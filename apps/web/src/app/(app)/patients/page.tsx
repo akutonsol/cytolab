@@ -1,97 +1,136 @@
 'use client';
 
-import { Col, Form, Input, InputNumber, Row, Select } from 'antd';
+import { useState } from 'react';
+import { Alert, Button, Card, Input, Space, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { useQuery } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
-import { CrudTablePage } from '@/components/CrudTablePage';
-
-interface Patient {
-  id: string;
-  registrationNo: string;
-  firstName: string;
-  lastName: string;
-  gender?: string;
-  age?: number;
-  phoneNumber?: string;
-  email?: string;
-  createdAt: string;
-}
-
-const columns: ColumnsType<Patient> = [
-  { title: 'Reg. No', dataIndex: 'registrationNo' },
-  { title: 'Name', render: (_, r) => `${r.firstName} ${r.lastName}` },
-  { title: 'Gender', dataIndex: 'gender' },
-  { title: 'Age', dataIndex: 'age' },
-  { title: 'Phone', dataIndex: 'phoneNumber' },
-  { title: 'Email', dataIndex: 'email' },
-  { title: 'Created', dataIndex: 'createdAt', render: (v: string) => new Date(v).toLocaleDateString() },
-];
+import { useAuth } from '@/lib/auth';
+import { deriveAge } from '@/lib/age';
+import { PatientFormDrawer, type PatientRecord } from '@/components/PatientFormDrawer';
 
 export default function PatientsPage() {
+  const { can } = useAuth();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [q, setQ] = useState('');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editing, setEditing] = useState<PatientRecord | null>(null);
+
+  const { data, isFetching, isError, error, refetch } = useQuery({
+    queryKey: ['patients', page, pageSize, q],
+    queryFn: () =>
+      api
+        .get<Paginated<PatientRecord>>('/patients', { params: { page, pageSize, q: q || undefined } })
+        .then((r) => r.data),
+  });
+
+  const errorMessage =
+    (error as any)?.code === 'ECONNABORTED'
+      ? 'The request timed out. Please try again.'
+      : (error as any)?.response?.data?.message ?? 'Could not load patients. Please try again.';
+
+  const openCreate = () => {
+    setEditing(null);
+    setDrawerOpen(true);
+  };
+  const openEdit = (p: PatientRecord) => {
+    setEditing(p);
+    setDrawerOpen(true);
+  };
+
+  const columns: ColumnsType<PatientRecord> = [
+    { title: 'Reg. No', dataIndex: 'registrationNo', width: 130 },
+    { title: 'Name', render: (_, r) => [r.firstName, r.middleName, r.lastName].filter(Boolean).join(' ') },
+    { title: 'Gender', dataIndex: 'gender', width: 90 },
+    {
+      title: 'Age',
+      width: 70,
+      render: (_, r) => {
+        const a = deriveAge(r.dateOfBirth);
+        return a != null ? a : '—';
+      },
+    },
+    { title: 'Phone', dataIndex: 'phoneNumber' },
+    { title: 'Email', dataIndex: 'email' },
+    {
+      title: 'Client',
+      render: (_, r) => (r.client ? `${r.client.firstName} ${r.client.lastName}` : '—'),
+    },
+    ...(can('patient:change')
+      ? [
+          {
+            title: '',
+            width: 90,
+            render: (_: unknown, r: PatientRecord) => (
+              <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(r)}>
+                Edit
+              </Button>
+            ),
+          },
+        ]
+      : []),
+  ];
+
   return (
-    <CrudTablePage<Patient>
+    <Card
       title="Patients"
-      resourceKey="patients"
-      mode="server"
-      searchable
-      columns={columns}
-      fetchList={async ({ page, pageSize, q }) => {
-        const res = await api.get<Paginated<Patient>>('/patients', { params: { page, pageSize, q } });
-        return { rows: res.data.data, total: res.data.total };
-      }}
-      create={{
-        title: 'New Patient',
-        permission: 'patient:create',
-        submit: (values) => api.post('/patient', values),
-        fields: (
-          <>
-            <Row gutter={12}>
-              <Col span={12}>
-                <Form.Item name="firstName" label="First name" rules={[{ required: true }]}>
-                  <Input />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item name="lastName" label="Last name" rules={[{ required: true }]}>
-                  <Input />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Form.Item name="middleName" label="Middle name">
-              <Input />
-            </Form.Item>
-            <Row gutter={12}>
-              <Col span={8}>
-                <Form.Item name="age" label="Age">
-                  <InputNumber min={0} style={{ width: '100%' }} />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item name="gender" label="Gender">
-                  <Select
-                    allowClear
-                    options={[
-                      { label: 'Male', value: 'Male' },
-                      { label: 'Female', value: 'Female' },
-                    ]}
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item name="bloodGroup" label="Blood group">
-                  <Input />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Form.Item name="phoneNumber" label="Phone">
-              <Input />
-            </Form.Item>
-            <Form.Item name="email" label="Email" rules={[{ type: 'email' }]}>
-              <Input />
-            </Form.Item>
-          </>
-        ),
-      }}
-    />
+      extra={
+        <Space>
+          <Input.Search
+            allowClear
+            placeholder="Search name, reg no, email, phone"
+            style={{ width: 280 }}
+            onSearch={(v) => {
+              setQ(v);
+              setPage(1);
+            }}
+          />
+          {can('patient:create') && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+              New Patient
+            </Button>
+          )}
+        </Space>
+      }
+    >
+      {isError && (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Failed to load"
+          description={errorMessage}
+          action={
+            <Button size="small" icon={<ReloadOutlined />} onClick={() => refetch()}>
+              Retry
+            </Button>
+          }
+        />
+      )}
+
+      <Table<PatientRecord>
+        rowKey="id"
+        columns={columns}
+        dataSource={data?.data ?? []}
+        loading={isFetching && !isError}
+        size="middle"
+        scroll={{ x: true }}
+        pagination={{
+          current: page,
+          pageSize,
+          total: data?.total ?? 0,
+          showSizeChanger: true,
+          showTotal: (t) => `${t} total`,
+          onChange: (p, ps) => {
+            setPage(p);
+            setPageSize(ps);
+          },
+        }}
+      />
+
+      <PatientFormDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} patient={editing} />
+    </Card>
   );
 }
