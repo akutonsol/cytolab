@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { App, Button, Card, Drawer, Form, Input, Space, Table } from 'antd';
+import { Alert, App, Button, Card, Drawer, Form, Input, Space, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth';
 
@@ -55,11 +55,16 @@ export function CrudTablePage<T extends Record<string, any>>({
   const [q, setQ] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const { data, isFetching } = useQuery({
+  const { data, isFetching, isError, error, refetch } = useQuery({
     queryKey: mode === 'server' ? [resourceKey, page, pageSize, q] : [resourceKey],
     queryFn: () =>
       fetchList(mode === 'server' ? { page, pageSize, q: q || undefined } : { page: 1, pageSize: 1000 }),
   });
+
+  const errorMessage =
+    (error as any)?.code === 'ECONNABORTED'
+      ? 'The request timed out. Please try again.'
+      : (error as any)?.response?.data?.message ?? 'Could not load data. Please try again.';
 
   const rows = data?.rows ?? [];
   // Client mode filters in-memory; server mode already filtered via `q`.
@@ -105,11 +110,28 @@ export function CrudTablePage<T extends Record<string, any>>({
         </Space>
       }
     >
+      {isError && (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Failed to load"
+          description={errorMessage}
+          action={
+            <Button size="small" icon={<ReloadOutlined />} onClick={() => refetch()}>
+              Retry
+            </Button>
+          }
+        />
+      )}
+
       <Table<T>
         rowKey={rowKey}
         columns={columns}
         dataSource={dataSource}
-        loading={isFetching}
+        // Only show the spinner while actually fetching; on error it stops so the
+        // Alert above is shown instead of an endless spinner.
+        loading={isFetching && !isError}
         size="middle"
         scroll={{ x: true }}
         pagination={

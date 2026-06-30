@@ -2,7 +2,9 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from './auth';
 
 // Same-origin: Next rewrites /api/v1/* to the NestJS API on :4000 (next.config.mjs).
-export const api = axios.create({ baseURL: '/api/v1' });
+// A finite timeout guarantees a hung request rejects (error state) instead of
+// spinning forever.
+export const api = axios.create({ baseURL: '/api/v1', timeout: 20_000 });
 
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
@@ -15,10 +17,17 @@ let refreshing: Promise<string | null> | null = null;
 
 async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = useAuthStore.getState().refreshToken;
-  if (!refreshToken) return null;
+  // No refresh token is itself a logged-out state — clear so the route guard
+  // sees `isAuthed === false` and navigates cleanly (no token left behind that
+  // would bounce /login back to a protected page).
+  if (!refreshToken) {
+    useAuthStore.getState().clear();
+    return null;
+  }
   try {
-    // Bare axios (not `api`) so this request skips the interceptors below.
-    const res = await axios.post('/api/v1/auth/refresh', { refreshToken });
+    // Bare axios (not `api`) so this request skips the interceptors below; its
+    // own timeout so a stuck refresh can't wedge every queued request.
+    const res = await axios.post('/api/v1/auth/refresh', { refreshToken }, { timeout: 20_000 });
     useAuthStore.getState().setTokens(res.data.accessToken, res.data.refreshToken);
     return res.data.accessToken as string;
   } catch {
@@ -30,8 +39,12 @@ async function refreshAccessToken(): Promise<string | null> {
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
-    const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-    if (error.response?.status === 401 && original && !original._retry) {
+    const original = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
+    // A 401 on the auth endpoints themselves (login/refresh) is a real failure,
+    // not an expired session — never try to "refresh" those.
+    const isAuthCall = original?.url?.includes('/auth/');
+
+    if (error.response?.status === 401 && original && !original._retry && !isAuthCall) {
       original._retry = true;
       refreshing = refreshing ?? refreshAccessToken();
       const token = await refreshing;
@@ -40,9 +53,12 @@ api.interceptors.response.use(
         original.headers.Authorization = `Bearer ${token}`;
         return api(original);
       }
-      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-        window.location.href = '/login';
-      }
+      // Refresh failed: tokens are now cleared. We deliberately do NOT
+      // window.location.href = '/login' here — a hard navigation fights the
+      // React route guard and ping-pongs (the loop). Clearing the store flips
+      // `isAuthed` to false, and the guard performs a single soft redirect to
+      // /login. The rejection below also lets React Query surface an error
+      // state instead of spinning forever.
     }
     return Promise.reject(error);
   },
