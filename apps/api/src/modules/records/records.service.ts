@@ -65,13 +65,15 @@ export class RecordsService {
   }
 
   async findBillable(query: RecordQueryDto) {
-    // Completed + Approved but not yet billed
+    // Only Approved-and-not-yet-billed records are billable. This mirrors legacy
+    // (records became billable only on reaching Approved) and stays consistent
+    // with the issue-bill transition, which advances Approved -> Billed.
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 20;
     const skip = (page - 1) * pageSize;
     const where = {
       billed: false,
-      status: { in: [RecordStatus.Completed, RecordStatus.Approved] },
+      status: RecordStatus.Approved,
     };
     const [data, total] = await Promise.all([
       this.prisma.record.findMany({ where, select: recordSelect, skip, take: pageSize, orderBy: { createdAt: 'desc' } }),
