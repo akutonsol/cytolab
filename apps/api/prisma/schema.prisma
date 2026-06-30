@@ -78,6 +78,14 @@ model Lab {
   requisitionLines   RequisitionLine[]
   recordStatusEvents RecordStatusEvent[]
   therapies          Therapy[]
+  cabinets           Cabinet[]
+  codeSheets         CodeSheet[]
+  codeFindings       CodeFinding[]
+  labCodes           LabCode[]
+  resultSheets       ResultSheet[]
+  resultEntries      ResultEntry[]
+  resultLines        ResultLine[]
+  reports            Report[]
 }
 
 model Account {
@@ -120,11 +128,13 @@ model User {
   account            Account             @relation(fields: [accountId], references: [id])
   workspaceId        String?
   workspace          Workspace?          @relation(fields: [workspaceId], references: [id])
-  roles              UserRole[]
-  authAttempts       AuthAttempt[]
-  recordStatusEvents RecordStatusEvent[]
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
+  roles                  UserRole[]
+  authAttempts           AuthAttempt[]
+  recordStatusEvents     RecordStatusEvent[]
+  authorizedResultSheets ResultSheet[]       @relation("ResultSheetAuthorizer")
+  authoredReports        Report[]            @relation("ReportAuthor")
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
 
   @@unique([labId, email])
   @@index([accountId])
@@ -302,6 +312,9 @@ model Record {
   statusHistory     RecordStatusEvent[]
   requisitionLines  RequisitionLine[]
   therapy           Therapy?
+  resultSheets      ResultSheet[]
+  cabinetId         String?
+  cabinet           Cabinet?            @relation(fields: [cabinetId], references: [id])
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 
@@ -309,6 +322,7 @@ model Record {
   @@index([labId])
   @@index([patientId])
   @@index([clientId])
+  @@index([cabinetId])
   @@index([status])
 }
 
@@ -346,6 +360,7 @@ model Specimen {
   clientId     String?
   client       Client?      @relation(fields: [clientId], references: [id])
   dateReceived DateTime?
+  resultEntries ResultEntry[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
@@ -365,4 +380,139 @@ model Therapy {
   other     String?
 
   @@index([labId])
+}
+
+// ---- Phase 3: Results & Coding ----
+
+// Storage unit; records can be filed into a cabinet (GET /cabinet/records/:id).
+model Cabinet {
+  id         String   @id @default(uuid())
+  labId      String
+  lab        Lab      @relation(fields: [labId], references: [id])
+  label      String
+  identifier String?
+  color      String?
+  records    Record[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([labId])
+}
+
+// Reference list of diagnostic code sheets.
+model CodeSheet {
+  id           String   @id @default(uuid())
+  labId        String
+  lab          Lab      @relation(fields: [labId], references: [id])
+  abbreviation String
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([labId])
+}
+
+// Reference list of code findings (independent of CodeSheet, per legacy).
+model CodeFinding {
+  id           String   @id @default(uuid())
+  labId        String
+  lab          Lab      @relation(fields: [labId], references: [id])
+  abbreviation String
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([labId])
+}
+
+// Lab/region code.
+model LabCode {
+  id        String   @id @default(uuid())
+  labId     String
+  lab       Lab      @relation(fields: [labId], references: [id])
+  code      String
+  region    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([labId])
+}
+
+// A record's result sheet: filled with entries/lines, then authorized.
+// Authorization (who/when) is the gate that allows a report to be released.
+model ResultSheet {
+  id             String        @id @default(uuid())
+  labId          String
+  lab            Lab           @relation(fields: [labId], references: [id])
+  recordId       String
+  record         Record        @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  viewed         Boolean       @default(false)
+  // Authorization gate (Phase 3 critical rule): set by a user holding
+  // resultsheet:authorize. Editing entries resets these (re-authorization required).
+  authorized     Boolean       @default(false)
+  authorizedAt   DateTime?
+  authorizedById String?
+  authorizedBy   User?         @relation("ResultSheetAuthorizer", fields: [authorizedById], references: [id])
+  resultEntries  ResultEntry[]
+  reports        Report[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([labId])
+  @@index([recordId])
+}
+
+model ResultEntry {
+  id            String       @id @default(uuid())
+  labId         String
+  lab           Lab          @relation(fields: [labId], references: [id])
+  resultSheetId String
+  resultSheet   ResultSheet  @relation(fields: [resultSheetId], references: [id], onDelete: Cascade)
+  specimenId    String?
+  specimen      Specimen?    @relation(fields: [specimenId], references: [id])
+  resultLines   ResultLine[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([labId])
+  @@index([resultSheetId])
+}
+
+model ResultLine {
+  id              String      @id @default(uuid())
+  labId           String
+  lab             Lab         @relation(fields: [labId], references: [id])
+  resultEntryId   String
+  resultEntry     ResultEntry @relation(fields: [resultEntryId], references: [id], onDelete: Cascade)
+  abbreviation    String?
+  result          String?
+  findings        String?
+  abnormalFinding Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([labId])
+  @@index([resultEntryId])
+}
+
+// A released pathology report. Only created from an authorized result sheet.
+model Report {
+  id                  String      @id @default(uuid())
+  labId               String
+  lab                 Lab         @relation(fields: [labId], references: [id])
+  resultSheetId       String
+  resultSheet         ResultSheet @relation(fields: [resultSheetId], references: [id], onDelete: Cascade)
+  authorizerReference String?
+  content             String?
+  signature           String?
+  digitalSignature    String?
+  medicalEntry        String?
+  writtenById         String?
+  writtenBy           User?       @relation("ReportAuthor", fields: [writtenById], references: [id])
+  releasedAt          DateTime    @default(now())
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@index([labId])
+  @@index([resultSheetId])
 }
