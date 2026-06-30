@@ -1,6 +1,8 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { LabContextMiddleware } from './common/tenancy/lab-context.middleware';
+import { TenancyModule } from './common/tenancy/tenancy.module';
 import { PrismaModule } from './database/prisma.module';
 import { HealthController } from './health.controller';
 import { AuthModule } from './modules/auth/auth.module';
@@ -26,6 +28,7 @@ import { RecordsModule } from './modules/records/records.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
+    TenancyModule,
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -37,4 +40,9 @@ import { RecordsModule } from './modules/records/records.module';
   ],
   controllers: [HealthController],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // Open a tenant context for every request before guards/handlers run.
+    consumer.apply(LabContextMiddleware).forRoutes('*');
+  }
+}

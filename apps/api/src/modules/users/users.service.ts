@@ -5,7 +5,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import * as argon2 from 'argon2';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { ChangePasswordDto, CreateUserDto, UpdateUserDto } from './dto/user.dto';
 
 const userSelect = {
@@ -22,29 +24,29 @@ const userSelect = {
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  // All queries are lab-scoped: labId always comes from the JWT, never the request body.
-  async findAll(labId: string) {
-    const users = await this.prisma.user.findMany({ where: { labId }, select: userSelect });
+  // All queries are lab-scoped automatically by the tenancy extension: labId
+  // comes from the JWT request context, never from the request body.
+  async findAll() {
+    const users = await this.prisma.user.findMany({ select: userSelect });
     return users.map(this.flatten);
   }
 
-  async findOne(labId: string, id: string) {
-    const user = await this.prisma.user.findFirst({ where: { id, labId }, select: userSelect });
+  async findOne(id: string) {
+    const user = await this.prisma.user.findFirst({ where: { id }, select: userSelect });
     if (!user) throw new NotFoundException('User not found');
     return this.flatten(user);
   }
 
-  async create(labId: string, dto: CreateUserDto) {
+  async create(dto: CreateUserDto) {
     const email = dto.email.toLowerCase();
-    const dup = await this.prisma.user.findFirst({ where: { labId, email } });
+    const dup = await this.prisma.user.findFirst({ where: { email } });
     if (dup) throw new ConflictException('A user with this email already exists in this lab');
 
-    const account = await this.prisma.account.findFirst({ where: { labId } });
+    const account = await this.prisma.account.findFirst();
     if (!account) throw new NotFoundException('Lab account missing');
 
     const user = await this.prisma.user.create({
-      data: {
-        labId,
+      data: tenantCreate<Prisma.UserUncheckedCreateInput>({
         email,
         passwordHash: await argon2.hash(dto.password),
         firstName: dto.firstName,
@@ -53,14 +55,14 @@ export class UsersService {
         roles: dto.roleIds?.length
           ? { create: dto.roleIds.map((roleId) => ({ roleId })) }
           : undefined,
-      },
+      }),
       select: userSelect,
     });
     return this.flatten(user);
   }
 
-  async update(labId: string, id: string, dto: UpdateUserDto) {
-    await this.findOne(labId, id);
+  async update(id: string, dto: UpdateUserDto) {
+    await this.findOne(id);
     const user = await this.prisma.user.update({
       where: { id },
       data: {
@@ -81,8 +83,8 @@ export class UsersService {
   }
 
   /** Legacy parity: PATCH /user/authAccess/{id} — enable/disable login */
-  async setActive(labId: string, id: string, isActive: boolean) {
-    await this.findOne(labId, id);
+  async setActive(id: string, isActive: boolean) {
+    await this.findOne(id);
     const user = await this.prisma.user.update({
       where: { id },
       data: { isActive },

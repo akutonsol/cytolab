@@ -16,73 +16,63 @@ import { RecordsService } from './records.service';
 export class RecordsController {
   constructor(private records: RecordsService) {}
 
-  // Static sub-routes declared before /specimens/:id to avoid match conflicts
+  // Reads are lab-scoped automatically by the tenancy guard; writes still take
+  // userId for the status-history audit trail.
+  // Static sub-routes declared before /specimens/:id to avoid match conflicts.
 
   @Get('specimens/approved')
   @RequirePermissions('record:view')
-  findApproved(@CurrentUser() user: AuthUser, @Query() query: RecordQueryDto) {
-    return this.records.findApproved(user.labId, query);
+  findApproved(@Query() query: RecordQueryDto) {
+    return this.records.findApproved(query);
   }
 
   @Get('specimens/billable')
   @RequirePermissions('bill:view')
-  findBillable(@CurrentUser() user: AuthUser, @Query() query: RecordQueryDto) {
-    return this.records.findBillable(user.labId, query);
+  findBillable(@Query() query: RecordQueryDto) {
+    return this.records.findBillable(query);
   }
 
   @Get('specimens/client')
   @RequirePermissions('record:view')
-  findByClient(
-    @CurrentUser() user: AuthUser,
-    @Query('clientId') clientId: string,
-    @Query() query: RecordQueryDto,
-  ) {
-    return this.records.findByClient(user.labId, clientId, query);
+  findByClient(@Query('clientId') clientId: string, @Query() query: RecordQueryDto) {
+    return this.records.findByClient(clientId, query);
   }
 
   @Get('specimens/patient')
   @RequirePermissions('record:view')
-  findByPatient(
-    @CurrentUser() user: AuthUser,
-    @Query('patientId') patientId: string,
-    @Query() query: RecordQueryDto,
-  ) {
-    return this.records.findByPatient(user.labId, patientId, query);
+  findByPatient(@Query('patientId') patientId: string, @Query() query: RecordQueryDto) {
+    return this.records.findByPatient(patientId, query);
   }
 
   @Get('specimens/recent')
   @RequirePermissions('record:view')
-  findRecent(@CurrentUser() user: AuthUser, @Query() query: RecordQueryDto) {
-    return this.records.findRecent(user.labId, query);
+  findRecent(@Query() query: RecordQueryDto) {
+    return this.records.findRecent(query);
   }
 
   @Get('specimens/requisition')
   @RequirePermissions('record:view')
   @ApiOperation({ summary: 'Records linked to a requisition (query: requisitionId)' })
-  findByRequisition(
-    @CurrentUser() user: AuthUser,
-    @Query('requisitionId') requisitionId: string,
-    @Query() query: RecordQueryDto,
-  ) {
-    return this.records.findByRequisition(user.labId, requisitionId, query);
+  findByRequisition(@Query('requisitionId') requisitionId: string, @Query() query: RecordQueryDto) {
+    return this.records.findByRequisition(requisitionId, query);
   }
 
   @Get('specimens')
   @RequirePermissions('record:view')
-  findAll(@CurrentUser() user: AuthUser, @Query() query: RecordQueryDto) {
-    return this.records.findAll(user.labId, query);
+  findAll(@Query() query: RecordQueryDto) {
+    return this.records.findAll(query);
   }
 
   @Get('specimens/:id')
   @RequirePermissions('record:view')
-  findOne(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.records.findOne(user.labId, id);
+  findOne(@Param('id') id: string) {
+    return this.records.findOne(id);
   }
 
   @Post('specimen/create')
   @RequirePermissions('record:create')
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateRecordDto) {
-    return this.records.create(user.labId, user.userId, dto);
+    return this.records.create(user.userId, dto);
   }
 
   @Put('specimen/update/:id')
@@ -92,13 +82,13 @@ export class RecordsController {
     @Param('id') id: string,
     @Body() dto: UpdateRecordDto,
   ) {
-    return this.records.update(user.labId, id, user.userId, dto);
+    return this.records.update(id, user.userId, dto);
   }
 
   @Put('specimen/submit/:id')
   @RequirePermissions('record:submit')
   submit(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.records.submit(user.labId, id, user.userId);
+    return this.records.submit(id, user.userId);
   }
 
   @Patch('specimen/status/:id')
@@ -108,12 +98,12 @@ export class RecordsController {
     @Param('id') id: string,
     @Body() dto: UpdateRecordStatusDto,
   ) {
-    return this.records.updateStatus(user.labId, id, user.userId, dto);
+    return this.records.updateStatus(id, user.userId, dto);
   }
 
   @Delete('specimen/delete/:id')
   @RequirePermissions('record:change')
-  remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.records.remove(user.labId, id);
+  remove(@Param('id') id: string) {
+    return this.records.remove(id);
   }
 }

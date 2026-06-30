@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
+import { LabContext } from '../../common/tenancy/lab-context';
 import { PrismaService } from '../../database/prisma.service';
 import { LoginDto, RegisterLabDto } from './dto/login.dto';
 
@@ -28,6 +29,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwt: JwtService,
     private config: ConfigService,
+    private labContext: LabContext,
   ) {}
 
   /** Bootstrap: create a Lab, its Account, default Workspace, Superuser role, and first user. */
@@ -37,45 +39,52 @@ export class AuthService {
 
     const passwordHash = await argon2.hash(dto.password);
 
-    return this.prisma.$transaction(async (tx: any) => {
-      const lab = await tx.lab.create({
-        data: { name: dto.labName, slug: dto.labSlug },
-      });
-      const account = await tx.account.create({
-        data: { name: dto.labName, labId: lab.id },
-      });
-      const workspace = await tx.workspace.create({
-        data: { name: 'Global', labId: lab.id, accountId: account.id },
-      });
-      const superuser = await tx.role.upsert({
-        where: { name: 'Superuser' },
-        update: {},
-        create: { name: 'Superuser', description: 'Full access' },
-      });
-      const user = await tx.user.create({
-        data: {
-          labId: lab.id,
-          email: dto.email.toLowerCase(),
-          passwordHash,
-          firstName: dto.firstName,
-          lastName: dto.lastName,
-          accountId: account.id,
-          workspaceId: workspace.id,
-          roles: { create: { roleId: superuser.id } },
-        },
-      });
-      return { labId: lab.id, userId: user.id };
-    });
+    // Bootstrap runs before any lab is authenticated: create tenant rows
+    // (account/workspace/user) with explicit labIds, outside tenancy scoping.
+    return this.labContext.runSystem(() =>
+      this.prisma.$transaction(async (tx: any) => {
+        const lab = await tx.lab.create({
+          data: { name: dto.labName, slug: dto.labSlug },
+        });
+        const account = await tx.account.create({
+          data: { name: dto.labName, labId: lab.id },
+        });
+        const workspace = await tx.workspace.create({
+          data: { name: 'Global', labId: lab.id, accountId: account.id },
+        });
+        const superuser = await tx.role.upsert({
+          where: { name: 'Superuser' },
+          update: {},
+          create: { name: 'Superuser', description: 'Full access' },
+        });
+        const user = await tx.user.create({
+          data: {
+            labId: lab.id,
+            email: dto.email.toLowerCase(),
+            passwordHash,
+            firstName: dto.firstName,
+            lastName: dto.lastName,
+            accountId: account.id,
+            workspaceId: workspace.id,
+            roles: { create: { roleId: superuser.id } },
+          },
+        });
+        return { labId: lab.id, userId: user.id };
+      }),
+    );
   }
 
   async login(dto: LoginDto, ip?: string) {
     const email = dto.email.toLowerCase();
-    const user = await this.prisma.user.findFirst({
-      where: { email },
-      include: {
-        roles: { include: { role: { include: { permissions: { include: { permission: true } } } } } },
-      },
-    });
+    // Cross-lab lookup: the user's lab is discovered here, so it can't be scoped yet.
+    const user = await this.labContext.runSystem(() =>
+      this.prisma.user.findFirst({
+        where: { email },
+        include: {
+          roles: { include: { role: { include: { permissions: { include: { permission: true } } } } } },
+        },
+      }),
+    );
 
     // Lockout check (legacy parity: AuthAttempt tracking)
     const windowStart = new Date(Date.now() - LOCKOUT_WINDOW_MINUTES * 60_000);
@@ -111,12 +120,15 @@ export class AuthService {
     }
     if (payload.type !== 'refresh') throw new UnauthorizedException('Invalid token type');
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: payload.sub },
-      include: {
-        roles: { include: { role: { include: { permissions: { include: { permission: true } } } } } },
-      },
-    });
+    // Public endpoint: no request lab context, so resolve the user unscoped.
+    const user = await this.labContext.runSystem(() =>
+      this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        include: {
+          roles: { include: { role: { include: { permissions: { include: { permission: true } } } } } },
+        },
+      }),
+    );
     if (!user || !user.isActive) throw new UnauthorizedException('User no longer active');
 
     return this.issueTokens(user);

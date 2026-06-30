@@ -11,38 +11,35 @@ import { UsersService } from './users.service';
 export class UsersController {
   constructor(private users: UsersService) {}
 
+  // Queries are lab-scoped automatically by the tenancy guard (labId from JWT).
   @Get()
   @RequirePermissions('user:view')
-  findAll(@CurrentUser() user: AuthUser) {
-    return this.users.findAll(user.labId);
+  findAll() {
+    return this.users.findAll();
   }
 
   @Get(':id')
   @RequirePermissions('user:view')
-  findOne(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.users.findOne(user.labId, id);
+  findOne(@Param('id') id: string) {
+    return this.users.findOne(id);
   }
 
   @Post()
   @RequirePermissions('user:create')
-  create(@CurrentUser() user: AuthUser, @Body() dto: CreateUserDto) {
-    return this.users.create(user.labId, dto);
+  create(@Body() dto: CreateUserDto) {
+    return this.users.create(dto);
   }
 
   @Put(':id')
   @RequirePermissions('user:change')
-  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.users.update(user.labId, id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
+    return this.users.update(id, dto);
   }
 
   @Patch(':id/access')
   @RequirePermissions('user:change')
-  setActive(
-    @CurrentUser() user: AuthUser,
-    @Param('id') id: string,
-    @Body() body: { isActive: boolean },
-  ) {
-    return this.users.setActive(user.labId, id, body.isActive);
+  setActive(@Param('id') id: string, @Body() body: { isActive: boolean }) {
+    return this.users.setActive(id, body.isActive);
   }
 
   @Put('password/change')

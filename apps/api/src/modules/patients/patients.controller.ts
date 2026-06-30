@@ -1,6 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CreatePatientDto, PatientQueryDto, UpdatePatientDto } from './dto/patient.dto';
 import { PatientsService } from './patients.service';
@@ -11,54 +10,47 @@ import { PatientsService } from './patients.service';
 export class PatientsController {
   constructor(private patients: PatientsService) {}
 
-  // Static sub-routes declared before /:id to avoid routing conflicts
+  // Queries are lab-scoped automatically by the tenancy guard (labId from JWT).
+  // Static sub-routes declared before /:id to avoid routing conflicts.
   @Get('patients/search')
   @RequirePermissions('patient:view')
-  search(@CurrentUser() user: AuthUser, @Query() query: PatientQueryDto) {
-    return this.patients.search(user.labId, query);
+  search(@Query() query: PatientQueryDto) {
+    return this.patients.search(query);
   }
 
   @Get('patients/client')
   @RequirePermissions('patient:view')
-  findByClient(
-    @CurrentUser() user: AuthUser,
-    @Query('clientId') clientId: string,
-    @Query() query: PatientQueryDto,
-  ) {
-    return this.patients.findByClient(user.labId, clientId, query);
+  findByClient(@Query('clientId') clientId: string, @Query() query: PatientQueryDto) {
+    return this.patients.findByClient(clientId, query);
   }
 
   @Get('patients')
   @RequirePermissions('patient:view')
-  findAll(@CurrentUser() user: AuthUser, @Query() query: PatientQueryDto) {
-    return this.patients.findAll(user.labId, query);
+  findAll(@Query() query: PatientQueryDto) {
+    return this.patients.findAll(query);
   }
 
   @Get('patient/:id')
   @RequirePermissions('patient:view')
-  findOne(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.patients.findOne(user.labId, id);
+  findOne(@Param('id') id: string) {
+    return this.patients.findOne(id);
   }
 
   @Post('patient')
   @RequirePermissions('patient:create')
-  create(@CurrentUser() user: AuthUser, @Body() dto: CreatePatientDto) {
-    return this.patients.create(user.labId, dto);
+  create(@Body() dto: CreatePatientDto) {
+    return this.patients.create(dto);
   }
 
   @Put('patient/update/:id')
   @RequirePermissions('patient:change')
-  update(
-    @CurrentUser() user: AuthUser,
-    @Param('id') id: string,
-    @Body() dto: UpdatePatientDto,
-  ) {
-    return this.patients.update(user.labId, id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdatePatientDto) {
+    return this.patients.update(id, dto);
   }
 
   @Delete('patient/delete/:id')
   @RequirePermissions('patient:delete')
-  remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.patients.remove(user.labId, id);
+  remove(@Param('id') id: string) {
+    return this.patients.remove(id);
   }
 }

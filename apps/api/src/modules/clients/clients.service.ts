@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { paginate } from '../../common/dto/pagination.dto';
+import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { ClientQueryDto, CreateClientDto, CreateClientTypeDto, UpdateClientDto } from './dto/client.dto';
 
 const clientSelect = {
@@ -22,12 +24,13 @@ const clientSelect = {
 export class ClientsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(labId: string, query: ClientQueryDto) {
+  // Every query below is automatically lab-scoped by the Prisma tenancy extension.
+  async findAll(query: ClientQueryDto) {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 20;
     const skip = (page - 1) * pageSize;
 
-    const where: any = { labId };
+    const where: any = {};
     if (query.q) {
       const q = query.q;
       where.OR = [
@@ -45,33 +48,38 @@ export class ClientsService {
     return paginate(data, total, page, pageSize);
   }
 
-  async findOne(labId: string, id: string) {
-    const client = await this.prisma.client.findFirst({ where: { id, labId }, select: clientSelect });
+  async findOne(id: string) {
+    const client = await this.prisma.client.findFirst({ where: { id }, select: clientSelect });
     if (!client) throw new NotFoundException('Client not found');
     return client;
   }
 
-  async create(labId: string, dto: CreateClientDto) {
-    return this.prisma.client.create({ data: { labId, ...dto }, select: clientSelect });
+  async create(dto: CreateClientDto) {
+    return this.prisma.client.create({
+      data: tenantCreate<Prisma.ClientUncheckedCreateInput>({ ...dto }),
+      select: clientSelect,
+    });
   }
 
-  async update(labId: string, id: string, dto: UpdateClientDto) {
-    await this.findOne(labId, id);
+  async update(id: string, dto: UpdateClientDto) {
+    await this.findOne(id);
     return this.prisma.client.update({ where: { id }, data: dto, select: clientSelect });
   }
 
-  async remove(labId: string, id: string) {
-    await this.findOne(labId, id);
+  async remove(id: string) {
+    await this.findOne(id);
     await this.prisma.client.delete({ where: { id } });
     return { deleted: true };
   }
 
   // ClientType management
-  async findAllClientTypes(labId: string) {
-    return this.prisma.clientType.findMany({ where: { labId }, orderBy: { name: 'asc' } });
+  async findAllClientTypes() {
+    return this.prisma.clientType.findMany({ orderBy: { name: 'asc' } });
   }
 
-  async createClientType(labId: string, dto: CreateClientTypeDto) {
-    return this.prisma.clientType.create({ data: { labId, ...dto } });
+  async createClientType(dto: CreateClientTypeDto) {
+    return this.prisma.clientType.create({
+      data: tenantCreate<Prisma.ClientTypeUncheckedCreateInput>({ ...dto }),
+    });
   }
 }

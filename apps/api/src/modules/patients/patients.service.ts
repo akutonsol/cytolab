@@ -1,6 +1,8 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { paginate } from '../../common/dto/pagination.dto';
+import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { CreatePatientDto, PatientQueryDto, UpdatePatientDto } from './dto/patient.dto';
 import { randomBytes } from 'crypto';
 
@@ -30,12 +32,14 @@ const patientSelect = {
 export class PatientsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(labId: string, query: PatientQueryDto) {
+  // Every query below is automatically scoped to the caller's lab by the Prisma
+  // tenancy extension (labId injected from the request's JWT context).
+  async findAll(query: PatientQueryDto) {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 20;
     const skip = (page - 1) * pageSize;
 
-    const where = this.buildWhere(labId, query);
+    const where = this.buildWhere(query);
     const [data, total] = await Promise.all([
       this.prisma.patient.findMany({ where, select: patientSelect, skip, take: pageSize, orderBy: { createdAt: 'desc' } }),
       this.prisma.patient.count({ where }),
@@ -43,44 +47,44 @@ export class PatientsService {
     return paginate(data, total, page, pageSize);
   }
 
-  async findByClient(labId: string, clientId: string, query: PatientQueryDto) {
-    return this.findAll(labId, { ...query, clientId });
+  async findByClient(clientId: string, query: PatientQueryDto) {
+    return this.findAll({ ...query, clientId });
   }
 
-  async search(labId: string, query: PatientQueryDto) {
-    return this.findAll(labId, query);
+  async search(query: PatientQueryDto) {
+    return this.findAll(query);
   }
 
-  async findOne(labId: string, id: string) {
-    const patient = await this.prisma.patient.findFirst({ where: { id, labId }, select: patientSelect });
+  async findOne(id: string) {
+    const patient = await this.prisma.patient.findFirst({ where: { id }, select: patientSelect });
     if (!patient) throw new NotFoundException('Patient not found');
     return patient;
   }
 
-  async create(labId: string, dto: CreatePatientDto) {
+  async create(dto: CreatePatientDto) {
     const registrationNo = this.generateRegNo();
-    const existing = await this.prisma.patient.findFirst({ where: { labId, registrationNo } });
+    const existing = await this.prisma.patient.findFirst({ where: { registrationNo } });
     if (existing) throw new ConflictException('Registration number collision; retry');
 
     return this.prisma.patient.create({
-      data: { labId, registrationNo, ...dto },
+      data: tenantCreate<Prisma.PatientUncheckedCreateInput>({ registrationNo, ...dto }),
       select: patientSelect,
     });
   }
 
-  async update(labId: string, id: string, dto: UpdatePatientDto) {
-    await this.findOne(labId, id);
+  async update(id: string, dto: UpdatePatientDto) {
+    await this.findOne(id);
     return this.prisma.patient.update({ where: { id }, data: dto, select: patientSelect });
   }
 
-  async remove(labId: string, id: string) {
-    await this.findOne(labId, id);
+  async remove(id: string) {
+    await this.findOne(id);
     await this.prisma.patient.delete({ where: { id } });
     return { deleted: true };
   }
 
-  private buildWhere(labId: string, query: PatientQueryDto) {
-    const where: any = { labId };
+  private buildWhere(query: PatientQueryDto) {
+    const where: any = {};
     if (query.clientId) where.clientId = query.clientId;
     if (query.q) {
       const q = query.q;
