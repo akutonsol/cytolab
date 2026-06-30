@@ -1,5 +1,14 @@
 /** @type {import('next').NextConfig} */
+
+// Keep production builds OUT of the dev server's build dir. `next dev` runs with
+// NODE_ENV=development and uses `.next`; `next build`/`next start` run with
+// NODE_ENV=production and use `.next-prod`. This means running a production
+// build never overwrites the chunks the running dev server is serving (which
+// otherwise causes _next/static/chunks 404s and a dead, un-hydrated page).
+const isProd = process.env.NODE_ENV === 'production';
+
 const nextConfig = {
+  distDir: isProd ? '.next-prod' : '.next',
   async rewrites() {
     return [
       {
