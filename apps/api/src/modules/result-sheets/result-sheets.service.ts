@@ -1,0 +1,148 @@
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
+import { paginate } from '../../common/dto/pagination.dto';
+import { tenantCreate } from '../../common/tenancy/tenancy.extension';
+import {
+  CreateResultEntryDto,
+  CreateResultSheetDto,
+  ResultSheetQueryDto,
+  UpdateResultSheetDto,
+} from './dto/result-sheet.dto';
+
+const resultSheetSelect = {
+  id: true,
+  recordId: true,
+  viewed: true,
+  authorized: true,
+  authorizedAt: true,
+  authorizedById: true,
+  authorizedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
+  resultEntries: {
+    select: {
+      id: true,
+      specimenId: true,
+      resultLines: {
+        select: { id: true, abbreviation: true, result: true, findings: true, abnormalFinding: true },
+      },
+    },
+  },
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+@Injectable()
+export class ResultSheetsService {
+  constructor(private prisma: PrismaService) {}
+
+  // Build the nested entries/lines create payload. The tenancy guard stamps
+  // labId on every nested tenant row at write time.
+  private entriesCreate(entries?: CreateResultEntryDto[]) {
+    if (!entries?.length) return undefined;
+    return {
+      create: entries.map((e) =>
+        tenantCreate<Prisma.ResultEntryUncheckedCreateWithoutResultSheetInput>({
+          specimenId: e.specimenId,
+          resultLines: e.lines?.length
+            ? {
+                create: e.lines.map((l) =>
+                  tenantCreate<Prisma.ResultLineUncheckedCreateWithoutResultEntryInput>({
+                    abbreviation: l.abbreviation,
+                    result: l.result,
+                    findings: l.findings,
+                    abnormalFinding: l.abnormalFinding ?? false,
+                  }),
+                ),
+              }
+            : undefined,
+        }),
+      ),
+    };
+  }
+
+  async create(dto: CreateResultSheetDto) {
+    // Confirm the record exists in this lab (auto lab-scoped).
+    const record = await this.prisma.record.findFirst({ where: { id: dto.recordId }, select: { id: true } });
+    if (!record) throw new NotFoundException('Record not found');
+
+    return this.prisma.resultSheet.create({
+      data: tenantCreate<Prisma.ResultSheetUncheckedCreateInput>({
+        recordId: dto.recordId,
+        resultEntries: this.entriesCreate(dto.entries),
+      }),
+      select: resultSheetSelect,
+    });
+  }
+
+  async findAll(query: ResultSheetQueryDto) {
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 20;
+    const skip = (page - 1) * pageSize;
+    const where: Prisma.ResultSheetWhereInput = {};
+    if (query.recordId) where.recordId = query.recordId;
+
+    const [data, total] = await Promise.all([
+      this.prisma.resultSheet.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          recordId: true,
+          record: { select: { identifier: true } },
+          authorized: true,
+          authorizedAt: true,
+          viewed: true,
+          createdAt: true,
+          _count: { select: { resultEntries: true, reports: true } },
+        },
+      }),
+      this.prisma.resultSheet.count({ where }),
+    ]);
+    return paginate(data, total, page, pageSize);
+  }
+
+  async findOne(id: string) {
+    const sheet = await this.prisma.resultSheet.findFirst({ where: { id }, select: resultSheetSelect });
+    if (!sheet) throw new NotFoundException('Result sheet not found');
+    return sheet;
+  }
+
+  /**
+   * Replace entries/lines and/or update flags. Any change to the result content
+   * re-opens the sheet (de-authorizes it): a previously authorized sheet must be
+   * re-authorized before a new report can be released. Already-released reports
+   * remain as immutable snapshots.
+   */
+  async update(id: string, dto: UpdateResultSheetDto) {
+    await this.findOne(id);
+
+    const data: Prisma.ResultSheetUncheckedUpdateInput = {};
+    if (dto.viewed !== undefined) data.viewed = dto.viewed;
+    if (dto.entries !== undefined) {
+      // Editing results invalidates any prior authorization.
+      data.authorized = false;
+      data.authorizedAt = null;
+      data.authorizedById = null;
+      data.resultEntries = { deleteMany: {}, ...this.entriesCreate(dto.entries) };
+    }
+
+    return this.prisma.resultSheet.update({ where: { id }, data, select: resultSheetSelect });
+  }
+
+  /**
+   * Authorization gate. Sets authorized + records who/when. The controller
+   * restricts this to holders of resultsheet:authorize (the Authorizer role).
+   */
+  async authorize(id: string, userId: string) {
+    const sheet = await this.findOne(id);
+    if (sheet.authorized) throw new BadRequestException('Result sheet is already authorized');
+
+    return this.prisma.resultSheet.update({
+      where: { id },
+      data: { authorized: true, authorizedAt: new Date(), authorizedById: userId },
+      select: resultSheetSelect,
+    });
+  }
+}
