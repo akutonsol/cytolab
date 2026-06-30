@@ -84,6 +84,10 @@ model Lab {
   name         String
   slug         String        @unique
   logoUrl      String?
+  // Branding shown on rendered report PDFs (Phase 3.5).
+  address      String?
+  phone        String?
+  email        String?
   currency     String        @default("JMD")
   isActive     Boolean       @default(true)
   createdAt    DateTime      @default(now())
@@ -152,6 +156,9 @@ model User {
   passwordHash       String
   firstName          String
   lastName           String
+  // Authorizer signature image for rendered reports (Phase 3.5). Typed name
+  // (firstName lastName) is the fallback when this is absent.
+  signatureUrl       String?
   isActive           Boolean             @default(true)
   accountId          String
   account            Account             @relation(fields: [accountId], references: [id])
