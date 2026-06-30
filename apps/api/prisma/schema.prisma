@@ -1,8 +1,6 @@
 // Cytolab 2.0 — Prisma schema
-// Phase 1 models (auth & identity), derived from the legacy entities:
-// User, Account, Role, Permission, Workspace, AuthAttempt.
-// Lab-domain models (Patient, Client, Requisition, Specimen, ResultSheet, ...)
-// are added in Phase 2+ once the requirements baseline doc is approved.
+// Phase 1: auth & identity (Lab, Account, Workspace, User, Role, Permission, AuthAttempt)
+// Phase 2: lab intake (Patient, ClientType, Client, Requisition, Record, Specimen, Therapy, RecordStatusEvent)
 
 generator client {
   provider = "prisma-client-js"
@@ -13,25 +11,75 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ---- Enums ----
+
+enum Gender {
+  Male
+  Female
+}
+
+enum ClientTypeEnum {
+  Doctor
+  Laboratory
+}
+
+enum SpecimenType {
+  URINE
+  CSF
+  PLEURAL_FLD
+  BREAST_ASP
+  JOINT_ASP
+  SYNOVIAL_FLD
+  OTHER
+}
+
+enum RecordStatus {
+  Pending
+  Submitted
+  Processing
+  Partial
+  Completed
+  Approved
+  Billed
+  Paid
+  OnHold
+  Disabled
+  Failed
+  Viewed
+}
+
+enum RequisitionStatus {
+  Pending
+  Active
+  Completed
+  Disabled
+}
+
 // ---- F1: Multi-lab tenancy (every tenant-owned model carries labId) ----
+
 model Lab {
-  id        String      @id @default(uuid())
-  name      String
-  slug      String      @unique // used in portal URLs, e.g. portal.cytolab.app/{slug}
-  logoUrl   String?
-  currency  String      @default("JMD")
-  isActive  Boolean     @default(true)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  accounts  Account[]
-  users     User[]
-  workspaces Workspace[]
+  id           String        @id @default(uuid())
+  name         String
+  slug         String        @unique
+  logoUrl      String?
+  currency     String        @default("JMD")
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  accounts     Account[]
+  users        User[]
+  workspaces   Workspace[]
+  patients     Patient[]
+  clientTypes  ClientType[]
+  clients      Client[]
+  requisitions Requisition[]
+  records      Record[]
+  specimens    Specimen[]
 }
 
 model Account {
   labId      String
   lab        Lab         @relation(fields: [labId], references: [id])
-
   id         String      @id @default(uuid())
   name       String
   createdAt  DateTime    @default(now())
@@ -41,36 +89,39 @@ model Account {
 }
 
 model Workspace {
-  id        String   @id @default(uuid())
-  labId     String
-  lab       Lab      @relation(fields: [labId], references: [id])
-  name      String
-  accountId String
-  account   Account  @relation(fields: [accountId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  users     User[]
+  id           String        @id @default(uuid())
+  labId        String
+  lab          Lab           @relation(fields: [labId], references: [id])
+  name         String
+  accountId    String
+  account      Account       @relation(fields: [accountId], references: [id])
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  users        User[]
+  requisitions Requisition[]
+  records      Record[]
 
   @@index([accountId])
 }
 
 model User {
-  id           String        @id @default(uuid())
-  labId        String
-  lab          Lab           @relation(fields: [labId], references: [id])
-  email        String
-  passwordHash String
-  firstName    String
-  lastName     String
-  isActive     Boolean       @default(true)
-  accountId    String
-  account      Account       @relation(fields: [accountId], references: [id])
-  workspaceId  String?
-  workspace    Workspace?    @relation(fields: [workspaceId], references: [id])
-  roles        UserRole[]
-  authAttempts AuthAttempt[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id                 String              @id @default(uuid())
+  labId              String
+  lab                Lab                 @relation(fields: [labId], references: [id])
+  email              String
+  passwordHash       String
+  firstName          String
+  lastName           String
+  isActive           Boolean             @default(true)
+  accountId          String
+  account            Account             @relation(fields: [accountId], references: [id])
+  workspaceId        String?
+  workspace          Workspace?          @relation(fields: [workspaceId], references: [id])
+  roles              UserRole[]
+  authAttempts       AuthAttempt[]
+  recordStatusEvents RecordStatusEvent[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   @@unique([labId, email])
   @@index([accountId])
@@ -87,7 +138,7 @@ model Role {
 
 model Permission {
   id    String           @id @default(uuid())
-  code  String           @unique // e.g. "requisition:create", "resultsheet:sign"
+  code  String           @unique
   label String
   roles RolePermission[]
 }
@@ -120,4 +171,185 @@ model AuthAttempt {
   createdAt DateTime @default(now())
 
   @@index([email, createdAt])
+}
+
+// ---- Phase 2: Lab Intake ----
+
+model Patient {
+  id               String    @id @default(uuid())
+  labId            String
+  lab              Lab       @relation(fields: [labId], references: [id])
+  registrationNo   String
+  firstName        String
+  lastName         String
+  middleName       String?
+  age              Int?
+  phoneNumber      String?
+  bloodGroup       String?
+  gender           Gender?
+  height           Float?
+  weight           Float?
+  email            String?
+  dateOfBirth      DateTime?
+  identityToken    String?
+  motherMaidenName String?
+  clientId         String?
+  client           Client?   @relation(fields: [clientId], references: [id])
+  records          Record[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([labId, registrationNo])
+  @@index([labId])
+  @@index([clientId])
+}
+
+model ClientType {
+  id        String         @id @default(uuid())
+  labId     String
+  lab       Lab            @relation(fields: [labId], references: [id])
+  name      String
+  type      ClientTypeEnum
+  clients   Client[]
+  createdAt DateTime       @default(now())
+
+  @@index([labId])
+}
+
+model Client {
+  id           String        @id @default(uuid())
+  labId        String
+  lab          Lab           @relation(fields: [labId], references: [id])
+  firstName    String
+  lastName     String
+  officeName   String?
+  phoneNumber  String?
+  mobileNumber String?
+  officeNumber String?
+  faxNumber    String?
+  clientTypeId String?
+  clientType   ClientType?   @relation(fields: [clientTypeId], references: [id])
+  patients     Patient[]
+  requisitions Requisition[]
+  records      Record[]
+  specimens    Specimen[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([labId])
+}
+
+model Requisition {
+  id               String            @id @default(uuid())
+  labId            String
+  lab              Lab               @relation(fields: [labId], references: [id])
+  status           RequisitionStatus @default(Pending)
+  amount           Float             @default(0)
+  entriesCompleted Boolean           @default(false)
+  clientId         String?
+  client           Client?           @relation(fields: [clientId], references: [id])
+  workspaceId      String?
+  workspace        Workspace?        @relation(fields: [workspaceId], references: [id])
+  lines            RequisitionLine[]
+  dateReceived     DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([labId])
+  @@index([clientId])
+}
+
+model RequisitionLine {
+  id            String      @id @default(uuid())
+  requisitionId String
+  requisition   Requisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  isUrgent      Boolean     @default(false)
+  isCompleted   Boolean     @default(false)
+  description   String?
+  amount        Float       @default(0)
+  recordId      String?
+  record        Record?     @relation(fields: [recordId], references: [id])
+
+  @@index([requisitionId])
+  @@index([recordId])
+}
+
+model Record {
+  id                String              @id @default(uuid())
+  labId             String
+  lab               Lab                 @relation(fields: [labId], references: [id])
+  identifier        String
+  clinicalDiagnosis String?
+  labNumber         String?
+  urgent            Boolean             @default(false)
+  medicalEntry      String?
+  billed            Boolean             @default(false)
+  status            RecordStatus        @default(Pending)
+  dateStatus        DateTime?
+  patientId         String
+  patient           Patient             @relation(fields: [patientId], references: [id])
+  clientId          String?
+  client            Client?             @relation(fields: [clientId], references: [id])
+  workspaceId       String?
+  workspace         Workspace?          @relation(fields: [workspaceId], references: [id])
+  specimens         Specimen[]
+  statusHistory     RecordStatusEvent[]
+  requisitionLines  RequisitionLine[]
+  therapy           Therapy?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@unique([labId, identifier])
+  @@index([labId])
+  @@index([patientId])
+  @@index([clientId])
+  @@index([status])
+}
+
+// Append-only status history — feeds the client portal (F2) status timeline
+model RecordStatusEvent {
+  id        String       @id @default(uuid())
+  recordId  String
+  record    Record       @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  status    RecordStatus
+  userId    String?
+  user      User?        @relation(fields: [userId], references: [id])
+  notes     String?
+  createdAt DateTime     @default(now())
+
+  @@index([recordId])
+  @@index([recordId, createdAt])
+}
+
+model Specimen {
+  id           String       @id @default(uuid())
+  labId        String
+  lab          Lab          @relation(fields: [labId], references: [id])
+  label        String?
+  vialColour   String?
+  antiserumA   String?
+  antiserumB   String?
+  rhSolution   String?
+  type         SpecimenType
+  bloodGroup   String?
+  recordId     String
+  record       Record       @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  clientId     String?
+  client       Client?      @relation(fields: [clientId], references: [id])
+  dateReceived DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([labId])
+  @@index([recordId])
+}
+
+model Therapy {
+  id        String  @id @default(uuid())
+  recordId  String  @unique
+  record    Record  @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  hormone   Boolean @default(false)
+  radiation Boolean @default(false)
+  surgical  Boolean @default(false)
+  other     String?
 }

@@ -6,6 +6,10 @@ import { HealthController } from './health.controller';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
+import { PatientsModule } from './modules/patients/patients.module';
+import { ClientsModule } from './modules/clients/clients.module';
+import { RequisitionsModule } from './modules/requisitions/requisitions.module';
+import { RecordsModule } from './modules/records/records.module';
 
 /**
  * Cytolab modular monolith.
@@ -26,6 +30,10 @@ import { RolesModule } from './modules/roles/roles.module';
     AuthModule,
     UsersModule,
     RolesModule,
+    PatientsModule,
+    ClientsModule,
+    RequisitionsModule,
+    RecordsModule,
   ],
   controllers: [HealthController],
 })
