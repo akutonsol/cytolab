@@ -21,6 +21,7 @@ export interface JwtPayload {
   roles: string[];
   permissions: string[];
   type: 'access' | 'refresh';
+  scope: 'staff';
 }
 
 @Injectable()
@@ -162,20 +163,22 @@ export class AuthService {
       ...new Set(user.roles.flatMap((r: any) => r.role.permissions.map((p: any) => p.permission.code))),
     ];
 
-    const base = { sub: user.id, labId: user.labId, email: user.email, roles, permissions };
+    const base = { sub: user.id, labId: user.labId, email: user.email, roles, permissions, scope: 'staff' as const };
 
     const accessToken = await this.jwt.signAsync(
       { ...base, type: 'access' },
       {
         secret: this.config.get<string>('JWT_SECRET'),
         expiresIn: this.config.get<string>('JWT_EXPIRES_IN') ?? '15m',
+        audience: 'staff',
       },
     );
     const refreshToken = await this.jwt.signAsync(
-      { sub: user.id, labId: user.labId, email: user.email, roles: [], permissions: [], type: 'refresh' },
+      { sub: user.id, labId: user.labId, email: user.email, roles: [], permissions: [], type: 'refresh', scope: 'staff' as const },
       {
         secret: this.config.get<string>('JWT_REFRESH_SECRET'),
         expiresIn: this.config.get<string>('JWT_REFRESH_EXPIRES_IN') ?? '7d',
+        audience: 'staff',
       },
     );
 

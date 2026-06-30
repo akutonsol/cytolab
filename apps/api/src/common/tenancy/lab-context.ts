@@ -63,4 +63,35 @@ export class LabContext {
     const store = this.als.getStore();
     if (store) store.labId = labId;
   }
+
+  /**
+   * Bind a portal (external) request's scope: both lab and client, with the
+   * portal flag set so the tenancy guard additionally client-scopes every query
+   * and fails closed (Rule B) on any table it can't client-scope.
+   */
+  setPortalContext(labId: string, clientId: string): void {
+    const store = this.als.getStore();
+    if (store) {
+      store.labId = labId;
+      store.clientId = clientId;
+      store.portal = true;
+    }
+  }
+
+  /** The active client id for a portal request, or undefined. */
+  getClientId(): string | undefined {
+    const store = this.als.getStore();
+    return store?.system ? undefined : store?.clientId;
+  }
+
+  /**
+   * Run a callback in a fresh LAB-ONLY scope (lab kept, portal/client dropped).
+   * Used after a portal request has *structurally proven* it owns a record, to
+   * read that record's non-client-scoped chain (e.g. ResultSheet/Report) which
+   * Rule B otherwise refuses. Awaits inside the scope (see runSystem) so a lazy
+   * PrismaPromise still executes in the lab-only context.
+   */
+  async runLabScoped<T>(labId: string, fn: () => T | Promise<T>): Promise<T> {
+    return this.als.run({ labId }, async () => await fn());
+  }
 }

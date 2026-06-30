@@ -1,6 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LabContextMiddleware } from './common/tenancy/lab-context.middleware';
 import { TenancyModule } from './common/tenancy/tenancy.module';
 import { PrismaModule } from './database/prisma.module';
@@ -21,6 +22,7 @@ import { ServicesCatalogModule } from './modules/services-catalog/services-catal
 import { TaxesModule } from './modules/taxes/taxes.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { PortalModule } from './modules/portal/portal.module';
 
 /**
  * Cytolab modular monolith.
@@ -55,8 +57,14 @@ import { PaymentsModule } from './modules/payments/payments.module';
     TaxesModule,
     BillingModule,
     PaymentsModule,
+    PortalModule,
   ],
   controllers: [HealthController],
+  providers: [
+    // Activate the configured rate limits globally (portal routes tighten
+    // them further via @Throttle).
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
