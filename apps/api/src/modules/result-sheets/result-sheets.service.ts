@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, ResultSheetEventType } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
@@ -26,6 +26,16 @@ const resultSheetSelect = {
         select: { id: true, abbreviation: true, result: true, findings: true, abnormalFinding: true },
       },
     },
+  },
+  events: {
+    select: {
+      id: true,
+      type: true,
+      userId: true,
+      user: { select: { id: true, email: true, firstName: true, lastName: true } },
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'asc' as const },
   },
   createdAt: true,
   updatedAt: true,
@@ -115,8 +125,8 @@ export class ResultSheetsService {
    * re-authorized before a new report can be released. Already-released reports
    * remain as immutable snapshots.
    */
-  async update(id: string, dto: UpdateResultSheetDto) {
-    await this.findOne(id);
+  async update(id: string, userId: string, dto: UpdateResultSheetDto) {
+    const existing = await this.findOne(id);
 
     const data: Prisma.ResultSheetUncheckedUpdateInput = {};
     if (dto.viewed !== undefined) data.viewed = dto.viewed;
@@ -126,6 +136,15 @@ export class ResultSheetsService {
       data.authorizedAt = null;
       data.authorizedById = null;
       data.resultEntries = { deleteMany: {}, ...this.entriesCreate(dto.entries) };
+      // Audit the de-authorization only when it actually transitions away from authorized.
+      if (existing.authorized) {
+        data.events = {
+          create: tenantCreate<Prisma.ResultSheetEventUncheckedCreateWithoutResultSheetInput>({
+            type: ResultSheetEventType.Deauthorized,
+            userId,
+          }),
+        };
+      }
     }
 
     return this.prisma.resultSheet.update({ where: { id }, data, select: resultSheetSelect });
@@ -139,9 +158,28 @@ export class ResultSheetsService {
     const sheet = await this.findOne(id);
     if (sheet.authorized) throw new BadRequestException('Result sheet is already authorized');
 
+    // First authorization vs re-authorization after a prior de-authorization.
+    const priorAuthorizations = await this.prisma.resultSheetEvent.count({
+      where: {
+        resultSheetId: id,
+        type: { in: [ResultSheetEventType.Authorized, ResultSheetEventType.Reauthorized] },
+      },
+    });
+    const type = priorAuthorizations > 0 ? ResultSheetEventType.Reauthorized : ResultSheetEventType.Authorized;
+
     return this.prisma.resultSheet.update({
       where: { id },
-      data: { authorized: true, authorizedAt: new Date(), authorizedById: userId },
+      data: {
+        authorized: true,
+        authorizedAt: new Date(),
+        authorizedById: userId,
+        events: {
+          create: tenantCreate<Prisma.ResultSheetEventUncheckedCreateWithoutResultSheetInput>({
+            type,
+            userId,
+          }),
+        },
+      },
       select: resultSheetSelect,
     });
   }

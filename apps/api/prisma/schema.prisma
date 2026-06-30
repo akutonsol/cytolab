@@ -55,6 +55,12 @@ enum RequisitionStatus {
   Disabled
 }
 
+enum ResultSheetEventType {
+  Authorized
+  Deauthorized
+  Reauthorized
+}
+
 // ---- F1: Multi-lab tenancy (every tenant-owned model carries labId) ----
 
 model Lab {
@@ -86,6 +92,7 @@ model Lab {
   resultEntries      ResultEntry[]
   resultLines        ResultLine[]
   reports            Report[]
+  resultSheetEvents  ResultSheetEvent[]
 }
 
 model Account {
@@ -133,6 +140,7 @@ model User {
   recordStatusEvents     RecordStatusEvent[]
   authorizedResultSheets ResultSheet[]       @relation("ResultSheetAuthorizer")
   authoredReports        Report[]            @relation("ReportAuthor")
+  resultSheetEvents      ResultSheetEvent[]
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
 
@@ -455,11 +463,31 @@ model ResultSheet {
   authorizedBy   User?         @relation("ResultSheetAuthorizer", fields: [authorizedById], references: [id])
   resultEntries  ResultEntry[]
   reports        Report[]
+  events         ResultSheetEvent[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   @@index([labId])
   @@index([recordId])
+}
+
+// Append-only audit of authorization state changes (authorize / de-authorize on
+// edit / re-authorize). The live gate stays on ResultSheet; this is the history,
+// and will feed the client portal (F2) report timeline.
+model ResultSheetEvent {
+  id            String               @id @default(uuid())
+  labId         String
+  lab           Lab                  @relation(fields: [labId], references: [id])
+  resultSheetId String
+  resultSheet   ResultSheet          @relation(fields: [resultSheetId], references: [id], onDelete: Cascade)
+  type          ResultSheetEventType
+  userId        String?
+  user          User?                @relation(fields: [userId], references: [id])
+  createdAt     DateTime             @default(now())
+
+  @@index([labId])
+  @@index([resultSheetId])
+  @@index([resultSheetId, createdAt])
 }
 
 model ResultEntry {

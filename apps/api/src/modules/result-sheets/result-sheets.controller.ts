@@ -33,11 +33,12 @@ export class ResultSheetsController {
     return this.resultSheets.findOne(id);
   }
 
-  // Editing entries/lines re-opens the sheet for authorization (see service).
+  // Editing entries/lines re-opens the sheet for authorization (see service);
+  // the editing user is recorded on the de-authorization audit event.
   @Put('resultsheet/update/:id')
   @RequirePermissions('resultentry:change')
-  update(@Param('id') id: string, @Body() dto: UpdateResultSheetDto) {
-    return this.resultSheets.update(id, dto);
+  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateResultSheetDto) {
+    return this.resultSheets.update(id, user.userId, dto);
   }
 
   // Authorization gate — restricted to resultsheet:authorize (the Authorizer
