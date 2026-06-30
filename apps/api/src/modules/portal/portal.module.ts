@@ -13,6 +13,8 @@ import { PortalRecordsController } from './records/portal-records.controller';
 import { PortalRecordsService } from './records/portal-records.service';
 import { PortalReportsController } from './reports/portal-reports.controller';
 import { PortalReportsService } from './reports/portal-reports.service';
+import { PortalChangeRequestsController } from './change-requests/portal-change-requests.controller';
+import { PortalChangeRequestsService } from './change-requests/portal-change-requests.service';
 
 /**
  * Client Portal (F2). Houses the external (portal) auth surface and the
@@ -21,7 +23,20 @@ import { PortalReportsService } from './reports/portal-reports.service';
  */
 @Module({
   imports: [PrismaModule, PassportModule, JwtModule.register({}), MailModule, ReportsModule],
-  controllers: [PortalAuthController, PortalUsersController, PortalRecordsController, PortalReportsController],
-  providers: [PortalAuthService, PortalJwtStrategy, PortalUsersService, PortalRecordsService, PortalReportsService],
+  controllers: [
+    PortalAuthController,
+    PortalUsersController,
+    PortalRecordsController,
+    PortalReportsController,
+    PortalChangeRequestsController,
+  ],
+  providers: [
+    PortalAuthService,
+    PortalJwtStrategy,
+    PortalUsersService,
+    PortalRecordsService,
+    PortalReportsService,
+    PortalChangeRequestsService,
+  ],
 })
 export class PortalModule {}

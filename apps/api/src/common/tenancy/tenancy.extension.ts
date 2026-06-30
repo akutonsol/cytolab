@@ -70,6 +70,17 @@ export function tenantCreate<T extends { labId?: unknown }>(data: Omit<T, 'labId
   return data as T;
 }
 
+/**
+ * Create-payload helper for PORTAL writes: omits both `labId` and `clientId` —
+ * the tenancy guard stamps both from portal request context at query time, so a
+ * portal caller can never set either via the body.
+ */
+export function portalCreate<T extends { labId?: unknown; clientId?: unknown }>(
+  data: Omit<T, 'labId' | 'clientId'>,
+): T {
+  return data as T;
+}
+
 // Operations whose `where` filters rows. update/delete are included: with
 // Prisma 5's GA extendedWhereUnique, a labId added alongside the unique key is a
 // valid additional filter, so a cross-lab update/delete simply matches nothing.
