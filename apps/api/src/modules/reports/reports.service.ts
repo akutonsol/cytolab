@@ -6,6 +6,7 @@ import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { CreateReportDto, ReportQueryDto } from './dto/report.dto';
 import { ReportPdfService } from './report-pdf.service';
 import { ReportDocumentData } from './report-document';
+import { deriveAge } from '../../common/util/age';
 
 // Only embed images we can trust without a network fetch (avoids SSRF / render
 // failures in the PDF path). Remote URL fetching is deferred — see Phase 3.5.
@@ -133,7 +134,6 @@ export class ReportsService {
                 lastName: true,
                 middleName: true,
                 registrationNo: true,
-                age: true,
                 gender: true,
                 bloodGroup: true,
                 phoneNumber: true,
@@ -178,7 +178,7 @@ export class ReportsService {
         lastName: r.patient.lastName,
         middleName: r.patient.middleName,
         registrationNo: r.patient.registrationNo,
-        age: r.patient.age,
+        age: deriveAge(r.patient.dateOfBirth),
         gender: r.patient.gender ?? null,
         bloodGroup: r.patient.bloodGroup,
         phoneNumber: r.patient.phoneNumber,

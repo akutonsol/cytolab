@@ -10,6 +10,7 @@ const clientSelect = {
   firstName: true,
   lastName: true,
   officeName: true,
+  email: true,
   phoneNumber: true,
   mobileNumber: true,
   officeNumber: true,
@@ -33,10 +34,12 @@ export class ClientsService {
     const where: any = {};
     if (query.q) {
       const q = query.q;
+      // Patient form "choose client by name OR email".
       where.OR = [
         { firstName: { contains: q, mode: 'insensitive' } },
         { lastName: { contains: q, mode: 'insensitive' } },
         { officeName: { contains: q, mode: 'insensitive' } },
+        { email: { contains: q, mode: 'insensitive' } },
         { phoneNumber: { contains: q, mode: 'insensitive' } },
       ];
     }

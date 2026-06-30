@@ -12,7 +12,6 @@ const patientSelect = {
   firstName: true,
   lastName: true,
   middleName: true,
-  age: true,
   phoneNumber: true,
   bloodGroup: true,
   gender: true,
@@ -22,8 +21,21 @@ const patientSelect = {
   dateOfBirth: true,
   identityToken: true,
   motherMaidenName: true,
+  avatarUrl: true,
   clientId: true,
-  client: { select: { id: true, firstName: true, lastName: true, officeName: true } },
+  client: { select: { id: true, firstName: true, lastName: true, officeName: true, email: true } },
+  addresses: {
+    select: {
+      id: true,
+      label: true,
+      line1: true,
+      line2: true,
+      city: true,
+      region: true,
+      postalCode: true,
+      country: true,
+    },
+  },
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -61,20 +73,40 @@ export class PatientsService {
     return patient;
   }
 
+  private addressCreate(addresses?: { line1: string }[]) {
+    if (!addresses?.length) return undefined;
+    return {
+      create: addresses.map((a) =>
+        tenantCreate<Prisma.PatientAddressUncheckedCreateWithoutPatientInput>({ ...a }),
+      ),
+    };
+  }
+
   async create(dto: CreatePatientDto) {
+    const { addresses, ...rest } = dto;
     const registrationNo = this.generateRegNo();
     const existing = await this.prisma.patient.findFirst({ where: { registrationNo } });
     if (existing) throw new ConflictException('Registration number collision; retry');
 
     return this.prisma.patient.create({
-      data: tenantCreate<Prisma.PatientUncheckedCreateInput>({ registrationNo, ...dto }),
+      data: tenantCreate<Prisma.PatientUncheckedCreateInput>({
+        registrationNo,
+        ...rest,
+        addresses: this.addressCreate(addresses),
+      }),
       select: patientSelect,
     });
   }
 
   async update(id: string, dto: UpdatePatientDto) {
     await this.findOne(id);
-    return this.prisma.patient.update({ where: { id }, data: dto, select: patientSelect });
+    const { addresses, ...rest } = dto;
+    const data: Prisma.PatientUncheckedUpdateInput = { ...rest };
+    // When addresses are supplied, replace the whole set.
+    if (addresses !== undefined) {
+      data.addresses = { deleteMany: {}, ...this.addressCreate(addresses) };
+    }
+    return this.prisma.patient.update({ where: { id }, data, select: patientSelect });
   }
 
   async remove(id: string) {

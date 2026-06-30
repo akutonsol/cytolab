@@ -146,6 +146,8 @@ model Lab {
   changeRequests        ChangeRequest[]
   changeRequestMessages ChangeRequestMessage[]
   changeRequestEvents   ChangeRequestEvent[]
+  patientAddresses      PatientAddress[]
+  sequences             LabSequence[]
 }
 
 model Account {
@@ -269,7 +271,7 @@ model Patient {
   firstName        String
   lastName         String
   middleName       String?
-  age              Int?
+  // Age is DERIVED from dateOfBirth (read-only), never stored — see DATA_MIGRATION_PLAN.md.
   phoneNumber      String?
   bloodGroup       String?
   gender           Gender?
@@ -279,8 +281,11 @@ model Patient {
   dateOfBirth      DateTime?
   identityToken    String?
   motherMaidenName String?
+  // Nullable stub — actual upload/serving deferred to Phase 6 file storage.
+  avatarUrl        String?
   clientId         String?
   client           Client?   @relation(fields: [clientId], references: [id])
+  addresses        PatientAddress[]
   records          Record[]
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
@@ -309,6 +314,8 @@ model Client {
   firstName    String
   lastName     String
   officeName   String?
+  // Supports the patient form's "choose client by name OR email" search.
+  email        String?
   phoneNumber  String?
   mobileNumber String?
   officeNumber String?
@@ -875,4 +882,45 @@ model ChangeRequestEvent {
   @@index([clientId])
   @@index([changeRequestId])
   @@index([changeRequestId, createdAt])
+}
+
+// ---- Patient form rebuild (legacy parity) ----
+
+// A patient can have one or more addresses ("Add Address" on the form).
+model PatientAddress {
+  id         String   @id @default(uuid())
+  labId      String
+  lab        Lab      @relation(fields: [labId], references: [id])
+  patientId  String
+  patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  // Optional label (e.g. Home, Work) when the source distinguishes addresses.
+  label      String?
+  line1      String
+  line2      String?
+  city       String?
+  region     String?
+  postalCode String?
+  country    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([labId])
+  @@index([patientId])
+}
+
+// Per-lab monotonic counters for human-facing identifiers (currently the
+// patient registration number). Allocation is atomic via an incrementing update
+// that returns the new value; the seed is set during data migration to
+// max(numeric imported registrationNo) so generated numbers never collide with
+// imported ones (see DATA_MIGRATION_PLAN.md).
+model LabSequence {
+  id        String   @id @default(uuid())
+  labId     String
+  lab       Lab      @relation(fields: [labId], references: [id])
+  name      String // e.g. "patientRegNo"
+  value     BigInt   @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([labId, name])
+  @@index([labId])
 }
