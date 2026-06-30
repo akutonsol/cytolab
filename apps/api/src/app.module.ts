@@ -14,6 +14,7 @@ import { RequisitionsModule } from './modules/requisitions/requisitions.module';
 import { RecordsModule } from './modules/records/records.module';
 import { CabinetsModule } from './modules/cabinets/cabinets.module';
 import { CodeSheetsModule } from './modules/code-sheets/code-sheets.module';
+import { LabCodesModule } from './modules/lab-codes/lab-codes.module';
 
 /**
  * Cytolab modular monolith.
@@ -41,6 +42,7 @@ import { CodeSheetsModule } from './modules/code-sheets/code-sheets.module';
     RecordsModule,
     CabinetsModule,
     CodeSheetsModule,
+    LabCodesModule,
   ],
   controllers: [HealthController],
 })
