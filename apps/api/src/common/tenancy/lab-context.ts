@@ -29,9 +29,14 @@ export class LabContext {
   /**
    * Run a callback with tenancy disabled. Reserved for genuinely cross-lab work
    * that has no authenticated lab yet — login, refresh, and lab bootstrap.
+   *
+   * Awaits `fn` *inside* the AsyncLocalStorage scope, so a lazily-executed
+   * PrismaPromise still runs in the system context even if the caller awaits the
+   * result outside it. (Returning the promise unawaited would let the query
+   * execute after the scope exited, and the guard would refuse it.)
    */
-  runSystem<T>(fn: () => T): T {
-    return this.als.run({ system: true }, fn);
+  async runSystem<T>(fn: () => T | Promise<T>): Promise<T> {
+    return this.als.run({ system: true }, async () => await fn());
   }
 
   getStore(): TenantStore | undefined {
