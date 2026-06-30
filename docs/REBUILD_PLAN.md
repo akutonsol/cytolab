@@ -26,9 +26,15 @@ Each phase reaches feature parity with the corresponding legacy modules before m
 
 1. **Foundation & Identity + Tenancy (F1)** — auth (login, refresh, lockout/AuthAttempt), users, roles & permissions, accounts, workspaces. *Scaffolded — Prisma schema for this phase is in place.*
 2. **Lab intake** — patients, clients (referring physicians/clinics) & client types, requisitions + requisition lines, specimens/samples, record status workflow (DRAFT → RECEIVED → IN_PROGRESS → PARTIAL → COMPLETED → BILLED → PAID).
-3. **Results & coding** — result sheets (entries/lines), code sheets, code findings, lab codes, cabinets (storage), report generation & form print groups.
+3. **Results & coding** — result sheets (entries/lines) with authorization gate + append-only audit (ResultSheetEvent), code sheets, code findings, lab codes, cabinets (storage), report release. *Done.*
+3.5. **Report templating / FormPrintGroup** *(tracked debt, deferred from Phase 3)* — `FormPrintGroup` / clinical-form print groups and PDF report templating were not built in Phase 3 (it shipped report *release* gated on authorization, but not rendered report documents). **This is a prerequisite for F2 client report viewing** — the portal needs releasable, rendered report artifacts, not just the release gate. Must land before or with F2.
 4. **Revenue** — billing + bill lines, payments + payment lines, services catalog & pricing, taxes.
 6. **Platform** — messaging threads, notifications, appointments/scheduler, settings/preferences, file storage, global search, dashboard analytics (replacing the separate analytics-service with a reporting module).
+
+### Tracked debts
+
+- **Phase 3.5 — Report templating / FormPrintGroup** (see phase list above): deferred from Phase 3; prerequisite for F2 client report viewing.
+- **LabCode ↔ Record / Client associations** *(deferred from Phase 3)* — `LabCode` shipped as a standalone CRUD table. The legacy `Client.labCode` (a client's assigned code/region) and `Record.labCodes` (codes applied to a record) associations were not wired, to avoid re-modelling Phase 2 tables mid-phase. These need wiring before results are considered complete; revisit during/after Phase 4.
 
 ## Requirements baseline
 
