@@ -4,6 +4,15 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 export interface TenantStore {
   /** The lab (tenant) the current request is scoped to. Populated from the JWT, never the body. */
   labId?: string;
+  /**
+   * The client (sub-tenant) a PORTAL request is scoped to. Populated from the
+   * portal JWT, never the body. Only set for external/portal requests; when set,
+   * the tenancy guard additionally filters/stamps every client-scoped model by
+   * this clientId and refuses any tenant model that cannot be client-scoped.
+   */
+  clientId?: string;
+  /** True for external client-portal requests (enables client-scoping + Rule B fail-close). */
+  portal?: boolean;
   /** When true, tenancy is intentionally bypassed (auth/bootstrap cross-lab lookups only). */
   system?: boolean;
 }

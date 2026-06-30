@@ -77,6 +77,28 @@ enum BillStatus {
   Paid
 }
 
+// ---- Phase 5: Client Portal (F2) ----
+
+enum ChangeRequestType {
+  DemographicsCorrection
+  AddTest
+  CancelRequest
+  GeneralQuery
+}
+
+enum ChangeRequestStatus {
+  Open
+  InReview
+  Actioned
+  Declined
+}
+
+// Credential token kind: initial invite (set first password) or password reset.
+enum PortalTokenType {
+  Invite
+  Reset
+}
+
 // ---- F1: Multi-lab tenancy (every tenant-owned model carries labId) ----
 
 model Lab {
@@ -119,6 +141,11 @@ model Lab {
   billLines          BillLine[]
   billTaxes          BillTax[]
   payments           Payment[]
+  portalUsers           PortalUser[]
+  portalAccessTokens    PortalAccessToken[]
+  changeRequests        ChangeRequest[]
+  changeRequestMessages ChangeRequestMessage[]
+  changeRequestEvents   ChangeRequestEvent[]
 }
 
 model Account {
@@ -170,6 +197,9 @@ model User {
   authorizedResultSheets ResultSheet[]       @relation("ResultSheetAuthorizer")
   authoredReports        Report[]            @relation("ReportAuthor")
   resultSheetEvents      ResultSheetEvent[]
+  assignedChangeRequests ChangeRequest[]        @relation("ChangeRequestAssignee")
+  changeRequestMessages  ChangeRequestMessage[] @relation("ChangeRequestMessageStaffAuthor")
+  changeRequestEvents    ChangeRequestEvent[]   @relation("ChangeRequestEventStaffActor")
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
 
@@ -215,12 +245,18 @@ model AuthAttempt {
   id        String   @id @default(uuid())
   userId    String?
   user      User?    @relation(fields: [userId], references: [id])
+  // Set for portal logins so portal lockouts never conflate with staff lockouts
+  // even when a portal email collides with a staff email in the same lab.
+  portalUserId String?
+  portalUser   PortalUser? @relation(fields: [portalUserId], references: [id])
+  portal    Boolean  @default(false)
   email     String
   ip        String?
   success   Boolean
   createdAt DateTime @default(now())
 
   @@index([email, createdAt])
+  @@index([portal, email, createdAt])
 }
 
 // ---- Phase 2: Lab Intake ----
@@ -284,6 +320,10 @@ model Client {
   records      Record[]
   specimens    Specimen[]
   bills        Bill[]
+  portalUsers    PortalUser[]
+  changeRequests ChangeRequest[]
+  changeRequestMessages ChangeRequestMessage[]
+  changeRequestEvents   ChangeRequestEvent[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -352,6 +392,7 @@ model Record {
   therapy           Therapy?
   resultSheets      ResultSheet[]
   bills             Bill[]
+  changeRequests    ChangeRequest[]
   cabinetId         String?
   cabinet           Cabinet?            @relation(fields: [cabinetId], references: [id])
   createdAt         DateTime            @default(now())
@@ -704,4 +745,134 @@ model Payment {
 
   @@index([labId])
   @@index([billId])
+}
+
+// ---- Phase 5: Client Portal (F2) ----
+// External identity for referring doctors/labs. Completely separate from staff
+// User: separate table, separate JWT (own secret + audience). Lab-scoped AND
+// client-scoped — carries clientId, which the tenancy guard injects into every
+// portal query so a portal user can only ever reach its own client's data.
+model PortalUser {
+  id            String   @id @default(uuid())
+  labId         String
+  lab           Lab      @relation(fields: [labId], references: [id])
+  clientId      String
+  client        Client   @relation(fields: [clientId], references: [id])
+  email         String
+  // Null until the invite is accepted (first password set via emailed token).
+  passwordHash  String?
+  firstName     String
+  lastName      String
+  isActive      Boolean  @default(true)
+  // F2 notification preferences.
+  notifyByEmail Boolean  @default(true)
+  notifyInApp   Boolean  @default(true)
+  lastLoginAt   DateTime?
+  tokens        PortalAccessToken[]
+  authAttempts  AuthAttempt[]
+  changeRequests        ChangeRequest[]        @relation("ChangeRequestCreator")
+  changeRequestMessages ChangeRequestMessage[] @relation("ChangeRequestMessagePortalAuthor")
+  changeRequestEvents   ChangeRequestEvent[]   @relation("ChangeRequestEventPortalActor")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([labId, email])
+  @@index([labId])
+  @@index([clientId])
+}
+
+// Single-use, time-limited credential token for staff-invite onboarding and
+// password reset. Only the SHA-256 hash is stored; the raw token is emailed.
+// No clientId column: it is consumed unauthenticated (system scope), never in a
+// portal-scoped request, so Rule B never applies to it.
+model PortalAccessToken {
+  id           String          @id @default(uuid())
+  labId        String
+  lab          Lab             @relation(fields: [labId], references: [id])
+  portalUserId String
+  portalUser   PortalUser      @relation(fields: [portalUserId], references: [id], onDelete: Cascade)
+  type         PortalTokenType
+  tokenHash    String          @unique
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime        @default(now())
+
+  @@index([labId])
+  @@index([portalUserId])
+}
+
+// A structured request a client raises against a record (or generally). Carries
+// clientId so the tenancy guard auto-scopes portal access to the client's own
+// requests. Status lifecycle Open -> InReview -> Actioned|Declined.
+model ChangeRequest {
+  id                    String                 @id @default(uuid())
+  labId                 String
+  lab                   Lab                    @relation(fields: [labId], references: [id])
+  clientId              String
+  client                Client                 @relation(fields: [clientId], references: [id])
+  recordId              String?
+  record                Record?                @relation(fields: [recordId], references: [id])
+  type                  ChangeRequestType
+  subject               String
+  status                ChangeRequestStatus    @default(Open)
+  createdByPortalUserId String
+  createdByPortalUser   PortalUser             @relation("ChangeRequestCreator", fields: [createdByPortalUserId], references: [id])
+  assignedToUserId      String?
+  assignedToUser        User?                  @relation("ChangeRequestAssignee", fields: [assignedToUserId], references: [id])
+  messages              ChangeRequestMessage[]
+  events                ChangeRequestEvent[]
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  @@index([labId])
+  @@index([clientId])
+  @@index([recordId])
+  @@index([status])
+}
+
+// Append-only message thread between a portal user and lab staff. Exactly one of
+// authorPortalUserId / authorUserId is set per row.
+model ChangeRequestMessage {
+  id                 String        @id @default(uuid())
+  labId              String
+  lab                Lab           @relation(fields: [labId], references: [id])
+  clientId           String
+  client             Client        @relation(fields: [clientId], references: [id])
+  changeRequestId    String
+  changeRequest      ChangeRequest @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
+  body               String
+  authorPortalUserId String?
+  authorPortalUser   PortalUser?   @relation("ChangeRequestMessagePortalAuthor", fields: [authorPortalUserId], references: [id])
+  authorUserId       String?
+  authorUser         User?         @relation("ChangeRequestMessageStaffAuthor", fields: [authorUserId], references: [id])
+  createdAt          DateTime      @default(now())
+
+  @@index([labId])
+  @@index([clientId])
+  @@index([changeRequestId])
+  @@index([changeRequestId, createdAt])
+}
+
+// Append-only audit of change-request status transitions (mirrors
+// ResultSheetEvent). Exactly one of byPortalUserId / byUserId is set per row.
+model ChangeRequestEvent {
+  id              String              @id @default(uuid())
+  labId           String
+  lab             Lab                 @relation(fields: [labId], references: [id])
+  clientId        String
+  client          Client              @relation(fields: [clientId], references: [id])
+  changeRequestId String
+  changeRequest   ChangeRequest       @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
+  status          ChangeRequestStatus
+  note            String?
+  byPortalUserId  String?
+  byPortalUser    PortalUser?         @relation("ChangeRequestEventPortalActor", fields: [byPortalUserId], references: [id])
+  byUserId        String?
+  byUser          User?               @relation("ChangeRequestEventStaffActor", fields: [byUserId], references: [id])
+  createdAt       DateTime            @default(now())
+
+  @@index([labId])
+  @@index([clientId])
+  @@index([changeRequestId])
+  @@index([changeRequestId, createdAt])
 }
