@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { LabContext } from '../../common/tenancy/lab-context';
 import { PrismaService } from '../../database/prisma.service';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
@@ -31,10 +30,7 @@ const requisitionSelect = {
 
 @Injectable()
 export class RequisitionsService {
-  constructor(
-    private prisma: PrismaService,
-    private labContext: LabContext,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   // Requisition queries are lab-scoped automatically by the tenancy extension.
   async findAll(query: RequisitionQueryDto) {
@@ -94,7 +90,15 @@ export class RequisitionsService {
       data: tenantCreate<Prisma.RequisitionUncheckedCreateInput>({
         ...rest,
         lines: lines?.length
-          ? { create: lines.map((l) => ({ isUrgent: l.isUrgent ?? false, description: l.description, amount: l.amount ?? 0 })) }
+          ? {
+              create: lines.map((l) =>
+                tenantCreate<Prisma.RequisitionLineUncheckedCreateWithoutRequisitionInput>({
+                  isUrgent: l.isUrgent ?? false,
+                  description: l.description,
+                  amount: l.amount ?? 0,
+                }),
+              ),
+            }
           : undefined,
       }),
       select: requisitionSelect,
@@ -107,12 +111,10 @@ export class RequisitionsService {
     return { deleted: true };
   }
 
-  // RequisitionLine has no labId column of its own, so the extension can't scope
-  // it directly — guard ownership through the parent requisition's lab.
+  // RequisitionLine now carries its own labId, so the tenancy guard scopes it
+  // directly — a line from another lab won't be found.
   async removeLine(lineId: string) {
-    const line = await this.prisma.requisitionLine.findFirst({
-      where: { id: lineId, requisition: { labId: this.labContext.getLabId() } },
-    });
+    const line = await this.prisma.requisitionLine.findFirst({ where: { id: lineId } });
     if (!line) throw new NotFoundException('Requisition line not found');
     await this.prisma.requisitionLine.delete({ where: { id: lineId } });
     return { deleted: true };

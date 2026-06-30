@@ -75,6 +75,9 @@ model Lab {
   requisitions Requisition[]
   records      Record[]
   specimens    Specimen[]
+  requisitionLines   RequisitionLine[]
+  recordStatusEvents RecordStatusEvent[]
+  therapies          Therapy[]
 }
 
 model Account {
@@ -261,6 +264,8 @@ model Requisition {
 
 model RequisitionLine {
   id            String      @id @default(uuid())
+  labId         String
+  lab           Lab         @relation(fields: [labId], references: [id])
   requisitionId String
   requisition   Requisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
   isUrgent      Boolean     @default(false)
@@ -270,6 +275,7 @@ model RequisitionLine {
   recordId      String?
   record        Record?     @relation(fields: [recordId], references: [id])
 
+  @@index([labId])
   @@index([requisitionId])
   @@index([recordId])
 }
@@ -309,6 +315,8 @@ model Record {
 // Append-only status history — feeds the client portal (F2) status timeline
 model RecordStatusEvent {
   id        String       @id @default(uuid())
+  labId     String
+  lab       Lab          @relation(fields: [labId], references: [id])
   recordId  String
   record    Record       @relation(fields: [recordId], references: [id], onDelete: Cascade)
   status    RecordStatus
@@ -317,6 +325,7 @@ model RecordStatusEvent {
   notes     String?
   createdAt DateTime     @default(now())
 
+  @@index([labId])
   @@index([recordId])
   @@index([recordId, createdAt])
 }
@@ -346,10 +355,14 @@ model Specimen {
 
 model Therapy {
   id        String  @id @default(uuid())
+  labId     String
+  lab       Lab     @relation(fields: [labId], references: [id])
   recordId  String  @unique
   record    Record  @relation(fields: [recordId], references: [id], onDelete: Cascade)
   hormone   Boolean @default(false)
   radiation Boolean @default(false)
   surgical  Boolean @default(false)
   other     String?
+
+  @@index([labId])
 }

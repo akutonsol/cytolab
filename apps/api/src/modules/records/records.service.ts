@@ -1,6 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, RecordStatus } from '@prisma/client';
-import { LabContext } from '../../common/tenancy/lab-context';
 import { PrismaService } from '../../database/prisma.service';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
@@ -53,10 +52,7 @@ const ALLOWED_TRANSITIONS: Partial<Record<RecordStatus, RecordStatus[]>> = {
 
 @Injectable()
 export class RecordsService {
-  constructor(
-    private prisma: PrismaService,
-    private labContext: LabContext,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   // Record queries are lab-scoped automatically by the tenancy extension; nested
   // tenant rows (specimens) are stamped with the lab on write by the same guard.
@@ -135,19 +131,25 @@ export class RecordsService {
               ),
             }
           : undefined,
-        therapy: therapy ? { create: therapy } : undefined,
+        therapy: therapy
+          ? { create: tenantCreate<Prisma.TherapyUncheckedCreateWithoutRecordInput>(therapy) }
+          : undefined,
         statusHistory: {
-          create: { status: RecordStatus.Pending, userId, notes: 'Record created' },
+          create: tenantCreate<Prisma.RecordStatusEventUncheckedCreateWithoutRecordInput>({
+            status: RecordStatus.Pending,
+            userId,
+            notes: 'Record created',
+          }),
         },
       }),
       select: recordSelect,
     });
 
-    // Link to requisition line if provided. RequisitionLine carries no labId of
-    // its own, so confirm it belongs to this lab (via its parent) before linking.
+    // Link to requisition line if provided. The line is lab-scoped by the
+    // tenancy guard, so a line from another lab simply won't be found.
     if (requisitionLineId) {
       const line = await this.prisma.requisitionLine.findFirst({
-        where: { id: requisitionLineId, requisition: { labId: this.labContext.getLabId() } },
+        where: { id: requisitionLineId },
         select: { id: true },
       });
       if (line) {
@@ -172,7 +174,10 @@ export class RecordsService {
         ...(therapy != null
           ? {
               therapy: {
-                upsert: { create: therapy, update: therapy },
+                upsert: {
+                  create: tenantCreate<Prisma.TherapyUncheckedCreateWithoutRecordInput>(therapy),
+                  update: therapy,
+                },
               },
             }
           : {}),
@@ -232,7 +237,13 @@ export class RecordsService {
       data: {
         status: newStatus,
         dateStatus: new Date(),
-        statusHistory: { create: { status: newStatus, userId, notes } },
+        statusHistory: {
+          create: tenantCreate<Prisma.RecordStatusEventUncheckedCreateWithoutRecordInput>({
+            status: newStatus,
+            userId,
+            notes,
+          }),
+        },
       },
       select: recordSelect,
     });

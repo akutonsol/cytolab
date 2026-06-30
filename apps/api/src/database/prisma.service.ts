@@ -14,6 +14,14 @@ export class PrismaService
     // returning it from the constructor makes every injected PrismaService
     // lab-scoped automatically. Cast back to PrismaService for DI typing — model
     // delegates and `$`-methods are forwarded to the underlying client.
+    //
+    // Why this is safe re: lifecycle: the object Nest holds is the *extended*
+    // client, and `onModuleInit`/`onModuleDestroy` below are defined on the base
+    // instance — Nest may or may not see them through the extension proxy. It
+    // doesn't matter: Prisma connects lazily on the first query, so even if
+    // `$connect()` is never called explicitly the client still works. The hooks
+    // are kept as a best-effort eager connect / clean disconnect, not a
+    // correctness requirement.
     return this.$extends(tenancyExtension(labContext)) as unknown as PrismaService;
   }
 
