@@ -61,6 +61,22 @@ enum ResultSheetEventType {
   Reauthorized
 }
 
+// Legacy payment_type_enum.
+enum PaymentType {
+  Cash
+  Cheque
+  CreditCard
+  DebitCard
+  BankTransfer
+}
+
+enum BillStatus {
+  Draft
+  Issued
+  PartiallyPaid
+  Paid
+}
+
 // ---- F1: Multi-lab tenancy (every tenant-owned model carries labId) ----
 
 model Lab {
@@ -93,6 +109,12 @@ model Lab {
   resultLines        ResultLine[]
   reports            Report[]
   resultSheetEvents  ResultSheetEvent[]
+  services           Service[]
+  taxes              Tax[]
+  bills              Bill[]
+  billLines          BillLine[]
+  billTaxes          BillTax[]
+  payments           Payment[]
 }
 
 model Account {
@@ -254,6 +276,7 @@ model Client {
   requisitions Requisition[]
   records      Record[]
   specimens    Specimen[]
+  bills        Bill[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -321,6 +344,7 @@ model Record {
   requisitionLines  RequisitionLine[]
   therapy           Therapy?
   resultSheets      ResultSheet[]
+  bills             Bill[]
   cabinetId         String?
   cabinet           Cabinet?            @relation(fields: [cabinetId], references: [id])
   createdAt         DateTime            @default(now())
@@ -543,4 +567,134 @@ model Report {
 
   @@index([labId])
   @@index([resultSheetId])
+}
+
+// ---- Phase 4: Revenue ----
+// All monetary amounts are integers in minor units (cents). Currency is the
+// lab's (Lab.currency). Never store money as a float.
+
+// Price-list entry a bill draws from.
+model Service {
+  id          String     @id @default(uuid())
+  labId       String
+  lab         Lab        @relation(fields: [labId], references: [id])
+  name        String
+  code        String
+  description String?
+  price       Int // minor units (cents)
+  active      Boolean    @default(true)
+  billLines   BillLine[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([labId])
+}
+
+// Tax rate stored as basis points (1% = 100 bps) — integer, no floats.
+model Tax {
+  id              String    @id @default(uuid())
+  labId           String
+  lab             Lab       @relation(fields: [labId], references: [id])
+  name            String
+  code            String?
+  rateBasisPoints Int // basis points; 1% = 100
+  isDefault       Boolean   @default(false)
+  billTaxes       BillTax[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([labId])
+}
+
+// A bill for one lab case (Record), billed to a Client. Totals are computed at
+// creation from snapshotted line/tax amounts and never recomputed from the
+// live catalog.
+model Bill {
+  id          String     @id @default(uuid())
+  labId       String
+  lab         Lab        @relation(fields: [labId], references: [id])
+  recordId    String
+  record      Record     @relation(fields: [recordId], references: [id])
+  clientId    String?
+  client      Client?    @relation(fields: [clientId], references: [id])
+  referenceNo String
+  status      BillStatus @default(Draft)
+  subtotal    Int        @default(0) // minor units (cents) — sum of line amounts
+  taxTotal    Int        @default(0) // minor units (cents) — sum of applied tax amounts
+  total       Int        @default(0) // minor units (cents) — subtotal + taxTotal
+  amountPaid  Int        @default(0) // minor units (cents) — Σ of payments, recomputed on each payment
+  dueDate     DateTime?
+  viewed      Boolean    @default(false)
+  lines       BillLine[]
+  taxes       BillTax[]
+  payments    Payment[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([labId])
+  @@index([recordId])
+  @@index([clientId])
+  @@index([status])
+}
+
+// A bill line; price + service identity are snapshotted at bill time so later
+// catalog edits don't rewrite historical bills.
+model BillLine {
+  id          String   @id @default(uuid())
+  labId       String
+  lab         Lab      @relation(fields: [labId], references: [id])
+  billId      String
+  bill        Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+  serviceId   String?
+  service     Service? @relation(fields: [serviceId], references: [id])
+  serviceName String // snapshot of Service.name at bill time
+  serviceCode String? // snapshot of Service.code at bill time
+  description String?
+  quantity    Int
+  unitPrice   Int // minor units (cents) — snapshot of Service.price at bill time
+  amount      Int // minor units (cents) — quantity * unitPrice
+  createdAt   DateTime @default(now())
+
+  @@index([labId])
+  @@index([billId])
+}
+
+// A tax applied to a bill, snapshotted (name + rate) at bill time.
+model BillTax {
+  id              String   @id @default(uuid())
+  labId           String
+  lab             Lab      @relation(fields: [labId], references: [id])
+  billId          String
+  bill            Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+  taxId           String?
+  tax             Tax?     @relation(fields: [taxId], references: [id])
+  name            String // snapshot of Tax.name
+  rateBasisPoints Int // snapshot of Tax.rateBasisPoints
+  amount          Int // minor units (cents) — round(subtotal * rate / 10000)
+  createdAt       DateTime @default(now())
+
+  @@index([labId])
+  @@index([billId])
+}
+
+// A payment settling (part of) a bill. Multiple payments per bill = partial
+// settlement. `verified` is an audit flag, not a settlement gate.
+model Payment {
+  id           String      @id @default(uuid())
+  labId        String
+  lab          Lab         @relation(fields: [labId], references: [id])
+  billId       String
+  bill         Bill        @relation(fields: [billId], references: [id], onDelete: Cascade)
+  amount       Int // minor units (cents)
+  type         PaymentType
+  referenceNo  String?
+  bank         String?
+  chequeNumber String?
+  verified     Boolean     @default(false)
+  datePaid     DateTime    @default(now())
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([labId])
+  @@index([billId])
 }
