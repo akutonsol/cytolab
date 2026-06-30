@@ -19,6 +19,7 @@ import { ResultSheetsModule } from './modules/result-sheets/result-sheets.module
 import { ReportsModule } from './modules/reports/reports.module';
 import { ServicesCatalogModule } from './modules/services-catalog/services-catalog.module';
 import { TaxesModule } from './modules/taxes/taxes.module';
+import { BillingModule } from './modules/billing/billing.module';
 
 /**
  * Cytolab modular monolith.
@@ -51,6 +52,7 @@ import { TaxesModule } from './modules/taxes/taxes.module';
     ReportsModule,
     ServicesCatalogModule,
     TaxesModule,
+    BillingModule,
   ],
   controllers: [HealthController],
 })
