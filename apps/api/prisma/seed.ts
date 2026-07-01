@@ -34,7 +34,16 @@ async function main() {
   }
   console.log(`Seeded ${codes.length} permissions`);
 
-  // Default roles (legacy user_enum parity: Staff, Authorizer, Superuser, Standard)
+  // Default roles aligned to the REAL legacy role set seen in the app
+  // (Pathologist, Receptionist, Lab Technician, Authorizers, Superuser).
+  //
+  // NOTE: "Clients" is intentionally NOT seeded as a staff role. In 2.0 a client
+  // is the PORTAL identity (a structurally client-scoped PortalUser), not a
+  // permission-coded staff role — see the F2 portal design. The permission guard
+  // has no bearing on portal access.
+  //
+  // Super roles bypass the permission guard via the isSuperRole flag (not a
+  // hardcoded name), so a lab can add its own named super roles later.
   const all = await prisma.permission.findMany();
   const byPrefix = (prefixes: string[], actions?: string[]) =>
     all.filter(
@@ -43,35 +52,45 @@ async function main() {
         (!actions || actions.includes(p.code.split(':')[1])),
     );
 
-  const roleDefs: { name: string; description: string; perms: { id: string }[] }[] = [
-    { name: 'Superuser', description: 'Full access', perms: [] }, // bypasses checks in guard
+  const roleDefs: { name: string; description: string; isSuperRole?: boolean; perms: { id: string }[] }[] = [
+    { name: 'Superuser', description: 'Full access', isSuperRole: true, perms: [] }, // bypasses via isSuperRole
     {
-      name: 'Authorizer',
-      description: 'Pathologist/Cytologist — reviews and authorizes results',
+      name: 'Authorizers',
+      description: 'Reviews and authorizes result sheets (holds resultsheet:authorize)',
       perms: byPrefix(
         ['patient', 'client', 'record', 'recordstatus', 'requisition', 'resultsheet', 'resultentry', 'codesheet', 'labcode', 'report', 'cabinet'],
       ),
     },
     {
-      name: 'Staff',
-      description: 'Lab staff — intake, specimens, results entry (no authorization)',
+      name: 'Pathologist',
+      description: 'Authorizer (Pathologist/Cytologist) who signs off and authorizes reports',
+      perms: byPrefix(
+        ['patient', 'client', 'record', 'recordstatus', 'requisition', 'resultsheet', 'resultentry', 'codesheet', 'labcode', 'report', 'cabinet'],
+      ),
+    },
+    {
+      name: 'Lab Technician',
+      description: 'Intake, specimens and results entry (no authorization)',
       perms: byPrefix(
         ['patient', 'client', 'record', 'recordstatus', 'requisition', 'resultentry', 'cabinet', 'message', 'notification'],
         ['view', 'create', 'change', 'submit'],
       ),
     },
     {
-      name: 'Standard',
-      description: 'Read-mostly access',
-      perms: byPrefix(['patient', 'client', 'record', 'requisition', 'report'], ['view']),
+      name: 'Receptionist',
+      description: 'Front desk — patient/client/requisition registration and billing view',
+      perms: [
+        ...byPrefix(['patient', 'client', 'requisition'], ['view', 'create']),
+        ...byPrefix(['bill'], ['view']),
+      ],
     },
   ];
 
   for (const r of roleDefs) {
     const role = await prisma.role.upsert({
       where: { name: r.name },
-      update: { description: r.description },
-      create: { name: r.name, description: r.description },
+      update: { description: r.description, isSuperRole: r.isSuperRole ?? false },
+      create: { name: r.name, description: r.description, isSuperRole: r.isSuperRole ?? false },
     });
     if (r.perms.length) {
       await prisma.rolePermission.deleteMany({ where: { roleId: role.id } });
@@ -81,6 +100,10 @@ async function main() {
       });
     }
   }
+  // Drop retired default roles from earlier seeds: 'Standard' (removed) and the
+  // pre-rename 'Authorizer'/'Staff' (now 'Authorizers'/'Lab Technician').
+  // Cascades any UserRole rows on those defaults.
+  await prisma.role.deleteMany({ where: { name: { in: ['Standard', 'Authorizer', 'Staff'] } } });
   console.log(`Seeded ${roleDefs.length} roles`);
 }
 

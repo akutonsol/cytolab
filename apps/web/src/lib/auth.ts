@@ -8,6 +8,7 @@ export interface AuthClaims {
   labId: string;
   roles: string[];
   permissions: string[];
+  isSuperRole: boolean;
 }
 
 interface AuthState {
@@ -66,6 +67,7 @@ export function decodeClaims(token: string | null): AuthClaims | null {
       labId: p.labId,
       roles: p.roles ?? [],
       permissions: p.permissions ?? [],
+      isSuperRole: p.isSuperRole === true,
     };
   } catch {
     return null;
@@ -73,13 +75,14 @@ export function decodeClaims(token: string | null): AuthClaims | null {
 }
 
 /**
- * Mirror the API's PermissionsGuard: the Superuser role bypasses every check
- * (and carries no explicit permission codes), so it must see all nav.
+ * Mirror the API's PermissionsGuard: any super role (isSuperRole flag, not a
+ * hardcoded name) bypasses every check and carries no explicit permission codes,
+ * so it must see all nav.
  */
 export function claimsHavePermission(claims: AuthClaims | null, code?: string): boolean {
   if (!claims) return false;
   if (!code) return true;
-  if (claims.roles.includes('Superuser')) return true;
+  if (claims.isSuperRole) return true;
   return claims.permissions.includes(code);
 }
 

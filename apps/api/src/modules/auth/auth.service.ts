@@ -20,6 +20,7 @@ export interface JwtPayload {
   email: string;
   roles: string[];
   permissions: string[];
+  isSuperRole?: boolean;
   type: 'access' | 'refresh';
   scope: 'staff';
 }
@@ -55,8 +56,8 @@ export class AuthService {
         });
         const superuser = await tx.role.upsert({
           where: { name: 'Superuser' },
-          update: {},
-          create: { name: 'Superuser', description: 'Full access' },
+          update: { isSuperRole: true },
+          create: { name: 'Superuser', description: 'Full access', isSuperRole: true },
         });
         const user = await tx.user.create({
           data: {
@@ -156,14 +157,25 @@ export class AuthService {
     id: string;
     labId: string;
     email: string;
-    roles: { role: { name: string; permissions: { permission: { code: string } }[] } }[];
+    roles: { role: { name: string; isSuperRole: boolean; permissions: { permission: { code: string } }[] } }[];
   }) {
     const roles = user.roles.map((r: any) => r.role.name);
+    // Any role flagged isSuperRole grants the permission bypass (legacy
+    // super_role parity) — not a hardcoded 'Superuser' name.
+    const isSuperRole = user.roles.some((r: any) => r.role.isSuperRole);
     const permissions = [
       ...new Set(user.roles.flatMap((r: any) => r.role.permissions.map((p: any) => p.permission.code))),
     ];
 
-    const base = { sub: user.id, labId: user.labId, email: user.email, roles, permissions, scope: 'staff' as const };
+    const base = {
+      sub: user.id,
+      labId: user.labId,
+      email: user.email,
+      roles,
+      permissions,
+      isSuperRole,
+      scope: 'staff' as const,
+    };
 
     const accessToken = await this.jwt.signAsync(
       { ...base, type: 'access' },

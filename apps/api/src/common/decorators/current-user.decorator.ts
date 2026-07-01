@@ -6,6 +6,7 @@ export interface AuthUser {
   email: string;
   roles: string[];
   permissions: string[];
+  isSuperRole?: boolean;
 }
 
 export const CurrentUser = createParamDecorator(
