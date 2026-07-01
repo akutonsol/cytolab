@@ -162,7 +162,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="premium-scroll" style={{ flex: 1, overflow: 'auto', padding: screens.md ? 32 : 16 }}>{children}</main>
+      <main className="premium-scroll" style={{ flex: 1, overflow: 'auto', padding: screens.md ? 32 : 16, background: 'radial-gradient(1200px 520px at 15% -8%, #e9f0fd 0%, rgba(233,240,253,0) 60%), radial-gradient(1100px 480px at 100% 0%, #eef0fb 0%, rgba(238,240,251,0) 55%), linear-gradient(180deg, #f4f7fc 0%, #eef2f9 100%)' }}>{children}</main>
 
       <Drawer title={<Logo />} placement="left" width={300} open={drawerOpen} onClose={() => setDrawerOpen(false)} styles={{ body: { padding: 0 } }}>
         <Menu mode="inline" selectedKeys={[pathname]} defaultOpenKeys={NAV_GROUPS.map((g) => g.key)} items={drawerMenu} onClick={({ key }) => navigate(key)} style={{ borderInlineEnd: 'none' }} />
