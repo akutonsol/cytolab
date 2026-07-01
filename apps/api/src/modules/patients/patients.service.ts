@@ -176,10 +176,14 @@ export class PatientsService {
    * "Today at a glance" daily-queue overview for /patients: today's requisitions,
    * a featured open case, KPIs, alert counts and today's records table. Lab-scoped.
    */
-  async overview() {
+  async overview(userId?: string) {
     const now = new Date();
     const startToday = new Date(now); startToday.setHours(0, 0, 0, 0);
     const win30 = new Date(now.getTime() - 30 * DAY_MS);
+
+    // Greeting name resolved from the authenticated user's record (lab-scoped).
+    const me = userId ? await this.prisma.user.findFirst({ where: { id: userId }, select: { firstName: true } }) : null;
+    const firstName = me?.firstName?.trim() || 'there';
 
     const typeLabel = (ft: string | null) => (ft === 'Gynecology' ? 'Gyn' : ft === 'NonGynecology' ? 'Non-Gyn' : 'Record');
     const pname = (r: any) => `${r.patient.firstName} ${r.patient.lastName}`.trim();
@@ -270,6 +274,7 @@ export class PatientsService {
     }
 
     return {
+      greeting: { firstName },
       today: { dateISO: now.toISOString(), requisitionsToday: todays.length },
       featured,
       queue,

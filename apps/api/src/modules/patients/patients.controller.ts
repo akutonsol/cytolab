@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreatePatientDto, PatientQueryDto, UpdatePatientDto } from './dto/patient.dto';
 import { PatientsService } from './patients.service';
 
@@ -14,8 +15,8 @@ export class PatientsController {
   // Static sub-routes declared before /:id to avoid routing conflicts.
   @Get('patients/overview')
   @RequirePermissions('patient:view')
-  overview() {
-    return this.patients.overview();
+  overview(@CurrentUser() user: AuthUser) {
+    return this.patients.overview(user.userId);
   }
 
   @Get('patients/search')

@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
 import { AvatarStack } from '@/components/ui';
 import { PatientFormDrawer } from '@/components/PatientFormDrawer';
 
@@ -21,10 +20,6 @@ const SPECIMEN: Record<string, string> = {
 const specLabel = (t?: string | null) => (t ? SPECIMEN[t] ?? t : '—');
 const time = (d: string) => new Date(d).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 const longDate = (d: string) => new Date(d).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
-const greetName = (email?: string) => {
-  const t = (email ?? '').split('@')[0].split(/[.\-_]/)[0].replace(/[^a-z]/gi, '');
-  return t ? t[0].toUpperCase() + t.slice(1) : 'there';
-};
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good Morning' : h < 18 ? 'Good Afternoon' : 'Good Evening'; };
 
 function StatusChip({ status, urgent }: { status: string; urgent: boolean }) {
@@ -38,7 +33,6 @@ function StatusChip({ status, urgent }: { status: string; urgent: boolean }) {
 
 export default function PatientsPage() {
   const router = useRouter();
-  const { claims } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [q, setQ] = useState('');
 
@@ -147,7 +141,7 @@ export default function PatientsPage() {
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <div className="text-[22px] font-medium text-text-tertiary">{greeting()},</div>
-            <div className="text-[34px] font-extrabold leading-none tracking-tight text-text">{greetName(claims?.email)}</div>
+            <div className="text-[34px] font-extrabold leading-none tracking-tight text-text">{d.greeting.firstName}</div>
           </div>
           <div className="flex items-center gap-5">
             <Kpi label="Pending requisitions" value={d.kpis.pendingRequisitions} />

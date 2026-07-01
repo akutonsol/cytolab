@@ -19,6 +19,7 @@ describeIf('PatientsService.overview (integration)', () => {
   const tag = `ov-${Date.now().toString(36)}`;
   let labId: string;
   let patientId: string;
+  let userId: string;
   const todayAt = (h: number) => { const d = new Date(); d.setHours(h, 0, 0, 0); return d; };
   const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000);
   const run = <T>(fn: () => Promise<T>) => labContext.run({ labId }, fn);
@@ -38,6 +39,9 @@ describeIf('PatientsService.overview (integration)', () => {
     labId = lab.id;
     const p = await raw.patient.create({ data: { labId, registrationNo: `${tag}-P`, firstName: 'A', lastName: 'B' } });
     patientId = p.id;
+    const account = await raw.account.create({ data: { labId, name: `Acct ${tag}` } });
+    const user = await raw.user.create({ data: { labId, accountId: account.id, email: `${tag}@ex.com`, passwordHash: 'x', firstName: 'Dwight', lastName: 'M' } });
+    userId = user.id;
 
     // Today: urgent Gyn open (featured/attention), a Pending, a Submitted, and an Approved-today.
     await mk('URG', RecordStatus.Processing, { urgent: true, formType: 'Gynecology', createdAt: todayAt(7), events: [[RecordStatus.Submitted, todayAt(7)], [RecordStatus.Processing, todayAt(8)]] });
@@ -54,6 +58,8 @@ describeIf('PatientsService.overview (integration)', () => {
     await raw.specimen.deleteMany({ where: { labId } });
     await raw.record.deleteMany({ where: { labId } });
     await raw.patient.deleteMany({ where: { labId } });
+    await raw.user.deleteMany({ where: { labId } });
+    await raw.account.deleteMany({ where: { labId } });
     await raw.lab.deleteMany({ where: { id: labId } });
     await prisma.$disconnect();
     await raw.$disconnect();
@@ -61,7 +67,10 @@ describeIf('PatientsService.overview (integration)', () => {
 
   it('aggregates today\'s queue, featured case, KPIs and alert counts from real data', () =>
     run(async () => {
-      const o = await service.overview();
+      const o = await service.overview(userId);
+
+      // Greeting resolves the authenticated user's firstName from the User table.
+      expect(o.greeting.firstName).toBe('Dwight');
 
       // 4 records created today (URG, PEND, SUB, APP); OLD excluded.
       expect(o.today.requisitionsToday).toBe(4);
