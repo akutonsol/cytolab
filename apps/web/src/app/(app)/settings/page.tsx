@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import { Card, Empty, Typography } from 'antd';
 import { SettingsListPane, type PaneField } from '@/components/SettingsListPane';
+import { AiSettingsPane } from '@/components/AiSettingsPane';
 
 type SectionId =
   | 'labcodes' | 'codesheet' | 'codefindings'
   | 'services' | 'taxes'
-  | 'company' | 'notification' | 'departments';
+  | 'ai' | 'company' | 'notification' | 'departments';
 
 const NAV_GROUPS: { title: string; items: { id: SectionId; label: string }[] }[] = [
   {
@@ -28,6 +29,7 @@ const NAV_GROUPS: { title: string; items: { id: SectionId; label: string }[] }[]
   {
     title: 'General',
     items: [
+      { id: 'ai', label: 'AI Assistance' },
       { id: 'company', label: 'Company' },
       { id: 'notification', label: 'Notification' },
       { id: 'departments', label: 'Departments' },
@@ -143,6 +145,8 @@ export default function SettingsPage() {
             deleteUrl={(id) => `/taxes/delete/${id}`}
           />
         );
+      case 'ai':
+        return <AiSettingsPane />;
       default: {
         const label = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.id === active)?.label ?? 'Settings';
         return <ComingSoon label={label} />;
