@@ -2,13 +2,17 @@
 
 import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
-import { ArrowUpRight, FlaskConical, MoreHorizontal, Plus, TrendingDown, TrendingUp } from 'lucide-react';
+import {
+  ArrowUpRight, Boxes, Calendar, ChevronDown, ClipboardCheck, Clock, FlaskConical, MoreHorizontal, Plus,
+  TrendingDown, TrendingUp, Truck, Wrench,
+} from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { AvatarStack, PillSelect, SectionCard } from '@/components/ui';
-import { OeeDonut, ProgressRing, RadarMetrics, ThroughputBars } from './charts';
+import { OeeDonut, ProgressRing, RadarMetrics, ThroughputComb } from './charts';
 
-const ago = (d: string) => {
+const GREEN = '#22c55e', BLUE = '#4f7df9', GRAY = '#9ca3af';
+const relDay = (d: string) => {
   const s = (Date.now() - new Date(d).getTime()) / 1000;
   if (s < 60) return 'just now';
   if (s < 3600) return `${Math.floor(s / 60)}m ago`;
@@ -16,20 +20,41 @@ const ago = (d: string) => {
   return `${Math.floor(s / 86400)}d ago`;
 };
 const dateShort = (d: string) => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-const GREEN = '#22c55e', BLUE = '#4f7df9', RED = '#ef4444';
+const dateTime = (d: string) => new Date(d).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const dotFor = (status: string) =>
   ['Approved', 'Completed', 'Paid', 'Billed'].includes(status) ? GREEN
-    : ['Deauthorized', 'Failed', 'Disabled'].includes(status) ? RED : BLUE;
+    : ['Deauthorized', 'Failed', 'Disabled'].includes(status) ? '#ef4444' : BLUE;
 
-function SeeAll({ onClick }: { onClick: () => void }) {
-  return <button onClick={onClick} className="text-caption font-semibold text-primary hover:underline">See all</button>;
+// Varied icon chips (kept from the reference — navy / sage / tan / blue-gray), cycled per row.
+const CHIPS = [
+  { bg: '#1f2937', fg: '#ffffff', Icon: Wrench },
+  { bg: '#e3ead9', fg: '#5b6b47', Icon: ClipboardCheck },
+  { bg: '#ece2d0', fg: '#8a734e', Icon: Boxes },
+  { bg: '#dfe3ec', fg: '#5b6472', Icon: FlaskConical },
+  { bg: '#e6e1f2', fg: '#6b5ca0', Icon: Truck },
+];
+
+function SeeAll({ label = 'See all', onClick }: { label?: string; onClick?: () => void }) {
+  return <button onClick={onClick} className="text-caption font-semibold text-text-tertiary hover:text-text">{label}</button>;
 }
-function Stat({ value, label, dot }: { value: React.ReactNode; label: string; dot: string }) {
+function IconBtn({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
+  return <button onClick={onClick} className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-card text-text-secondary transition-colors hover:text-text">{children}</button>;
+}
+function DatePill() {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-pill border border-card bg-surface px-3 py-1.5 text-tiny font-semibold text-text">
+      <Calendar size={13} className="text-text-tertiary" />
+      {new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+      <ChevronDown size={13} className="text-text-tertiary" />
+    </span>
+  );
+}
+function Stat({ value, label, dot }: { value: React.ReactNode; label: string; dot?: string }) {
   return (
     <div className="flex flex-col gap-0.5">
       <span className="text-title font-bold leading-tight text-text">{value}</span>
       <span className="flex items-center gap-1.5 text-caption text-text-tertiary">
-        <span className="h-1.5 w-1.5 rounded-full" style={{ background: dot }} /> {label}
+        {dot && <span className="h-1.5 w-1.5 rounded-full" style={{ background: dot }} />}{label}
       </span>
     </div>
   );
@@ -45,89 +70,96 @@ export default function DashboardPage() {
   if (isError) return <div className="p-2 text-small text-text-secondary">Dashboard is unavailable right now.</div>;
   if (isLoading || !d) {
     return (
-      <div className="grid grid-cols-12 gap-6">
-        {['xl:col-span-4', 'xl:col-span-5', 'xl:col-span-3', 'xl:col-span-5', 'xl:col-span-4', 'xl:col-span-3'].map((s, i) => (
-          <div key={i} className={`col-span-12 ${s}`}><SkeletonCard h={i < 3 ? 340 : 300} /></div>
+      <div className="grid grid-cols-12 items-start gap-6">
+        {['xl:col-span-4', 'xl:col-span-8', 'xl:col-span-4', 'xl:col-span-4', 'xl:col-span-4'].map((s, i) => (
+          <div key={i} className={`col-span-12 ${s}`}><SkeletonCard h={i < 2 ? 360 : 320} /></div>
         ))}
       </div>
     );
   }
 
   const up = d.throughput.deltaPct >= 0;
+  const eff = d.effectiveness;
 
   return (
     <div className="flex flex-col gap-6">
       {/* ---- ROW 1 ---- */}
-      <div className="grid grid-cols-12 gap-6">
-        {/* Priority Queue */}
+      <div className="grid grid-cols-12 items-start gap-6">
+        {/* Urgent Tasks / Priority Queue */}
         <SectionCard className="col-span-12 xl:col-span-4" title="Priority Queue" action={<SeeAll onClick={() => router.push('/records')} />}>
           <div className="flex flex-col divide-y divide-border">
             {d.priorityRecords.length === 0 && <div className="py-6 text-center text-small text-text-tertiary">Nothing urgent — you&apos;re clear.</div>}
-            {d.priorityRecords.map((r: any) => (
-              <div key={r.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-control ${r.urgent ? 'bg-danger-soft text-danger' : 'bg-primary-soft text-primary'}`}><FlaskConical size={18} /></span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate text-small font-semibold text-text">{r.patient}</span>
-                    <span className="shrink-0 text-caption text-text-tertiary">{r.labNumber}</span>
+            {d.priorityRecords.map((r: any, i: number) => {
+              const chip = CHIPS[i % CHIPS.length];
+              return (
+                <div key={r.id} className="flex items-center gap-3 py-3.5 first:pt-0 last:pb-0">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-control" style={{ background: chip.bg, color: chip.fg }}><chip.Icon size={17} /></span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-small font-semibold text-text">{r.patient}</span>
+                      <span className="shrink-0 rounded-pill bg-[#f1f3f7] px-2 py-0.5 text-tiny font-medium text-text-secondary">{dateShort(r.date)}</span>
+                    </div>
+                    <div className="truncate text-caption text-text-tertiary">{[r.client, r.labNumber].filter(Boolean).join(' · ')}</div>
                   </div>
-                  <div className="truncate text-caption text-text-tertiary">{[r.client, r.specimen].filter(Boolean).join(' · ') || '—'}</div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <ProgressRing pct={r.progress} />
+                    <span className="hidden whitespace-nowrap text-caption text-text-secondary sm:inline">{r.progress}% completed</span>
+                  </div>
+                  <IconBtn onClick={() => router.push('/records')}><ArrowUpRight size={15} /></IconBtn>
                 </div>
-                <span className="hidden shrink-0 rounded-pill bg-text px-2.5 py-1 text-tiny font-semibold text-white sm:inline">{dateShort(r.date)}</span>
-                <div className="flex shrink-0 items-center gap-2">
-                  <ProgressRing pct={r.progress} />
-                  <span className="hidden text-caption text-text-secondary md:inline">{r.progress}%</span>
-                </div>
-                <button onClick={() => router.push('/records')} className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-card text-text-secondary hover:text-text"><ArrowUpRight size={16} /></button>
+              );
+            })}
+          </div>
+        </SectionCard>
+
+        {/* Production Efficiency + Radar (one card) */}
+        <section className="col-span-12 flex flex-col rounded-card border border-card bg-surface shadow-card xl:col-span-8">
+          <div className="flex flex-col md:flex-row">
+            {/* Left: throughput */}
+            <div className="min-w-0 flex-1 p-7">
+              <h2 className="text-section text-text">Specimen Throughput</h2>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="text-h1 font-extrabold tracking-tight text-text">{d.throughput.headlinePct}%</span>
+                <span className="flex items-center gap-1 rounded-pill bg-primary-soft px-2 py-0.5 text-caption font-semibold text-primary">
+                  {up ? <TrendingUp size={13} /> : <TrendingDown size={13} />}{Math.abs(d.throughput.deltaPct)}%
+                </span>
               </div>
-            ))}
+              <div className="mt-4"><ThroughputComb data={d.throughput.series} /></div>
+            </div>
+            {/* Right: radar */}
+            <div className="border-t border-card p-5 md:w-[40%] md:border-l md:border-t-0">
+              <div className="mb-1 flex items-center justify-end gap-2">
+                <PillSelect value="Week" options={['Week']} />
+                <IconBtn onClick={() => router.push('/analytics')}><ArrowUpRight size={15} /></IconBtn>
+              </div>
+              <RadarMetrics data={d.radar} />
+              <div className="mt-1 flex items-center justify-center gap-4">
+                <span className="flex items-center gap-1.5 text-caption text-text-secondary"><span className="h-2 w-2 rounded-full bg-primary" /> This period</span>
+                <span className="flex items-center gap-1.5 text-caption text-text-secondary"><span className="h-2 w-2 rounded-full bg-text" /> Last period</span>
+              </div>
+            </div>
           </div>
-        </SectionCard>
-
-        {/* Specimen Throughput */}
-        <SectionCard
-          className="col-span-12 xl:col-span-5"
-          title="Specimen Throughput"
-          action={<div className="flex items-center gap-2"><PillSelect value="Week" options={['Week']} /><button className="grid h-8 w-8 place-items-center rounded-full border border-card text-text-secondary"><ArrowUpRight size={15} /></button></div>}
-        >
-          <div className="mb-1 flex items-center gap-3">
-            <span className="text-h1 font-extrabold tracking-tight text-text">{d.throughput.headlinePct}%</span>
-            <span className={`flex items-center gap-1 rounded-pill px-2 py-0.5 text-caption font-semibold ${up ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger'}`}>
-              {up ? <TrendingUp size={13} /> : <TrendingDown size={13} />}{Math.abs(d.throughput.deltaPct)}%
-            </span>
-          </div>
-          <div className="mb-2 text-caption text-text-tertiary">{d.throughput.headlineLabel}, last 6 weeks</div>
-          <ThroughputBars data={d.throughput.series} />
-        </SectionCard>
-
-        {/* Performance Radar */}
-        <SectionCard className="col-span-12 xl:col-span-3" title="Performance Radar" action={<PillSelect value="Week" options={['Week']} />}>
-          <RadarMetrics data={d.radar} />
-          <div className="mt-1 flex items-center justify-center gap-4">
-            <span className="flex items-center gap-1.5 text-caption text-text-secondary"><span className="h-2 w-2 rounded-full bg-primary" /> This period</span>
-            <span className="flex items-center gap-1.5 text-caption text-text-secondary"><span className="h-2 w-2 rounded-full bg-text" /> Last period</span>
-          </div>
-        </SectionCard>
+        </section>
       </div>
 
       {/* ---- ROW 2 ---- */}
-      <div className="grid grid-cols-12 gap-6">
-        {/* Lab Effectiveness */}
-        <SectionCard className="col-span-12 xl:col-span-5" title="Lab Effectiveness" action={<PillSelect value="This month" options={['This month']} />}>
-          <div className="flex flex-wrap items-center gap-6">
-            <OeeDonut value={d.effectiveness.oee} />
-            <div className="grid flex-1 grid-cols-3 gap-x-4 gap-y-5" style={{ minWidth: 260 }}>
-              <Stat value={`${d.effectiveness.onTime}%`} label="On-time" dot={BLUE} />
-              <Stat value={`${d.effectiveness.authorization}%`} label="Authorization" dot={GREEN} />
-              <Stat value={`${d.effectiveness.accuracy}%`} label="Accuracy" dot={BLUE} />
-              <Stat value={d.effectiveness.specimensProcessed} label="Specimens" dot={BLUE} />
-              <Stat value={d.effectiveness.reportsAuthorized} label="Authorized" dot={GREEN} />
-              <Stat value={`${d.effectiveness.reopenRate}%`} label="Re-open rate" dot={RED} />
+      <div className="grid grid-cols-12 items-start gap-6">
+        {/* Operational Effectiveness */}
+        <SectionCard className="col-span-12 xl:col-span-4" title={<>Lab<br />Effectiveness</>} action={<DatePill />}>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
+            <OeeDonut value={eff.oee} inner={eff.authorization} />
+            <div className="grid flex-1 grid-cols-3 gap-x-4 gap-y-5" style={{ minWidth: 220 }}>
+              <Stat value={`${eff.onTime}%`} label="On-time" dot={GRAY} />
+              <Stat value={`${eff.authorization}%`} label="Authorization" dot={BLUE} />
+              <Stat value={`${eff.accuracy}%`} label="Accuracy" dot="#d4d9e2" />
+              <Stat value={eff.specimensProcessed} label="Specimens Processed" />
+              <Stat value={eff.reportsAuthorized} label="Reports Authorized" />
+              <Stat value={`${eff.reopenRate}%`} label="Re-open Rate" />
             </div>
           </div>
         </SectionCard>
 
-        {/* Top Clients */}
+        {/* Key Teams / Top Clients */}
         <SectionCard className="col-span-12 md:col-span-6 xl:col-span-4" title="Top Clients" action={<SeeAll onClick={() => router.push('/clients')} />}>
           <div className="flex flex-col gap-3">
             {d.topClients.length === 0 && <div className="py-6 text-center text-small text-text-tertiary">No client volume yet.</div>}
@@ -135,25 +167,34 @@ export default function DashboardPage() {
               <div key={i} className="flex items-center gap-3 rounded-control border border-card p-3">
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-small font-semibold text-text">{c.name}</div>
-                  <div className="truncate text-caption text-text-tertiary">{c.type || 'Referring client'} · {c.count} records</div>
+                  <div className="truncate text-caption text-text-tertiary">{c.type || 'Referring client — specimens & billing'}</div>
                 </div>
-                <AvatarStack avatars={[{ name: c.name }, { name: c.type ?? 'Lab' }]} size={26} max={2} />
-                <button onClick={() => router.push('/clients')} className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary-soft text-primary"><Plus size={16} /></button>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <span className="text-caption font-medium text-text-secondary">{c.count} records</span>
+                  <AvatarStack avatars={[{ name: c.name }, { name: c.type ?? 'Lab' }, { name: 'Team' }]} size={22} max={3} />
+                </div>
+                <button onClick={() => router.push('/clients')} className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-card text-text-secondary hover:text-text"><Plus size={16} /></button>
               </div>
             ))}
           </div>
         </SectionCard>
 
-        {/* Activity */}
-        <SectionCard className="col-span-12 md:col-span-6 xl:col-span-3" title="Activity" action={<button className="text-caption font-semibold text-text-tertiary hover:text-text">Clear all</button>}>
-          <div className="flex flex-col gap-3">
+        {/* Updates / Activity */}
+        <SectionCard className="col-span-12 md:col-span-6 xl:col-span-4" title="Activity" action={<SeeAll label="Clear all" />}>
+          <div className="flex flex-col divide-y divide-border">
             {d.activity.length === 0 && <div className="py-6 text-center text-small text-text-tertiary">No recent activity.</div>}
             {d.activity.map((a: any, i: number) => (
-              <div key={i} className="flex items-start gap-3">
-                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: dotFor(a.status) }} />
+              <div key={i} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-small font-semibold text-text">{a.status} · {a.labNumber ?? '—'}</div>
-                  <div className="truncate text-caption text-text-tertiary">{a.patient} · {ago(a.at)}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-small font-semibold text-text">{a.status} · {a.labNumber ?? '—'}</span>
+                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: dotFor(a.status) }} />
+                  </div>
+                  <div className="truncate text-caption text-text-tertiary">{a.patient}</div>
+                  <div className="mt-1 flex items-center gap-3 text-tiny text-text-tertiary">
+                    <span className="flex items-center gap-1"><Calendar size={12} /> {dateTime(a.at)}</span>
+                    <span className="flex items-center gap-1"><Clock size={12} /> {relDay(a.at)}</span>
+                  </div>
                 </div>
                 <button className="shrink-0 text-text-tertiary hover:text-text"><MoreHorizontal size={16} /></button>
               </div>
