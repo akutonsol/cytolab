@@ -387,6 +387,7 @@ model Client {
   requisitions Requisition[]
   records      Record[]
   specimens    Specimen[]
+  cabinets     Cabinet[]
   bills        Bill[]
   addresses    ClientAddress[]
   portalUsers    PortalUser[]
@@ -564,7 +565,12 @@ model Therapy {
 
 // ---- Phase 3: Results & Coding ----
 
-// Storage unit; records can be filed into a cabinet (GET /cabinet/records/:id).
+// A named, colored filing folder linked to a Client. Its contents are that
+// client's specimen records (automatic-by-client: records where clientId =
+// cabinet.clientId), NOT the legacy per-record Record.cabinetId assignment,
+// which is now deprecated (kept as a column, no longer written/read here).
+// `identifier` holds the reference code CB{accountNo}-{RAND4}, generated when a
+// client is linked.
 model Cabinet {
   id         String   @id @default(uuid())
   labId      String
@@ -572,11 +578,17 @@ model Cabinet {
   label      String
   identifier String?
   color      String?
+  // The linked client. At most one cabinet per client (nullable → many unlinked
+  // cabinets allowed, since Postgres treats NULLs as distinct).
+  clientId   String?
+  client     Client?  @relation(fields: [clientId], references: [id])
   records    Record[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  @@unique([labId, clientId])
   @@index([labId])
+  @@index([clientId])
 }
 
 // Reference list of diagnostic code sheets.
