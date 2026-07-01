@@ -1,122 +1,146 @@
 'use client';
 
-import { Button, Checkbox, DatePicker, Form, Input, InputNumber, Space, Tag } from 'antd';
-import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import { useState } from 'react';
+import { Alert, Button, Card, Space, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { useQuery } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
-import { CrudTablePage } from '@/components/CrudTablePage';
-import { RemoteSelect } from '@/components/RemoteSelect';
+import { useAuth } from '@/lib/auth';
+import { RequisitionFormDrawer } from '@/components/RequisitionFormDrawer';
 
+interface RequisitionLine {
+  id: string;
+  isCompleted: boolean;
+}
 interface Requisition {
   id: string;
+  referenceNo?: string | null;
   status: string;
-  amount: number;
-  client?: { firstName: string; lastName: string; officeName?: string };
-  dateReceived?: string;
-  lines: { id: string }[];
+  amount: number; // cents
+  client?: { firstName: string; lastName: string; officeName?: string | null; accountNo?: string | null } | null;
+  dateReceived?: string | null;
+  lines: RequisitionLine[];
+  _count?: { lines: number };
   createdAt: string;
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  Pending: 'gold',
+  Pending: 'default',
   Active: 'blue',
+  Partial: 'orange',
   Completed: 'green',
   Disabled: 'default',
 };
 
-const columns: ColumnsType<Requisition> = [
-  { title: 'Ref', dataIndex: 'id', render: (v: string) => v.slice(0, 8) },
-  { title: 'Status', dataIndex: 'status', render: (s: string) => <Tag color={STATUS_COLORS[s]}>{s}</Tag> },
-  {
-    title: 'Client',
-    render: (_, r) => (r.client ? r.client.officeName || `${r.client.firstName} ${r.client.lastName}` : '—'),
-  },
-  { title: 'Lines', render: (_, r) => r.lines?.length ?? 0 },
-  { title: 'Amount', dataIndex: 'amount' },
-  {
-    title: 'Received',
-    dataIndex: 'dateReceived',
-    render: (v?: string) => (v ? new Date(v).toLocaleDateString() : '—'),
-  },
-  { title: 'Created', dataIndex: 'createdAt', render: (v: string) => new Date(v).toLocaleDateString() },
-];
+const money = (cents?: number) => `$${((Number(cents) || 0) / 100).toFixed(2)}`;
 
 export default function RequisitionsPage() {
-  return (
-    <CrudTablePage<Requisition>
-      title="Requisitions"
-      resourceKey="requisitions"
-      mode="server"
-      columns={columns}
-      fetchList={async ({ page, pageSize }) => {
-        const res = await api.get<Paginated<Requisition>>('/requisitions', { params: { page, pageSize } });
-        return { rows: res.data.data, total: res.data.total };
-      }}
-      create={{
-        title: 'New Requisition',
-        permission: 'requisition:create',
-        width: 560,
-        submit: (values) =>
-          api.post('/requisition/create', {
-            ...values,
-            dateReceived: values.dateReceived ? values.dateReceived.toISOString() : undefined,
-          }),
-        fields: (
-          <>
-            <Form.Item name="clientId" label="Client">
-              <RemoteSelect
-                allowClear
-                endpoint="/clients?pageSize=200"
-                queryKey="clients-options"
-                transform={(data: any) =>
-                  data.data.map((c: any) => ({
-                    label: c.officeName || `${c.firstName} ${c.lastName}`,
-                    value: c.id,
-                  }))
-                }
-              />
-            </Form.Item>
-            <Space size="large">
-              <Form.Item name="amount" label="Amount">
-                <InputNumber min={0} />
-              </Form.Item>
-              <Form.Item name="dateReceived" label="Date received">
-                <DatePicker />
-              </Form.Item>
-            </Space>
+  const { can } = useAuth();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
-            <Form.Item label="Lines">
-              <Form.List name="lines">
-                {(fields, { add, remove }) => (
-                  <>
-                    {fields.map((field) => (
-                      <Space key={field.key} align="baseline" style={{ display: 'flex', marginBottom: 8 }}>
-                        <Form.Item
-                          name={[field.name, 'description']}
-                          rules={[{ required: true, message: 'Description' }]}
-                          noStyle
-                        >
-                          <Input placeholder="Description" style={{ width: 220 }} />
-                        </Form.Item>
-                        <Form.Item name={[field.name, 'amount']} noStyle>
-                          <InputNumber placeholder="Amount" min={0} />
-                        </Form.Item>
-                        <Form.Item name={[field.name, 'isUrgent']} valuePropName="checked" noStyle>
-                          <Checkbox>Urgent</Checkbox>
-                        </Form.Item>
-                        <MinusCircleOutlined onClick={() => remove(field.name)} />
-                      </Space>
-                    ))}
-                    <Button type="dashed" block icon={<PlusOutlined />} onClick={() => add()}>
-                      Add line
-                    </Button>
-                  </>
-                )}
-              </Form.List>
-            </Form.Item>
-          </>
+  const { data, isFetching, isError, error, refetch } = useQuery({
+    queryKey: ['requisitions', page, pageSize],
+    queryFn: () =>
+      api.get<Paginated<Requisition>>('/requisitions', { params: { page, pageSize } }).then((r) => r.data),
+  });
+
+  const errorMessage =
+    (error as any)?.code === 'ECONNABORTED'
+      ? 'The request timed out. Please try again.'
+      : (error as any)?.response?.data?.message ?? 'Could not load requisitions. Please try again.';
+
+  const columns: ColumnsType<Requisition> = [
+    { title: 'Ref#', dataIndex: 'referenceNo', width: 90, render: (v?: string) => v ?? '—' },
+    {
+      title: 'Client',
+      render: (_, r) =>
+        r.client ? (
+          <Space direction="vertical" size={0}>
+            <span>{r.client.officeName || `${r.client.firstName} ${r.client.lastName}`}</span>
+            {r.client.accountNo && (
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                AC# {r.client.accountNo}
+              </Typography.Text>
+            )}
+          </Space>
+        ) : (
+          '—'
         ),
-      }}
-    />
+    },
+    {
+      title: 'Ordered',
+      width: 90,
+      render: (_, r) => r._count?.lines ?? r.lines?.length ?? 0,
+    },
+    {
+      title: 'Fulfilled',
+      width: 90,
+      render: (_, r) => (r.lines ?? []).filter((l) => l.isCompleted).length,
+    },
+    { title: 'Amount', width: 110, render: (_, r) => money(r.amount) },
+    {
+      title: 'Status',
+      width: 120,
+      dataIndex: 'status',
+      render: (s: string) => <Tag color={STATUS_COLORS[s] ?? 'default'}>{s.toUpperCase()}</Tag>,
+    },
+    {
+      title: 'Received',
+      dataIndex: 'dateReceived',
+      render: (v?: string) => (v ? new Date(v).toLocaleDateString() : '—'),
+    },
+  ];
+
+  return (
+    <Card
+      title="Requisitions"
+      extra={
+        can('requisition:create') && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setDrawerOpen(true)}>
+            New Requisition
+          </Button>
+        )
+      }
+    >
+      {isError && (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Failed to load"
+          description={errorMessage}
+          action={
+            <Button size="small" icon={<ReloadOutlined />} onClick={() => refetch()}>
+              Retry
+            </Button>
+          }
+        />
+      )}
+
+      <Table<Requisition>
+        rowKey="id"
+        columns={columns}
+        dataSource={data?.data ?? []}
+        loading={isFetching && !isError}
+        size="middle"
+        scroll={{ x: true }}
+        pagination={{
+          current: page,
+          pageSize,
+          total: data?.total ?? 0,
+          showSizeChanger: true,
+          showTotal: (t) => `${t} total`,
+          onChange: (p, ps) => {
+            setPage(p);
+            setPageSize(ps);
+          },
+        }}
+      />
+
+      <RequisitionFormDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+    </Card>
   );
 }
