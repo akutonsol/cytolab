@@ -77,6 +77,13 @@ enum ResultSheetEventType {
   Reauthorized
 }
 
+// Legacy authorizer_enum: a staff authorizer's professional designation, stamped
+// on released reports next to their name (e.g. "Dr. Jane Doe — CYTOLOGIST").
+enum AuthorizerDesignation {
+  Pathologist
+  Cytologist
+}
+
 // Legacy payment_type_enum.
 enum PaymentType {
   Cash
@@ -210,6 +217,9 @@ model User {
   // Authorizer signature image for rendered reports (Phase 3.5). Typed name
   // (firstName lastName) is the fallback when this is absent.
   signatureUrl       String?
+  // Professional designation for staff who authorize result sheets (legacy
+  // Authorizer.type). Null for non-authorizer staff; rendered on the report.
+  authorizerDesignation AuthorizerDesignation?
   isActive           Boolean             @default(true)
   accountId          String
   account            Account             @relation(fields: [accountId], references: [id])

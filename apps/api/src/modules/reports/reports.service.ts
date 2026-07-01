@@ -108,7 +108,7 @@ export class ReportsService {
       select: {
         authorized: true,
         authorizedAt: true,
-        authorizedBy: { select: { firstName: true, lastName: true, signatureUrl: true } },
+        authorizedBy: { select: { firstName: true, lastName: true, signatureUrl: true, authorizerDesignation: true } },
         resultEntries: {
           select: {
             specimen: { select: { label: true, type: true } },
@@ -193,6 +193,7 @@ export class ReportsService {
       narrative: narrative ? { content: narrative.content, medicalEntry: narrative.medicalEntry } : null,
       authorizer: {
         name: authorizerName,
+        designation: sheet.authorizedBy?.authorizerDesignation ?? null,
         signedAt: sheet.authorizedAt ?? new Date(),
         signatureDataUri: asDataUri(sheet.authorizedBy?.signatureUrl),
       },

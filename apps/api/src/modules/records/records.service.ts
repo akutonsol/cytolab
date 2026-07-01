@@ -100,7 +100,10 @@ const ALLOWED_TRANSITIONS: Partial<Record<RecordStatus, RecordStatus[]>> = {
   // Approved via the authorization gate.
   [RecordStatus.Completed]:  [RecordStatus.Resulted, RecordStatus.OnHold],
   [RecordStatus.Resulted]:   [RecordStatus.Approved, RecordStatus.OnHold],
-  [RecordStatus.Approved]:   [RecordStatus.Billed],
+  // Approved -> Resulted: editing a result sheet's findings after approval
+  // de-authorizes it, returning the record to the Awaiting Approval queue for
+  // re-sign-off (the report gate stays closed until re-authorization).
+  [RecordStatus.Approved]:   [RecordStatus.Billed, RecordStatus.Resulted],
   [RecordStatus.Billed]:     [RecordStatus.Paid],
   [RecordStatus.OnHold]:     [RecordStatus.Submitted, RecordStatus.Processing, RecordStatus.Disabled],
 };

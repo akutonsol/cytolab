@@ -166,7 +166,25 @@ export class ResultSheetsService {
       }
     }
 
-    return this.prisma.resultSheet.update({ where: { id }, data, select: resultSheetSelect });
+    const updated = await this.prisma.resultSheet.update({ where: { id }, data, select: resultSheetSelect });
+
+    // If this edit de-authorized a previously authorized sheet, roll the record
+    // back Approved -> Resulted so it returns to the Awaiting Approval queue for
+    // re-sign-off. (Only from Approved; other statuses are left untouched.)
+    if (dto.entries !== undefined && existing.authorized) {
+      const rec = await this.prisma.record.findFirst({
+        where: { id: updated.recordId },
+        select: { status: true },
+      });
+      if (rec?.status === RecordStatus.Approved) {
+        await this.records.updateStatus(updated.recordId, userId, {
+          status: RecordStatus.Resulted,
+          notes: 'Result sheet edited — authorization revoked',
+        });
+      }
+    }
+
+    return updated;
   }
 
   /**

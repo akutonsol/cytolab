@@ -55,6 +55,7 @@ export interface ReportDocumentData {
   } | null;
   authorizer: {
     name: string;
+    designation?: string | null; // Pathologist / Cytologist, shown under the name
     signedAt: Date;
     signatureDataUri?: string | null; // image if a data: URI, else typed-name fallback
   };
@@ -251,7 +252,12 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
           signatureMark,
           { canvas: [{ type: 'line', x1: 0, y1: 2, x2: 200, y2: 2, lineWidth: 0.5 }] },
           { text: authorizer.name, style: 'signatureName', margin: [0, 2, 0, 0] },
-          { text: 'Authorized Signatory', style: 'fieldLabel' },
+          {
+            text: authorizer.designation
+              ? `${authorizer.designation.toUpperCase()} · Authorized Signatory`
+              : 'Authorized Signatory',
+            style: 'fieldLabel',
+          },
           { text: `Signed off: ${fmtDateTime(authorizer.signedAt)}`, style: 'fieldLabel' },
         ],
       },

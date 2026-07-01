@@ -89,6 +89,30 @@ describeIf('Results workflow (integration)', () => {
     await expect(run(() => records.remove(rec.id))).rejects.toBeInstanceOf(ConflictException);
   });
 
+  it('4. editing an authorized sheet de-authorizes it and rolls Approved → Resulted', async () => {
+    const rec = await newRecord();
+    await drive(rec.id, [RecordStatus.Submitted, RecordStatus.Processing, RecordStatus.Completed]);
+    const sheet = await run(() => resultSheets.create({ recordId: rec.id }, null as any));
+    await run(() => resultSheets.authorize(sheet.id, null as any));
+    expect(await statusOf(rec.id)).toBe(RecordStatus.Approved);
+
+    // The authorizer re-opens the sheet to correct a finding.
+    const edited = await run(() =>
+      resultSheets.update(sheet.id, null as any, {
+        entries: [{ lines: [{ abbreviation: 'NC SS', findings: 'corrected', abnormalFinding: true }] }],
+      } as any),
+    );
+    expect(edited.authorized).toBe(false); // authorization revoked
+    expect(edited.resultEntries[0].resultLines[0].findings).toBe('corrected'); // edit persisted
+    // Record returns to the Awaiting Approval queue.
+    expect(await statusOf(rec.id)).toBe(RecordStatus.Resulted);
+    expect(await eventNotes(rec.id, RecordStatus.Resulted)).toBe('Result sheet edited — authorization revoked');
+
+    // Re-authorizing advances it back to Approved.
+    await run(() => resultSheets.authorize(sheet.id, null as any));
+    expect(await statusOf(rec.id)).toBe(RecordStatus.Approved);
+  });
+
   it('3. a result sheet cannot be created on a non-Completed record', async () => {
     const rec = await newRecord(); // Pending
     await expect(run(() => resultSheets.create({ recordId: rec.id }, null as any))).rejects.toBeInstanceOf(
