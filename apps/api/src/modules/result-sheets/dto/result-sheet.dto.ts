@@ -45,6 +45,10 @@ export class UpdateResultSheetDto {
   @Type(() => CreateResultEntryDto)
   entries?: CreateResultEntryDto[];
 
+  // Human-owned report narrative. Editing it (incl. accepting an AI draft into
+  // it) re-opens the sheet just like editing entries.
+  @IsString() @IsOptional() narrative?: string;
+
   @IsBoolean() @IsOptional() viewed?: boolean;
 }
 

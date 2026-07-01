@@ -15,6 +15,7 @@ const resultSheetSelect = {
   id: true,
   recordId: true,
   viewed: true,
+  narrative: true,
   authorized: true,
   authorizedAt: true,
   authorizedById: true,
@@ -147,14 +148,22 @@ export class ResultSheetsService {
   async update(id: string, userId: string, dto: UpdateResultSheetDto) {
     const existing = await this.findOne(id);
 
+    // Any change to released content — result entries OR the report narrative
+    // (incl. accepting an AI draft into it) — re-opens the sheet. A signed report
+    // can never be silently changed.
+    const contentChanged = dto.entries !== undefined || dto.narrative !== undefined;
+
     const data: Prisma.ResultSheetUncheckedUpdateInput = {};
     if (dto.viewed !== undefined) data.viewed = dto.viewed;
+    if (dto.narrative !== undefined) data.narrative = dto.narrative;
     if (dto.entries !== undefined) {
-      // Editing results invalidates any prior authorization.
+      data.resultEntries = { deleteMany: {}, ...this.entriesCreate(dto.entries) };
+    }
+    if (contentChanged) {
+      // Editing content invalidates any prior authorization.
       data.authorized = false;
       data.authorizedAt = null;
       data.authorizedById = null;
-      data.resultEntries = { deleteMany: {}, ...this.entriesCreate(dto.entries) };
       // Audit the de-authorization only when it actually transitions away from authorized.
       if (existing.authorized) {
         data.events = {
@@ -171,7 +180,7 @@ export class ResultSheetsService {
     // If this edit de-authorized a previously authorized sheet, roll the record
     // back Approved -> Resulted so it returns to the Awaiting Approval queue for
     // re-sign-off. (Only from Approved; other statuses are left untouched.)
-    if (dto.entries !== undefined && existing.authorized) {
+    if (contentChanged && existing.authorized) {
       const rec = await this.prisma.record.findFirst({
         where: { id: updated.recordId },
         select: { status: true },
