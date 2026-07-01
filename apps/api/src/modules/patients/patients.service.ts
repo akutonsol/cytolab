@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, RecordStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { LabContext } from '../../common/tenancy/lab-context';
 import { paginate } from '../../common/dto/pagination.dto';
@@ -14,6 +14,30 @@ const REG_SEQUENCE = 'patientRegNo';
 const REG_BASE = 10_000_000n;
 const REG_PAD = 8;
 const MAX_REGNO_RETRIES = 5;
+
+const DAY_MS = 86_400_000;
+// Records that are still "in flight" (open) — before final Approved sign-off.
+const OPEN: RecordStatus[] = [
+  RecordStatus.Pending, RecordStatus.Submitted, RecordStatus.Processing, RecordStatus.Partial,
+  RecordStatus.Completed, RecordStatus.Resulted,
+];
+const APPROVED_PLUS: RecordStatus[] = [RecordStatus.Approved, RecordStatus.Billed, RecordStatus.Paid];
+// Lifecycle stage label + progress for the records-table "Stage" column.
+const STAGE: Partial<Record<RecordStatus, { label: string; pct: number }>> = {
+  [RecordStatus.Pending]: { label: 'Intake', pct: 10 },
+  [RecordStatus.Submitted]: { label: 'Intake', pct: 25 },
+  [RecordStatus.Processing]: { label: 'Processing', pct: 50 },
+  [RecordStatus.Partial]: { label: 'Processing', pct: 62 },
+  [RecordStatus.Completed]: { label: 'Review', pct: 78 },
+  [RecordStatus.Resulted]: { label: 'Review', pct: 90 },
+  [RecordStatus.Approved]: { label: 'Complete', pct: 100 },
+  [RecordStatus.Billed]: { label: 'Complete', pct: 100 },
+  [RecordStatus.Paid]: { label: 'Complete', pct: 100 },
+};
+const firstAt = (events: { status: RecordStatus; createdAt: Date }[], status: RecordStatus): Date | null => {
+  const hit = events.filter((e) => e.status === status).map((e) => +new Date(e.createdAt)).sort((a, b) => a - b)[0];
+  return hit ? new Date(hit) : null;
+};
 
 const patientSelect = {
   id: true,
@@ -146,6 +170,113 @@ export class PatientsService {
     await this.findOne(id);
     await this.prisma.patient.delete({ where: { id } });
     return { deleted: true };
+  }
+
+  /**
+   * "Today at a glance" daily-queue overview for /patients: today's requisitions,
+   * a featured open case, KPIs, alert counts and today's records table. Lab-scoped.
+   */
+  async overview() {
+    const now = new Date();
+    const startToday = new Date(now); startToday.setHours(0, 0, 0, 0);
+    const win30 = new Date(now.getTime() - 30 * DAY_MS);
+
+    const typeLabel = (ft: string | null) => (ft === 'Gynecology' ? 'Gyn' : ft === 'NonGynecology' ? 'Non-Gyn' : 'Record');
+    const pname = (r: any) => `${r.patient.firstName} ${r.patient.lastName}`.trim();
+    const cname = (r: any) => r.client?.officeName || `${r.client?.firstName ?? ''} ${r.client?.lastName ?? ''}`.trim() || null;
+
+    // Today's records (created today), urgent first then oldest.
+    const todays = await this.prisma.record.findMany({
+      where: { createdAt: { gte: startToday } },
+      orderBy: [{ urgent: 'desc' }, { createdAt: 'asc' }],
+      select: {
+        id: true, labNumber: true, status: true, urgent: true, formType: true,
+        clinicalDiagnosis: true, specimenDate: true, createdAt: true,
+        patient: { select: { firstName: true, lastName: true } },
+        client: { select: { officeName: true, firstName: true, lastName: true } },
+        specimens: { select: { type: true, label: true } },
+      },
+    });
+    const openToday = todays.filter((r) => OPEN.includes(r.status));
+    // Feature the top open case, preferring one with a proper Gyn/Non-Gyn form type.
+    const fr = openToday.find((r) => r.formType) ?? openToday[0];
+
+    const featured = fr
+      ? {
+          id: fr.id, labNumber: fr.labNumber, urgent: fr.urgent,
+          patient: pname(fr), formType: typeLabel(fr.formType), client: cname(fr),
+          specimenLabel: fr.specimens[0]?.label || fr.specimens[0]?.type || 'Specimen',
+          status: fr.status,
+          collectedAt: fr.specimenDate ?? fr.createdAt,
+        }
+      : null;
+
+    const queue = openToday.map((r) => ({
+      id: r.id, patient: pname(r), diagnosis: r.clinicalDiagnosis || r.specimens[0]?.type || null,
+      type: typeLabel(r.formType), at: r.specimenDate ?? r.createdAt,
+    }));
+
+    const records = todays.map((r) => ({
+      id: r.id, labNumber: r.labNumber, patient: pname(r), specimenType: r.specimens[0]?.type ?? null,
+      status: r.status, urgent: r.urgent, receivedAt: r.specimenDate ?? r.createdAt,
+      stage: STAGE[r.status] ?? { label: '—', pct: 0 },
+    }));
+
+    // KPIs + alert counts (lab-wide where it makes sense).
+    const [pendingRequisitions, awaitingProcessing, notifications, authorizedToday, recent, attentionRec] = await Promise.all([
+      this.prisma.record.count({ where: { status: RecordStatus.Pending } }),
+      this.prisma.record.count({ where: { status: RecordStatus.Submitted } }),
+      this.prisma.recordStatusEvent.count({ where: { createdAt: { gte: startToday } } }),
+      this.prisma.recordStatusEvent.count({ where: { status: RecordStatus.Approved, createdAt: { gte: startToday } } }),
+      this.prisma.record.findMany({
+        where: { statusHistory: { some: { status: RecordStatus.Approved, createdAt: { gte: win30 } } } },
+        select: { statusHistory: { select: { status: true, createdAt: true } } },
+      }),
+      this.prisma.record.findFirst({
+        where: { urgent: true, status: { in: OPEN } },
+        orderBy: { createdAt: 'asc' },
+        select: {
+          id: true, labNumber: true, formType: true, clinicalDiagnosis: true,
+          patient: { select: { firstName: true, lastName: true } },
+          statusHistory: { select: { user: { select: { firstName: true, lastName: true, email: true } } }, orderBy: { createdAt: 'desc' }, take: 6 },
+        },
+      }),
+    ]);
+
+    let tatSum = 0, tatN = 0;
+    for (const r of recent) {
+      const a = firstAt(r.statusHistory as any, RecordStatus.Approved);
+      const s = firstAt(r.statusHistory as any, RecordStatus.Submitted);
+      if (a && s) { tatSum += (+a - +s) / DAY_MS; tatN += 1; }
+    }
+    const avgTat = tatN ? Math.round((tatSum / tatN) * 10) / 10 : 0;
+
+    let attention = null as any;
+    if (attentionRec) {
+      const seen = new Set<string>();
+      const assignees: { name: string }[] = [];
+      for (const e of attentionRec.statusHistory) {
+        const u = e.user; if (!u) continue;
+        const name = `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email || '';
+        if (name && !seen.has(name)) { seen.add(name); assignees.push({ name }); }
+      }
+      attention = {
+        id: attentionRec.id, labNumber: attentionRec.labNumber,
+        patient: `${attentionRec.patient.firstName} ${attentionRec.patient.lastName}`.trim(),
+        formType: typeLabel(attentionRec.formType),
+        text: attentionRec.clinicalDiagnosis || `Urgent case ${attentionRec.labNumber ?? ''} is still open and needs review.`,
+        assignees: assignees.slice(0, 4),
+      };
+    }
+
+    return {
+      today: { dateISO: now.toISOString(), requisitionsToday: todays.length },
+      featured,
+      queue,
+      kpis: { pendingRequisitions, awaitingProcessing, avgTat },
+      alerts: { attention, notifications, authorizedToday },
+      records,
+    };
   }
 
   private buildWhere(query: PatientQueryDto) {

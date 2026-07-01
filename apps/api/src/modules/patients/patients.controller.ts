@@ -12,6 +12,12 @@ export class PatientsController {
 
   // Queries are lab-scoped automatically by the tenancy guard (labId from JWT).
   // Static sub-routes declared before /:id to avoid routing conflicts.
+  @Get('patients/overview')
+  @RequirePermissions('patient:view')
+  overview() {
+    return this.patients.overview();
+  }
+
   @Get('patients/search')
   @RequirePermissions('patient:view')
   search(@Query() query: PatientQueryDto) {
