@@ -20,6 +20,7 @@ const kfmt = (v: number) => {
 export function DivergingBars({ data, currentMonth, height = 460 }: { data: any[]; currentMonth: string; height?: number }) {
   const rows = data.map((d) => ({ ...d, negDeficit: -d.deficit }));
   const max = Math.max(1, ...rows.map((r) => Math.max(r.actual, r.deficit)));
+  const half = Math.max(1, Math.round(max / 2));
 
   const YTick = (props: any) => {
     const cur = props.payload.value === currentMonth;
@@ -55,8 +56,18 @@ export function DivergingBars({ data, currentMonth, height = 460 }: { data: any[
     <div style={{ width: '100%' }}>
       <ResponsiveContainer width="100%" height={height}>
         <BarChart layout="vertical" data={rows} stackOffset="sign" margin={{ top: 8, right: 24, bottom: 8, left: 8 }} barCategoryGap="26%">
+          <defs>
+            <linearGradient id="actualGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#5a86fb" />
+              <stop offset="100%" stopColor={ACTUAL_BLUE} />
+            </linearGradient>
+            <linearGradient id="actualGradCur" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor={ACTUAL_BLUE} />
+              <stop offset="100%" stopColor={ACTUAL_BLUE_CURRENT} />
+            </linearGradient>
+          </defs>
           <CartesianGrid horizontal={false} strokeDasharray="4 5" stroke="#e6eaf2" />
-          <XAxis type="number" domain={[-max, max]} tickFormatter={kfmt} tick={{ fontSize: 12.5, fill: CHART.axis, fontWeight: 500 }} axisLine={false} tickLine={false} />
+          <XAxis type="number" domain={[-max, max]} ticks={[-max, -half, 0, half, max]} tickFormatter={kfmt} tick={{ fontSize: 12.5, fill: CHART.axis, fontWeight: 500 }} axisLine={false} tickLine={false} />
           <YAxis type="category" dataKey="month" width={40} tick={<YTick />} axisLine={false} tickLine={false} />
           <ReferenceLine x={0} stroke="#dfe4ee" />
           {/* full-width pale lane per row (background of the actual bar spans the whole domain) */}
@@ -64,7 +75,7 @@ export function DivergingBars({ data, currentMonth, height = 460 }: { data: any[
             <LabelList dataKey="deficit" content={DeficitChip} />
           </Bar>
           <Bar dataKey="actual" stackId="a" radius={[11, 11, 11, 11]} isAnimationActive animationDuration={900} animationEasing="ease-out" maxBarSize={24} background={{ fill: LANE, radius: 12 } as any}>
-            {rows.map((r, i) => <Cell key={i} fill={r.current ? ACTUAL_BLUE_CURRENT : ACTUAL_BLUE} />)}
+            {rows.map((r, i) => <Cell key={i} fill={r.current ? 'url(#actualGradCur)' : 'url(#actualGrad)'} />)}
             <LabelList dataKey="actual" content={ActualLabel} />
           </Bar>
         </BarChart>
