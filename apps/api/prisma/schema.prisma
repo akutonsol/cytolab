@@ -220,8 +220,17 @@ model Role {
   // checks this flag, not a hardcoded role name) — legacy super_role parity, so
   // a lab can have multiple named super roles.
   isSuperRole Boolean          @default(false)
+  // Legacy User/Workspace role toggle. Workspace-CONSTRAINED enforcement is
+  // deferred (future RBAC) — the column only preserves the scope and lets the
+  // admin UI show the selector. All roles are User-scoped today.
+  scope       RoleScope        @default(User)
   users       UserRole[]
   permissions RolePermission[]
+}
+
+enum RoleScope {
+  User
+  Workspace
 }
 
 model Permission {

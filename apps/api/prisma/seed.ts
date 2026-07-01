@@ -6,33 +6,55 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// From REQUIREMENTS_BASELINE.md §4 — objects guarded in the legacy system
-const OBJECTS = [
-  'account', 'applicationprefs', 'bill', 'cabinet', 'client', 'clinicalitemgroup',
-  'codesheet', 'department', 'employee', 'formprintgroup', 'labcode', 'message',
-  'notification', 'patient', 'payadvice', 'payment', 'payroll', 'permission',
+// The FULL legacy permission catalog (REQUIREMENTS_BASELINE.md §4). Seeded in
+// full — including objects whose 2.0 modules aren't built yet — so roles can be
+// pre-configured and the data migration maps legacy role->permission 1:1.
+//
+// Consolidations kept as-is (no legacy-line equivalent to map): requisitionline,
+// billline are managed via their parent (requisition/bill); paymentline is gone
+// in 2.0 (Payment settles a Bill directly).
+const STANDARD_OBJECTS = [
+  'account', 'appointment', 'bill', 'cabinet', 'client', 'clienttype',
+  'clinicalformitem', 'clinicalitemgroup', 'codefinding', 'codesheet', 'deduction',
+  'department', 'earning', 'employee', 'employeedetails', 'formprintgroup',
+  'labcode', 'message', 'patient', 'payadvice', 'payment', 'payroll', 'permission',
   'record', 'recordstatus', 'report', 'requisition', 'resultentry', 'resultsheet',
-  'role', 'service', 'tax', 'user',
+  'role', 'service', 'specimen', 'tax', 'therapy', 'user', 'workspace',
 ];
-const ACTIONS = ['view', 'create', 'change', 'delete'];
-const EXTRA: Record<string, string[]> = {
+const STANDARD_ACTIONS = ['view', 'create', 'change', 'delete'];
+// Extra actions on standard-CRUD objects.
+const STANDARD_EXTRA: Record<string, string[]> = {
   record: ['submit'],
   resultsheet: ['authorize'],
-  applicationprefs: ['reports'],
+};
+// Objects with a non-CRUD action set.
+const SPECIAL_OBJECTS: Record<string, string[]> = {
+  // System-generated — legacy allows only view/delete (no create/change).
+  notification: ['view', 'delete'],
+  applicationprefs: ['view', 'change', 'reports', 'dashboard'],
+  accountprefs: ['view', 'change'],
 };
 
 async function main() {
   const codes: { code: string; label: string }[] = [];
-  for (const obj of OBJECTS) {
-    for (const action of [...ACTIONS, ...(EXTRA[obj] ?? [])]) {
+  for (const obj of STANDARD_OBJECTS) {
+    for (const action of [...STANDARD_ACTIONS, ...(STANDARD_EXTRA[obj] ?? [])]) {
       codes.push({ code: `${obj}:${action}`, label: `${action} ${obj}` });
     }
   }
+  for (const [obj, actions] of Object.entries(SPECIAL_OBJECTS)) {
+    for (const action of actions) codes.push({ code: `${obj}:${action}`, label: `${action} ${obj}` });
+  }
 
   for (const c of codes) {
-    await prisma.permission.upsert({ where: { code: c.code }, update: {}, create: c });
+    await prisma.permission.upsert({ where: { code: c.code }, update: { label: c.label }, create: c });
   }
-  console.log(`Seeded ${codes.length} permissions`);
+  // Remove any permission not in the authoritative catalog (e.g. the retired
+  // applicationprefs:create/delete, notification:create/change). Cascades their
+  // RolePermission rows.
+  const keep = codes.map((c) => c.code);
+  const removed = await prisma.permission.deleteMany({ where: { code: { notIn: keep } } });
+  console.log(`Seeded ${codes.length} permissions (removed ${removed.count} stale)`);
 
   // Default roles aligned to the REAL legacy role set seen in the app
   // (Pathologist, Receptionist, Lab Technician, Authorizers, Superuser).
