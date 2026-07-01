@@ -38,5 +38,6 @@ import { PortalChangeRequestsService } from './change-requests/portal-change-req
     PortalReportsService,
     PortalChangeRequestsService,
   ],
+  exports: [PortalUsersService],
 })
 export class PortalModule {}

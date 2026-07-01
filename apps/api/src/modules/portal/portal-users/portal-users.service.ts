@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, PortalTokenType } from '@prisma/client';
+import { randomBytes } from 'crypto';
 import { PrismaService } from '../../../database/prisma.service';
 import { paginate } from '../../../common/dto/pagination.dto';
 import { tenantCreate } from '../../../common/tenancy/tenancy.extension';
@@ -17,15 +18,26 @@ const portalUserSelect = {
   id: true,
   clientId: true,
   client: { select: { id: true, firstName: true, lastName: true, officeName: true } },
+  username: true,
   email: true,
   firstName: true,
   lastName: true,
   isActive: true,
+  twoFactorEnabled: true,
+  isPrimary: true,
   lastLoginAt: true,
   // Whether the invite has been accepted (password set). Never expose the hash.
   passwordHash: true,
   createdAt: true,
 } as const;
+
+export interface ProvisionPortalUserInput {
+  clientId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  twoFactorEnabled?: boolean;
+}
 
 type PortalUserRow = Prisma.PortalUserGetPayload<{ select: typeof portalUserSelect }>;
 
@@ -53,28 +65,65 @@ export class PortalUsersService {
     // The client must belong to the staff's lab (auto lab-scoped).
     const client = await this.prisma.client.findFirst({
       where: { id: dto.clientId },
-      select: { id: true, firstName: true },
+      select: { id: true },
     });
     if (!client) throw new NotFoundException('Client not found');
 
-    const email = dto.email.toLowerCase();
-    const existing = await this.prisma.portalUser.findFirst({ where: { email }, select: { id: true } });
+    const user = await this.provisionForClient(dto);
+    return this.shape(user);
+  }
+
+  /** Reject early if a portal email is already taken (before creating a Client). */
+  async assertEmailAvailable(email: string) {
+    const existing = await this.prisma.portalUser.findFirst({
+      where: { email: email.toLowerCase() },
+      select: { id: true },
+    });
     if (existing) throw new BadRequestException('A portal user with this email already exists');
+  }
+
+  /**
+   * Create a portal login for a client and email the F2 setup invite. Shared by
+   * the staff invite endpoint and the client-create form. Staff NEVER set the
+   * password — the client sets it via the single-use emailed token. The username
+   * is auto-generated; the first login for a client becomes the primary.
+   */
+  async provisionForClient(input: ProvisionPortalUserInput) {
+    const email = input.email.toLowerCase();
+    await this.assertEmailAvailable(email);
+
+    const priorForClient = await this.prisma.portalUser.count({ where: { clientId: input.clientId } });
+    const username = await this.generateUsername(input.firstName, input.lastName);
 
     const user = await this.prisma.portalUser.create({
       data: tenantCreate<Prisma.PortalUserUncheckedCreateInput>({
-        // labId stamped by the tenancy guard; clientId is staff-chosen (validated above).
-        clientId: dto.clientId,
+        // labId stamped by the tenancy guard; clientId validated by the caller.
+        clientId: input.clientId,
+        username,
         email,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        twoFactorEnabled: input.twoFactorEnabled ?? false,
+        isPrimary: priorForClient === 0,
         // passwordHash stays null until the invite is accepted.
       }),
       select: portalUserSelect,
     });
 
     await this.issueInvite(user.id, email, user.firstName);
-    return this.shape(user);
+    return user;
+  }
+
+  /** Auto-generate a lab-unique username (legacy "Generated" field). */
+  private async generateUsername(firstName: string, lastName: string): Promise<string> {
+    const base = `${firstName}.${lastName}`.toLowerCase().replace(/[^a-z0-9.]/g, '') || 'client';
+    for (let i = 0; i < 6; i++) {
+      const candidate = i === 0 ? base : `${base}.${randomBytes(2).toString('hex')}`;
+      // Lab-scoped by the tenancy guard; username is @@unique([labId, username]).
+      const taken = await this.prisma.portalUser.findFirst({ where: { username: candidate }, select: { id: true } });
+      if (!taken) return candidate;
+    }
+    return `${base}.${randomBytes(4).toString('hex')}`;
   }
 
   /** (Re)issue an invite token for a not-yet-onboarded user and email it. */
