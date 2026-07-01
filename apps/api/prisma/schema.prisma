@@ -147,6 +147,7 @@ model Lab {
   changeRequestMessages ChangeRequestMessage[]
   changeRequestEvents   ChangeRequestEvent[]
   patientAddresses      PatientAddress[]
+  clientAddresses       ClientAddress[]
   sequences             LabSequence[]
 }
 
@@ -173,6 +174,7 @@ model Workspace {
   users        User[]
   requisitions Requisition[]
   records      Record[]
+  clients      Client[]
 
   @@index([accountId])
 }
@@ -214,6 +216,10 @@ model Role {
   id          String           @id @default(uuid())
   name        String           @unique
   description String?
+  // When true, holders bypass all permission checks (the permissions guard
+  // checks this flag, not a hardcoded role name) — legacy super_role parity, so
+  // a lab can have multiple named super roles.
+  isSuperRole Boolean          @default(false)
   users       UserRole[]
   permissions RolePermission[]
 }
@@ -320,6 +326,18 @@ model Client {
   mobileNumber String?
   officeNumber String?
   faxNumber    String?
+  // Active/blocked toggles from the legacy Client form.
+  active       Boolean       @default(true)
+  blocked      Boolean       @default(false)
+  // Nullable stub — actual upload/serving deferred to Phase 6 file storage.
+  avatarUrl    String?
+  // The client's assigned lab code/region (legacy "Labcode" dropdown). Closes
+  // the Phase 3 "LabCode <-> Client" tracked debt.
+  labCodeId    String?
+  labCode      LabCode?      @relation(fields: [labCodeId], references: [id])
+  // Optional workspace the client belongs to (legacy "Workspace" section).
+  workspaceId  String?
+  workspace    Workspace?    @relation(fields: [workspaceId], references: [id])
   clientTypeId String?
   clientType   ClientType?   @relation(fields: [clientTypeId], references: [id])
   patients     Patient[]
@@ -327,12 +345,16 @@ model Client {
   records      Record[]
   specimens    Specimen[]
   bills        Bill[]
+  addresses    ClientAddress[]
   portalUsers    PortalUser[]
   changeRequests ChangeRequest[]
   changeRequestMessages ChangeRequestMessage[]
   changeRequestEvents   ChangeRequestEvent[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+
+  @@index([labCodeId])
+  @@index([workspaceId])
 
   @@index([labId])
 }
@@ -519,6 +541,7 @@ model LabCode {
   lab       Lab      @relation(fields: [labId], references: [id])
   code      String
   region    String?
+  clients   Client[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -765,12 +788,21 @@ model PortalUser {
   lab           Lab      @relation(fields: [labId], references: [id])
   clientId      String
   client        Client   @relation(fields: [clientId], references: [id])
+  // Auto-generated at invite time (legacy "Generated" username). Unique per lab.
+  username      String?
   email         String
   // Null until the invite is accepted (first password set via emailed token).
+  // Staff never set an external user's password (Finding 2, option B).
   passwordHash  String?
   firstName     String
   lastName      String
   isActive      Boolean  @default(true)
+  // 2FA is toggled on the client form; actual enrollment happens later in the
+  // portal (the staff form never sees the secret).
+  twoFactorEnabled Boolean @default(false)
+  // The client's main login. Soft flag (a client may have more than one contact
+  // login); the service keeps at most one primary per client.
+  isPrimary     Boolean  @default(false)
   // F2 notification preferences.
   notifyByEmail Boolean  @default(true)
   notifyInApp   Boolean  @default(true)
@@ -784,6 +816,7 @@ model PortalUser {
   updatedAt     DateTime @updatedAt
 
   @@unique([labId, email])
+  @@unique([labId, username])
   @@index([labId])
   @@index([clientId])
 }
@@ -906,6 +939,27 @@ model PatientAddress {
 
   @@index([labId])
   @@index([patientId])
+}
+
+// A client can have one or more addresses ("Add Address" on the client form).
+model ClientAddress {
+  id         String   @id @default(uuid())
+  labId      String
+  lab        Lab      @relation(fields: [labId], references: [id])
+  clientId   String
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  label      String?
+  line1      String
+  line2      String?
+  city       String?
+  region     String?
+  postalCode String?
+  country    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([labId])
+  @@index([clientId])
 }
 
 // Per-lab monotonic counters for human-facing identifiers (currently the
