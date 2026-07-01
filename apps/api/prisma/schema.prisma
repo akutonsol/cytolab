@@ -138,6 +138,10 @@ model Lab {
   email        String?
   currency     String        @default("JMD")
   isActive     Boolean       @default(true)
+  // Analytics targets. targetTatDays: expected turnaround (Submitted->Approved);
+  // monthlyVolumeTarget: expected specimens/month (null -> derived from history).
+  targetTatDays      Int      @default(3)
+  monthlyVolumeTarget Int?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   accounts     Account[]

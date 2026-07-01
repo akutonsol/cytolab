@@ -19,6 +19,7 @@ import { LabCodesModule } from './modules/lab-codes/lab-codes.module';
 import { ResultSheetsModule } from './modules/result-sheets/result-sheets.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { AiModule } from './modules/ai/ai.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ServicesCatalogModule } from './modules/services-catalog/services-catalog.module';
 import { TaxesModule } from './modules/taxes/taxes.module';
 import { BillingModule } from './modules/billing/billing.module';
@@ -56,6 +57,7 @@ import { ChangeRequestsModule } from './modules/change-requests/change-requests.
     ResultSheetsModule,
     ReportsModule,
     AiModule,
+    AnalyticsModule,
     ServicesCatalogModule,
     TaxesModule,
     BillingModule,
