@@ -91,3 +91,81 @@ imported numeric value in that lab.
 - **Backfill:** populate from legacy client records where an email exists.
   Clients without a legacy email import with `email = null` (still searchable by
   name).
+
+### Lab code (`Client.labCodeId`, new)
+
+- `Client.labCodeId` (FK → `LabCode`, nullable) closes the Phase 3 "LabCode ↔
+  Client" tracked debt (legacy "Labcode" dropdown on the client form).
+- **Mapping:** for each legacy client, resolve its assigned lab code/region to
+  the matching `LabCode` row in the destination lab (import lab codes first),
+  and set `labCodeId`. Clients with no legacy lab code import with `null`.
+
+### Active / Blocked (`Client.active`, `Client.blocked`, new)
+
+- Mirror the legacy Active/Blocked toggles.
+- **Backfill:** map the legacy client status → `active` (default `true` if the
+  legacy record was enabled) and `blocked` (default `false`). If the legacy
+  system has no explicit blocked flag, import `blocked = false`.
+
+### Client type (Doctor / Laboratory)
+
+- The Doctor/Laboratory toggle resolves to a `ClientType` row (find-or-create by
+  `type`). **Mapping:** map the legacy client's type to `Doctor` or `Laboratory`
+  and attach the corresponding `ClientType` (created per lab on first use).
+
+### Addresses (`ClientAddress`, 1:many)
+
+- New `ClientAddress` (lab-scoped, `clientId` FK, cascade) mirrors
+  `PatientAddress`. **Mapping:** legacy client address data maps into one or more
+  `ClientAddress` rows (default one per client unless the legacy schema stores
+  multiple). Preserve any label/type if present.
+
+### Avatar (`Client.avatarUrl`, deferred)
+
+- Nullable stub; upload/serving deferred to **Phase 6 file storage**. Import
+  clients with `avatarUrl = null`; migrate legacy photos in a later pass.
+
+### Client portal login: inline credentials → invite-based `PortalUser`
+
+Legacy created the client's login **inline** (username + email + password + 2FA)
+on the client form. 2.0 uses **invite-based** provisioning (Finding 2, option B).
+
+- **Legacy passwords are NOT migrated.** Staff never hold external users'
+  passwords, and legacy hashes are a different scheme/trust boundary. Instead,
+  each legacy client login is re-created as a `PortalUser` and the client is
+  **re-invited** to set a new password via the F2 single-use email token.
+- **Mapping per legacy client login:**
+  - `PortalUser.email` = legacy login email; `passwordHash = null` (until the
+    client accepts the invite).
+  - `PortalUser.username` = the legacy username if present, else auto-generated
+    (lab-unique). `twoFactorEnabled` = the legacy 2FA flag (the client
+    re-enrolls the secret in the portal — 2FA secrets are **not** migrated).
+  - The client's main login is flagged `isPrimary`; additional contact logins
+    (if any) import as non-primary.
+- **Invite timing:** the migration can either send invites in a controlled batch
+  at cutover or leave `PortalUser`s un-invited and invite on first portal
+  rollout. Either way, no client can log in until they accept an invite.
+- **Post-migration check:** every imported `PortalUser` has `passwordHash = null`
+  (no legacy password leaked into 2.0) and a unique `(labId, email)` /
+  `(labId, username)`.
+
+## Roles / RBAC
+
+### `Role.isSuperRole` (new) — replaces the hardcoded 'Superuser' name
+
+- The permission bypass now keys off `Role.isSuperRole`, not a role named
+  'Superuser'. **Mapping:** set `isSuperRole = true` for the legacy `super_role`
+  roles (e.g. named super roles like "P. McCarthy", "M. Donegal", and the
+  canonical Superuser). Ordinary roles import with `isSuperRole = false`.
+- Seeded default roles realigned to the legacy set: `Superuser` (super),
+  `Authorizers`, `Pathologist`, `Lab Technician`, `Receptionist`. The retired
+  `Standard`/`Authorizer`/`Staff` default names are dropped.
+- **"Clients" is NOT a staff role** — it is the portal identity (structurally
+  client-scoped `PortalUser`); do not import it into the staff `Role` table.
+
+### Deferred (future RBAC): workspace-constraint roles
+
+- The legacy Roles tab's **"Workspace Constraint Role"** (workspace-scoped roles)
+  is **not** built. `Role` has no workspace constraint in 2.0. Tracked as a
+  future RBAC feature; `Client.workspaceId` exists to carry the association when
+  that lands.
