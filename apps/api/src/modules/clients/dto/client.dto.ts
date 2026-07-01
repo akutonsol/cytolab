@@ -37,6 +37,8 @@ export class CreateClientDto {
   @IsString() @IsOptional() officeNumber?: string;
   @IsString() @IsOptional() faxNumber?: string;
   @IsString() @IsOptional() clientTypeId?: string;
+  // Doctor/Laboratory toggle — resolved to a ClientType row (find-or-create).
+  @IsEnum(ClientTypeEnum) @IsOptional() clientType?: ClientTypeEnum;
   @IsString() @IsOptional() labCodeId?: string;
   @IsString() @IsOptional() workspaceId?: string;
   @IsBoolean() @IsOptional() active?: boolean;
@@ -62,6 +64,7 @@ export class UpdateClientDto {
   @IsString() @IsOptional() officeNumber?: string;
   @IsString() @IsOptional() faxNumber?: string;
   @IsString() @IsOptional() clientTypeId?: string;
+  @IsEnum(ClientTypeEnum) @IsOptional() clientType?: ClientTypeEnum;
   @IsString() @IsOptional() labCodeId?: string;
   @IsString() @IsOptional() workspaceId?: string;
   @IsBoolean() @IsOptional() active?: boolean;

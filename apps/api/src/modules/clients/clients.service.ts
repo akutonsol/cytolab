@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { ClientTypeEnum, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
@@ -50,6 +50,18 @@ export class ClientsService {
     };
   }
 
+  /** Resolve the Doctor/Laboratory toggle to a ClientType row (find-or-create). */
+  private async resolveClientTypeId(clientType?: ClientTypeEnum) {
+    if (!clientType) return undefined;
+    const existing = await this.prisma.clientType.findFirst({ where: { type: clientType }, select: { id: true } });
+    if (existing) return existing.id;
+    const created = await this.prisma.clientType.create({
+      data: tenantCreate<Prisma.ClientTypeUncheckedCreateInput>({ name: clientType, type: clientType }),
+      select: { id: true },
+    });
+    return created.id;
+  }
+
   // Every query below is automatically lab-scoped by the Prisma tenancy extension.
   async findAll(query: ClientQueryDto) {
     const page = query.page ?? 1;
@@ -83,7 +95,7 @@ export class ClientsService {
   }
 
   async create(dto: CreateClientDto) {
-    const { addresses, createPortalLogin, twoFactorEnabled, ...rest } = dto;
+    const { addresses, createPortalLogin, twoFactorEnabled, clientType, ...rest } = dto;
 
     // Pre-check the portal email BEFORE creating the client, so a taken email
     // never leaves an orphan client behind.
@@ -91,9 +103,12 @@ export class ClientsService {
       await this.portalUsers.assertEmailAvailable(rest.email);
     }
 
+    const clientTypeId = (await this.resolveClientTypeId(clientType)) ?? rest.clientTypeId;
+
     const client = await this.prisma.client.create({
       data: tenantCreate<Prisma.ClientUncheckedCreateInput>({
         ...rest,
+        clientTypeId,
         addresses: this.addressCreate(addresses),
       }),
       select: clientSelect,
@@ -116,8 +131,10 @@ export class ClientsService {
 
   async update(id: string, dto: UpdateClientDto) {
     await this.findOne(id);
-    const { addresses, ...rest } = dto;
+    const { addresses, clientType, ...rest } = dto;
     const data: Prisma.ClientUncheckedUpdateInput = { ...rest };
+    const clientTypeId = await this.resolveClientTypeId(clientType);
+    if (clientTypeId) data.clientTypeId = clientTypeId;
     if (addresses !== undefined) {
       data.addresses = { deleteMany: {}, ...this.addressCreate(addresses) };
     }
