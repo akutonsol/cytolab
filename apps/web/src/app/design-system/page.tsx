@@ -97,7 +97,7 @@ export default function DesignSystemPage() {
       <div className="mx-auto max-w-[1200px]">
         <header className="mb-8">
           <p className="text-display font-medium text-text-secondary">Premium UI</p>
-          <h1 className="text-display font-bold text-text">Design System</h1>
+          <h1 className="text-display font-extrabold text-text">Design System</h1>
           <p className="mt-2 max-w-xl text-sm text-text-secondary">
             The shared token layer + primitives every premium screen composes from. Blue (#4F7DF9) is the unified accent.
           </p>
@@ -213,9 +213,9 @@ export default function DesignSystemPage() {
                 { label: 'Efficiency', value: '78%', data: SPARK_B, color: '#1a1d21' },
                 { label: 'Unit Cost', value: '$360', data: SPARK_C, color: '#4f7df9' },
               ].map((t) => (
-                <div key={t.label} className="flex items-center gap-3 rounded-card border border-border bg-surface p-4 shadow-card">
+                <div key={t.label} className="flex items-center gap-3 rounded-card bg-surface p-4 shadow-card">
                   <div className="flex min-w-[70px] flex-col">
-                    <span className="text-xl font-bold text-text">{t.value}</span>
+                    <span className="text-[22px] font-extrabold tracking-tight text-text">{t.value}</span>
                     <span className="text-meta text-text-tertiary">{t.label}</span>
                   </div>
                   <MiniAreaChart data={t.data} color={t.color} className="flex-1" />

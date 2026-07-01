@@ -7,7 +7,8 @@ interface AvatarProps {
   className?: string;
 }
 
-const PALETTE = ['#4f7df9', '#16a34a', '#d97706', '#9333ea', '#0891b2', '#db2777', '#2563eb'];
+// Muted, desaturated tones so initials avatars recede rather than pull focus.
+const PALETTE = ['#8595ad', '#93a594', '#c2a18b', '#a896b5', '#7fa8a0', '#c098a0', '#9aa0b3'];
 
 function initials(name?: string) {
   if (!name) return '';

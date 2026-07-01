@@ -40,7 +40,7 @@ export function PastelCard({ tone, label, title, meta, avatars, value, onAction,
 
       <div className="mt-auto flex items-end justify-between pt-4">
         <div>
-          {value !== undefined && <span className="text-stat font-bold text-text">{value}</span>}
+          {value !== undefined && <span className="text-stat font-extrabold text-text">{value}</span>}
           {avatars && avatars.length > 0 && <AvatarStack avatars={avatars} />}
         </div>
         <IconButton variant="dark" size="md" icon={<ArrowUpRight />} onClick={onAction} aria-label="Open" />

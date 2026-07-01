@@ -55,7 +55,7 @@ export function BarChart({ data, peakIndex, peakLabel = 'Load peak', total, tota
     <div className={cn('flex items-center gap-6', className)}>
       {total !== undefined && (
         <div className="flex shrink-0 flex-col">
-          <span className="text-[30px] font-bold leading-none text-text">{total}</span>
+          <span className="text-stat font-extrabold text-text">{total}</span>
           {totalLabel && <span className="mt-1 text-meta text-text-tertiary">{totalLabel}</span>}
         </div>
       )}

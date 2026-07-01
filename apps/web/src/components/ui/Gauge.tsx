@@ -5,66 +5,57 @@ import { CHART } from './tokens';
 interface GaugeProps {
   /** Target value shown large in the center. */
   goal: number;
-  /** Current value — drives the fill fraction (current/goal) and the on-arc chip. */
+  /** Current value — drives the arc fill (current/goal) and the on-arc chip. */
   current: number;
   label?: string;
   centerValue?: ReactNode;
   size?: number;
-  segments?: number;
+  /** Number of dots in the track ring. */
+  dots?: number;
   className?: string;
 }
 
 /**
- * Segmented completion dial: a ring of ticks (blue for progressed, light for the
- * remainder), a big centered value + label, and a small current-value chip
- * sitting on the arc — matching the "Orders Completion Rate" dial.
+ * Completion dial: a gray dotted track ring with a partial blue progress arc
+ * (current/goal of the circle) drawn over it, a big centered value + label, and
+ * a small current-value chip sitting at the arc's end — matching the reference.
  */
-export function Gauge({ goal, current, label = 'Goal', centerValue, size = 208, segments = 52, className }: GaugeProps) {
+export function Gauge({ goal, current, label = 'Goal', centerValue, size = 208, dots = 44, className }: GaugeProps) {
   const cx = size / 2;
   const cy = size / 2;
-  const rOuter = size / 2 - 6;
-  const rInner = rOuter - 13;
+  const r = size / 2 - 12;
   const start = -90; // 12 o'clock
-  const sweep = 360;
   const fraction = goal > 0 ? Math.max(0, Math.min(1, current / goal)) : 0;
-  const filled = Math.round(fraction * segments);
 
-  // Round to a fixed precision so SSR and client hydration produce identical
-  // coordinate strings (raw floats differ in their last digit → hydration warning).
+  // Round so SSR and client hydration emit identical coordinate strings.
   const r3 = (n: number) => Math.round(n * 1000) / 1000;
-  const polar = (r: number, deg: number) => {
+  const polar = (radius: number, deg: number) => {
     const a = (deg * Math.PI) / 180;
-    return [r3(cx + r * Math.cos(a)), r3(cy + r * Math.sin(a))] as const;
+    return [r3(cx + radius * Math.cos(a)), r3(cy + radius * Math.sin(a))] as const;
   };
 
-  const ticks = Array.from({ length: segments }, (_, i) => {
-    const deg = start + (i / segments) * sweep;
-    const [x1, y1] = polar(rInner, deg);
-    const [x2, y2] = polar(rOuter, deg);
-    return { x1, y1, x2, y2, on: i < filled };
-  });
+  const track = Array.from({ length: dots }, (_, i) => polar(r, start + (i / dots) * 360));
 
-  const [chipX, chipY] = polar(rOuter + 1, start + fraction * sweep);
+  const endDeg = start + Math.min(fraction, 0.9999) * 360;
+  const [ax0, ay0] = polar(r, start);
+  const [ax1, ay1] = polar(r, endDeg);
+  const largeArc = fraction * 360 > 180 ? 1 : 0;
+  const arcPath = `M ${ax0} ${ay0} A ${r} ${r} 0 ${largeArc} 1 ${ax1} ${ay1}`;
+  const [chipX, chipY] = polar(r, endDeg);
 
   return (
     <div className={cn('relative', className)} style={{ width: size, height: size }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {ticks.map((t, i) => (
-          <line
-            key={i}
-            x1={t.x1}
-            y1={t.y1}
-            x2={t.x2}
-            y2={t.y2}
-            stroke={t.on ? CHART.primary : CHART.track}
-            strokeWidth={3}
-            strokeLinecap="round"
-          />
+        {track.map(([x, y], i) => (
+          <circle key={i} cx={x} cy={y} r={2} fill={CHART.track} />
         ))}
+        {fraction > 0 && (
+          <path d={arcPath} fill="none" stroke={CHART.primary} strokeWidth={5} strokeLinecap="round" />
+        )}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-[34px] font-bold leading-none text-text">{centerValue ?? goal}</span>
-        <span className="mt-1 text-label font-medium text-text-secondary">{label}</span>
+        <span className="text-[34px] font-extrabold leading-none tracking-tight text-text">{centerValue ?? goal}</span>
+        <span className="mt-1.5 text-label font-medium text-text-secondary">{label}</span>
       </div>
       <div
         className="absolute -translate-x-1/2 -translate-y-1/2 rounded-pill bg-text px-2 py-0.5 text-[11px] font-semibold text-white shadow-float"

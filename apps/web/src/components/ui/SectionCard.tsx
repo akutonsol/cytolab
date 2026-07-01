@@ -17,7 +17,7 @@ interface SectionCardProps {
 /** Generic titled card: header row (title + right-aligned control) over a body. */
 export function SectionCard({ title, subtitle, action, children, className, bodyClassName, flush }: SectionCardProps) {
   return (
-    <section className={cn('flex flex-col rounded-card border border-border bg-surface shadow-card', className)}>
+    <section className={cn('flex flex-col rounded-card bg-surface shadow-card', className)}>
       {(title || action) && (
         <header className={cn('flex items-start justify-between gap-4 px-6 pt-5', flush ? 'pb-4' : 'pb-1')}>
           <div className="flex flex-col gap-0.5">

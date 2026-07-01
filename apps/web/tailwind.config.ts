@@ -59,8 +59,9 @@ const config: Config = {
       fontSize: {
         label: ['12px', { lineHeight: '1.4', letterSpacing: '0.01em' }],
         meta: ['12px', { lineHeight: '1.4' }],
-        stat: ['30px', { lineHeight: '1.1', letterSpacing: '-0.01em' }],
-        display: ['32px', { lineHeight: '1.15', letterSpacing: '-0.02em' }],
+        // Big punchy numbers: heavy + tight, matching the reference stats.
+        stat: ['30px', { lineHeight: '1', letterSpacing: '-0.03em', fontWeight: '800' }],
+        display: ['32px', { lineHeight: '1.05', letterSpacing: '-0.03em', fontWeight: '800' }],
       },
     },
   },

@@ -26,8 +26,8 @@ export function StatCard({ label, value, suffix, sublabel, icon, action, active,
   return (
     <div
       className={cn(
-        'flex flex-col justify-between gap-4 rounded-card border bg-surface p-5 transition-shadow',
-        active ? 'border-primary/40 shadow-card-hover ring-1 ring-primary/30' : 'border-border shadow-card',
+        'flex flex-col justify-between gap-2.5 rounded-card bg-surface p-4 transition-shadow',
+        active ? 'shadow-card-hover ring-1 ring-primary/25' : 'shadow-card',
         className,
       )}
     >
@@ -46,7 +46,7 @@ export function StatCard({ label, value, suffix, sublabel, icon, action, active,
         {action}
       </div>
       <div className="flex items-baseline gap-1">
-        <span className="text-stat font-bold text-text">{value}</span>
+        <span className="text-stat font-extrabold text-text">{value}</span>
         {suffix && <span className="text-sm font-medium text-text-tertiary">{suffix}</span>}
       </div>
     </div>
