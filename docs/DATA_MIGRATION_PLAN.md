@@ -53,9 +53,9 @@ Concretely, after seeding and before go-live, assert
 spot-check that the next generated number is strictly greater than every
 imported numeric value in that lab.
 
-### Seeded-counter identifiers — the shared pattern (now THREE)
+### Seeded-counter identifiers — the shared pattern (now FOUR)
 
-Three human-facing identifiers use the **identical** atomic-seeded-counter
+Four human-facing identifiers use the **identical** atomic-seeded-counter
 pattern above (String column, `@@unique([labId, …])`, import-verbatim,
 per-lab `LabSequence`, seed to `max(numeric imported)`, unique-constraint retry
 backstop, and the "no generated ≤ max imported numeric" post-migration check):
@@ -63,8 +63,9 @@ backstop, and the "no generated ≤ max imported numeric" post-migration check):
 | Identifier | Column | `LabSequence` name | Base | Format |
 |---|---|---|---|---|
 | Patient registration no. | `Patient.registrationNo` | `patientRegNo` | `10000000` | zero-padded 8-digit numeric |
-| **Requisition Ref#** | `Requisition.referenceNo` | `requisitionRef` | `1000` | plain numeric (e.g. `1460`) |
-| **Client account no.** | `Client.accountNo` | `clientAccountNo` | `100000` | `<LAB_PREFIX>-<n>` (e.g. `CYLB-577071`) |
+| Requisition Ref# | `Requisition.referenceNo` | `requisitionRef` | `1000` | plain numeric (e.g. `1460`) |
+| Client account no. | `Client.accountNo` | `clientAccountNo` | `100000` | `<LAB_PREFIX>-<n>` (e.g. `CYLB-577071`) |
+| **Record Lab No.** | `Record.labNumber` | **`recordLabNo:{YYYY}-{MM}`** (per-month) | `0` | `CBL{YY}-{MM}-{3-digit seq}` (e.g. `CBL26-06-465`) |
 
 - **Requisition `referenceNo`:** import legacy Ref#s verbatim; seed
   `requisitionRef` to `max(numeric imported referenceNo)` per lab.
@@ -73,6 +74,20 @@ backstop, and the "no generated ≤ max imported numeric" post-migration check):
   from the lab slug; seed `clientAccountNo` to the max **numeric part** of the
   imported account numbers per lab. Because imports are verbatim, a legacy
   prefix that differs from the derived one is preserved as-is.
+- **Record `labNumber` (the physical case number on the slides/vials):** import
+  legacy Lab No.s **verbatim**. The sequence is **MONTHLY-reset** — the counter
+  key carries the year-month (`recordLabNo:{YYYY}-{MM}`), so seeding is
+  **per (lab, month)**: for each `(lab, YYYY-MM)` seen in the imported Lab No.s,
+  seed that month's counter to the **max `{seq}`** observed in that month. The
+  prefix (`CBL`) is derived from the lab slug for generated numbers; imported
+  values keep their legacy prefix. The uniqueness guarantee is the full string
+  (`@@unique([labId, labNumber])`), since `{YY}-{MM}` makes monthly seqs
+  globally unique per lab.
+- **`identifier` vs `labNumber` (record):** `Record.identifier` is the **internal
+  stable system id** (never human-edited) and `Record.labNumber` is the
+  **human-facing case number**. On import, set `labNumber` = the legacy Lab No.
+  (verbatim) and generate/keep a fresh internal `identifier` — do **not** map the
+  legacy Lab No. into `identifier`.
 
 ### Age (`Patient.age` → derived, not stored)
 
@@ -203,6 +218,43 @@ on the client form. 2.0 uses **invite-based** provisioning (Finding 2, option B)
   `Partial`/`Completed` status and each line's `isCompleted` are recomputed from
   the linked records' statuses (fulfilled = `Completed`-or-beyond). Don't import
   a stale legacy status; let the recompute set it.
+
+## Records (the two-form clinical case)
+
+### Lab No. + identifier
+
+- `Record.labNumber` = the 4th seeded identifier (monthly, `CBL{YY}-{MM}-{seq}`)
+  — see the identifiers section above for import-verbatim + per-(lab,month)
+  seeding and the `identifier`-vs-`labNumber` role split.
+
+### Form type + clinical features (option B, two typed 1:1 models)
+
+- `Record.formType` (`Gynecology` | `NonGynecology`, reuses `RequisitionFormType`)
+  — map from the legacy form the case was created on (it flows requisition-line
+  → record). Records with no clinical data import with `formType = null`.
+- **Clinical features map into the matching typed model, never both:**
+  - **Gynecology → `GynClinicalFeatures`:** routineCheck, previousCytology, lmp,
+    clinicalAppearanceOfCervix, nowPregnant, pregnancies, leucorrhea, menopause,
+    dateOfMenopause, lengthOfCycle, pelvicAbnormalities. `clinicalDiagnosis` stays
+    on `Record`; the Therapy block maps to the existing `Therapy` model
+    (hormone/radiation/surgical booleans + `other`).
+  - **Non-Gynecology → `NonGynClinicalFeatures`:** sampleDescription,
+    natureAndSource.
+  - The import MUST route these through the same **form-type discriminator**: a
+    Gyn case gets only `GynClinicalFeatures`, a NonGyn case only
+    `NonGynClinicalFeatures`. A record must **never** end with both rows (the
+    2.0 service enforces this; the import must not bypass it).
+- **`SpecimenType`:** map legacy Gyn types to `ENDOCERV_ASP`/`CERV_SCRAP`/
+  `VAG_POOL` and NonGyn to `URINE`/`CSF`/`PLEURAL_FLD`/`BREAST_ASP`/`JOINT_ASP`/
+  `SYNOVIAL_FLD`/`OTHER`. Specimen material and form class are orthogonal.
+
+### Specimen images (`SpecimenImage`, deferred)
+
+- Slide (Gyn) / Vial (NonGyn) specimen images are a **stub** — `SpecimenImage`
+  carries a `storageUrl` populated only once **Phase 6 file storage** lands.
+  Migration of legacy specimen images is a **later pass**; import records/
+  specimens now with no image rows. The Slide/Vial label is derived from
+  `formType`, not stored.
 
 ## Roles / RBAC
 
