@@ -45,7 +45,7 @@ function Legend({ items }: { items: { label: string; color: string }[] }) {
   return (
     <div className="flex items-center gap-4">
       {items.map((it) => (
-        <span key={it.label} className="flex items-center gap-1.5 text-small font-medium text-text-secondary">
+        <span key={it.label} className="flex items-center gap-1.5 text-[15px] font-medium text-text-secondary">
           <span className="h-2.5 w-2.5 rounded-full" style={{ background: it.color }} /> {it.label}
         </span>
       ))}
@@ -58,7 +58,7 @@ function KpiTile({ label, value, spark, color }: { label: string; value: string;
     <div className={`flex flex-1 items-center justify-between gap-2 rounded-card border border-card p-4 shadow-card ${CARD}`}>
       <div className="flex min-w-0 flex-col">
         <span className="text-h3 font-extrabold leading-tight tracking-tight text-text">{value}</span>
-        <span className="whitespace-nowrap text-small font-medium text-text-secondary">{label}</span>
+        <span className="whitespace-nowrap text-[15px] font-medium text-text-secondary">{label}</span>
       </div>
       <div className="w-16 shrink-0"><MiniAreaChart data={spark.length ? spark : [0, 0]} color={color} height={38} /></div>
     </div>
@@ -89,7 +89,7 @@ export default function AnalyticsPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-[28px] font-extrabold tracking-tight text-text">Analytics</h1>
-        <p className="text-small font-medium text-text-secondary">Live lab performance — volume, turnaround, revenue and what needs attention.</p>
+        <p className="text-[15px] font-medium text-text-secondary">Live lab performance — volume, turnaround, revenue and what needs attention.</p>
       </div>
 
       {/* ---- TOP ROW (equal height) ---- */}
@@ -113,10 +113,10 @@ export default function AnalyticsPage() {
               <div key={it.key} className="flex flex-1 items-center gap-3 py-3.5 first:pt-0 last:pb-0">
                 <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-control ${CHIP[ATTENTION[it.key]?.chip ?? 'gray']}`}>{ATTENTION[it.key]?.icon}</span>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[15px] font-bold text-text">{it.title}</div>
-                  <div className="text-small font-medium text-text-secondary">{it.description}</div>
+                  <div className="text-[16px] font-bold text-text">{it.title}</div>
+                  <div className="text-[15px] font-medium text-text-secondary">{it.description}</div>
                 </div>
-                <span className={`grid h-7 min-w-7 place-items-center rounded-pill px-2 text-caption font-bold ${BADGE_BG[it.severity]} ${BADGE_TEXT[it.severity]}`}>{it.count}</span>
+                <span className={`grid h-7 min-w-7 place-items-center rounded-pill px-2 text-small font-bold ${BADGE_BG[it.severity]} ${BADGE_TEXT[it.severity]}`}>{it.count}</span>
               </div>
             ))}
           </div>
@@ -124,7 +124,7 @@ export default function AnalyticsPage() {
 
         <SectionCard className={`col-span-12 md:col-span-6 xl:col-span-3 ${INSIGHTS}`} bodyClassName="flex flex-1 flex-col">
           <div className="flex items-center justify-between rounded-card bg-primary-soft px-4 py-3">
-            <span className="text-small font-bold text-primary">Based on the last 30 days</span>
+            <span className="text-[15px] font-bold text-primary">Based on the last 30 days</span>
             <Activity size={18} className="text-primary" />
           </div>
           <div className="mt-3 flex flex-1 flex-col justify-between gap-1.5">
@@ -137,17 +137,17 @@ export default function AnalyticsPage() {
                   <div key={it.key} className="flex items-center gap-3 rounded-control px-1 py-1.5">
                     <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-control ${CHIP[cfg.chip]}`}>{cfg.icon}</span>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[15px] font-bold text-text">{it.title}</div>
-                      <div className="truncate text-small font-medium text-text-secondary">{it.detail}</div>
+                      <div className="truncate text-[16px] font-bold text-text">{it.title}</div>
+                      <div className="truncate text-[15px] font-medium text-text-secondary">{it.detail}</div>
                     </div>
-                    <span className={`text-small font-bold ${neg ? 'text-danger' : pos ? 'text-success' : 'text-text'}`}>{it.metric}</span>
+                    <span className={`text-[15px] font-bold ${neg ? 'text-danger' : pos ? 'text-success' : 'text-text'}`}>{it.metric}</span>
                     <ChevronRight size={16} className="text-text-tertiary" />
                   </div>
                 );
               })}
             </div>
             <div className="mt-2 flex items-center justify-between border-t border-border pt-3">
-              <span className="text-caption font-semibold uppercase tracking-wide text-text-secondary">{d.insights.footerLabel}</span>
+              <span className="text-small font-semibold uppercase tracking-wide text-text-secondary">{d.insights.footerLabel}</span>
               <span className="rounded-pill bg-success-soft px-2.5 py-1 text-small font-bold text-success">{d.insights.footerValue}</span>
             </div>
           </div>
@@ -175,7 +175,7 @@ export default function AnalyticsPage() {
           <SectionCard className={`col-span-6 sm:col-span-4 ${CARD}`} title={<CardTitle size={17}>Turnaround Compliance</CardTitle>} action={<PillSelect value="Week" options={['Week']} />}>
             <div className="mb-1 flex items-baseline gap-2">
               <span className="text-h1 font-extrabold tracking-tight text-text">{d.compliance.onTimePct}%</span>
-              <span className="text-small font-medium text-text-secondary">on time · target {d.compliance.targetTatDays}d</span>
+              <span className="text-[15px] font-medium text-text-secondary">on time · target {d.compliance.targetTatDays}d</span>
             </div>
             <ComplianceLine week={d.compliance.week} />
           </SectionCard>
@@ -183,7 +183,7 @@ export default function AnalyticsPage() {
           <SectionCard className={`col-span-6 ${CARD}`}>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-small font-medium text-text-secondary">Reports Authorized · this month</div>
+                <div className="text-[15px] font-medium text-text-secondary">Reports Authorized · this month</div>
                 <div className="text-h3 font-extrabold text-text">{d.reportsAuthorized.count} <span className="text-small font-semibold text-text-secondary">/ {d.reportsAuthorized.target} target</span></div>
               </div>
               <span className="text-title font-bold text-primary">{d.reportsAuthorized.pct}%</span>

@@ -25,7 +25,7 @@ export function DivergingBars({ data, currentMonth, height = 460 }: { data: any[
   const YTick = (props: any) => {
     const cur = props.payload.value === currentMonth;
     return (
-      <text x={props.x - 6} y={props.y} dy={4} textAnchor="end" fontSize={13} fontWeight={cur ? 800 : 600} fill={cur ? ACTUAL_BLUE : CHART.axis}>
+      <text x={props.x - 6} y={props.y} dy={4} textAnchor="end" fontSize={14.5} fontWeight={cur ? 800 : 700} fill={cur ? ACTUAL_BLUE : CHART.axis}>
         {props.payload.value}
       </text>
     );
@@ -35,7 +35,7 @@ export function DivergingBars({ data, currentMonth, height = 460 }: { data: any[
     if (!p.value) return null;
     const inside = p.width > 30;
     const tx = inside ? p.x + p.width - 10 : p.x + p.width + 6;
-    return <text x={tx} y={p.y + p.height / 2} dy={4} textAnchor={inside ? 'end' : 'start'} fontSize={12.5} fontWeight={700} fill={inside ? '#fff' : CHART.ink}>{p.value.toLocaleString()}</text>;
+    return <text x={tx} y={p.y + p.height / 2} dy={4} textAnchor={inside ? 'end' : 'start'} fontSize={13.5} fontWeight={700} fill={inside ? '#fff' : CHART.ink}>{p.value.toLocaleString()}</text>;
   };
   // Deficit value: dark text in a white rounded chip at the deficit (left) end.
   const DeficitChip = (p: any) => {
@@ -47,7 +47,7 @@ export function DivergingBars({ data, currentMonth, height = 460 }: { data: any[
     return (
       <g>
         <rect x={right - w} y={cy - 11} width={w} height={22} rx={7} fill="#fff" stroke="#e6eaf2" />
-        <text x={right - w / 2} y={cy + 4} textAnchor="middle" fontSize={11} fontWeight={600} fill="#475569">{text}</text>
+        <text x={right - w / 2} y={cy + 4} textAnchor="middle" fontSize={12.5} fontWeight={700} fill="#475569">{text}</text>
       </g>
     );
   };
@@ -67,7 +67,7 @@ export function DivergingBars({ data, currentMonth, height = 460 }: { data: any[
             </linearGradient>
           </defs>
           <CartesianGrid horizontal={false} strokeDasharray="4 5" stroke="#e6eaf2" />
-          <XAxis type="number" domain={[-max, max]} ticks={[-max, -half, 0, half, max]} tickFormatter={kfmt} tick={{ fontSize: 12.5, fill: CHART.axis, fontWeight: 500 }} axisLine={false} tickLine={false} />
+          <XAxis type="number" domain={[-max, max]} ticks={[-max, -half, 0, half, max]} tickFormatter={kfmt} tick={{ fontSize: 13.5, fill: CHART.axis, fontWeight: 600 }} axisLine={false} tickLine={false} />
           <YAxis type="category" dataKey="month" width={40} tick={<YTick />} axisLine={false} tickLine={false} />
           <ReferenceLine x={0} stroke="#dfe4ee" />
           {/* full-width pale lane per row (background of the actual bar spans the whole domain) */}
@@ -118,7 +118,7 @@ export function DualAreaLine({ data, height = 300 }: { data: any[]; height?: num
             </linearGradient>
           </defs>
           <CartesianGrid vertical={false} stroke={CHART.grid} />
-          <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12.5, fill: CHART.axis, fontWeight: 500 }} dy={6} />
+          <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 13.5, fill: CHART.axis, fontWeight: 600 }} dy={6} />
           <YAxis yAxisId="v" hide />
           <YAxis yAxisId="r" orientation="right" hide />
           <Tooltip content={<DualTooltip />} cursor={{ stroke: CHART.track, strokeDasharray: '4 4' }} />
@@ -152,7 +152,7 @@ export function ComplianceLine({ week, height = 168 }: { week: any[]; height?: n
           <CartesianGrid vertical={false} stroke={CHART.grid} />
           <ReferenceArea x1="Mo" x2="We" fill="#eaf1ff" fillOpacity={0.7} />
           <ReferenceArea x1="Fr" x2="Su" fill="#dcfce7" fillOpacity={0.8} />
-          <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12.5, fill: CHART.axis, fontWeight: 500 }} dy={4} />
+          <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 13.5, fill: CHART.axis, fontWeight: 600 }} dy={4} />
           <YAxis hide domain={[0, 100]} />
           <Line type="monotone" dataKey="pct" stroke="url(#compStroke)" strokeWidth={3.5} isAnimationActive animationDuration={950}
             dot={(props: any) => {
