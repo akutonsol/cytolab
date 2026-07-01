@@ -53,6 +53,27 @@ Concretely, after seeding and before go-live, assert
 spot-check that the next generated number is strictly greater than every
 imported numeric value in that lab.
 
+### Seeded-counter identifiers — the shared pattern (now THREE)
+
+Three human-facing identifiers use the **identical** atomic-seeded-counter
+pattern above (String column, `@@unique([labId, …])`, import-verbatim,
+per-lab `LabSequence`, seed to `max(numeric imported)`, unique-constraint retry
+backstop, and the "no generated ≤ max imported numeric" post-migration check):
+
+| Identifier | Column | `LabSequence` name | Base | Format |
+|---|---|---|---|---|
+| Patient registration no. | `Patient.registrationNo` | `patientRegNo` | `10000000` | zero-padded 8-digit numeric |
+| **Requisition Ref#** | `Requisition.referenceNo` | `requisitionRef` | `1000` | plain numeric (e.g. `1460`) |
+| **Client account no.** | `Client.accountNo` | `clientAccountNo` | `100000` | `<LAB_PREFIX>-<n>` (e.g. `CYLB-577071`) |
+
+- **Requisition `referenceNo`:** import legacy Ref#s verbatim; seed
+  `requisitionRef` to `max(numeric imported referenceNo)` per lab.
+- **Client `accountNo`:** import legacy AC#s **verbatim** (including the legacy
+  prefix, e.g. `CYLB-577071`). For 2.0-generated numbers the prefix is derived
+  from the lab slug; seed `clientAccountNo` to the max **numeric part** of the
+  imported account numbers per lab. Because imports are verbatim, a legacy
+  prefix that differs from the derived one is preserved as-is.
+
 ### Age (`Patient.age` → derived, not stored)
 
 - 2.0 **derives age from `dateOfBirth`** (read-only, computed); it is not stored
@@ -148,6 +169,40 @@ on the client form. 2.0 uses **invite-based** provisioning (Finding 2, option B)
 - **Post-migration check:** every imported `PortalUser` has `passwordHash = null`
   (no legacy password leaked into 2.0) and a unique `(labId, email)` /
   `(labId, username)`.
+
+## Requisitions
+
+### Ref# (`Requisition.referenceNo`)
+
+- Seeded-counter identifier — see the shared pattern above (`requisitionRef`,
+  base `1000`, plain numeric). Import legacy Ref#s **verbatim**.
+
+### Money: Float → Int (minor units / cents) — ⚠️ convert on import
+
+- 2.0 stores all money as **integer minor units (cents)**, never floats
+  (Phase 4 standard). `Requisition.amount` and `RequisitionLine.amount` were
+  changed from `Float` to `Int`.
+- **Import rule:** legacy float amounts (dollars, e.g. `50.00`) must be
+  **converted to integer cents: `round(amount × 100)`**. `50.00 → 5000`.
+- **Flag rounding:** use banker's/`round-half-up` consistently and **log any
+  amount whose `×100` is not already integral** (e.g. `19.999`), so
+  sub-cent legacy values are reviewed rather than silently rounded. The
+  requisition total is `Σ line amounts` — recompute it from the (converted)
+  line costs on import rather than trusting a separately-stored legacy total.
+- This applies to **every** money column migrated (bills, payments, services,
+  taxes already `Int`); requisition amounts were the last floats and are now
+  aligned.
+
+### Line form type + fulfillment
+
+- `RequisitionLine.formType` (`Gynecology` | `NonGynecology`) — map from the
+  legacy Gyn/Nongyn toggle; defaults to `Gynecology`.
+- `RequisitionLine.notes` (was `description`) — map legacy line notes.
+- **Ordered/Fulfilled/status are derived, not imported:** after records and
+  their `requisitionLine.recordId` links are imported, the requisition's
+  `Partial`/`Completed` status and each line's `isCompleted` are recomputed from
+  the linked records' statuses (fulfilled = `Completed`-or-beyond). Don't import
+  a stale legacy status; let the recompute set it.
 
 ## Roles / RBAC
 
