@@ -1,5 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { RoleScope } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+
+export interface RoleBody {
+  name: string;
+  description?: string;
+  isSuperRole?: boolean;
+  scope?: RoleScope;
+  permissionIds?: string[];
+}
 
 @Injectable()
 export class RolesService {
@@ -7,6 +16,7 @@ export class RolesService {
 
   findRoles() {
     return this.prisma.role.findMany({
+      orderBy: { name: 'asc' },
       include: { permissions: { include: { permission: true } } },
     });
   }
@@ -15,11 +25,14 @@ export class RolesService {
     return this.prisma.permission.findMany({ orderBy: { code: 'asc' } });
   }
 
-  createRole(body: { name: string; description?: string; permissionIds?: string[] }) {
+  createRole(body: RoleBody) {
     return this.prisma.role.create({
       data: {
         name: body.name,
         description: body.description,
+        isSuperRole: body.isSuperRole ?? false,
+        // Workspace enforcement is deferred; the column is still preserved.
+        scope: body.scope ?? RoleScope.User,
         permissions: body.permissionIds?.length
           ? { create: body.permissionIds.map((permissionId) => ({ permissionId })) }
           : undefined,
@@ -28,10 +41,7 @@ export class RolesService {
     });
   }
 
-  async updateRole(
-    id: string,
-    body: { name?: string; description?: string; permissionIds?: string[] },
-  ) {
+  async updateRole(id: string, body: Partial<RoleBody>) {
     const role = await this.prisma.role.findUnique({ where: { id } });
     if (!role) throw new NotFoundException('Role not found');
     return this.prisma.role.update({
@@ -39,6 +49,8 @@ export class RolesService {
       data: {
         name: body.name,
         description: body.description,
+        ...(body.isSuperRole !== undefined ? { isSuperRole: body.isSuperRole } : {}),
+        ...(body.scope !== undefined ? { scope: body.scope } : {}),
         ...(body.permissionIds
           ? {
               permissions: {

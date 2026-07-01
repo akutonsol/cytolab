@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { RolesService } from './roles.service';
+import { RoleBody, RolesService } from './roles.service';
 
 @ApiTags('roles')
 @ApiBearerAuth()
@@ -23,16 +23,13 @@ export class RolesController {
 
   @Post('roles')
   @RequirePermissions('permission:create')
-  createRole(@Body() body: { name: string; description?: string; permissionIds?: string[] }) {
+  createRole(@Body() body: RoleBody) {
     return this.roles.createRole(body);
   }
 
   @Put('roles/:id')
   @RequirePermissions('permission:change')
-  updateRole(
-    @Param('id') id: string,
-    @Body() body: { name?: string; description?: string; permissionIds?: string[] },
-  ) {
+  updateRole(@Param('id') id: string, @Body() body: Partial<RoleBody>) {
     return this.roles.updateRole(id, body);
   }
 
