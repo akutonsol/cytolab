@@ -3,55 +3,74 @@
 @tailwind utilities;
 
 /* ============================================================
-   Premium UI design foundation — token layer.
-   Single source of truth for both AntD (ConfigProvider reads a
-   few of these) and Tailwind (tailwind.config maps to them).
+   Premium UI design foundation — token layer (real design spec).
+   Single source of truth for AntD (ConfigProvider) + Tailwind.
    ============================================================ */
 :root {
-  /* Font — --font-jakarta is injected by next/font in layout.tsx */
-  --font-family: var(--font-jakarta), 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  /* Font — --font-inter is injected by next/font in layout.tsx */
+  --font-family: var(--font-inter), 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   /* Primary (blue — the app identity) */
   --color-primary: #4f7df9;
-  --color-primary-hover: #3d6ae5;
-  --color-primary-soft: #eaf0fe;
+  --color-primary-hover: #3b6cf5;
+  --color-primary-soft: #eaf1ff; /* light */
   --color-primary-on: #ffffff;
 
   /* Neutrals */
-  --color-bg: #f4f5f7;
+  --color-bg: #f6f8fc;
   --color-surface: #ffffff;
-  --color-surface-alt: #fafbfc;
-  --color-border: #edeff2;
-  --color-border-strong: #e1e4e9;
-  --color-text: #1a1d21;
+  --color-surface-alt: #fafbfd; /* table hover / subtle alt */
+  --color-border: #e6eaf2;
+  --color-border-card: #edf2f7; /* the 1px border on cards */
+  --color-border-strong: #e6eaf2;
+  --color-text: #111827; /* primary */
   --color-text-secondary: #6b7280;
-  --color-text-tertiary: #9ca3af;
+  --color-text-tertiary: #9ca3af; /* muted */
+  --color-text-disabled: #d1d5db;
+
+  /* Inputs */
+  --color-input-bg: #f7f8fc;
+  --color-placeholder: #a0aec0;
+
+  /* Accents */
+  --color-purple: #c7b9ff;
+  --color-card-blue: #dcebff;
+  --color-light-gray: #eef2f7;
 
   /* Semantic (status) */
-  --color-success: #16a34a;
+  --color-success: #22c55e;
   --color-success-soft: #dcfce7;
-  --color-warning: #d97706;
+  --color-warning: #f59e0b;
   --color-warning-soft: #fef3c7;
-  --color-danger: #dc2626;
+  --color-danger: #ef4444;
   --color-danger-soft: #fee2e2;
   --color-info: #4f7df9;
-  --color-info-soft: #eaf0fe;
+  --color-info-soft: #eaf1ff;
   --color-neutral-badge: #6b7280;
-  --color-neutral-badge-soft: #f1f3f5;
+  --color-neutral-badge-soft: #eef2f7;
 
   /* Pastel highlight cards */
-  --pastel-lavender: #e9e4f5;
-  --pastel-sky: #dde8f7;
+  --pastel-lavender: #c7b9ff;
+  --pastel-sky: #dcebff;
   --pastel-peach: #fbe4d8;
 
-  /* Shape / elevation */
-  --radius-card: 20px;
-  --radius-control: 12px;
+  /* Radii */
+  --radius-card: 24px;
+  --radius-card-lg: 28px; /* profile cards */
+  --radius-modal: 32px;
+  --radius-button: 14px;
+  --radius-input: 18px;
+  --radius-control: 14px; /* button default */
   --radius-pill: 999px;
-  /* Cards float on the gray canvas via a soft, diffuse shadow — not a border. */
-  --shadow-card: 0 2px 12px rgba(17, 24, 39, 0.05), 0 1px 3px rgba(17, 24, 39, 0.03);
-  --shadow-card-hover: 0 10px 28px rgba(17, 24, 39, 0.1), 0 2px 6px rgba(17, 24, 39, 0.05);
-  --shadow-float: 0 8px 24px rgba(16, 24, 40, 0.12);
+  --radius-avatar: 999px;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-card: 0 12px 30px rgba(16, 24, 40, 0.05);
+  --shadow-md: 0 8px 24px rgba(16, 24, 40, 0.06);
+  --shadow-lg: 0 20px 50px rgba(16, 24, 40, 0.08);
+  --shadow-card-hover: 0 20px 50px rgba(16, 24, 40, 0.08);
+  --shadow-float: 0 8px 24px rgba(16, 24, 40, 0.06);
 }
 
 /* Minimal base (Tailwind preflight is disabled so AntD's reset stays intact) */
@@ -70,7 +89,7 @@ body {
   color: var(--color-text);
   background: var(--color-bg);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-osmoothing: grayscale;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Thin, quiet scrollbars inside premium scroll regions */

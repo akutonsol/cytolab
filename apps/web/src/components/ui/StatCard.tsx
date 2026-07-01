@@ -26,7 +26,7 @@ export function StatCard({ label, value, suffix, sublabel, icon, action, active,
   return (
     <div
       className={cn(
-        'flex flex-col justify-between gap-2.5 rounded-card bg-surface p-4 transition-shadow',
+        'flex flex-col justify-between gap-2.5 rounded-card border border-card bg-surface p-5 transition-shadow',
         active ? 'shadow-card-hover ring-1 ring-primary/25' : 'shadow-card',
         className,
       )}

@@ -213,7 +213,7 @@ export default function DesignSystemPage() {
                 { label: 'Efficiency', value: '78%', data: SPARK_B, color: '#1a1d21' },
                 { label: 'Unit Cost', value: '$360', data: SPARK_C, color: '#4f7df9' },
               ].map((t) => (
-                <div key={t.label} className="flex items-center gap-3 rounded-card bg-surface p-4 shadow-card">
+                <div key={t.label} className="flex items-center gap-3 rounded-card border border-card bg-surface p-5 shadow-card">
                   <div className="flex min-w-[70px] flex-col">
                     <span className="text-[22px] font-extrabold tracking-tight text-text">{t.value}</span>
                     <span className="text-meta text-text-tertiary">{t.label}</span>

@@ -78,11 +78,11 @@ function DefaultLogo() {
 
 function SearchBar({ placeholder }: { placeholder: string }) {
   return (
-    <div className="flex h-10 max-w-md flex-1 items-center gap-2 rounded-control border border-border bg-surface px-3 text-text-tertiary">
+    <div className="flex h-11 max-w-md flex-1 items-center gap-2 rounded-input bg-inputbg px-4 text-text-tertiary">
       <SearchOutlined />
       <input
         placeholder={placeholder}
-        className="w-full border-0 bg-transparent text-sm text-text outline-none placeholder:text-text-tertiary"
+        className="w-full border-0 bg-transparent text-small text-text outline-none placeholder:text-placeholder"
       />
     </div>
   );

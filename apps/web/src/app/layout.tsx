@@ -1,13 +1,13 @@
 import './globals.css';
-import { Plus_Jakarta_Sans } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import { Providers } from './providers';
 
-// Self-hosted at build time; exposed as the --font-jakarta CSS variable that
-// globals.css folds into --font-family (with Inter / system-ui fallbacks).
-const jakarta = Plus_Jakarta_Sans({
+// Self-hosted at build time; exposed as the --font-inter CSS variable that
+// globals.css folds into --font-family (with system-ui fallbacks).
+const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-jakarta',
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-inter',
   display: 'swap',
 });
 
@@ -18,7 +18,7 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={jakarta.variable}>
+    <html lang="en" className={inter.variable}>
       <body>
         <Providers>{children}</Providers>
       </body>

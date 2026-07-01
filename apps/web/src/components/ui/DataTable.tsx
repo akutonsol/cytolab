@@ -114,7 +114,7 @@ export function DataTable<T>({
                 className={cn(
                   'group relative border-b border-border transition-colors',
                   onRowClick && 'cursor-pointer',
-                  isActive ? 'bg-primary-soft' : 'hover:bg-[#f7f9fc]',
+                  isActive ? 'bg-primary-soft' : 'hover:bg-surface-alt',
                 )}
               >
                 {selectable && (
