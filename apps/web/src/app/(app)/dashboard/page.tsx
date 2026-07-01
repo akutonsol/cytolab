@@ -59,7 +59,7 @@ function DatePill() {
 function Stat({ value, label, dot }: { value: React.ReactNode; label: string; dot?: string }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-h3 font-extrabold leading-tight tracking-tight text-text">{value}</span>
+      <span className="text-[30px] font-extrabold leading-none tracking-tight text-text">{value}</span>
       <span className="flex items-center gap-1.5 text-small font-medium text-text-secondary">
         {dot && <span className="h-2 w-2 rounded-full" style={{ background: dot }} />}{label}
       </span>
@@ -141,9 +141,9 @@ export default function DashboardPage() {
                 <IconBtn onClick={() => router.push('/analytics')}><ArrowUpRight size={16} /></IconBtn>
               </div>
               <div className="flex-1"><RadarMetrics data={d.radar} /></div>
-              <div className="mt-1 flex items-center justify-center gap-4">
-                <span className="flex items-center gap-1.5 text-small font-medium text-text-secondary"><span className="h-2.5 w-2.5 rounded-full bg-primary" /> This period</span>
-                <span className="flex items-center gap-1.5 text-small font-medium text-text-secondary"><span className="h-2.5 w-2.5 rounded-full bg-text" /> Last period</span>
+              <div className="mt-2 flex flex-col gap-2 pl-2">
+                <span className="flex items-center gap-2.5 text-[15px] font-semibold text-text"><span className="h-3 w-3 rounded-full bg-primary" /> This period</span>
+                <span className="flex items-center gap-2.5 text-[15px] font-semibold text-text"><span className="h-3 w-3 rounded-full bg-text" /> Last period</span>
               </div>
             </div>
           </div>

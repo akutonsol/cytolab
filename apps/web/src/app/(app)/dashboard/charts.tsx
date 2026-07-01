@@ -11,25 +11,25 @@ const PURPLE = '#a68fe0';
 const INK = '#0f172a';
 const AXIS = '#6b7280';
 const GRID = '#e8edf4';
-const BAR = '#b6bdca';
+const BAR = '#454b57';
 
-/* ---- Dense daily throughput "comb"; peak day = blue line + dot (ref: orange) ---- */
+/* ---- Dense daily throughput "comb": thick charcoal bars; peak = blue lollipop (ref) ---- */
 export function ThroughputComb({ data, height = 280 }: { data: any[]; height?: number }) {
   const peakIdx = data.findIndex((d) => d.peak);
   const peak = data[peakIdx];
   const ticks = data.filter((d) => d.label).map((d) => d.i);
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={data} margin={{ top: 18, right: 8, bottom: 4, left: 4 }} barCategoryGap="6%">
-        <CartesianGrid vertical={false} stroke={GRID} strokeDasharray="4 5" />
+      <BarChart data={data} margin={{ top: 18, right: 8, bottom: 4, left: 4 }} barCategoryGap="16%">
+        <CartesianGrid vertical={false} stroke={GRID} strokeDasharray="5 6" />
         <XAxis dataKey="i" type="number" domain={[0, data.length - 1]} axisLine={false} tickLine={false}
           ticks={ticks} tickFormatter={(i) => data[i]?.label ?? ''} tick={{ fontSize: 13, fill: AXIS, fontWeight: 500 }} dy={8} />
         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 13, fill: AXIS, fontWeight: 500 }} width={36}
           tickFormatter={(v) => (v >= 1000 ? `${v / 1000}K` : `${v}`)} />
-        {peak && <ReferenceLine x={peakIdx} stroke={BLUE_DEEP} strokeWidth={2.5} />}
-        {peak && <ReferenceDot x={peakIdx} y={peak.value} r={5} fill={BLUE_DEEP} stroke="#fff" strokeWidth={2.5} />}
-        <Bar dataKey="value" isAnimationActive animationDuration={900} animationEasing="ease-out" maxBarSize={5} radius={[3, 3, 0, 0]}>
-          {data.map((d, i) => <Cell key={i} fill={d.peak ? BLUE_DEEP : BAR} />)}
+        {peak && <ReferenceLine segment={[{ x: peakIdx, y: 0 }, { x: peakIdx, y: peak.value }]} stroke={BLUE_DEEP} strokeWidth={3} ifOverflow="visible" />}
+        {peak && <ReferenceDot x={peakIdx} y={peak.value} r={6} fill={BLUE_DEEP} stroke="#fff" strokeWidth={2.5} />}
+        <Bar dataKey="value" isAnimationActive animationDuration={900} animationEasing="ease-out" maxBarSize={7} radius={[3.5, 3.5, 0, 0]}>
+          {data.map((d, i) => <Cell key={i} fill={d.peak ? 'transparent' : BAR} />)}
         </Bar>
       </BarChart>
     </ResponsiveContainer>
@@ -44,10 +44,10 @@ export function RadarMetrics({ data, height = 280 }: { data: any[]; height?: num
         <PolarGrid stroke={GRID} />
         <PolarAngleAxis dataKey="dim" tick={{ fontSize: 13, fill: AXIS, fontWeight: 600 }} />
         <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10, fill: '#b8bec9' }} tickCount={3} axisLine={false} />
-        <Radar name="Last period" dataKey="previous" stroke={INK} fill={INK} fillOpacity={0.06} strokeWidth={2}
-          isAnimationActive animationDuration={900} dot={{ r: 3, fill: INK }} />
-        <Radar name="This period" dataKey="current" stroke={BLUE} fill={BLUE} fillOpacity={0.2} strokeWidth={2.5}
-          isAnimationActive animationDuration={1000} dot={{ r: 3.5, fill: BLUE }} />
+        <Radar name="Last period" dataKey="previous" stroke={INK} fill={INK} fillOpacity={0.05} strokeWidth={2}
+          isAnimationActive animationDuration={900} dot={{ r: 4, fill: '#fff', stroke: INK, strokeWidth: 2 }} />
+        <Radar name="This period" dataKey="current" stroke={BLUE} fill={BLUE} fillOpacity={0.18} strokeWidth={2.5}
+          isAnimationActive animationDuration={1000} dot={{ r: 4.5, fill: '#fff', stroke: BLUE, strokeWidth: 2 }} />
       </RadarChart>
     </ResponsiveContainer>
   );
@@ -76,10 +76,10 @@ export function OeeDonut({ value, inner, size = 216 }: { value: number; inner: n
   );
   return (
     <div style={{ position: 'relative', width: size, height: size }}>
-      {ring(value, 'url(#oeeGrad)', '70%', '100%', 17, 'outer')}
-      {ring(inner, PURPLE, '46%', '63%', 9, 'inner', 250)}
+      {ring(value, 'url(#oeeGrad)', '72%', '100%', 18, 'outer')}
+      {ring(inner, PURPLE, '48%', '70%', 14, 'inner', 250)}
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: 34, fontWeight: 800, color: INK, letterSpacing: '-0.02em' }}>{value}%</span>
+        <span style={{ fontSize: 36, fontWeight: 800, color: INK, letterSpacing: '-0.02em' }}>{value}%</span>
         <span style={{ fontSize: 13, color: AXIS, fontWeight: 700, letterSpacing: '0.06em' }}>OEE</span>
       </div>
     </div>
