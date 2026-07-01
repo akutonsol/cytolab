@@ -3,27 +3,30 @@ import {
   IsBoolean,
   IsDate,
   IsEnum,
+  IsInt,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
+  Min,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { RequisitionStatus } from '@prisma/client';
+import { RequisitionFormType, RequisitionStatus } from '@prisma/client';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 
 export class CreateRequisitionLineDto {
+  @IsEnum(RequisitionFormType) @IsOptional() formType?: RequisitionFormType;
   @IsBoolean() @IsOptional() isUrgent?: boolean;
-  @IsString() @IsOptional() description?: string;
-  @IsNumber() @IsOptional() amount?: number;
+  @IsString() @IsOptional() notes?: string;
+  // Line cost in minor units (cents).
+  @IsInt() @Min(0) @IsOptional() @Type(() => Number) amount?: number;
 }
 
 export class CreateRequisitionDto {
   @IsString() @IsOptional() clientId?: string;
   @IsString() @IsOptional() workspaceId?: string;
   @IsDate() @IsOptional() @Type(() => Date) dateReceived?: Date;
-  @IsNumber() @IsOptional() amount?: number;
+  // Requisition total is derived from the line costs; not accepted from input.
 
   @IsArray()
   @IsOptional()
@@ -34,10 +37,11 @@ export class CreateRequisitionDto {
 
 export class UpdateRequisitionLineDto {
   @IsString() @IsNotEmpty() id!: string;
+  @IsEnum(RequisitionFormType) @IsOptional() formType?: RequisitionFormType;
   @IsBoolean() @IsOptional() isUrgent?: boolean;
   @IsBoolean() @IsOptional() isCompleted?: boolean;
-  @IsString() @IsOptional() description?: string;
-  @IsNumber() @IsOptional() amount?: number;
+  @IsString() @IsOptional() notes?: string;
+  @IsInt() @Min(0) @IsOptional() @Type(() => Number) amount?: number;
   @IsString() @IsOptional() recordId?: string;
 }
 

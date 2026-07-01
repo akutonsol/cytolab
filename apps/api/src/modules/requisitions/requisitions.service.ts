@@ -1,36 +1,51 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { LabContext } from '../../common/tenancy/lab-context';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
+import { allocateSequence, isUniqueConflict } from '../../common/util/lab-sequence';
 import { CreateRequisitionDto, RequisitionQueryDto } from './dto/requisition.dto';
+
+// Human-facing requisition number (legacy Ref#, e.g. 1460). Plain numeric, no
+// prefix. Fresh lab starts at REF_BASE+1; migration seeds to max(numeric
+// imported). Same atomic seeded-counter pattern as patient registrationNo.
+const REF_SEQUENCE = 'requisitionRef';
+const REF_BASE = 1_000n;
+const MAX_REF_RETRIES = 5;
 
 const requisitionSelect = {
   id: true,
+  referenceNo: true,
   status: true,
   amount: true,
-  entriesCompleted: true,
   clientId: true,
-  client: { select: { id: true, firstName: true, lastName: true, officeName: true } },
+  client: { select: { id: true, firstName: true, lastName: true, officeName: true, accountNo: true } },
   workspaceId: true,
   dateReceived: true,
   lines: {
     select: {
       id: true,
+      formType: true,
       isUrgent: true,
       isCompleted: true,
-      description: true,
+      notes: true,
       amount: true,
       recordId: true,
     },
   },
+  // Ordered/Fulfilled counts for the list view.
+  _count: { select: { lines: true } },
   createdAt: true,
   updatedAt: true,
 } as const;
 
 @Injectable()
 export class RequisitionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private labContext: LabContext,
+  ) {}
 
   // Requisition queries are lab-scoped automatically by the tenancy extension.
   async findAll(query: RequisitionQueryDto) {
@@ -86,23 +101,50 @@ export class RequisitionsService {
 
   async create(dto: CreateRequisitionDto) {
     const { lines, ...rest } = dto;
-    return this.prisma.requisition.create({
-      data: tenantCreate<Prisma.RequisitionUncheckedCreateInput>({
-        ...rest,
-        lines: lines?.length
-          ? {
-              create: lines.map((l) =>
-                tenantCreate<Prisma.RequisitionLineUncheckedCreateWithoutRequisitionInput>({
-                  isUrgent: l.isUrgent ?? false,
-                  description: l.description,
-                  amount: l.amount ?? 0,
-                }),
-              ),
-            }
-          : undefined,
-      }),
-      select: requisitionSelect,
-    });
+    // Batch total = Σ line costs (cents).
+    const amount = (lines ?? []).reduce((sum, l) => sum + (l.amount ?? 0), 0);
+    const linesCreate = lines?.length
+      ? {
+          create: lines.map((l) =>
+            tenantCreate<Prisma.RequisitionLineUncheckedCreateWithoutRequisitionInput>({
+              formType: l.formType ?? undefined,
+              isUrgent: l.isUrgent ?? false,
+              notes: l.notes,
+              amount: l.amount ?? 0,
+            }),
+          ),
+        }
+      : undefined;
+
+    // Atomic seeded Ref# with the unique-constraint retry backstop.
+    for (let attempt = 0; ; attempt++) {
+      const referenceNo = await this.allocateReferenceNo();
+      try {
+        return await this.prisma.requisition.create({
+          data: tenantCreate<Prisma.RequisitionUncheckedCreateInput>({
+            referenceNo,
+            amount,
+            ...rest,
+            lines: linesCreate,
+          }),
+          select: requisitionSelect,
+        });
+      } catch (e) {
+        if (isUniqueConflict(e, 'referenceNo') && attempt < MAX_REF_RETRIES) continue;
+        if (isUniqueConflict(e, 'referenceNo')) {
+          throw new ConflictException('Could not allocate a unique requisition number; please retry');
+        }
+        throw e;
+      }
+    }
+  }
+
+  /** Allocate the next requisition Ref# for the current lab (atomic, seeded). */
+  private async allocateReferenceNo(): Promise<string> {
+    const labId = this.labContext.getLabId();
+    if (!labId) throw new Error('Cannot allocate a requisition number with no lab context');
+    const value = await allocateSequence(this.prisma, labId, REF_SEQUENCE, REF_BASE);
+    return value.toString();
   }
 
   async remove(id: string) {

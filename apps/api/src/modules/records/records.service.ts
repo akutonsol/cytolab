@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, RecordStatus } from '@prisma/client';
+import { Prisma, RecordStatus, RequisitionStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
@@ -39,6 +39,15 @@ const recordSelect = {
 } as const;
 
 // Valid forward transitions; OnHold / Disabled / Failed can be set from any non-terminal state
+// A requisition line is "fulfilled" once its record reaches Completed or beyond.
+const FULFILLED_STATUSES: RecordStatus[] = [
+  RecordStatus.Completed,
+  RecordStatus.Approved,
+  RecordStatus.Billed,
+  RecordStatus.Paid,
+  RecordStatus.Viewed,
+];
+
 const ALLOWED_TRANSITIONS: Partial<Record<RecordStatus, RecordStatus[]>> = {
   [RecordStatus.Pending]:    [RecordStatus.Submitted, RecordStatus.OnHold, RecordStatus.Disabled],
   [RecordStatus.Submitted]:  [RecordStatus.Processing, RecordStatus.OnHold, RecordStatus.Disabled],
@@ -234,7 +243,7 @@ export class RecordsService {
       throw new BadRequestException(`Cannot transition from ${current} to ${newStatus}`);
     }
 
-    return this.prisma.record.update({
+    const updated = await this.prisma.record.update({
       where: { id },
       data: {
         status: newStatus,
@@ -249,6 +258,43 @@ export class RecordsService {
       },
       select: recordSelect,
     });
+
+    // Batch fulfillment: cache the line's fulfilled flag off this record's new
+    // status, then recompute the parent requisition's Partial/Completed status.
+    await this.syncRequisitionForRecord(id, newStatus);
+    return updated;
+  }
+
+  /**
+   * Reflect a record's new status onto its requisition line(s) and recompute the
+   * parent requisition. A line is fulfilled once its record reaches Completed+.
+   * A requisition is Completed only when every line is fulfilled, otherwise
+   * Partial — so a regression (a fulfilled record dropping back) flips it to
+   * Partial again.
+   */
+  private async syncRequisitionForRecord(recordId: string, newStatus: RecordStatus) {
+    const lines = await this.prisma.requisitionLine.findMany({
+      where: { recordId },
+      select: { requisitionId: true },
+    });
+    if (!lines.length) return;
+
+    const fulfilled = FULFILLED_STATUSES.includes(newStatus);
+    await this.prisma.requisitionLine.updateMany({ where: { recordId }, data: { isCompleted: fulfilled } });
+
+    const requisitionIds = [...new Set(lines.map((l) => l.requisitionId))];
+    for (const requisitionId of requisitionIds) {
+      const all = await this.prisma.requisitionLine.findMany({
+        where: { requisitionId },
+        select: { isCompleted: true },
+      });
+      const ordered = all.length;
+      const fulfilledCount = all.filter((l) => l.isCompleted).length;
+      if (ordered === 0) continue;
+      const status =
+        fulfilledCount === ordered ? RequisitionStatus.Completed : RequisitionStatus.Partial;
+      await this.prisma.requisition.update({ where: { id: requisitionId }, data: { status } });
+    }
   }
 
   private generateIdentifier() {

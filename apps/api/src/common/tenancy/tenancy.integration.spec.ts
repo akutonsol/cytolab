@@ -45,7 +45,7 @@ describeIf('tenancy guard — cross-lab isolation (integration)', () => {
     const client = await raw.client.create({ data: { labId: lab.id, firstName: 'C', lastName: key } });
     const requisition = await raw.requisition.create({ data: { labId: lab.id } });
     const line = await raw.requisitionLine.create({
-      data: { labId: lab.id, requisitionId: requisition.id, description: `line-${key}` },
+      data: { labId: lab.id, requisitionId: requisition.id, notes: `line-${key}` },
     });
     const record = await raw.record.create({
       data: { labId: lab.id, identifier: `${tag}-${key}-R`, patientId: patient.id },

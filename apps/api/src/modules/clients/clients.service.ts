@@ -1,13 +1,22 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { ClientTypeEnum, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { LabContext } from '../../common/tenancy/lab-context';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
+import { allocateSequence, isUniqueConflict } from '../../common/util/lab-sequence';
 import { PortalUsersService } from '../portal/portal-users/portal-users.service';
 import { ClientQueryDto, CreateClientDto, CreateClientTypeDto, UpdateClientDto } from './dto/client.dto';
 
+// Client account number (legacy AC#, e.g. CYLB-577071): lab-code prefix + a
+// seeded per-lab counter. Migration imports legacy values verbatim.
+const ACCT_SEQUENCE = 'clientAccountNo';
+const ACCT_BASE = 100_000n;
+const MAX_ACCT_RETRIES = 5;
+
 const clientSelect = {
   id: true,
+  accountNo: true,
   firstName: true,
   lastName: true,
   officeName: true,
@@ -39,7 +48,19 @@ export class ClientsService {
   constructor(
     private prisma: PrismaService,
     private portalUsers: PortalUsersService,
+    private labContext: LabContext,
   ) {}
+
+  /** Allocate a lab-unique account number: <PREFIX>-<seeded counter>. */
+  private async allocateAccountNo(): Promise<string> {
+    const labId = this.labContext.getLabId();
+    if (!labId) throw new Error('Cannot allocate an account number with no lab context');
+    // Prefix derived from the lab slug (Lab is not lab-scoped; read directly).
+    const lab = await this.prisma.lab.findUnique({ where: { id: labId }, select: { slug: true } });
+    const prefix = (lab?.slug ?? 'lab').replace(/[^a-z0-9]/gi, '').slice(0, 4).toUpperCase() || 'LAB';
+    const value = await allocateSequence(this.prisma, labId, ACCT_SEQUENCE, ACCT_BASE);
+    return `${prefix}-${value}`;
+  }
 
   private addressCreate(addresses?: { line1: string }[]) {
     if (!addresses?.length) return undefined;
@@ -105,14 +126,29 @@ export class ClientsService {
 
     const clientTypeId = (await this.resolveClientTypeId(clientType)) ?? rest.clientTypeId;
 
-    const client = await this.prisma.client.create({
-      data: tenantCreate<Prisma.ClientUncheckedCreateInput>({
-        ...rest,
-        clientTypeId,
-        addresses: this.addressCreate(addresses),
-      }),
-      select: clientSelect,
-    });
+    // Atomic seeded account number with the unique-constraint retry backstop.
+    let client;
+    for (let attempt = 0; ; attempt++) {
+      const accountNo = await this.allocateAccountNo();
+      try {
+        client = await this.prisma.client.create({
+          data: tenantCreate<Prisma.ClientUncheckedCreateInput>({
+            accountNo,
+            ...rest,
+            clientTypeId,
+            addresses: this.addressCreate(addresses),
+          }),
+          select: clientSelect,
+        });
+        break;
+      } catch (e) {
+        if (isUniqueConflict(e, 'accountNo') && attempt < MAX_ACCT_RETRIES) continue;
+        if (isUniqueConflict(e, 'accountNo')) {
+          throw new ConflictException('Could not allocate a unique account number; please retry');
+        }
+        throw e;
+      }
+    }
 
     // Auth Information → create the client's PORTAL login and email the F2 setup
     // invite. Staff never set the password.

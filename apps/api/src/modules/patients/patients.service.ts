@@ -5,7 +5,7 @@ import { LabContext } from '../../common/tenancy/lab-context';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { CreatePatientDto, PatientQueryDto, UpdatePatientDto } from './dto/patient.dto';
-import { randomUUID } from 'crypto';
+import { allocateSequence, isUniqueConflict } from '../../common/util/lab-sequence';
 
 // The registration-number counter (LabSequence "patientRegNo") starts here for a
 // lab with no migration seed, so the first generated number is REG_BASE + 1
@@ -112,8 +112,8 @@ export class PatientsService {
           select: patientSelect,
         });
       } catch (e) {
-        if (this.isRegNoConflict(e) && attempt < MAX_REGNO_RETRIES) continue;
-        if (this.isRegNoConflict(e)) {
+        if (isUniqueConflict(e, 'registrationNo') && attempt < MAX_REGNO_RETRIES) continue;
+        if (isUniqueConflict(e, 'registrationNo')) {
           throw new ConflictException('Could not allocate a unique registration number; please retry');
         }
         throw e;
@@ -121,35 +121,14 @@ export class PatientsService {
     }
   }
 
-  /**
-   * Allocate the next registration number for the current lab from the
-   * LabSequence counter. The INSERT … ON CONFLICT DO UPDATE … RETURNING is a
-   * single atomic statement, so concurrent allocations are serialized by the
-   * row lock and can never return the same value. (Raw SQL bypasses the tenancy
-   * extension, so labId is passed explicitly.)
-   */
+  /** Allocate the next registration number for the current lab (atomic, seeded). */
   private async allocateRegNo(): Promise<string> {
     const labId = this.labContext.getLabId();
     if (!labId) {
       throw new Error('Cannot allocate a registration number with no lab context');
     }
-    const rows = await this.prisma.$queryRaw<{ value: bigint }[]>`
-      INSERT INTO "LabSequence" ("id", "labId", "name", "value", "updatedAt")
-      VALUES (${randomUUID()}, ${labId}, ${REG_SEQUENCE}, ${REG_BASE + 1n}, now())
-      ON CONFLICT ("labId", "name")
-      DO UPDATE SET "value" = "LabSequence"."value" + 1, "updatedAt" = now()
-      RETURNING "value";
-    `;
-    return rows[0].value.toString().padStart(REG_PAD, '0');
-  }
-
-  private isRegNoConflict(e: unknown): boolean {
-    if (!(e instanceof Prisma.PrismaClientKnownRequestError) || e.code !== 'P2002') return false;
-    // The unique index is @@unique([labId, registrationNo]). When Prisma reports
-    // the target columns, confirm it's the regno; otherwise treat any P2002 from
-    // the patient insert as the regno collision.
-    const target = (e.meta as any)?.target;
-    return Array.isArray(target) ? target.includes('registrationNo') : true;
+    const value = await allocateSequence(this.prisma, labId, REG_SEQUENCE, REG_BASE);
+    return value.toString().padStart(REG_PAD, '0');
   }
 
   async update(id: string, dto: UpdatePatientDto) {
