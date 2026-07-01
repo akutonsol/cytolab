@@ -2,18 +2,16 @@
 
 import { createElement, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Button, Layout, Menu, Spin, Tooltip, Typography } from 'antd';
-import { BellOutlined, LogoutOutlined, SearchOutlined } from '@ant-design/icons';
-import { NAV_GROUPS } from '@/lib/nav';
+import { Drawer, Dropdown, Grid, Menu, Spin, Tooltip, Typography } from 'antd';
+import {
+  BellOutlined, DownOutlined, LogoutOutlined, MenuOutlined, PlusOutlined, SearchOutlined, SettingOutlined,
+} from '@ant-design/icons';
+import type { MenuProps } from 'antd';
+import { ACCOUNT_GROUP_KEY, ANALYTICS_ITEM, CENTER_GROUP_KEYS, NAV_GROUPS } from '@/lib/nav';
 import { useAuth, useAuthStore } from '@/lib/auth';
 import { refreshSession } from '@/lib/api';
 
-const { Header, Sider, Content } = Layout;
-
-// Routes that use the horizontal top-nav (Modo-style) instead of the sidebar.
-const TOP_NAV_ROUTES = new Set(['/analytics']);
-
-function Logo({ compact }: { compact?: boolean }) {
+function Logo() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
       <div style={{ width: 34, height: 34, borderRadius: 10, background: '#4f7df9', display: 'grid', placeItems: 'center', color: '#fff', flexShrink: 0 }}>
@@ -22,7 +20,7 @@ function Logo({ compact }: { compact?: boolean }) {
           <path d="M10 6.5v7M6.5 10h7" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
         </svg>
       </div>
-      {!compact && <span style={{ fontWeight: 700, fontSize: 18, color: '#111827' }}>Cytolab</span>}
+      <span style={{ fontWeight: 700, fontSize: 18, color: '#111827' }}>Cytolab</span>
     </div>
   );
 }
@@ -32,53 +30,48 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { claims, hydrated, isAuthed, stale, can } = useAuth();
   const clear = useAuthStore((s) => s.clear);
-  const [collapsed, setCollapsed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const screens = Grid.useBreakpoint();
 
-  // Restore persisted collapse state after mount.
-  useEffect(() => {
-    if (typeof window !== 'undefined') setCollapsed(localStorage.getItem('cytolab-nav-collapsed') === '1');
-  }, []);
-  const toggleCollapsed = (c: boolean) => {
-    setCollapsed(c);
-    if (typeof window !== 'undefined') localStorage.setItem('cytolab-nav-collapsed', c ? '1' : '0');
-  };
-
-  useEffect(() => {
-    if (hydrated && !isAuthed) router.replace('/login');
-  }, [hydrated, isAuthed, router]);
-
+  useEffect(() => { if (hydrated && !isAuthed) router.replace('/login'); }, [hydrated, isAuthed, router]);
   useEffect(() => {
     if (hydrated && isAuthed && stale && !refreshing) {
       setRefreshing(true);
-      refreshSession()
-        .then((ok) => { if (!ok) { clear(); router.replace('/login'); } })
-        .finally(() => setRefreshing(false));
+      refreshSession().then((ok) => { if (!ok) { clear(); router.replace('/login'); } }).finally(() => setRefreshing(false));
     }
   }, [hydrated, isAuthed, stale, refreshing, clear, router]);
 
-  const menuItems = useMemo(
+  const navigate = (key: string) => { setDrawerOpen(false); router.push(key); };
+
+  // Center dropdown groups (permission-filtered; group hidden when it has no items).
+  const centerGroups = useMemo(
     () =>
-      NAV_GROUPS.map((group) => {
-        const items = group.items.filter((i) => can(i.permission));
-        if (items.length === 0) return null;
-        return { key: group.key, label: group.label, icon: createElement(group.icon), children: items.map((i) => ({ key: i.path, label: i.label })) };
-      }).filter(Boolean) as NonNullable<unknown>[],
+      CENTER_GROUP_KEYS.map((k) => NAV_GROUPS.find((g) => g.key === k))
+        .filter(Boolean)
+        .map((g) => ({ ...(g as any), visible: (g as any).items.filter((i: any) => can(i.permission)) }))
+        .filter((g) => g.visible.length > 0),
     [claims], // eslint-disable-line react-hooks/exhaustive-deps
   );
+  const analyticsVisible = can(ANALYTICS_ITEM.permission);
+  const accountGroup = NAV_GROUPS.find((g) => g.key === ACCOUNT_GROUP_KEY)!;
+  const accountItems = accountGroup.items.filter((i) => can(i.permission));
 
-  // Top-nav links: one per accessible group → its first item.
-  const topLinks = useMemo(
+  const groupActive = (items: any[]) => items.some((i: any) => i.path === pathname);
+
+  // Full grouped menu (used in the mobile drawer).
+  const drawerMenu: MenuProps['items'] = useMemo(
     () =>
-      NAV_GROUPS.map((g) => {
-        const items = g.items.filter((i) => can(i.permission));
-        return items.length ? { key: g.key, label: g.label, path: items[0].path, paths: items.map((i) => i.path) } : null;
-      }).filter(Boolean) as { key: string; label: string; path: string; paths: string[] }[],
+      [
+        ...NAV_GROUPS.map((group) => {
+          const items = group.items.filter((i) => can(i.permission));
+          if (!items.length) return null;
+          return { key: group.key, label: group.label, icon: createElement(group.icon), children: items.map((i) => ({ key: i.path, label: i.label })) };
+        }).filter(Boolean),
+        analyticsVisible ? { key: ANALYTICS_ITEM.path, label: ANALYTICS_ITEM.label } : null,
+      ].filter(Boolean) as MenuProps['items'],
     [claims], // eslint-disable-line react-hooks/exhaustive-deps
   );
-  const activeGroup = NAV_GROUPS.find((g) => g.items.some((i) => i.path === pathname))?.key;
-
-  const openKeys = useMemo(() => NAV_GROUPS.map((g) => g.key), []);
 
   if (!hydrated || !isAuthed || stale || refreshing) {
     return (
@@ -92,66 +85,90 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const logout = () => { clear(); router.replace('/login'); };
   const initials = (claims?.email ?? '?').slice(0, 2).toUpperCase();
 
-  // ---- Top-nav variant (Analytics) ----
-  if (TOP_NAV_ROUTES.has(pathname)) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f6f8fc', display: 'flex', flexDirection: 'column' }}>
-        <header style={{ display: 'flex', alignItems: 'center', gap: 32, background: '#fff', padding: '12px 32px', borderBottom: '1px solid #edf2f7' }}>
-          <Logo />
-          <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            {topLinks.map((l) => {
-              const active = l.key === activeGroup;
+  // Account (avatar) dropdown: email header + admin/platform sections + Settings + Sign out.
+  const accountMenu: MenuProps = {
+    items: [
+      { key: 'who', label: <span style={{ color: '#9ca3af', fontSize: 12 }}>{claims?.email}</span>, disabled: true },
+      { type: 'divider' },
+      ...accountItems.map((i) => ({ key: i.path, label: i.label, icon: i.path === '/settings' ? <SettingOutlined /> : undefined })),
+      ...(accountItems.length ? [{ type: 'divider' as const }] : []),
+      { key: 'logout', label: 'Sign out', icon: <LogoutOutlined />, danger: true },
+    ],
+    onClick: ({ key }) => (key === 'logout' ? logout() : navigate(key)),
+  };
+
+  const quickAdd: MenuProps = {
+    items: [
+      { key: '/patients', label: 'New patient' },
+      { key: '/requisitions', label: 'New requisition' },
+      { key: '/records', label: 'New record' },
+    ].filter((i) => can(NAV_GROUPS.flatMap((g) => g.items).find((x) => x.path === i.key)?.permission)),
+    onClick: ({ key }) => navigate(key),
+  };
+
+  const showCenter = screens.lg; // hamburger below lg
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#f6f8fc', display: 'flex', flexDirection: 'column' }}>
+      <header style={{ display: 'flex', alignItems: 'center', gap: 20, background: '#fff', padding: '12px 32px', borderBottom: '1px solid #edf2f7', position: 'sticky', top: 0, zIndex: 20 }}>
+        {!showCenter && (
+          <button aria-label="Menu" onClick={() => setDrawerOpen(true)} style={iconBtn}><MenuOutlined /></button>
+        )}
+        <Logo />
+
+        {showCenter && (
+          <nav style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {centerGroups.map((g) => {
+              const active = groupActive(g.visible);
               return (
-                <button
-                  key={l.key}
-                  onClick={() => router.push(l.path)}
-                  style={{
-                    position: 'relative', border: 'none', background: 'transparent', cursor: 'pointer',
-                    padding: '8px 14px', fontSize: 15, fontWeight: 600,
-                    color: active ? '#4f7df9' : '#6b7280',
-                  }}
-                >
-                  {l.label}
-                  {active && <span style={{ position: 'absolute', left: 14, right: 14, bottom: -13, height: 2, background: '#4f7df9', borderRadius: 2 }} />}
-                </button>
+                <Dropdown key={g.key} trigger={['hover', 'click']} menu={{ items: g.visible.map((i: any) => ({ key: i.path, label: i.label })), onClick: ({ key }) => navigate(key) }}>
+                  <button style={navBtn(active)}>
+                    {g.label} <DownOutlined style={{ fontSize: 10 }} />
+                    {active && <span style={underline} />}
+                  </button>
+                </Dropdown>
               );
             })}
+            {analyticsVisible && (
+              <button onClick={() => navigate(ANALYTICS_ITEM.path)} style={navBtn(pathname === ANALYTICS_ITEM.path)}>
+                {ANALYTICS_ITEM.label}
+                {pathname === ANALYTICS_ITEM.path && <span style={underline} />}
+              </button>
+            )}
           </nav>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 44, width: 280, background: '#f7f8fc', borderRadius: 18, padding: '0 16px', color: '#9ca3af' }}>
+        )}
+
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+          {screens.md && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 48, width: 280, background: '#f7f8fc', borderRadius: 18, padding: '0 16px', color: '#9ca3af' }}>
               <SearchOutlined />
               <input placeholder="Quick search" style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: 14, color: '#111827' }} />
             </div>
-            <button className="grid-place" style={btnCircle}><BellOutlined /></button>
-            <Tooltip title={claims?.email}><div style={{ ...avatarCircle }}>{initials}</div></Tooltip>
-            <Tooltip title="Sign out"><button onClick={logout} style={btnCircle}><LogoutOutlined /></button></Tooltip>
-          </div>
-        </header>
-        <main className="premium-scroll" style={{ flex: 1, overflow: 'auto', padding: 32 }}>{children}</main>
-      </div>
-    );
-  }
-
-  // ---- Default: collapsible sidebar ----
-  return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider collapsible collapsed={collapsed} onCollapse={toggleCollapsed} theme="light" width={280} collapsedWidth={88}
-        style={{ borderRight: '1px solid #edf2f7' }}>
-        <div style={{ height: 64, display: 'flex', alignItems: 'center', paddingInline: collapsed ? 0 : 20, justifyContent: collapsed ? 'center' : 'flex-start' }}>
-          <Logo compact={collapsed} />
+          )}
+          {quickAdd.items && quickAdd.items.length > 0 && (
+            <Dropdown trigger={['click']} menu={quickAdd}><button aria-label="Quick add" style={iconBtn}><PlusOutlined /></button></Dropdown>
+          )}
+          <button aria-label="Notifications" style={iconBtn}><BellOutlined /></button>
+          <Dropdown trigger={['click']} menu={accountMenu} placement="bottomRight">
+            <button aria-label="Account" style={{ ...avatarBtn }}>{initials}</button>
+          </Dropdown>
         </div>
-        <Menu mode="inline" selectedKeys={[pathname]} defaultOpenKeys={openKeys} items={menuItems as any} onClick={({ key }) => router.push(key)} style={{ borderInlineEnd: 'none' }} />
-      </Sider>
-      <Layout>
-        <Header style={{ background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 16, paddingInline: 24, borderBottom: '1px solid #edf2f7' }}>
-          <Typography.Text type="secondary">{claims?.email}</Typography.Text>
-          <Tooltip title="Sign out"><Button icon={<LogoutOutlined />} onClick={logout}>Logout</Button></Tooltip>
-        </Header>
-        <Content style={{ margin: 24 }}>{children}</Content>
-      </Layout>
-    </Layout>
+      </header>
+
+      <main className="premium-scroll" style={{ flex: 1, overflow: 'auto', padding: screens.md ? 32 : 16 }}>{children}</main>
+
+      <Drawer title={<Logo />} placement="left" width={300} open={drawerOpen} onClose={() => setDrawerOpen(false)} styles={{ body: { padding: 0 } }}>
+        <Menu mode="inline" selectedKeys={[pathname]} defaultOpenKeys={NAV_GROUPS.map((g) => g.key)} items={drawerMenu} onClick={({ key }) => navigate(key)} style={{ borderInlineEnd: 'none' }} />
+      </Drawer>
+    </div>
   );
 }
 
-const btnCircle: React.CSSProperties = { width: 40, height: 40, borderRadius: 999, border: '1px solid #edf2f7', background: '#fff', color: '#6b7280', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 16 };
-const avatarCircle: React.CSSProperties = { width: 40, height: 40, borderRadius: 999, background: '#4f7df9', color: '#fff', display: 'grid', placeItems: 'center', fontSize: 13, fontWeight: 600 };
+const navBtn = (active: boolean): React.CSSProperties => ({
+  position: 'relative', border: 'none', background: 'transparent', cursor: 'pointer',
+  padding: '8px 14px', fontSize: 15, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6,
+  color: active ? '#4f7df9' : '#6b7280',
+});
+const underline: React.CSSProperties = { position: 'absolute', left: 14, right: 14, bottom: -13, height: 2, background: '#4f7df9', borderRadius: 2 };
+const iconBtn: React.CSSProperties = { width: 40, height: 40, borderRadius: 999, border: '1px solid #edf2f7', background: '#fff', color: '#6b7280', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 16 };
+const avatarBtn: React.CSSProperties = { width: 40, height: 40, borderRadius: 999, border: 'none', background: '#4f7df9', color: '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 13, fontWeight: 600 };

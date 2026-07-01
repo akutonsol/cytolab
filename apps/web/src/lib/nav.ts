@@ -46,7 +46,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Lab Codes', path: '/lab-codes', permission: 'labcode:view', phase: 3 },
       { label: 'Cabinets', path: '/cabinets', permission: 'cabinet:view', phase: 3 },
       { label: 'Reports', path: '/reports', permission: 'report:view', phase: 3 },
-      { label: 'Analytics', path: '/analytics', permission: 'applicationprefs:reports' },
     ],
   },
   {
@@ -88,6 +87,15 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
+// Analytics is a standalone top-level link (its own blue-underlined nav item),
+// not inside a dropdown group.
+export const ANALYTICS_ITEM: NavItem = { label: 'Analytics', path: '/analytics', permission: 'applicationprefs:reports' };
+
+// Top-nav layout: which groups are center dropdowns vs. tucked into the account
+// (avatar) menu. Everything stays reachable.
+export const CENTER_GROUP_KEYS = ['lab', 'results', 'finance', 'people'];
+export const ACCOUNT_GROUP_KEY = 'platform';
+
+const ALL_ITEMS = [...NAV_GROUPS.flatMap((g) => g.items), ANALYTICS_ITEM];
 export const navItemByPath = (path: string): NavItem | undefined =>
   ALL_ITEMS.find((i) => i.path === path);
