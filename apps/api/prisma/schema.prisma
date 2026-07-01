@@ -628,6 +628,8 @@ model LabCode {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Legacy enforced a unique code; per-lab uniqueness is the multi-tenant form.
+  @@unique([labId, code])
   @@index([labId])
 }
 

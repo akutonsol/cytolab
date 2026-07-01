@@ -2,7 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
-import { CreateCodeFindingDto, CreateCodeSheetDto } from './dto/code-sheet.dto';
+import {
+  CreateCodeFindingDto,
+  CreateCodeSheetDto,
+  UpdateCodeFindingDto,
+  UpdateCodeSheetDto,
+} from './dto/code-sheet.dto';
 
 @Injectable()
 export class CodeSheetsService {
@@ -20,6 +25,12 @@ export class CodeSheetsService {
     });
   }
 
+  async updateCodeSheet(id: string, dto: UpdateCodeSheetDto) {
+    const found = await this.prisma.codeSheet.findFirst({ where: { id } });
+    if (!found) throw new NotFoundException('Code sheet not found');
+    return this.prisma.codeSheet.update({ where: { id }, data: dto });
+  }
+
   async removeCodeSheet(id: string) {
     const found = await this.prisma.codeSheet.findFirst({ where: { id } });
     if (!found) throw new NotFoundException('Code sheet not found');
@@ -35,6 +46,12 @@ export class CodeSheetsService {
     return this.prisma.codeFinding.create({
       data: tenantCreate<Prisma.CodeFindingUncheckedCreateInput>({ ...dto }),
     });
+  }
+
+  async updateCodeFinding(id: string, dto: UpdateCodeFindingDto) {
+    const found = await this.prisma.codeFinding.findFirst({ where: { id } });
+    if (!found) throw new NotFoundException('Code finding not found');
+    return this.prisma.codeFinding.update({ where: { id }, data: dto });
   }
 
   async removeCodeFinding(id: string) {
