@@ -5,6 +5,7 @@ import { RequirePermissions } from '../../common/decorators/require-permissions.
 import {
   CreateRecordDto,
   RecordQueryDto,
+  SubmitRecordDto,
   UpdateRecordDto,
   UpdateRecordStatusDto,
 } from './dto/record.dto';
@@ -87,8 +88,9 @@ export class RecordsController {
 
   @Put('specimen/submit/:id')
   @RequirePermissions('record:submit')
-  submit(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.records.submit(id, user.userId);
+  @ApiOperation({ summary: 'Submit to Cytolab (Pending → Submitted); optional express/urgent' })
+  submit(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: SubmitRecordDto) {
+    return this.records.submit(id, user.userId, dto.urgent);
   }
 
   @Patch('specimen/status/:id')

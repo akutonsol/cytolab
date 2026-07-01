@@ -1,35 +1,65 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, RecordStatus, RequisitionStatus } from '@prisma/client';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma, RecordStatus, RequisitionFormType, RequisitionStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { LabContext } from '../../common/tenancy/lab-context';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
+import { allocateSequence, isUniqueConflict } from '../../common/util/lab-sequence';
 import {
   CreateRecordDto,
+  GynClinicalFeaturesDto,
+  NonGynClinicalFeaturesDto,
   RecordQueryDto,
   UpdateRecordDto,
   UpdateRecordStatusDto,
 } from './dto/record.dto';
 import { randomBytes } from 'crypto';
 
+// Human-facing case number (legacy Lab No., e.g. CBL26-06-465): <lab-prefix> +
+// 2-digit year + 2-digit month + a MONTHLY-reset sequence. Imported verbatim.
+const LABNO_MAX_RETRIES = 5;
+
 const recordSelect = {
   id: true,
   identifier: true,
   labNumber: true,
+  formType: true,
+  doctor: true,
   clinicalDiagnosis: true,
+  specimenDate: true,
   urgent: true,
   medicalEntry: true,
   billed: true,
   status: true,
   dateStatus: true,
   patientId: true,
-  patient: { select: { id: true, registrationNo: true, firstName: true, lastName: true } },
+  patient: {
+    select: { id: true, registrationNo: true, firstName: true, lastName: true, gender: true, dateOfBirth: true },
+  },
   clientId: true,
-  client: { select: { id: true, firstName: true, lastName: true, officeName: true } },
+  // Rich client display for the record header (name, Acc#, portal user, Type).
+  client: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      officeName: true,
+      accountNo: true,
+      clientType: { select: { type: true } },
+      portalUsers: { select: { username: true }, take: 1 },
+    },
+  },
   workspaceId: true,
   specimens: {
-    select: { id: true, type: true, label: true, vialColour: true, antiserumA: true, antiserumB: true, rhSolution: true, bloodGroup: true, dateReceived: true },
+    select: {
+      id: true, type: true, label: true, vialColour: true, antiserumA: true, antiserumB: true,
+      rhSolution: true, bloodGroup: true, dateReceived: true,
+      images: { select: { id: true, storageUrl: true, caption: true } },
+    },
   },
   therapy: true,
+  gynFeatures: true,
+  nonGynFeatures: true,
   statusHistory: {
     select: { id: true, status: true, notes: true, userId: true, createdAt: true },
     orderBy: { createdAt: 'asc' as const },
@@ -61,7 +91,10 @@ const ALLOWED_TRANSITIONS: Partial<Record<RecordStatus, RecordStatus[]>> = {
 
 @Injectable()
 export class RecordsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private labContext: LabContext,
+  ) {}
 
   // Record queries are lab-scoped automatically by the tenancy extension; nested
   // tenant rows (specimens) are stamped with the lab on write by the same guard.
@@ -128,33 +161,49 @@ export class RecordsService {
   }
 
   async create(userId: string, dto: CreateRecordDto) {
-    const { specimens, therapy, requisitionLineId, ...rest } = dto;
+    const { specimens, therapy, requisitionLineId, gynFeatures, nonGynFeatures, ...rest } = dto;
+    // Reject mismatched clinical features BEFORE creating any row (no orphans).
+    this.assertFeaturesMatch(rest.formType, gynFeatures, nonGynFeatures);
     const identifier = this.generateIdentifier();
 
-    const record = await this.prisma.record.create({
-      data: tenantCreate<Prisma.RecordUncheckedCreateInput>({
-        identifier,
-        ...rest,
-        specimens: specimens?.length
-          ? {
-              create: specimens.map((s) =>
-                tenantCreate<Prisma.SpecimenUncheckedCreateWithoutRecordInput>(s),
-              ),
-            }
-          : undefined,
-        therapy: therapy
-          ? { create: tenantCreate<Prisma.TherapyUncheckedCreateWithoutRecordInput>(therapy) }
-          : undefined,
-        statusHistory: {
-          create: tenantCreate<Prisma.RecordStatusEventUncheckedCreateWithoutRecordInput>({
-            status: RecordStatus.Pending,
-            userId,
-            notes: 'Record created',
+    // Atomic monthly Lab No. with the unique-constraint retry backstop.
+    let record;
+    for (let attempt = 0; ; attempt++) {
+      const labNumber = await this.allocateLabNumber();
+      try {
+        record = await this.prisma.record.create({
+          data: tenantCreate<Prisma.RecordUncheckedCreateInput>({
+            identifier,
+            labNumber,
+            ...rest,
+            specimens: specimens?.length
+              ? { create: specimens.map((s) => tenantCreate<Prisma.SpecimenUncheckedCreateWithoutRecordInput>(s)) }
+              : undefined,
+            therapy: therapy
+              ? { create: tenantCreate<Prisma.TherapyUncheckedCreateWithoutRecordInput>(therapy) }
+              : undefined,
+            statusHistory: {
+              create: tenantCreate<Prisma.RecordStatusEventUncheckedCreateWithoutRecordInput>({
+                status: RecordStatus.Pending,
+                userId,
+                notes: 'Record created',
+              }),
+            },
           }),
-        },
-      }),
-      select: recordSelect,
-    });
+          select: recordSelect,
+        });
+        break;
+      } catch (e) {
+        if (isUniqueConflict(e, 'labNumber') && attempt < LABNO_MAX_RETRIES) continue;
+        if (isUniqueConflict(e, 'labNumber')) {
+          throw new ConflictException('Could not allocate a unique lab number; please retry');
+        }
+        throw e;
+      }
+    }
+
+    // Clinical features go through the single guarded chokepoint.
+    await this.writeClinicalFeatures(record.id, rest.formType ?? null, gynFeatures, nonGynFeatures);
 
     // Link to requisition line if provided. The line is lab-scoped by the
     // tenancy guard, so a line from another lab simply won't be found.
@@ -171,14 +220,18 @@ export class RecordsService {
       }
     }
 
-    return record;
+    return this.findOne(record.id);
   }
 
   async update(id: string, userId: string, dto: UpdateRecordDto) {
-    await this.findOne(id);
-    const { therapy, ...rest } = dto;
+    const existing = await this.findOne(id);
+    const { therapy, gynFeatures, nonGynFeatures, ...rest } = dto;
 
-    return this.prisma.record.update({
+    // Effective form type = the update's, else the record's current one.
+    const formType = (rest.formType ?? existing.formType ?? null) as RequisitionFormType | null;
+    this.assertFeaturesMatch(formType, gynFeatures, nonGynFeatures);
+
+    await this.prisma.record.update({
       where: { id },
       data: {
         ...rest,
@@ -193,12 +246,105 @@ export class RecordsService {
             }
           : {}),
       },
-      select: recordSelect,
+      select: { id: true },
     });
+
+    // All clinical-features writes route through the chokepoint (which also
+    // clears the opposite-type row, so a record can never hold both).
+    if (gynFeatures || nonGynFeatures || rest.formType !== undefined) {
+      await this.writeClinicalFeatures(id, formType, gynFeatures, nonGynFeatures);
+    }
+    return this.findOne(id);
   }
 
-  async submit(id: string, userId: string) {
-    return this.transition(id, userId, RecordStatus.Submitted, 'Submitted by staff');
+  /**
+   * "Submit to Cytolab": hand the case off to the lab (Pending → Submitted, NOT
+   * Processing — the lab picks it up separately). The urgent toggle marks the
+   * case as express.
+   */
+  async submit(id: string, userId: string, urgent?: boolean) {
+    if (urgent !== undefined) {
+      await this.prisma.record.update({ where: { id }, data: { urgent }, select: { id: true } });
+    }
+    return this.transition(
+      id,
+      userId,
+      RecordStatus.Submitted,
+      urgent ? 'Submitted to Cytolab (urgent/express)' : 'Submitted to Cytolab',
+    );
+  }
+
+  // ---- clinical features: the single guarded chokepoint (option B) ----
+
+  /** Reject clinical features that don't match the record's form type. */
+  private assertFeaturesMatch(
+    formType: RequisitionFormType | null | undefined,
+    gyn?: GynClinicalFeaturesDto,
+    nonGyn?: NonGynClinicalFeaturesDto,
+  ) {
+    if ((gyn || nonGyn) && !formType) {
+      throw new BadRequestException('Choose the record form type before adding clinical features');
+    }
+    if (gyn && formType !== RequisitionFormType.Gynecology) {
+      throw new BadRequestException('Gynecology clinical features can only be attached to a Gynecology record');
+    }
+    if (nonGyn && formType !== RequisitionFormType.NonGynecology) {
+      throw new BadRequestException('Non-gynecology clinical features can only be attached to a Non-gynecology record');
+    }
+  }
+
+  /**
+   * The ONLY path that writes clinical features. It asserts the type matches,
+   * upserts the matching-type row, and always deletes the opposite-type row — so
+   * a record can never structurally hold both Gyn and NonGyn features.
+   */
+  private async writeClinicalFeatures(
+    recordId: string,
+    formType: RequisitionFormType | null,
+    gyn?: GynClinicalFeaturesDto,
+    nonGyn?: NonGynClinicalFeaturesDto,
+  ) {
+    this.assertFeaturesMatch(formType, gyn, nonGyn);
+
+    if (formType === RequisitionFormType.Gynecology) {
+      await this.prisma.nonGynClinicalFeatures.deleteMany({ where: { recordId } });
+      if (gyn) {
+        await this.prisma.gynClinicalFeatures.upsert({
+          where: { recordId },
+          create: tenantCreate<Prisma.GynClinicalFeaturesUncheckedCreateInput>({ recordId, ...gyn }),
+          update: gyn,
+        });
+      }
+    } else if (formType === RequisitionFormType.NonGynecology) {
+      await this.prisma.gynClinicalFeatures.deleteMany({ where: { recordId } });
+      if (nonGyn) {
+        await this.prisma.nonGynClinicalFeatures.upsert({
+          where: { recordId },
+          create: tenantCreate<Prisma.NonGynClinicalFeaturesUncheckedCreateInput>({ recordId, ...nonGyn }),
+          update: nonGyn,
+        });
+      }
+    } else {
+      // No form type → ensure neither features row lingers.
+      await this.prisma.gynClinicalFeatures.deleteMany({ where: { recordId } });
+      await this.prisma.nonGynClinicalFeatures.deleteMany({ where: { recordId } });
+    }
+  }
+
+  /** Allocate the case's Lab No. (CBL{YY}-{MM}-{seq}) from a monthly counter. */
+  private async allocateLabNumber(): Promise<string> {
+    const labId = this.labContext.getLabId();
+    if (!labId) throw new Error('Cannot allocate a lab number with no lab context');
+    const lab = await this.prisma.lab.findUnique({ where: { id: labId }, select: { slug: true } });
+    const prefix = (lab?.slug ?? 'lab').replace(/[^a-z0-9]/gi, '').slice(0, 3).toUpperCase() || 'LAB';
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(-2);
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    // Monthly-reset: the sequence name carries the year-month, so each month
+    // starts fresh at 1.
+    const seqName = `recordLabNo:${now.getFullYear()}-${mm}`;
+    const seq = await allocateSequence(this.prisma, labId, seqName, 0n);
+    return `${prefix}${yy}-${mm}-${seq.toString().padStart(3, '0')}`;
   }
 
   async updateStatus(id: string, userId: string, dto: UpdateRecordStatusDto) {
