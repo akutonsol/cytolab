@@ -7,7 +7,7 @@ import {
   BellOutlined, DownOutlined, LogoutOutlined, MenuOutlined, PlusOutlined, SearchOutlined, SettingOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { ACCOUNT_GROUP_KEY, ANALYTICS_ITEM, CENTER_GROUP_KEYS, NAV_GROUPS } from '@/lib/nav';
+import { ACCOUNT_GROUP_KEY, ANALYTICS_ITEM, CENTER_GROUP_KEYS, HOME_ITEM, NAV_GROUPS } from '@/lib/nav';
 import { useAuth, useAuthStore } from '@/lib/auth';
 import { refreshSession } from '@/lib/api';
 
@@ -63,6 +63,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const drawerMenu: MenuProps['items'] = useMemo(
     () =>
       [
+        can(HOME_ITEM.permission) ? { key: HOME_ITEM.path, label: HOME_ITEM.label } : null,
         ...NAV_GROUPS.map((group) => {
           const items = group.items.filter((i) => can(i.permission));
           if (!items.length) return null;
@@ -118,6 +119,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {showCenter && (
           <nav style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {can(HOME_ITEM.permission) && (
+              <button onClick={() => navigate(HOME_ITEM.path)} style={navBtn(pathname === HOME_ITEM.path)}>
+                {HOME_ITEM.label}
+                {pathname === HOME_ITEM.path && <span style={underline} />}
+              </button>
+            )}
             {centerGroups.map((g) => {
               const active = groupActive(g.visible);
               return (

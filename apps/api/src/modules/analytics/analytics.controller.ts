@@ -15,4 +15,11 @@ export class AnalyticsController {
   dashboard() {
     return this.analytics.dashboard();
   }
+
+  @Get('analytics/home')
+  @RequirePermissions('record:view')
+  @ApiOperation({ summary: 'Dashboard home aggregates (priority, throughput, radar, effectiveness, clients, activity)' })
+  home() {
+    return this.analytics.home();
+  }
 }

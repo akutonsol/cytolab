@@ -87,8 +87,9 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-// Analytics is a standalone top-level link (its own blue-underlined nav item),
-// not inside a dropdown group.
+// Standalone top-level links (their own blue-underlined nav items), not inside a
+// dropdown group. Home is the landing page; Analytics the deep-dive.
+export const HOME_ITEM: NavItem = { label: 'Home', path: '/dashboard', permission: 'record:view' };
 export const ANALYTICS_ITEM: NavItem = { label: 'Analytics', path: '/analytics', permission: 'applicationprefs:reports' };
 
 // Top-nav layout: which groups are center dropdowns vs. tucked into the account

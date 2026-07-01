@@ -97,4 +97,35 @@ describeIf('Analytics dashboard (integration)', () => {
       expect(d.compliance.week).toHaveLength(7);
       expect(d.insights.items.length).toBeGreaterThan(0);
     }));
+
+  it('home(): priority queue, throughput, radar, effectiveness and activity from real data', () =>
+    run(async () => {
+      const h = await analytics.home();
+
+      // Priority queue = open records (C Resulted, D Completed, E Submitted), NOT A/B (Approved).
+      const labs = h.priorityRecords.map((r: any) => r.labNumber);
+      expect(labs).toEqual(expect.arrayContaining([`${tag}-C`, `${tag}-D`, `${tag}-E`]));
+      expect(labs).not.toContain(`${tag}-A`);
+      // Progress ring value per lifecycle status.
+      expect(h.priorityRecords.find((r: any) => r.labNumber === `${tag}-C`)!.progress).toBe(90); // Resulted
+      expect(h.priorityRecords.find((r: any) => r.labNumber === `${tag}-E`)!.progress).toBe(25); // Submitted
+
+      // Throughput = 42 daily buckets with a peak flagged.
+      expect(h.throughput.series).toHaveLength(42);
+      expect(h.throughput.series.filter((s: any) => s.peak).length).toBeGreaterThanOrEqual(1);
+
+      // Radar: 5 dimensions, each 0–100, two series.
+      expect(h.radar.map((r: any) => r.dim)).toEqual(['Turnaround', 'Authorization', 'Volume', 'On-time', 'Quality']);
+      h.radar.forEach((r: any) => { expect(r.current).toBeGreaterThanOrEqual(0); expect(r.current).toBeLessThanOrEqual(100); });
+
+      // Effectiveness: OEE + real stats. On-time 50% (A on-time, B delayed).
+      expect(h.effectiveness.onTime).toBe(50);
+      expect(typeof h.effectiveness.oee).toBe('number');
+      expect(h.effectiveness.reportsAuthorized).toBeGreaterThanOrEqual(2); // A, B approved recently
+
+      // Activity feed from RecordStatusEvent.
+      expect(h.activity.length).toBeGreaterThan(0);
+      expect(h.activity[0]).toHaveProperty('labNumber');
+      expect(h.activity[0]).toHaveProperty('patient');
+    }));
 });

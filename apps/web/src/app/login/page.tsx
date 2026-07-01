@@ -21,7 +21,7 @@ export default function LoginPage() {
 
   // Already logged in → leave the login page.
   useEffect(() => {
-    if (hydrated && isAuthed) router.replace('/patients');
+    if (hydrated && isAuthed) router.replace('/dashboard');
   }, [hydrated, isAuthed, router]);
 
   const login = useMutation({
@@ -32,7 +32,7 @@ export default function LoginPage() {
     onSuccess: (data) => {
       setTokens(data.accessToken, data.refreshToken);
       message.success('Welcome back');
-      router.replace('/patients');
+      router.replace('/dashboard');
     },
     onError: (err: any) => {
       message.error(err?.response?.data?.message ?? 'Login failed');

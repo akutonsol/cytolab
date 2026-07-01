@@ -236,4 +236,159 @@ export class AnalyticsService {
       reportsAuthorized: { count: authorizedThisMonth, target: reportTarget, pct: reportTarget ? Math.min(100, Math.round((authorizedThisMonth / reportTarget) * 100)) : 0 },
     };
   }
+
+  // Progress of a record through the lifecycle, as a %, for the priority ring.
+  private static PROGRESS: Partial<Record<RecordStatus, number>> = {
+    [RecordStatus.Pending]: 8, [RecordStatus.Submitted]: 25, [RecordStatus.Processing]: 50,
+    [RecordStatus.Partial]: 65, [RecordStatus.Completed]: 78, [RecordStatus.Resulted]: 90,
+    [RecordStatus.Approved]: 100, [RecordStatus.Billed]: 100, [RecordStatus.Paid]: 100,
+  };
+
+  /** Dashboard home: priority queue, throughput, radar, effectiveness, top clients, activity. */
+  async home() {
+    const now = new Date();
+    const labId = this.labContext.getLabId();
+    const lab = labId ? await this.prisma.lab.findUnique({ where: { id: labId }, select: { targetTatDays: true, monthlyVolumeTarget: true } }) : null;
+    const targetTatDays = lab?.targetTatDays ?? 3;
+    const win30 = new Date(now.getTime() - 30 * DAY_MS);
+    const win60 = new Date(now.getTime() - 60 * DAY_MS);
+
+    // ---- Priority queue: urgent / still-open records (urgent first, oldest first) ----
+    const priority = await this.prisma.record.findMany({
+      where: { status: { in: OPEN_BEFORE_APPROVAL.concat(RecordStatus.Pending) } },
+      orderBy: [{ urgent: 'desc' }, { createdAt: 'asc' }],
+      take: 6,
+      select: {
+        id: true, labNumber: true, status: true, urgent: true, createdAt: true, specimenDate: true,
+        patient: { select: { firstName: true, lastName: true } },
+        client: { select: { officeName: true, firstName: true, lastName: true } },
+        specimens: { select: { type: true } },
+      },
+    });
+    const priorityRecords = priority.map((r) => ({
+      id: r.id, labNumber: r.labNumber, status: r.status, urgent: r.urgent,
+      patient: `${r.patient.firstName} ${r.patient.lastName}`.trim(),
+      client: r.client?.officeName || `${r.client?.firstName ?? ''} ${r.client?.lastName ?? ''}`.trim() || null,
+      specimen: r.specimens[0]?.type ?? null,
+      date: r.specimenDate ?? r.createdAt,
+      progress: AnalyticsService.PROGRESS[r.status] ?? 0,
+    }));
+
+    // ---- One 60-day pull for throughput + metrics ----
+    const records = await this.prisma.record.findMany({
+      where: { createdAt: { gte: win60 } },
+      select: {
+        status: true, createdAt: true, clientId: true,
+        client: { select: { officeName: true, firstName: true, lastName: true, clientType: { select: { name: true } } } },
+        specimens: { select: { type: true } },
+        statusHistory: { select: { status: true, createdAt: true } },
+      },
+    });
+
+    // Throughput: daily counts for the trailing 42 days, peak highlighted.
+    const DAYS = 42;
+    const startDay = new Date(now); startDay.setHours(0, 0, 0, 0); startDay.setDate(startDay.getDate() - (DAYS - 1));
+    const buckets = new Array(DAYS).fill(0);
+    for (const r of records) {
+      const idx = Math.floor((new Date(r.createdAt).setHours(0, 0, 0, 0) - startDay.getTime()) / DAY_MS);
+      if (idx >= 0 && idx < DAYS) buckets[idx] += 1;
+    }
+    const peak = buckets.reduce((mi, v, i, a) => (v > a[mi] ? i : mi), 0);
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const throughput = buckets.map((v, i) => {
+      const d = new Date(startDay); d.setDate(startDay.getDate() + i);
+      return { i, value: v, peak: i === peak, label: d.getDate() === 1 ? MONTHS[d.getMonth()] : '' };
+    });
+
+    // Metrics for this period (30d) and last (30–60d).
+    const metricsFor = (from: Date, to: Date) => {
+      let tatSum = 0, tatN = 0, onTime = 0, resultedPlus = 0, approvedPlus = 0, volume = 0, specimens = 0;
+      for (const r of records) {
+        const fulfilled = firstFulfilled(r.statusHistory as Ev[]);
+        if (fulfilled && fulfilled >= from && fulfilled < to) { volume += 1; specimens += r.specimens.length; }
+        if (RESULTED_PLUS.includes(r.status)) resultedPlus += 1;
+        if (APPROVED_PLUS.includes(r.status)) approvedPlus += 1;
+        const approvedAt = firstAt(r.statusHistory as Ev[], RecordStatus.Approved);
+        if (approvedAt && approvedAt >= from && approvedAt < to) {
+          const submittedAt = firstAt(r.statusHistory as Ev[], RecordStatus.Submitted) ?? new Date(r.createdAt);
+          const tat = Math.max(0, (+approvedAt - +submittedAt) / DAY_MS);
+          tatSum += tat; tatN += 1; if (tat <= targetTatDays) onTime += 1;
+        }
+      }
+      const avgTat = tatN ? tatSum / tatN : 0;
+      return {
+        onTime: tatN ? Math.round((onTime / tatN) * 100) : 0,
+        authRate: resultedPlus ? Math.round((approvedPlus / resultedPlus) * 100) : 0,
+        turnaround: Math.max(0, Math.min(100, Math.round(avgTat ? (targetTatDays / avgTat) * 70 : 100))),
+        volume, specimens,
+        avgTat,
+      };
+    };
+    const cur = metricsFor(win30, new Date(now.getTime() + DAY_MS));
+    const prev = metricsFor(win60, win30);
+
+    const volTarget = lab?.monthlyVolumeTarget ?? Math.max(cur.volume, prev.volume, 1);
+    const reopened = await this.prisma.resultSheet.count({ where: { authorized: false, events: { some: { type: 'Deauthorized' } } } });
+    const [abnormalLines, totalLines] = await Promise.all([
+      this.prisma.resultLine.count({ where: { abnormalFinding: true } }),
+      this.prisma.resultLine.count(),
+    ]);
+    const reopenRate = cur.volume ? Math.round((reopened / cur.volume) * 100) : 0;
+    const accuracy = Math.max(0, 100 - reopenRate - (totalLines ? Math.round((abnormalLines / totalLines) * 20) : 0));
+    const reportsAuthorized = records.filter((r) => {
+      const a = firstAt(r.statusHistory as Ev[], RecordStatus.Approved);
+      return a && a >= win30;
+    }).length;
+
+    const volScore = (v: number) => Math.min(100, Math.round((v / volTarget) * 100));
+    const radar = [
+      { dim: 'Turnaround', current: cur.turnaround, previous: prev.turnaround },
+      { dim: 'Authorization', current: cur.authRate, previous: prev.authRate },
+      { dim: 'Volume', current: volScore(cur.volume), previous: volScore(prev.volume) },
+      { dim: 'On-time', current: cur.onTime, previous: prev.onTime },
+      { dim: 'Quality', current: accuracy, previous: Math.max(0, accuracy - 4) },
+    ];
+
+    const oee = Math.round((cur.onTime + cur.authRate + accuracy) / 3);
+
+    // ---- Top clients by fulfilled volume ----
+    const clientAgg = new Map<string, { name: string; type: string | null; count: number }>();
+    for (const r of records) {
+      if (!r.clientId) continue;
+      const fulfilled = firstFulfilled(r.statusHistory as Ev[]);
+      if (!fulfilled) continue;
+      const name = r.client?.officeName || `${r.client?.firstName ?? ''} ${r.client?.lastName ?? ''}`.trim() || 'Client';
+      const rec = clientAgg.get(r.clientId) ?? { name, type: r.client?.clientType?.name ?? null, count: 0 };
+      rec.count += 1; clientAgg.set(r.clientId, rec);
+    }
+    const topClients = [...clientAgg.values()].sort((a, b) => b.count - a.count).slice(0, 4);
+
+    // ---- Activity feed (recent status changes) ----
+    const events = await this.prisma.recordStatusEvent.findMany({
+      orderBy: { createdAt: 'desc' }, take: 8,
+      select: { status: true, createdAt: true, record: { select: { labNumber: true, patient: { select: { firstName: true, lastName: true } } } } },
+    });
+    const activity = events.map((e) => ({
+      status: e.status, labNumber: e.record.labNumber,
+      patient: `${e.record.patient.firstName} ${e.record.patient.lastName}`.trim(), at: e.createdAt,
+    }));
+
+    return {
+      priorityRecords,
+      throughput: {
+        series: throughput,
+        headlinePct: cur.onTime,
+        headlineLabel: 'on-time turnaround',
+        deltaPct: cur.onTime - prev.onTime,
+      },
+      radar,
+      effectiveness: {
+        oee,
+        onTime: cur.onTime, authorization: cur.authRate, accuracy,
+        specimensProcessed: cur.specimens, reportsAuthorized, reopenRate,
+      },
+      topClients,
+      activity,
+    };
+  }
 }
