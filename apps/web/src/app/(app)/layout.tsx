@@ -7,20 +7,40 @@ import { LogoutOutlined } from '@ant-design/icons';
 import { createElement } from 'react';
 import { NAV_GROUPS } from '@/lib/nav';
 import { useAuth, useAuthStore } from '@/lib/auth';
+import { refreshSession } from '@/lib/api';
 
 const { Header, Sider, Content } = Layout;
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { claims, hydrated, isAuthed, can } = useAuth();
+  const { claims, hydrated, isAuthed, stale, can } = useAuth();
   const clear = useAuthStore((s) => s.clear);
   const [collapsed, setCollapsed] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Client-side auth guard (tokens live in localStorage, hydrated after mount).
   useEffect(() => {
     if (hydrated && !isAuthed) router.replace('/login');
   }, [hydrated, isAuthed, router]);
+
+  // A token whose claims predate a permissions-model change must NOT be used to
+  // render the nav (it would silently hide sections the user actually has). Force
+  // a silent refresh to re-issue a token with current claims; if that fails,
+  // send the user to a clean re-login rather than showing an empty app.
+  useEffect(() => {
+    if (hydrated && isAuthed && stale && !refreshing) {
+      setRefreshing(true);
+      refreshSession()
+        .then((ok) => {
+          if (!ok) {
+            clear();
+            router.replace('/login');
+          }
+        })
+        .finally(() => setRefreshing(false));
+    }
+  }, [hydrated, isAuthed, stale, refreshing, clear, router]);
 
   // Build the menu from nav config, dropping items the user can't view and
   // then any group left empty.
@@ -41,10 +61,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const openKeys = useMemo(() => NAV_GROUPS.map((g) => g.key), []);
 
-  if (!hydrated || !isAuthed) {
+  // While unauthenticated, hydrating, or refreshing a stale token, show a
+  // spinner — never the nav computed from a stale/absent token.
+  if (!hydrated || !isAuthed || stale || refreshing) {
     return (
-      <div style={{ height: '100vh', display: 'grid', placeItems: 'center' }}>
+      <div style={{ height: '100vh', display: 'grid', placeItems: 'center', gap: 12 }}>
         <Spin size="large" />
+        {(stale || refreshing) && <Typography.Text type="secondary">Updating your session…</Typography.Text>}
       </div>
     );
   }

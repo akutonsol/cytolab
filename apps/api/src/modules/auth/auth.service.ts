@@ -14,6 +14,16 @@ import { LoginDto, RegisterLabDto } from './dto/login.dto';
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_WINDOW_MINUTES = 15;
 
+/**
+ * Version of the staff-token CLAIMS shape. Bump this whenever the permission
+ * model changes what claims the app relies on (e.g. adding `isSuperRole`). The
+ * frontend forces a silent refresh for any token below the version it expects,
+ * so a user never sees stale/empty UI after a claims-model change.
+ *   v1: sub/labId/email/roles/permissions
+ *   v2: + isSuperRole (flag-driven super bypass)
+ */
+export const TOKEN_CLAIMS_VERSION = 2;
+
 export interface JwtPayload {
   sub: string; // user id
   labId: string;
@@ -21,6 +31,7 @@ export interface JwtPayload {
   roles: string[];
   permissions: string[];
   isSuperRole?: boolean;
+  ver?: number; // claims version (see TOKEN_CLAIMS_VERSION)
   type: 'access' | 'refresh';
   scope: 'staff';
 }
@@ -174,6 +185,7 @@ export class AuthService {
       roles,
       permissions,
       isSuperRole,
+      ver: TOKEN_CLAIMS_VERSION,
       scope: 'staff' as const,
     };
 

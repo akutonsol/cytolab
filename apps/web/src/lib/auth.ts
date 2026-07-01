@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
+// Minimum staff-token claims version this build understands. Must match the
+// API's TOKEN_CLAIMS_VERSION. A decoded token below this predates a permissions
+// -model change and must NOT be used to render UI — the app forces a refresh.
+export const EXPECTED_CLAIMS_VERSION = 2;
+
 export interface AuthClaims {
   userId: string;
   email: string;
@@ -9,6 +14,7 @@ export interface AuthClaims {
   roles: string[];
   permissions: string[];
   isSuperRole: boolean;
+  ver: number;
 }
 
 interface AuthState {
@@ -68,10 +74,20 @@ export function decodeClaims(token: string | null): AuthClaims | null {
       roles: p.roles ?? [],
       permissions: p.permissions ?? [],
       isSuperRole: p.isSuperRole === true,
+      ver: typeof p.ver === 'number' ? p.ver : 0,
     };
   } catch {
     return null;
   }
+}
+
+/**
+ * A token whose claims predate the current permission model (below the expected
+ * version). Its roles/permissions/isSuperRole can't be trusted to render UI, so
+ * the app must refresh rather than show a misleadingly empty app.
+ */
+export function claimsAreStale(claims: AuthClaims | null): boolean {
+  return !!claims && claims.ver < EXPECTED_CLAIMS_VERSION;
 }
 
 /**
@@ -91,5 +107,5 @@ export function useAuth() {
   const hydrated = useHydrated();
   const claims = useMemo(() => decodeClaims(accessToken), [accessToken]);
   const can = (code?: string) => claimsHavePermission(claims, code);
-  return { claims, hydrated, isAuthed: !!claims, can };
+  return { claims, hydrated, isAuthed: !!claims, stale: claimsAreStale(claims), can };
 }

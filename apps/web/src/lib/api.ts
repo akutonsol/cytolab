@@ -36,6 +36,18 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
+/**
+ * Deliberately refresh the session (not driven by a 401). Used when the app
+ * detects a token whose claims are stale (below the expected version) — it
+ * re-issues a token carrying the current claims so the UI never renders from a
+ * stale token. Returns true on success; on failure the store is cleared so the
+ * route guard sends the user to /login.
+ */
+export async function refreshSession(): Promise<boolean> {
+  const token = await refreshAccessToken();
+  return token != null;
+}
+
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
