@@ -163,9 +163,50 @@ on the client form. 2.0 uses **invite-based** provisioning (Finding 2, option B)
 - **"Clients" is NOT a staff role** — it is the portal identity (structurally
   client-scoped `PortalUser`); do not import it into the staff `Role` table.
 
+### Permission catalog — full 2.0 catalog enables 1:1 role→permission mapping
+
+- 2.0 seeds the **full legacy permission catalog** (154 codes: 36 standard-CRUD
+  objects + `notification[view,delete]`, `applicationprefs[view,change,reports,
+  dashboard]`, `accountprefs[view,change]` + `record:submit`,
+  `resultsheet:authorize`), including objects whose modules aren't built yet
+  (earning, deduction, employeedetails, clinicalformitem, appointment, …). This
+  makes each **legacy role → permission** assignment map **1:1** by code.
+- **Unmapped codes MUST be surfaced, never silently dropped.** The import
+  compares every legacy permission code against the 2.0 catalog and **reports any
+  code with no 2.0 equivalent for human review** — it does not drop them. Each is
+  then confirmed as one of: a **consolidated line-item** (`requisitionline`,
+  `billline`, `paymentline` — no 2.0 equivalent; the role's parent-object
+  permission covers it), a **duplicate/typo**, or a genuine gap to **add to the
+  catalog**. (Reconciliation: 154 seeded + 12 line-item codes = 166; ~4 legacy
+  codes from the source list are still unaccounted and must be caught by this
+  review.)
+- **Line-item permissions have no legacy-line-permission equivalent to map:**
+  `requisitionline`/`billline` are managed via their parent object's permission;
+  `paymentline` is gone in 2.0 (Payment settles a Bill directly). Legacy
+  assignments of these map to the parent (`requisition`/`bill`/`payment`) or are
+  dropped with a review note.
+
+### `Role.scope` (RoleScope) — preserved from legacy User/Workspace
+
+- `Role.scope` (`User` | `Workspace`, default `User`) preserves the legacy role
+  **User/Workspace toggle**. **Mapping:** set `scope` from the legacy role's
+  User/Workspace flag. Workspace-CONSTRAINED **enforcement** is deferred (future
+  RBAC) — the column only preserves the value and drives the admin UI selector;
+  Workspace-scoped roles behave as User-scoped until enforcement lands.
+
+### ⚠️ The seed is AUTHORITATIVE and DESTRUCTIVE — dev/bootstrap ONLY
+
+- `prisma/seed.ts` is the source of truth for the permission catalog: it
+  **deletes every permission not in the catalog and cascades their
+  RolePermission rows**. This is correct for a fresh dev/bootstrap database.
+- **NEVER run the seed against a production or migrated database holding real
+  data.** Doing so would delete any legacy permission not in the 2.0 catalog and
+  drop its role links. **Migration and production use additive, reviewed schema
+  changes and data imports — not the seed.**
+
 ### Deferred (future RBAC): workspace-constraint roles
 
 - The legacy Roles tab's **"Workspace Constraint Role"** (workspace-scoped roles)
-  is **not** built. `Role` has no workspace constraint in 2.0. Tracked as a
-  future RBAC feature; `Client.workspaceId` exists to carry the association when
-  that lands.
+  is **not** built. `Role.scope` carries the value but enforcement is deferred.
+  Tracked as a future RBAC feature; `Client.workspaceId` exists to carry the
+  association when that lands.
