@@ -8,3 +8,10 @@ export class CreateTaxDto {
   @IsInt() @Min(0) @Type(() => Number) rateBasisPoints!: number;
   @IsBoolean() @IsOptional() isDefault?: boolean;
 }
+
+export class UpdateTaxDto {
+  @IsString() @IsNotEmpty() @IsOptional() name?: string;
+  @IsString() @IsOptional() code?: string;
+  @IsInt() @Min(0) @IsOptional() @Type(() => Number) rateBasisPoints?: number;
+  @IsBoolean() @IsOptional() isDefault?: boolean;
+}

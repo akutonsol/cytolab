@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
-import { CreateServiceDto, ServiceQueryDto } from './dto/service.dto';
+import { isUniqueConflict } from '../../common/util/lab-sequence';
+import { CreateServiceDto, ServiceQueryDto, UpdateServiceDto } from './dto/service.dto';
 
 @Injectable()
 export class ServicesCatalogService {
@@ -28,10 +29,26 @@ export class ServicesCatalogService {
     return paginate(data, total, page, pageSize);
   }
 
-  create(dto: CreateServiceDto) {
-    return this.prisma.service.create({
-      data: tenantCreate<Prisma.ServiceUncheckedCreateInput>({ ...dto }),
-    });
+  async create(dto: CreateServiceDto) {
+    try {
+      return await this.prisma.service.create({
+        data: tenantCreate<Prisma.ServiceUncheckedCreateInput>({ ...dto }),
+      });
+    } catch (e) {
+      if (isUniqueConflict(e, 'name')) throw new ConflictException(`A service named "${dto.name}" already exists`);
+      throw e;
+    }
+  }
+
+  async update(id: string, dto: UpdateServiceDto) {
+    const found = await this.prisma.service.findFirst({ where: { id } });
+    if (!found) throw new NotFoundException('Service not found');
+    try {
+      return await this.prisma.service.update({ where: { id }, data: dto });
+    } catch (e) {
+      if (isUniqueConflict(e, 'name')) throw new ConflictException(`A service named "${dto.name}" already exists`);
+      throw e;
+    }
   }
 
   async remove(id: string) {

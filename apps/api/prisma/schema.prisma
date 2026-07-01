@@ -753,6 +753,8 @@ model Service {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
+  // Legacy enforced a unique service name; per-lab uniqueness is the tenant form.
+  @@unique([labId, name])
   @@index([labId])
 }
 
@@ -769,6 +771,8 @@ model Tax {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
+  // Legacy enforced a unique tax name; per-lab uniqueness is the tenant form.
+  @@unique([labId, name])
   @@index([labId])
 }
 

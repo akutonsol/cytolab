@@ -48,6 +48,15 @@ const CODE_FINDING_FIELDS: PaneField[] = [
   { key: 'abbreviation', label: 'Abbreviated Code', placeholder: 'CANDIS-H', uppercase: true, flex: 1 },
   { key: 'description', label: 'Description', placeholder: 'Description', flex: 2, textarea: true },
 ];
+const SERVICE_FIELDS: PaneField[] = [
+  { key: 'name', label: 'Name', placeholder: 'Pap Smear', flex: 2 },
+  { key: 'code', label: 'Code', placeholder: 'PAP', uppercase: true, flex: 1 },
+  { key: 'price', label: 'Price', placeholder: '0.00', kind: 'money', flex: 1 },
+];
+const TAX_FIELDS: PaneField[] = [
+  { key: 'name', label: 'Name', placeholder: 'GCT', flex: 2 },
+  { key: 'rateBasisPoints', label: 'Rate', placeholder: '0', kind: 'percent', flex: 1 },
+];
 
 function ComingSoon({ label }: { label: string }) {
   return (
@@ -105,6 +114,35 @@ export default function SettingsPage() {
             deleteUrl={(id) => `/codefindings/delete/${id}`}
           />
         );
+      case 'services':
+        return (
+          <SettingsListPane
+            title="Services"
+            helper="Services created here are the billable line items available when generating a bill."
+            addLabel="Add Service"
+            fields={SERVICE_FIELDS}
+            queryKey="services"
+            listUrl="/services"
+            createUrl="/services"
+            updateUrl={(id) => `/services/update/${id}`}
+            deleteUrl={(id) => `/services/delete/${id}`}
+            mapList={(raw) => raw.data}
+          />
+        );
+      case 'taxes':
+        return (
+          <SettingsListPane
+            title="Taxes"
+            helper="Taxes created here can be applied to bills."
+            addLabel="Add Tax"
+            fields={TAX_FIELDS}
+            queryKey="taxes"
+            listUrl="/taxes"
+            createUrl="/taxes"
+            updateUrl={(id) => `/taxes/update/${id}`}
+            deleteUrl={(id) => `/taxes/delete/${id}`}
+          />
+        );
       default: {
         const label = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.id === active)?.label ?? 'Settings';
         return <ComingSoon label={label} />;
@@ -142,7 +180,9 @@ export default function SettingsPage() {
         ))}
       </Card>
 
-      <Card style={{ flex: 1, minWidth: 0 }}>{pane}</Card>
+      {/* key by section so each pane remounts — otherwise the shared
+          SettingsListPane instance leaks its draft/edit state across sections. */}
+      <Card style={{ flex: 1, minWidth: 0 }} key={active}>{pane}</Card>
     </div>
   );
 }

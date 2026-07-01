@@ -1,8 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { ServicesCatalogService } from './services-catalog.service';
-import { CreateServiceDto, ServiceQueryDto } from './dto/service.dto';
+import { CreateServiceDto, ServiceQueryDto, UpdateServiceDto } from './dto/service.dto';
 
 @ApiTags('services-catalog')
 @ApiBearerAuth()
@@ -20,6 +20,12 @@ export class ServicesCatalogController {
   @RequirePermissions('service:create')
   create(@Body() dto: CreateServiceDto) {
     return this.services.create(dto);
+  }
+
+  @Put('services/update/:id')
+  @RequirePermissions('service:change')
+  update(@Param('id') id: string, @Body() dto: UpdateServiceDto) {
+    return this.services.update(id, dto);
   }
 
   @Delete('services/delete/:id')

@@ -11,6 +11,14 @@ export class CreateServiceDto {
   @IsBoolean() @IsOptional() active?: boolean;
 }
 
+export class UpdateServiceDto {
+  @IsString() @IsNotEmpty() @IsOptional() name?: string;
+  @IsString() @IsNotEmpty() @IsOptional() code?: string;
+  @IsString() @IsOptional() description?: string;
+  @IsInt() @Min(0) @IsOptional() @Type(() => Number) price?: number;
+  @IsBoolean() @IsOptional() active?: boolean;
+}
+
 export class ServiceQueryDto extends PaginationDto {
   @IsString() @IsOptional() q?: string;
 }

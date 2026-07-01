@@ -1,8 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { TaxesService } from './taxes.service';
-import { CreateTaxDto } from './dto/tax.dto';
+import { CreateTaxDto, UpdateTaxDto } from './dto/tax.dto';
 
 @ApiTags('taxes')
 @ApiBearerAuth()
@@ -20,6 +20,12 @@ export class TaxesController {
   @RequirePermissions('tax:create')
   create(@Body() dto: CreateTaxDto) {
     return this.taxes.create(dto);
+  }
+
+  @Put('taxes/update/:id')
+  @RequirePermissions('tax:change')
+  update(@Param('id') id: string, @Body() dto: UpdateTaxDto) {
+    return this.taxes.update(id, dto);
   }
 
   @Delete('taxes/delete/:id')
