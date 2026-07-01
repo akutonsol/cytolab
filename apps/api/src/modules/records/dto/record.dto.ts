@@ -93,6 +93,14 @@ export class UpdateRecordDto {
   @IsString() @IsOptional() medicalEntry?: string;
   @IsString() @IsOptional() workspaceId?: string;
 
+  // When provided, replaces the specimen set (safe below Completed — no results
+  // exist yet; the Completed-lock blocks edits once results begin).
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CreateSpecimenDto)
+  specimens?: CreateSpecimenDto[];
+
   @IsOptional()
   @ValidateNested()
   @Type(() => CreateTherapyDto)

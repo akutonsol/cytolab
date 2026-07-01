@@ -22,10 +22,11 @@ interface Props {
   onChange?: (value: string | undefined) => void;
   initialOption?: { value: string; label: string };
   placeholder?: string;
+  disabled?: boolean;
 }
 
 /** Searchable patient picker (server search by name / reg no / email). */
-export function PatientSelect({ value, onChange, initialOption, placeholder }: Props) {
+export function PatientSelect({ value, onChange, initialOption, placeholder, disabled }: Props) {
   const [term, setTerm] = useState('');
   const debounce = useRef<ReturnType<typeof setTimeout>>();
   const onSearch = (q: string) => {
@@ -52,6 +53,7 @@ export function PatientSelect({ value, onChange, initialOption, placeholder }: P
     <Select
       showSearch
       allowClear
+      disabled={disabled}
       filterOption={false}
       onSearch={onSearch}
       loading={isFetching}

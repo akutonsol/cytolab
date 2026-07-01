@@ -242,7 +242,7 @@ export class RecordsService {
   async update(id: string, userId: string, dto: UpdateRecordDto) {
     const existing = await this.findOne(id);
     this.assertNotLocked(existing.status as RecordStatus);
-    const { therapy, gynFeatures, nonGynFeatures, ...rest } = dto;
+    const { therapy, gynFeatures, nonGynFeatures, specimens, ...rest } = dto;
 
     // Effective form type = the update's, else the record's current one.
     const formType = (rest.formType ?? existing.formType ?? null) as RequisitionFormType | null;
@@ -252,6 +252,16 @@ export class RecordsService {
       where: { id },
       data: {
         ...rest,
+        ...(specimens !== undefined
+          ? {
+              specimens: {
+                deleteMany: {},
+                create: specimens.map((s) =>
+                  tenantCreate<Prisma.SpecimenUncheckedCreateWithoutRecordInput>(s),
+                ),
+              },
+            }
+          : {}),
         ...(therapy != null
           ? {
               therapy: {

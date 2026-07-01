@@ -20,7 +20,7 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
-import { PlusOutlined, UserAddOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined, UserAddOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { api } from '@/lib/api';
@@ -30,21 +30,36 @@ import { PatientSelect, patientLabel } from '@/components/PatientSelect';
 import { PatientFormDrawer, type PatientRecord } from '@/components/PatientFormDrawer';
 import { SPECIMEN_LABELS, specimenTypesForForm, type FormType } from '@/lib/specimen-types';
 
+// Data edits are rejected server-side once a record reaches Completed. Mirror
+// that set so the edit UI goes read-only rather than letting a save fail.
+const LOCKED_STATUSES = ['Completed', 'Resulted', 'Approved', 'Billed', 'Paid', 'Viewed'];
+
 interface Props {
   open: boolean;
   onClose: () => void;
   formType: FormType;
+  /** When set, the drawer edits this record instead of creating a new one. */
+  recordId?: string;
 }
 
-export function RecordFormDrawer({ open, onClose, formType }: Props) {
-  const { message } = App.useApp();
+export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
+  const { message, modal } = App.useApp();
   const qc = useQueryClient();
   const [form] = Form.useForm();
   const isGyn = formType === 'Gynecology';
+  const isEdit = !!recordId;
   const [patientDrawer, setPatientDrawer] = useState(false);
 
   const clientId = Form.useWatch('clientId', form);
   const patientId = Form.useWatch('patientId', form);
+
+  // In edit mode, load the full record (header + clinical features + specimens).
+  const { data: record } = useQuery({
+    queryKey: ['record', recordId],
+    queryFn: () => api.get(`/specimens/${recordId}`).then((r) => r.data),
+    enabled: open && isEdit,
+  });
+  const locked = isEdit && !!record && LOCKED_STATUSES.includes(record.status);
 
   // Rich header display for the selected client / patient.
   const { data: client } = useQuery({
@@ -60,9 +75,47 @@ export function RecordFormDrawer({ open, onClose, formType }: Props) {
 
   useEffect(() => {
     if (!open) return;
+    if (isEdit) return; // edit prefill is handled once the record loads
     form.resetFields();
     form.setFieldsValue({ specimenDate: dayjs(), urgent: false, specimenTypes: [] });
-  }, [open, form]);
+  }, [open, isEdit, form]);
+
+  // Prefill from the loaded record (edit mode).
+  useEffect(() => {
+    if (!open || !isEdit || !record) return;
+    const g = record.gynFeatures ?? {};
+    const t = record.therapy ?? {};
+    const n = record.nonGynFeatures ?? {};
+    form.setFieldsValue({
+      clientId: record.clientId,
+      patientId: record.patientId,
+      doctor: record.doctor,
+      specimenDate: record.specimenDate ? dayjs(record.specimenDate) : undefined,
+      urgent: !!record.urgent,
+      specimenTypes: (record.specimens ?? []).map((s: any) => s.type),
+      clinicalDiagnosis: record.clinicalDiagnosis,
+      // Gyn features
+      routineCheck: !!g.routineCheck,
+      previousCytology: !!g.previousCytology,
+      lmp: g.lmp ? dayjs(g.lmp) : undefined,
+      clinicalAppearanceOfCervix: g.clinicalAppearanceOfCervix,
+      nowPregnant: !!g.nowPregnant,
+      pregnancies: g.pregnancies,
+      leucorrhea: g.leucorrhea,
+      menopause: !!g.menopause,
+      dateOfMenopause: g.dateOfMenopause ? dayjs(g.dateOfMenopause) : undefined,
+      lengthOfCycle: g.lengthOfCycle,
+      pelvicAbnormalities: g.pelvicAbnormalities,
+      // Therapy
+      therapyHormone: !!t.hormone,
+      therapyRadiation: !!t.radiation,
+      therapySurgical: !!t.surgical,
+      therapyOther: t.other,
+      // Non-gyn features
+      sampleDescription: n.sampleDescription,
+      natureAndSource: n.natureAndSource,
+    });
+  }, [open, isEdit, record, form]);
 
   const buildPayload = (values: any) => {
     const base: any = {
@@ -105,30 +158,65 @@ export function RecordFormDrawer({ open, onClose, formType }: Props) {
 
   const save = useMutation({
     mutationFn: async (opts: { values: any; submit: boolean }) => {
-      const res = await api.post('/specimen/create', buildPayload(opts.values));
-      const record = res.data;
-      if (opts.submit) {
-        await api.put(`/specimen/submit/${record.id}`, { urgent: !!opts.values.urgent });
+      if (isEdit) {
+        // patientId is not part of UpdateRecordDto (forbidNonWhitelisted) — strip it.
+        const { patientId: _p, ...payload } = buildPayload(opts.values);
+        const res = await api.put(`/specimen/update/${recordId}`, payload);
+        return res.data;
       }
-      return record;
+      const res = await api.post('/specimen/create', buildPayload(opts.values));
+      const created = res.data;
+      if (opts.submit) {
+        await api.put(`/specimen/submit/${created.id}`, { urgent: !!opts.values.urgent });
+      }
+      return created;
     },
     onSuccess: (_r, opts) => {
-      message.success(opts.submit ? 'Record submitted to Cytolab' : 'Record saved');
+      message.success(isEdit ? 'Record updated' : opts.submit ? 'Record submitted to Cytolab' : 'Record saved');
       qc.invalidateQueries({ queryKey: ['records'] });
+      if (isEdit) qc.invalidateQueries({ queryKey: ['record', recordId] });
       onClose();
     },
     onError: (e: any) => message.error(e?.response?.data?.message ?? 'Save failed'),
   });
 
+  const del = useMutation({
+    mutationFn: () => api.delete(`/specimen/delete/${recordId}`),
+    onSuccess: () => {
+      message.success('Record deleted');
+      qc.invalidateQueries({ queryKey: ['records'] });
+      onClose();
+    },
+    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Delete failed'),
+  });
+
   const submitForm = (submit: boolean) =>
-    form.validateFields().then((values) => save.mutate({ values, submit }));
+    modal.confirm({
+      title: isEdit ? 'Save changes to this record?' : submit ? 'Submit this record to Cytolab?' : 'Save this record?',
+      okText: isEdit ? 'Save' : submit ? 'Submit' : 'Save',
+      onOk: () => form.validateFields().then((values) => save.mutateAsync({ values, submit })),
+    });
+
+  const confirmDelete = () =>
+    modal.confirm({
+      title: 'Delete this record?',
+      content: 'This permanently removes the record and its specimens.',
+      okText: 'Delete',
+      okButtonProps: { danger: true },
+      onOk: () => del.mutateAsync(),
+    });
+
+  const statusTag = isEdit ? record?.status ?? '…' : 'Pending';
 
   return (
     <Drawer
       title={
         <Space>
-          <span>New {isGyn ? 'Gynecology' : 'Non-Gynecology'} Record</span>
-          <Tag>Pending</Tag>
+          <span>
+            {isEdit ? 'Edit' : 'New'} {isGyn ? 'Gynecology' : 'Non-Gynecology'} Record
+            {isEdit && record?.labNumber ? ` · ${record.labNumber}` : ''}
+          </span>
+          <Tag color={locked ? 'default' : 'processing'}>{statusTag}</Tag>
         </Space>
       }
       width={860}
@@ -138,23 +226,45 @@ export function RecordFormDrawer({ open, onClose, formType }: Props) {
       extra={
         <Space>
           <Button onClick={onClose}>Cancel</Button>
-          <Button loading={save.isPending} onClick={() => submitForm(false)}>
-            Save
-          </Button>
-          <Tooltip title="Submit has Urgent? adds express cost — set the toggle below">
-            <Button type="primary" loading={save.isPending} onClick={() => submitForm(true)}>
-              Submit to Cytolab
-            </Button>
-          </Tooltip>
+          {isEdit ? (
+            <>
+              <Button danger icon={<DeleteOutlined />} loading={del.isPending} disabled={locked} onClick={confirmDelete}>
+                Delete
+              </Button>
+              <Button type="primary" loading={save.isPending} disabled={locked} onClick={() => submitForm(false)}>
+                Save
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button loading={save.isPending} onClick={() => submitForm(false)}>
+                Save
+              </Button>
+              <Tooltip title="Submit has Urgent? adds express cost — set the toggle below">
+                <Button type="primary" loading={save.isPending} onClick={() => submitForm(true)}>
+                  Submit to Cytolab
+                </Button>
+              </Tooltip>
+            </>
+          )}
         </Space>
       }
     >
-      <Form layout="vertical" form={form} requiredMark={false}>
+      {locked && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="This record is locked"
+          description={`A record cannot be edited or deleted once it reaches ${record?.status}. View only.`}
+        />
+      )}
+      <Form layout="vertical" form={form} requiredMark={false} disabled={locked}>
         {/* ---- Common header ---- */}
         <Row gutter={12}>
           <Col span={8}>
             <Form.Item label="Lab No.">
-              <Input readOnly disabled value="Generated on save" />
+              <Input readOnly disabled value={isEdit ? record?.labNumber ?? '…' : 'Generated on save'} />
             </Form.Item>
           </Col>
           <Col span={16}>
@@ -174,10 +284,19 @@ export function RecordFormDrawer({ open, onClose, formType }: Props) {
         <Form.Item label="Patient" required>
           <Space.Compact style={{ width: '100%' }}>
             <Form.Item name="patientId" noStyle rules={[{ required: true, message: 'Choose or create a patient' }]}>
-              <PatientSelect placeholder="Search patient by name or reg no" />
+              {/* Patient is fixed once a record exists. */}
+              <PatientSelect
+                placeholder="Search patient by name or reg no"
+                disabled={isEdit}
+                initialOption={
+                  isEdit && patient
+                    ? { value: patient.id, label: patientLabel(patient) }
+                    : undefined
+                }
+              />
             </Form.Item>
             <Tooltip title="Create a new patient">
-              <Button icon={<UserAddOutlined />} onClick={() => setPatientDrawer(true)} />
+              <Button icon={<UserAddOutlined />} disabled={isEdit} onClick={() => setPatientDrawer(true)} />
             </Tooltip>
           </Space.Compact>
         </Form.Item>
@@ -264,16 +383,20 @@ export function RecordFormDrawer({ open, onClose, formType }: Props) {
           </>
         )}
 
-        <Divider plain />
-        <Space align="center">
-          <Form.Item name="urgent" valuePropName="checked" noStyle>
-            <Switch />
-          </Form.Item>
-          <span>
-            Submit has Urgent?{' '}
-            <Typography.Text type="secondary">(additional cost for express results)</Typography.Text>
-          </span>
-        </Space>
+        {!isEdit && (
+          <>
+            <Divider plain />
+            <Space align="center">
+              <Form.Item name="urgent" valuePropName="checked" noStyle>
+                <Switch />
+              </Form.Item>
+              <span>
+                Submit has Urgent?{' '}
+                <Typography.Text type="secondary">(additional cost for express results)</Typography.Text>
+              </span>
+            </Space>
+          </>
+        )}
       </Form>
 
       {/* Inline patient create — auto-selects the new patient on success. */}

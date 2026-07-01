@@ -9,6 +9,8 @@ import { EditOutlined, MoreOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { ResultSheetModal } from '@/components/ResultSheetModal';
+import { RecordFormDrawer } from '@/components/RecordFormDrawer';
+import type { FormType } from '@/lib/specimen-types';
 
 interface Rec {
   id: string;
@@ -52,6 +54,7 @@ export default function SpecimenOverviewPage() {
   const [sheetFor, setSheetFor] = useState<Rec | null>(null);
   const [viewRec, setViewRec] = useState<Rec | null>(null);
   const [statusRec, setStatusRec] = useState<Rec | null>(null);
+  const [editRec, setEditRec] = useState<Rec | null>(null);
   const [nextStatus, setNextStatus] = useState<string>();
 
   const { data, isFetching, isError, error, refetch } = useQuery({
@@ -85,7 +88,7 @@ export default function SpecimenOverviewPage() {
       title: 'Edit this record?',
       content: `Editing ${r.labNumber ?? 'this record'} changes clinical form data.`,
       okText: 'Edit',
-      onOk: () => message.info('Record editor opens here (uses the record form).'),
+      onOk: () => setEditRec(r),
     });
   const confirmDelete = (r: Rec) =>
     modal.confirm({
@@ -208,6 +211,14 @@ export default function SpecimenOverviewPage() {
       )}
 
       <ResultSheetModal open={!!sheetFor} onClose={() => setSheetFor(null)} record={sheetFor} />
+
+      <RecordFormDrawer
+        open={!!editRec}
+        onClose={() => setEditRec(null)}
+        formType={(editRec?.formType as FormType) ?? 'Gynecology'}
+        recordId={editRec?.id}
+      />
+
 
       <Modal title="Record details" open={!!viewRec} footer={null} onCancel={() => setViewRec(null)} width={620}>
         {viewRec && (
