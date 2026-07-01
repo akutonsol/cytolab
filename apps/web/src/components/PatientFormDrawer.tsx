@@ -55,9 +55,11 @@ interface Props {
   onClose: () => void;
   /** When set, the drawer edits this patient; otherwise it creates a new one. */
   patient?: PatientRecord | null;
+  /** Called with the created patient (for inline use, e.g. the record form). */
+  onCreated?: (patient: PatientRecord) => void;
 }
 
-export function PatientFormDrawer({ open, onClose, patient }: Props) {
+export function PatientFormDrawer({ open, onClose, patient, onCreated }: Props) {
   const { message } = App.useApp();
   const qc = useQueryClient();
   const [form] = Form.useForm();
@@ -90,13 +92,15 @@ export function PatientFormDrawer({ open, onClose, patient }: Props) {
       };
       // registrationNo is server-generated/derived; never sent.
       delete payload.registrationNo;
-      return isEdit
-        ? api.put(`/patient/update/${patient!.id}`, payload)
-        : api.post('/patient', payload);
+      const res = isEdit
+        ? await api.put(`/patient/update/${patient!.id}`, payload)
+        : await api.post('/patient', payload);
+      return res.data as PatientRecord;
     },
-    onSuccess: () => {
+    onSuccess: (saved) => {
       message.success(isEdit ? 'Patient updated' : 'Patient created');
       qc.invalidateQueries({ queryKey: ['patients'] });
+      if (!isEdit && onCreated) onCreated(saved);
       onClose();
     },
     onError: (e: any) => message.error(e?.response?.data?.message ?? 'Save failed'),
