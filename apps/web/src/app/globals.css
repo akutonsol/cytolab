@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Premium UI design foundation — token layer.
+   Single source of truth for both AntD (ConfigProvider reads a
+   few of these) and Tailwind (tailwind.config maps to them).
+   ============================================================ */
+:root {
+  /* Font — --font-jakarta is injected by next/font in layout.tsx */
+  --font-family: var(--font-jakarta), 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+
+  /* Primary (blue — the app identity) */
+  --color-primary: #4f7df9;
+  --color-primary-hover: #3d6ae5;
+  --color-primary-soft: #eaf0fe;
+  --color-primary-on: #ffffff;
+
+  /* Neutrals */
+  --color-bg: #f4f5f7;
+  --color-surface: #ffffff;
+  --color-surface-alt: #fafbfc;
+  --color-border: #edeff2;
+  --color-border-strong: #e1e4e9;
+  --color-text: #1a1d21;
+  --color-text-secondary: #6b7280;
+  --color-text-tertiary: #9ca3af;
+
+  /* Semantic (status) */
+  --color-success: #16a34a;
+  --color-success-soft: #dcfce7;
+  --color-warning: #d97706;
+  --color-warning-soft: #fef3c7;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fee2e2;
+  --color-info: #4f7df9;
+  --color-info-soft: #eaf0fe;
+  --color-neutral-badge: #6b7280;
+  --color-neutral-badge-soft: #f1f3f5;
+
+  /* Pastel highlight cards */
+  --pastel-lavender: #e9e4f5;
+  --pastel-sky: #dde8f7;
+  --pastel-peach: #fbe4d8;
+
+  /* Shape / elevation */
+  --radius-card: 20px;
+  --radius-control: 12px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 3px rgba(16, 24, 40, 0.04), 0 1px 2px rgba(16, 24, 40, 0.03);
+  --shadow-card-hover: 0 4px 12px rgba(16, 24, 40, 0.08);
+  --shadow-float: 0 8px 24px rgba(16, 24, 40, 0.12);
+}
+
+/* Minimal base (Tailwind preflight is disabled so AntD's reset stays intact) */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: var(--font-family);
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-osmoothing: grayscale;
+}
+
+/* Thin, quiet scrollbars inside premium scroll regions */
+.premium-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.premium-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 999px;
+}
+.premium-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
