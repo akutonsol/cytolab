@@ -73,11 +73,18 @@
   --shadow-float: 0 8px 24px rgba(16, 24, 40, 0.06);
 }
 
-/* Minimal base (Tailwind preflight is disabled so AntD's reset stays intact) */
+/* Minimal base (Tailwind preflight is disabled so AntD's reset stays intact).
+   We still need Tailwind's border reset: without it the `border` utility sets a
+   width + color but no border-style, so card borders render invisible. This
+   mirrors preflight's border rule (default width 0, solid style) so `border`
+   utilities show; AntD components set their own border shorthand and override it. */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
+  border-width: 0;
+  border-style: solid;
+  border-color: var(--color-border);
 }
 html,
 body {
