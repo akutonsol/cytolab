@@ -24,6 +24,11 @@ enum ClientTypeEnum {
 }
 
 enum SpecimenType {
+  // Gynecology specimen types.
+  ENDOCERV_ASP
+  CERV_SCRAP
+  VAG_POOL
+  // Non-gynecology specimen types.
   URINE
   CSF
   PLEURAL_FLD
@@ -39,6 +44,9 @@ enum RecordStatus {
   Processing
   Partial
   Completed
+  // Record has a result sheet but is not yet authorized (between Completed and
+  // Approved).
+  Resulted
   Approved
   Billed
   Paid
@@ -51,8 +59,16 @@ enum RecordStatus {
 enum RequisitionStatus {
   Pending
   Active
+  Partial
   Completed
   Disabled
+}
+
+// Cytology test CLASS on a requisition line — orthogonal to SpecimenType
+// (which is the specimen material). Legacy Gynecology/Nongynecology toggle.
+enum RequisitionFormType {
+  Gynecology
+  NonGynecology
 }
 
 enum ResultSheetEventType {
@@ -149,6 +165,10 @@ model Lab {
   patientAddresses      PatientAddress[]
   clientAddresses       ClientAddress[]
   sequences             LabSequence[]
+  gynClinicalFeatures    GynClinicalFeatures[]
+  nonGynClinicalFeatures NonGynClinicalFeatures[]
+  specimenImages         SpecimenImage[]
+  recordAttachments      RecordAttachment[]
 }
 
 model Account {
@@ -329,6 +349,10 @@ model Client {
   firstName    String
   lastName     String
   officeName   String?
+  // Client account number (legacy AC#, e.g. CYLB-577071) — lab-code prefix +
+  // seeded LabSequence counter; imported verbatim. Nullable at the column level
+  // but always set on create.
+  accountNo    String?
   // Supports the patient form's "choose client by name OR email" search.
   email        String?
   phoneNumber  String?
@@ -362,6 +386,7 @@ model Client {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
+  @@unique([labId, accountNo])
   @@index([labCodeId])
   @@index([workspaceId])
 
@@ -372,9 +397,14 @@ model Requisition {
   id               String            @id @default(uuid())
   labId            String
   lab              Lab               @relation(fields: [labId], references: [id])
+  // Human-facing requisition number (legacy Ref#, e.g. 1460). Auto-generated
+  // per lab via a seeded LabSequence; imported verbatim during migration.
+  // Nullable at the column level (survives existing rows) but always set on
+  // create — mirrors PortalUser.username.
+  referenceNo      String?
   status           RequisitionStatus @default(Pending)
-  amount           Float             @default(0)
-  entriesCompleted Boolean           @default(false)
+  // Batch total = Σ line costs, in minor units (cents). Never a float.
+  amount           Int               @default(0)
   clientId         String?
   client           Client?           @relation(fields: [clientId], references: [id])
   workspaceId      String?
@@ -384,22 +414,28 @@ model Requisition {
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
+  @@unique([labId, referenceNo])
   @@index([labId])
   @@index([clientId])
 }
 
 model RequisitionLine {
-  id            String      @id @default(uuid())
+  id            String              @id @default(uuid())
   labId         String
-  lab           Lab         @relation(fields: [labId], references: [id])
+  lab           Lab                 @relation(fields: [labId], references: [id])
   requisitionId String
-  requisition   Requisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
-  isUrgent      Boolean     @default(false)
-  isCompleted   Boolean     @default(false)
-  description   String?
-  amount        Float       @default(0)
+  requisition   Requisition         @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  // Cytology test class (Gyn/NonGyn), separate from the specimen material.
+  formType      RequisitionFormType @default(Gynecology)
+  isUrgent      Boolean             @default(false)
+  // Cached fulfillment flag: true once the linked record reaches Completed+.
+  // The parent requisition's Partial/Completed status is recomputed from these.
+  isCompleted   Boolean             @default(false)
+  notes         String?
+  // Line cost in minor units (cents). Never a float.
+  amount        Int                 @default(0)
   recordId      String?
-  record        Record?     @relation(fields: [recordId], references: [id])
+  record        Record?             @relation(fields: [recordId], references: [id])
 
   @@index([labId])
   @@index([requisitionId])
@@ -410,9 +446,20 @@ model Record {
   id                String              @id @default(uuid())
   labId             String
   lab               Lab                 @relation(fields: [labId], references: [id])
+  // Internal, stable system id (never human-edited). Generated at create.
   identifier        String
-  clinicalDiagnosis String?
+  // Human-facing case number (legacy Lab No., e.g. CBL26-06-465). Generated per
+  // lab via a MONTHLY-reset LabSequence; imported verbatim. Nullable at the
+  // column level (survives existing rows) but always set on create.
   labNumber         String?
+  // Which clinical form this case uses — the discriminator for which
+  // *ClinicalFeatures relation applies. Reuses RequisitionFormType (flows
+  // requisition-line -> record); one shared enum.
+  formType          RequisitionFormType?
+  // Referring/requesting doctor (free-text on the record form).
+  doctor            String?
+  clinicalDiagnosis String?
+  specimenDate      DateTime?
   urgent            Boolean             @default(false)
   medicalEntry      String?
   billed            Boolean             @default(false)
@@ -428,15 +475,19 @@ model Record {
   statusHistory     RecordStatusEvent[]
   requisitionLines  RequisitionLine[]
   therapy           Therapy?
+  gynFeatures       GynClinicalFeatures?
+  nonGynFeatures    NonGynClinicalFeatures?
   resultSheets      ResultSheet[]
   bills             Bill[]
   changeRequests    ChangeRequest[]
+  attachments       RecordAttachment[]
   cabinetId         String?
   cabinet           Cabinet?            @relation(fields: [cabinetId], references: [id])
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 
   @@unique([labId, identifier])
+  @@unique([labId, labNumber])
   @@index([labId])
   @@index([patientId])
   @@index([clientId])
@@ -479,6 +530,7 @@ model Specimen {
   client       Client?      @relation(fields: [clientId], references: [id])
   dateReceived DateTime?
   resultEntries ResultEntry[]
+  images       SpecimenImage[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
@@ -565,6 +617,9 @@ model ResultSheet {
   lab            Lab           @relation(fields: [labId], references: [id])
   recordId       String
   record         Record        @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  // External uploaded result sheet (stub — populated when Phase 6 file storage
+  // lands; the in-system entry path uses resultEntries below).
+  fileUrl        String?
   viewed         Boolean       @default(false)
   // Authorization gate (Phase 3 critical rule): set by a user holding
   // resultsheet:authorize. Editing entries resets these (re-authorization required).
@@ -986,4 +1041,79 @@ model LabSequence {
 
   @@unique([labId, name])
   @@index([labId])
+}
+
+// ---- Record clinical features (two forms, chosen up front) ----
+// A record is EITHER a Gynecology case OR a Non-Gynecology case (Record.formType
+// discriminator). Each form's clinical fields live in its own typed 1:1 model so
+// invalid states are unrepresentable (no pregnancy data on a urine sample).
+
+model GynClinicalFeatures {
+  id                        String    @id @default(uuid())
+  labId                     String
+  lab                       Lab       @relation(fields: [labId], references: [id])
+  recordId                  String    @unique
+  record                    Record    @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  routineCheck              Boolean   @default(false)
+  previousCytology          Boolean   @default(false)
+  lmp                       DateTime? // last menstrual period
+  clinicalAppearanceOfCervix String?
+  nowPregnant               Boolean   @default(false)
+  pregnancies               Int?
+  leucorrhea                String?
+  menopause                 Boolean   @default(false)
+  dateOfMenopause           DateTime?
+  lengthOfCycle             String?
+  pelvicAbnormalities       String?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  @@index([labId])
+}
+
+model NonGynClinicalFeatures {
+  id                String   @id @default(uuid())
+  labId             String
+  lab               Lab      @relation(fields: [labId], references: [id])
+  recordId          String   @unique
+  record            Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  sampleDescription String?
+  natureAndSource   String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([labId])
+}
+
+// General file attached to a record ("Attach File" row action). STUB — the
+// actual upload/serving is deferred to Phase 6 file storage.
+model RecordAttachment {
+  id         String   @id @default(uuid())
+  labId      String
+  lab        Lab      @relation(fields: [labId], references: [id])
+  recordId   String
+  record     Record   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  storageUrl String
+  filename   String?
+  kind       String?
+  createdAt  DateTime @default(now())
+
+  @@index([labId])
+  @@index([recordId])
+}
+
+// Slide (Gyn) / Vial (NonGyn) specimen images. STUB — actual upload/serving is
+// deferred to Phase 6 file storage; the label is derived from Record.formType.
+model SpecimenImage {
+  id         String   @id @default(uuid())
+  labId      String
+  lab        Lab      @relation(fields: [labId], references: [id])
+  specimenId String
+  specimen   Specimen @relation(fields: [specimenId], references: [id], onDelete: Cascade)
+  storageUrl String
+  caption    String?
+  createdAt  DateTime @default(now())
+
+  @@index([labId])
+  @@index([specimenId])
 }
