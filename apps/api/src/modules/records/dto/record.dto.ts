@@ -118,4 +118,7 @@ export class RecordQueryDto extends PaginationDto {
   @IsString() @IsOptional() clientId?: string;
   @IsString() @IsOptional() requisitionId?: string;
   @IsEnum(RecordStatus) @IsOptional() status?: RecordStatus;
+  @IsEnum(RequisitionFormType) @IsOptional() formType?: RequisitionFormType;
+  // "Authorized" tab: only records that have an authorized result sheet.
+  @IsBoolean() @IsOptional() @Type(() => Boolean) authorized?: boolean;
 }

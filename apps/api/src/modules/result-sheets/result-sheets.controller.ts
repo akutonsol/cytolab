@@ -17,8 +17,8 @@ export class ResultSheetsController {
 
   @Post('resultsheet/create')
   @RequirePermissions('resultsheet:create')
-  create(@Body() dto: CreateResultSheetDto) {
-    return this.resultSheets.create(dto);
+  create(@CurrentUser() user: AuthUser, @Body() dto: CreateResultSheetDto) {
+    return this.resultSheets.create(dto, user.userId);
   }
 
   @Get('resultsheets')

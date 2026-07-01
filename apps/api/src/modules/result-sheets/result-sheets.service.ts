@@ -1,8 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, ResultSheetEventType } from '@prisma/client';
+import { Prisma, RecordStatus, ResultSheetEventType } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
+import { RecordsService } from '../records/records.service';
 import {
   CreateResultEntryDto,
   CreateResultSheetDto,
@@ -43,7 +44,10 @@ const resultSheetSelect = {
 
 @Injectable()
 export class ResultSheetsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private records: RecordsService,
+  ) {}
 
   // Build the nested entries/lines create payload. The tenancy guard stamps
   // labId on every nested tenant row at write time.
@@ -70,18 +74,33 @@ export class ResultSheetsService {
     };
   }
 
-  async create(dto: CreateResultSheetDto) {
+  async create(dto: CreateResultSheetDto, userId: string) {
     // Confirm the record exists in this lab (auto lab-scoped).
-    const record = await this.prisma.record.findFirst({ where: { id: dto.recordId }, select: { id: true } });
+    const record = await this.prisma.record.findFirst({
+      where: { id: dto.recordId },
+      select: { id: true, status: true },
+    });
     if (!record) throw new NotFoundException('Record not found');
+    // A result sheet can only be added to a Completed record — you can't have
+    // results for an unprocessed sample.
+    if (record.status !== RecordStatus.Completed) {
+      throw new BadRequestException('A result sheet can only be added to a Completed record');
+    }
 
-    return this.prisma.resultSheet.create({
+    const sheet = await this.prisma.resultSheet.create({
       data: tenantCreate<Prisma.ResultSheetUncheckedCreateInput>({
         recordId: dto.recordId,
         resultEntries: this.entriesCreate(dto.entries),
       }),
       select: resultSheetSelect,
     });
+
+    // The record now has a result sheet: Completed -> Resulted (validated + audited).
+    await this.records.updateStatus(record.id, userId, {
+      status: RecordStatus.Resulted,
+      notes: 'Result sheet added',
+    });
+    return sheet;
   }
 
   async findAll(query: ResultSheetQueryDto) {
@@ -167,7 +186,7 @@ export class ResultSheetsService {
     });
     const type = priorAuthorizations > 0 ? ResultSheetEventType.Reauthorized : ResultSheetEventType.Authorized;
 
-    return this.prisma.resultSheet.update({
+    const authorized = await this.prisma.resultSheet.update({
       where: { id },
       data: {
         authorized: true,
@@ -182,5 +201,19 @@ export class ResultSheetsService {
       },
       select: resultSheetSelect,
     });
+
+    // Authorizing the sheet advances the record Resulted -> Approved (only from
+    // Resulted, so a re-authorization on an already-advanced record is a no-op).
+    const rec = await this.prisma.record.findFirst({
+      where: { id: sheet.recordId },
+      select: { status: true },
+    });
+    if (rec?.status === RecordStatus.Resulted) {
+      await this.records.updateStatus(sheet.recordId, userId, {
+        status: RecordStatus.Approved,
+        notes: 'Result sheet authorized',
+      });
+    }
+    return authorized;
   }
 }

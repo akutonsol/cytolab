@@ -60,6 +60,7 @@ const recordSelect = {
   therapy: true,
   gynFeatures: true,
   nonGynFeatures: true,
+  resultSheets: { select: { id: true, authorized: true, authorizedAt: true } },
   statusHistory: {
     select: { id: true, status: true, notes: true, userId: true, createdAt: true },
     orderBy: { createdAt: 'asc' as const },
@@ -72,6 +73,18 @@ const recordSelect = {
 // A requisition line is "fulfilled" once its record reaches Completed or beyond.
 const FULFILLED_STATUSES: RecordStatus[] = [
   RecordStatus.Completed,
+  RecordStatus.Resulted,
+  RecordStatus.Approved,
+  RecordStatus.Billed,
+  RecordStatus.Paid,
+  RecordStatus.Viewed,
+];
+
+// Completed-or-beyond: the record's DATA is frozen (no edits/delete). Orthogonal
+// to status transitions — the workflow still proceeds via updateStatus().
+const LOCKED_STATUSES: RecordStatus[] = [
+  RecordStatus.Completed,
+  RecordStatus.Resulted,
   RecordStatus.Approved,
   RecordStatus.Billed,
   RecordStatus.Paid,
@@ -83,7 +96,10 @@ const ALLOWED_TRANSITIONS: Partial<Record<RecordStatus, RecordStatus[]>> = {
   [RecordStatus.Submitted]:  [RecordStatus.Processing, RecordStatus.OnHold, RecordStatus.Disabled],
   [RecordStatus.Processing]: [RecordStatus.Partial, RecordStatus.Completed, RecordStatus.OnHold, RecordStatus.Disabled, RecordStatus.Failed],
   [RecordStatus.Partial]:    [RecordStatus.Completed, RecordStatus.OnHold, RecordStatus.Disabled, RecordStatus.Failed],
-  [RecordStatus.Completed]:  [RecordStatus.Approved, RecordStatus.OnHold],
+  // A Completed record moves to Resulted once it has a result sheet, then to
+  // Approved via the authorization gate.
+  [RecordStatus.Completed]:  [RecordStatus.Resulted, RecordStatus.OnHold],
+  [RecordStatus.Resulted]:   [RecordStatus.Approved, RecordStatus.OnHold],
   [RecordStatus.Approved]:   [RecordStatus.Billed],
   [RecordStatus.Billed]:     [RecordStatus.Paid],
   [RecordStatus.OnHold]:     [RecordStatus.Submitted, RecordStatus.Processing, RecordStatus.Disabled],
@@ -225,6 +241,7 @@ export class RecordsService {
 
   async update(id: string, userId: string, dto: UpdateRecordDto) {
     const existing = await this.findOne(id);
+    this.assertNotLocked(existing.status as RecordStatus);
     const { therapy, gynFeatures, nonGynFeatures, ...rest } = dto;
 
     // Effective form type = the update's, else the record's current one.
@@ -352,9 +369,21 @@ export class RecordsService {
   }
 
   async remove(id: string) {
-    await this.findOne(id);
+    const record = await this.findOne(id);
+    this.assertNotLocked(record.status as RecordStatus);
     await this.prisma.record.delete({ where: { id } });
     return { deleted: true };
+  }
+
+  /**
+   * Completed-lock: once a record reaches Completed (or beyond) its data is
+   * frozen — edits and deletes are refused. This is ORTHOGONAL to status
+   * transitions, which continue via updateStatus() so the lifecycle proceeds.
+   */
+  private assertNotLocked(status: RecordStatus) {
+    if (LOCKED_STATUSES.includes(status)) {
+      throw new ConflictException('Record is locked once completed and can no longer be edited or deleted');
+    }
   }
 
   // ---- helpers ----
@@ -368,9 +397,19 @@ export class RecordsService {
     if (query.status) where.status = query.status;
     if (query.patientId) where.patientId = query.patientId;
     if (query.clientId) where.clientId = query.clientId;
+    if (query.formType) where.formType = query.formType;
+    // "Authorized" tab: records that have at least one authorized result sheet.
+    if (query.authorized) where.resultSheets = { some: { authorized: true } };
 
     const [data, total] = await Promise.all([
-      this.prisma.record.findMany({ where, select: recordSelect, skip, take: pageSize, orderBy: { createdAt: 'desc' } }),
+      this.prisma.record.findMany({
+        where,
+        select: recordSelect,
+        skip,
+        take: pageSize,
+        // Urgent specimens surface at the top of the overview.
+        orderBy: [{ urgent: 'desc' }, { createdAt: 'desc' }],
+      }),
       this.prisma.record.count({ where }),
     ]);
     return paginate(data, total, page, pageSize);
