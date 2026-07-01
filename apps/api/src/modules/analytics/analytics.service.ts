@@ -68,7 +68,11 @@ export class AnalyticsService {
     let resultedPlus = 0;
     let approvedPlus = 0;
     let specimenCount = 0;
-    const clientMonth = new Map<string, { name: string; cur: number; prev: number }>();
+    // Top-volume client: rank by total window volume; MoM change from a rolling
+    // 30-day window vs the prior 30 days (avoids the partial-calendar-month -100%).
+    const clientMonth = new Map<string, { name: string; total: number; cur: number; prev: number }>();
+    const win30 = new Date(now.getTime() - 30 * DAY_MS);
+    const win60 = new Date(now.getTime() - 60 * DAY_MS);
 
     for (const r of records) {
       const sh = r.statusHistory as Ev[];
@@ -90,13 +94,13 @@ export class AnalyticsService {
         tatRecords.push({ tatDays, approvedAt, specimenTypes: types, clientId: r.clientId });
       }
 
-      // Highest-volume client: current vs prior month.
+      // Highest-volume client.
       if (r.clientId && fulfilled) {
         const name = r.client?.officeName || `${r.client?.firstName ?? ''} ${r.client?.lastName ?? ''}`.trim() || 'Client';
-        const i = bucketIndex(fulfilled);
-        const rec = clientMonth.get(r.clientId) ?? { name, cur: 0, prev: 0 };
-        if (i === currentIdx) rec.cur += 1;
-        else if (i === currentIdx - 1) rec.prev += 1;
+        const rec = clientMonth.get(r.clientId) ?? { name, total: 0, cur: 0, prev: 0 };
+        rec.total += 1;
+        if (fulfilled >= win30) rec.cur += 1;
+        else if (fulfilled >= win60) rec.prev += 1;
         clientMonth.set(r.clientId, rec);
       }
     }
@@ -161,9 +165,16 @@ export class AnalyticsService {
     let fastest: { type: string; avg: number } | null = null;
     for (const [type, v] of tatByType) { const avg = v.sum / v.n; if (!fastest || avg < fastest.avg) fastest = { type, avg }; }
 
-    let topClient: { name: string; cur: number; prev: number } | null = null;
-    for (const v of clientMonth.values()) if (!topClient || v.cur > topClient.cur) topClient = v;
-    const topClientPct = topClient && topClient.prev ? Math.round(((topClient.cur - topClient.prev) / topClient.prev) * 100) : null;
+    let topClient: { name: string; total: number; cur: number; prev: number } | null = null;
+    for (const v of clientMonth.values()) if (!topClient || v.total > topClient.total) topClient = v;
+    // MoM %: prior>0 → real change; prior==0 but current>0 → +100% (new activity); else null.
+    const topClientPct = topClient
+      ? topClient.prev > 0
+        ? Math.round(((topClient.cur - topClient.prev) / topClient.prev) * 100)
+        : topClient.cur > 0
+          ? 100
+          : null
+      : null;
 
     const authRate = resultedPlus ? Math.round((approvedPlus / resultedPlus) * 100) : 0;
     const [abnormalLines, totalLines] = await Promise.all([
@@ -190,8 +201,11 @@ export class AnalyticsService {
     ];
 
     // ---- reports authorized this month ----
+    // "Reports authorized this month" = records that reached Approved this
+    // calendar month (from the status timeline), so it reflects real sign-off
+    // activity even when result sheets aren't separately tracked.
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const authorizedThisMonth = await this.prisma.resultSheet.count({ where: { authorized: true, authorizedAt: { gte: startOfMonth } } });
+    const authorizedThisMonth = tatRecords.filter((t) => t.approvedAt >= startOfMonth).length;
     const reportTarget = lab?.monthlyVolumeTarget ?? Math.max(derivedTarget, 1);
 
     const currency = lab?.currency ?? 'JMD';
@@ -206,7 +220,7 @@ export class AnalyticsService {
       insights: {
         items: [
           { key: 'fastestTat', title: 'Fastest turnaround', detail: fastest?.type ?? '—', metric: fastest ? `${fastest.avg.toFixed(1)}d` : '—' },
-          { key: 'topClient', title: 'Highest volume client', detail: topClient?.name ?? '—', metric: topClientPct != null ? `${topClientPct >= 0 ? '+' : ''}${topClientPct}%` : `${topClient?.cur ?? 0}` },
+          { key: 'topClient', title: 'Highest volume client', detail: topClient?.name ?? '—', metric: topClientPct != null ? `${topClientPct >= 0 ? '+' : ''}${topClientPct}%` : `${topClient?.total ?? 0} cases` },
           { key: 'authRate', title: 'Authorization rate', detail: 'Resulted → Approved', metric: `${authRate}%` },
           { key: 'abnormalRate', title: 'Abnormal findings', detail: 'Flagged result lines', metric: `${abnormalRate}%` },
         ],

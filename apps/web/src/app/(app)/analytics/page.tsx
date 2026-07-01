@@ -81,7 +81,7 @@ export default function AnalyticsPage() {
         <SectionCard
           className="col-span-12 xl:col-span-6"
           title="Specimen Volume Overview"
-          action={<Legend items={[{ label: 'Actual Volume', color: '#4f7df9' }, { label: 'Target Capacity', color: '#9ca3af' }]} />}
+          action={<Legend items={[{ label: 'Actual Volume', color: '#3b6cf5' }, { label: 'Target Capacity', color: '#cbd5e1' }]} />}
         >
           <DivergingBars data={d.monthlyVolume} currentMonth={d.currentMonth} />
         </SectionCard>
