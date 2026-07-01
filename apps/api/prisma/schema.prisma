@@ -75,6 +75,9 @@ enum ResultSheetEventType {
   Authorized
   Deauthorized
   Reauthorized
+  // F4 AI-assist audit trail (assistive only — never an authorization).
+  AiDrafted
+  AiAccepted
 }
 
 // Legacy authorizer_enum: a staff authorizer's professional designation, stamped
@@ -153,6 +156,8 @@ model Lab {
   codeSheets         CodeSheet[]
   codeFindings       CodeFinding[]
   labCodes           LabCode[]
+  aiSettings         LabAiSettings?
+  aiDrafts           AiDraft[]
   resultSheets       ResultSheet[]
   resultEntries      ResultEntry[]
   resultLines        ResultLine[]
@@ -231,6 +236,8 @@ model User {
   authorizedResultSheets ResultSheet[]       @relation("ResultSheetAuthorizer")
   authoredReports        Report[]            @relation("ReportAuthor")
   resultSheetEvents      ResultSheetEvent[]
+  aiDraftsCreated        AiDraft[]           @relation("AiDraftCreatedBy")
+  aiDraftsAccepted       AiDraft[]           @relation("AiDraftAcceptedBy")
   assignedChangeRequests ChangeRequest[]        @relation("ChangeRequestAssignee")
   changeRequestMessages  ChangeRequestMessage[] @relation("ChangeRequestMessageStaffAuthor")
   changeRequestEvents    ChangeRequestEvent[]   @relation("ChangeRequestEventStaffActor")
@@ -651,9 +658,14 @@ model ResultSheet {
   authorizedAt   DateTime?
   authorizedById String?
   authorizedBy   User?         @relation("ResultSheetAuthorizer", fields: [authorizedById], references: [id])
+  // Human-owned working narrative the Authorizer edits and signs. An accepted AI
+  // draft (F4) is copied here; at report release this becomes Report.content.
+  // Owned by the human — the AiDraft keeps the provenance separately.
+  narrative      String?
   resultEntries  ResultEntry[]
   reports        Report[]
   events         ResultSheetEvent[]
+  aiDrafts       AiDraft[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -733,6 +745,72 @@ model Report {
 
   @@index([labId])
   @@index([resultSheetId])
+}
+
+// ---- F4: AI-assisted reporting ----
+// AI is strictly ASSISTIVE. Nothing here authorizes or bypasses the auth gate;
+// every AI call is best-effort and degrades gracefully. See docs/F4_AI_REPORTING_DESIGN.md.
+
+// Per-lab AI configuration. Off by default (opt-in, compliance-gated).
+model LabAiSettings {
+  id              String          @id @default(uuid())
+  labId           String          @unique
+  lab             Lab             @relation(fields: [labId], references: [id])
+  enabled         Boolean         @default(false)
+  houseStyle      String?         // lab's narrative template / style guidance
+  redactionPolicy RedactionPolicy @default(Strict)
+  model           String?         // optional model override; else the server default
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+enum RedactionPolicy {
+  Strict   // clinical data only — NO demographics
+  Standard // adds de-identified sex + age BAND (never DOB / exact age)
+}
+
+// Provenance record for every AI generation, kept forever. Never overwritten:
+// a result sheet accumulates drafts over time.
+model AiDraft {
+  id              String          @id @default(uuid())
+  labId           String
+  lab             Lab             @relation(fields: [labId], references: [id])
+  resultSheetId   String
+  resultSheet     ResultSheet     @relation(fields: [resultSheetId], references: [id], onDelete: Cascade)
+  kind            AiDraftKind
+  status          AiDraftStatus   @default(Generated)
+  // What the model produced: narrative text, or a JSON string for codes/consistency.
+  output          String
+  // Provenance
+  model           String          // exact model id used
+  promptVersion   String          // e.g. "narrative-v1" — bumped when the prompt changes
+  redactionPolicy RedactionPolicy // policy snapshot applied at generation
+  inputDigest     String          // sha256 of the exact redacted payload (proves input class w/o storing PHI)
+  createdById     String?
+  createdBy       User?           @relation("AiDraftCreatedBy", fields: [createdById], references: [id])
+  createdAt       DateTime        @default(now())
+  // Human review (Narrative kind): the edited final text + diff at acceptance.
+  finalText       String?
+  editedDiff      Json?           // structured diff: AI output -> finalText
+  acceptedAt      DateTime?
+  acceptedById    String?
+  acceptedBy      User?           @relation("AiDraftAcceptedBy", fields: [acceptedById], references: [id])
+
+  @@index([labId])
+  @@index([resultSheetId])
+}
+
+enum AiDraftKind {
+  Narrative
+  CodeSuggestion
+  ConsistencyCheck
+}
+
+enum AiDraftStatus {
+  Generated
+  Accepted
+  Rejected
+  Superseded
 }
 
 // ---- Phase 4: Revenue ----

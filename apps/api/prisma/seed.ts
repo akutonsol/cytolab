@@ -20,6 +20,8 @@ const STANDARD_OBJECTS = [
   'labcode', 'message', 'patient', 'payadvice', 'payment', 'payroll', 'permission',
   'record', 'recordstatus', 'report', 'requisition', 'resultentry', 'resultsheet',
   'role', 'service', 'specimen', 'tax', 'therapy', 'user', 'workspace',
+  // F4 AI-assisted reporting: aidraft:create gates generation (Authorizer roles).
+  'aidraft',
 ];
 const STANDARD_ACTIONS = ['view', 'create', 'change', 'delete'];
 // Extra actions on standard-CRUD objects.
@@ -80,14 +82,14 @@ async function main() {
       name: 'Authorizers',
       description: 'Reviews and authorizes result sheets (holds resultsheet:authorize)',
       perms: byPrefix(
-        ['patient', 'client', 'record', 'recordstatus', 'requisition', 'resultsheet', 'resultentry', 'codesheet', 'labcode', 'report', 'cabinet'],
+        ['patient', 'client', 'record', 'recordstatus', 'requisition', 'resultsheet', 'resultentry', 'codesheet', 'labcode', 'report', 'cabinet', 'aidraft'],
       ),
     },
     {
       name: 'Pathologist',
       description: 'Authorizer (Pathologist/Cytologist) who signs off and authorizes reports',
       perms: byPrefix(
-        ['patient', 'client', 'record', 'recordstatus', 'requisition', 'resultsheet', 'resultentry', 'codesheet', 'labcode', 'report', 'cabinet'],
+        ['patient', 'client', 'record', 'recordstatus', 'requisition', 'resultsheet', 'resultentry', 'codesheet', 'labcode', 'report', 'cabinet', 'aidraft'],
       ),
     },
     {
