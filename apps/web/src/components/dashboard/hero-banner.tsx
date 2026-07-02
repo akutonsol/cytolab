@@ -23,7 +23,7 @@ const glass: React.CSSProperties = {
 };
 // Solid colour-coded card. The specimen (blood) card is red; the first three KPI
 // chips use peach / lavender / light-blue; the last chip keeps the frosted glass.
-const SPECIMEN_BG = '#f5cbc9';
+const SPECIMEN_BG = '#e87b72';
 const CHIP_BG: (string | undefined)[] = ['#f5ddca', '#e6e1ee', '#d6e0f0'];
 const solid = (bg: string): React.CSSProperties => ({
   borderRadius: 24,
@@ -71,21 +71,26 @@ export function HeroBanner({
       {/* Row 2 — active specimen + KPI chips in one horizontal row */}
       <div style={{ display: 'flex', gap: 16, marginTop: 48, flexWrap: 'wrap' }}>
         <div style={{ ...solid(SPECIMEN_BG), display: 'flex', gap: 12, alignItems: 'center', flex: '0 0 auto', minWidth: 250 }}>
-          <Image src="/specimen-tube.png" alt="" width={48} height={96} style={{ objectFit: 'contain', flexShrink: 0 }} />
+          <div style={{ position: 'relative', width: 48, height: 96, flexShrink: 0 }}>
+            <Image src="/specimen-tube.png" alt="" width={48} height={96} style={{ objectFit: 'contain' }} />
+            {/* Two staggered blood drops falling from the tube tip */}
+            <span className="blood-drip" style={{ position: 'absolute', left: '50%', bottom: 10, width: 6, height: 8, marginLeft: -3, borderRadius: '50% 50% 50% 50% / 60% 60% 42% 42%', background: '#a01414' }} />
+            <span className="blood-drip" style={{ position: 'absolute', left: '50%', bottom: 10, width: 5, height: 7, marginLeft: -2.5, borderRadius: '50% 50% 50% 50% / 60% 60% 42% 42%', background: '#8f1111', animationDelay: '1.3s' }} />
+          </div>
           <div style={{ minWidth: 0 }}>
-            <div style={kicker}>Active Specimen</div>
+            <div style={{ ...kicker, color: '#7a231c' }}>Active Specimen</div>
             {featured ? (
               <>
-                <div style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 14, fontWeight: 600, color: '#0f172a', marginTop: 2 }}>
+                <div style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 14, fontWeight: 600, color: '#3f120e', marginTop: 2 }}>
                   {featured.labNumber ?? '—'}
                 </div>
-                <div style={{ fontSize: 12, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{featured.patient}</div>
-                <span style={{ display: 'inline-block', marginTop: 6, borderRadius: 999, background: 'rgba(99,102,241,0.1)', color: '#6366f1', fontSize: 11, fontWeight: 600, padding: '2px 8px' }}>
+                <div style={{ fontSize: 12, color: '#6e241e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{featured.patient}</div>
+                <span style={{ display: 'inline-block', marginTop: 6, borderRadius: 999, background: 'rgba(255,255,255,0.55)', color: '#7a231c', fontSize: 11, fontWeight: 600, padding: '2px 8px' }}>
                   {featured.status}
                 </span>
               </>
             ) : (
-              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>No open cases today</div>
+              <div style={{ fontSize: 12, color: '#6e241e', marginTop: 4 }}>No open cases today</div>
             )}
           </div>
         </div>

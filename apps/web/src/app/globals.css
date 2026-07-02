@@ -151,3 +151,21 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .dna-drift { animation: none; }
 }
+
+/* ============================================================
+   Active-specimen tube — blood drip animation.
+   ============================================================ */
+@keyframes blood-drip {
+  0%   { transform: translateY(0) scaleY(0.5); opacity: 0; }
+  12%  { transform: translateY(2px) scaleY(1); opacity: 1; }
+  62%  { transform: translateY(15px) scaleY(1.2); opacity: 1; }
+  100% { transform: translateY(30px) scaleY(1.4); opacity: 0; }
+}
+.blood-drip {
+  animation: blood-drip 2.6s ease-in infinite;
+  transform-origin: top center;
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .blood-drip { animation: none; opacity: 0; }
+}
