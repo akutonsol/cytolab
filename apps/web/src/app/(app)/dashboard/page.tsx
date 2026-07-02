@@ -114,7 +114,7 @@ export default function DashboardPage() {
           maskImage: 'linear-gradient(to right, transparent 0%, transparent 30%, black 55%, black 100%)',
           WebkitMaskImage: 'linear-gradient(to right, transparent 0%, transparent 30%, black 55%, black 100%)',
         }}>
-          <Image src="/dna-helix.png" alt="" fill style={{ objectFit: 'cover', objectPosition: 'center right' }} priority />
+          <Image src="/dna-helix.png" alt="" fill style={{ objectFit: 'contain', objectPosition: 'right center' }} priority />
         </div>
 
         <div style={{ position: 'relative', zIndex: 2, maxWidth: 420 }}>
