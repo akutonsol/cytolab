@@ -15,9 +15,9 @@ export interface HeroFeatured {
 const glass: React.CSSProperties = {
   borderRadius: 24,
   border: '1px solid rgba(255,255,255,0.7)',
-  background: 'rgba(255,255,255,0.72)',
-  backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)',
+  background: 'rgba(255,255,255,0.58)',
+  backdropFilter: 'blur(14px)',
+  WebkitBackdropFilter: 'blur(14px)',
   boxShadow: '0 1px 2px rgba(16,24,40,0.06)',
   padding: 16,
 };
