@@ -5,13 +5,15 @@ import {
   RadialBar, RadialBarChart, ReferenceDot, ReferenceLine, ResponsiveContainer, XAxis, YAxis,
 } from 'recharts';
 
-const BLUE = '#6366f1';
-const BLUE_DEEP = '#4f46e5';
-const PURPLE = '#a5b4fc';
+const ORANGE = '#f1592b';
+const ORANGE_DEEP = '#dc4718';
+const CHARCOAL = '#2b2d31';
+const LAV = '#c3b8f5';
+const GREEN = '#34c759';
 const INK = '#0f172a';
 const AXIS = '#6b7280';
 const GRID = '#e8edf4';
-const BAR = '#e0e7ff';
+const BAR = '#34363d';
 
 /* ---- Dense daily throughput "comb": thick charcoal bars; peak = blue lollipop (ref) ---- */
 export function ThroughputComb({ data, height = 280 }: { data: any[]; height?: number }) {
@@ -26,8 +28,8 @@ export function ThroughputComb({ data, height = 280 }: { data: any[]; height?: n
           ticks={ticks} tickFormatter={(i) => data[i]?.label ?? ''} tick={{ fontSize: 13, fill: AXIS, fontWeight: 500 }} dy={8} />
         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 13, fill: AXIS, fontWeight: 500 }} width={36}
           tickFormatter={(v) => (v >= 1000 ? `${v / 1000}K` : `${v}`)} />
-        {peak && <ReferenceLine segment={[{ x: peakIdx, y: 0 }, { x: peakIdx, y: peak.value }]} stroke={BLUE} strokeWidth={3} ifOverflow="visible" />}
-        {peak && <ReferenceDot x={peakIdx} y={peak.value} r={6} fill={BLUE} stroke="#fff" strokeWidth={2.5} />}
+        {peak && <ReferenceLine segment={[{ x: peakIdx, y: 0 }, { x: peakIdx, y: peak.value }]} stroke={ORANGE} strokeWidth={3} ifOverflow="visible" />}
+        {peak && <ReferenceDot x={peakIdx} y={peak.value} r={6} fill={ORANGE} stroke="#fff" strokeWidth={2.5} />}
         <Bar dataKey="value" isAnimationActive animationDuration={900} animationEasing="ease-out" maxBarSize={7} radius={[3.5, 3.5, 0, 0]}>
           {data.map((d, i) => <Cell key={i} fill={d.peak ? 'transparent' : BAR} />)}
         </Bar>
@@ -44,10 +46,10 @@ export function RadarMetrics({ data, height = 280 }: { data: any[]; height?: num
         <PolarGrid stroke={GRID} />
         <PolarAngleAxis dataKey="dim" tick={{ fontSize: 13, fill: AXIS, fontWeight: 600 }} />
         <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10, fill: '#b8bec9' }} tickCount={3} axisLine={false} />
-        <Radar name="Last period" dataKey="previous" stroke="#d1d5db" fill="#d1d5db" fillOpacity={0.08} strokeWidth={2}
-          isAnimationActive animationDuration={900} dot={{ r: 4, fill: '#fff', stroke: '#d1d5db', strokeWidth: 2 }} />
-        <Radar name="This period" dataKey="current" stroke={BLUE} fill={BLUE} fillOpacity={0.12} strokeWidth={2.5}
-          isAnimationActive animationDuration={1000} dot={{ r: 4.5, fill: '#fff', stroke: BLUE, strokeWidth: 2 }} />
+        <Radar name="Last period" dataKey="previous" stroke={CHARCOAL} fill={CHARCOAL} fillOpacity={0.05} strokeWidth={2}
+          isAnimationActive animationDuration={900} dot={{ r: 4, fill: '#fff', stroke: CHARCOAL, strokeWidth: 2 }} />
+        <Radar name="This period" dataKey="current" stroke={ORANGE} fill={ORANGE} fillOpacity={0.16} strokeWidth={2.5}
+          isAnimationActive animationDuration={1000} dot={{ r: 4.5, fill: '#fff', stroke: ORANGE, strokeWidth: 2 }} />
       </RadarChart>
     </ResponsiveContainer>
   );
@@ -62,8 +64,8 @@ export function OeeDonut({ value, inner, size = 216 }: { value: number; inner: n
           {key === 'outer' && (
             <defs>
               <linearGradient id="oeeGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor={BLUE} />
-                <stop offset="100%" stopColor={BLUE_DEEP} />
+                <stop offset="0%" stopColor={ORANGE} />
+                <stop offset="100%" stopColor={ORANGE_DEEP} />
               </linearGradient>
             </defs>
           )}
@@ -77,7 +79,7 @@ export function OeeDonut({ value, inner, size = 216 }: { value: number; inner: n
   return (
     <div style={{ position: 'relative', width: size, height: size }}>
       {ring(value, 'url(#oeeGrad)', '72%', '100%', 18, 'outer')}
-      {ring(inner, PURPLE, '48%', '70%', 14, 'inner', 250)}
+      {ring(inner, LAV, '48%', '70%', 14, 'inner', 250)}
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         <span style={{ fontSize: 36, fontWeight: 800, color: INK, letterSpacing: '-0.02em' }}>{value}%</span>
         <span style={{ fontSize: 13, color: AXIS, fontWeight: 700, letterSpacing: '0.06em' }}>OEE</span>
@@ -90,8 +92,7 @@ export function OeeDonut({ value, inner, size = 216 }: { value: number; inner: n
 export function ProgressRing({ pct, size = 40 }: { pct: number; size?: number }) {
   const r = (size - 5) / 2;
   const c = 2 * Math.PI * r;
-  const done = pct >= 100;
-  const color = done ? '#22c55e' : BLUE;
+  const color = pct >= 50 ? GREEN : ORANGE;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e8edf4" strokeWidth={4.5} />

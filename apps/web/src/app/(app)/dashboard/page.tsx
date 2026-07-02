@@ -15,7 +15,7 @@ import { HeroBanner, type HeroChip } from '@/components/dashboard/hero-banner';
 import { NavPills } from '@/components/dashboard/nav-pills';
 import { OeeDonut, ProgressRing, RadarMetrics, ThroughputComb } from './charts';
 
-const GREEN = '#22c55e', BLUE = '#6366f1', GRAY = '#9ca3af';
+const GREEN = '#22c55e', ORANGE = '#f1592b', PURPLE = '#8b5cf6';
 // The page is transparent so it shows the layout's single shared canvas gradient
 // (top bar + content are one continuous surface, no seam). The DNA PNG has a
 // transparent background, so it overlays the gradient directly.
@@ -31,11 +31,11 @@ const dateShort = (d: string) => new Date(d).toLocaleDateString(undefined, { mon
 const dateTime = (d: string) => new Date(d).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const dotFor = (status: string) =>
   ['Approved', 'Completed', 'Paid', 'Billed'].includes(status) ? GREEN
-    : ['Deauthorized', 'Failed', 'Disabled'].includes(status) ? '#ef4444' : BLUE;
+    : ['Deauthorized', 'Failed', 'Disabled'].includes(status) ? '#ef4444' : ORANGE;
 
-// Varied icon chips (navy / sage / tan / blue-gray / lavender), cycled per row.
+// Varied light icon chips (grey / sage / tan / blue-gray / lavender), cycled per row.
 const CHIPS = [
-  { bg: '#1f2937', fg: '#ffffff', Icon: Wrench },
+  { bg: '#eceef2', fg: '#5b6472', Icon: Wrench },
   { bg: '#e3ead9', fg: '#5b6b47', Icon: ClipboardCheck },
   { bg: '#ece2d0', fg: '#8a734e', Icon: Boxes },
   { bg: '#dfe3ec', fg: '#5b6472', Icon: FlaskConical },
@@ -155,20 +155,20 @@ export default function DashboardPage() {
               {d.priorityRecords.map((r: any, i: number) => {
                 const chip = CHIPS[i % CHIPS.length];
                 return (
-                  <div key={r.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: chip.bg, color: chip.fg }}><chip.Icon size={18} /></span>
+                  <div key={r.id} className="flex items-center gap-3 py-3.5 first:pt-0 last:pb-0">
+                    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px]" style={{ background: chip.bg, color: chip.fg }}><chip.Icon size={20} /></span>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[15px] font-bold text-[var(--foreground)]">{r.patient}</div>
-                      <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
-                        <span className="shrink-0 rounded-full bg-[#eef0f7] px-2 py-0.5 text-[11px] font-semibold text-[var(--muted-foreground)]">{dateShort(r.date)}</span>
-                        <span className="truncate text-xs font-medium text-[var(--muted-foreground)]">{[r.client, r.labNumber].filter(Boolean).join(' · ')}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-[15px] font-bold text-[var(--foreground)]">{r.patient}</span>
+                        <span className="shrink-0 rounded-full bg-[#1b1d21] px-2 py-0.5 text-[11px] font-semibold text-white">{dateShort(r.date)}</span>
                       </div>
+                      <div className="mt-0.5 truncate text-xs font-medium text-[var(--muted-foreground)]">{[r.client, r.labNumber].filter(Boolean).join(' · ')}</div>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <ProgressRing pct={r.progress} />
-                      <span className="hidden whitespace-nowrap text-xs font-semibold text-[var(--foreground)] sm:inline">{r.progress}%</span>
-                    </div>
-                    <IconBtn onClick={() => router.push('/records')}><ArrowUpRight size={16} /></IconBtn>
+                    <span className="hidden shrink-0 items-center gap-2 rounded-full bg-[#f1f3f6] py-1 pl-1 pr-3 sm:inline-flex">
+                      <ProgressRing pct={r.progress} size={28} />
+                      <span className="whitespace-nowrap text-[11px] font-semibold text-[#374151]">{r.progress}% completed</span>
+                    </span>
+                    <button onClick={() => router.push('/records')} className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[#e2e6ef] bg-white text-[#374151] transition-colors hover:text-black"><ArrowUpRight size={16} /></button>
                   </div>
                 );
               })}
@@ -179,8 +179,8 @@ export default function DashboardPage() {
           <GlassCard title="Performance Radar" action={<IconBtn onClick={() => router.push('/analytics')}><ArrowUpRight size={16} /></IconBtn>}>
             <RadarMetrics data={d.radar} />
             <div className="mt-2 flex items-center justify-center gap-6">
-              <span className="flex items-center gap-2 text-[13px] font-semibold text-[var(--foreground)]"><span className="h-3 w-3 rounded-full" style={{ background: BLUE }} /> This period</span>
-              <span className="flex items-center gap-2 text-[13px] font-semibold text-[var(--foreground)]"><span className="h-3 w-3 rounded-full" style={{ background: '#d1d5db' }} /> Last period</span>
+              <span className="flex items-center gap-2 text-[13px] font-semibold text-[var(--foreground)]"><span className="h-3 w-3 rounded-full" style={{ background: ORANGE }} /> This period</span>
+              <span className="flex items-center gap-2 text-[13px] font-semibold text-[var(--foreground)]"><span className="h-3 w-3 rounded-full" style={{ background: '#2b2d31' }} /> Last period</span>
             </div>
           </GlassCard>
 
@@ -188,7 +188,7 @@ export default function DashboardPage() {
           <GlassCard title="Specimen Throughput" action={<PillSelect value="Week" options={['Week']} />}>
             <div className="flex items-center justify-center gap-2.5">
               <span className="text-[34px] font-extrabold leading-none tracking-tight text-[var(--foreground)]">{d.throughput.headlinePct}%</span>
-              <span className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold" style={{ background: 'rgba(99,102,241,0.1)', color: BLUE }}>
+              <span className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold text-white" style={{ background: ORANGE }}>
                 {up ? <TrendingUp size={15} /> : <TrendingDown size={15} />}{Math.abs(d.throughput.deltaPct)}%
               </span>
             </div>
@@ -200,9 +200,9 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-6">
               <OeeDonut value={eff.oee} inner={eff.authorization} size={196} />
               <div className="grid flex-1 grid-cols-2 gap-x-5 gap-y-6" style={{ minWidth: 200 }}>
-                <Stat value={`${eff.onTime}%`} label="On-time" dot={GRAY} />
-                <Stat value={`${eff.authorization}%`} label="Authorization" dot={BLUE} />
-                <Stat value={`${eff.accuracy}%`} label="Accuracy" dot="#d4d9e2" />
+                <Stat value={`${eff.onTime}%`} label="On-time" dot={PURPLE} />
+                <Stat value={`${eff.authorization}%`} label="Authorization" dot={ORANGE} />
+                <Stat value={`${eff.accuracy}%`} label="Accuracy" dot={PURPLE} />
                 <Stat value={eff.specimensProcessed} label="Specimens" />
                 <Stat value={eff.reportsAuthorized} label="Authorized" />
                 <Stat value={`${eff.reopenRate}%`} label="Re-open Rate" />
@@ -232,14 +232,14 @@ export default function DashboardPage() {
 
           {/* Activity */}
           <GlassCard title="Activity" action={<SeeAll label="Clear all" />}>
-            <div className="flex flex-col divide-y divide-[var(--border-soft)]">
+            <div className="flex flex-col gap-3">
               {d.activity.length === 0 && <div className="py-6 text-center text-xs text-[var(--muted-foreground)]">No recent activity.</div>}
               {d.activity.slice(0, 4).map((a: any, i: number) => (
-                <div key={i} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                <div key={i} className="flex items-start gap-3 rounded-2xl border border-[var(--border-soft)] bg-white/50 p-3.5">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="truncate text-[15px] font-bold text-[var(--foreground)]">{a.status} · {a.labNumber ?? '—'}</span>
-                      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: dotFor(a.status) }} />
+                      <span className="truncate text-[14px] font-bold text-[var(--foreground)]">{a.status} · {a.labNumber ?? '—'}</span>
+                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: dotFor(a.status) }} />
                     </div>
                     <div className="truncate text-xs font-medium text-[var(--muted-foreground)]">{a.patient}</div>
                     <div className="mt-1.5 flex items-center gap-3 text-[11px] font-medium text-[var(--muted-foreground)]">

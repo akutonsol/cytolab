@@ -33,10 +33,12 @@ export function GlassCard({
         ...style,
       }}
     >
-      <div style={{ position: 'relative', textAlign: 'center', marginBottom: 20 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 600, color: '#374151', margin: 0 }}>{title}</h2>
-        {subtitle ? <p style={{ fontSize: 12, color: '#9ca3af', margin: '2px 0 0' }}>{subtitle}</p> : null}
-        {action ? <div style={{ position: 'absolute', right: 0, top: 0 }}>{action}</div> : null}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 20 }}>
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: 0, letterSpacing: '-0.01em' }}>{title}</h2>
+          {subtitle ? <p style={{ fontSize: 12, color: '#9ca3af', margin: '2px 0 0' }}>{subtitle}</p> : null}
+        </div>
+        {action ? <div style={{ flexShrink: 0 }}>{action}</div> : null}
       </div>
       <div style={{ flex: 1 }}>{children}</div>
     </section>
