@@ -4,7 +4,7 @@ import { createElement, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Drawer, Dropdown, Grid, Menu, Spin, Typography } from 'antd';
 import {
-  BellOutlined, DownOutlined, HomeOutlined, LineChartOutlined, LogoutOutlined, MenuOutlined, PlusOutlined,
+  BellOutlined, DownOutlined, LogoutOutlined, MenuOutlined, PlusOutlined,
   SearchOutlined, SettingOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
@@ -15,7 +15,7 @@ import { refreshSession } from '@/lib/api';
 function Logo() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <div style={{ width: 34, height: 34, borderRadius: 10, background: '#4f7df9', display: 'grid', placeItems: 'center', color: '#fff', flexShrink: 0 }}>
+      <div style={{ width: 34, height: 34, borderRadius: 10, background: '#4F46E5', display: 'grid', placeItems: 'center', color: '#fff', flexShrink: 0 }}>
         <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
           <path d="M10 2l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V5l7-3z" fill="currentColor" opacity="0.25" />
           <path d="M10 6.5v7M6.5 10h7" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
@@ -100,7 +100,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         ...NAV_GROUPS.map((group) => {
           const items = group.items.filter((i) => can(i.permission));
           if (!items.length) return null;
-          return { key: group.key, label: group.label, icon: createElement(group.icon), children: items.map((i) => ({ key: i.path, label: i.label })) };
+          return { key: group.key, label: group.label, icon: createElement(group.icon, { size: 16 }), children: items.map((i) => ({ key: i.path, label: i.label })) };
         }).filter(Boolean),
         analyticsVisible ? { key: ANALYTICS_ITEM.path, label: ANALYTICS_ITEM.label } : null,
       ].filter(Boolean) as MenuProps['items'],
@@ -155,7 +155,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f6f8fc', display: 'flex', flexDirection: 'column' }}>
-      <style>{'.cyto-pill:not(.cyto-pill-active):hover{background:#f0f4ff !important;border-color:#c7d4f5 !important}'}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+.cyto-pill{transition:all .18s cubic-bezier(0.4,0,0.2,1)}
+.cyto-pill:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(79,70,229,0.18)}
+.cyto-pill:not(.cyto-pill-active):hover{background:rgba(79,70,229,0.08) !important;border-color:#c7d2fe !important}`}</style>
 
       <header style={heroZone}>
         <div style={heroBg(showCenter)}>
@@ -180,7 +183,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             <div style={{ position: 'absolute', left: '50%', top: 4, transform: 'translateX(-50%)', textAlign: 'center', pointerEvents: 'none' }}>
-              <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: 1.5, color: '#111827' }}>CYTOLAB</div>
+              <div style={{ fontFamily: 'Geist, sans-serif', fontSize: 18, fontWeight: 700, letterSpacing: 1.5, color: '#111827' }}>CYTOLAB</div>
               {screens.md && <div style={{ fontSize: 11, color: '#8a93a6' }}>Cytology &amp; Pathology Laboratory System</div>}
             </div>
 
@@ -203,17 +206,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {showCenter && (
             <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'flex-end', gap: 24, marginTop: 12 }}>
               <div style={{ minWidth: 210, flexShrink: 0 }}>
-                <div style={{ fontSize: 14, color: '#6b7280' }}>Hi, {firstName}!</div>
-                <div style={{ fontSize: 32, fontWeight: 800, color: '#111827', lineHeight: 1.05 }}>Welcome Back</div>
+                <div style={{ fontFamily: 'Geist, sans-serif', fontSize: 14, fontWeight: 400, color: '#6b7280' }}>Hi, {firstName}!</div>
+                <div style={{ fontFamily: 'Geist, sans-serif', fontSize: 32, fontWeight: 700, letterSpacing: '-0.015em', color: '#111827', lineHeight: 1.05 }}>Welcome Back</div>
               </div>
               <nav style={navPillBar}>
-                {can(HOME_ITEM.permission) && pill(pathname === HOME_ITEM.path, <HomeOutlined />, HOME_ITEM.label, false, () => navigate(HOME_ITEM.path))}
+                {can(HOME_ITEM.permission) && pill(pathname === HOME_ITEM.path, createElement(HOME_ITEM.icon!, { size: 15, strokeWidth: 1.5 }), HOME_ITEM.label, false, () => navigate(HOME_ITEM.path))}
                 {centerGroups.map((g) => (
                   <Dropdown key={g.key} trigger={['hover', 'click']} menu={{ items: g.visible.map((i: any) => ({ key: i.path, label: i.label })), onClick: ({ key }) => navigate(key) }}>
-                    {pill(groupActive(g.visible), createElement(g.icon), g.label, true)}
+                    {pill(groupActive(g.visible), createElement(g.icon as any, { size: 15, strokeWidth: 1.5 }), g.label, true)}
                   </Dropdown>
                 ))}
-                {analyticsVisible && pill(pathname === ANALYTICS_ITEM.path, <LineChartOutlined />, ANALYTICS_ITEM.label, false, () => navigate(ANALYTICS_ITEM.path))}
+                {analyticsVisible && pill(pathname === ANALYTICS_ITEM.path, createElement(ANALYTICS_ITEM.icon!, { size: 15, strokeWidth: 1.5 }), ANALYTICS_ITEM.label, false, () => navigate(ANALYTICS_ITEM.path))}
               </nav>
             </div>
           )}
@@ -241,9 +244,9 @@ const navPillBar: React.CSSProperties = {
 const navPill = (active: boolean): React.CSSProperties => ({
   display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 999, cursor: 'pointer',
   fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
-  border: '1px solid ' + (active ? '#4f7df9' : '#e2e8f0'),
-  background: active ? '#4f7df9' : '#fff',
+  border: '1px solid ' + (active ? '#4F46E5' : '#e2e8f0'),
+  background: active ? '#4F46E5' : '#fff',
   color: active ? '#fff' : '#374151',
 });
 const iconBtnHero: React.CSSProperties = { width: 40, height: 40, borderRadius: 999, border: '1px solid #d1d9ee', background: '#fff', color: '#6b7280', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 16 };
-const avatarBtn: React.CSSProperties = { width: 40, height: 40, borderRadius: 999, border: 'none', background: '#4f7df9', color: '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 13, fontWeight: 600 };
+const avatarBtn: React.CSSProperties = { width: 40, height: 40, borderRadius: 999, border: 'none', background: '#4F46E5', color: '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 13, fontWeight: 600 };

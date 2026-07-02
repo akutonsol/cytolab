@@ -1,11 +1,13 @@
-import type { ComponentType } from 'react';
 import {
-  ExperimentOutlined,
-  FileSearchOutlined,
-  DollarOutlined,
-  TeamOutlined,
-  AppstoreOutlined,
-} from '@ant-design/icons';
+  AppWindow,
+  BarChart2,
+  CreditCard,
+  FileSearch,
+  FlaskConical,
+  LayoutDashboard,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
 
 export interface NavItem {
   label: string;
@@ -14,12 +16,14 @@ export interface NavItem {
   permission?: string;
   /** If set, the page is a placeholder for the given build phase. */
   phase?: number;
+  /** Optional Lucide icon (used by standalone hero-nav pills like Home/Analytics). */
+  icon?: LucideIcon;
 }
 
 export interface NavGroup {
   key: string;
   label: string;
-  icon: ComponentType;
+  icon: LucideIcon;
   items: NavItem[];
 }
 
@@ -27,7 +31,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     key: 'lab',
     label: 'Lab',
-    icon: ExperimentOutlined,
+    icon: FlaskConical,
     items: [
       { label: 'Patients', path: '/patients', permission: 'patient:view' },
       { label: 'Clients', path: '/clients', permission: 'client:view' },
@@ -38,7 +42,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     key: 'results',
     label: 'Results',
-    icon: FileSearchOutlined,
+    icon: FileSearch,
     items: [
       { label: 'Result Sheets', path: '/result-sheets', permission: 'resultsheet:view', phase: 3 },
       { label: 'Authorization', path: '/authorizer', permission: 'resultsheet:authorize', phase: 3 },
@@ -51,7 +55,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     key: 'finance',
     label: 'Finance',
-    icon: DollarOutlined,
+    icon: CreditCard,
     items: [
       { label: 'Billing', path: '/billing', permission: 'bill:view', phase: 4 },
       { label: 'Payments', path: '/payments', permission: 'payment:view', phase: 4 },
@@ -62,7 +66,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     key: 'people',
     label: 'People',
-    icon: TeamOutlined,
+    icon: Users,
     items: [
       { label: 'Employees', path: '/employees', permission: 'employee:view', phase: 7 },
       { label: 'Departments', path: '/departments', permission: 'department:view', phase: 7 },
@@ -72,7 +76,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     key: 'platform',
     label: 'Platform',
-    icon: AppstoreOutlined,
+    icon: AppWindow,
     items: [
       { label: 'Users', path: '/users', permission: 'user:view' },
       { label: 'Roles', path: '/roles', permission: 'role:view' },
@@ -89,8 +93,8 @@ export const NAV_GROUPS: NavGroup[] = [
 
 // Standalone top-level links (their own blue-underlined nav items), not inside a
 // dropdown group. Home is the landing page; Analytics the deep-dive.
-export const HOME_ITEM: NavItem = { label: 'Home', path: '/dashboard', permission: 'record:view' };
-export const ANALYTICS_ITEM: NavItem = { label: 'Analytics', path: '/analytics', permission: 'applicationprefs:reports' };
+export const HOME_ITEM: NavItem = { label: 'Home', path: '/dashboard', permission: 'record:view', icon: LayoutDashboard };
+export const ANALYTICS_ITEM: NavItem = { label: 'Analytics', path: '/analytics', permission: 'applicationprefs:reports', icon: BarChart2 };
 
 // Top-nav layout: which groups are center dropdowns vs. tucked into the account
 // (avatar) menu. Everything stays reachable.

@@ -5,8 +5,8 @@ import {
   RadialBar, RadialBarChart, ReferenceDot, ReferenceLine, ResponsiveContainer, XAxis, YAxis,
 } from 'recharts';
 
-const BLUE = '#4f7df9';
-const BLUE_DEEP = '#2e5ce6';
+const BLUE = '#4F46E5';
+const BLUE_DEEP = '#4338CA';
 const PURPLE = '#a68fe0';
 const INK = '#0f172a';
 const AXIS = '#6b7280';
