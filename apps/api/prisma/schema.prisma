@@ -128,63 +128,64 @@ enum PortalTokenType {
 // ---- F1: Multi-lab tenancy (every tenant-owned model carries labId) ----
 
 model Lab {
-  id           String        @id @default(uuid())
-  name         String
-  slug         String        @unique
-  logoUrl      String?
+  id                     String                   @id @default(uuid())
+  name                   String
+  slug                   String                   @unique
+  logoUrl                String?
   // Branding shown on rendered report PDFs (Phase 3.5).
-  address      String?
-  phone        String?
-  email        String?
-  currency     String        @default("JMD")
-  isActive     Boolean       @default(true)
+  address                String?
+  phone                  String?
+  email                  String?
+  currency               String                   @default("JMD")
+  isActive               Boolean                  @default(true)
   // Analytics targets. targetTatDays: expected turnaround (Submitted->Approved);
   // monthlyVolumeTarget: expected specimens/month (null -> derived from history).
-  targetTatDays      Int      @default(3)
-  monthlyVolumeTarget Int?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  accounts     Account[]
-  users        User[]
-  workspaces   Workspace[]
-  patients     Patient[]
-  clientTypes  ClientType[]
-  clients      Client[]
-  requisitions Requisition[]
-  records      Record[]
-  specimens    Specimen[]
-  requisitionLines   RequisitionLine[]
-  recordStatusEvents RecordStatusEvent[]
-  therapies          Therapy[]
-  cabinets           Cabinet[]
-  codeSheets         CodeSheet[]
-  codeFindings       CodeFinding[]
-  labCodes           LabCode[]
-  aiSettings         LabAiSettings?
-  aiDrafts           AiDraft[]
-  resultSheets       ResultSheet[]
-  resultEntries      ResultEntry[]
-  resultLines        ResultLine[]
-  reports            Report[]
-  resultSheetEvents  ResultSheetEvent[]
-  services           Service[]
-  taxes              Tax[]
-  bills              Bill[]
-  billLines          BillLine[]
-  billTaxes          BillTax[]
-  payments           Payment[]
-  portalUsers           PortalUser[]
-  portalAccessTokens    PortalAccessToken[]
-  changeRequests        ChangeRequest[]
-  changeRequestMessages ChangeRequestMessage[]
-  changeRequestEvents   ChangeRequestEvent[]
-  patientAddresses      PatientAddress[]
-  clientAddresses       ClientAddress[]
-  sequences             LabSequence[]
+  targetTatDays          Int                      @default(3)
+  monthlyVolumeTarget    Int?
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  accounts               Account[]
+  users                  User[]
+  workspaces             Workspace[]
+  patients               Patient[]
+  clientTypes            ClientType[]
+  clients                Client[]
+  requisitions           Requisition[]
+  records                Record[]
+  specimens              Specimen[]
+  requisitionLines       RequisitionLine[]
+  recordStatusEvents     RecordStatusEvent[]
+  therapies              Therapy[]
+  cabinets               Cabinet[]
+  codeSheets             CodeSheet[]
+  codeFindings           CodeFinding[]
+  labCodes               LabCode[]
+  aiSettings             LabAiSettings?
+  aiDrafts               AiDraft[]
+  resultSheets           ResultSheet[]
+  resultEntries          ResultEntry[]
+  resultLines            ResultLine[]
+  reports                Report[]
+  resultSheetEvents      ResultSheetEvent[]
+  services               Service[]
+  taxes                  Tax[]
+  bills                  Bill[]
+  billLines              BillLine[]
+  billTaxes              BillTax[]
+  payments               Payment[]
+  portalUsers            PortalUser[]
+  portalAccessTokens     PortalAccessToken[]
+  changeRequests         ChangeRequest[]
+  changeRequestMessages  ChangeRequestMessage[]
+  changeRequestEvents    ChangeRequestEvent[]
+  patientAddresses       PatientAddress[]
+  clientAddresses        ClientAddress[]
+  sequences              LabSequence[]
   gynClinicalFeatures    GynClinicalFeatures[]
   nonGynClinicalFeatures NonGynClinicalFeatures[]
   specimenImages         SpecimenImage[]
   recordAttachments      RecordAttachment[]
+  threads                Thread[]
 }
 
 model Account {
@@ -216,37 +217,39 @@ model Workspace {
 }
 
 model User {
-  id                 String              @id @default(uuid())
-  labId              String
-  lab                Lab                 @relation(fields: [labId], references: [id])
-  email              String
-  passwordHash       String
-  firstName          String
-  lastName           String
+  id                     String                 @id @default(uuid())
+  labId                  String
+  lab                    Lab                    @relation(fields: [labId], references: [id])
+  email                  String
+  passwordHash           String
+  firstName              String
+  lastName               String
   // Authorizer signature image for rendered reports (Phase 3.5). Typed name
   // (firstName lastName) is the fallback when this is absent.
-  signatureUrl       String?
+  signatureUrl           String?
   // Professional designation for staff who authorize result sheets (legacy
   // Authorizer.type). Null for non-authorizer staff; rendered on the report.
-  authorizerDesignation AuthorizerDesignation?
-  isActive           Boolean             @default(true)
-  accountId          String
-  account            Account             @relation(fields: [accountId], references: [id])
-  workspaceId        String?
-  workspace          Workspace?          @relation(fields: [workspaceId], references: [id])
+  authorizerDesignation  AuthorizerDesignation?
+  isActive               Boolean                @default(true)
+  accountId              String
+  account                Account                @relation(fields: [accountId], references: [id])
+  workspaceId            String?
+  workspace              Workspace?             @relation(fields: [workspaceId], references: [id])
   roles                  UserRole[]
   authAttempts           AuthAttempt[]
   recordStatusEvents     RecordStatusEvent[]
-  authorizedResultSheets ResultSheet[]       @relation("ResultSheetAuthorizer")
-  authoredReports        Report[]            @relation("ReportAuthor")
+  authorizedResultSheets ResultSheet[]          @relation("ResultSheetAuthorizer")
+  authoredReports        Report[]               @relation("ReportAuthor")
   resultSheetEvents      ResultSheetEvent[]
-  aiDraftsCreated        AiDraft[]           @relation("AiDraftCreatedBy")
-  aiDraftsAccepted       AiDraft[]           @relation("AiDraftAcceptedBy")
+  aiDraftsCreated        AiDraft[]              @relation("AiDraftCreatedBy")
+  aiDraftsAccepted       AiDraft[]              @relation("AiDraftAcceptedBy")
   assignedChangeRequests ChangeRequest[]        @relation("ChangeRequestAssignee")
   changeRequestMessages  ChangeRequestMessage[] @relation("ChangeRequestMessageStaffAuthor")
   changeRequestEvents    ChangeRequestEvent[]   @relation("ChangeRequestEventStaffActor")
-  createdAt              DateTime            @default(now())
-  updatedAt              DateTime            @updatedAt
+  threadParticipants     ThreadParticipant[]
+  authoredMessages       Message[]
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
 
   @@unique([labId, email])
   @@index([accountId])
@@ -300,18 +303,18 @@ model RolePermission {
 }
 
 model AuthAttempt {
-  id        String   @id @default(uuid())
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
+  id           String      @id @default(uuid())
+  userId       String?
+  user         User?       @relation(fields: [userId], references: [id])
   // Set for portal logins so portal lockouts never conflate with staff lockouts
   // even when a portal email collides with a staff email in the same lab.
   portalUserId String?
   portalUser   PortalUser? @relation(fields: [portalUserId], references: [id])
-  portal    Boolean  @default(false)
-  email     String
-  ip        String?
-  success   Boolean
-  createdAt DateTime @default(now())
+  portal       Boolean     @default(false)
+  email        String
+  ip           String?
+  success      Boolean
+  createdAt    DateTime    @default(now())
 
   @@index([email, createdAt])
   @@index([portal, email, createdAt])
@@ -320,9 +323,9 @@ model AuthAttempt {
 // ---- Phase 2: Lab Intake ----
 
 model Patient {
-  id               String    @id @default(uuid())
+  id               String           @id @default(uuid())
   labId            String
-  lab              Lab       @relation(fields: [labId], references: [id])
+  lab              Lab              @relation(fields: [labId], references: [id])
   registrationNo   String
   firstName        String
   lastName         String
@@ -340,11 +343,11 @@ model Patient {
   // Nullable stub — actual upload/serving deferred to Phase 6 file storage.
   avatarUrl        String?
   clientId         String?
-  client           Client?   @relation(fields: [clientId], references: [id])
+  client           Client?          @relation(fields: [clientId], references: [id])
   addresses        PatientAddress[]
   records          Record[]
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   @@unique([labId, registrationNo])
   @@index([labId])
@@ -364,77 +367,77 @@ model ClientType {
 }
 
 model Client {
-  id           String        @id @default(uuid())
-  labId        String
-  lab          Lab           @relation(fields: [labId], references: [id])
-  firstName    String
-  lastName     String
-  officeName   String?
+  id                    String                 @id @default(uuid())
+  labId                 String
+  lab                   Lab                    @relation(fields: [labId], references: [id])
+  firstName             String
+  lastName              String
+  officeName            String?
   // Client account number (legacy AC#, e.g. CYLB-577071) — lab-code prefix +
   // seeded LabSequence counter; imported verbatim. Nullable at the column level
   // but always set on create.
-  accountNo    String?
+  accountNo             String?
   // Supports the patient form's "choose client by name OR email" search.
-  email        String?
-  phoneNumber  String?
-  mobileNumber String?
-  officeNumber String?
-  faxNumber    String?
+  email                 String?
+  phoneNumber           String?
+  mobileNumber          String?
+  officeNumber          String?
+  faxNumber             String?
   // Active/blocked toggles from the legacy Client form.
-  active       Boolean       @default(true)
-  blocked      Boolean       @default(false)
+  active                Boolean                @default(true)
+  blocked               Boolean                @default(false)
   // Nullable stub — actual upload/serving deferred to Phase 6 file storage.
-  avatarUrl    String?
+  avatarUrl             String?
   // The client's assigned lab code/region (legacy "Labcode" dropdown). Closes
   // the Phase 3 "LabCode <-> Client" tracked debt.
-  labCodeId    String?
-  labCode      LabCode?      @relation(fields: [labCodeId], references: [id])
+  labCodeId             String?
+  labCode               LabCode?               @relation(fields: [labCodeId], references: [id])
   // Optional workspace the client belongs to (legacy "Workspace" section).
-  workspaceId  String?
-  workspace    Workspace?    @relation(fields: [workspaceId], references: [id])
-  clientTypeId String?
-  clientType   ClientType?   @relation(fields: [clientTypeId], references: [id])
-  patients     Patient[]
-  requisitions Requisition[]
-  records      Record[]
-  specimens    Specimen[]
-  cabinets     Cabinet[]
-  bills        Bill[]
-  addresses    ClientAddress[]
-  portalUsers    PortalUser[]
-  changeRequests ChangeRequest[]
+  workspaceId           String?
+  workspace             Workspace?             @relation(fields: [workspaceId], references: [id])
+  clientTypeId          String?
+  clientType            ClientType?            @relation(fields: [clientTypeId], references: [id])
+  patients              Patient[]
+  requisitions          Requisition[]
+  records               Record[]
+  specimens             Specimen[]
+  cabinets              Cabinet[]
+  bills                 Bill[]
+  addresses             ClientAddress[]
+  portalUsers           PortalUser[]
+  changeRequests        ChangeRequest[]
   changeRequestMessages ChangeRequestMessage[]
   changeRequestEvents   ChangeRequestEvent[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  threads               Thread[]
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
 
   @@unique([labId, accountNo])
   @@index([labCodeId])
   @@index([workspaceId])
-
   @@index([labId])
 }
 
 model Requisition {
-  id               String            @id @default(uuid())
-  labId            String
-  lab              Lab               @relation(fields: [labId], references: [id])
+  id           String            @id @default(uuid())
+  labId        String
+  lab          Lab               @relation(fields: [labId], references: [id])
   // Human-facing requisition number (legacy Ref#, e.g. 1460). Auto-generated
   // per lab via a seeded LabSequence; imported verbatim during migration.
   // Nullable at the column level (survives existing rows) but always set on
   // create — mirrors PortalUser.username.
-  referenceNo      String?
-  status           RequisitionStatus @default(Pending)
+  referenceNo  String?
+  status       RequisitionStatus @default(Pending)
   // Batch total = Σ line costs, in minor units (cents). Never a float.
-  amount           Int               @default(0)
-  clientId         String?
-  client           Client?           @relation(fields: [clientId], references: [id])
-  workspaceId      String?
-  workspace        Workspace?        @relation(fields: [workspaceId], references: [id])
-  lines            RequisitionLine[]
-  dateReceived     DateTime?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  amount       Int               @default(0)
+  clientId     String?
+  client       Client?           @relation(fields: [clientId], references: [id])
+  workspaceId  String?
+  workspace    Workspace?        @relation(fields: [workspaceId], references: [id])
+  lines        RequisitionLine[]
+  dateReceived DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   @@unique([labId, referenceNo])
   @@index([labId])
@@ -465,9 +468,9 @@ model RequisitionLine {
 }
 
 model Record {
-  id                String              @id @default(uuid())
+  id                String                  @id @default(uuid())
   labId             String
-  lab               Lab                 @relation(fields: [labId], references: [id])
+  lab               Lab                     @relation(fields: [labId], references: [id])
   // Internal, stable system id (never human-edited). Generated at create.
   identifier        String
   // Human-facing case number (legacy Lab No., e.g. CBL26-06-465). Generated per
@@ -482,17 +485,17 @@ model Record {
   doctor            String?
   clinicalDiagnosis String?
   specimenDate      DateTime?
-  urgent            Boolean             @default(false)
+  urgent            Boolean                 @default(false)
   medicalEntry      String?
-  billed            Boolean             @default(false)
-  status            RecordStatus        @default(Pending)
+  billed            Boolean                 @default(false)
+  status            RecordStatus            @default(Pending)
   dateStatus        DateTime?
   patientId         String
-  patient           Patient             @relation(fields: [patientId], references: [id])
+  patient           Patient                 @relation(fields: [patientId], references: [id])
   clientId          String?
-  client            Client?             @relation(fields: [clientId], references: [id])
+  client            Client?                 @relation(fields: [clientId], references: [id])
   workspaceId       String?
-  workspace         Workspace?          @relation(fields: [workspaceId], references: [id])
+  workspace         Workspace?              @relation(fields: [workspaceId], references: [id])
   specimens         Specimen[]
   statusHistory     RecordStatusEvent[]
   requisitionLines  RequisitionLine[]
@@ -504,9 +507,9 @@ model Record {
   changeRequests    ChangeRequest[]
   attachments       RecordAttachment[]
   cabinetId         String?
-  cabinet           Cabinet?            @relation(fields: [cabinetId], references: [id])
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  cabinet           Cabinet?                @relation(fields: [cabinetId], references: [id])
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
 
   @@unique([labId, identifier])
   @@unique([labId, labNumber])
@@ -536,25 +539,25 @@ model RecordStatusEvent {
 }
 
 model Specimen {
-  id           String       @id @default(uuid())
-  labId        String
-  lab          Lab          @relation(fields: [labId], references: [id])
-  label        String?
-  vialColour   String?
-  antiserumA   String?
-  antiserumB   String?
-  rhSolution   String?
-  type         SpecimenType
-  bloodGroup   String?
-  recordId     String
-  record       Record       @relation(fields: [recordId], references: [id], onDelete: Cascade)
-  clientId     String?
-  client       Client?      @relation(fields: [clientId], references: [id])
-  dateReceived DateTime?
+  id            String          @id @default(uuid())
+  labId         String
+  lab           Lab             @relation(fields: [labId], references: [id])
+  label         String?
+  vialColour    String?
+  antiserumA    String?
+  antiserumB    String?
+  rhSolution    String?
+  type          SpecimenType
+  bloodGroup    String?
+  recordId      String
+  record        Record          @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  clientId      String?
+  client        Client?         @relation(fields: [clientId], references: [id])
+  dateReceived  DateTime?
   resultEntries ResultEntry[]
-  images       SpecimenImage[]
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  images        SpecimenImage[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
   @@index([labId])
   @@index([recordId])
@@ -647,21 +650,21 @@ model LabCode {
 // A record's result sheet: filled with entries/lines, then authorized.
 // Authorization (who/when) is the gate that allows a report to be released.
 model ResultSheet {
-  id             String        @id @default(uuid())
+  id             String             @id @default(uuid())
   labId          String
-  lab            Lab           @relation(fields: [labId], references: [id])
+  lab            Lab                @relation(fields: [labId], references: [id])
   recordId       String
-  record         Record        @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  record         Record             @relation(fields: [recordId], references: [id], onDelete: Cascade)
   // External uploaded result sheet (stub — populated when Phase 6 file storage
   // lands; the in-system entry path uses resultEntries below).
   fileUrl        String?
-  viewed         Boolean       @default(false)
+  viewed         Boolean            @default(false)
   // Authorization gate (Phase 3 critical rule): set by a user holding
   // resultsheet:authorize. Editing entries resets these (re-authorization required).
-  authorized     Boolean       @default(false)
+  authorized     Boolean            @default(false)
   authorizedAt   DateTime?
   authorizedById String?
-  authorizedBy   User?         @relation("ResultSheetAuthorizer", fields: [authorizedById], references: [id])
+  authorizedBy   User?              @relation("ResultSheetAuthorizer", fields: [authorizedById], references: [id])
   // Human-owned working narrative the Authorizer edits and signs. An accepted AI
   // draft (F4) is copied here; at report release this becomes Report.content.
   // Owned by the human — the AiDraft keeps the provenance separately.
@@ -670,8 +673,8 @@ model ResultSheet {
   reports        Report[]
   events         ResultSheetEvent[]
   aiDrafts       AiDraft[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 
   @@index([labId])
   @@index([recordId])
@@ -761,15 +764,15 @@ model LabAiSettings {
   labId           String          @unique
   lab             Lab             @relation(fields: [labId], references: [id])
   enabled         Boolean         @default(false)
-  houseStyle      String?         // lab's narrative template / style guidance
+  houseStyle      String? // lab's narrative template / style guidance
   redactionPolicy RedactionPolicy @default(Strict)
-  model           String?         // optional model override; else the server default
+  model           String? // optional model override; else the server default
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 }
 
 enum RedactionPolicy {
-  Strict   // clinical data only — NO demographics
+  Strict // clinical data only — NO demographics
   Standard // adds de-identified sex + age BAND (never DOB / exact age)
 }
 
@@ -786,16 +789,16 @@ model AiDraft {
   // What the model produced: narrative text, or a JSON string for codes/consistency.
   output          String
   // Provenance
-  model           String          // exact model id used
-  promptVersion   String          // e.g. "narrative-v1" — bumped when the prompt changes
+  model           String // exact model id used
+  promptVersion   String // e.g. "narrative-v1" — bumped when the prompt changes
   redactionPolicy RedactionPolicy // policy snapshot applied at generation
-  inputDigest     String          // sha256 of the exact redacted payload (proves input class w/o storing PHI)
+  inputDigest     String // sha256 of the exact redacted payload (proves input class w/o storing PHI)
   createdById     String?
   createdBy       User?           @relation("AiDraftCreatedBy", fields: [createdById], references: [id])
   createdAt       DateTime        @default(now())
   // Human review (Narrative kind): the edited final text + diff at acceptance.
   finalText       String?
-  editedDiff      Json?           // structured diff: AI output -> finalText
+  editedDiff      Json? // structured diff: AI output -> finalText
   acceptedAt      DateTime?
   acceptedById    String?
   acceptedBy      User?           @relation("AiDraftAcceptedBy", fields: [acceptedById], references: [id])
@@ -957,37 +960,39 @@ model Payment {
 // client-scoped — carries clientId, which the tenancy guard injects into every
 // portal query so a portal user can only ever reach its own client's data.
 model PortalUser {
-  id            String   @id @default(uuid())
-  labId         String
-  lab           Lab      @relation(fields: [labId], references: [id])
-  clientId      String
-  client        Client   @relation(fields: [clientId], references: [id])
+  id                    String                 @id @default(uuid())
+  labId                 String
+  lab                   Lab                    @relation(fields: [labId], references: [id])
+  clientId              String
+  client                Client                 @relation(fields: [clientId], references: [id])
   // Auto-generated at invite time (legacy "Generated" username). Unique per lab.
-  username      String?
-  email         String
+  username              String?
+  email                 String
   // Null until the invite is accepted (first password set via emailed token).
   // Staff never set an external user's password (Finding 2, option B).
-  passwordHash  String?
-  firstName     String
-  lastName      String
-  isActive      Boolean  @default(true)
+  passwordHash          String?
+  firstName             String
+  lastName              String
+  isActive              Boolean                @default(true)
   // 2FA is toggled on the client form; actual enrollment happens later in the
   // portal (the staff form never sees the secret).
-  twoFactorEnabled Boolean @default(false)
+  twoFactorEnabled      Boolean                @default(false)
   // The client's main login. Soft flag (a client may have more than one contact
   // login); the service keeps at most one primary per client.
-  isPrimary     Boolean  @default(false)
+  isPrimary             Boolean                @default(false)
   // F2 notification preferences.
-  notifyByEmail Boolean  @default(true)
-  notifyInApp   Boolean  @default(true)
-  lastLoginAt   DateTime?
-  tokens        PortalAccessToken[]
-  authAttempts  AuthAttempt[]
+  notifyByEmail         Boolean                @default(true)
+  notifyInApp           Boolean                @default(true)
+  lastLoginAt           DateTime?
+  tokens                PortalAccessToken[]
+  authAttempts          AuthAttempt[]
   changeRequests        ChangeRequest[]        @relation("ChangeRequestCreator")
   changeRequestMessages ChangeRequestMessage[] @relation("ChangeRequestMessagePortalAuthor")
   changeRequestEvents   ChangeRequestEvent[]   @relation("ChangeRequestEventPortalActor")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  threadParticipants    ThreadParticipant[]
+  authoredMessages      Message[]
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
 
   @@unique([labId, email])
   @@unique([labId, username])
@@ -1159,24 +1164,24 @@ model LabSequence {
 // invalid states are unrepresentable (no pregnancy data on a urine sample).
 
 model GynClinicalFeatures {
-  id                        String    @id @default(uuid())
-  labId                     String
-  lab                       Lab       @relation(fields: [labId], references: [id])
-  recordId                  String    @unique
-  record                    Record    @relation(fields: [recordId], references: [id], onDelete: Cascade)
-  routineCheck              Boolean   @default(false)
-  previousCytology          Boolean   @default(false)
-  lmp                       DateTime? // last menstrual period
+  id                         String    @id @default(uuid())
+  labId                      String
+  lab                        Lab       @relation(fields: [labId], references: [id])
+  recordId                   String    @unique
+  record                     Record    @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  routineCheck               Boolean   @default(false)
+  previousCytology           Boolean   @default(false)
+  lmp                        DateTime? // last menstrual period
   clinicalAppearanceOfCervix String?
-  nowPregnant               Boolean   @default(false)
-  pregnancies               Int?
-  leucorrhea                String?
-  menopause                 Boolean   @default(false)
-  dateOfMenopause           DateTime?
-  lengthOfCycle             String?
-  pelvicAbnormalities       String?
-  createdAt                 DateTime  @default(now())
-  updatedAt                 DateTime  @updatedAt
+  nowPregnant                Boolean   @default(false)
+  pregnancies                Int?
+  leucorrhea                 String?
+  menopause                  Boolean   @default(false)
+  dateOfMenopause            DateTime?
+  lengthOfCycle              String?
+  pelvicAbnormalities        String?
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
 
   @@index([labId])
 }
@@ -1226,4 +1231,61 @@ model SpecimenImage {
 
   @@index([labId])
   @@index([specimenId])
+}
+
+// ─── Messaging (Phase 6) ─────────────────────────────────────────────────────
+// Threads carry messages between staff (INTERNAL) or staff↔client (CLIENT).
+// Lab-scoped via labId; participants gate read access.
+
+model Thread {
+  id           String              @id @default(cuid())
+  labId        String
+  type         ThreadType          @default(INTERNAL)
+  subject      String?
+  clientId     String?
+  client       Client?             @relation(fields: [clientId], references: [id])
+  participants ThreadParticipant[]
+  messages     Message[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  lab          Lab                 @relation(fields: [labId], references: [id])
+
+  @@index([labId])
+  @@index([clientId])
+  @@index([labId, updatedAt])
+}
+
+model ThreadParticipant {
+  id           String      @id @default(cuid())
+  threadId     String
+  thread       Thread      @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?       @relation(fields: [userId], references: [id])
+  portalUserId String?
+  portalUser   PortalUser? @relation(fields: [portalUserId], references: [id])
+  joinedAt     DateTime    @default(now())
+
+  @@index([threadId])
+  @@index([userId])
+  @@index([portalUserId])
+}
+
+model Message {
+  id                 String      @id @default(cuid())
+  threadId           String
+  thread             Thread      @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  body               String
+  authorUserId       String?
+  authorUser         User?       @relation(fields: [authorUserId], references: [id])
+  authorPortalUserId String?
+  authorPortalUser   PortalUser? @relation(fields: [authorPortalUserId], references: [id])
+  createdAt          DateTime    @default(now())
+
+  @@index([threadId])
+  @@index([threadId, createdAt])
+}
+
+enum ThreadType {
+  INTERNAL
+  CLIENT
 }

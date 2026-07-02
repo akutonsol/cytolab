@@ -28,6 +28,8 @@ const STANDARD_ACTIONS = ['view', 'create', 'change', 'delete'];
 const STANDARD_EXTRA: Record<string, string[]> = {
   record: ['submit'],
   resultsheet: ['authorize'],
+  // Messaging: view threads vs. send a message (Phase 6).
+  message: ['send'],
 };
 // Objects with a non-CRUD action set.
 const SPECIAL_OBJECTS: Record<string, string[]> = {
