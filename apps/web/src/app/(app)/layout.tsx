@@ -202,10 +202,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 }
 
 // Soft blue-gray → lavender canvas; the whole app is one seamless surface.
-// Single shared canvas gradient painted once on the outermost container. The top
-// bar and every page's content are transparent over it, so they show one
-// continuous gradient with no seam.
-const CANVAS = 'linear-gradient(160deg, #eef0f7 0%, #e6e9f2 55%, #ebe9f4 100%)';
+// Single shared canvas colour painted once on the outermost container. The top
+// bar and every page's content are transparent over it, so they're all exactly
+// this colour with no seam.
+const CANVAS = '#dce3ee';
 const heroZone: React.CSSProperties = { position: 'sticky', top: 0, zIndex: 20 };
 const heroBg = (tall: boolean): React.CSSProperties => ({
   position: 'relative', background: 'transparent',
