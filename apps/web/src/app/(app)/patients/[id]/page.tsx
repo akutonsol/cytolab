@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ArrowLeft, ArrowUpRight, ChevronRight, Download, Filter, MoreHorizontal, Plus, Search, Star, X,
+  ArrowLeft, ArrowUpRight, Download, Filter, MoreHorizontal, Plus, Search, Star,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
@@ -63,8 +63,8 @@ interface Rec {
 /* Layered progress ring: outer indigo arc + inner green arc (44px). */
 function DualRing({ pct, days, done }: { pct: number; days: number; done: boolean }) {
   const size = 56;
-  const r1 = (size - 4) / 2;
-  const r2 = r1 - 6;
+  const r1 = 22;
+  const r2 = 16;
   const c1 = 2 * Math.PI * r1;
   const c2 = 2 * Math.PI * r2;
   const p = Math.min(100, Math.max(0, pct));
@@ -78,7 +78,7 @@ function DualRing({ pct, days, done }: { pct: number; days: number; done: boolea
         strokeDasharray={c1} strokeDashoffset={c1 * (1 - p / 100)} transform={rot} />
       <circle cx={size / 2} cy={size / 2} r={r2} fill="none" stroke="#22c55e" strokeWidth={3.5} strokeLinecap="round"
         strokeDasharray={c2} strokeDashoffset={c2 * (1 - inner / 100)} transform={rot} />
-      <text x="50%" y="50%" dy="0.35em" textAnchor="middle" fontSize="12" fontWeight="800" fill="#0f172a">{done ? '✓' : `${days}d`}</text>
+      <text x="50%" y="50%" dy="0.35em" textAnchor="middle" fontSize="12" fontWeight="700" fill="#0f172a">{done ? '✓' : `${days}d`}</text>
     </svg>
   );
 }
@@ -107,6 +107,11 @@ export default function PatientProfilePage() {
   const [expanded, setExpanded] = useState<string>();
   const [starred, setStarred] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setCurrentIdx((i) => (i + 1) % AVATARS.length), 4000);
+    return () => clearInterval(t);
+  }, []);
 
   // — fetches (unchanged) —
   const { data: patient, isLoading: pl } = useQuery<any>({
@@ -167,14 +172,10 @@ export default function PatientProfilePage() {
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[1fr_300px]">
         {/* ══ HERO ══ */}
         <section className={`relative overflow-hidden ${CARD}`} style={{ background: '#EEF3FF', minHeight: 260 }}>
-          {/* photo slideshow */}
-          <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '42%', overflow: 'hidden', zIndex: 1 }}>
-            {AVATARS.map((src, i) => (
-              <div key={i} className="cyto-avatar-slide" style={{ position: 'absolute', inset: 0, animationDelay: `${-i * 4}s` }}>
-                <Image src={src} alt="" fill unoptimized sizes="42vw" style={{ objectFit: 'cover', objectPosition: 'top center' }} />
-              </div>
-            ))}
-            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 80, zIndex: 2, background: 'linear-gradient(to right, #EEF3FF, transparent)' }} />
+          {/* photo — single image, cycles every 4s */}
+          <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '45%', overflow: 'hidden', zIndex: 1 }}>
+            <Image key={currentIdx} src={AVATARS[currentIdx]} alt="" fill unoptimized sizes="45vw" style={{ objectFit: 'cover', objectPosition: 'top center' }} />
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 120, zIndex: 2, background: 'linear-gradient(to right, #EEF3FF 0%, transparent 100%)' }} />
           </div>
 
           {/* label (top-left) */}
@@ -210,17 +211,17 @@ export default function PatientProfilePage() {
                 <div className="mt-0.5 text-[15px] font-semibold text-[#111827]">{diagnosis}</div>
               </div>
             </div>
-            <div className="mt-5 flex items-center gap-6">
+            <div className="mt-5 flex items-center">
               <Stat value={rows.length} unit="rec" label="Total records" />
-              <div style={{ width: 1, height: 32, background: '#D1D5DB' }} />
+              <div style={{ width: 1, height: 32, background: '#D1D5DB', alignSelf: 'center', margin: '0 8px' }} />
               <Stat value={openRecs.length} unit="open" label="Open cases" />
-              <div style={{ width: 1, height: 32, background: '#D1D5DB' }} />
+              <div style={{ width: 1, height: 32, background: '#D1D5DB', alignSelf: 'center', margin: '0 8px' }} />
               <Stat value={authorized.length} unit="auth" label="Authorized" />
             </div>
           </div>
 
           {/* name + age/sex */}
-          <div style={{ position: 'absolute', bottom: 24, right: 'calc(42% + 16px)', zIndex: 3, textAlign: 'right' }}>
+          <div style={{ position: 'absolute', bottom: 24, right: 'calc(45% + 16px)', zIndex: 3, textAlign: 'right' }}>
             <div className="text-[20px] font-bold text-[#111827]">{fullName}</div>
             <div className="text-[14px] text-[#6B7280]">{age != null ? `${age} years old` : 'Age —'}, {patient.gender ?? '—'}</div>
           </div>
@@ -325,21 +326,24 @@ export default function PatientProfilePage() {
                       <div className="mt-0.5 flex items-center gap-2 text-[12px] text-[#6b7280]">{dmy(r.specimenDate ?? r.createdAt)} · <StatusBadge s={r.status} /></div>
                     </div>
                     <button aria-label={open ? 'Collapse' : 'Expand'} onClick={() => setExpanded(open ? undefined : r.id)}
-                      className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-[#4f46e5] shadow-sm">
-                      {open ? <X size={15} /> : <Plus size={15} />}
+                      className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-[#4f46e5] shadow-sm"
+                      style={{ transform: open ? 'rotate(45deg)' : 'none', transition: 'transform .15s ease' }}>
+                      <Plus size={15} />
                     </button>
                   </div>
                   {open && (
-                    <div className="mt-3">
-                      <div className="flex flex-wrap gap-1.5">
+                    <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         {(r.specimens ?? []).length === 0 && <span className="text-[12px] text-[#9CA3AF]">No specimens</span>}
-                        {(r.specimens ?? []).map((s) => <span key={s.id} className="rounded-full bg-[#EEF3FF] px-2.5 py-1 text-[11px] font-bold text-[#4F46E5]">{specLabel(s.type)}</span>)}
+                        {(r.specimens ?? []).map((s) => (
+                          <span key={s.id} style={{ background: '#EEF3FF', color: '#4F46E5', borderRadius: 999, padding: '3px 10px', fontSize: 11, fontWeight: 600 }}>{specLabel(s.type)}</span>
+                        ))}
                       </div>
-                      <button onClick={() => router.push(`/records/${r.id}`)} className="mt-3 w-full rounded-[10px] bg-[#4F46E5] py-2.5 text-[13px] font-bold text-white hover:bg-[#4338ca]">View report</button>
-                      <div className="mt-3 flex items-center gap-2">
-                        <span className="grid h-7 w-7 place-items-center rounded-full bg-[#4f46e5] text-[11px] font-bold text-white">{doctor(r) === '—' ? '?' : initials(doctor(r))}</span>
-                        <span className="flex-1 text-[13px] font-medium text-[#374151]">{doctor(r)}</span>
-                        <ChevronRight size={16} className="text-[#9CA3AF]" />
+                      <button onClick={() => router.push(`/records/${r.id}`)} style={{ width: '100%', background: '#111827', color: 'white', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}>View report</button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#F5F5FF', borderRadius: 10 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#4F46E5', color: 'white', display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{doctor(r) === '—' ? '?' : initials(doctor(r))}</div>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: '#374151', flex: 1 }}>{doctor(r)}</span>
+                        <span style={{ color: '#9CA3AF' }}>›</span>
                       </div>
                     </div>
                   )}
