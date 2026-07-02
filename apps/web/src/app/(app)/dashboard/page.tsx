@@ -3,8 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
 import {
-  ArrowUpRight, Boxes, Calendar, ChevronDown, ClipboardCheck, Clock, FlaskConical, MoreHorizontal, Plus,
-  TrendingDown, TrendingUp, Truck, Wrench,
+  ArrowUpRight, Calendar, ChevronDown, Clock, FlaskConical, Microscope, MoreHorizontal, Plus,
+  Stethoscope, TestTube, TrendingDown, TrendingUp, User,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -33,13 +33,14 @@ const dotFor = (status: string) =>
   ['Approved', 'Completed', 'Paid', 'Billed'].includes(status) ? GREEN
     : ['Deauthorized', 'Failed', 'Disabled'].includes(status) ? '#ef4444' : ORANGE;
 
-// Varied light icon chips (grey / sage / tan / blue-gray / lavender), cycled per row.
+// Varied light icon chips (grey / sage / tan / blue-gray / lavender) with
+// patient/cytology-appropriate icons, cycled per row.
 const CHIPS = [
-  { bg: '#eceef2', fg: '#5b6472', Icon: Wrench },
-  { bg: '#e3ead9', fg: '#5b6b47', Icon: ClipboardCheck },
-  { bg: '#ece2d0', fg: '#8a734e', Icon: Boxes },
+  { bg: '#eceef2', fg: '#5b6472', Icon: User },
+  { bg: '#e3ead9', fg: '#5b6b47', Icon: TestTube },
+  { bg: '#ece2d0', fg: '#8a734e', Icon: Microscope },
   { bg: '#dfe3ec', fg: '#5b6472', Icon: FlaskConical },
-  { bg: '#e6e1f2', fg: '#6b5ca0', Icon: Truck },
+  { bg: '#e6e1f2', fg: '#6b5ca0', Icon: Stethoscope },
 ];
 
 function SeeAll({ label = 'See all', onClick }: { label?: string; onClick?: () => void }) {
@@ -148,8 +149,8 @@ export default function DashboardPage() {
         <HeroBanner firstName={firstName} featured={featured} chips={chips} nav={<NavPills />} />
 
         <div style={{ marginTop: 48 }} className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-          {/* Priority Queue */}
-          <GlassCard title="Priority Queue" action={<SeeAll onClick={() => router.push('/records')} />}>
+          {/* Priority Queue — no card background (matches reference "Urgent Tasks") */}
+          <GlassCard title="Priority Queue" action={<SeeAll onClick={() => router.push('/records')} />} style={{ background: 'transparent', backdropFilter: 'none', WebkitBackdropFilter: 'none', border: '1px solid transparent', boxShadow: 'none' }}>
             <div className="flex flex-col divide-y divide-[var(--border-soft)]">
               {d.priorityRecords.length === 0 && <div className="py-6 text-center text-xs text-[var(--muted-foreground)]">Nothing urgent — you&apos;re clear.</div>}
               {d.priorityRecords.map((r: any, i: number) => {
@@ -175,24 +176,31 @@ export default function DashboardPage() {
             </div>
           </GlassCard>
 
-          {/* Performance Radar */}
-          <GlassCard title="Performance Radar" action={<IconBtn onClick={() => router.push('/analytics')}><ArrowUpRight size={16} /></IconBtn>}>
-            <RadarMetrics data={d.radar} />
-            <div className="mt-2 flex items-center justify-center gap-6">
-              <span className="flex items-center gap-2 text-[13px] font-semibold text-[var(--foreground)]"><span className="h-3 w-3 rounded-full" style={{ background: ORANGE }} /> This period</span>
-              <span className="flex items-center gap-2 text-[13px] font-semibold text-[var(--foreground)]"><span className="h-3 w-3 rounded-full" style={{ background: '#2b2d31' }} /> Last period</span>
+          {/* Specimen Throughput (bar, left) + Performance Radar (right) — one divided card */}
+          <GlassCard
+            className="lg:col-span-2"
+            title="Specimen Throughput"
+            action={<div className="flex items-center gap-2"><PillSelect value="Week" options={['Week']} /><IconBtn onClick={() => router.push('/analytics')}><ArrowUpRight size={16} /></IconBtn></div>}
+          >
+            <div className="flex flex-col gap-6 lg:flex-row">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-[34px] font-extrabold leading-none tracking-tight text-[var(--foreground)]">{d.throughput.headlinePct}%</span>
+                  <span className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold text-white" style={{ background: ORANGE }}>
+                    {up ? <TrendingUp size={15} /> : <TrendingDown size={15} />}{Math.abs(d.throughput.deltaPct)}%
+                  </span>
+                </div>
+                <div className="mt-4"><ThroughputComb data={d.throughput.series} height={260} /></div>
+              </div>
+              <div className="hidden w-px shrink-0 bg-[var(--border-soft)] lg:block" />
+              <div className="lg:w-[40%]">
+                <RadarMetrics data={d.radar} height={260} />
+                <div className="mt-1 flex items-center justify-center gap-6">
+                  <span className="flex items-center gap-2 text-[13px] font-semibold text-[var(--foreground)]"><span className="h-3 w-3 rounded-full" style={{ background: ORANGE }} /> This period</span>
+                  <span className="flex items-center gap-2 text-[13px] font-semibold text-[var(--foreground)]"><span className="h-3 w-3 rounded-full" style={{ background: '#2b2d31' }} /> Last period</span>
+                </div>
+              </div>
             </div>
-          </GlassCard>
-
-          {/* Specimen Throughput */}
-          <GlassCard title="Specimen Throughput" action={<PillSelect value="Week" options={['Week']} />}>
-            <div className="flex items-center justify-center gap-2.5">
-              <span className="text-[34px] font-extrabold leading-none tracking-tight text-[var(--foreground)]">{d.throughput.headlinePct}%</span>
-              <span className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold text-white" style={{ background: ORANGE }}>
-                {up ? <TrendingUp size={15} /> : <TrendingDown size={15} />}{Math.abs(d.throughput.deltaPct)}%
-              </span>
-            </div>
-            <div className="mt-4"><ThroughputComb data={d.throughput.series} height={220} /></div>
           </GlassCard>
 
           {/* Lab Effectiveness */}

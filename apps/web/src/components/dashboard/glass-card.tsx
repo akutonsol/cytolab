@@ -9,16 +9,19 @@ export function GlassCard({
   subtitle,
   action,
   style,
+  className,
   children,
 }: {
   title: ReactNode;
   subtitle?: string;
   action?: ReactNode;
   style?: CSSProperties;
+  className?: string;
   children: ReactNode;
 }) {
   return (
     <section
+      className={className}
       style={{
         position: 'relative',
         display: 'flex',
