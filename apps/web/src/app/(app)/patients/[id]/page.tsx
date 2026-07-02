@@ -258,16 +258,22 @@ export default function PatientProfilePage() {
               <button onClick={() => router.push('/records')} aria-label="Open" className={`${iconBtn} bg-[#4f46e5] text-white hover:bg-[#4338ca]`}><ArrowUpRight size={16} /></button>
             </div>
           </div>
-          <div className="mt-2 flex flex-col">
+          <div className="mt-3 flex flex-col gap-3">
             {findings.length === 0 && <div className="py-8 text-center text-[13px] text-[#9CA3AF]">No completed findings yet</div>}
             {findings.map((r) => (
-              <div key={r.id} className="flex items-center gap-3 border-b border-[#F3F4F6] py-3.5 last:border-b-0">
+              <div key={r.id} className="flex items-center gap-3 rounded-[14px] border border-[#EEF2F7] p-4">
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-[14px] font-semibold text-[#111827]">{r.clinicalDiagnosis || (r.specimens?.[0]?.type ? specLabel(r.specimens[0].type) : r.formType ? (r.formType === 'Gynecology' ? 'Gyn' : 'Non-Gyn') : '—')}</div>
-                  <div className="mt-0.5 truncate text-[12px] text-[#9CA3AF]">{r.labNumber ?? '—'} · {dmy(approvedAt(r) ?? r.specimenDate ?? r.createdAt)}</div>
-                  {r.urgent
-                    ? <span className="mt-1 inline-block rounded-[6px] bg-[#fee2e2] px-2 py-0.5 text-[11px] font-bold text-[#dc2626]">Urgent</span>
-                    : <div className="mt-0.5 text-[11px] text-[#9CA3AF]">{specLabel(r.specimens?.[0]?.type)}</div>}
+                  <div className="truncate text-[15px] font-bold text-[#111827]">{r.clinicalDiagnosis || (r.specimens?.[0]?.type ? specLabel(r.specimens[0].type) : examName(r.formType))}</div>
+                  <div className="mt-2 flex gap-6">
+                    <div className="space-y-0.5">
+                      <div className="text-[12px] text-[#9CA3AF]">Received – {dmy(r.specimenDate ?? r.createdAt)}</div>
+                      <div className="text-[12px] text-[#9CA3AF]">Reported – {dmy(approvedAt(r))}</div>
+                    </div>
+                    <div className="space-y-0.5">
+                      <div className="font-mono text-[12px] text-[#6b7280]">{r.labNumber ?? '—'}</div>
+                      <div className={`text-[12px] font-semibold ${r.urgent ? 'text-[#dc2626]' : 'text-[#374151]'}`}>{r.urgent ? 'Urgent' : r.status}</div>
+                    </div>
+                  </div>
                 </div>
                 <FindingRing days={turnaround(r)} />
               </div>
