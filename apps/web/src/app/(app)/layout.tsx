@@ -135,7 +135,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               {!showCenter && <button aria-label="Menu" onClick={() => setDrawerOpen(true)} style={iconBtnHero}><MenuOutlined /></button>}
               <Dropdown trigger={['click']} menu={accountMenu} placement="bottomLeft">
-                <button aria-label="Account" style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 12 }}>
+                <button aria-label="Account" style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff', border: '1px solid #e6e9f2', cursor: 'pointer', padding: '5px 8px 5px 5px', borderRadius: 999, boxShadow: '0 2px 6px rgba(16,24,40,0.06)' }}>
                   <span style={avatarBtn}>{initials}</span>
                   {screens.sm && (
                     <span style={{ textAlign: 'left', lineHeight: 1.2 }}>
@@ -143,19 +143,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       <span style={{ display: 'block', fontSize: 11, color: '#8a93a6' }}>{role}</span>
                     </span>
                   )}
-                  <DownOutlined style={{ fontSize: 10, color: '#8a93a6' }} />
+                  <span style={{ display: 'grid', placeItems: 'center', width: 24, height: 24, borderRadius: 999, background: '#f2f4fa', color: '#6b7280' }}><DownOutlined style={{ fontSize: 10 }} /></span>
                 </button>
               </Dropdown>
             </div>
 
             <div style={{ position: 'absolute', left: '50%', top: 4, transform: 'translateX(-50%)', textAlign: 'center', pointerEvents: 'none' }}>
-              <div style={{ fontFamily: 'Geist, sans-serif', fontSize: 18, fontWeight: 700, letterSpacing: 1.5, color: '#111827' }}>CYTOLAB</div>
-              {screens.md && <div style={{ fontSize: 11, color: '#8a93a6' }}>Cytology &amp; Pathology Laboratory System</div>}
+              <div style={{ fontFamily: 'Geist, sans-serif', fontSize: 25, fontWeight: 700, letterSpacing: 1, color: '#111827' }}>CYTOLAB</div>
+              {screens.md && <div style={{ fontSize: 13, color: '#8a93a6', marginTop: 2 }}>Cytology &amp; Pathology Laboratory System</div>}
             </div>
 
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
               {screens.md && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 42, width: 220, background: '#fff', border: '1px solid #d1d9ee', borderRadius: 999, padding: '0 14px', color: '#9ca3af' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 46, width: 260, background: '#fff', border: '1px solid #d1d9ee', borderRadius: 999, padding: '0 16px', color: '#9ca3af' }}>
                   <SearchOutlined />
                   <input placeholder="Search…" style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: 14, color: '#111827' }} />
                 </div>
@@ -214,5 +214,5 @@ const navPill = (active: boolean): React.CSSProperties => ({
   color: active ? '#fff' : '#374151',
   boxShadow: active ? '0 4px 12px rgba(79,70,229,0.28)' : 'none',
 });
-const iconBtnHero: React.CSSProperties = { width: 40, height: 40, borderRadius: 999, border: '1px solid #d1d9ee', background: '#fff', color: '#6b7280', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 16 };
-const avatarBtn: React.CSSProperties = { width: 40, height: 40, borderRadius: 999, border: 'none', background: '#4F46E5', color: '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 13, fontWeight: 600 };
+const iconBtnHero: React.CSSProperties = { width: 44, height: 44, borderRadius: 999, border: '1px solid #d1d9ee', background: '#fff', color: '#6b7280', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 17 };
+const avatarBtn: React.CSSProperties = { width: 38, height: 38, borderRadius: 999, border: 'none', background: '#4F46E5', color: '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 13, fontWeight: 600 };

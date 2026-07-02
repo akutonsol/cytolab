@@ -149,7 +149,7 @@ export default function DashboardPage() {
       <div style={{ position: 'relative', zIndex: 1, padding: '36px 40px 40px' }}>
         <HeroBanner firstName={firstName} featured={featured} chips={chips} nav={<NavPills />} />
 
-        <div style={{ marginTop: 40 }} className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div style={{ marginTop: 48 }} className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           {/* Priority Queue */}
           <GlassCard title="Priority Queue" action={<SeeAll onClick={() => router.push('/records')} />}>
             <div className="flex flex-col divide-y divide-[var(--border-soft)]">

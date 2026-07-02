@@ -15,7 +15,7 @@ export interface HeroFeatured {
 const glass: React.CSSProperties = {
   borderRadius: 24,
   border: '1px solid rgba(255,255,255,0.7)',
-  background: 'rgba(255,255,255,0.8)',
+  background: 'rgba(255,255,255,0.72)',
   backdropFilter: 'blur(12px)',
   WebkitBackdropFilter: 'blur(12px)',
   boxShadow: '0 1px 2px rgba(16,24,40,0.06)',
@@ -49,8 +49,8 @@ export function HeroBanner({
       {/* Row 1 — greeting (left) + nav pills (right) */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap' }}>
         <div>
-          <p style={{ fontSize: 15, color: '#6b7280', fontWeight: 400, margin: '0 0 4px' }}>Hi, {firstName}!</p>
-          <h1 style={{ fontSize: 52, fontWeight: 800, letterSpacing: '-0.03em', color: '#0f172a', lineHeight: 1.0, margin: 0 }}>
+          <p style={{ fontSize: 20, color: '#4b5563', fontWeight: 500, margin: '0 0 6px' }}>Hi, {firstName}!</p>
+          <h1 style={{ fontSize: 40, fontWeight: 800, letterSpacing: '-0.02em', color: '#0f172a', lineHeight: 1.05, margin: 0 }}>
             Welcome Back
           </h1>
         </div>
@@ -58,7 +58,7 @@ export function HeroBanner({
       </div>
 
       {/* Row 2 — active specimen + KPI chips in one horizontal row */}
-      <div style={{ display: 'flex', gap: 16, marginTop: 32, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 16, marginTop: 48, flexWrap: 'wrap' }}>
         <div style={{ ...glass, display: 'flex', gap: 12, alignItems: 'center', flex: '0 0 auto', minWidth: 250 }}>
           <Image src="/specimen-tube.png" alt="" width={48} height={96} style={{ objectFit: 'contain', flexShrink: 0 }} />
           <div style={{ minWidth: 0 }}>
