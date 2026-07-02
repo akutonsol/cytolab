@@ -16,7 +16,9 @@ import { NavPills } from '@/components/dashboard/nav-pills';
 import { OeeDonut, ProgressRing, RadarMetrics, ThroughputComb } from './charts';
 
 const GREEN = '#22c55e', BLUE = '#6366f1', GRAY = '#9ca3af';
-const CANVAS = 'linear-gradient(160deg, #e8ebf4 0%, #eaecf5 50%, #eceff6 100%)';
+// Solid canvas — matches the layout top bar exactly (no seam) and gives the DNA
+// multiply a uniform backdrop so the helix knocks out cleanly everywhere.
+const CANVAS = '#eaecf5';
 
 const relDay = (d: string) => {
   const s = (Date.now() - new Date(d).getTime()) / 1000;
@@ -73,25 +75,30 @@ function Stat({ value, label, dot }: { value: React.ReactNode; label: string; do
 function DnaBackdrop() {
   return (
     <>
+      {/* Animated helix layer — knocked out against the solid canvas colour, so the
+          drifting solid areas stay invisible against the page and only the helix
+          appears to slowly move/breathe. */}
       <div
         aria-hidden
+        className="dna-drift"
         style={{
           position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
-          backgroundImage: `url(/dna-helix.png), ${CANVAS}`,
-          backgroundBlendMode: 'multiply, normal',
-          backgroundRepeat: 'no-repeat, no-repeat',
-          backgroundPosition: 'right -20px top -30px, center',
-          backgroundSize: '82% auto, cover',
+          backgroundImage: 'url(/dna-helix.png)',
+          backgroundColor: CANVAS,
+          backgroundBlendMode: 'multiply',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'right -20px top -30px',
+          backgroundSize: '82% auto',
+          transformOrigin: 'top right',
         }}
       />
-      {/* Radial vignette feathers the helix image's rectangular edges (its non-white
-          glow/corners) into the canvas — the clear zone is wide so the helix stays
-          vivid and flows down toward the centre, exactly like the reference tail. */}
+      {/* Static vignette feathers the helix image's edges into the canvas so it stays
+          vivid in the top-right and fades toward the centre like the reference tail. */}
       <div
         aria-hidden
         style={{
           position: 'absolute', top: 0, right: 0, width: '88%', height: 860, zIndex: 0, pointerEvents: 'none',
-          background: 'radial-gradient(96% 96% at 100% 0%, transparent 58%, #eaecf5 92%)',
+          background: `radial-gradient(96% 96% at 100% 0%, transparent 58%, ${CANVAS} 92%)`,
         }}
       />
     </>

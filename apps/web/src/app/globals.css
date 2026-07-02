@@ -131,3 +131,19 @@ body {
   --accent-icon: oklch(0.5 0.18 282);
   --accent-fg: oklch(0.34 0.11 282);
 }
+
+/* ============================================================
+   Dashboard DNA backdrop — slow drifting/breathing animation.
+   ============================================================ */
+@keyframes dna-drift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(-16px, 20px, 0) scale(1.035); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+.dna-drift {
+  animation: dna-drift 20s ease-in-out infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dna-drift { animation: none; }
+}
