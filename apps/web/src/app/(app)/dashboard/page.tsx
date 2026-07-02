@@ -44,7 +44,15 @@ const CHIPS = [
 ];
 
 function SeeAll({ label = 'See all', onClick }: { label?: string; onClick?: () => void }) {
-  return <button onClick={onClick} className="text-[13px] font-semibold text-[var(--muted-foreground)] underline underline-offset-2 transition-colors hover:text-[var(--foreground)]">{label}</button>;
+  return (
+    <button
+      onClick={onClick}
+      className="rounded-full px-3 py-1.5 text-[12px] font-semibold text-white transition-opacity hover:opacity-90"
+      style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)' }}
+    >
+      {label}
+    </button>
+  );
 }
 function IconBtn({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
   return <button onClick={onClick} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border-soft)] text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]">{children}</button>;
