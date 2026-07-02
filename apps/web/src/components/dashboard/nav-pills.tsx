@@ -31,7 +31,7 @@ const chevBox = (active: boolean): React.CSSProperties => ({
  * rounded square, chevron in a circle, soft-lavender active state). On the
  * dashboard the layout hides its own pill row so this is the only copy.
  */
-export function NavPills() {
+export function NavPills({ justify = 'flex-end' }: { justify?: React.CSSProperties['justifyContent'] } = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const { can } = useAuth();
@@ -52,7 +52,7 @@ export function NavPills() {
   );
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'flex-end' }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: justify }}>
       <style>{`.cyto-hero-pill{transition:transform .18s cubic-bezier(0.4,0,0.2,1),box-shadow .18s}.cyto-hero-pill:hover{transform:translateY(-1px)}`}</style>
       {can(HOME_ITEM.permission) && Pill(pathname === HOME_ITEM.path, createElement(HOME_ITEM.icon!, { size: 16, strokeWidth: 1.9 }), HOME_ITEM.label, true, () => router.push(HOME_ITEM.path))}
       {centerGroups.map((g) => (

@@ -9,7 +9,8 @@ import {
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { Microscope } from 'lucide-react';
-import { ACCOUNT_GROUP_KEY, ANALYTICS_ITEM, CENTER_GROUP_KEYS, HOME_ITEM, NAV_GROUPS } from '@/lib/nav';
+import { ACCOUNT_GROUP_KEY, ANALYTICS_ITEM, HOME_ITEM, NAV_GROUPS } from '@/lib/nav';
+import { NavPills } from '@/components/dashboard/nav-pills';
 import { useAuth, useAuthStore } from '@/lib/auth';
 import { refreshSession } from '@/lib/api';
 
@@ -46,20 +47,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const navigate = (key: string) => { setDrawerOpen(false); router.push(key); };
 
-  // Center dropdown groups (permission-filtered; group hidden when it has no items).
-  const centerGroups = useMemo(
-    () =>
-      CENTER_GROUP_KEYS.map((k) => NAV_GROUPS.find((g) => g.key === k))
-        .filter(Boolean)
-        .map((g) => ({ ...(g as any), visible: (g as any).items.filter((i: any) => can(i.permission)) }))
-        .filter((g) => g.visible.length > 0),
-    [claims], // eslint-disable-line react-hooks/exhaustive-deps
-  );
   const analyticsVisible = can(ANALYTICS_ITEM.permission);
   const accountGroup = NAV_GROUPS.find((g) => g.key === ACCOUNT_GROUP_KEY)!;
   const accountItems = accountGroup.items.filter((i) => can(i.permission));
-
-  const groupActive = (items: any[]) => items.some((i: any) => i.path === pathname);
 
   // Full grouped menu (used in the mobile drawer).
   const drawerMenu: MenuProps['items'] = useMemo(
@@ -114,20 +104,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const showCenter = !!screens.lg; // hero pills + greeting above lg; hamburger below
 
-  const pill = (active: boolean, icon: React.ReactNode, label: string, chevron: boolean, onClick?: () => void) => (
-    <button className={active ? 'cyto-pill cyto-pill-active' : 'cyto-pill'} onClick={onClick} style={navPill(active)}>
-      <span style={{ display: 'inline-flex', fontSize: 15 }}>{icon}</span>
-      <span>{label}</span>
-      {chevron && <DownOutlined style={{ fontSize: 10, opacity: 0.7 }} />}
-    </button>
-  );
-
   return (
     <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', background: CANVAS, display: 'flex', flexDirection: 'column' }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
-.cyto-pill{transition:all .18s cubic-bezier(0.4,0,0.2,1)}
-.cyto-pill:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(79,70,229,0.18)}
-.cyto-pill:not(.cyto-pill-active):hover{background:rgba(79,70,229,0.08) !important;border-color:#c7d2fe !important}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');`}</style>
 
       <header style={heroZone}>
         <div style={heroBg(showCenter)}>
@@ -181,15 +160,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               renders its own pills beside the greeting (matches the reference). */}
           {showCenter && pathname !== '/dashboard' && (
             <div style={{ position: 'relative', zIndex: 2, display: 'flex', marginTop: 12 }}>
-              <nav style={navPillBar}>
-                {can(HOME_ITEM.permission) && pill(pathname === HOME_ITEM.path, createElement(HOME_ITEM.icon!, { size: 15, strokeWidth: 1.5 }), HOME_ITEM.label, false, () => navigate(HOME_ITEM.path))}
-                {centerGroups.map((g) => (
-                  <Dropdown key={g.key} trigger={['hover', 'click']} menu={{ items: g.visible.map((i: any) => ({ key: i.path, label: i.label })), onClick: ({ key }) => navigate(key) }}>
-                    {pill(groupActive(g.visible), createElement(g.icon as any, { size: 15, strokeWidth: 1.5 }), g.label, true)}
-                  </Dropdown>
-                ))}
-                {analyticsVisible && pill(pathname === ANALYTICS_ITEM.path, createElement(ANALYTICS_ITEM.icon!, { size: 15, strokeWidth: 1.5 }), ANALYTICS_ITEM.label, false, () => navigate(ANALYTICS_ITEM.path))}
-              </nav>
+              <NavPills justify="flex-start" />
             </div>
           )}
         </div>
@@ -213,18 +184,6 @@ const heroZone: React.CSSProperties = { position: 'sticky', top: 0, zIndex: 20 }
 const heroBg = (tall: boolean): React.CSSProperties => ({
   position: 'relative', background: 'transparent',
   padding: tall ? '14px 32px 12px' : '10px 16px', minHeight: tall ? 108 : 64,
-});
-const navPillBar: React.CSSProperties = {
-  display: 'inline-flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, background: '#fff', borderRadius: 16,
-  padding: '8px 12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-};
-const navPill = (active: boolean): React.CSSProperties => ({
-  display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 999, cursor: 'pointer',
-  fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
-  border: '1px solid ' + (active ? 'transparent' : '#e2e8f0'),
-  background: active ? 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)' : '#fff',
-  color: active ? '#fff' : '#374151',
-  boxShadow: active ? '0 4px 12px rgba(79,70,229,0.28)' : 'none',
 });
 const iconBtnHero: React.CSSProperties = { width: 50, height: 50, borderRadius: 999, border: '1px solid #bcc6d9', background: 'linear-gradient(145deg, #e4e9f3 0%, #cbd3e2 100%)', color: '#4b5563', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 18, boxShadow: '0 2px 6px rgba(16,24,40,0.06)' };
 const avatarBtn: React.CSSProperties = { width: 42, height: 42, borderRadius: 999, border: 'none', background: '#4F46E5', color: '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 14, fontWeight: 600 };
