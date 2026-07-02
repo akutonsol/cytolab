@@ -62,7 +62,7 @@ const recordSelect = {
   nonGynFeatures: true,
   resultSheets: { select: { id: true, authorized: true, authorizedAt: true } },
   statusHistory: {
-    select: { id: true, status: true, notes: true, userId: true, createdAt: true },
+    select: { id: true, status: true, notes: true, userId: true, createdAt: true, user: { select: { firstName: true, lastName: true } } },
     orderBy: { createdAt: 'asc' as const },
   },
   createdAt: true,

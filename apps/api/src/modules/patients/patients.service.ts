@@ -194,7 +194,7 @@ export class PatientsService {
       where: { createdAt: { gte: startToday } },
       orderBy: [{ urgent: 'desc' }, { createdAt: 'asc' }],
       select: {
-        id: true, labNumber: true, status: true, urgent: true, formType: true,
+        id: true, patientId: true, labNumber: true, status: true, urgent: true, formType: true,
         clinicalDiagnosis: true, specimenDate: true, createdAt: true,
         patient: { select: { firstName: true, lastName: true } },
         client: { select: { officeName: true, firstName: true, lastName: true } },
@@ -221,7 +221,7 @@ export class PatientsService {
     }));
 
     const records = todays.map((r) => ({
-      id: r.id, labNumber: r.labNumber, patient: pname(r), specimenType: r.specimens[0]?.type ?? null,
+      id: r.id, patientId: r.patientId, labNumber: r.labNumber, patient: pname(r), specimenType: r.specimens[0]?.type ?? null,
       status: r.status, urgent: r.urgent, receivedAt: r.specimenDate ?? r.createdAt,
       stage: STAGE[r.status] ?? { label: '—', pct: 0 },
     }));

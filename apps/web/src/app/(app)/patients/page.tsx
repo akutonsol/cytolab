@@ -200,6 +200,7 @@ export default function PatientsPage() {
           </div>
           <div className="px-3 pb-3 pt-2">
             <Table rowKey="id" columns={columns} dataSource={rows} pagination={false} size="middle"
+              onRow={(r: any) => ({ onClick: () => r.patientId && router.push(`/patients/${r.patientId}`), style: { cursor: 'pointer' } })}
               locale={{ emptyText: 'No records today yet.' }} />
           </div>
         </div>
