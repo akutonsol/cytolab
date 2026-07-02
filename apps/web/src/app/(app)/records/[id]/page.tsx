@@ -38,9 +38,14 @@ const STEP_OF: Record<string, number> = {
 const SPECIAL = ['OnHold', 'Failed', 'Disabled'];
 const OPEN = ['Pending', 'Submitted', 'Processing', 'Partial', 'Completed', 'Resulted'];
 const INDIGO = '#4F46E5';
+// Activity-dot colour per the reference spec.
+const DOT: Record<string, string> = {
+  Pending: '#94A3B8', Submitted: '#94A3B8', Processing: '#4F46E5', Partial: '#4F46E5',
+  Completed: '#22C55E', Resulted: '#4F46E5', Approved: '#22C55E', Billed: '#22C55E',
+  Paid: '#22C55E', Failed: '#EF4444', Disabled: '#EF4444', OnHold: '#94A3B8', Viewed: '#22C55E',
+};
 
 const specLabel = (t?: string) => (t ? (SPECIMEN_LABELS as any)[t] ?? t : '—');
-const dateFmt = (d?: string | null) => (d ? new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—');
 const relTime = (iso?: string | null) => {
   if (!iso) return '';
   const s = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
@@ -50,11 +55,12 @@ const relTime = (iso?: string | null) => {
   if (s < 604800) return `${Math.floor(s / 86400)}d ago`;
   return new Date(iso).toLocaleDateString();
 };
-const initials = (f?: string, l?: string) => `${(f ?? '')[0] ?? ''}${(l ?? '')[0] ?? ''}`.toUpperCase() || '—';
 
-const btnPrimary = 'flex w-full items-center justify-center gap-2 rounded-xl bg-[#4F46E5] px-4 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-[#4338CA] disabled:opacity-60';
-const btnSecondary = 'flex w-full items-center justify-center gap-2 rounded-xl border border-[#4F46E5] px-4 py-2.5 text-[13px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#EEF3FF] disabled:opacity-60';
-const LABEL = 'text-[10px] font-bold uppercase tracking-[0.08em] text-[#9CA3AF]';
+// Button styles.
+const actionPrimary = 'flex w-full items-center justify-between gap-2 rounded-full bg-[#4F46E5] px-5 py-3 text-[14px] font-bold text-white transition-colors hover:bg-[#4338CA] disabled:opacity-60';
+const actionSecondary = 'flex w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-[#CBD5E1] px-5 py-[11px] text-[14px] font-semibold text-[#475569] transition-colors hover:bg-[#F1F5F9] disabled:opacity-60';
+const rightBtn = 'w-full rounded-[10px] bg-[#F1F5F9] px-3 py-2.5 text-center text-[13px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#E2E8F0]';
+const LABEL = 'text-[10px] font-bold uppercase tracking-[0.08em] text-[#94A3B8]';
 
 // Floating-particle / glow configs for the cytology-image animation layers.
 const PARTICLES = [
@@ -78,7 +84,6 @@ const ANIM_CSS = `
 @keyframes glowPulse{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:.7;transform:scale(1.15)}}
 @keyframes scanLine{0%{top:0%;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:100%;opacity:0}}
 @keyframes colorDrift{0%{background:rgba(99,102,241,0)}25%{background:rgba(99,102,241,.04)}50%{background:rgba(129,140,248,.06)}75%{background:rgba(167,139,250,.04)}100%{background:rgba(99,102,241,0)}}
-@keyframes stepPulse{0%,100%{box-shadow:0 0 0 0 rgba(79,70,229,.4)}50%{box-shadow:0 0 0 8px rgba(79,70,229,0)}}
 @keyframes drift1{0%{transform:translate(0,0) scale(1);opacity:.6}33%{transform:translate(12px,-18px) scale(1.2);opacity:.9}66%{transform:translate(-8px,10px) scale(.8);opacity:.4}100%{transform:translate(0,0) scale(1);opacity:.6}}
 @keyframes drift2{0%{transform:translate(0,0) scale(1);opacity:.5}33%{transform:translate(-16px,12px) scale(1.3);opacity:.8}66%{transform:translate(10px,-14px) scale(.9);opacity:.3}100%{transform:translate(0,0) scale(1);opacity:.5}}
 @keyframes drift3{0%{transform:translate(0,0) scale(1);opacity:.4}33%{transform:translate(18px,14px) scale(1.1);opacity:.7}66%{transform:translate(-12px,-16px) scale(.85);opacity:.3}100%{transform:translate(0,0) scale(1);opacity:.4}}
@@ -112,7 +117,6 @@ export default function RecordDetailPage() {
   const sheetId = sheetsPage?.data?.[0]?.id as string | undefined;
   const { data: sheet } = useQuery<any>({ queryKey: ['result-sheet', sheetId], queryFn: () => api.get(`/resultsheet/${sheetId}`).then((r) => r.data), enabled: !!sheetId });
   const { data: schema } = useQuery<any>({ queryKey: ['form-schema', record?.formType], queryFn: () => api.get(`/form-config/${record.formType}/schema`).then((r) => r.data), enabled: !!record?.formType });
-  // Patient-level stats for the right panel.
   const { data: patientRecs } = useQuery<Paginated<any>>({ queryKey: ['patient-records', record?.patientId], enabled: !!record?.patientId, queryFn: () => api.get('/specimens/patient', { params: { patientId: record.patientId, pageSize: 100 } }).then((r) => r.data) });
 
   const refetchAll = () => { qc.invalidateQueries({ queryKey: ['record-detail', id] }); qc.invalidateQueries({ queryKey: ['record-sheets', id] }); };
@@ -136,10 +140,10 @@ export default function RecordDetailPage() {
 
   if (isLoading || !record) {
     return (
-      <div className="flex gap-5 p-6" style={{ background: '#F0F2F8', minHeight: 'calc(100vh - 140px)' }}>
-        <div className="h-[70vh] w-[300px] shrink-0 animate-pulse rounded-[20px] bg-white/70" />
-        <div className="h-[70vh] flex-1 animate-pulse rounded-[20px] bg-white/70" />
-        <div className="h-[70vh] w-[300px] shrink-0 animate-pulse rounded-[20px] bg-white/70" />
+      <div className="flex gap-4 p-5" style={{ background: '#EDF0F7', height: 'calc(100vh - 150px)', minHeight: 560 }}>
+        <div className="w-[280px] shrink-0 animate-pulse rounded-[20px] bg-white/70" />
+        <div className="flex-1 animate-pulse rounded-[20px] bg-white/70" />
+        <div className="w-[260px] shrink-0 animate-pulse rounded-[20px] bg-white/70" />
       </div>
     );
   }
@@ -157,7 +161,7 @@ export default function RecordDetailPage() {
   };
   const hasFeatures = !!feat || !!record.clinicalDiagnosis;
   const fields = schema?.fields ?? [];
-  const shownFields = showAllFeatures ? fields : fields.slice(0, 3);
+  const shownFields = showAllFeatures ? fields : fields.slice(0, 4);
 
   const specimens: any[] = record.specimens ?? [];
   const activeSpecimen = specimens[activeSpec] ?? specimens[0];
@@ -168,45 +172,48 @@ export default function RecordDetailPage() {
   const aiFinding = sheet?.narrative ? (sheet.narrative.length > 120 ? `${sheet.narrative.slice(0, 120)}…` : sheet.narrative) : 'Awaiting cytological analysis.';
   const activity = [...(record.statusHistory ?? [])].reverse();
   const shownActivity = showAllActivity ? activity : activity.slice(0, 5);
+  const chip = 'rounded-full bg-[#F1F5F9] px-4 py-1.5 text-[13px] font-semibold text-[#64748B]';
 
   return (
-    <div className="flex gap-5 p-6" style={{ background: '#F0F2F8', height: 'calc(100vh - 140px)', minHeight: 560 }}>
+    <div className="flex gap-4 p-5" style={{ background: '#EDF0F7', height: 'calc(100vh - 150px)', minHeight: 560 }}>
       <style>{ANIM_CSS}</style>
 
       {/* ═══════════ LEFT PANEL ═══════════ */}
-      <aside className="premium-scroll flex w-[300px] shrink-0 flex-col overflow-y-auto rounded-[20px] border border-[#EEF2F7] bg-white p-6" style={{ boxShadow: '0 4px 24px rgba(79,70,229,0.06)' }}>
-        <button onClick={() => router.back()} className="mb-4 flex items-center gap-1.5 self-start text-[12px] font-medium text-[#6B7280] hover:text-[#0F172A]"><ArrowLeft size={14} /> Records</button>
+      <aside className="premium-scroll flex w-[280px] shrink-0 flex-col overflow-y-auto rounded-[20px] border border-[#E4E8F4] bg-[#F4F6FC] p-6">
+        <button onClick={() => router.back()} className="mb-4 flex items-center gap-1.5 self-start text-[12px] font-medium text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={14} /> Records</button>
 
         {/* Identity */}
         <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-[20px] font-bold text-[#0F172A]">{record.labNumber ?? '—'}</span>
-            {record.formType && <span className="rounded-md px-2 py-0.5 text-[11px] font-bold" style={isGyn ? { background: '#EEF3FF', color: '#4F46E5' } : { background: '#F0FDF4', color: '#16A34A' }}>{isGyn ? 'GYN' : 'NON-GYN'}</span>}
-            {record.urgent && <span className="rounded-md bg-[#FEF2F2] px-2 py-0.5 text-[11px] font-bold text-[#DC2626]">URGENT</span>}
-          </div>
-          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold" style={{ background: st.bg, color: st.fg }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: st.fg }} />{status}</span>
+          <span className="font-mono text-[22px] font-extrabold text-[#0F172A]">{record.labNumber ?? '—'}</span>
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-[13px] font-bold" style={{ background: st.bg, color: st.fg }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: st.fg }} />{status}</span>
         </div>
-        <div className="mt-2 text-[14px] font-semibold text-[#6B7280]">{`${record.patient?.firstName ?? ''} ${record.patient?.lastName ?? ''}`.trim() || '—'}</div>
-        <div className="text-[12px] text-[#9CA3AF]">{record.client?.officeName || `${record.client?.firstName ?? ''} ${record.client?.lastName ?? ''}`.trim() || '—'}</div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          {record.formType && <span className="rounded-md px-2 py-0.5 text-[11px] font-bold" style={isGyn ? { background: '#EEF3FF', color: '#4F46E5' } : { background: '#F0FDF4', color: '#16A34A' }}>{isGyn ? 'GYN' : 'NON-GYN'}</span>}
+          {record.urgent && <span className="rounded-md bg-[#FEF2F2] px-2 py-0.5 text-[11px] font-bold text-[#DC2626]">URGENT</span>}
+        </div>
+        <div className="mt-3 text-[15px] font-semibold text-[#1E293B]">{`${record.patient?.firstName ?? ''} ${record.patient?.lastName ?? ''}`.trim() || '—'}</div>
+        <div className="text-[13px] text-[#64748B]">{record.client?.officeName || `${record.client?.firstName ?? ''} ${record.client?.lastName ?? ''}`.trim() || '—'}</div>
 
         {/* Vertical stepper */}
         <div className="mt-6 flex flex-col">
           {STEPS.map((label, i) => {
             const done = i < currentStep; const current = i === currentStep; const passed = i <= currentStep;
-            const circle = current && special ? { background: STATUS[status].bg, color: STATUS[status].fg }
-              : passed ? { background: INDIGO, color: '#fff', animation: current && !special ? 'stepPulse 2s infinite' : undefined }
-                : { background: '#F3F4F6', color: '#9CA3AF' };
+            const circle: any = current && special ? { background: STATUS[status].bg, color: STATUS[status].fg }
+              : passed ? { background: INDIGO, color: '#fff', boxShadow: current && !special ? '0 0 0 4px rgba(79,70,229,0.2)' : undefined }
+                : { background: '#F1F5F9', color: '#94A3B8' };
             return (
-              <div key={label} className="flex gap-3">
+              <div key={label} className="flex items-start gap-3">
                 <div className="flex flex-col items-center">
-                  <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-bold" style={circle as any}>
-                    {current && special ? (status === 'OnHold' ? <Pause size={12} /> : <X size={12} />) : done ? <Check size={13} /> : <span>{i + 1}</span>}
+                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[14px] font-bold" style={circle}>
+                    {current && special ? (status === 'OnHold' ? <Pause size={14} /> : <X size={14} />) : done ? <Check size={15} /> : <span>{i + 1}</span>}
                   </div>
-                  {i < STEPS.length - 1 && <div className="w-0.5 flex-1" style={{ minHeight: 16, background: i < currentStep ? INDIGO : '#E5E7EB' }} />}
+                  {i < STEPS.length - 1 && <div style={{ width: 2, height: 20, background: i < currentStep ? INDIGO : '#E2E8F0' }} />}
                 </div>
-                <div className="pb-3">
-                  <div className="text-[13px] font-semibold" style={{ color: passed ? '#0F172A' : '#9CA3AF' }}>{label}</div>
-                  <div className="text-[11px] text-[#9CA3AF]">{current ? (special ? (status === 'OnHold' ? 'On Hold' : status === 'Failed' ? 'Failed' : 'Cancelled') : 'In progress') : done ? 'Done' : 'Upcoming'}</div>
+                <div className="pt-1">
+                  <div className="text-[15px] font-semibold" style={{ color: passed ? '#0F172A' : '#94A3B8' }}>{label}</div>
+                  <div className="text-[12px]" style={{ color: current ? (special ? STATUS[status].fg : '#4F46E5') : done ? '#22C55E' : '#94A3B8' }}>
+                    {current ? (special ? (status === 'OnHold' ? 'On Hold' : status === 'Failed' ? 'Failed' : 'Cancelled') : 'In progress') : done ? 'Completed' : 'Upcoming'}
+                  </div>
                 </div>
               </div>
             );
@@ -214,128 +221,110 @@ export default function RecordDetailPage() {
         </div>
 
         {/* Recommended action */}
-        <div className="mt-3 border-t border-[#F3F4F6] pt-4">
-          <div className={LABEL}>Recommended Action</div>
-          <div className="mt-2"><ActionPanel status={status} pending={statusMut.isPending} go={go} onEditFeatures={() => setDrawer(true)} onOpenSheet={() => setSheetModal(true)} onAuthorize={() => setAuthModal(true)} onInvoice={() => router.push(`/billing?recordId=${id}`)} onReport={() => router.push(`/reports?recordId=${id}`)} onAuthorizer={() => router.push('/authorizer')} /></div>
+        <div className="mt-2 border-t-2 border-[#E4E8F4] pt-5">
+          <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#EF4444]">Recommended Action</div>
+          <ActionPanel status={status} pending={statusMut.isPending} go={go} onEditFeatures={() => setDrawer(true)} onOpenSheet={() => setSheetModal(true)} onAuthorize={() => setAuthModal(true)} onInvoice={() => router.push(`/billing?recordId=${id}`)} onReport={() => router.push(`/reports?recordId=${id}`)} onAuthorizer={() => router.push('/authorizer')} />
         </div>
 
-        {/* Clinical features (collapsible) */}
-        <div className="mt-5 border-t border-[#F3F4F6] pt-4">
-          <div className="mb-3 flex items-center justify-between">
+        {/* Clinical features */}
+        <div className="mt-5 border-t border-[#E4E8F4] pt-5">
+          <div className="mb-2 flex items-center justify-between">
             <div className={LABEL}>Clinical Features</div>
-            <button onClick={() => setDrawer(true)} className="grid h-7 w-7 place-items-center rounded-lg text-[#9CA3AF] hover:bg-[#F3F4F6] hover:text-[#4F46E5]"><Pencil size={13} /></button>
+            <button onClick={() => setDrawer(true)} className="grid h-7 w-7 place-items-center rounded-full text-[#94A3B8] hover:bg-[#E2E8F0] hover:text-[#4F46E5]"><Pencil size={13} /></button>
           </div>
           {!hasFeatures ? (
-            <div className="text-[12px] text-[#9CA3AF]">No clinical features recorded.</div>
+            <div className="text-[12px] text-[#94A3B8]">No clinical features recorded.</div>
           ) : (
             <>
-              <div className="flex flex-col gap-2.5">
-                {shownFields.map((f: any) => {
-                  const v = featValue(f.fieldKey);
-                  return (
-                    <div key={f.fieldKey} className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] text-[#9CA3AF]">{f.label}</span>
-                      <span className="text-right text-[13px] font-medium text-[#0F172A]">{f.fieldType === 'CHECKBOX' ? (v ? <Check size={14} className="inline text-[#16A34A]" /> : <span className="text-[#D1D5DB]">—</span>) : (v || <span className="text-[#D1D5DB]">—</span>)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              {fields.length > 3 && <button onClick={() => setShowAllFeatures((v) => !v)} className="mt-3 text-[12px] font-semibold text-[#4F46E5] hover:underline">{showAllFeatures ? 'Show less' : `Show all (${fields.length})`}</button>}
+              {shownFields.map((f: any) => {
+                const v = featValue(f.fieldKey);
+                return (
+                  <div key={f.fieldKey} className="flex items-center justify-between gap-2 border-b border-[#F1F5F9] py-2">
+                    <span className="text-[11px] text-[#94A3B8]">{f.label}</span>
+                    <span className="text-right text-[13px] font-semibold text-[#0F172A]">{f.fieldType === 'CHECKBOX' ? (v ? <Check size={14} className="inline text-[#16A34A]" /> : <span className="text-[#CBD5E1]">—</span>) : (v || <span className="text-[#CBD5E1]">—</span>)}</span>
+                  </div>
+                );
+              })}
+              {fields.length > 4 && <button onClick={() => setShowAllFeatures((v) => !v)} className="mt-2 text-[12px] font-semibold text-[#4F46E5] hover:underline">{showAllFeatures ? 'Show less' : 'Show all →'}</button>}
             </>
           )}
         </div>
       </aside>
 
       {/* ═══════════ CENTER PANEL ═══════════ */}
-      <section className="flex min-w-[400px] flex-1 flex-col overflow-hidden rounded-[20px] border border-[#EEF2F7] bg-white">
+      <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-[#E4E8F4] bg-white">
         {/* Top bar */}
-        <div className="flex items-center justify-between gap-3 border-b border-[#F3F4F6] px-5 py-4">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#F1F5F9] px-5 py-3.5">
           <div className={LABEL}>Specimen Analysis</div>
-          <div className="flex items-center gap-1.5 rounded-full bg-[#F3F4F6] p-1">
-            {specimens.length === 0 ? <span className="px-3 py-1 text-[12px] text-[#9CA3AF]">No specimens</span> : specimens.map((s: any, i: number) => (
-              <button key={s.id} onClick={() => setActiveSpec(i)} className="rounded-full px-3 py-1 text-[12px] font-semibold transition-colors" style={i === activeSpec ? { background: '#4F46E5', color: '#fff' } : { color: '#6B7280' }}>{specLabel(s.type)}</button>
+          <div className="flex items-center gap-2">
+            {specimens.length === 0 ? <span className="text-[12px] text-[#94A3B8]">No specimens</span> : specimens.map((s: any, i: number) => (
+              <button key={s.id} onClick={() => setActiveSpec(i)} className="rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors" style={i === activeSpec ? { background: '#4F46E5', color: '#fff' } : { background: '#F1F5F9', color: '#64748B' }}>{specLabel(s.type)}</button>
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[12px] font-semibold text-[#4F46E5]">{record.labNumber ?? '—'}</span>
-            <span className="rounded-md bg-[#EEF3FF] px-2 py-0.5 text-[11px] font-bold text-[#4F46E5]">{openCases} Active</span>
+            <span className="font-mono text-[13px] font-bold text-[#4F46E5]">{record.labNumber ?? '—'}</span>
+            <span className="text-[13px] font-semibold text-[#4F46E5]">{openCases} Active</span>
           </div>
         </div>
 
         {/* Cytology image + animation layers */}
-        <div className="relative flex-1 overflow-hidden bg-[#F5F0FA]">
+        <div className="relative flex-1 overflow-hidden bg-[#F5F0FA]" style={{ minHeight: 400 }}>
           <div className="absolute inset-0" style={{ animation: 'cytoBreathe 8s ease-in-out infinite' }}>
             <Image src="/cytology-sample.png" alt="Cytology specimen" fill unoptimized sizes="60vw" style={{ objectFit: 'cover', objectPosition: 'center' }} priority />
           </div>
-          {/* Layer 5 — colour drift */}
           <div className="pointer-events-none absolute inset-0" style={{ animation: 'colorDrift 12s linear infinite' }} />
-          {/* Layer 3 — radial glow pulse */}
           {GLOWS.map((g, i) => (
             <div key={`g${i}`} className="pointer-events-none absolute rounded-full" style={{ left: g.left, top: g.top, width: g.size, height: g.size, background: g.color, filter: 'blur(30px)', animation: `glowPulse ${g.dur} ease-in-out ${g.delay} infinite` }} />
           ))}
-          {/* Layer 2 — floating particles */}
           {PARTICLES.map((p, i) => (
             <div key={`p${i}`} className="pointer-events-none absolute rounded-full" style={{ left: p.left, top: p.top, width: p.size, height: p.size, background: p.color, animation: `${p.anim} ${p.dur} ease-in-out ${p.delay} infinite` }} />
           ))}
-          {/* Layer 4 — scan line */}
           <div className="pointer-events-none absolute left-0 right-0" style={{ height: 2, background: 'linear-gradient(to right, transparent, rgba(129,140,248,0.4), transparent)', animation: 'scanLine 4s linear infinite' }} />
         </div>
 
-        {/* Bottom info bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#F3F4F6] bg-[#F8FAFC] px-5 py-4">
-          <div className="min-w-0 flex-1 text-[13px] text-[#374151]">
-            {abnormal && <span className="mr-1.5 font-bold text-[#4F46E5]">Attention ·</span>}
-            {aiFinding}
+        {/* Bottom bar */}
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-t border-[#F1F5F9] px-5 py-3.5" style={{ background: '#FAFBFF' }}>
+          <div className="min-w-0 flex-1 basis-[45%] text-[13px]">
+            {abnormal ? <><span className="mr-1.5 text-[11px] font-bold uppercase tracking-wide text-[#4F46E5]">Attention</span><span className="text-[#374151]">{aiFinding}</span></>
+              : <span className="italic text-[#64748B]">Awaiting cytological analysis.</span>}
           </div>
-          {sheet ? (
-            sheet.authorized
-              ? <span className="inline-flex items-center gap-1 rounded-md bg-[#DCFCE7] px-2.5 py-1 text-[11px] font-bold text-[#16A34A]"><CheckCircle2 size={12} /> Authorized</span>
-              : activeSpecimen && <span className="rounded-md bg-[#EEF3FF] px-2.5 py-1 text-[11px] font-bold text-[#4F46E5]">{specLabel(activeSpecimen.type)}</span>
-          ) : activeSpecimen && <span className="rounded-md bg-[#EEF3FF] px-2.5 py-1 text-[11px] font-bold text-[#4F46E5]">{specLabel(activeSpecimen.type)}</span>}
-          <button onClick={() => setSheetModal(true)} className="flex items-center gap-1 text-[13px] font-semibold text-[#4F46E5] hover:underline">{sheet ? 'View Result Sheet' : 'Add Result Sheet'} <ChevronRight size={14} /></button>
+          {activeSpecimen && <span className={chip}>{specLabel(activeSpecimen.type)}</span>}
+          <button onClick={() => setSheetModal(true)} className="flex items-center gap-1 rounded-full border border-[#4F46E5] px-4 py-1.5 text-[14px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#EEF3FF]">{sheet ? 'View Result Sheet' : 'Add Result Sheet'} <ChevronRight size={14} /></button>
         </div>
       </section>
 
       {/* ═══════════ RIGHT PANEL ═══════════ */}
-      <aside className="premium-scroll flex w-[300px] shrink-0 flex-col overflow-y-auto rounded-[20px] border border-[#EEF2F7] bg-white p-6" style={{ boxShadow: '0 4px 24px rgba(79,70,229,0.06)' }}>
-        <div className={`${LABEL} mb-4`}>Patient Stats</div>
-        <div className="flex flex-col gap-4">
-          <Stat icon={Activity} label="Total Records" value={String(totalRecords)} unit="cases" />
-          <Stat icon={FlaskConical} label="Open Cases" value={String(openCases)} unit="in progress" />
-          <Stat icon={Clock} label="Avg TAT" value="—" unit="days" />
-        </div>
+      <aside className="premium-scroll flex w-[260px] shrink-0 flex-col overflow-y-auto rounded-[20px] border border-[#E4E8F4] bg-white p-6">
+        <div className={`${LABEL} mb-5`}>Patient Stats</div>
+        <Stat icon={Activity} label="Total Records" value={String(totalRecords)} unit="cases" />
+        <Stat icon={FlaskConical} label="Open Cases" value={String(openCases)} unit="in progress" />
+        <Stat icon={Clock} label="Avg TAT" value="—" unit="days" />
 
-        <div className="my-5 border-t border-[#F3F4F6]" />
+        <div className="mb-4 mt-1 border-t border-[#F1F5F9]" />
 
         <div className={`${LABEL} mb-3`}>Activity Timeline</div>
         <div className="flex flex-col">
-          {shownActivity.map((ev: any, i: number) => {
-            const c = STATUS[ev.status] ?? STATUS.Pending;
-            return (
-              <div key={ev.id} className="flex gap-2.5">
-                <div className="flex flex-col items-center">
-                  <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.fg }} />
-                  {i < shownActivity.length - 1 && <span className="w-px flex-1 bg-[#E5E7EB]" />}
-                </div>
-                <div className="pb-3.5">
-                  <div className="text-[13px] font-semibold text-[#0F172A]">{ev.status}</div>
-                  <div className="text-[11px] text-[#9CA3AF]">{ev.user ? `${ev.user.firstName ?? ''} ${ev.user.lastName ?? ''}`.trim() : 'System'} · {relTime(ev.createdAt)}</div>
-                </div>
+          {shownActivity.map((ev: any) => (
+            <div key={ev.id} className="flex items-start gap-2.5 border-b border-[#F8FAFC] py-2">
+              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: DOT[ev.status] ?? '#94A3B8' }} />
+              <div className="min-w-0">
+                <div className="text-[13px] font-semibold text-[#0F172A]">{ev.status}</div>
+                <div className="truncate text-[11px] text-[#94A3B8]">{ev.user ? `${ev.user.firstName ?? ''} ${ev.user.lastName ?? ''}`.trim() : 'System'} · {relTime(ev.createdAt)}</div>
               </div>
-            );
-          })}
-          {activity.length === 0 && <div className="text-[12px] text-[#9CA3AF]">No activity yet.</div>}
-          {activity.length > 5 && <button onClick={() => setShowAllActivity((v) => !v)} className="text-[12px] font-semibold text-[#4F46E5] hover:underline">{showAllActivity ? 'Show less' : `Show more (${activity.length})`}</button>}
+            </div>
+          ))}
+          {activity.length === 0 && <div className="text-[12px] text-[#94A3B8]">No activity yet.</div>}
+          {activity.length > 5 && <button onClick={() => setShowAllActivity((v) => !v)} className="mt-2 self-start text-[12px] font-semibold text-[#4F46E5] hover:underline">{showAllActivity ? 'Show less' : `Show more (${activity.length})`}</button>}
         </div>
 
-        <div className="my-5 border-t border-[#F3F4F6]" />
+        <div className="my-4 border-t border-[#F1F5F9]" />
 
         <div className={`${LABEL} mb-3`}>Result Sheet</div>
         {!sheet ? (
-          <div className="flex flex-col items-start gap-2">
-            <div className="text-[12px] text-[#9CA3AF]">No result sheet.</div>
-            <button onClick={() => setSheetModal(true)} className={btnSecondary}>Add Result Sheet</button>
-          </div>
+          <>
+            <div className="text-[13px] text-[#94A3B8]">No result sheet.</div>
+            <button onClick={() => setSheetModal(true)} className={`${rightBtn} mt-2`}>Add Result Sheet</button>
+          </>
         ) : (
           <div className="flex flex-col gap-3">
             <span className="inline-flex w-fit items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-bold" style={sheet.authorized ? { background: '#DCFCE7', color: '#16A34A' } : { background: '#EEF3FF', color: '#4F46E5' }}>{sheet.authorized ? <CheckCircle2 size={12} /> : <Clock size={12} />}{sheet.authorized ? 'Authorized' : 'Pending'}</span>
@@ -351,15 +340,15 @@ export default function RecordDetailPage() {
           </div>
         )}
 
-        <div className="my-5 border-t border-[#F3F4F6]" />
+        <div className="my-4 border-t border-[#F1F5F9]" />
 
         <div className={`${LABEL} mb-3`}>Next Steps</div>
         <div className="flex flex-col gap-2">
-          {status === 'Resulted' && <button onClick={() => router.push('/authorizer')} className={btnSecondary}>Open Authorizer</button>}
-          {status === 'Approved' && <button onClick={() => router.push(`/reports?recordId=${id}`)} className={btnSecondary}>Release Report</button>}
-          {status === 'Approved' && <button onClick={() => router.push(`/billing?recordId=${id}`)} className={btnSecondary}>Create Invoice</button>}
-          {['Billed', 'Paid', 'Viewed'].includes(status) && <button onClick={() => router.push(`/reports?recordId=${id}`)} className={btnSecondary}>View Report</button>}
-          <button onClick={() => router.push('/records')} className={btnSecondary}>Back to Records</button>
+          {status === 'Resulted' && <button onClick={() => router.push('/authorizer')} className={rightBtn}>Open Authorizer</button>}
+          {status === 'Approved' && <button onClick={() => router.push(`/reports?recordId=${id}`)} className={rightBtn}>Release Report</button>}
+          {status === 'Approved' && <button onClick={() => router.push(`/billing?recordId=${id}`)} className={rightBtn}>Create Invoice</button>}
+          {['Billed', 'Paid', 'Viewed'].includes(status) && <button onClick={() => router.push(`/reports?recordId=${id}`)} className={rightBtn}>View Report</button>}
+          <button onClick={() => router.push('/records')} className={rightBtn}>Back to Records</button>
         </div>
       </aside>
 
@@ -389,11 +378,11 @@ export default function RecordDetailPage() {
 // ─── Sub-components ──────────────────────────────────────────────────────────
 function Stat({ icon: Icon, label, value, unit }: { icon: any; label: string; value: string; unit: string }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#F0F0FF] text-[#4F46E5]"><Icon size={18} /></span>
+    <div className="mb-5 flex items-center gap-3.5">
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#EEF2FF] text-[#4F46E5]"><Icon size={20} /></span>
       <div>
-        <div className="text-[11px] text-[#9CA3AF]">{label}</div>
-        <div className="flex items-baseline gap-1.5"><span className="text-[22px] font-bold leading-none text-[#0F172A]">{value}</span><span className="text-[12px] text-[#6B7280]">{unit}</span></div>
+        <div className="text-[12px] text-[#94A3B8]">{label}</div>
+        <div className="flex items-baseline gap-1.5"><span className="text-[28px] font-bold leading-none text-[#0F172A]">{value}</span><span className="text-[14px] text-[#64748B]">{unit}</span></div>
       </div>
     </div>
   );
@@ -407,61 +396,60 @@ interface ActionProps {
 }
 function ActionPanel(p: ActionProps) {
   const { status, pending, go } = p;
-  const Title = ({ children }: any) => <div className="text-[15px] font-bold text-[#0F172A]">{children}</div>;
-  const Desc = ({ children }: any) => <div className="mt-1 text-[12px] leading-relaxed text-[#6B7280]">{children}</div>;
-  const Row = ({ children }: any) => <div className="mt-3 flex flex-col gap-2">{children}</div>;
+  const Title = ({ children }: any) => <div className="mt-1.5 text-[18px] font-bold text-[#0F172A]">{children}</div>;
+  const Desc = ({ children }: any) => <div className="mt-1 text-[13px] leading-[1.5] text-[#64748B]">{children}</div>;
+  const Row = ({ children }: any) => <div className="mt-3.5 flex flex-col gap-2">{children}</div>;
+  const Prim = ({ children, ...rest }: any) => <button {...rest} className={actionPrimary}><span>{children}</span><ChevronRight size={16} /></button>;
 
   switch (status) {
     case 'Pending':
       return (<><Title>Ready to Submit</Title><Desc>Review clinical features and submit this record for processing.</Desc>
         <Row>
-          <button disabled={pending} className={btnPrimary} onClick={() => go('Submitted', { title: 'Submit for processing?', desc: 'This moves the record into the processing queue.' })}>Submit for Processing <ChevronRight size={15} /></button>
-          <button className={btnSecondary} onClick={p.onEditFeatures}>Edit Clinical Features</button>
+          <Prim disabled={pending} onClick={() => go('Submitted', { title: 'Submit for processing?', desc: 'This moves the record into the processing queue.' })}>Submit for Processing</Prim>
+          <button className={actionSecondary} onClick={p.onEditFeatures}>Edit Clinical Features</button>
         </Row></>);
     case 'Submitted':
       return (<><Title>Awaiting Processing</Title><Desc>Mark this record as in processing when the specimen is received in lab.</Desc>
         <Row>
-          <button disabled={pending} className={btnPrimary} onClick={() => go('Processing')}>Mark as Processing <ChevronRight size={15} /></button>
-          <button disabled={pending} className={btnSecondary} onClick={() => go('OnHold')}>Put On Hold</button>
+          <Prim disabled={pending} onClick={() => go('Processing')}>Mark as Processing</Prim>
+          <button disabled={pending} className={actionSecondary} onClick={() => go('OnHold')}>Put On Hold</button>
         </Row></>);
     case 'Processing':
     case 'Partial':
       return (<><Title>Add Result Sheet</Title><Desc>Enter cytology findings for this specimen.</Desc>
         <Row>
-          <button className={btnPrimary} onClick={p.onOpenSheet}>Open Result Sheet <ChevronRight size={15} /></button>
-          {status === 'Processing' && <button disabled={pending} className={btnSecondary} onClick={() => go('Partial')}>Mark Partial</button>}
-          <button disabled={pending} className={btnSecondary} onClick={() => go('Completed', { title: 'Mark complete?', desc: 'Confirm the result sheet is complete for this record.' })}>Mark Complete</button>
+          <Prim onClick={p.onOpenSheet}>Open Result Sheet</Prim>
+          {status === 'Processing' && <button disabled={pending} className={actionSecondary} onClick={() => go('Partial')}>Mark Partial</button>}
+          <button disabled={pending} className={actionSecondary} onClick={() => go('Completed', { title: 'Mark complete?', desc: 'Confirm the result sheet is complete for this record.' })}>Mark Complete</button>
         </Row></>);
     case 'Completed':
       return (<><Title>Ready for Review</Title><Desc>Result sheet is complete. Submit for pathologist authorization.</Desc>
-        <Row><button disabled={pending} className={btnPrimary} onClick={() => go('Resulted', { title: 'Submit for authorization?', desc: 'This places the record in the pathologist authorization queue.' })}>Submit for Authorization <ChevronRight size={15} /></button></Row></>);
+        <Row><Prim disabled={pending} onClick={() => go('Resulted', { title: 'Submit for authorization?', desc: 'This places the record in the pathologist authorization queue.' })}>Submit for Authorization</Prim></Row></>);
     case 'Resulted':
       return (<><Title>Awaiting Authorization</Title><Desc>This record is in the authorization queue.</Desc>
-        <Row><button className={btnPrimary} onClick={p.onAuthorize}>Authorize Now <ChevronRight size={15} /></button>
-          <button onClick={p.onAuthorizer} className={btnSecondary}>Batch Authorizer</button></Row></>);
+        <Row><Prim onClick={p.onAuthorize}>Authorize Now</Prim>
+          <button onClick={p.onAuthorizer} className={actionSecondary}>Batch Authorizer</button></Row></>);
     case 'Approved':
       return (<><CheckHero /><Title>Approved — Ready to Bill</Title><Desc>Record is authorized. Generate an invoice for the referring client.</Desc>
-        <Row><button className={btnPrimary} onClick={p.onInvoice}>Create Invoice <ChevronRight size={15} /></button>
-          <button className={btnSecondary} onClick={p.onReport}><Download size={14} /> Download Report</button></Row></>);
+        <Row><Prim onClick={p.onInvoice}>Create Invoice</Prim>
+          <button className={actionSecondary} onClick={p.onReport}><Download size={14} /> Download Report</button></Row></>);
     case 'Billed':
     case 'Paid':
       return (<><CheckHero /><Title>Billing Complete</Title><Desc>This record has been billed{status === 'Paid' ? ' and paid' : ''}.</Desc>
-        <Row><button className={btnSecondary} onClick={p.onReport}><Download size={14} /> Download Report</button></Row></>);
+        <Row><button className={actionSecondary} onClick={p.onReport}><Download size={14} /> Download Report</button></Row></>);
     case 'OnHold':
-      return (<><div className="mb-3 flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#F1F5F9] px-3 py-2 text-[13px] font-semibold text-[#475569]"><Pause size={15} /> On hold.</div>
-        <Title>Record On Hold</Title><Desc>Resume processing or cancel this record.</Desc>
-        <Row><button disabled={pending} className={btnPrimary} onClick={() => go('Submitted')}>Resume Processing <ChevronRight size={15} /></button>
-          <button disabled={pending} className={btnSecondary} onClick={() => go('Disabled', { title: 'Cancel record?', desc: 'This marks the record as cancelled.' })}>Cancel Record</button></Row></>);
+      return (<><Title>Record On Hold</Title><Desc>Resume processing or cancel this record.</Desc>
+        <Row><Prim disabled={pending} onClick={() => go('Submitted')}>Resume Processing</Prim>
+          <button disabled={pending} className={actionSecondary} onClick={() => go('Disabled', { title: 'Cancel record?', desc: 'This marks the record as cancelled.' })}>Cancel Record</button></Row></>);
     case 'Failed':
     case 'Disabled':
-      return (<><div className="mb-3 flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold" style={status === 'Failed' ? { background: '#FEF2F2', color: '#DC2626' } : { background: '#F3F4F6', color: '#6B7280' }}><X size={15} /> {status === 'Failed' ? 'Failed' : 'Cancelled'}.</div>
-        <Title>Record {status === 'Failed' ? 'Failed' : 'Cancelled'}</Title><Desc>Reopen this record to move it back into processing.</Desc>
-        <Row><button disabled={pending} className={btnPrimary} onClick={() => go('Submitted', { title: 'Reopen record?', desc: 'This returns the record to the processing workflow.' })}>Reopen Record <ChevronRight size={15} /></button></Row></>);
+      return (<><Title>Record {status === 'Failed' ? 'Failed' : 'Cancelled'}</Title><Desc>Reopen this record to move it back into processing.</Desc>
+        <Row><Prim disabled={pending} onClick={() => go('Submitted', { title: 'Reopen record?', desc: 'This returns the record to the processing workflow.' })}>Reopen Record</Prim></Row></>);
     default:
       return (<><Title>Complete</Title><Desc>This record has completed its lifecycle.</Desc></>);
   }
 }
 
 function CheckHero() {
-  return <div className="mb-3 grid h-10 w-10 place-items-center rounded-full bg-[#DCFCE7]"><CheckCircle2 size={22} className="text-[#16A34A]" /></div>;
+  return <div className="mb-3 mt-2 grid h-10 w-10 place-items-center rounded-full bg-[#DCFCE7]"><CheckCircle2 size={22} className="text-[#16A34A]" /></div>;
 }
