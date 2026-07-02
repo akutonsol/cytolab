@@ -21,6 +21,17 @@ const glass: React.CSSProperties = {
   boxShadow: '0 1px 2px rgba(16,24,40,0.06)',
   padding: 16,
 };
+// Solid colour-coded card. The specimen (blood) card is red; the first three KPI
+// chips use peach / lavender / light-blue; the last chip keeps the frosted glass.
+const SPECIMEN_BG = '#f5cbc9';
+const CHIP_BG: (string | undefined)[] = ['#f5ddca', '#e6e1ee', '#d6e0f0'];
+const solid = (bg: string): React.CSSProperties => ({
+  borderRadius: 24,
+  border: '1px solid rgba(255,255,255,0.55)',
+  background: bg,
+  boxShadow: '0 1px 2px rgba(16,24,40,0.06)',
+  padding: 16,
+});
 const kicker: React.CSSProperties = {
   fontSize: 10,
   fontWeight: 500,
@@ -59,7 +70,7 @@ export function HeroBanner({
 
       {/* Row 2 — active specimen + KPI chips in one horizontal row */}
       <div style={{ display: 'flex', gap: 16, marginTop: 48, flexWrap: 'wrap' }}>
-        <div style={{ ...glass, display: 'flex', gap: 12, alignItems: 'center', flex: '0 0 auto', minWidth: 250 }}>
+        <div style={{ ...solid(SPECIMEN_BG), display: 'flex', gap: 12, alignItems: 'center', flex: '0 0 auto', minWidth: 250 }}>
           <Image src="/specimen-tube.png" alt="" width={48} height={96} style={{ objectFit: 'contain', flexShrink: 0 }} />
           <div style={{ minWidth: 0 }}>
             <div style={kicker}>Active Specimen</div>
@@ -79,8 +90,8 @@ export function HeroBanner({
           </div>
         </div>
 
-        {chips.map((chip) => (
-          <div key={chip.label} style={{ ...glass, flex: '1 1 0', minWidth: 150 }}>
+        {chips.map((chip, i) => (
+          <div key={chip.label} style={{ ...(CHIP_BG[i] ? solid(CHIP_BG[i]!) : glass), flex: '1 1 0', minWidth: 150 }}>
             <div style={kicker}>{chip.label}</div>
             <div style={{ marginTop: 6, display: 'flex', alignItems: 'baseline', gap: 8 }}>
               <span style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>{chip.value}</span>
