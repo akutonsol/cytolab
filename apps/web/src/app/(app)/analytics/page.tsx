@@ -2,7 +2,7 @@
 
 import { Skeleton } from 'antd';
 import {
-  Activity, AlertTriangle, ChevronRight, Clock, FileClock, Receipt, RotateCcw, ShieldCheck, TrendingUp, Zap,
+  AlertTriangle, ChevronRight, Clock, FileClock, Receipt, RotateCcw, ShieldCheck, Sparkles, TrendingUp, Zap,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -128,33 +128,40 @@ export default function AnalyticsPage() {
           </div>
         </section>
 
-        <SectionCard className={`col-span-12 md:col-span-6 xl:col-span-3 ${INSIGHTS}`} bodyClassName="flex flex-1 flex-col">
-          <div className="flex items-center justify-between rounded-card bg-[#fde7df] px-4 py-3">
-            <span className="text-[15px] font-bold text-[#f1592b]">Based on the last 30 days</span>
-            <Activity size={18} className="text-[#f1592b]" />
+        <SectionCard className={`col-span-12 md:col-span-6 xl:col-span-3 ${CARD}`} bodyClassName="flex flex-1 flex-col">
+          <div className="flex items-start justify-between gap-3 rounded-2xl bg-[linear-gradient(105deg,#efeafd_0%,#fdece6_100%)] px-4 py-3">
+            <div>
+              <div className="text-[16px] font-bold text-text">Based on the last 30 days</div>
+              <div className="text-[13px] font-medium text-text-secondary">AI Recommendations</div>
+            </div>
+            <Sparkles size={18} className="mt-0.5 shrink-0 text-[#6366f1]" />
           </div>
           <div className="mt-3 flex flex-1 flex-col justify-between gap-1.5">
             <div className="flex flex-1 flex-col justify-around gap-1">
-              {d.insights.items.map((it: any) => {
+              {d.insights.items.map((it: any, i: number) => {
                 const cfg = INSIGHT[it.key] ?? { icon: <Zap size={18} />, chip: 'blue' as const };
                 const neg = String(it.metric).startsWith('-');
                 const pos = String(it.metric).startsWith('+');
+                const featured = i === 0;
                 return (
-                  <div key={it.key} className="flex items-center gap-3 rounded-control px-1 py-1.5">
+                  <div key={it.key} className={`flex items-center gap-3 rounded-xl px-2 py-2 ${featured ? 'bg-[#f3f0fd]' : ''}`}>
                     <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-control ${CHIP[cfg.chip]}`}>{cfg.icon}</span>
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[16px] font-bold text-text">{it.title}</div>
-                      <div className="truncate text-[15px] font-medium text-text-secondary">{it.detail}</div>
+                      <div className="truncate text-[14px] font-medium text-text-secondary">{it.detail}</div>
                     </div>
                     <span className={`text-[15px] font-bold ${neg ? 'text-danger' : pos ? 'text-success' : 'text-text'}`}>{it.metric}</span>
-                    <ChevronRight size={16} className="text-text-tertiary" />
+                    {featured ? <Sparkles size={16} className="shrink-0 text-[#6366f1]" /> : <ChevronRight size={16} className="shrink-0 text-text-tertiary" />}
                   </div>
                 );
               })}
             </div>
-            <div className="mt-2 flex items-center justify-between border-t border-border pt-3">
+            <div className="mt-2 flex items-center justify-between gap-2 border-t border-border pt-3">
               <span className="text-small font-semibold uppercase tracking-wide text-text-secondary">{d.insights.footerLabel}</span>
-              <span className="rounded-pill bg-success-soft px-2.5 py-1 text-small font-bold text-success">{d.insights.footerValue}</span>
+              <div className="flex items-center gap-2">
+                <span className="rounded-pill bg-success-soft px-2.5 py-1 text-small font-bold text-success">{d.insights.footerValue}</span>
+                <ChevronRight size={16} className="text-text-tertiary" />
+              </div>
             </div>
           </div>
         </SectionCard>
