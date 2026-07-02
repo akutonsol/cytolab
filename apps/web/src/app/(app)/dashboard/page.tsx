@@ -43,7 +43,7 @@ const CHIPS = [
 ];
 
 function SeeAll({ label = 'See all', onClick }: { label?: string; onClick?: () => void }) {
-  return <button onClick={onClick} className="text-xs font-semibold text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]">{label}</button>;
+  return <button onClick={onClick} className="text-[13px] font-semibold text-[var(--muted-foreground)] underline underline-offset-2 transition-colors hover:text-[var(--foreground)]">{label}</button>;
 }
 function IconBtn({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
   return <button onClick={onClick} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border-soft)] text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]">{children}</button>;
@@ -155,20 +155,20 @@ export default function DashboardPage() {
               {d.priorityRecords.map((r: any, i: number) => {
                 const chip = CHIPS[i % CHIPS.length];
                 return (
-                  <div key={r.id} className="flex items-center gap-3 py-3.5 first:pt-0 last:pb-0">
-                    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px]" style={{ background: chip.bg, color: chip.fg }}><chip.Icon size={20} /></span>
+                  <div key={r.id} className="flex items-center gap-3 py-4 first:pt-0 last:pb-0">
+                    <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl" style={{ background: chip.bg, color: chip.fg }}><chip.Icon size={22} /></span>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate text-[15px] font-bold text-[var(--foreground)]">{r.patient}</span>
-                        <span className="shrink-0 rounded-full bg-[#1b1d21] px-2 py-0.5 text-[11px] font-semibold text-white">{dateShort(r.date)}</span>
+                      <div className="truncate text-[15px] font-bold text-[var(--foreground)]">{r.patient}</div>
+                      <div className="mt-1 flex min-w-0 items-center gap-2">
+                        <span className="shrink-0 rounded-full bg-[#1b1d21] px-2.5 py-1 text-[11px] font-semibold text-white">{dateShort(r.date)}</span>
+                        <span className="truncate text-[13px] font-medium text-[var(--muted-foreground)]">{[r.client, r.labNumber].filter(Boolean).join(' · ')}</span>
                       </div>
-                      <div className="mt-0.5 truncate text-xs font-medium text-[var(--muted-foreground)]">{[r.client, r.labNumber].filter(Boolean).join(' · ')}</div>
                     </div>
-                    <span className="hidden shrink-0 items-center gap-2 rounded-full bg-[#f1f3f6] py-1 pl-1 pr-3 sm:inline-flex">
-                      <ProgressRing pct={r.progress} size={28} />
-                      <span className="whitespace-nowrap text-[11px] font-semibold text-[#374151]">{r.progress}% completed</span>
+                    <span className="hidden shrink-0 items-center gap-2 rounded-full bg-[#f1f2f5] py-1 pl-1 pr-3 shadow-[0_1px_2px_rgba(16,24,40,0.06)] sm:inline-flex">
+                      <ProgressRing pct={r.progress} size={34} />
+                      <span className="whitespace-nowrap text-[12px] font-semibold text-[#374151]">{r.progress}% completed</span>
                     </span>
-                    <button onClick={() => router.push('/records')} className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[#e2e6ef] bg-white text-[#374151] transition-colors hover:text-black"><ArrowUpRight size={16} /></button>
+                    <button onClick={() => router.push('/records')} className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[#eceef4] bg-white text-[#374151] shadow-[0_2px_6px_rgba(16,24,40,0.08)] transition-colors hover:text-black"><ArrowUpRight size={16} /></button>
                   </div>
                 );
               })}
@@ -215,27 +215,27 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-3">
               {d.topClients.length === 0 && <div className="py-6 text-center text-xs text-[var(--muted-foreground)]">No client volume yet.</div>}
               {d.topClients.map((c: any, i: number) => (
-                <div key={i} className="flex items-center gap-3 rounded-2xl border border-[var(--border-soft)] bg-white/70 p-3.5">
+                <div key={i} className="flex items-center gap-3 rounded-2xl border border-[#edeef3] bg-white p-4 shadow-[0_1px_3px_rgba(16,24,40,0.05)]">
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-[15px] font-bold text-[var(--foreground)]">{c.name}</div>
-                    <div className="truncate text-xs font-medium text-[var(--muted-foreground)]">{c.type || 'Referring client — specimens & billing'}</div>
+                    <div className="truncate text-[16px] font-bold text-[var(--foreground)]">{c.name}</div>
+                    <div className="truncate text-[13px] font-medium text-[var(--muted-foreground)]">{c.type || 'Referring client — specimens & billing'}</div>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">{c.count} records</span>
-                    <AvatarStack avatars={[{ name: c.name }, { name: c.type ?? 'Lab' }, { name: 'Team' }]} size={24} max={3} />
+                    <span className="text-[13px] font-semibold text-[var(--muted-foreground)]">{c.count} records</span>
+                    <AvatarStack avatars={[{ name: c.name }, { name: c.type ?? 'Lab' }, { name: 'Team' }]} size={26} max={3} />
                   </div>
-                  <button onClick={() => router.push('/clients')} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border-soft)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"><Plus size={17} /></button>
+                  <button onClick={() => router.push('/clients')} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#f0f1f4] text-[#5b6472] transition-colors hover:text-black"><Plus size={18} /></button>
                 </div>
               ))}
             </div>
           </GlassCard>
 
           {/* Activity */}
-          <GlassCard title="Activity" action={<SeeAll label="Clear all" />}>
+          <GlassCard title="Activity" action={<SeeAll label="Clear all" />} style={{ background: '#e8e9f2', backdropFilter: 'none', WebkitBackdropFilter: 'none' }}>
             <div className="flex flex-col gap-3">
               {d.activity.length === 0 && <div className="py-6 text-center text-xs text-[var(--muted-foreground)]">No recent activity.</div>}
               {d.activity.slice(0, 4).map((a: any, i: number) => (
-                <div key={i} className="flex items-start gap-3 rounded-2xl border border-[var(--border-soft)] bg-white/50 p-3.5">
+                <div key={i} className="flex items-start gap-3 rounded-2xl border border-[#edeef3] bg-white p-3.5 shadow-[0_1px_3px_rgba(16,24,40,0.05)]">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="truncate text-[14px] font-bold text-[var(--foreground)]">{a.status} · {a.labNumber ?? '—'}</span>

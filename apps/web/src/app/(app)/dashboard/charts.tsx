@@ -13,7 +13,7 @@ const GREEN = '#34c759';
 const INK = '#0f172a';
 const AXIS = '#6b7280';
 const GRID = '#e8edf4';
-const BAR = '#34363d';
+const BAR = '#a0a5ad';
 
 /* ---- Dense daily throughput "comb": thick charcoal bars; peak = blue lollipop (ref) ---- */
 export function ThroughputComb({ data, height = 280 }: { data: any[]; height?: number }) {
@@ -46,8 +46,8 @@ export function RadarMetrics({ data, height = 280 }: { data: any[]; height?: num
         <PolarGrid stroke={GRID} />
         <PolarAngleAxis dataKey="dim" tick={{ fontSize: 13, fill: AXIS, fontWeight: 600 }} />
         <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10, fill: '#b8bec9' }} tickCount={3} axisLine={false} />
-        <Radar name="Last period" dataKey="previous" stroke={CHARCOAL} fill={CHARCOAL} fillOpacity={0.05} strokeWidth={2}
-          isAnimationActive animationDuration={900} dot={{ r: 4, fill: '#fff', stroke: CHARCOAL, strokeWidth: 2 }} />
+        <Radar name="Last period" dataKey="previous" stroke={CHARCOAL} fill="none" fillOpacity={0} strokeWidth={2}
+          isAnimationActive animationDuration={900} dot={{ r: 3.5, fill: CHARCOAL, stroke: CHARCOAL, strokeWidth: 1 }} />
         <Radar name="This period" dataKey="current" stroke={ORANGE} fill={ORANGE} fillOpacity={0.16} strokeWidth={2.5}
           isAnimationActive animationDuration={1000} dot={{ r: 4.5, fill: '#fff', stroke: ORANGE, strokeWidth: 2 }} />
       </RadarChart>
