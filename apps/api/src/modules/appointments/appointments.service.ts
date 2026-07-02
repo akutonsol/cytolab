@@ -25,7 +25,11 @@ const clientName = (c?: { officeName: string | null; firstName: string; lastName
   c ? (c.officeName || `${c.firstName} ${c.lastName}`.trim() || null) : null;
 
 function dayBounds(date?: string) {
-  const base = date ? new Date(date) : new Date();
+  // A bare 'YYYY-MM-DD' parses as UTC midnight, which is the previous local day
+  // in negative-offset timezones. Anchor it to local midnight instead.
+  const base = date
+    ? new Date(/^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T00:00:00` : date)
+    : new Date();
   const start = new Date(base); start.setHours(0, 0, 0, 0);
   const end = new Date(start); end.setDate(end.getDate() + 1);
   return { start, end };

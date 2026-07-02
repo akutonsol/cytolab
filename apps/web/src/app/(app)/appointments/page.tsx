@@ -1,11 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { App } from 'antd';
 import {
-  AlertTriangle, ArrowRight, ArrowUpDown, Calendar, ChevronDown, Clock, FileText,
-  Filter, Maximize2, MoreHorizontal, Phone, Plus, Search, UserX, Video, X,
+  AlertTriangle, ArrowRight, ArrowUpDown, Calendar, ChevronDown, ChevronLeft, ChevronRight,
+  Clock, FileText, Filter, Maximize2, MoreHorizontal, Phone, Plus, Search, UserX, Video, X,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -200,6 +201,7 @@ const PX_PER_MIN = 4.2;
 const LANE_W = 44;
 
 function ScheduleCard({ schedule }: { schedule: Overview['todaySchedule'] }) {
+  const [expanded, setExpanded] = useState(false);
   const { lanes, cols, totalWidth, baseMin } = useMemo(() => {
     if (!schedule.length) return { lanes: [] as (Overview['todaySchedule'][number] & { startMin: number; endMin: number })[][], cols: [] as number[], totalWidth: 0, baseMin: 0 };
     const items = schedule.map((a) => ({ ...a, startMin: midMins(a.scheduledAt), endMin: midMins(a.scheduledAt) + a.duration }));
@@ -222,13 +224,14 @@ function ScheduleCard({ schedule }: { schedule: Overview['todaySchedule'] }) {
   }, [schedule]);
 
   return (
+    <>
     <div className={`${CARD} p-6`}>
       <div className="mb-5 flex items-start justify-between">
         <div>
           <h2 className="text-[22px] font-bold text-[#0F172A]">Today&apos;s Schedule</h2>
           <p className="mt-1 text-[14px] text-[#6B7280]">Track collections and callbacks in real time.</p>
         </div>
-        <button aria-label="Expand" className="grid h-9 w-9 place-items-center rounded-lg text-[#6B7280] hover:bg-[#F3F4F6]"><Maximize2 size={16} /></button>
+        <button aria-label="Open calendar" onClick={() => setExpanded(true)} className="grid h-9 w-9 place-items-center rounded-lg text-[#6B7280] transition-colors hover:bg-[#F3F4F6] hover:text-[#0F172A]"><Maximize2 size={16} /></button>
       </div>
 
       {schedule.length === 0 ? (
@@ -276,6 +279,99 @@ function ScheduleCard({ schedule }: { schedule: Overview['todaySchedule'] }) {
         </div>
       )}
     </div>
+    {expanded && <ScheduleModal onClose={() => setExpanded(false)} />}
+    </>
+  );
+}
+
+// ─── Expanded day calendar ───────────────────────────────────────────────────
+function ScheduleModal({ onClose }: { onClose: () => void }) {
+  const [day, setDay] = useState(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; });
+  const dayISO = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+  const { data, isLoading } = useQuery<{ data: any[] }>({
+    queryKey: ['appointments-day', dayISO],
+    queryFn: () => api.get('/appointments', { params: { date: dayISO, pageSize: 100 } }).then((r) => r.data),
+  });
+
+  const START_H = 7, END_H = 19, ROW = 88, PXM = ROW / 60;
+  const hours: number[] = []; for (let h = START_H; h <= END_H; h++) hours.push(h);
+
+  // Map + greedy lane-pack so overlapping appointments sit side by side.
+  const items = (data?.data ?? [])
+    .map((a) => ({
+      id: a.id as string, type: a.type as ApptType, status: a.status as ApptStatus,
+      scheduledAt: a.scheduledAt as string, duration: a.duration as number,
+      name: a.patient ? `${a.patient.firstName} ${a.patient.lastName}`.trim()
+        : (a.client ? (a.client.officeName || `${a.client.firstName} ${a.client.lastName}`.trim()) : a.title),
+      s: midMins(a.scheduledAt), e: midMins(a.scheduledAt) + a.duration,
+    }))
+    .sort((x, y) => x.s - y.s);
+  const laneEnds: number[] = []; const laneOf = new Map<string, number>();
+  for (const it of items) {
+    let li = laneEnds.findIndex((e) => e <= it.s);
+    if (li === -1) { li = laneEnds.length; laneEnds.push(it.e); } else laneEnds[li] = it.e;
+    laneOf.set(it.id, li);
+  }
+  const laneCount = Math.max(1, laneEnds.length);
+
+  const shift = (n: number) => setDay((d) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; });
+  const isToday = day.toDateString() === new Date().toDateString();
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
+      <div className="flex max-h-[90vh] w-full max-w-5xl flex-col rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#EEF2F7] px-6 py-4">
+          <div>
+            <h2 className="text-[20px] font-bold text-[#0F172A]">Appointment Calendar</h2>
+            <div className="mt-0.5 text-[13px] font-medium text-[#6B7280]">{day.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => shift(-1)} aria-label="Previous day" className="grid h-9 w-9 place-items-center rounded-lg border border-[#EEF2F7] text-[#6B7280] hover:bg-[#F9FAFB]"><ChevronLeft size={16} /></button>
+            <button onClick={() => setDay(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; })}
+              className={`h-9 rounded-lg border px-3.5 text-[13px] font-semibold ${isToday ? 'border-[#4F46E5] bg-[#EEF3FF] text-[#4F46E5]' : 'border-[#EEF2F7] text-[#6B7280] hover:bg-[#F9FAFB]'}`}>Today</button>
+            <button onClick={() => shift(1)} aria-label="Next day" className="grid h-9 w-9 place-items-center rounded-lg border border-[#EEF2F7] text-[#6B7280] hover:bg-[#F9FAFB]"><ChevronRight size={16} /></button>
+            <button onClick={onClose} aria-label="Close" className="ml-1 grid h-9 w-9 place-items-center rounded-lg text-[#9CA3AF] hover:bg-[#F3F4F6]"><X size={18} /></button>
+          </div>
+        </div>
+
+        <div className="premium-scroll flex-1 overflow-y-auto p-6">
+          {isLoading ? (
+            <div className="grid h-40 place-items-center text-[13px] text-[#9CA3AF]">Loading…</div>
+          ) : items.length === 0 ? (
+            <div className="flex h-40 flex-col items-center justify-center gap-2 text-[#9CA3AF]"><Calendar size={26} /><span className="text-[13px]">No appointments on this day</span></div>
+          ) : (
+            <div className="relative" style={{ height: (END_H - START_H) * ROW + ROW }}>
+              {hours.map((h, i) => (
+                <div key={h} className="absolute inset-x-0 flex" style={{ top: i * ROW, height: ROW }}>
+                  <div className="w-16 shrink-0 -translate-y-2 pr-3 text-right text-[12px] font-medium text-[#9CA3AF]">
+                    {new Date(new Date().setHours(h, 0, 0, 0)).toLocaleTimeString(undefined, { hour: 'numeric' })}
+                  </div>
+                  <div className="flex-1 border-t border-[#F1F3F7]" />
+                </div>
+              ))}
+              <div className="absolute left-16 right-0 top-0" style={{ height: (END_H - START_H) * ROW + ROW }}>
+                {items.map((a) => {
+                  const ui = STATUS_UI[a.status];
+                  const top = (a.s - START_H * 60) * PXM;
+                  const height = Math.max(a.duration * PXM - 4, 42);
+                  const li = laneOf.get(a.id) ?? 0;
+                  const wPct = 100 / laneCount;
+                  return (
+                    <div key={a.id} className="absolute overflow-hidden rounded-lg px-2.5 py-1.5"
+                      style={{ top, height, left: `calc(${li * wPct}% + 4px)`, width: `calc(${wPct}% - 8px)`, background: ui.bg, borderLeft: `3px solid ${ui.bar}` }}>
+                      <div className="text-[11px] leading-tight text-[#9CA3AF]">{timeRange(a.scheduledAt, a.duration)}</div>
+                      <div className="truncate text-[13px] font-semibold leading-tight text-[#0F172A]">{a.name}</div>
+                      {height > 74 && <div className="mt-0.5 truncate text-[11px] text-[#6B7280]">{TYPE_LABEL[a.type]} · {ui.label}</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -389,8 +485,8 @@ function NewAppointmentModal({ onClose, onCreated }: { onClose: () => void; onCr
   const inputCls = 'h-11 w-full rounded-[10px] border border-[#E2E8F0] bg-white px-3.5 text-[14px] text-[#0F172A] outline-none transition-colors focus:border-[#4F46E5]';
   const labelCls = 'text-[13px] font-semibold text-[#0F172A]';
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between">
           <div>
@@ -455,6 +551,7 @@ function NewAppointmentModal({ onClose, onCreated }: { onClose: () => void; onCr
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

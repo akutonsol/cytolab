@@ -71,4 +71,14 @@ describeIf('AppointmentsService (integration)', () => {
       expect(list.data.every((a) => a.type === 'CALLBACK')).toBe(true);
       expect(list.total).toBeGreaterThanOrEqual(1);
     }));
+
+  it('filters findAll by a local-day date string (no UTC off-by-one)', () =>
+    run(async () => {
+      const now = new Date();
+      const localDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const list = await service.findAll({ date: localDay, page: 1, pageSize: 100 });
+      // The two collections created today must be present; the yesterday-missed one must not.
+      expect(list.data.some((a) => a.title === 'Specimen collection')).toBe(true);
+      expect(list.data.every((a) => new Date(a.scheduledAt).toDateString() === now.toDateString())).toBe(true);
+    }));
 });
