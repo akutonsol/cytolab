@@ -79,7 +79,7 @@ export default function AppointmentsPage() {
 
   const matches = (s: string | null | undefined) => !search.trim() || (s ?? '').toLowerCase().includes(search.trim().toLowerCase());
   const schedule = (data?.todaySchedule ?? []).filter((a) => matches(a.patientName) || matches(a.title) || matches(a.id));
-  const records = (data?.recentRecords ?? []).filter((r) => matches(r.patientName) || matches(r.labNumber) || matches(r.id));
+  const records = (data?.recentRecords ?? []).filter((r) => matches(r.patientName) || matches(r.labNumber) || matches(r.id)).slice(0, 4);
 
   return (
     <div className="min-h-full px-6 pb-8 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}>
