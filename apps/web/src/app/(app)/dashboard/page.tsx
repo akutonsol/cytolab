@@ -17,9 +17,10 @@ const GREEN = '#22c55e', BLUE = '#4F46E5', GRAY = '#9ca3af';
 const CARD = 'cyto-card bg-gradient-to-b from-white to-[#f5f7fd]';
 const ACTIVITY = 'cyto-card bg-[linear-gradient(180deg,#eaeffb_0%,#f4f6fd_38%,#ffffff_100%)]';
 
-// ── Indigo Enterprise: glassmorphic card token (dashboard-scoped) ──
+// ── Indigo Enterprise: glassmorphic card token (dashboard-scoped) — frosted glass
+// so the page-level DNA shows softly through the top cards. ──
 const DASH_STYLE = `
-.cyto-card{border-radius:16px !important;border:1px solid rgba(10,37,64,0.05) !important;box-shadow:0 20px 40px rgba(0,0,0,0.04),0 2px 4px rgba(79,70,229,0.05) !important}
+.cyto-card{border-radius:16px !important;border:1px solid rgba(10,37,64,0.05) !important;box-shadow:0 20px 40px rgba(0,0,0,0.04),0 2px 4px rgba(79,70,229,0.05) !important;background:rgba(255,255,255,0.72) !important;backdrop-filter:blur(14px) !important;-webkit-backdrop-filter:blur(14px) !important}
 `;
 
 const relDay = (d: string) => {

@@ -29,25 +29,25 @@ function Logo() {
 // Large vibrant blue→purple DNA double-helix hero graphic (glowing, diagonal,
 // edge-faded, gently floating) — the signature element from the reference.
 function DnaWatermark() {
-  const W = 760, H = 260, mid = H / 2, amp = 78, periods = 3.6, N = 110;
+  const W = 900, H = 420, mid = H / 2, amp = 118, periods = 4.6, N = 150;
   const strand = (phase: number) =>
     Array.from({ length: N }, (_, i) => {
       const x = (i / (N - 1)) * W;
       const y = mid + amp * Math.sin((i / (N - 1)) * periods * 2 * Math.PI + phase);
       return `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`;
     }).join(' ');
-  const rungs = Array.from({ length: 30 }, (_, i) => {
-    const t = (i + 0.5) / 30;
+  const rungs = Array.from({ length: 40 }, (_, i) => {
+    const t = (i + 0.5) / 40;
     const x = t * W;
     const a = t * periods * 2 * Math.PI;
     return { x, y1: mid + amp * Math.sin(a), y2: mid + amp * Math.sin(a + Math.PI), k: i };
   });
   return (
     <div style={{
-      position: 'absolute', right: -70, top: -26, width: W, height: H, transform: 'rotate(-14deg)',
-      opacity: 0.9, pointerEvents: 'none', zIndex: 1,
-      WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 22%, #000 82%, transparent 100%)',
-      maskImage: 'linear-gradient(90deg, transparent 0%, #000 22%, #000 82%, transparent 100%)',
+      position: 'absolute', right: -90, top: 8, width: W, height: H, transform: 'rotate(-16deg)',
+      opacity: 0.9, pointerEvents: 'none', zIndex: 0,
+      WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 20%, #000 84%, transparent 100%)',
+      maskImage: 'linear-gradient(90deg, transparent 0%, #000 20%, #000 84%, transparent 100%)',
     }}>
       <div className="hero-dna-float">
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} fill="none">
@@ -176,7 +176,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f6f8fc', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', background: CANVAS, display: 'flex', flexDirection: 'column' }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
 .cyto-pill{transition:all .18s cubic-bezier(0.4,0,0.2,1)}
 .cyto-pill:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(79,70,229,0.18)}
@@ -184,10 +184,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 @keyframes heroDnaFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 .hero-dna-float{animation:heroDnaFloat 7s ease-in-out infinite}`}</style>
 
+      {/* Page-level DNA — sits behind the (transparent) hero and bleeds down behind the top cards. */}
+      {showCenter && <DnaWatermark />}
+
       <header style={heroZone}>
         <div style={heroBg(showCenter)}>
-          {showCenter && <DnaWatermark />}
-
           {/* ROW 1 — identity / title / actions */}
           <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 16, minHeight: 48 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -247,7 +248,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="premium-scroll" style={{ flex: 1, overflow: 'auto', padding: screens.md ? 32 : 16, background: 'radial-gradient(1200px 520px at 15% -8%, #e9f0fd 0%, rgba(233,240,253,0) 60%), radial-gradient(1100px 480px at 100% 0%, #eef0fb 0%, rgba(238,240,251,0) 55%), linear-gradient(180deg, #f4f7fc 0%, #eef2f9 100%)' }}>{children}</main>
+      <main className="premium-scroll" style={{ position: 'relative', zIndex: 1, flex: 1, overflow: 'auto', padding: screens.md ? 32 : 16, background: 'transparent' }}>{children}</main>
 
       <Drawer title={<Logo />} placement="left" width={300} open={drawerOpen} onClose={() => setDrawerOpen(false)} styles={{ body: { padding: 0 } }}>
         <Menu mode="inline" selectedKeys={[pathname]} defaultOpenKeys={NAV_GROUPS.map((g) => g.key)} items={drawerMenu} onClick={({ key }) => navigate(key)} style={{ borderInlineEnd: 'none' }} />
@@ -256,9 +257,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Soft blue-gray → lavender canvas; the whole app is one seamless surface.
+const CANVAS = 'linear-gradient(160deg, #edf0f6 0%, #e7eaf3 58%, #eae8f5 100%)';
 const heroZone: React.CSSProperties = { position: 'sticky', top: 0, zIndex: 20 };
 const heroBg = (tall: boolean): React.CSSProperties => ({
-  position: 'relative', overflow: 'hidden', background: '#edf1f7', borderBottom: '1px solid #dbe2f0',
+  position: 'relative', background: 'transparent',
   padding: tall ? '14px 32px 20px' : '10px 16px', minHeight: tall ? 208 : 64,
 });
 const navPillBar: React.CSSProperties = {
