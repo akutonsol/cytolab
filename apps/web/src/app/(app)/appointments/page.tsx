@@ -83,10 +83,10 @@ export default function AppointmentsPage() {
   return (
     <div className="min-h-full" style={{ background: '#F8FAFC' }}>
       {/* ── Greeting row ── */}
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-[32px] font-bold leading-tight text-[#0F172A]">{greeting}, {firstName}!</h1>
-          <p className="mt-1 text-[16px] text-[#6B7280]">Here&apos;s your day at a glance.</p>
+          <h1 className="text-[34px] font-bold leading-tight tracking-tight text-[#0F172A]">{greeting}, {firstName}!</h1>
+          <p className="mt-2 text-[16px] text-[#6B7280]">Here&apos;s your day at a glance.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-[280px] items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-4 text-[#9CA3AF]">
@@ -106,20 +106,20 @@ export default function AppointmentsPage() {
       {isLoading ? (
         <div className="grid h-64 place-items-center text-[#9CA3AF]">Loading your day…</div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_2.2fr_1.4fr]">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.35fr_2.2fr_1.35fr]">
           {/* ── LEFT ── */}
-          <div className="flex min-w-0 flex-col gap-4">
+          <div className="flex min-w-0 flex-col gap-5">
             <div className="grid grid-cols-2 gap-4">
               <Kpi icon={Calendar} label="Appointments" value={data?.kpis.scheduledToday ?? 0} sub="pending confirmations" />
               <Kpi icon={UserX} label="Missed visits" value={data?.kpis.missed ?? 0} sub="View contact details" />
-              <Kpi icon={Video} label="Pending Callbacks" value={data?.kpis.pendingCallbacks ?? 0} sub="awaiting response" />
+              <Kpi icon={Video} label="Callbacks" value={data?.kpis.pendingCallbacks ?? 0} sub="awaiting response" />
               <Kpi icon={FileText} label="Lab Reports" value={data?.kpis.pendingReports ?? 0} sub="require review" />
             </div>
             <CallbacksPanel callbacks={data?.callbacks ?? []} />
           </div>
 
           {/* ── CENTER ── */}
-          <div className="flex min-w-0 flex-col gap-4">
+          <div className="flex min-w-0 flex-col gap-5">
             <ScheduleCard schedule={schedule} />
             <LabResultsCard records={records} onOpen={(id) => router.push(`/records/${id}`)} />
           </div>
@@ -142,13 +142,13 @@ export default function AppointmentsPage() {
 // ─── KPI card ────────────────────────────────────────────────────────────────
 function Kpi({ icon: Icon, label, value, sub }: { icon: any; label: string; value: number; sub: string }) {
   return (
-    <div className={`${CARD} p-5`}>
-      <div className="flex items-center gap-2 text-[#6B7280]">
-        <Icon size={18} />
-        <span className="text-[14px]">{label}</span>
+    <div className={`${CARD} flex flex-col p-6`}>
+      <div className="flex items-center gap-2.5 text-[#6B7280]">
+        <Icon size={19} className="shrink-0" />
+        <span className="truncate whitespace-nowrap text-[15px] font-medium">{label}</span>
       </div>
-      <div className="mt-3 text-[36px] font-bold leading-none text-[#0F172A]">{value}</div>
-      <div className="mt-4 border-t border-[#F3F4F6] pt-2.5 text-[12px] text-[#9CA3AF]">{sub}</div>
+      <div className="mt-4 text-[38px] font-bold leading-none text-[#0F172A]">{value}</div>
+      <div className="mt-5 border-t border-[#F1F3F7] pt-3 text-[12px] text-[#9CA3AF]">{sub}</div>
     </div>
   );
 }
@@ -156,31 +156,32 @@ function Kpi({ icon: Icon, label, value, sub }: { icon: any; label: string; valu
 // ─── Callbacks panel ─────────────────────────────────────────────────────────
 function CallbacksPanel({ callbacks }: { callbacks: Overview['callbacks'] }) {
   return (
-    <div className={`${CARD} p-5`}>
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-[18px] font-bold text-[#0F172A]">Pending Callbacks</h2>
+    <div className={`${CARD} p-6`}>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-[20px] font-bold text-[#0F172A]">Pending Callbacks</h2>
         <button aria-label="More" className="grid h-8 w-8 place-items-center rounded-lg text-[#9CA3AF] hover:bg-[#F3F4F6]"><MoreHorizontal size={18} /></button>
       </div>
       {callbacks.length === 0 ? (
         <div className="py-8 text-center text-[13px] text-[#9CA3AF]">No pending callbacks</div>
       ) : (
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-3">
           {callbacks.map((c) => {
             const live = c.status === 'IN_PROGRESS';
             const name = c.patientName || c.clientName || c.title;
             return (
-              <div key={c.id} className="border-b border-[#F3F4F6] py-3 last:border-b-0">
+              <div key={c.id} className={`rounded-2xl p-4 ${live ? 'bg-[#F2F4FF]' : 'border border-[#F1F3F7]'}`}>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[14px] font-semibold text-[#0F172A]">{name}</span>
-                    <span className={`h-2 w-2 rounded-full ${live ? 'bg-[#22C55E]' : 'bg-[#D1D5DB]'}`} />
-                  </div>
-                  <button aria-label="Video" className="grid h-8 w-8 place-items-center rounded-lg text-[#6B7280] hover:bg-[#F3F4F6]"><Video size={16} /></button>
+                  <span className="text-[15px] font-bold text-[#0F172A]">{name}</span>
+                  <button aria-label="Video" className="grid h-9 w-9 place-items-center rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#0F172A]"><Video size={16} /></button>
                 </div>
-                <div className={`mt-0.5 text-[12px] font-medium ${live ? 'text-[#16A34A]' : 'text-[#9CA3AF]'}`}>
-                  {live ? 'Live · In progress' : 'Preparing'}
+                <div className="mt-1.5 flex items-center gap-1.5 text-[13px]">
+                  {live ? (
+                    <><span className="h-2 w-2 rounded-full bg-[#22C55E]" /><span className="font-semibold text-[#16A34A]">Live</span><span className="text-[#9CA3AF]">· In progress</span></>
+                  ) : (
+                    <><span className="h-2 w-2 rounded-full bg-[#D1D5DB]" /><span className="text-[#9CA3AF]">Preparing</span></>
+                  )}
                 </div>
-                <button className={`mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[14px] font-semibold transition-colors ${
+                <button className={`mt-3.5 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-semibold transition-colors ${
                   live ? 'bg-[#4F46E5] text-white hover:bg-[#4338CA]' : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]'}`}>
                   {live ? <Phone size={15} /> : <Video size={15} />}
                   {live ? 'Join call' : 'Start session'}
@@ -221,11 +222,11 @@ function ScheduleCard({ schedule }: { schedule: Overview['todaySchedule'] }) {
   }, [schedule]);
 
   return (
-    <div className={`${CARD} p-5`}>
-      <div className="mb-4 flex items-start justify-between">
+    <div className={`${CARD} p-6`}>
+      <div className="mb-5 flex items-start justify-between">
         <div>
-          <h2 className="text-[20px] font-bold text-[#0F172A]">Today&apos;s Schedule</h2>
-          <p className="mt-0.5 text-[14px] text-[#6B7280]">Track collections and callbacks in real time.</p>
+          <h2 className="text-[22px] font-bold text-[#0F172A]">Today&apos;s Schedule</h2>
+          <p className="mt-1 text-[14px] text-[#6B7280]">Track collections and callbacks in real time.</p>
         </div>
         <button aria-label="Expand" className="grid h-9 w-9 place-items-center rounded-lg text-[#6B7280] hover:bg-[#F3F4F6]"><Maximize2 size={16} /></button>
       </div>
@@ -236,39 +237,41 @@ function ScheduleCard({ schedule }: { schedule: Overview['todaySchedule'] }) {
         </div>
       ) : (
         <div className="overflow-x-auto pb-1">
-          <div style={{ minWidth: totalWidth + LANE_W }}>
+          <div className="overflow-hidden rounded-2xl border border-[#EEF2F7]" style={{ minWidth: totalWidth + LANE_W }}>
             {/* Time axis */}
-            <div className="flex border-b border-[#EEF2F7]">
-              <div style={{ width: LANE_W }} className="shrink-0 py-2 text-center text-[11px] font-medium text-[#9CA3AF]">GMT</div>
+            <div className="flex border-b border-[#EEF2F7] bg-[#FBFCFE]">
+              <div style={{ width: LANE_W }} className="shrink-0 border-r border-[#EEF2F7] py-3 text-center text-[11px] font-semibold text-[#9CA3AF]">GMT</div>
               {cols.map((m) => (
-                <div key={m} style={{ width: 30 * PX_PER_MIN }} className="shrink-0 border-l border-[#F3F4F6] py-2 pl-2 text-[12px] font-medium text-[#6B7280]">
+                <div key={m} style={{ width: 30 * PX_PER_MIN }} className="shrink-0 border-r border-[#EEF2F7] py-3 pl-3 text-[12px] font-medium text-[#6B7280] last:border-r-0">
                   {new Date(new Date().setHours(Math.floor(m / 60), m % 60, 0, 0)).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
                 </div>
               ))}
             </div>
             {/* Lanes */}
-            {lanes.map((lane, i) => (
-              <div key={i} className="flex" style={{ height: 108 }}>
-                <div style={{ width: LANE_W }} className="grid shrink-0 place-items-center text-[13px] font-semibold text-[#9CA3AF]">{i + 1}</div>
-                <div className="relative shrink-0" style={{ width: totalWidth }}>
-                  {cols.map((m) => <div key={m} className="absolute top-0 h-full border-l border-[#F6F7F9]" style={{ left: (m - baseMin) * PX_PER_MIN }} />)}
-                  {lane.map((a) => {
-                    const ui = STATUS_UI[a.status];
-                    const left = (midMins(a.scheduledAt) - baseMin) * PX_PER_MIN;
-                    const width = Math.max(a.duration * PX_PER_MIN - 8, 96);
-                    return (
-                      <div key={a.id} className="absolute top-3 overflow-hidden rounded-xl p-3"
-                        style={{ left: left + 4, width, background: ui.bg, borderLeft: `3px solid ${ui.bar}` }}>
-                        <div className="text-[11px] text-[#9CA3AF]">{timeRange(a.scheduledAt, a.duration)}</div>
-                        <div className="mt-0.5 truncate text-[13px] font-semibold text-[#0F172A]">{a.patientName || a.title}</div>
-                        <div className="truncate text-[11px] text-[#6B7280]">{TYPE_LABEL[a.type]}</div>
-                        <span className="mt-1.5 inline-block rounded-md px-2 py-0.5 text-[11px] font-semibold" style={{ background: ui.badgeBg, color: ui.bar }}>{ui.label}</span>
-                      </div>
-                    );
-                  })}
+            <div className="divide-y divide-[#EEF2F7]">
+              {lanes.map((lane, i) => (
+                <div key={i} className="flex" style={{ height: 122 }}>
+                  <div style={{ width: LANE_W }} className="grid shrink-0 place-items-center border-r border-[#EEF2F7] text-[13px] font-semibold text-[#9CA3AF]">{i + 1}</div>
+                  <div className="relative shrink-0" style={{ width: totalWidth }}>
+                    {cols.map((m) => <div key={m} className="absolute top-0 h-full border-r border-[#F1F3F7] last:border-r-0" style={{ left: (m - baseMin) * PX_PER_MIN, width: 30 * PX_PER_MIN }} />)}
+                    {lane.map((a) => {
+                      const ui = STATUS_UI[a.status];
+                      const left = (midMins(a.scheduledAt) - baseMin) * PX_PER_MIN;
+                      const width = Math.max(a.duration * PX_PER_MIN - 10, 100);
+                      return (
+                        <div key={a.id} className="absolute top-3.5 overflow-hidden rounded-xl p-3"
+                          style={{ left: left + 5, width, background: ui.bg, borderLeft: `3px solid ${ui.bar}` }}>
+                          <div className="text-[11px] text-[#9CA3AF]">{timeRange(a.scheduledAt, a.duration)}</div>
+                          <div className="mt-0.5 truncate text-[14px] font-semibold text-[#0F172A]">{a.patientName || a.title}</div>
+                          <div className="truncate text-[12px] text-[#6B7280]">{TYPE_LABEL[a.type]}</div>
+                          <span className="mt-1.5 inline-block rounded-md px-2 py-0.5 text-[11px] font-semibold" style={{ background: ui.badgeBg, color: ui.bar }}>{ui.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -279,9 +282,9 @@ function ScheduleCard({ schedule }: { schedule: Overview['todaySchedule'] }) {
 // ─── Latest lab results ──────────────────────────────────────────────────────
 function LabResultsCard({ records, onOpen }: { records: Overview['recentRecords']; onOpen: (id: string) => void }) {
   return (
-    <div className={`${CARD} p-5`}>
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-[20px] font-bold text-[#0F172A]">Latest Lab Results</h2>
+    <div className={`${CARD} p-6`}>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-[22px] font-bold text-[#0F172A]">Latest Lab Results</h2>
         <div className="flex items-center gap-2">
           <button className="flex items-center gap-1.5 rounded-lg border border-[#EEF2F7] px-3 py-1.5 text-[13px] font-medium text-[#6B7280] hover:bg-[#F9FAFB]"><ArrowUpDown size={14} /> Sort</button>
           <button className="flex items-center gap-1.5 rounded-lg border border-[#EEF2F7] px-3 py-1.5 text-[13px] font-medium text-[#6B7280] hover:bg-[#F9FAFB]"><Filter size={14} /> Filter</button>
@@ -294,11 +297,11 @@ function LabResultsCard({ records, onOpen }: { records: Overview['recentRecords'
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="text-[12px] font-medium uppercase tracking-wide text-[#9CA3AF]">
-              <th className="pb-2 font-medium">Patient Name</th>
-              <th className="pb-2 font-medium">Test</th>
-              <th className="pb-2 font-medium">Status</th>
-              <th className="pb-2 font-medium">Date</th>
-              <th className="pb-2 text-right font-medium">Action</th>
+              <th className="pb-3 font-medium">Patient Name</th>
+              <th className="pb-3 font-medium">Test</th>
+              <th className="pb-3 font-medium">Status</th>
+              <th className="pb-3 font-medium">Date</th>
+              <th className="pb-3 text-right font-medium">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -306,11 +309,11 @@ function LabResultsCard({ records, onOpen }: { records: Overview['recentRecords'
               const ui = recordUi(r.status);
               return (
                 <tr key={r.id} className="border-t border-[#F3F4F6] transition-colors hover:bg-[#F9FAFB]">
-                  <td className="py-3 text-[14px] font-semibold text-[#0F172A]">{r.patientName ?? '—'}</td>
-                  <td className="py-3 text-[14px] text-[#6B7280]">{r.specimenType ?? r.labNumber ?? '—'}</td>
-                  <td className="py-3"><span className="inline-block rounded-md px-2.5 py-1 text-[12px] font-semibold" style={{ background: ui.badgeBg, color: ui.badgeText }}>{r.status}</span></td>
-                  <td className="py-3 text-[14px] text-[#6B7280]">{relDate(r.createdAt)}</td>
-                  <td className="py-3 text-right">
+                  <td className="py-3.5 text-[14px] font-semibold text-[#0F172A]">{r.patientName ?? '—'}</td>
+                  <td className="py-3.5 text-[14px] text-[#6B7280]">{r.specimenType ?? r.labNumber ?? '—'}</td>
+                  <td className="py-3.5"><span className="inline-block rounded-md px-2.5 py-1 text-[12px] font-semibold" style={{ background: ui.badgeBg, color: ui.badgeText }}>{r.status}</span></td>
+                  <td className="py-3.5 text-[14px] text-[#6B7280]">{relDate(r.createdAt)}</td>
+                  <td className="py-3.5 text-right">
                     <button onClick={() => onOpen(r.id)} className="text-[14px] font-semibold hover:underline" style={{ color: ui.actionColor }}>{ui.action}</button>
                   </td>
                 </tr>
@@ -326,29 +329,29 @@ function LabResultsCard({ records, onOpen }: { records: Overview['recentRecords'
 // ─── Important alerts ────────────────────────────────────────────────────────
 function AlertsCard({ alerts, onOpen }: { alerts: Overview['alerts']; onOpen: (a: Overview['alerts'][number]) => void }) {
   return (
-    <div className={`${CARD} h-fit min-w-0 p-5`}>
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-[20px] font-bold text-[#0F172A]">Important Alerts</h2>
+    <div className={`${CARD} h-fit min-w-0 p-6`}>
+      <div className="mb-5 flex items-center justify-between">
+        <h2 className="text-[22px] font-bold text-[#0F172A]">Important Alerts</h2>
         <button aria-label="More" className="grid h-8 w-8 place-items-center rounded-lg text-[#9CA3AF] hover:bg-[#F3F4F6]"><MoreHorizontal size={18} /></button>
       </div>
       {alerts.length === 0 ? (
         <div className="py-8 text-center text-[13px] text-[#9CA3AF]">No alerts right now</div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           {alerts.map((a, i) => {
             const ui = ALERT_UI[a.type];
             return (
-              <div key={i} className="rounded-xl border border-[#EEF2F7] p-4">
-                <div className="flex items-start gap-3">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg" style={{ background: ui.bg, color: ui.color }}>
+              <div key={i} className="rounded-2xl border border-[#EEF2F7] p-5">
+                <div className="flex items-start gap-3.5">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl" style={{ background: ui.bg, color: ui.color }}>
                     {a.type === 'critical' ? <AlertTriangle size={18} /> : <ui.Icon size={18} />}
                   </span>
                   <div className="min-w-0">
-                    <div className="text-[15px] font-semibold text-[#0F172A]">{a.title}</div>
-                    <div className="mt-0.5 text-[13px] leading-snug text-[#6B7280]">{a.description}</div>
+                    <div className="text-[15px] font-bold text-[#0F172A]">{a.title}</div>
+                    <div className="mt-1 text-[13px] leading-relaxed text-[#6B7280]">{a.description}</div>
                   </div>
                 </div>
-                <button onClick={() => onOpen(a)} className="mt-3 flex items-center gap-1.5 text-[14px] font-semibold text-[#4F46E5] hover:underline">
+                <button onClick={() => onOpen(a)} className="mt-3.5 flex items-center gap-1.5 text-[14px] font-semibold text-[#4F46E5] hover:underline">
                   Open patient record <ArrowRight size={15} />
                 </button>
               </div>
