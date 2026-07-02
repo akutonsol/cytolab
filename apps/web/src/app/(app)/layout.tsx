@@ -168,8 +168,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          {/* ROW 2 — nav pills (desktop only). Greeting/DNA live in the dashboard hero. */}
-          {showCenter && (
+          {/* ROW 2 — nav pills (desktop only). The dashboard hides these because it
+              renders its own pills beside the greeting (matches the reference). */}
+          {showCenter && pathname !== '/dashboard' && (
             <div style={{ position: 'relative', zIndex: 2, display: 'flex', marginTop: 12 }}>
               <nav style={navPillBar}>
                 {can(HOME_ITEM.permission) && pill(pathname === HOME_ITEM.path, createElement(HOME_ITEM.icon!, { size: 15, strokeWidth: 1.5 }), HOME_ITEM.label, false, () => navigate(HOME_ITEM.path))}

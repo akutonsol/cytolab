@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth';
 import { AvatarStack, PillSelect } from '@/components/ui';
 import { GlassCard } from '@/components/dashboard/glass-card';
 import { HeroBanner, type HeroChip } from '@/components/dashboard/hero-banner';
+import { NavPills } from '@/components/dashboard/nav-pills';
 import { OeeDonut, ProgressRing, RadarMetrics, ThroughputComb } from './charts';
 
 const GREEN = '#22c55e', BLUE = '#6366f1', GRAY = '#9ca3af';
@@ -146,7 +147,7 @@ export default function DashboardPage() {
       <DnaBackdrop />
 
       <div style={{ position: 'relative', zIndex: 1, padding: '36px 40px 40px' }}>
-        <HeroBanner firstName={firstName} featured={featured} chips={chips} />
+        <HeroBanner firstName={firstName} featured={featured} chips={chips} nav={<NavPills />} />
 
         <div style={{ marginTop: 40 }} className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           {/* Priority Queue */}

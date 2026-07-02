@@ -37,19 +37,24 @@ export function HeroBanner({
   firstName,
   featured,
   chips,
+  nav,
 }: {
   firstName: string;
   featured: HeroFeatured | null;
   chips: HeroChip[];
+  nav?: React.ReactNode;
 }) {
   return (
     <section>
-      {/* Row 1 — greeting (left, full width) */}
-      <div>
-        <p style={{ fontSize: 15, color: '#6b7280', fontWeight: 400, margin: '0 0 4px' }}>Hi, {firstName}!</p>
-        <h1 style={{ fontSize: 52, fontWeight: 800, letterSpacing: '-0.03em', color: '#0f172a', lineHeight: 1.0, margin: 0 }}>
-          Welcome Back
-        </h1>
+      {/* Row 1 — greeting (left) + nav pills (right) */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap' }}>
+        <div>
+          <p style={{ fontSize: 15, color: '#6b7280', fontWeight: 400, margin: '0 0 4px' }}>Hi, {firstName}!</p>
+          <h1 style={{ fontSize: 52, fontWeight: 800, letterSpacing: '-0.03em', color: '#0f172a', lineHeight: 1.0, margin: 0 }}>
+            Welcome Back
+          </h1>
+        </div>
+        {nav}
       </div>
 
       {/* Row 2 — active specimen + KPI chips in one horizontal row */}
