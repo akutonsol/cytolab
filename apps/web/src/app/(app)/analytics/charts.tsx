@@ -16,6 +16,23 @@ const kfmt = (v: number) => {
   return a >= 1000 ? `${Math.round(a / 100) / 10}k` : `${a}`;
 };
 
+// Tooltip shown when hovering a month row of the diverging bar chart.
+function VolTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0]?.payload ?? {};
+  return (
+    <div style={{ background: CHART.ink, color: '#fff', borderRadius: 12, padding: '10px 12px', boxShadow: '0 8px 24px rgba(16,24,40,.18)' }}>
+      <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600 }}>
+        <span style={{ width: 8, height: 8, borderRadius: 999, background: ORANGE }} /> Actual <span style={{ marginLeft: 20 }}>{(row.actual ?? 0).toLocaleString()}</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600, marginTop: 4 }}>
+        <span style={{ width: 8, height: 8, borderRadius: 999, background: '#cbd5e1' }} /> Below target <span style={{ marginLeft: 20 }}>{(row.deficit ?? 0).toLocaleString()}</span>
+      </div>
+    </div>
+  );
+}
+
 /* ---- Diverging bars on a full-width lane: actual (deep blue, right) vs deficit (gray, left) ---- */
 export function DivergingBars({ data, currentMonth, height = 460 }: { data: any[]; currentMonth: string; height?: number }) {
   const rows = data.map((d) => ({ ...d, negDeficit: -d.deficit }));
@@ -55,7 +72,7 @@ export function DivergingBars({ data, currentMonth, height = 460 }: { data: any[
   return (
     <div style={{ width: '100%' }}>
       <ResponsiveContainer width="100%" height={height}>
-        <BarChart layout="vertical" data={rows} stackOffset="sign" margin={{ top: 8, right: 24, bottom: 8, left: 8 }} barCategoryGap="26%">
+        <BarChart layout="vertical" data={rows} stackOffset="sign" margin={{ top: 8, right: 24, bottom: 8, left: 8 }} barCategoryGap="18%">
           <defs>
             <linearGradient id="actualGrad" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="#f7794f" />
@@ -70,11 +87,12 @@ export function DivergingBars({ data, currentMonth, height = 460 }: { data: any[
           <XAxis type="number" domain={[-max, max]} ticks={[-max, -half, 0, half, max]} tickFormatter={kfmt} tick={{ fontSize: 13.5, fill: CHART.axis, fontWeight: 600 }} axisLine={false} tickLine={false} />
           <YAxis type="category" dataKey="month" width={40} tick={<YTick />} axisLine={false} tickLine={false} />
           <ReferenceLine x={0} stroke="#dfe4ee" />
+          <Tooltip cursor={{ fill: 'rgba(241,89,43,0.06)' }} content={<VolTooltip />} />
           {/* full-width pale lane per row (background of the actual bar spans the whole domain) */}
-          <Bar dataKey="negDeficit" stackId="a" fill={DEFICIT_GRAY} radius={[11, 11, 11, 11]} isAnimationActive animationDuration={800} animationEasing="ease-out" maxBarSize={24}>
+          <Bar dataKey="negDeficit" stackId="a" fill={DEFICIT_GRAY} radius={[13, 13, 13, 13]} isAnimationActive animationDuration={800} animationEasing="ease-out" maxBarSize={38}>
             <LabelList dataKey="deficit" content={DeficitChip} />
           </Bar>
-          <Bar dataKey="actual" stackId="a" radius={[11, 11, 11, 11]} isAnimationActive animationDuration={900} animationEasing="ease-out" maxBarSize={24} background={{ fill: LANE, radius: 12 } as any}>
+          <Bar dataKey="actual" stackId="a" radius={[13, 13, 13, 13]} isAnimationActive animationDuration={900} animationEasing="ease-out" maxBarSize={38} background={{ fill: LANE, radius: 13 } as any}>
             {rows.map((r, i) => <Cell key={i} fill={r.current ? 'url(#actualGradCur)' : 'url(#actualGrad)'} />)}
             <LabelList dataKey="actual" content={ActualLabel} />
           </Bar>

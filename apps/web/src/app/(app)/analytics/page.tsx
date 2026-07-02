@@ -94,33 +94,39 @@ export default function AnalyticsPage() {
 
       {/* ---- TOP ROW (equal height) ---- */}
       <div className="grid grid-cols-12 gap-6">
-        <SectionCard
-          className={`col-span-12 xl:col-span-6 ${CARD}`}
-          title={<CardTitle>Specimen Volume Overview</CardTitle>}
-          action={<Legend items={[{ label: 'Actual Volume', color: '#f1592b' }, { label: 'Target Capacity', color: '#cbd5e1' }]} />}
-        >
-          <DivergingBars data={d.monthlyVolume} currentMonth={d.currentMonth} />
-        </SectionCard>
-
-        <SectionCard
-          className={`col-span-12 md:col-span-6 xl:col-span-3 ${CARD}`}
-          bodyClassName="flex flex-1 flex-col"
-          title={<CardTitle>Attention Queue</CardTitle>}
-          action={<span className="grid h-7 min-w-7 place-items-center rounded-pill bg-lightgray px-2 text-small font-bold text-text-secondary">{d.attention.total}</span>}
-        >
-          <div className="flex flex-1 flex-col justify-between divide-y divide-border">
-            {d.attention.items.map((it: any) => (
-              <div key={it.key} className="flex flex-1 items-center gap-3 py-3.5 first:pt-0 last:pb-0">
-                <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-control ${CHIP[ATTENTION[it.key]?.chip ?? 'gray']}`}>{ATTENTION[it.key]?.icon}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[16px] font-bold text-text">{it.title}</div>
-                  <div className="text-[15px] font-medium text-text-secondary">{it.description}</div>
-                </div>
-                <span className={`grid h-7 min-w-7 place-items-center rounded-pill px-2 text-small font-bold ${BADGE_BG[it.severity]} ${BADGE_TEXT[it.severity]}`}>{it.count}</span>
+        {/* Bar chart + Attention Queue share one bare (no-bg) card, split by a thin divider */}
+        <section className="col-span-12 xl:col-span-9">
+          <div className="flex flex-col gap-8 xl:flex-row xl:gap-8">
+            <div className="flex min-w-0 flex-1 flex-col">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <CardTitle>Specimen Volume Overview</CardTitle>
+                <Legend items={[{ label: 'Actual Volume', color: '#f1592b' }, { label: 'Target Capacity', color: '#cbd5e1' }]} />
               </div>
-            ))}
+              <DivergingBars data={d.monthlyVolume} currentMonth={d.currentMonth} />
+            </div>
+
+            <div className="hidden w-px shrink-0 self-stretch bg-[#cbd3e2] xl:block" />
+
+            <div className="shrink-0 xl:w-[338px]">
+              <div className="mb-2 flex items-start justify-between gap-3">
+                <CardTitle>Attention Queue</CardTitle>
+                <span className="grid h-7 min-w-7 place-items-center rounded-pill bg-lightgray px-2 text-small font-bold text-text-secondary">{d.attention.total}</span>
+              </div>
+              <div className="flex flex-col divide-y divide-border">
+                {d.attention.items.map((it: any) => (
+                  <div key={it.key} className="flex items-center gap-3 py-3.5 first:pt-0 last:pb-0">
+                    <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-control ${CHIP[ATTENTION[it.key]?.chip ?? 'gray']}`}>{ATTENTION[it.key]?.icon}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[16px] font-bold text-text">{it.title}</div>
+                      <div className="text-[15px] font-medium text-text-secondary">{it.description}</div>
+                    </div>
+                    <span className={`grid h-7 min-w-7 place-items-center rounded-pill px-2 text-small font-bold ${BADGE_BG[it.severity]} ${BADGE_TEXT[it.severity]}`}>{it.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </SectionCard>
+        </section>
 
         <SectionCard className={`col-span-12 md:col-span-6 xl:col-span-3 ${INSIGHTS}`} bodyClassName="flex flex-1 flex-col">
           <div className="flex items-center justify-between rounded-card bg-[#fde7df] px-4 py-3">
