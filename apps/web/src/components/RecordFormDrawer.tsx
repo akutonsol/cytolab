@@ -73,6 +73,17 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
     enabled: !!patientId,
   });
 
+  // Enabled clinical-feature fields for this form type (Form Setup config).
+  // The endpoint returns { formType, fields }. We cache that object as-is (the
+  // record detail page shares this exact query key) and read the fields array.
+  const { data: formSchemaResp } = useQuery({
+    queryKey: ['form-schema', formType],
+    queryFn: () => api.get(`/form-config/${formType}/schema`).then((r) => r.data),
+    enabled: open,
+    staleTime: 5 * 60 * 1000, // schema rarely changes
+  });
+  const formSchema: any[] = formSchemaResp?.fields ?? [];
+
   useEffect(() => {
     if (!open) return;
     if (isEdit) return; // edit prefill is handled once the record loads
@@ -128,19 +139,34 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
       specimens: (values.specimenTypes ?? []).map((t: string) => ({ type: t })),
     };
     if (isGyn) {
-      base.gynFeatures = {
-        routineCheck: !!values.routineCheck,
-        previousCytology: !!values.previousCytology,
-        lmp: values.lmp ? dayjs(values.lmp).toISOString() : undefined,
-        clinicalAppearanceOfCervix: values.clinicalAppearanceOfCervix,
-        nowPregnant: !!values.nowPregnant,
-        pregnancies: values.pregnancies,
-        leucorrhea: values.leucorrhea,
-        menopause: !!values.menopause,
-        dateOfMenopause: values.dateOfMenopause ? dayjs(values.dateOfMenopause).toISOString() : undefined,
-        lengthOfCycle: values.lengthOfCycle,
-        pelvicAbnormalities: values.pelvicAbnormalities,
-      };
+      if (formSchema.length === 0) {
+        // Fallback (schema unavailable): original hardcoded mapping.
+        base.gynFeatures = {
+          routineCheck: !!values.routineCheck,
+          previousCytology: !!values.previousCytology,
+          lmp: values.lmp ? dayjs(values.lmp).toISOString() : undefined,
+          clinicalAppearanceOfCervix: values.clinicalAppearanceOfCervix,
+          nowPregnant: !!values.nowPregnant,
+          pregnancies: values.pregnancies,
+          leucorrhea: values.leucorrhea,
+          menopause: !!values.menopause,
+          dateOfMenopause: values.dateOfMenopause ? dayjs(values.dateOfMenopause).toISOString() : undefined,
+          lengthOfCycle: values.lengthOfCycle,
+          pelvicAbnormalities: values.pelvicAbnormalities,
+        };
+      } else {
+        // Schema-driven: build gynFeatures from configured field keys.
+        // clinicalDiagnosis lives on the Record (already in base); registrationNo is display-only.
+        const gynKeys = formSchema
+          .filter((f: any) => f.fieldKey !== 'clinicalDiagnosis' && f.fieldKey !== 'registrationNo')
+          .map((f: any) => f.fieldKey);
+        base.gynFeatures = gynKeys.reduce((acc: any, key: string) => {
+          const val = values[key];
+          if (val !== undefined) acc[key] = dayjs.isDayjs(val) ? val.toISOString() : val;
+          return acc;
+        }, {});
+      }
+      // Therapy is not part of the form schema — always sent for Gyn.
       base.therapy = {
         hormone: !!values.therapyHormone,
         radiation: !!values.therapyRadiation,
@@ -148,10 +174,21 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
         other: values.therapyOther,
       };
     } else {
-      base.nonGynFeatures = {
-        sampleDescription: values.sampleDescription,
-        natureAndSource: values.natureAndSource,
-      };
+      if (formSchema.length === 0) {
+        base.nonGynFeatures = {
+          sampleDescription: values.sampleDescription,
+          natureAndSource: values.natureAndSource,
+        };
+      } else {
+        const nonGynKeys = formSchema
+          .filter((f: any) => f.fieldKey !== 'registrationNo')
+          .map((f: any) => f.fieldKey);
+        base.nonGynFeatures = nonGynKeys.reduce((acc: any, key: string) => {
+          const val = values[key];
+          if (val !== undefined) acc[key] = dayjs.isDayjs(val) ? val.toISOString() : val;
+          return acc;
+        }, {});
+      }
     }
     return base;
   };
@@ -346,28 +383,83 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
           {isGyn ? 'Gynecology clinical features' : 'Non-Gynecology clinical features'}
         </Divider>
 
-        {isGyn ? (
+        {formSchema.length === 0 ? (
+          // Fallback while loading or if the schema fetch fails — original hardcoded fields.
+          isGyn ? (
+            <>
+              <Space size="large" wrap>
+                <Form.Item label="Routine Check" name="routineCheck" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item label="Previous Cytology" name="previousCytology" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item label="Now Pregnant" name="nowPregnant" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item label="Menopause" name="menopause" valuePropName="checked"><Switch /></Form.Item>
+              </Space>
+              <Row gutter={12}>
+                <Col span={8}><Form.Item label="LMP" name="lmp"><DatePicker style={{ width: '100%' }} /></Form.Item></Col>
+                <Col span={8}><Form.Item label="Date of Menopause" name="dateOfMenopause"><DatePicker style={{ width: '100%' }} /></Form.Item></Col>
+                <Col span={8}><Form.Item label="No. of Pregnancies" name="pregnancies"><InputNumber min={0} style={{ width: '100%' }} /></Form.Item></Col>
+              </Row>
+              <Row gutter={12}>
+                <Col span={12}><Form.Item label="Clinical Diagnosis" name="clinicalDiagnosis"><Input /></Form.Item></Col>
+                <Col span={12}><Form.Item label="Clinical Appearance of Cervix" name="clinicalAppearanceOfCervix"><Input /></Form.Item></Col>
+              </Row>
+              <Row gutter={12}>
+                <Col span={8}><Form.Item label="Leucorrhea" name="leucorrhea"><Input /></Form.Item></Col>
+                <Col span={8}><Form.Item label="Length of Cycle" name="lengthOfCycle"><Input /></Form.Item></Col>
+                <Col span={8}><Form.Item label="Pelvic Abnormalities" name="pelvicAbnormalities"><Input /></Form.Item></Col>
+              </Row>
+            </>
+          ) : (
+            <>
+              <Form.Item label="Sample Description" name="sampleDescription"><Input.TextArea rows={2} /></Form.Item>
+              <Form.Item label="Nature & Source of Specimen" name="natureAndSource"><Input /></Form.Item>
+            </>
+          )
+        ) : (
+          // Schema-driven fields (Form Setup config) in configured order.
           <>
-            <Space size="large" wrap>
-              <Form.Item label="Routine Check" name="routineCheck" valuePropName="checked"><Switch /></Form.Item>
-              <Form.Item label="Previous Cytology" name="previousCytology" valuePropName="checked"><Switch /></Form.Item>
-              <Form.Item label="Now Pregnant" name="nowPregnant" valuePropName="checked"><Switch /></Form.Item>
-              <Form.Item label="Menopause" name="menopause" valuePropName="checked"><Switch /></Form.Item>
-            </Space>
-            <Row gutter={12}>
-              <Col span={8}><Form.Item label="LMP" name="lmp"><DatePicker style={{ width: '100%' }} /></Form.Item></Col>
-              <Col span={8}><Form.Item label="Date of Menopause" name="dateOfMenopause"><DatePicker style={{ width: '100%' }} /></Form.Item></Col>
-              <Col span={8}><Form.Item label="No. of Pregnancies" name="pregnancies"><InputNumber min={0} style={{ width: '100%' }} /></Form.Item></Col>
+            {formSchema.filter((f: any) => f.fieldType === 'CHECKBOX').length > 0 && (
+              <Space size="large" wrap>
+                {formSchema
+                  .filter((f: any) => f.fieldType === 'CHECKBOX')
+                  .map((f: any) => (
+                    <Form.Item key={f.fieldKey} label={f.label} name={f.fieldKey} valuePropName="checked">
+                      <Switch />
+                    </Form.Item>
+                  ))}
+              </Space>
+            )}
+
+            <Row gutter={12} style={{ marginTop: 12 }}>
+              {formSchema
+                .filter((f: any) => f.fieldType === 'TEXT')
+                .map((f: any) => {
+                  const isDate =
+                    f.fieldKey === 'lmp' ||
+                    f.fieldKey === 'dateOfMenopause' ||
+                    f.fieldKey.toLowerCase().includes('date');
+                  const isNumber = f.fieldKey === 'pregnancies';
+                  return (
+                    <Col span={12} key={f.fieldKey}>
+                      <Form.Item label={f.label} name={f.fieldKey}>
+                        {isDate ? (
+                          <DatePicker style={{ width: '100%' }} />
+                        ) : isNumber ? (
+                          <InputNumber min={0} style={{ width: '100%' }} />
+                        ) : f.fieldKey === 'sampleDescription' ? (
+                          <Input.TextArea rows={2} />
+                        ) : (
+                          <Input />
+                        )}
+                      </Form.Item>
+                    </Col>
+                  );
+                })}
             </Row>
-            <Row gutter={12}>
-              <Col span={12}><Form.Item label="Clinical Diagnosis" name="clinicalDiagnosis"><Input /></Form.Item></Col>
-              <Col span={12}><Form.Item label="Clinical Appearance of Cervix" name="clinicalAppearanceOfCervix"><Input /></Form.Item></Col>
-            </Row>
-            <Row gutter={12}>
-              <Col span={8}><Form.Item label="Leucorrhea" name="leucorrhea"><Input /></Form.Item></Col>
-              <Col span={8}><Form.Item label="Length of Cycle" name="lengthOfCycle"><Input /></Form.Item></Col>
-              <Col span={8}><Form.Item label="Pelvic Abnormalities" name="pelvicAbnormalities"><Input /></Form.Item></Col>
-            </Row>
+          </>
+        )}
+
+        {isGyn && (
+          <>
             <Divider orientation="left" plain>Therapy</Divider>
             <Space size="large" wrap>
               <Form.Item label="Hormone" name="therapyHormone" valuePropName="checked"><Switch /></Form.Item>
@@ -375,11 +467,6 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
               <Form.Item label="Surgical" name="therapySurgical" valuePropName="checked"><Switch /></Form.Item>
             </Space>
             <Form.Item label="Other therapy" name="therapyOther"><Input /></Form.Item>
-          </>
-        ) : (
-          <>
-            <Form.Item label="Sample Description" name="sampleDescription"><Input.TextArea rows={2} /></Form.Item>
-            <Form.Item label="Nature & Source of Specimen" name="natureAndSource"><Input /></Form.Item>
           </>
         )}
 
