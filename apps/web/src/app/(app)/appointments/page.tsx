@@ -81,12 +81,12 @@ export default function AppointmentsPage() {
   const records = (data?.recentRecords ?? []).filter((r) => matches(r.patientName) || matches(r.labNumber) || matches(r.id));
 
   return (
-    <div className="min-h-full" style={{ background: '#F8FAFC' }}>
+    <div className="min-h-full px-6 pb-8 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}>
       {/* ── Greeting row ── */}
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-[34px] font-bold leading-tight tracking-tight text-[#0F172A]">{greeting}, {firstName}!</h1>
-          <p className="mt-2 text-[16px] text-[#6B7280]">Here&apos;s your day at a glance.</p>
+          <h1 className="text-[26px] font-bold leading-tight tracking-tight text-[#0F172A]">{greeting}, {firstName}!</h1>
+          <p className="mt-1.5 text-[15px] text-[#6B7280]">Here&apos;s your day at a glance.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-[280px] items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-4 text-[#9CA3AF]">
@@ -110,10 +110,10 @@ export default function AppointmentsPage() {
           {/* ── LEFT ── */}
           <div className="flex min-w-0 flex-col gap-5">
             <div className="grid grid-cols-2 gap-4">
-              <Kpi icon={Calendar} label="Appointments" value={data?.kpis.scheduledToday ?? 0} sub="pending confirmations" />
-              <Kpi icon={UserX} label="Missed visits" value={data?.kpis.missed ?? 0} sub="View contact details" />
-              <Kpi icon={Video} label="Callbacks" value={data?.kpis.pendingCallbacks ?? 0} sub="awaiting response" />
-              <Kpi icon={FileText} label="Lab Reports" value={data?.kpis.pendingReports ?? 0} sub="require review" />
+              <Kpi icon={Calendar} label="Appointments" value={data?.kpis.scheduledToday ?? 0} sub="pending confirmations" gradient="from-[#EEF3FF] to-white" iconColor="#4F46E5" />
+              <Kpi icon={UserX} label="Missed visits" value={data?.kpis.missed ?? 0} sub="View contact details" gradient="from-[#FFF1F2] to-white" iconColor="#EF4444" />
+              <Kpi icon={Video} label="Callbacks" value={data?.kpis.pendingCallbacks ?? 0} sub="awaiting response" gradient="from-[#F4F1FF] to-white" iconColor="#8B5CF6" />
+              <Kpi icon={FileText} label="Lab Reports" value={data?.kpis.pendingReports ?? 0} sub="require review" gradient="from-[#ECFEFF] to-white" iconColor="#0EA5E9" />
             </div>
             <CallbacksPanel callbacks={data?.callbacks ?? []} />
           </div>
@@ -140,15 +140,15 @@ export default function AppointmentsPage() {
 }
 
 // ─── KPI card ────────────────────────────────────────────────────────────────
-function Kpi({ icon: Icon, label, value, sub }: { icon: any; label: string; value: number; sub: string }) {
+function Kpi({ icon: Icon, label, value, sub, gradient, iconColor }: { icon: any; label: string; value: number; sub: string; gradient: string; iconColor: string }) {
   return (
-    <div className={`${CARD} flex flex-col p-6`}>
-      <div className="flex items-center gap-2.5 text-[#6B7280]">
-        <Icon size={19} className="shrink-0" />
-        <span className="truncate whitespace-nowrap text-[15px] font-medium">{label}</span>
+    <div className={`flex flex-col rounded-2xl border border-[#EEF2F7] bg-gradient-to-br ${gradient} p-6 shadow-[0_4px_24px_rgba(0,0,0,0.04)]`}>
+      <div className="flex items-center gap-2.5">
+        <Icon size={19} className="shrink-0" style={{ color: iconColor }} />
+        <span className="truncate whitespace-nowrap text-[15px] font-medium text-[#6B7280]">{label}</span>
       </div>
       <div className="mt-4 text-[38px] font-bold leading-none text-[#0F172A]">{value}</div>
-      <div className="mt-5 border-t border-[#F1F3F7] pt-3 text-[12px] text-[#9CA3AF]">{sub}</div>
+      <div className="mt-5 border-t border-black/[0.05] pt-3 text-[12px] text-[#9CA3AF]">{sub}</div>
     </div>
   );
 }
