@@ -159,8 +159,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {/* ROW 2 — nav pills (desktop only). The dashboard hides these because it
               renders its own pills beside the greeting (matches the reference). */}
           {showCenter && pathname !== '/dashboard' && (
-            <div style={{ position: 'relative', zIndex: 2, display: 'flex', marginTop: 12 }}>
-              <NavPills justify="flex-start" />
+            <div style={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+              <NavPills justify="flex-end" />
             </div>
           )}
         </div>
