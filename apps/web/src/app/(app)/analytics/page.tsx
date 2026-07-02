@@ -112,13 +112,13 @@ export default function AnalyticsPage() {
                 <CardTitle>Attention Queue</CardTitle>
                 <span className="grid h-7 min-w-7 place-items-center rounded-pill bg-lightgray px-2 text-small font-bold text-text-secondary">{d.attention.total}</span>
               </div>
-              <div className="flex flex-col divide-y divide-border">
+              <div className="flex flex-col gap-3">
                 {d.attention.items.map((it: any) => (
-                  <div key={it.key} className="flex items-center gap-3 py-3.5 first:pt-0 last:pb-0">
+                  <div key={it.key} className="flex items-center gap-3 rounded-2xl border border-[#e6eaf2] bg-white/55 p-3.5">
                     <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-control ${CHIP[ATTENTION[it.key]?.chip ?? 'gray']}`}>{ATTENTION[it.key]?.icon}</span>
                     <div className="min-w-0 flex-1">
                       <div className="text-[16px] font-bold text-text">{it.title}</div>
-                      <div className="text-[15px] font-medium text-text-secondary">{it.description}</div>
+                      <div className="text-[14px] font-medium leading-snug text-text-secondary">{it.description}</div>
                     </div>
                     <span className={`grid h-7 min-w-7 place-items-center rounded-pill px-2 text-small font-bold ${BADGE_BG[it.severity]} ${BADGE_TEXT[it.severity]}`}>{it.count}</span>
                   </div>
