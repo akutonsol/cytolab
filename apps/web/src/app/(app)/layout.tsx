@@ -143,7 +143,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       <span style={{ display: 'block', fontSize: 11, color: '#8a93a6' }}>{role}</span>
                     </span>
                   )}
-                  <span style={{ display: 'grid', placeItems: 'center', width: 24, height: 24, borderRadius: 999, background: '#f2f4fa', color: '#6b7280' }}><DownOutlined style={{ fontSize: 10 }} /></span>
+                  <span style={{ display: 'grid', placeItems: 'center', width: 26, height: 26, borderRadius: 999, background: '#e2e7f1', color: '#5b6472' }}><DownOutlined style={{ fontSize: 10 }} /></span>
                 </button>
               </Dropdown>
             </div>
@@ -155,7 +155,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
               {screens.md && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 46, width: 260, background: '#fff', border: '1px solid #d1d9ee', borderRadius: 999, padding: '0 16px', color: '#9ca3af' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 50, width: 290, borderRadius: 999, padding: '0 18px', color: '#9ca3af', border: '2px solid transparent', background: 'linear-gradient(#fff,#fff) padding-box, linear-gradient(135deg,#e6eaf3 0%,#c4cdde 100%) border-box', boxShadow: '0 2px 6px rgba(16,24,40,0.05)' }}>
                   <SearchOutlined />
                   <input placeholder="Search…" style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: 14, color: '#111827' }} />
                 </div>
@@ -214,5 +214,5 @@ const navPill = (active: boolean): React.CSSProperties => ({
   color: active ? '#fff' : '#374151',
   boxShadow: active ? '0 4px 12px rgba(79,70,229,0.28)' : 'none',
 });
-const iconBtnHero: React.CSSProperties = { width: 44, height: 44, borderRadius: 999, border: '1px solid #d1d9ee', background: '#fff', color: '#6b7280', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 17 };
+const iconBtnHero: React.CSSProperties = { width: 48, height: 48, borderRadius: 999, border: '1px solid #cdd5e5', background: 'linear-gradient(145deg, #f4f6fb 0%, #e4e9f2 100%)', color: '#5b6472', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 18, boxShadow: '0 2px 6px rgba(16,24,40,0.05)' };
 const avatarBtn: React.CSSProperties = { width: 38, height: 38, borderRadius: 999, border: 'none', background: '#4F46E5', color: '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 13, fontWeight: 600 };

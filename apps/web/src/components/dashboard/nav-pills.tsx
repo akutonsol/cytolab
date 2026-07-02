@@ -22,7 +22,7 @@ const iconBox = (active: boolean): React.CSSProperties => ({
 });
 const chevBox = (active: boolean): React.CSSProperties => ({
   display: 'grid', placeItems: 'center', width: 28, height: 28, borderRadius: 999, flexShrink: 0,
-  background: active ? 'rgba(255,255,255,0.65)' : '#f2f4fa', color: active ? '#4f46e5' : '#6b7280',
+  background: active ? 'rgba(255,255,255,0.65)' : '#e2e7f1', color: active ? '#4f46e5' : '#5b6472',
 });
 
 /**
