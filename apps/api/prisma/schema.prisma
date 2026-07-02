@@ -187,6 +187,7 @@ model Lab {
   recordAttachments      RecordAttachment[]
   threads                Thread[]
   appointments           Appointment[]
+  formConfigs            FormConfig[]
 }
 
 model Account {
@@ -1353,4 +1354,61 @@ model MaintenanceLog {
   notes    String?
 
   @@index([ranAt])
+}
+
+// ─── Form Setup (Path A: UI config layer over hardcoded clinical features) ────
+// Configures labels/ordering/print-grouping of the existing GynClinicalFeatures
+// + NonGynClinicalFeatures columns. Never alters those columns — fieldKey maps
+// to an existing Prisma column name.
+
+model FormConfig {
+  id          String              @id @default(cuid())
+  labId       String
+  lab         Lab                 @relation(fields: [labId], references: [id])
+  formType    RequisitionFormType
+  fields      FormFieldConfig[]
+  printGroups FormPrintGroup[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@unique([labId, formType])
+  @@index([labId])
+}
+
+model FormFieldConfig {
+  id               String          @id @default(cuid())
+  labId            String
+  formConfigId     String
+  formConfig       FormConfig      @relation(fields: [formConfigId], references: [id], onDelete: Cascade)
+  fieldKey         String
+  label            String
+  fieldType        FormFieldType   @default(TEXT)
+  showWhenPrinting Boolean         @default(true)
+  printGroupId     String?
+  printGroup       FormPrintGroup? @relation(fields: [printGroupId], references: [id])
+  sortOrder        Int             @default(0)
+  enabled          Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@unique([formConfigId, fieldKey])
+  @@index([labId])
+}
+
+model FormPrintGroup {
+  id           String            @id @default(cuid())
+  labId        String
+  formConfigId String
+  formConfig   FormConfig        @relation(fields: [formConfigId], references: [id], onDelete: Cascade)
+  name         String
+  sortOrder    Int               @default(0)
+  fields       FormFieldConfig[]
+  createdAt    DateTime          @default(now())
+
+  @@index([labId])
+}
+
+enum FormFieldType {
+  TEXT
+  CHECKBOX
 }

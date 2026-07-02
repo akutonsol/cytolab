@@ -86,6 +86,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Appointments', path: '/appointments', phase: 8 },
       { label: 'Search', path: '/search', phase: 8 },
       { label: 'Settings', path: '/settings', permission: 'applicationprefs:view' },
+      { label: 'Form Setup', path: '/settings/forms', permission: 'formconfig:view' },
       { label: 'System Health', path: '/system', permission: 'system:health' },
       { label: 'Files', path: '/files', phase: 8 },
     ],

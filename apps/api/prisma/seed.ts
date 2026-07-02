@@ -42,6 +42,9 @@ const SPECIAL_OBJECTS: Record<string, string[]> = {
   // Internal System Health dashboard — intentionally assigned to NO default role,
   // so only super roles (which bypass the permission guard) can reach it.
   system: ['health'],
+  // Form Setup (clinical-feature UI config). Lab-admin territory — assigned to no
+  // default staff role; super roles reach it via the guard bypass.
+  formconfig: ['view', 'manage'],
 };
 
 async function main() {
