@@ -25,7 +25,18 @@ const reportSelect = {
   writtenBy: { select: { id: true, email: true, firstName: true, lastName: true } },
   releasedAt: true,
   resultSheet: {
-    select: { recordId: true, authorized: true, record: { select: { identifier: true } } },
+    select: {
+      recordId: true,
+      authorized: true,
+      record: {
+        select: {
+          identifier: true,
+          formType: true,
+          patient: { select: { firstName: true, lastName: true } },
+          client: { select: { firstName: true, lastName: true, officeName: true } },
+        },
+      },
+    },
   },
   createdAt: true,
 } as const;
@@ -205,16 +216,16 @@ export class ReportsService {
 
   /** Reporting summary (legacy GET /reports/summary). */
   async summary() {
-    const [reports, resultSheets, authorizedSheets] = await Promise.all([
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const [total, thisMonth, authorized, pending] = await Promise.all([
       this.prisma.report.count(),
-      this.prisma.resultSheet.count(),
-      this.prisma.resultSheet.count({ where: { authorized: true } }),
+      this.prisma.report.count({ where: { createdAt: { gte: monthStart } } }),
+      this.prisma.report.count({ where: { resultSheet: { authorized: true } } }),
+      // Authorized result sheets that don't yet have a released report.
+      this.prisma.resultSheet.count({ where: { authorized: true, reports: { none: {} } } }),
     ]);
-    return {
-      reports,
-      resultSheets,
-      authorizedSheets,
-      unauthorizedSheets: resultSheets - authorizedSheets,
-    };
+    return { total, thisMonth, authorized, pending };
   }
 }
