@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { App } from 'antd';
 import {
   AlertTriangle, ArrowUpRight, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Clock, FlaskConical,
@@ -79,6 +80,7 @@ const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function SamplesPage() {
   const { can } = useAuth();
+  const router = useRouter();
   const { message } = App.useApp();
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
@@ -205,7 +207,7 @@ export default function SamplesPage() {
                   const pr = priorityOf(r); const ps = PRIORITY[pr as keyof typeof PRIORITY]; const st = statusStyle(r.status);
                   const spec = specLabel(r.specimens?.[0]?.type);
                   return (
-                    <tr key={r.id} className="border-t border-border transition-colors hover:bg-[#f8fafd]">
+                    <tr key={r.id} onClick={() => router.push(`/records/${r.id}`)} className="cursor-pointer border-t border-border transition-colors hover:bg-[#f8fafd]">
                       <td className="px-4 py-3"><span className="font-mono text-small font-semibold text-text">{r.labNumber ?? '—'}</span></td>
                       <td className="px-4 py-3"><span className="text-small font-semibold text-text">{patientName(r)}</span></td>
                       <td className="px-4 py-3">
@@ -216,13 +218,13 @@ export default function SamplesPage() {
                       <td className="px-4 py-3"><span className="inline-flex items-center rounded-pill px-2.5 py-1 text-caption font-bold" style={{ background: ps.bg, color: ps.fg }}>{pr}</span></td>
                       <td className="px-4 py-3"><span className="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-caption font-bold" style={{ background: st.bg, color: st.fg }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: st.fg }} />{r.status}</span></td>
                       <td className="px-4 py-3"><span className="text-small font-medium text-text-secondary">{dateFmt(r.specimenDate)}</span></td>
-                      <td className="relative px-2 py-3">
+                      <td className="relative px-2 py-3" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => setMenuId(menuId === r.id ? null : r.id)} className="text-text-tertiary hover:text-text"><MoreHorizontal size={18} /></button>
                         {menuId === r.id && (
                           <>
                             <div className="fixed inset-0 z-10" onClick={() => setMenuId(null)} />
                             <div className="absolute right-6 top-11 z-20 w-32 overflow-hidden rounded-[10px] border border-card bg-white py-1 shadow-float">
-                              <button onClick={() => openEdit(r)} className="block w-full px-3 py-2 text-left text-small font-medium text-text hover:bg-[#f6f8fc]">View</button>
+                              <button onClick={() => { setMenuId(null); router.push(`/records/${r.id}`); }} className="block w-full px-3 py-2 text-left text-small font-medium text-text hover:bg-[#f6f8fc]">View</button>
                               {can('record:change') && <button onClick={() => openEdit(r)} className="block w-full px-3 py-2 text-left text-small font-medium text-text hover:bg-[#f6f8fc]">Edit</button>}
                               {can('record:delete') && <button onClick={() => { setMenuId(null); if (confirm(`Delete sample ${r.labNumber ?? ''}?`)) del.mutate(r.id); }} className="block w-full px-3 py-2 text-left text-small font-medium text-danger hover:bg-danger-soft">Delete</button>}
                             </div>
