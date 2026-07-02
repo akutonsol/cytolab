@@ -48,7 +48,7 @@ const statusCls = (s: string) =>
         : s === 'OnHold' ? 'bg-[#f1f3f6] text-[#6b7280]'
           : 'bg-[#eaf1ff] text-[#2e5ce6]';
 const StatusBadge = ({ s }: { s: string }) => (
-  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold ${statusCls(s)}`}>{s}</span>
+  <span className={`inline-flex items-center rounded-[6px] px-2.5 py-[3px] text-[11px] font-bold ${statusCls(s)}`}>{s}</span>
 );
 
 interface Rec {
@@ -62,9 +62,9 @@ interface Rec {
 
 /* Layered progress ring: outer indigo arc + inner green arc (44px). */
 function DualRing({ pct, days, done }: { pct: number; days: number; done: boolean }) {
-  const size = 44;
-  const r1 = (size - 3.5) / 2;
-  const r2 = r1 - 5;
+  const size = 56;
+  const r1 = (size - 4) / 2;
+  const r2 = r1 - 6;
   const c1 = 2 * Math.PI * r1;
   const c2 = 2 * Math.PI * r2;
   const p = Math.min(100, Math.max(0, pct));
@@ -72,13 +72,13 @@ function DualRing({ pct, days, done }: { pct: number; days: number; done: boolea
   const rot = `rotate(-90 ${size / 2} ${size / 2})`;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
-      <circle cx={size / 2} cy={size / 2} r={r1} fill="none" stroke="#eef1f7" strokeWidth={3.5} />
-      <circle cx={size / 2} cy={size / 2} r={r2} fill="none" stroke="#eef1f7" strokeWidth={3} />
-      <circle cx={size / 2} cy={size / 2} r={r1} fill="none" stroke={done ? '#22c55e' : '#4f46e5'} strokeWidth={3.5} strokeLinecap="round"
+      <circle cx={size / 2} cy={size / 2} r={r1} fill="none" stroke="#eef1f7" strokeWidth={4} />
+      <circle cx={size / 2} cy={size / 2} r={r2} fill="none" stroke="#eef1f7" strokeWidth={3.5} />
+      <circle cx={size / 2} cy={size / 2} r={r1} fill="none" stroke={done ? '#22c55e' : '#4f46e5'} strokeWidth={4} strokeLinecap="round"
         strokeDasharray={c1} strokeDashoffset={c1 * (1 - p / 100)} transform={rot} />
-      <circle cx={size / 2} cy={size / 2} r={r2} fill="none" stroke="#22c55e" strokeWidth={3} strokeLinecap="round"
+      <circle cx={size / 2} cy={size / 2} r={r2} fill="none" stroke="#22c55e" strokeWidth={3.5} strokeLinecap="round"
         strokeDasharray={c2} strokeDashoffset={c2 * (1 - inner / 100)} transform={rot} />
-      <text x="50%" y="50%" dy="0.35em" textAnchor="middle" fontSize="11" fontWeight="800" fill="#0f172a">{done ? '✓' : `${days}d`}</text>
+      <text x="50%" y="50%" dy="0.35em" textAnchor="middle" fontSize="12" fontWeight="800" fill="#0f172a">{done ? '✓' : `${days}d`}</text>
     </svg>
   );
 }
@@ -166,21 +166,22 @@ export default function PatientProfilePage() {
 
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[1fr_300px]">
         {/* ══ HERO ══ */}
-        <section className={`relative overflow-hidden ${CARD}`} style={{ background: '#EEF3FF', minHeight: 240 }}>
+        <section className={`relative overflow-hidden ${CARD}`} style={{ background: '#EEF3FF', minHeight: 260 }}>
           {/* photo slideshow */}
-          <div style={{ position: 'absolute', right: 0, bottom: 0, width: 200, height: '100%', zIndex: 1 }}>
+          <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '42%', overflow: 'hidden', zIndex: 1 }}>
             {AVATARS.map((src, i) => (
               <div key={i} className="cyto-avatar-slide" style={{ position: 'absolute', inset: 0, animationDelay: `${-i * 4}s` }}>
-                <Image src={src} alt="" fill unoptimized sizes="200px" style={{ objectFit: 'cover', objectPosition: 'top center' }} />
+                <Image src={src} alt="" fill unoptimized sizes="42vw" style={{ objectFit: 'cover', objectPosition: 'top center' }} />
               </div>
             ))}
-            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 80, zIndex: 2, background: 'linear-gradient(to right, #EEF3FF 0%, transparent 40%)' }} />
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 80, zIndex: 2, background: 'linear-gradient(to right, #EEF3FF, transparent)' }} />
           </div>
 
-          {/* top bar */}
-          <div style={{ position: 'relative', zIndex: 3 }} className="flex items-start justify-between px-7 pt-6">
-            <span className="text-[12px] font-medium text-[#6B7280]">Patient<br />profile</span>
-            <div className="relative flex items-center gap-2">
+          {/* label (top-left) */}
+          <span style={{ position: 'absolute', top: 24, left: 28, zIndex: 3 }} className="text-[12px] font-medium leading-tight text-[#6B7280]">Patient<br />profile</span>
+
+          {/* star + more (top-right) */}
+          <div style={{ position: 'absolute', top: 20, right: 20, zIndex: 3 }} className="flex items-center gap-2">
               <button aria-label="Star" onClick={() => setStarred((v) => !v)} className={`${iconBtn} bg-white/80 ${starred ? 'text-[#4f46e5]' : 'text-[#6b7280] hover:text-[#111827]'}`}>
                 <Star size={16} fill={starred ? '#4f46e5' : 'none'} />
               </button>
@@ -195,7 +196,6 @@ export default function PatientProfilePage() {
                   </div>
                 </>
               )}
-            </div>
           </div>
 
           {/* left content */}
@@ -210,15 +210,17 @@ export default function PatientProfilePage() {
                 <div className="mt-0.5 text-[15px] font-semibold text-[#111827]">{diagnosis}</div>
               </div>
             </div>
-            <div className="mt-5 flex gap-8">
+            <div className="mt-5 flex items-center gap-6">
               <Stat value={rows.length} unit="rec" label="Total records" />
+              <div style={{ width: 1, height: 32, background: '#D1D5DB' }} />
               <Stat value={openRecs.length} unit="open" label="Open cases" />
+              <div style={{ width: 1, height: 32, background: '#D1D5DB' }} />
               <Stat value={authorized.length} unit="auth" label="Authorized" />
             </div>
           </div>
 
           {/* name + age/sex */}
-          <div style={{ position: 'absolute', bottom: 20, right: 220, zIndex: 3, textAlign: 'right' }}>
+          <div style={{ position: 'absolute', bottom: 24, right: 'calc(42% + 16px)', zIndex: 3, textAlign: 'right' }}>
             <div className="text-[20px] font-bold text-[#111827]">{fullName}</div>
             <div className="text-[14px] text-[#6B7280]">{age != null ? `${age} years old` : 'Age —'}, {patient.gender ?? '—'}</div>
           </div>
