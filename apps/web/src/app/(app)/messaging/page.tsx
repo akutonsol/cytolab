@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { App } from 'antd';
 import {
-  ChevronDown, MoreHorizontal, Paperclip, Plus, Search, Send, Star, Video, X,
+  ChevronDown, Filter, MoreHorizontal, Paperclip, Plus, Search, Send, Star, Video, X,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
@@ -115,7 +115,10 @@ export default function MessagingPage() {
             </select>
             <ChevronDown size={16} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-text-secondary" />
           </div>
-          <button aria-label="Search" className="grid h-8 w-8 place-items-center rounded-full text-text-tertiary hover:bg-lightgray"><Search size={17} /></button>
+          <div className="flex items-center gap-2">
+            <button aria-label="Filter" className="grid h-8 w-8 place-items-center rounded-full border border-[#eef2f7] text-[#9ca3af] transition-colors hover:text-[#111827]"><Filter size={15} /></button>
+            <button aria-label="Search" className="grid h-8 w-8 place-items-center rounded-full border border-[#eef2f7] text-[#9ca3af] transition-colors hover:text-[#111827]"><Search size={15} /></button>
+          </div>
         </div>
 
         <div className="premium-scroll flex-1 overflow-y-auto">
@@ -124,18 +127,17 @@ export default function MessagingPage() {
             const on = t.id === activeId;
             return (
               <button key={t.id} onClick={() => setActiveId(t.id)}
-                className="relative flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#f8fafd]"
+                className="flex w-full items-center gap-3 border-b border-[#f3f4f6] px-4 py-3.5 text-left transition-colors hover:bg-[#f8fafd]"
                 style={{ background: on ? '#eef3ff' : undefined }}>
-                {on && <span className="absolute inset-y-2 left-0 w-1 rounded-pill bg-primary" />}
                 <Avatar name={t.title} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-small font-bold text-text">{t.title}</span>
-                    <span className="shrink-0 text-tiny font-medium text-text-tertiary">{t.lastMessage ? threadTime(t.lastMessage.createdAt) : ''}</span>
+                    <span className="truncate text-[15px] font-semibold text-[#111827]">{t.title}</span>
+                    <span className="shrink-0 text-[12px] font-medium text-[#9ca3af]">{t.lastMessage ? threadTime(t.lastMessage.createdAt) : ''}</span>
                   </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-caption font-medium text-text-secondary">{t.lastMessage?.body ?? 'No messages yet'}</span>
-                    {t.unread && <Star size={14} className="shrink-0 fill-primary text-primary" />}
+                  <div className="mt-0.5 flex items-center justify-between gap-2">
+                    <span className="truncate text-[13px] font-medium text-[#9ca3af]">{t.lastMessage?.body ?? 'No messages yet'}</span>
+                    {t.unread && <Star size={14} className="shrink-0 fill-[#4f7df9] text-[#4f7df9]" />}
                   </div>
                 </div>
               </button>
@@ -171,7 +173,7 @@ export default function MessagingPage() {
               </div>
             </div>
 
-            <div ref={scrollRef} className="premium-scroll flex-1 overflow-y-auto px-6 py-5" style={{ background: '#fbfcfe' }}>
+            <div ref={scrollRef} className="premium-scroll flex-1 overflow-y-auto px-6 py-5" style={{ background: '#ffffff' }}>
               {messages.map((m: any, i: number) => {
                 const prev = messages[i - 1]; const next = messages[i + 1];
                 const mine = m.authorUserId === myId;
@@ -179,15 +181,15 @@ export default function MessagingPage() {
                 const endRun = !next || next.authorUserId !== m.authorUserId || !sameDay(next.createdAt, m.createdAt);
                 return (
                   <div key={m.id}>
-                    {showSep && <div className="my-4 text-center text-caption font-bold tracking-wide text-text-tertiary">{daySep(m.createdAt)}</div>}
+                    {showSep && <div className="my-5 text-center text-[12px] font-semibold tracking-wide text-[#9ca3af]">{daySep(m.createdAt)}</div>}
                     <div className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                      <div className="max-w-[68%]">
+                      <div className="max-w-[62%]">
                         <div className={mine
-                          ? 'rounded-[18px] rounded-br-md bg-primary px-4 py-2.5 text-small font-medium leading-relaxed text-white'
-                          : 'rounded-[18px] rounded-bl-md border border-card bg-white px-4 py-2.5 text-small font-medium leading-relaxed text-text shadow-sm'}>
+                          ? 'rounded-[20px] rounded-br-[6px] bg-[#4f7df9] px-4 py-3 text-[15px] font-normal leading-relaxed text-white'
+                          : 'rounded-[20px] rounded-bl-[6px] bg-[#eef1fb] px-4 py-3 text-[15px] font-normal leading-relaxed text-[#1f2937]'}>
                           {m.body}
                         </div>
-                        {endRun && <div className={`mt-1 text-tiny font-medium text-text-tertiary ${mine ? 'text-right' : 'text-left'}`}>{clock(m.createdAt)}</div>}
+                        {endRun && <div className={`mt-1.5 text-[12px] font-medium text-[#9ca3af] ${mine ? 'text-right' : 'text-left'}`}>{clock(m.createdAt)}</div>}
                       </div>
                     </div>
                   </div>
@@ -229,7 +231,7 @@ export default function MessagingPage() {
             </div>
           </div>
 
-          <button onClick={() => setOpenMore((v) => !v)} className="mt-3 flex items-center justify-center gap-1.5 rounded-control bg-[#f6f8fc] py-2.5 text-small font-bold text-primary">
+          <button onClick={() => setOpenMore((v) => !v)} className="mt-3 flex items-center justify-center gap-1.5 rounded-control bg-[#eef3ff] py-2.5 text-small font-bold text-primary">
             Open more <ChevronDown size={15} className="transition-transform" style={{ transform: openMore ? 'rotate(180deg)' : 'none' }} />
           </button>
           {openMore && (
