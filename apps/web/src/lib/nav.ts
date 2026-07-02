@@ -32,7 +32,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Patients', path: '/patients', permission: 'patient:view' },
       { label: 'Clients', path: '/clients', permission: 'client:view' },
       { label: 'Requisitions', path: '/requisitions', permission: 'requisition:view' },
-      { label: 'Records', path: '/records', permission: 'record:view' },
+      { label: 'Samples', path: '/records', permission: 'record:view' },
     ],
   },
   {
