@@ -124,9 +124,9 @@ export default function MessagingPage() {
   ];
 
   return (
-    <div className="flex h-[calc(100vh-140px)] overflow-hidden rounded-card border border-card bg-surface shadow-card">
+    <div className="flex h-[calc(100vh-140px)] gap-4">
       {/* ================= LEFT PANEL ================= */}
-      <aside className="flex w-[280px] shrink-0 flex-col border-r border-card">
+      <aside className="flex w-[300px] shrink-0 flex-col overflow-hidden rounded-2xl border border-card bg-surface shadow-card">
         <div className="flex items-center justify-between px-4 py-4">
           <div className="relative">
             <select value={filter} onChange={(e) => setFilter(e.target.value)}
@@ -173,7 +173,7 @@ export default function MessagingPage() {
       </aside>
 
       {/* ================= CENTER PANEL ================= */}
-      <section className="flex min-w-0 flex-1 flex-col">
+      <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-card bg-surface shadow-card">
         {!thread ? (
           <div className="grid flex-1 place-items-center text-small text-text-tertiary">Select a conversation</div>
         ) : (
@@ -214,12 +214,12 @@ export default function MessagingPage() {
                 const endRun = !next || next.authorUserId !== m.authorUserId || !sameDay(next.createdAt, m.createdAt);
                 return (
                   <div key={m.id}>
-                    {showSep && <div className="my-5 text-center text-[12px] font-semibold tracking-wide text-[#9ca3af]">{daySep(m.createdAt)}</div>}
-                    <div className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                      <div className="max-w-[62%]">
+                    {showSep && <div className="my-6 text-center text-[12px] font-semibold tracking-wide text-[#9ca3af]">{daySep(m.createdAt)}</div>}
+                    <div className={`flex ${mine ? 'justify-end' : 'justify-start'} ${endRun ? 'mb-5' : 'mb-1'}`}>
+                      <div className="max-w-[70%]">
                         <div className={mine
-                          ? 'rounded-[20px] rounded-br-[6px] bg-[#4f7df9] px-4 py-3 text-[15px] font-normal leading-relaxed text-white'
-                          : 'rounded-[20px] rounded-bl-[6px] bg-[#eef1fb] px-4 py-3 text-[15px] font-normal leading-relaxed text-[#1f2937]'}>
+                          ? 'rounded-[18px] bg-[#4f7df9] px-[18px] py-[11px] text-[15px] font-normal leading-[1.55] text-white'
+                          : 'rounded-[18px] bg-[#eef1fb] px-[18px] py-[11px] text-[15px] font-normal leading-[1.55] text-[#1f2937]'}>
                           {m.body}
                         </div>
                         {endRun && <div className={`mt-1.5 text-[12px] font-medium text-[#9ca3af] ${mine ? 'text-right' : 'text-left'}`}>{clock(m.createdAt)}</div>}
@@ -243,12 +243,15 @@ export default function MessagingPage() {
 
       {/* ================= RIGHT PANEL ================= */}
       {thread && (
-        <aside className="premium-scroll hidden w-[280px] shrink-0 flex-col overflow-y-auto border-l border-card p-5 xl:flex">
-          <div className="mb-2 flex items-center justify-end gap-2">
+        <aside className="premium-scroll hidden w-[300px] shrink-0 flex-col overflow-y-auto rounded-2xl border border-card bg-surface p-5 shadow-card xl:flex">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <button aria-label="Collapse panel" className="grid h-9 w-9 place-items-center rounded-full border border-[#eef2f7] text-[#9ca3af] hover:text-[#111827]"><ChevronDown size={16} className="rotate-90" /></button>
             <button aria-label="Video call" className="grid h-9 w-9 place-items-center rounded-full bg-primary-soft text-primary"><Video size={16} /></button>
           </div>
           <div className="flex flex-col items-center text-center">
-            <Avatar name={counterName} size={80} />
+            <div className="rounded-full p-1 ring-1 ring-[#c9d8ff]">
+              <Avatar name={counterName} size={84} />
+            </div>
             <div className="mt-3 text-[17px] font-extrabold text-text">{counterName}</div>
             <div className="text-caption font-medium text-text-tertiary">{thread.type === 'CLIENT' ? 'Client contact' : counterpart?.email ?? 'Team member'}</div>
           </div>
