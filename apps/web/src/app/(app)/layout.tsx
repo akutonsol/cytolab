@@ -26,34 +26,56 @@ function Logo() {
   );
 }
 
-// Soft blue DNA double-helix watermark for the hero (masked to fade at the edges).
+// Large vibrant blue→purple DNA double-helix hero graphic (glowing, diagonal,
+// edge-faded, gently floating) — the signature element from the reference.
 function DnaWatermark() {
-  const W = 460, H = 190, mid = H / 2, amp = 66, periods = 3, N = 70;
+  const W = 760, H = 260, mid = H / 2, amp = 78, periods = 3.6, N = 110;
   const strand = (phase: number) =>
     Array.from({ length: N }, (_, i) => {
       const x = (i / (N - 1)) * W;
       const y = mid + amp * Math.sin((i / (N - 1)) * periods * 2 * Math.PI + phase);
       return `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`;
     }).join(' ');
-  const rungs = Array.from({ length: 22 }, (_, i) => {
-    const t = (i + 0.5) / 22;
+  const rungs = Array.from({ length: 30 }, (_, i) => {
+    const t = (i + 0.5) / 30;
     const x = t * W;
-    const y1 = mid + amp * Math.sin(t * periods * 2 * Math.PI);
-    const y2 = mid + amp * Math.sin(t * periods * 2 * Math.PI + Math.PI);
-    return { x, y1, y2, k: i };
+    const a = t * periods * 2 * Math.PI;
+    return { x, y1: mid + amp * Math.sin(a), y2: mid + amp * Math.sin(a + Math.PI), k: i };
   });
   return (
     <div style={{
-      position: 'absolute', top: '50%', left: '56%', transform: 'translateY(-42%)', width: W, height: H,
-      opacity: 0.6, pointerEvents: 'none', zIndex: 1,
-      WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%)',
-      maskImage: 'linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%)',
+      position: 'absolute', right: -70, top: -26, width: W, height: H, transform: 'rotate(-14deg)',
+      opacity: 0.9, pointerEvents: 'none', zIndex: 1,
+      WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 22%, #000 82%, transparent 100%)',
+      maskImage: 'linear-gradient(90deg, transparent 0%, #000 22%, #000 82%, transparent 100%)',
     }}>
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} fill="none">
-        {rungs.map((r) => <line key={r.k} x1={r.x} y1={r.y1} x2={r.x} y2={r.y2} stroke="#8fa8e8" strokeWidth={2.5} strokeLinecap="round" opacity={0.7} />)}
-        <path d={strand(0)} stroke="#a5b8f0" strokeWidth={4} strokeLinecap="round" fill="none" />
-        <path d={strand(Math.PI)} stroke="#c7d4f5" strokeWidth={4} strokeLinecap="round" fill="none" />
-      </svg>
+      <div className="hero-dna-float">
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} fill="none">
+          <defs>
+            <linearGradient id="dnaGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#3B82F6" />
+              <stop offset="38%" stopColor="#6366F1" />
+              <stop offset="72%" stopColor="#8B5CF6" />
+              <stop offset="100%" stopColor="#A855F7" />
+            </linearGradient>
+            <filter id="dnaGlow" x="-20%" y="-40%" width="140%" height="180%">
+              <feGaussianBlur stdDeviation="3.2" result="b" />
+              <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+          </defs>
+          <g filter="url(#dnaGlow)">
+            {rungs.map((r) => <line key={r.k} x1={r.x} y1={r.y1} x2={r.x} y2={r.y2} stroke="url(#dnaGrad)" strokeWidth={2} strokeLinecap="round" opacity={0.45} />)}
+            <path d={strand(0)} stroke="url(#dnaGrad)" strokeWidth={5} strokeLinecap="round" fill="none" opacity={0.5} />
+            <path d={strand(Math.PI)} stroke="url(#dnaGrad)" strokeWidth={5.5} strokeLinecap="round" fill="none" />
+            {rungs.map((r) => (
+              <g key={`n${r.k}`}>
+                <circle cx={r.x} cy={r.y1} r={5} fill="url(#dnaGrad)" opacity={0.6} />
+                <circle cx={r.x} cy={r.y2} r={5} fill="url(#dnaGrad)" />
+              </g>
+            ))}
+          </g>
+        </svg>
+      </div>
     </div>
   );
 }
@@ -158,7 +180,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
 .cyto-pill{transition:all .18s cubic-bezier(0.4,0,0.2,1)}
 .cyto-pill:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(79,70,229,0.18)}
-.cyto-pill:not(.cyto-pill-active):hover{background:rgba(79,70,229,0.08) !important;border-color:#c7d2fe !important}`}</style>
+.cyto-pill:not(.cyto-pill-active):hover{background:rgba(79,70,229,0.08) !important;border-color:#c7d2fe !important}
+@keyframes heroDnaFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.hero-dna-float{animation:heroDnaFloat 7s ease-in-out infinite}`}</style>
 
       <header style={heroZone}>
         <div style={heroBg(showCenter)}>
@@ -235,7 +259,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 const heroZone: React.CSSProperties = { position: 'sticky', top: 0, zIndex: 20 };
 const heroBg = (tall: boolean): React.CSSProperties => ({
   position: 'relative', overflow: 'hidden', background: '#edf1f7', borderBottom: '1px solid #dbe2f0',
-  padding: tall ? '14px 32px 18px' : '10px 16px', minHeight: tall ? 180 : 64,
+  padding: tall ? '14px 32px 20px' : '10px 16px', minHeight: tall ? 208 : 64,
 });
 const navPillBar: React.CSSProperties = {
   display: 'inline-flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, background: '#fff', borderRadius: 16,
@@ -244,9 +268,10 @@ const navPillBar: React.CSSProperties = {
 const navPill = (active: boolean): React.CSSProperties => ({
   display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 999, cursor: 'pointer',
   fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
-  border: '1px solid ' + (active ? '#4F46E5' : '#e2e8f0'),
-  background: active ? '#4F46E5' : '#fff',
+  border: '1px solid ' + (active ? 'transparent' : '#e2e8f0'),
+  background: active ? 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)' : '#fff',
   color: active ? '#fff' : '#374151',
+  boxShadow: active ? '0 4px 12px rgba(79,70,229,0.28)' : 'none',
 });
 const iconBtnHero: React.CSSProperties = { width: 40, height: 40, borderRadius: 999, border: '1px solid #d1d9ee', background: '#fff', color: '#6b7280', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 16 };
 const avatarBtn: React.CSSProperties = { width: 40, height: 40, borderRadius: 999, border: 'none', background: '#4F46E5', color: '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 13, fontWeight: 600 };
