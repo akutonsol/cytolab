@@ -80,18 +80,18 @@ function DnaBackdrop() {
           backgroundImage: `url(/dna-helix.png), ${CANVAS}`,
           backgroundBlendMode: 'multiply, normal',
           backgroundRepeat: 'no-repeat, no-repeat',
-          backgroundPosition: 'right -10px top -10px, center',
-          backgroundSize: '62% auto, cover',
+          backgroundPosition: 'right -20px top -30px, center',
+          backgroundSize: '82% auto, cover',
         }}
       />
       {/* Radial vignette feathers the helix image's rectangular edges (its non-white
-          glow/corners) into the canvas — strong in the top-right corner, fading toward
-          the centre exactly like the reference tail. */}
+          glow/corners) into the canvas — the clear zone is wide so the helix stays
+          vivid and flows down toward the centre, exactly like the reference tail. */}
       <div
         aria-hidden
         style={{
-          position: 'absolute', top: 0, right: 0, width: '72%', height: 720, zIndex: 0, pointerEvents: 'none',
-          background: 'radial-gradient(78% 78% at 100% 0%, transparent 42%, #eaecf5 78%)',
+          position: 'absolute', top: 0, right: 0, width: '88%', height: 860, zIndex: 0, pointerEvents: 'none',
+          background: 'radial-gradient(96% 96% at 100% 0%, transparent 58%, #eaecf5 92%)',
         }}
       />
     </>
