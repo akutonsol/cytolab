@@ -186,6 +186,7 @@ model Lab {
   specimenImages         SpecimenImage[]
   recordAttachments      RecordAttachment[]
   threads                Thread[]
+  appointments           Appointment[]
 }
 
 model Account {
@@ -248,6 +249,7 @@ model User {
   changeRequestEvents    ChangeRequestEvent[]   @relation("ChangeRequestEventStaffActor")
   threadParticipants     ThreadParticipant[]
   authoredMessages       Message[]
+  assignedAppointments   Appointment[]
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -346,6 +348,7 @@ model Patient {
   client           Client?          @relation(fields: [clientId], references: [id])
   addresses        PatientAddress[]
   records          Record[]
+  appointments     Appointment[]
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
@@ -409,6 +412,7 @@ model Client {
   changeRequestMessages ChangeRequestMessage[]
   changeRequestEvents   ChangeRequestEvent[]
   threads               Thread[]
+  appointments          Appointment[]
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
 
@@ -1288,4 +1292,50 @@ model Message {
 enum ThreadType {
   INTERNAL
   CLIENT
+}
+
+// ─── Appointments (Phase 6) ──────────────────────────────────────────────────
+// Scheduled patient/client visits: specimen collections, callbacks, consults and
+// follow-ups. Lab-scoped via labId; optionally linked to a patient/client and an
+// assigned staff member.
+
+model Appointment {
+  id             String            @id @default(cuid())
+  labId          String
+  lab            Lab               @relation(fields: [labId], references: [id])
+  patientId      String?
+  patient        Patient?          @relation(fields: [patientId], references: [id])
+  clientId       String?
+  client         Client?           @relation(fields: [clientId], references: [id])
+  title          String
+  type           AppointmentType   @default(COLLECTION)
+  status         AppointmentStatus @default(SCHEDULED)
+  scheduledAt    DateTime
+  duration       Int               @default(30)
+  notes          String?
+  assignedUserId String?
+  assignedUser   User?             @relation(fields: [assignedUserId], references: [id])
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([labId])
+  @@index([labId, scheduledAt])
+  @@index([patientId])
+  @@index([clientId])
+}
+
+enum AppointmentType {
+  COLLECTION
+  CALLBACK
+  CONSULTATION
+  FOLLOWUP
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  MISSED
+  CANCELLED
 }

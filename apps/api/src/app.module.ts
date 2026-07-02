@@ -27,6 +27,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { PortalModule } from './modules/portal/portal.module';
 import { ChangeRequestsModule } from './modules/change-requests/change-requests.module';
 import { MessagingModule } from './modules/messaging/messaging.module';
+import { AppointmentsModule } from './modules/appointments/appointments.module';
 
 /**
  * Cytolab modular monolith.
@@ -66,6 +67,7 @@ import { MessagingModule } from './modules/messaging/messaging.module';
     PortalModule,
     ChangeRequestsModule,
     MessagingModule,
+    AppointmentsModule,
   ],
   controllers: [HealthController],
   providers: [

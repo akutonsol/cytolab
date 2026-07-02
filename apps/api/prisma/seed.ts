@@ -30,6 +30,8 @@ const STANDARD_EXTRA: Record<string, string[]> = {
   resultsheet: ['authorize'],
   // Messaging: view threads vs. send a message (Phase 6).
   message: ['send'],
+  // Appointments: a single write-gate for create/update/delete (Phase 6).
+  appointment: ['manage'],
 };
 // Objects with a non-CRUD action set.
 const SPECIAL_OBJECTS: Record<string, string[]> = {
@@ -98,15 +100,16 @@ async function main() {
       name: 'Lab Technician',
       description: 'Intake, specimens and results entry (no authorization)',
       perms: byPrefix(
-        ['patient', 'client', 'record', 'recordstatus', 'requisition', 'resultentry', 'cabinet', 'message', 'notification'],
+        ['patient', 'client', 'record', 'recordstatus', 'requisition', 'resultentry', 'cabinet', 'message', 'notification', 'appointment'],
         ['view', 'create', 'change', 'submit'],
       ),
     },
     {
       name: 'Receptionist',
-      description: 'Front desk — patient/client/requisition registration and billing view',
+      description: 'Front desk — patient/client/requisition registration, appointments and billing view',
       perms: [
         ...byPrefix(['patient', 'client', 'requisition'], ['view', 'create']),
+        ...byPrefix(['appointment'], ['view', 'manage']),
         ...byPrefix(['bill'], ['view']),
       ],
     },
