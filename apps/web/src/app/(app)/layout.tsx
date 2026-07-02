@@ -137,14 +137,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {!showCenter && <button aria-label="Menu" onClick={() => setDrawerOpen(true)} style={iconBtnHero}><MenuOutlined /></button>}
               <Dropdown trigger={['click']} menu={accountMenu} placement="bottomLeft">
                 <button aria-label="Account" style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff', border: '1px solid #e6e9f2', cursor: 'pointer', padding: '5px 8px 5px 5px', borderRadius: 999, boxShadow: '0 2px 6px rgba(16,24,40,0.06)' }}>
-                  <span style={avatarBtn}>{initials}</span>
+                  <span style={{ position: 'relative', display: 'inline-flex' }}>
+                    <span style={avatarBtn}>{initials}</span>
+                    <span style={{ position: 'absolute', right: 0, bottom: 1, width: 11, height: 11, borderRadius: 999, background: '#22c55e', border: '2px solid #fff' }} />
+                  </span>
                   {screens.sm && (
                     <span style={{ textAlign: 'left', lineHeight: 1.2 }}>
                       <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: '#111827' }}>{firstName}</span>
                       <span style={{ display: 'block', fontSize: 11, color: '#8a93a6' }}>{role}</span>
                     </span>
                   )}
-                  <span style={{ display: 'grid', placeItems: 'center', width: 26, height: 26, borderRadius: 999, background: '#cbd3e2', color: '#4b5563' }}><DownOutlined style={{ fontSize: 10 }} /></span>
+                  <span style={{ display: 'grid', placeItems: 'center', width: 28, height: 28, borderRadius: 999, background: '#eaecf1', color: '#6b7280' }}><DownOutlined style={{ fontSize: 11 }} /></span>
                 </button>
               </Dropdown>
             </div>
@@ -224,4 +227,4 @@ const navPill = (active: boolean): React.CSSProperties => ({
   boxShadow: active ? '0 4px 12px rgba(79,70,229,0.28)' : 'none',
 });
 const iconBtnHero: React.CSSProperties = { width: 50, height: 50, borderRadius: 999, border: '1px solid #bcc6d9', background: 'linear-gradient(145deg, #e4e9f3 0%, #cbd3e2 100%)', color: '#4b5563', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 18, boxShadow: '0 2px 6px rgba(16,24,40,0.06)' };
-const avatarBtn: React.CSSProperties = { width: 38, height: 38, borderRadius: 999, border: 'none', background: '#4F46E5', color: '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 13, fontWeight: 600 };
+const avatarBtn: React.CSSProperties = { width: 42, height: 42, borderRadius: 999, border: 'none', background: '#4F46E5', color: '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 14, fontWeight: 600 };

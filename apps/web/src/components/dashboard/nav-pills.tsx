@@ -13,16 +13,16 @@ const pill: React.CSSProperties = {
   background: '#fff', color: '#374151', boxShadow: '0 2px 6px rgba(16,24,40,0.06)',
 };
 const pillActive: React.CSSProperties = {
-  ...pill, border: '1px solid transparent', color: '#312e81',
-  background: 'linear-gradient(110deg, #bcccff 0%, #dcccfa 100%)', boxShadow: '0 8px 18px rgba(129,140,248,0.4)',
+  ...pill, border: '1px solid transparent', color: '#2f3042',
+  background: 'linear-gradient(110deg, #b3c1f0 0%, #d0bfea 100%)', boxShadow: '0 8px 18px rgba(129,140,248,0.4)',
 };
 const iconBox = (active: boolean): React.CSSProperties => ({
-  display: 'grid', placeItems: 'center', width: 38, height: 38, borderRadius: 11, flexShrink: 0,
-  background: active ? '#fff' : '#eef1f7', color: active ? '#4f46e5' : '#4b5563',
+  display: 'grid', placeItems: 'center', width: 38, height: 38, borderRadius: active ? 999 : 11, flexShrink: 0,
+  background: active ? '#fff' : '#eef1f7', color: active ? '#3a3b47' : '#4b5563',
 });
 const chevBox = (active: boolean): React.CSSProperties => ({
   display: 'grid', placeItems: 'center', width: 30, height: 30, borderRadius: 999, flexShrink: 0,
-  background: active ? 'rgba(255,255,255,0.65)' : '#cbd3e2', color: active ? '#4f46e5' : '#4b5563',
+  background: active ? '#fff' : '#cbd3e2', color: active ? '#3a3b47' : '#4b5563',
 });
 
 /**
