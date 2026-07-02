@@ -196,9 +196,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 }
 
 // Soft blue-gray → lavender canvas; the whole app is one seamless surface.
-// Solid canvas so the sticky top bar and the page content below it are exactly
-// the same colour (no gradient-origin seam), and so the DNA knocks out cleanly.
-const CANVAS = '#eaecf5';
+// Single shared canvas gradient painted once on the outermost container. The top
+// bar and every page's content are transparent over it, so they show one
+// continuous gradient with no seam.
+const CANVAS = 'linear-gradient(160deg, #eef0f7 0%, #e6e9f2 55%, #ebe9f4 100%)';
 const heroZone: React.CSSProperties = { position: 'sticky', top: 0, zIndex: 20 };
 const heroBg = (tall: boolean): React.CSSProperties => ({
   position: 'relative', background: 'transparent',

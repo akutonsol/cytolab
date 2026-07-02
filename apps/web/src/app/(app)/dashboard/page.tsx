@@ -16,9 +16,9 @@ import { NavPills } from '@/components/dashboard/nav-pills';
 import { OeeDonut, ProgressRing, RadarMetrics, ThroughputComb } from './charts';
 
 const GREEN = '#22c55e', BLUE = '#6366f1', GRAY = '#9ca3af';
-// Solid canvas — matches the layout top bar exactly (no seam) and gives the DNA
-// multiply a uniform backdrop so the helix knocks out cleanly everywhere.
-const CANVAS = '#eaecf5';
+// The page is transparent so it shows the layout's single shared canvas gradient
+// (top bar + content are one continuous surface, no seam). The DNA PNG has a
+// transparent background, so it overlays the gradient directly.
 
 const relDay = (d: string) => {
   const s = (Date.now() - new Date(d).getTime()) / 1000;
@@ -75,30 +75,21 @@ function Stat({ value, label, dot }: { value: React.ReactNode; label: string; do
 function DnaBackdrop() {
   return (
     <>
-      {/* Animated helix layer — knocked out against the solid canvas colour, so the
-          drifting solid areas stay invisible against the page and only the helix
-          appears to slowly move/breathe. */}
+      {/* Animated helix layer — a transparent-background PNG overlaid on the shared
+          gradient, slowly twisting/breathing (see .dna-drift). No blend/backdrop, so
+          the gradient shows through around it. */}
       <div
         aria-hidden
         className="dna-drift"
         style={{
           position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
           backgroundImage: 'url(/dna-helix.png)',
-          backgroundColor: CANVAS,
-          backgroundBlendMode: 'multiply',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'right -20px top -30px',
           backgroundSize: '82% auto',
           transformOrigin: 'top right',
-        }}
-      />
-      {/* Static vignette feathers the helix image's edges into the canvas so it stays
-          vivid in the top-right and fades toward the centre like the reference tail. */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute', top: 0, right: 0, width: '88%', height: 860, zIndex: 0, pointerEvents: 'none',
-          background: `radial-gradient(96% 96% at 100% 0%, transparent 58%, ${CANVAS} 92%)`,
+          maskImage: 'radial-gradient(80% 80% at 100% 0%, #000 36%, transparent 70%)',
+          WebkitMaskImage: 'radial-gradient(80% 80% at 100% 0%, #000 36%, transparent 70%)',
         }}
       />
     </>
@@ -122,7 +113,7 @@ export default function DashboardPage() {
   if (isError) return <div className="p-2 text-sm text-text-secondary">Dashboard is unavailable right now.</div>;
   if (isLoading || !d) {
     return (
-      <div className="dashboard-theme -m-4 md:-m-8" style={{ minHeight: '100vh', background: CANVAS, position: 'relative', overflow: 'hidden' }}>
+      <div className="dashboard-theme -m-4 md:-m-8" style={{ minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden' }}>
         <DnaBackdrop />
         <div style={{ position: 'relative', zIndex: 1, padding: '36px 40px 40px' }}>
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
@@ -150,7 +141,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="dashboard-theme -m-4 md:-m-8" style={{ minHeight: '100vh', background: CANVAS, position: 'relative', overflow: 'hidden' }}>
+    <div className="dashboard-theme -m-4 md:-m-8" style={{ minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden' }}>
       <DnaBackdrop />
 
       <div style={{ position: 'relative', zIndex: 1, padding: '36px 40px 40px' }}>
