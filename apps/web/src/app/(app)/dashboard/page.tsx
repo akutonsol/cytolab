@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
 import {
@@ -8,19 +9,18 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import { AvatarStack, PillSelect, SectionCard } from '@/components/ui';
 import { OeeDonut, ProgressRing, RadarMetrics, ThroughputComb } from './charts';
 
 const GREEN = '#22c55e', BLUE = '#4F46E5', GRAY = '#9ca3af';
-// Subtle card gradient so surfaces aren't flat white; Activity gets a stronger tint (ref).
-// `cyto-card` layers the Indigo Enterprise glassmorphic shadow/border on top.
-const CARD = 'cyto-card bg-gradient-to-b from-white to-[#f5f7fd]';
-const ACTIVITY = 'cyto-card bg-[linear-gradient(180deg,#eaeffb_0%,#f4f6fd_38%,#ffffff_100%)]';
+// Clean white glassmorphic cards — the hero provides the colour, cards stay white.
+const CARD = 'cyto-card';
+const ACTIVITY = 'cyto-card';
 
-// ── Indigo Enterprise: glassmorphic card token (dashboard-scoped) — frosted glass
-// so the page-level DNA shows softly through the top cards. ──
+// ── Indigo Enterprise: white glassmorphic card token (dashboard-scoped) ──
 const DASH_STYLE = `
-.cyto-card{border-radius:16px !important;border:1px solid rgba(10,37,64,0.05) !important;box-shadow:0 20px 40px rgba(0,0,0,0.04),0 2px 4px rgba(79,70,229,0.05) !important;background:rgba(255,255,255,0.72) !important;backdrop-filter:blur(14px) !important;-webkit-backdrop-filter:blur(14px) !important}
+.cyto-card{border-radius:20px !important;border:1px solid rgba(10,37,64,0.06) !important;box-shadow:0 20px 40px rgba(0,0,0,0.06),0 2px 4px rgba(79,70,229,0.08) !important;background:#ffffff !important}
 `;
 
 const relDay = (d: string) => {
@@ -76,6 +76,7 @@ function Stat({ value, label, dot }: { value: React.ReactNode; label: string; do
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { claims } = useAuth();
   const { data: d, isLoading, isError } = useQuery({
     queryKey: ['dashboard-home'],
     queryFn: () => api.get('/analytics/home').then((r) => r.data),
@@ -94,13 +95,48 @@ export default function DashboardPage() {
 
   const up = d.throughput.deltaPct >= 0;
   const eff = d.effectiveness;
+  const emailName = (claims?.email ?? '').split('@')[0].split(/[._-]/)[0].replace(/[^a-z]/gi, '');
+  const greetName = d?.greeting?.firstName || (emailName ? emailName[0].toUpperCase() + emailName.slice(1) : 'there');
 
   return (
     <div className="flex flex-col gap-6">
       <style>{DASH_STYLE}</style>
 
+      {/* ── Full-bleed DNA hero ── */}
+      <section style={{
+        position: 'relative', minHeight: 300, overflow: 'hidden',
+        background: 'linear-gradient(135deg, #E8ECF8 0%, #DDE3F4 50%, #D4DAF0 100%)',
+        margin: '-32px -32px 40px -32px', width: 'calc(100% + 64px)',
+        padding: '36px 40px 80px 40px',
+      }}>
+        <div style={{
+          position: 'absolute', inset: 0,
+          maskImage: 'linear-gradient(to right, transparent 0%, transparent 30%, black 55%, black 100%)',
+          WebkitMaskImage: 'linear-gradient(to right, transparent 0%, transparent 30%, black 55%, black 100%)',
+        }}>
+          <Image src="/dna-helix.png" alt="" fill style={{ objectFit: 'cover', objectPosition: 'center right' }} priority />
+        </div>
+
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 420 }}>
+          <p style={{ fontFamily: "'Geist', sans-serif", fontSize: 16, fontWeight: 400, color: '#4B5563', margin: '0 0 4px 0' }}>Hi, {greetName}!</p>
+          <h1 style={{ fontFamily: "'Geist', sans-serif", fontSize: 48, fontWeight: 700, letterSpacing: '-0.02em', color: '#0F172A', lineHeight: 1.05, margin: '0 0 28px 0' }}>Welcome Back</h1>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            {[
+              { label: 'PENDING', value: d.priorityRecords.length },
+              { label: 'ON-TIME', value: (d.effectiveness?.onTime ?? 0) + '%' },
+              { label: 'THROUGHPUT', value: (d.throughput?.headlinePct ?? 0) + '%' },
+            ].map(({ label, value }) => (
+              <div key={label} style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderRadius: 12, padding: '10px 20px', border: '1px solid rgba(79,70,229,0.15)', boxShadow: '0 2px 8px rgba(79,70,229,0.08)', minWidth: 90 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6B7280', fontFamily: "'Geist', sans-serif", marginBottom: 2 }}>{label}</div>
+                <div style={{ fontSize: 26, fontWeight: 700, color: '#0F172A', fontFamily: "'Geist', sans-serif", letterSpacing: '-0.02em', lineHeight: 1.1 }}>{value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ---- ROW 1 (equal height) ---- */}
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-12 gap-6" style={{ marginTop: -48 }}>
         {/* Urgent Tasks / Priority Queue */}
         <SectionCard className={`col-span-12 xl:col-span-4 ${CARD}`} bodyClassName="flex flex-1 flex-col"
           title={<CardTitle>Priority Queue</CardTitle>} action={<SeeAll onClick={() => router.push('/records')} />}>

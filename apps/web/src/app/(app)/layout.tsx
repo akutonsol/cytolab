@@ -26,60 +26,6 @@ function Logo() {
   );
 }
 
-// Large vibrant blue→purple DNA double-helix hero graphic (glowing, diagonal,
-// edge-faded, gently floating) — the signature element from the reference.
-function DnaWatermark() {
-  const W = 900, H = 420, mid = H / 2, amp = 118, periods = 4.6, N = 150;
-  const strand = (phase: number) =>
-    Array.from({ length: N }, (_, i) => {
-      const x = (i / (N - 1)) * W;
-      const y = mid + amp * Math.sin((i / (N - 1)) * periods * 2 * Math.PI + phase);
-      return `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`;
-    }).join(' ');
-  const rungs = Array.from({ length: 40 }, (_, i) => {
-    const t = (i + 0.5) / 40;
-    const x = t * W;
-    const a = t * periods * 2 * Math.PI;
-    return { x, y1: mid + amp * Math.sin(a), y2: mid + amp * Math.sin(a + Math.PI), k: i };
-  });
-  return (
-    <div style={{
-      position: 'absolute', right: -90, top: 8, width: W, height: H, transform: 'rotate(-16deg)',
-      opacity: 0.9, pointerEvents: 'none', zIndex: 0,
-      WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 20%, #000 84%, transparent 100%)',
-      maskImage: 'linear-gradient(90deg, transparent 0%, #000 20%, #000 84%, transparent 100%)',
-    }}>
-      <div className="hero-dna-float">
-        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} fill="none">
-          <defs>
-            <linearGradient id="dnaGrad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#3B82F6" />
-              <stop offset="38%" stopColor="#6366F1" />
-              <stop offset="72%" stopColor="#8B5CF6" />
-              <stop offset="100%" stopColor="#A855F7" />
-            </linearGradient>
-            <filter id="dnaGlow" x="-20%" y="-40%" width="140%" height="180%">
-              <feGaussianBlur stdDeviation="3.2" result="b" />
-              <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-            </filter>
-          </defs>
-          <g filter="url(#dnaGlow)">
-            {rungs.map((r) => <line key={r.k} x1={r.x} y1={r.y1} x2={r.x} y2={r.y2} stroke="url(#dnaGrad)" strokeWidth={2} strokeLinecap="round" opacity={0.45} />)}
-            <path d={strand(0)} stroke="url(#dnaGrad)" strokeWidth={5} strokeLinecap="round" fill="none" opacity={0.5} />
-            <path d={strand(Math.PI)} stroke="url(#dnaGrad)" strokeWidth={5.5} strokeLinecap="round" fill="none" />
-            {rungs.map((r) => (
-              <g key={`n${r.k}`}>
-                <circle cx={r.x} cy={r.y1} r={5} fill="url(#dnaGrad)" opacity={0.6} />
-                <circle cx={r.x} cy={r.y2} r={5} fill="url(#dnaGrad)" />
-              </g>
-            ))}
-          </g>
-        </svg>
-      </div>
-    </div>
-  );
-}
-
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -180,12 +126,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
 .cyto-pill{transition:all .18s cubic-bezier(0.4,0,0.2,1)}
 .cyto-pill:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(79,70,229,0.18)}
-.cyto-pill:not(.cyto-pill-active):hover{background:rgba(79,70,229,0.08) !important;border-color:#c7d2fe !important}
-@keyframes heroDnaFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.hero-dna-float{animation:heroDnaFloat 7s ease-in-out infinite}`}</style>
-
-      {/* Page-level DNA — sits behind the (transparent) hero and bleeds down behind the top cards. */}
-      {showCenter && <DnaWatermark />}
+.cyto-pill:not(.cyto-pill-active):hover{background:rgba(79,70,229,0.08) !important;border-color:#c7d2fe !important}`}</style>
 
       <header style={heroZone}>
         <div style={heroBg(showCenter)}>
@@ -227,13 +168,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          {/* ROW 2 + 3 — greeting + nav pills (desktop only) */}
+          {/* ROW 2 — nav pills (desktop only). Greeting/DNA live in the dashboard hero. */}
           {showCenter && (
-            <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'flex-end', gap: 24, marginTop: 12 }}>
-              <div style={{ minWidth: 210, flexShrink: 0 }}>
-                <div style={{ fontFamily: 'Geist, sans-serif', fontSize: 14, fontWeight: 400, color: '#6b7280' }}>Hi, {firstName}!</div>
-                <div style={{ fontFamily: 'Geist, sans-serif', fontSize: 32, fontWeight: 700, letterSpacing: '-0.015em', color: '#111827', lineHeight: 1.05 }}>Welcome Back</div>
-              </div>
+            <div style={{ position: 'relative', zIndex: 2, display: 'flex', marginTop: 12 }}>
               <nav style={navPillBar}>
                 {can(HOME_ITEM.permission) && pill(pathname === HOME_ITEM.path, createElement(HOME_ITEM.icon!, { size: 15, strokeWidth: 1.5 }), HOME_ITEM.label, false, () => navigate(HOME_ITEM.path))}
                 {centerGroups.map((g) => (
@@ -262,7 +199,7 @@ const CANVAS = 'linear-gradient(160deg, #edf0f6 0%, #e7eaf3 58%, #eae8f5 100%)';
 const heroZone: React.CSSProperties = { position: 'sticky', top: 0, zIndex: 20 };
 const heroBg = (tall: boolean): React.CSSProperties => ({
   position: 'relative', background: 'transparent',
-  padding: tall ? '14px 32px 20px' : '10px 16px', minHeight: tall ? 208 : 64,
+  padding: tall ? '14px 32px 12px' : '10px 16px', minHeight: tall ? 108 : 64,
 });
 const navPillBar: React.CSSProperties = {
   display: 'inline-flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, background: '#fff', borderRadius: 16,
