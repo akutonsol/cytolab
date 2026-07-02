@@ -169,3 +169,19 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .blood-drip { animation: none; opacity: 0; }
 }
+
+/* ============================================================
+   Patient profile — avatar crossfade slideshow.
+   ============================================================ */
+@keyframes cyto-avatar-fade {
+  0%, 30% { opacity: 1; }
+  40%, 90% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.cyto-avatar-slide {
+  animation: cyto-avatar-fade 12s ease-in-out infinite;
+  will-change: opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cyto-avatar-slide { animation: none; }
+}
