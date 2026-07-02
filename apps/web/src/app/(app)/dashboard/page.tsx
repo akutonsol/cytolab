@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
 import { AvatarStack, PillSelect, SectionCard } from '@/components/ui';
 import { OeeDonut, ProgressRing, RadarMetrics, ThroughputComb } from './charts';
 
@@ -18,60 +17,10 @@ const GREEN = '#22c55e', BLUE = '#4F46E5', GRAY = '#9ca3af';
 const CARD = 'cyto-card bg-gradient-to-b from-white to-[#f5f7fd]';
 const ACTIVITY = 'cyto-card bg-[linear-gradient(180deg,#eaeffb_0%,#f4f6fd_38%,#ffffff_100%)]';
 
-// ── Indigo Enterprise: card tokens + animated-DNA keyframes (dashboard-scoped) ──
+// ── Indigo Enterprise: glassmorphic card token (dashboard-scoped) ──
 const DASH_STYLE = `
 .cyto-card{border-radius:16px !important;border:1px solid rgba(10,37,64,0.05) !important;box-shadow:0 20px 40px rgba(0,0,0,0.04),0 2px 4px rgba(79,70,229,0.05) !important}
-@keyframes dnaFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
-@keyframes dnaRotate{from{transform:scaleX(1)}to{transform:scaleX(1.04)}}
-.dna-float{animation:dnaFloat 6s ease-in-out infinite}
-.dna-strands{animation:dnaRotate 4s ease-in-out infinite alternate;transform-origin:center;transform-box:fill-box}
 `;
-
-function KpiChip({ label, value }: { label: string; value: any }) {
-  return (
-    <div style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)', borderRadius: 12, padding: '8px 16px', border: '1px solid rgba(79,70,229,0.12)' }}>
-      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', color: '#6B7280', fontFamily: 'Geist,sans-serif' }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', letterSpacing: '-0.01em' }}>{value}</div>
-    </div>
-  );
-}
-
-// Animated indigo DNA double-helix (vertical), edge-faded, float + subtle breathe.
-function AnimatedDNA() {
-  const cx = 160, amp = 74, periods = 2.6, N = 46, H = 240;
-  const pts = (phase: number) =>
-    Array.from({ length: N }, (_, i) => {
-      const y = (i / (N - 1)) * H;
-      const x = cx + amp * Math.sin((y / H) * periods * 2 * Math.PI + phase);
-      return `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`;
-    }).join(' ');
-  const rungs = Array.from({ length: 12 }, (_, i) => {
-    const y = ((i + 0.5) / 12) * H;
-    const a = (y / H) * periods * 2 * Math.PI;
-    return { y, x1: cx + amp * Math.sin(a), x2: cx + amp * Math.sin(a + Math.PI), k: i };
-  });
-  return (
-    <div className="dna-float" style={{
-      position: 'absolute', right: -20, top: -10, height: '110%', width: 340, opacity: 0.85, pointerEvents: 'none', zIndex: 1,
-      WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)',
-      maskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)',
-    }}>
-      <svg width="100%" height="100%" viewBox="0 0 320 240" preserveAspectRatio="xMidYMid slice" fill="none">
-        <g className="dna-strands">
-          {rungs.map((r) => <line key={r.k} x1={r.x1} y1={r.y} x2={r.x2} y2={r.y} stroke="#C7D2FE" strokeWidth={1.5} opacity={0.7} />)}
-          <path d={pts(0)} stroke="#818CF8" strokeWidth={3} fill="none" strokeLinecap="round" />
-          <path d={pts(Math.PI)} stroke="#A5B4FC" strokeWidth={3} fill="none" strokeLinecap="round" />
-          {rungs.map((r) => (
-            <g key={`n${r.k}`}>
-              <circle cx={r.x1} cy={r.y} r={4} fill={r.k % 2 ? '#6366F1' : '#A5B4FC'} />
-              <circle cx={r.x2} cy={r.y} r={4} fill={r.k % 2 ? '#A5B4FC' : '#6366F1'} />
-            </g>
-          ))}
-        </g>
-      </svg>
-    </div>
-  );
-}
 
 const relDay = (d: string) => {
   const s = (Date.now() - new Date(d).getTime()) / 1000;
@@ -126,7 +75,6 @@ function Stat({ value, label, dot }: { value: React.ReactNode; label: string; do
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { claims } = useAuth();
   const { data: d, isLoading, isError } = useQuery({
     queryKey: ['dashboard-home'],
     queryFn: () => api.get('/analytics/home').then((r) => r.data),
@@ -145,26 +93,10 @@ export default function DashboardPage() {
 
   const up = d.throughput.deltaPct >= 0;
   const eff = d.effectiveness;
-  const emailName = (claims?.email ?? '').split('@')[0].split(/[._-]/)[0].replace(/[^a-z]/gi, '');
-  const greeting = d.greeting?.firstName || (emailName ? emailName[0].toUpperCase() + emailName.slice(1) : 'there');
 
   return (
     <div className="flex flex-col gap-6">
       <style>{DASH_STYLE}</style>
-
-      {/* ── Animated DNA hero (dashboard only) ── */}
-      <section style={{ position: 'relative', width: '100%', minHeight: 220, borderRadius: 24, overflow: 'hidden', background: 'linear-gradient(135deg, #EEF0FB 0%, #E8EBF8 40%, #DDE1F5 100%)', display: 'flex', alignItems: 'flex-end', padding: '32px 40px' }}>
-        <AnimatedDNA />
-        <div style={{ position: 'relative', zIndex: 2 }}>
-          <div style={{ fontFamily: 'Geist,sans-serif', fontSize: 14, fontWeight: 400, color: '#6B7280', marginBottom: 4 }}>Hi, {greeting}!</div>
-          <div style={{ fontFamily: 'Geist,sans-serif', fontSize: 40, fontWeight: 700, letterSpacing: '-0.02em', color: '#0F172A', lineHeight: 1.1 }}>Welcome Back</div>
-          <div style={{ marginTop: 12, display: 'flex', gap: 24 }}>
-            <KpiChip label="Pending" value={d.priorityRecords.length} />
-            <KpiChip label="On-time" value={`${d.effectiveness.onTime}%`} />
-            <KpiChip label="Throughput" value={`${d.throughput.headlinePct}%`} />
-          </div>
-        </div>
-      </section>
 
       {/* ---- ROW 1 (equal height) ---- */}
       <div className="grid grid-cols-12 gap-6">
