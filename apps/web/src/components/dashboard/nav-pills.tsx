@@ -8,8 +8,8 @@ import { ANALYTICS_ITEM, CENTER_GROUP_KEYS, HOME_ITEM, NAV_GROUPS } from '@/lib/
 import { useAuth } from '@/lib/auth';
 
 const pill: React.CSSProperties = {
-  display: 'inline-flex', alignItems: 'center', gap: 9, padding: '6px 8px', borderRadius: 999,
-  fontSize: 15, fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer', border: '1px solid #eceef5',
+  display: 'inline-flex', alignItems: 'center', gap: 10, padding: '7px 9px', borderRadius: 999,
+  fontSize: 16, fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer', border: '1px solid #eceef5',
   background: '#fff', color: '#374151', boxShadow: '0 2px 6px rgba(16,24,40,0.06)',
 };
 const pillActive: React.CSSProperties = {
@@ -17,12 +17,12 @@ const pillActive: React.CSSProperties = {
   background: 'linear-gradient(110deg, #bcccff 0%, #dcccfa 100%)', boxShadow: '0 8px 18px rgba(129,140,248,0.4)',
 };
 const iconBox = (active: boolean): React.CSSProperties => ({
-  display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-  background: active ? '#fff' : '#f2f4fa', color: active ? '#4f46e5' : '#4b5563',
+  display: 'grid', placeItems: 'center', width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+  background: active ? '#fff' : '#eef1f7', color: active ? '#4f46e5' : '#4b5563',
 });
 const chevBox = (active: boolean): React.CSSProperties => ({
-  display: 'grid', placeItems: 'center', width: 28, height: 28, borderRadius: 999, flexShrink: 0,
-  background: active ? 'rgba(255,255,255,0.65)' : '#e2e7f1', color: active ? '#4f46e5' : '#5b6472',
+  display: 'grid', placeItems: 'center', width: 30, height: 30, borderRadius: 999, flexShrink: 0,
+  background: active ? 'rgba(255,255,255,0.65)' : '#cbd3e2', color: active ? '#4f46e5' : '#4b5563',
 });
 
 /**

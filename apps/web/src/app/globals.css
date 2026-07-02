@@ -133,15 +133,19 @@ body {
 }
 
 /* ============================================================
-   Dashboard DNA backdrop — slow drifting/breathing animation.
+   Dashboard DNA backdrop — twisting "living helix" animation.
+   The scaleX squeeze simulates the double helix rotating around its
+   axis; rotate + translateY make the strand undulate and flow.
    ============================================================ */
 @keyframes dna-drift {
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  50%  { transform: translate3d(-16px, 20px, 0) scale(1.035); }
-  100% { transform: translate3d(0, 0, 0) scale(1); }
+  0%   { transform: translateY(0)    rotate(0deg)    scale(1, 1); }
+  25%  { transform: translateY(10px) rotate(1deg)    scale(0.98, 1.02); }
+  50%  { transform: translateY(20px) rotate(0deg)    scale(1, 1.045); }
+  75%  { transform: translateY(10px) rotate(-1deg)   scale(1.02, 1.02); }
+  100% { transform: translateY(0)    rotate(0deg)    scale(1, 1); }
 }
 .dna-drift {
-  animation: dna-drift 20s ease-in-out infinite;
+  animation: dna-drift 14s ease-in-out infinite;
   will-change: transform;
 }
 @media (prefers-reduced-motion: reduce) {
