@@ -8,6 +8,7 @@ import {
   SearchOutlined, SettingOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
+import { Microscope } from 'lucide-react';
 import { ACCOUNT_GROUP_KEY, ANALYTICS_ITEM, CENTER_GROUP_KEYS, HOME_ITEM, NAV_GROUPS } from '@/lib/nav';
 import { useAuth, useAuthStore } from '@/lib/auth';
 import { refreshSession } from '@/lib/api';
@@ -148,9 +149,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </Dropdown>
             </div>
 
-            <div style={{ position: 'absolute', left: '50%', top: 4, transform: 'translateX(-50%)', textAlign: 'center', pointerEvents: 'none' }}>
-              <div style={{ fontFamily: 'Geist, sans-serif', fontSize: 25, fontWeight: 700, letterSpacing: 1, color: '#111827' }}>CYTOLAB</div>
-              {screens.md && <div style={{ fontSize: 13, color: '#8a93a6', marginTop: 2 }}>Cytology &amp; Pathology Laboratory System</div>}
+            <div style={{ position: 'absolute', left: '50%', top: 2, transform: 'translateX(-50%)', textAlign: 'center', pointerEvents: 'none' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                <span style={{ display: 'grid', placeItems: 'center', width: 36, height: 36, borderRadius: 11, background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)', color: '#fff', boxShadow: '0 6px 16px rgba(79,70,229,0.3)' }}>
+                  <Microscope size={21} strokeWidth={1.9} />
+                </span>
+                <span style={{ fontFamily: 'Geist, sans-serif', fontSize: 25, fontWeight: 700, letterSpacing: 1, color: '#111827' }}>CYTOLAB</span>
+              </div>
+              {screens.md && <div style={{ fontSize: 13, color: '#8a93a6', marginTop: 3 }}>Cytology &amp; Pathology Laboratory System</div>}
             </div>
 
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>

@@ -33,11 +33,11 @@ const solid = (bg: string): React.CSSProperties => ({
   padding: 16,
 });
 const kicker: React.CSSProperties = {
-  fontSize: 10,
-  fontWeight: 500,
-  letterSpacing: '0.06em',
+  fontSize: 12,
+  fontWeight: 700,
+  letterSpacing: '0.05em',
   textTransform: 'uppercase',
-  color: '#9ca3af',
+  color: '#334155',
 };
 
 /**
@@ -99,8 +99,8 @@ export function HeroBanner({
           <div key={chip.label} style={{ ...(CHIP_BG[i] ? solid(CHIP_BG[i]!) : glass), flex: '1 1 0', minWidth: 150 }}>
             <div style={kicker}>{chip.label}</div>
             <div style={{ marginTop: 6, display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>{chip.value}</span>
-              {chip.delta ? <span style={{ fontSize: 12, fontWeight: 600, color: '#6366f1' }}>{chip.delta}</span> : null}
+              <span style={{ fontSize: 30, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>{chip.value}</span>
+              {chip.delta ? <span style={{ fontSize: 13, fontWeight: 700, color: '#4f46e5' }}>{chip.delta}</span> : null}
             </div>
           </div>
         ))}
