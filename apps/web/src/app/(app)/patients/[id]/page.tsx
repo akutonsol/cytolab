@@ -181,8 +181,8 @@ export default function PatientProfilePage() {
           <div style={{ position: 'relative', zIndex: 3 }} className="flex items-start justify-between px-7 pt-6">
             <span className="text-[12px] font-medium text-[#6B7280]">Patient<br />profile</span>
             <div className="relative flex items-center gap-2">
-              <button aria-label="Star" onClick={() => setStarred((v) => !v)} className={`${iconBtn} bg-white/80 ${starred ? 'text-[#f59e0b]' : 'text-[#6b7280] hover:text-[#111827]'}`}>
-                <Star size={16} fill={starred ? '#f59e0b' : 'none'} />
+              <button aria-label="Star" onClick={() => setStarred((v) => !v)} className={`${iconBtn} bg-white/80 ${starred ? 'text-[#4f46e5]' : 'text-[#6b7280] hover:text-[#111827]'}`}>
+                <Star size={16} fill={starred ? '#4f46e5' : 'none'} />
               </button>
               <button aria-label="More" onClick={() => setMenuOpen((v) => !v)} className={`${iconBtn} bg-white/80 text-[#6b7280] hover:text-[#111827]`}><MoreHorizontal size={16} /></button>
               {menuOpen && (
