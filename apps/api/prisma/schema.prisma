@@ -1339,3 +1339,18 @@ enum AppointmentStatus {
   MISSED
   CANCELLED
 }
+
+// ─── System Health (internal) ────────────────────────────────────────────────
+// Audit trail of automated-maintenance runs (superuser dashboard + nightly cron).
+// Global (not lab-scoped): maintenance operates across every lab.
+
+model MaintenanceLog {
+  id       String   @id @default(cuid())
+  ranAt    DateTime @default(now())
+  ranBy    String? // userId, or 'system' for the cron run
+  duration Int // ms
+  results  Json // { flagged, archived, missedClosed, ... }
+  notes    String?
+
+  @@index([ranAt])
+}

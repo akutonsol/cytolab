@@ -39,6 +39,9 @@ const SPECIAL_OBJECTS: Record<string, string[]> = {
   notification: ['view', 'delete'],
   applicationprefs: ['view', 'change', 'reports', 'dashboard'],
   accountprefs: ['view', 'change'],
+  // Internal System Health dashboard — intentionally assigned to NO default role,
+  // so only super roles (which bypass the permission guard) can reach it.
+  system: ['health'],
 };
 
 async function main() {

@@ -1,6 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LabContextMiddleware } from './common/tenancy/lab-context.middleware';
 import { TenancyModule } from './common/tenancy/tenancy.module';
@@ -28,6 +29,7 @@ import { PortalModule } from './modules/portal/portal.module';
 import { ChangeRequestsModule } from './modules/change-requests/change-requests.module';
 import { MessagingModule } from './modules/messaging/messaging.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
+import { SystemModule } from './modules/system/system-health.module';
 
 /**
  * Cytolab modular monolith.
@@ -43,6 +45,7 @@ import { AppointmentsModule } from './modules/appointments/appointments.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     TenancyModule,
     PrismaModule,
@@ -68,6 +71,7 @@ import { AppointmentsModule } from './modules/appointments/appointments.module';
     ChangeRequestsModule,
     MessagingModule,
     AppointmentsModule,
+    SystemModule,
   ],
   controllers: [HealthController],
   providers: [
