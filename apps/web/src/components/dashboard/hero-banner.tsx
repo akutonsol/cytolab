@@ -12,10 +12,26 @@ export interface HeroFeatured {
   status: string;
 }
 
+const glass: React.CSSProperties = {
+  borderRadius: 24,
+  border: '1px solid rgba(255,255,255,0.7)',
+  background: 'rgba(255,255,255,0.8)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
+  boxShadow: '0 1px 2px rgba(16,24,40,0.06)',
+  padding: 16,
+};
+const kicker: React.CSSProperties = {
+  fontSize: 10,
+  fontWeight: 500,
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+  color: '#9ca3af',
+};
+
 /**
- * Dashboard hero (ported + adapted from the v0 template). The persistent nav /
- * top bar lives in the app layout, so this hero carries only the greeting, the
- * active-specimen widget and the KPI chips — all bound to real lab data.
+ * Dashboard hero. Nav lives in the app top bar, so this carries only the
+ * greeting, the active-specimen widget and the KPI chips — all real lab data.
  */
 export function HeroBanner({
   firstName,
@@ -27,49 +43,46 @@ export function HeroBanner({
   chips: HeroChip[];
 }) {
   return (
-    <section className="relative flex flex-col gap-8">
-      <div className="shrink-0 space-y-1">
-        <p className="text-lg font-medium text-[var(--muted-foreground)]">Hi, {firstName}!</p>
-        <p className="text-4xl font-bold tracking-tight text-[var(--foreground)] lg:text-5xl">Welcome Back</p>
+    <section>
+      {/* Row 1 — greeting (left, full width) */}
+      <div>
+        <p style={{ fontSize: 15, color: '#6b7280', fontWeight: 400, margin: '0 0 4px' }}>Hi, {firstName}!</p>
+        <h1 style={{ fontSize: 52, fontWeight: 800, letterSpacing: '-0.03em', color: '#0f172a', lineHeight: 1.0, margin: 0 }}>
+          Welcome Back
+        </h1>
       </div>
 
-      <div className="grid gap-4 pt-1 lg:grid-cols-[auto_1fr] lg:items-stretch">
-        {/* Active specimen */}
-        <div className="flex items-center gap-4 rounded-3xl border border-white/70 bg-white/85 p-4 shadow-[0_12px_40px_-12px_rgba(80,70,160,0.25)] backdrop-blur-md">
-          <div className="relative h-24 w-14 shrink-0">
-            <Image src="/specimen-tube.png" alt="Specimen tube" fill className="object-contain" />
-          </div>
-          <div className="min-w-0 space-y-0.5">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--muted-foreground)]">Active Specimen</p>
+      {/* Row 2 — active specimen + KPI chips in one horizontal row */}
+      <div style={{ display: 'flex', gap: 16, marginTop: 32, flexWrap: 'wrap' }}>
+        <div style={{ ...glass, display: 'flex', gap: 12, alignItems: 'center', flex: '0 0 auto', minWidth: 250 }}>
+          <Image src="/specimen-tube.png" alt="" width={48} height={96} style={{ objectFit: 'contain', flexShrink: 0 }} />
+          <div style={{ minWidth: 0 }}>
+            <div style={kicker}>Active Specimen</div>
             {featured ? (
               <>
-                <p className="font-mono text-sm font-semibold text-[var(--foreground)]">{featured.labNumber ?? '—'}</p>
-                <p className="truncate text-xs text-[var(--muted-foreground)]">{featured.patient}</p>
-                <span className="mt-1 inline-flex items-center rounded-full bg-[var(--primary-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--primary)]">
+                <div style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 14, fontWeight: 600, color: '#0f172a', marginTop: 2 }}>
+                  {featured.labNumber ?? '—'}
+                </div>
+                <div style={{ fontSize: 12, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{featured.patient}</div>
+                <span style={{ display: 'inline-block', marginTop: 6, borderRadius: 999, background: 'rgba(99,102,241,0.1)', color: '#6366f1', fontSize: 11, fontWeight: 600, padding: '2px 8px' }}>
                   {featured.status}
                 </span>
               </>
             ) : (
-              <p className="text-xs text-[var(--muted-foreground)]">No open cases today</p>
+              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>No open cases today</div>
             )}
           </div>
         </div>
 
-        {/* KPI chips */}
-        <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {chips.map((chip) => (
-            <div
-              key={chip.label}
-              className="rounded-3xl border border-white/70 bg-white/85 p-4 shadow-[0_12px_40px_-12px_rgba(80,70,160,0.25)] backdrop-blur-md"
-            >
-              <dt className="text-[11px] font-medium uppercase tracking-wide text-[var(--muted-foreground)]">{chip.label}</dt>
-              <dd className="mt-1.5 flex items-baseline gap-2">
-                <span className="text-2xl font-bold tabular-nums text-[var(--foreground)]">{chip.value}</span>
-                {chip.delta ? <span className="text-xs font-semibold text-[var(--primary)]">{chip.delta}</span> : null}
-              </dd>
+        {chips.map((chip) => (
+          <div key={chip.label} style={{ ...glass, flex: '1 1 0', minWidth: 150 }}>
+            <div style={kicker}>{chip.label}</div>
+            <div style={{ marginTop: 6, display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <span style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>{chip.value}</span>
+              {chip.delta ? <span style={{ fontSize: 12, fontWeight: 600, color: '#6366f1' }}>{chip.delta}</span> : null}
             </div>
-          ))}
-        </dl>
+          </div>
+        ))}
       </div>
     </section>
   );

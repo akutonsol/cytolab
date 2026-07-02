@@ -15,6 +15,7 @@ import { HeroBanner, type HeroChip } from '@/components/dashboard/hero-banner';
 import { OeeDonut, ProgressRing, RadarMetrics, ThroughputComb } from './charts';
 
 const GREEN = '#22c55e', BLUE = '#6366f1', GRAY = '#9ca3af';
+const CANVAS = 'linear-gradient(160deg, #e8ebf4 0%, #eaecf5 50%, #eceff6 100%)';
 
 const relDay = (d: string) => {
   const s = (Date.now() - new Date(d).getTime()) / 1000;
@@ -37,9 +38,6 @@ const CHIPS = [
   { bg: '#dfe3ec', fg: '#5b6472', Icon: FlaskConical },
   { bg: '#e6e1f2', fg: '#6b5ca0', Icon: Truck },
 ];
-
-const PAGE_GRADIENT = 'linear-gradient(160deg,oklch(0.9 0.012 255),oklch(0.92 0.01 260) 55%,oklch(0.93 0.008 265))';
-const PAGE_BG = 'bg-[linear-gradient(160deg,oklch(0.9_0.012_255),oklch(0.92_0.01_260)_55%,oklch(0.93_0.008_265))]';
 
 function SeeAll({ label = 'See all', onClick }: { label?: string; onClick?: () => void }) {
   return <button onClick={onClick} className="text-xs font-semibold text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]">{label}</button>;
@@ -67,6 +65,38 @@ function Stat({ value, label, dot }: { value: React.ReactNode; label: string; do
   );
 }
 
+// Dominant DNA-helix backdrop flowing from the top-right. `background-blend-mode:
+// multiply` knocks the white PNG background out against a full-cover copy of the
+// canvas gradient — self-contained and seamless (avoids the transparent-hole
+// artifact that next/image + mix-blend-mode leaves in this stack).
+function DnaBackdrop() {
+  return (
+    <>
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
+          backgroundImage: `url(/dna-helix.png), ${CANVAS}`,
+          backgroundBlendMode: 'multiply, normal',
+          backgroundRepeat: 'no-repeat, no-repeat',
+          backgroundPosition: 'right -10px top -10px, center',
+          backgroundSize: '62% auto, cover',
+        }}
+      />
+      {/* Radial vignette feathers the helix image's rectangular edges (its non-white
+          glow/corners) into the canvas — strong in the top-right corner, fading toward
+          the centre exactly like the reference tail. */}
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute', top: 0, right: 0, width: '72%', height: 720, zIndex: 0, pointerEvents: 'none',
+          background: 'radial-gradient(78% 78% at 100% 0%, transparent 42%, #eaecf5 78%)',
+        }}
+      />
+    </>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { claims } = useAuth();
@@ -84,9 +114,12 @@ export default function DashboardPage() {
   if (isError) return <div className="p-2 text-sm text-text-secondary">Dashboard is unavailable right now.</div>;
   if (isLoading || !d) {
     return (
-      <div className={`dashboard-theme relative isolate -m-4 min-h-full overflow-hidden p-6 md:-m-8 md:p-8 lg:p-10 ${PAGE_BG}`}>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+      <div className="dashboard-theme -m-4 md:-m-8" style={{ minHeight: '100vh', background: CANVAS, position: 'relative', overflow: 'hidden' }}>
+        <DnaBackdrop />
+        <div style={{ position: 'relative', zIndex: 1, padding: '36px 40px 40px' }}>
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
         </div>
       </div>
     );
@@ -101,37 +134,21 @@ export default function DashboardPage() {
     ? { labNumber: ov.featured.labNumber, patient: ov.featured.patient, status: ov.featured.status }
     : null;
 
-  const seriesSum = Array.isArray(d.throughput.series) ? d.throughput.series.reduce((a: number, s: any) => a + (s.value ?? 0), 0) : 0;
   const chips: HeroChip[] = [
-    { label: 'Cases Today', value: ov?.today?.requisitionsToday ?? seriesSum },
+    { label: 'Cases Today', value: ov?.today?.requisitionsToday ?? 0 },
     { label: 'Turnaround', value: `${ov?.kpis?.avgTat ?? 0}d` },
-    { label: 'Pending Review', value: ov?.kpis?.pendingRequisitions ?? d.priorityRecords.length },
-    { label: 'On-time', value: `${eff.onTime}%`, delta: `${up ? '+' : ''}${d.throughput.deltaPct}%` },
+    { label: 'Pending Review', value: ov?.kpis?.pendingRequisitions ?? 0 },
+    { label: 'On-time', value: `${eff.onTime ?? 0}%`, delta: `${up ? '+' : ''}${d.throughput.deltaPct}%` },
   ];
 
   return (
-    <div className={`dashboard-theme relative -m-4 min-h-full overflow-hidden p-6 md:-m-8 md:p-8 lg:p-10 ${PAGE_BG}`}>
-      {/* Full-bleed DNA helix backdrop flowing across the hero. `background-blend-mode:
-          multiply` blends the white-background PNG against a full-cover copy of the page
-          gradient (bottom layer), knocking the white out cleanly and seamlessly — this is
-          self-contained, avoiding the mix-blend / next-image stacking issues that left a
-          transparent hole. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-0"
-        style={{
-          backgroundImage: `url(/dna-helix.png), ${PAGE_GRADIENT}`,
-          backgroundBlendMode: 'multiply, normal',
-          backgroundRepeat: 'no-repeat, no-repeat',
-          backgroundPosition: 'right -40px top -40px, center',
-          backgroundSize: '620px 620px, cover',
-        }}
-      />
+    <div className="dashboard-theme -m-4 md:-m-8" style={{ minHeight: '100vh', background: CANVAS, position: 'relative', overflow: 'hidden' }}>
+      <DnaBackdrop />
 
-      <div className="relative flex flex-col gap-8">
+      <div style={{ position: 'relative', zIndex: 1, padding: '36px 40px 40px' }}>
         <HeroBanner firstName={firstName} featured={featured} chips={chips} />
 
-        <div className="grid grid-cols-1 gap-5 md:gap-6 lg:grid-cols-3">
+        <div style={{ marginTop: 40 }} className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           {/* Priority Queue */}
           <GlassCard title="Priority Queue" action={<SeeAll onClick={() => router.push('/records')} />}>
             <div className="flex flex-col divide-y divide-[var(--border-soft)]">
@@ -244,7 +261,7 @@ export default function DashboardPage() {
 
 function SkeletonCard() {
   return (
-    <div className="rounded-3xl border border-white/80 bg-[var(--card)] p-6 shadow-[0_12px_40px_-12px_rgba(80,70,160,0.25)]">
+    <div style={{ background: '#ffffff', borderRadius: 24, border: '1px solid rgba(255,255,255,0.8)', boxShadow: '0 12px 40px -12px rgba(80,70,160,0.2)', padding: 24 }}>
       <Skeleton active paragraph={{ rows: 6 }} />
     </div>
   );

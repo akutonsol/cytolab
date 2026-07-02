@@ -1,39 +1,42 @@
-import type { ReactNode } from 'react';
-import { cn } from '@/components/ui/cn';
+import type { CSSProperties, ReactNode } from 'react';
 
 /**
- * Glassmorphic dashboard card (ported from the v0 template). Renders a centred
- * title with an optional right-aligned action, over the v0 indigo card surface.
- * Color tokens resolve from the scoped `.dashboard-theme` wrapper (globals.css).
+ * Dashboard card — white surface, centred title, soft indigo drop shadow
+ * (matches the reference dashboard). Optional right-aligned action.
  */
 export function GlassCard({
   title,
-  description,
+  subtitle,
   action,
-  className,
+  style,
   children,
 }: {
   title: ReactNode;
-  description?: string;
+  subtitle?: string;
   action?: ReactNode;
-  className?: string;
+  style?: CSSProperties;
   children: ReactNode;
 }) {
   return (
     <section
-      className={cn(
-        'relative flex flex-col rounded-3xl border border-white/80 bg-[var(--card)] p-5 shadow-[0_12px_40px_-12px_rgba(80,70,160,0.25)] md:p-6',
-        className,
-      )}
+      style={{
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        background: '#ffffff',
+        borderRadius: 24,
+        border: '1px solid rgba(255,255,255,0.8)',
+        boxShadow: '0 12px 40px -12px rgba(80,70,160,0.2)',
+        padding: 24,
+        ...style,
+      }}
     >
-      <header className="relative flex items-start justify-center gap-3">
-        <div className="space-y-0.5 text-center">
-          <h2 className="text-base font-semibold tracking-tight text-[var(--foreground)]">{title}</h2>
-          {description ? <p className="text-xs text-[var(--muted-foreground)]">{description}</p> : null}
-        </div>
-        {action ? <div className="absolute right-0 top-0">{action}</div> : null}
-      </header>
-      <div className="mt-5 flex-1">{children}</div>
+      <div style={{ position: 'relative', textAlign: 'center', marginBottom: 20 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 600, color: '#374151', margin: 0 }}>{title}</h2>
+        {subtitle ? <p style={{ fontSize: 12, color: '#9ca3af', margin: '2px 0 0' }}>{subtitle}</p> : null}
+        {action ? <div style={{ position: 'absolute', right: 0, top: 0 }}>{action}</div> : null}
+      </div>
+      <div style={{ flex: 1 }}>{children}</div>
     </section>
   );
 }
