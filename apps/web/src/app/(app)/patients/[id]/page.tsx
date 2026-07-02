@@ -18,7 +18,10 @@ const STAGE: Record<string, { label: string; pct: number }> = {
 };
 const OPEN = ['Pending', 'Submitted', 'Processing', 'Partial', 'Completed', 'Resulted'];
 const AUTHORIZED = ['Approved', 'Billed', 'Paid'];
-const FINDINGS = ['Approved', 'Resulted'];
+const FINDINGS = ['Approved', 'Billed', 'Paid', 'Resulted'];
+const examName = (ft?: string | null) => (ft === 'Gynecology' ? 'Gynecology Cytology' : ft === 'NonGynecology' ? 'Non-Gynecology Cytology' : 'Cytology Examination');
+const THUMB_GYN = 'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=120&q=80';
+const THUMB_NONGYN = 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=120&q=80';
 const SPECIMEN: Record<string, string> = {
   ENDOCERV_ASP: 'Endocervical asp.', CERV_SCRAP: 'Cervical scrape', VAG_POOL: 'Vaginal pool', URINE: 'Urine cytology',
   CSF: 'CSF', PLEURAL_FLD: 'Pleural fluid', BREAST_ASP: 'Breast asp.', JOINT_ASP: 'Joint asp.', SYNOVIAL_FLD: 'Synovial fluid', OTHER: 'Other',
@@ -58,6 +61,24 @@ interface Rec {
   client?: { firstName: string; lastName: string; officeName?: string | null } | null;
   specimens?: Array<{ id: string; type: string }>;
   statusHistory?: Array<{ status: string; createdAt: string; user?: { firstName: string; lastName: string } | null }>;
+}
+
+const approvedAt = (r: Rec) => [...(r.statusHistory ?? [])].filter((e) => e.status === 'Approved').sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))[0]?.createdAt;
+const turnaround = (r: Rec) => {
+  const a = approvedAt(r);
+  const end = a ? +new Date(a) : Date.now();
+  return Math.max(0, Math.floor((end - +new Date(r.createdAt)) / 86_400_000));
+};
+
+/* Completed-finding ring: both rings solid (indigo outer, green inner), TAT centre. */
+function FindingRing({ days }: { days: number }) {
+  return (
+    <svg width={56} height={56} viewBox="0 0 56 56" className="shrink-0">
+      <circle cx={28} cy={28} r={22} fill="none" stroke="#4F46E5" strokeWidth={4} />
+      <circle cx={28} cy={28} r={16} fill="none" stroke="#22C55E" strokeWidth={3.5} />
+      <text x="50%" y="50%" dy="0.35em" textAnchor="middle" fontSize="11" fontWeight="700" fill="#111827">{days}d</text>
+    </svg>
+  );
 }
 
 /* Layered progress ring: outer indigo arc + inner green arc (44px). */
@@ -104,7 +125,7 @@ export default function PatientProfilePage() {
   const id = useParams<{ id: string }>().id;
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
-  const [expanded, setExpanded] = useState<string>();
+  const [expandedExamId, setExpandedExamId] = useState<string | null>(null);
   const [starred, setStarred] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -130,7 +151,8 @@ export default function PatientProfilePage() {
   const latest = rows[0];
   const openRecs = rows.filter((r) => OPEN.includes(r.status));
   const authorized = rows.filter((r) => AUTHORIZED.includes(r.status));
-  const findings = rows.filter((r) => FINDINGS.includes(r.status)).slice(0, 5);
+  const findings = rows.filter((r) => FINDINGS.includes(r.status)).slice(0, 3);
+  const exams = rows.slice(0, 5);
 
   const filtered = useMemo(() => {
     if (!q) return rows;
@@ -227,34 +249,30 @@ export default function PatientProfilePage() {
           </div>
         </section>
 
-        {/* ══ OPEN REQUISITIONS ══ */}
+        {/* ══ CURRENT FINDINGS ══ */}
         <section className={`flex flex-col bg-white p-5 ${CARD}`}>
           <div className="flex items-center justify-between">
-            <h2 className="text-[16px] font-bold text-[#111827]">Open requisitions</h2>
+            <h2 className="text-[16px] font-bold text-[#111827]">Current findings</h2>
             <div className="flex items-center gap-2">
               <button aria-label="Add" className={`${iconBtn} border border-[#EEF2F7] text-[#6b7280] hover:text-[#111827]`}><Plus size={16} /></button>
               <button onClick={() => router.push('/records')} aria-label="Open" className={`${iconBtn} bg-[#4f46e5] text-white hover:bg-[#4338ca]`}><ArrowUpRight size={16} /></button>
             </div>
           </div>
           <div className="mt-2 flex flex-col">
-            {openRecs.length === 0 && <div className="py-8 text-center text-[13px] text-[#9CA3AF]">No open requisitions.</div>}
-            {openRecs.slice(0, 4).map((r) => (
+            {findings.length === 0 && <div className="py-8 text-center text-[13px] text-[#9CA3AF]">No completed findings yet</div>}
+            {findings.map((r) => (
               <div key={r.id} className="flex items-center gap-3 border-b border-[#F3F4F6] py-3.5 last:border-b-0">
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate text-[14px] font-bold text-[#111827]">{r.labNumber ?? '—'}</span>
-                    <span className="shrink-0 rounded-full bg-[#eef2ff] px-1.5 py-0.5 text-[10px] font-bold text-[#4f46e5]">{typeChip(r.formType)}</span>
-                  </div>
-                  <div className="mt-1 text-[12px] text-[#9CA3AF]">Received · {dmy(r.specimenDate ?? r.createdAt)}</div>
-                  <div className={`text-[12px] font-semibold ${r.urgent ? 'text-[#dc2626]' : 'text-[#6b7280]'}`}>{r.urgent ? 'Urgent' : specLabel(r.specimens?.[0]?.type)}</div>
+                  <div className="truncate text-[14px] font-semibold text-[#111827]">{r.clinicalDiagnosis || (r.specimens?.[0]?.type ? specLabel(r.specimens[0].type) : r.formType ? (r.formType === 'Gynecology' ? 'Gyn' : 'Non-Gyn') : '—')}</div>
+                  <div className="mt-0.5 truncate text-[12px] text-[#9CA3AF]">{r.labNumber ?? '—'} · {dmy(approvedAt(r) ?? r.specimenDate ?? r.createdAt)}</div>
+                  {r.urgent
+                    ? <span className="mt-1 inline-block rounded-[6px] bg-[#fee2e2] px-2 py-0.5 text-[11px] font-bold text-[#dc2626]">Urgent</span>
+                    : <div className="mt-0.5 text-[11px] text-[#9CA3AF]">{specLabel(r.specimens?.[0]?.type)}</div>}
                 </div>
-                <DualRing pct={STAGE[r.status]?.pct ?? 0} days={daysSince(r.specimenDate ?? r.createdAt)} done={r.status === 'Approved'} />
+                <FindingRing days={turnaround(r)} />
               </div>
             ))}
           </div>
-          {openRecs.length > 4 && (
-            <button onClick={() => router.push('/records')} className="mt-3 self-start text-[13px] font-bold text-[#4f46e5] hover:underline">View all →</button>
-          )}
         </section>
 
         {/* ══ RECORD HISTORY ══ */}
@@ -308,41 +326,45 @@ export default function PatientProfilePage() {
           </div>
         </section>
 
-        {/* ══ RECENT FINDINGS ══ */}
+        {/* ══ CURRENT EXAMINATIONS ══ */}
         <section className={`flex flex-col p-5 ${CARD}`} style={{ background: '#F0F0FF' }}>
           <div className="flex items-center justify-between">
-            <h2 className="text-[18px] font-bold text-[#111827]">Recent findings</h2>
-            <button aria-label="Add finding" className="grid h-8 w-8 place-items-center rounded-full bg-[#111827] text-white hover:bg-black"><Plus size={16} /></button>
+            <h2 className="text-[18px] font-bold text-[#111827]">Current examinations</h2>
+            <button aria-label="Add examination" className="grid h-8 w-8 place-items-center rounded-full bg-[#111827] text-white hover:bg-black"><Plus size={16} /></button>
           </div>
           <div className="mt-3 flex flex-col">
-            {findings.length === 0 && <div className="py-8 text-center text-[13px] text-[#9CA3AF]">No findings yet.</div>}
-            {findings.map((r) => {
-              const open = expanded === r.id;
+            {exams.length === 0 && <div className="py-8 text-center text-[13px] text-[#9CA3AF]">No examinations yet.</div>}
+            {exams.map((r) => {
+              const open = expandedExamId === r.id;
+              const nongyn = r.formType === 'NonGynecology';
+              const thumb = nongyn ? THUMB_NONGYN : THUMB_GYN;
+              const tint = nongyn ? '#EEF3FF' : '#FFF0F5';
+              const clientNm = r.client ? (r.client.officeName || `${r.client.firstName} ${r.client.lastName}`.trim()) : 'Lab';
+              const clientInit = (r.client?.officeName?.[0] ?? r.client?.firstName?.[0] ?? 'L').toUpperCase();
               return (
                 <div key={r.id} className="border-b py-3.5 last:border-b-0" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
                   <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="truncate text-[14px] font-bold text-[#111827]">{r.labNumber ?? '—'}</div>
-                      <div className="mt-0.5 flex items-center gap-2 text-[12px] text-[#6b7280]">{dmy(r.specimenDate ?? r.createdAt)} · <StatusBadge s={r.status} /></div>
-                    </div>
-                    <button aria-label={open ? 'Collapse' : 'Expand'} onClick={() => setExpanded(open ? undefined : r.id)}
+                    <div className="truncate text-[14px] font-bold text-[#111827]">{examName(r.formType)}</div>
+                    <button aria-label={open ? 'Collapse' : 'Expand'} onClick={() => setExpandedExamId(open ? null : r.id)}
                       className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-[#4f46e5] shadow-sm"
                       style={{ transform: open ? 'rotate(45deg)' : 'none', transition: 'transform .15s ease' }}>
                       <Plus size={15} />
                     </button>
                   </div>
+                  <div className="mt-1 flex items-center gap-2 text-[12px] text-[#6b7280]">{dmy(r.specimenDate ?? r.createdAt)} · <StatusBadge s={r.status} /></div>
                   {open && (
-                    <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        {(r.specimens ?? []).length === 0 && <span className="text-[12px] text-[#9CA3AF]">No specimens</span>}
-                        {(r.specimens ?? []).map((s) => (
-                          <span key={s.id} style={{ background: '#EEF3FF', color: '#4F46E5', borderRadius: 999, padding: '3px 10px', fontSize: 11, fontWeight: 600 }}>{specLabel(s.type)}</span>
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+                        {[0, 1, 2].map((i) => (
+                          <div key={i} style={{ width: 54, height: 54, borderRadius: 10, overflow: 'hidden', position: 'relative', background: tint, flexShrink: 0 }}>
+                            <Image src={thumb} alt="" fill unoptimized sizes="54px" style={{ objectFit: 'cover' }} />
+                          </div>
                         ))}
+                        <button onClick={() => router.push(`/records/${r.id}`)} style={{ flex: 1, minWidth: 60, background: '#111827', color: 'white', borderRadius: 10, fontSize: 11, fontWeight: 600, lineHeight: 1.2, border: 'none', cursor: 'pointer' }}>Open full list</button>
                       </div>
-                      <button onClick={() => router.push(`/records/${r.id}`)} style={{ width: '100%', background: '#111827', color: 'white', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}>View report</button>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#F5F5FF', borderRadius: 10 }}>
-                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#4F46E5', color: 'white', display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{doctor(r) === '—' ? '?' : initials(doctor(r))}</div>
-                        <span style={{ fontSize: 13, fontWeight: 500, color: '#374151', flex: 1 }}>{doctor(r)}</span>
+                      <div style={{ marginTop: 8, background: '#F5F5FF', borderRadius: 10, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#4F46E5', color: 'white', display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{clientInit}</div>
+                        <span className="truncate" style={{ fontSize: 13, fontWeight: 500, color: '#374151', flex: 1 }}>{clientNm}</span>
                         <span style={{ color: '#9CA3AF' }}>›</span>
                       </div>
                     </div>
