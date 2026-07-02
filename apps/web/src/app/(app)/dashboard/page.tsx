@@ -153,7 +153,7 @@ export default function DashboardPage() {
           <GlassCard title="Priority Queue" action={<SeeAll onClick={() => router.push('/records')} />} style={{ background: 'transparent', backdropFilter: 'none', WebkitBackdropFilter: 'none', border: '1px solid transparent', boxShadow: 'none' }}>
             <div className="flex flex-col divide-y divide-[var(--border-soft)]">
               {d.priorityRecords.length === 0 && <div className="py-6 text-center text-xs text-[var(--muted-foreground)]">Nothing urgent — you&apos;re clear.</div>}
-              {d.priorityRecords.map((r: any, i: number) => {
+              {d.priorityRecords.slice(0, 4).map((r: any, i: number) => {
                 const chip = CHIPS[i % CHIPS.length];
                 return (
                   <div key={r.id} className="flex items-center gap-3 py-4 first:pt-0 last:pb-0">
@@ -222,7 +222,7 @@ export default function DashboardPage() {
           <GlassCard title="Top Clients" action={<SeeAll onClick={() => router.push('/clients')} />}>
             <div className="flex flex-col gap-3">
               {d.topClients.length === 0 && <div className="py-6 text-center text-xs text-[var(--muted-foreground)]">No client volume yet.</div>}
-              {d.topClients.map((c: any, i: number) => (
+              {d.topClients.slice(0, 3).map((c: any, i: number) => (
                 <div key={i} className="flex items-center gap-3 rounded-2xl border border-[#edeef3] bg-white p-4 shadow-[0_1px_3px_rgba(16,24,40,0.05)]">
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[16px] font-bold text-[var(--foreground)]">{c.name}</div>
@@ -242,7 +242,7 @@ export default function DashboardPage() {
           <GlassCard title="Activity" action={<SeeAll label="Clear all" />} style={{ background: '#e8e9f2', backdropFilter: 'none', WebkitBackdropFilter: 'none' }}>
             <div className="flex flex-col gap-3">
               {d.activity.length === 0 && <div className="py-6 text-center text-xs text-[var(--muted-foreground)]">No recent activity.</div>}
-              {d.activity.slice(0, 4).map((a: any, i: number) => (
+              {d.activity.slice(0, 3).map((a: any, i: number) => (
                 <div key={i} className="flex items-start gap-3 rounded-2xl border border-[#edeef3] bg-white p-3.5 shadow-[0_1px_3px_rgba(16,24,40,0.05)]">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
