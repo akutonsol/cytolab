@@ -4,8 +4,8 @@ import { createElement, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Drawer, Dropdown, Grid, Menu, Spin, Typography } from 'antd';
 import {
-  BellOutlined, DownOutlined, LogoutOutlined, MenuOutlined, PlusOutlined,
-  SearchOutlined, SettingOutlined,
+  BellOutlined, DownOutlined, LogoutOutlined, MenuOutlined, MessageOutlined,
+  ReadOutlined, SearchOutlined, SettingOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { Microscope } from 'lucide-react';
@@ -149,8 +149,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
               )}
               {quickAdd.items && quickAdd.items.length > 0 && (
-                <Dropdown trigger={['click']} menu={quickAdd}><button aria-label="Quick add" style={iconBtnHero}><PlusOutlined /></button></Dropdown>
+                <Dropdown trigger={['click']} menu={quickAdd}><button aria-label="Quick add" style={iconBtnHero}><ReadOutlined /></button></Dropdown>
               )}
+              <button aria-label="Messages" onClick={() => navigate('/messaging')} style={iconBtnHero}><MessageOutlined /></button>
               <button aria-label="Notifications" style={iconBtnHero}><BellOutlined /></button>
               <button aria-label="Settings" onClick={() => router.push('/settings')} style={iconBtnHero}><SettingOutlined /></button>
             </div>
