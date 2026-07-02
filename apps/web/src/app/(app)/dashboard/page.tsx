@@ -218,8 +218,8 @@ export default function DashboardPage() {
             </div>
           </GlassCard>
 
-          {/* Top Clients */}
-          <GlassCard title="Top Clients" action={<SeeAll onClick={() => router.push('/clients')} />}>
+          {/* Top Clients — no card background */}
+          <GlassCard title="Top Clients" action={<SeeAll onClick={() => router.push('/clients')} />} style={{ background: 'transparent', backdropFilter: 'none', WebkitBackdropFilter: 'none', border: '1px solid transparent', boxShadow: 'none' }}>
             <div className="flex flex-col gap-3">
               {d.topClients.length === 0 && <div className="py-6 text-center text-xs text-[var(--muted-foreground)]">No client volume yet.</div>}
               {d.topClients.slice(0, 3).map((c: any, i: number) => (
