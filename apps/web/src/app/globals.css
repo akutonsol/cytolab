@@ -111,3 +111,23 @@ body {
 .premium-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* ============================================================
+   Dashboard theme (Indigo Enterprise, v0 template) — scoped so it
+   only applies to the dashboard page, not the rest of the app.
+   ============================================================ */
+.dashboard-theme {
+  --background: oklch(0.93 0.022 275);
+  --foreground: oklch(0.28 0.035 278);
+  --card: oklch(0.995 0.004 280);
+  --card-foreground: oklch(0.28 0.035 278);
+  --primary: oklch(0.52 0.19 280);
+  --primary-foreground: oklch(0.99 0.005 280);
+  --primary-soft: oklch(0.52 0.19 280 / 0.1);
+  --muted-foreground: oklch(0.55 0.03 278);
+  --border-soft: oklch(0.9 0.015 278);
+  --accent-from: oklch(0.86 0.07 285);
+  --accent-to: oklch(0.92 0.04 270);
+  --accent-icon: oklch(0.5 0.18 282);
+  --accent-fg: oklch(0.34 0.11 282);
+}

@@ -5,13 +5,13 @@ import {
   RadialBar, RadialBarChart, ReferenceDot, ReferenceLine, ResponsiveContainer, XAxis, YAxis,
 } from 'recharts';
 
-const BLUE = '#4F46E5';
-const BLUE_DEEP = '#4338CA';
-const PURPLE = '#a68fe0';
+const BLUE = '#6366f1';
+const BLUE_DEEP = '#4f46e5';
+const PURPLE = '#a5b4fc';
 const INK = '#0f172a';
 const AXIS = '#6b7280';
 const GRID = '#e8edf4';
-const BAR = '#454b57';
+const BAR = '#e0e7ff';
 
 /* ---- Dense daily throughput "comb": thick charcoal bars; peak = blue lollipop (ref) ---- */
 export function ThroughputComb({ data, height = 280 }: { data: any[]; height?: number }) {
@@ -26,8 +26,8 @@ export function ThroughputComb({ data, height = 280 }: { data: any[]; height?: n
           ticks={ticks} tickFormatter={(i) => data[i]?.label ?? ''} tick={{ fontSize: 13, fill: AXIS, fontWeight: 500 }} dy={8} />
         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 13, fill: AXIS, fontWeight: 500 }} width={36}
           tickFormatter={(v) => (v >= 1000 ? `${v / 1000}K` : `${v}`)} />
-        {peak && <ReferenceLine segment={[{ x: peakIdx, y: 0 }, { x: peakIdx, y: peak.value }]} stroke={BLUE_DEEP} strokeWidth={3} ifOverflow="visible" />}
-        {peak && <ReferenceDot x={peakIdx} y={peak.value} r={6} fill={BLUE_DEEP} stroke="#fff" strokeWidth={2.5} />}
+        {peak && <ReferenceLine segment={[{ x: peakIdx, y: 0 }, { x: peakIdx, y: peak.value }]} stroke={BLUE} strokeWidth={3} ifOverflow="visible" />}
+        {peak && <ReferenceDot x={peakIdx} y={peak.value} r={6} fill={BLUE} stroke="#fff" strokeWidth={2.5} />}
         <Bar dataKey="value" isAnimationActive animationDuration={900} animationEasing="ease-out" maxBarSize={7} radius={[3.5, 3.5, 0, 0]}>
           {data.map((d, i) => <Cell key={i} fill={d.peak ? 'transparent' : BAR} />)}
         </Bar>
@@ -44,9 +44,9 @@ export function RadarMetrics({ data, height = 280 }: { data: any[]; height?: num
         <PolarGrid stroke={GRID} />
         <PolarAngleAxis dataKey="dim" tick={{ fontSize: 13, fill: AXIS, fontWeight: 600 }} />
         <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10, fill: '#b8bec9' }} tickCount={3} axisLine={false} />
-        <Radar name="Last period" dataKey="previous" stroke={INK} fill={INK} fillOpacity={0.05} strokeWidth={2}
-          isAnimationActive animationDuration={900} dot={{ r: 4, fill: '#fff', stroke: INK, strokeWidth: 2 }} />
-        <Radar name="This period" dataKey="current" stroke={BLUE} fill={BLUE} fillOpacity={0.18} strokeWidth={2.5}
+        <Radar name="Last period" dataKey="previous" stroke="#d1d5db" fill="#d1d5db" fillOpacity={0.08} strokeWidth={2}
+          isAnimationActive animationDuration={900} dot={{ r: 4, fill: '#fff', stroke: '#d1d5db', strokeWidth: 2 }} />
+        <Radar name="This period" dataKey="current" stroke={BLUE} fill={BLUE} fillOpacity={0.12} strokeWidth={2.5}
           isAnimationActive animationDuration={1000} dot={{ r: 4.5, fill: '#fff', stroke: BLUE, strokeWidth: 2 }} />
       </RadarChart>
     </ResponsiveContainer>
