@@ -15,7 +15,7 @@ import { HeroBanner, type HeroChip } from '@/components/dashboard/hero-banner';
 import { NavPills } from '@/components/dashboard/nav-pills';
 import { OeeDonut, ProgressRing, RadarMetrics, ThroughputComb } from './charts';
 
-const GREEN = '#22c55e', ORANGE = '#f1592b', PURPLE = '#8b5cf6';
+const GREEN = '#22c55e', BLUE = '#4f7df9', PURPLE = '#8b5cf6';
 // The page is transparent so it shows the layout's single shared canvas gradient
 // (top bar + content are one continuous surface, no seam). The DNA PNG has a
 // transparent background, so it overlays the gradient directly.
@@ -31,7 +31,7 @@ const dateShort = (d: string) => new Date(d).toLocaleDateString(undefined, { mon
 const dateTime = (d: string) => new Date(d).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const dotFor = (status: string) =>
   ['Approved', 'Completed', 'Paid', 'Billed'].includes(status) ? GREEN
-    : ['Deauthorized', 'Failed', 'Disabled'].includes(status) ? '#ef4444' : ORANGE;
+    : ['Deauthorized', 'Failed', 'Disabled'].includes(status) ? '#ef4444' : BLUE;
 
 // Varied light icon chips (grey / sage / tan / blue-gray / lavender) with
 // patient/cytology-appropriate icons, cycled per row.
@@ -194,7 +194,7 @@ export default function DashboardPage() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2.5">
                   <span className="text-[34px] font-extrabold leading-none tracking-tight text-[var(--foreground)]">{d.throughput.headlinePct}%</span>
-                  <span className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold text-white" style={{ background: ORANGE }}>
+                  <span className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold text-white" style={{ background: BLUE }}>
                     {up ? <TrendingUp size={15} /> : <TrendingDown size={15} />}{Math.abs(d.throughput.deltaPct)}%
                   </span>
                 </div>
@@ -204,7 +204,7 @@ export default function DashboardPage() {
               <div className="lg:w-[40%]">
                 <RadarMetrics data={d.radar} height={260} />
                 <div className="mt-1 flex items-center justify-center gap-6">
-                  <span className="flex items-center gap-2 text-[13px] font-semibold text-[var(--foreground)]"><span className="h-3 w-3 rounded-full" style={{ background: ORANGE }} /> This period</span>
+                  <span className="flex items-center gap-2 text-[13px] font-semibold text-[var(--foreground)]"><span className="h-3 w-3 rounded-full" style={{ background: BLUE }} /> This period</span>
                   <span className="flex items-center gap-2 text-[13px] font-semibold text-[var(--foreground)]"><span className="h-3 w-3 rounded-full" style={{ background: '#2b2d31' }} /> Last period</span>
                 </div>
               </div>
@@ -217,7 +217,7 @@ export default function DashboardPage() {
               <OeeDonut value={eff.oee} inner={eff.authorization} size={196} />
               <div className="grid flex-1 grid-cols-2 gap-x-5 gap-y-6" style={{ minWidth: 200 }}>
                 <Stat value={`${eff.onTime}%`} label="On-time" dot={PURPLE} />
-                <Stat value={`${eff.authorization}%`} label="Authorization" dot={ORANGE} />
+                <Stat value={`${eff.authorization}%`} label="Authorization" dot={BLUE} />
                 <Stat value={`${eff.accuracy}%`} label="Accuracy" dot={PURPLE} />
                 <Stat value={eff.specimensProcessed} label="Specimens" />
                 <Stat value={eff.reportsAuthorized} label="Authorized" />

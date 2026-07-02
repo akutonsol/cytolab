@@ -6,8 +6,8 @@ import {
 } from 'recharts';
 import { CHART } from '@/components/ui';
 
-const ORANGE = '#f1592b';
-const ORANGE_DEEP = '#dc4718';
+const BLUE = '#4f7df9';
+const BLUE_DEEP = '#2e5ce6';
 const DEFICIT_GRAY = '#d8dee9';
 const LANE = '#f1f4f9';
 
@@ -24,7 +24,7 @@ function VolTooltip({ active, payload, label }: any) {
     <div style={{ background: CHART.ink, color: '#fff', borderRadius: 12, padding: '10px 12px', boxShadow: '0 8px 24px rgba(16,24,40,.18)' }}>
       <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600 }}>
-        <span style={{ width: 8, height: 8, borderRadius: 999, background: ORANGE }} /> Actual <span style={{ marginLeft: 20 }}>{(row.actual ?? 0).toLocaleString()}</span>
+        <span style={{ width: 8, height: 8, borderRadius: 999, background: BLUE }} /> Actual <span style={{ marginLeft: 20 }}>{(row.actual ?? 0).toLocaleString()}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600, marginTop: 4 }}>
         <span style={{ width: 8, height: 8, borderRadius: 999, background: '#cbd5e1' }} /> Below target <span style={{ marginLeft: 20 }}>{(row.deficit ?? 0).toLocaleString()}</span>
@@ -42,7 +42,7 @@ export function DivergingBars({ data, currentMonth, height = 540 }: { data: any[
   const YTick = (props: any) => {
     const cur = props.payload.value === currentMonth;
     return (
-      <text x={props.x - 6} y={props.y} dy={4} textAnchor="end" fontSize={14.5} fontWeight={cur ? 800 : 700} fill={cur ? ORANGE : CHART.axis}>
+      <text x={props.x - 6} y={props.y} dy={4} textAnchor="end" fontSize={14.5} fontWeight={cur ? 800 : 700} fill={cur ? BLUE : CHART.axis}>
         {props.payload.value}
       </text>
     );
@@ -75,19 +75,19 @@ export function DivergingBars({ data, currentMonth, height = 540 }: { data: any[
         <BarChart layout="vertical" data={rows} stackOffset="sign" margin={{ top: 8, right: 24, bottom: 8, left: 8 }} barCategoryGap="6%">
           <defs>
             <linearGradient id="actualGrad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#f7794f" />
-              <stop offset="100%" stopColor={ORANGE} />
+              <stop offset="0%" stopColor="#7aa0fb" />
+              <stop offset="100%" stopColor={BLUE} />
             </linearGradient>
             <linearGradient id="actualGradCur" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor={ORANGE} />
-              <stop offset="100%" stopColor={ORANGE_DEEP} />
+              <stop offset="0%" stopColor={BLUE} />
+              <stop offset="100%" stopColor={BLUE_DEEP} />
             </linearGradient>
           </defs>
           <CartesianGrid horizontal={false} strokeDasharray="4 5" stroke="#e6eaf2" />
           <XAxis type="number" domain={[-max, max]} ticks={[-max, -half, 0, half, max]} tickFormatter={kfmt} tick={{ fontSize: 13.5, fill: CHART.axis, fontWeight: 600 }} axisLine={false} tickLine={false} />
           <YAxis type="category" dataKey="month" width={40} tick={<YTick />} axisLine={false} tickLine={false} />
           <ReferenceLine x={0} stroke="#dfe4ee" />
-          <Tooltip cursor={{ fill: 'rgba(241,89,43,0.06)' }} content={<VolTooltip />} />
+          <Tooltip cursor={{ fill: 'rgba(79,125,249,0.08)' }} content={<VolTooltip />} />
           {/* full-width pale lane per row (background of the actual bar spans the whole domain) */}
           <Bar dataKey="negDeficit" stackId="a" fill={DEFICIT_GRAY} radius={[16, 16, 16, 16]} isAnimationActive animationDuration={800} animationEasing="ease-out" maxBarSize={52}>
             <LabelList dataKey="deficit" content={DeficitChip} />
@@ -110,7 +110,7 @@ function DualTooltip({ active, payload, label }: any) {
     <div style={{ background: CHART.ink, color: '#fff', borderRadius: 12, padding: '10px 12px', boxShadow: '0 8px 24px rgba(16,24,40,.18)' }}>
       <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600 }}>
-        <span style={{ width: 8, height: 8, borderRadius: 999, background: ORANGE }} /> Volume <span style={{ marginLeft: 24 }}>{vol}</span>
+        <span style={{ width: 8, height: 8, borderRadius: 999, background: BLUE }} /> Volume <span style={{ marginLeft: 24 }}>{vol}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600, marginTop: 4 }}>
         <span style={{ width: 8, height: 8, borderRadius: 999, background: '#111827' }} /> Revenue <span style={{ marginLeft: 24 }}>${kfmt(rev ?? 0)}</span>
@@ -127,8 +127,8 @@ export function DualAreaLine({ data, height = 300 }: { data: any[]; height?: num
         <AreaChart data={data} margin={{ top: 12, right: 8, bottom: 4, left: 4 }}>
           <defs>
             <linearGradient id="volGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={ORANGE} stopOpacity={0.18} />
-              <stop offset="100%" stopColor={ORANGE} stopOpacity={0} />
+              <stop offset="0%" stopColor={BLUE} stopOpacity={0.18} />
+              <stop offset="100%" stopColor={BLUE} stopOpacity={0} />
             </linearGradient>
             <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={CHART.ink} stopOpacity={0.08} />
@@ -142,8 +142,8 @@ export function DualAreaLine({ data, height = 300 }: { data: any[]; height?: num
           <Tooltip content={<DualTooltip />} cursor={{ stroke: CHART.track, strokeDasharray: '4 4' }} />
           <Area yAxisId="r" type="monotone" dataKey="revenue" stroke={CHART.ink} strokeWidth={2.5} fill="url(#revGrad)"
             dot={{ r: 3.5, fill: '#fff', stroke: CHART.ink, strokeWidth: 2 }} activeDot={{ r: 5, fill: '#fff', stroke: CHART.ink, strokeWidth: 2 }} isAnimationActive animationDuration={900} />
-          <Area yAxisId="v" type="monotone" dataKey="volume" stroke={ORANGE} strokeWidth={3} fill="url(#volGrad)"
-            dot={{ r: 4, fill: '#fff', stroke: ORANGE, strokeWidth: 2 }} activeDot={{ r: 5.5, fill: '#fff', stroke: ORANGE, strokeWidth: 2 }} isAnimationActive animationDuration={1000} />
+          <Area yAxisId="v" type="monotone" dataKey="volume" stroke={BLUE} strokeWidth={3} fill="url(#volGrad)"
+            dot={{ r: 4, fill: '#fff', stroke: BLUE, strokeWidth: 2 }} activeDot={{ r: 5.5, fill: '#fff', stroke: BLUE, strokeWidth: 2 }} isAnimationActive animationDuration={1000} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -155,20 +155,20 @@ export function ComplianceLine({ week, height = 168 }: { week: any[]; height?: n
   const data = week.map((w) => ({ day: w.day, pct: w.onTimePct ?? 0, has: w.total > 0 }));
   return (
     <div style={{ width: '100%', position: 'relative' }}>
-      <div style={{ position: 'absolute', top: 2, left: '18%', zIndex: 2, background: ORANGE, color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 999 }}>Delayed</div>
+      <div style={{ position: 'absolute', top: 2, left: '18%', zIndex: 2, background: BLUE, color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 999 }}>Delayed</div>
       <div style={{ position: 'absolute', top: 2, left: '64%', zIndex: 2, background: '#22c55e', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 999 }}>On time</div>
       <ResponsiveContainer width="100%" height={height}>
         <LineChart data={data} margin={{ top: 30, right: 8, bottom: 4, left: 4 }}>
           <defs>
             <linearGradient id="compStroke" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor={ORANGE} />
-              <stop offset="55%" stopColor={ORANGE} />
+              <stop offset="0%" stopColor={BLUE} />
+              <stop offset="55%" stopColor={BLUE} />
               <stop offset="70%" stopColor="#22c55e" />
               <stop offset="100%" stopColor="#22c55e" />
             </linearGradient>
           </defs>
           <CartesianGrid vertical={false} stroke={CHART.grid} />
-          <ReferenceArea x1="Mo" x2="We" fill="#fdeae2" fillOpacity={0.9} />
+          <ReferenceArea x1="Mo" x2="We" fill="#eaf1ff" fillOpacity={0.9} />
           <ReferenceArea x1="Fr" x2="Su" fill="#dcfce7" fillOpacity={0.8} />
           <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 13.5, fill: CHART.axis, fontWeight: 600 }} dy={4} />
           <YAxis hide domain={[0, 100]} />
@@ -176,7 +176,7 @@ export function ComplianceLine({ week, height = 168 }: { week: any[]; height?: n
             dot={(props: any) => {
               const { cx, cy, payload, index } = props;
               if (!payload.has) return <circle key={index} cx={cx} cy={cy} r={3} fill={CHART.track} />;
-              const c = payload.pct >= 60 ? CHART.success : payload.pct >= 40 ? ORANGE : ORANGE_DEEP;
+              const c = payload.pct >= 60 ? CHART.success : payload.pct >= 40 ? BLUE : BLUE_DEEP;
               return <circle key={index} cx={cx} cy={cy} r={5} fill="#fff" stroke={c} strokeWidth={2.5} />;
             }} />
         </LineChart>

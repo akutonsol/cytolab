@@ -10,13 +10,13 @@ import { MiniAreaChart, PillSelect, SectionCard } from '@/components/ui';
 import { ComplianceLine, DivergingBars, DualAreaLine } from './charts';
 
 const money = (n: number) => `$${(n ?? 0).toLocaleString()}`;
-// Subtle card gradient; the AI-insights card gets a stronger orange tint (ref).
+// Subtle card gradient; white insight card with a tinted gradient header (ref).
 const CARD = 'bg-gradient-to-b from-white to-[#f5f7fd]';
-const INSIGHTS = 'bg-[linear-gradient(180deg,#fdeee8_0%,#fdf6f3_38%,#ffffff_100%)]';
+const INSIGHTS = 'bg-[linear-gradient(180deg,#eef2ff_0%,#f5f8ff_38%,#ffffff_100%)]';
 
-// Soft-tinted rounded-square icon chips, Lucide icons (orange/green/red/gray).
+// Soft-tinted rounded-square icon chips, Lucide icons (blue/green/red/gray).
 const CHIP = {
-  blue: 'bg-[#fde7df] text-[#f1592b]',
+  blue: 'bg-[#eaf1ff] text-[#4f7df9]',
   green: 'bg-success-soft text-success',
   red: 'bg-danger-soft text-danger',
   gray: 'bg-lightgray text-text-secondary',
@@ -35,8 +35,8 @@ const ATTENTION: Record<string, { icon: React.ReactNode; chip: keyof typeof CHIP
   reopened: { icon: <RotateCcw size={17} />, chip: 'red' },
   unbilled: { icon: <Receipt size={17} />, chip: 'gray' },
 };
-const BADGE_TEXT: Record<string, string> = { danger: 'text-danger', warning: 'text-[#f1592b]', info: 'text-[#f1592b]', neutral: 'text-text-secondary' };
-const BADGE_BG: Record<string, string> = { danger: 'bg-danger-soft', warning: 'bg-[#fde7df]', info: 'bg-[#fde7df]', neutral: 'bg-lightgray' };
+const BADGE_TEXT: Record<string, string> = { danger: 'text-danger', warning: 'text-[#4f7df9]', info: 'text-[#4f7df9]', neutral: 'text-text-secondary' };
+const BADGE_BG: Record<string, string> = { danger: 'bg-danger-soft', warning: 'bg-[#eaf1ff]', info: 'bg-[#eaf1ff]', neutral: 'bg-lightgray' };
 
 function CardTitle({ children, size = 22 }: { children: React.ReactNode; size?: number }) {
   return <span className="font-bold leading-tight tracking-tight text-text" style={{ fontSize: size }}>{children}</span>;
@@ -100,7 +100,7 @@ export default function AnalyticsPage() {
             <div className="flex min-w-0 flex-1 flex-col">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <CardTitle>Specimen Volume Overview</CardTitle>
-                <Legend items={[{ label: 'Actual Volume', color: '#f1592b' }, { label: 'Target Capacity', color: '#cbd5e1' }]} />
+                <Legend items={[{ label: 'Actual Volume', color: '#4f7df9' }, { label: 'Target Capacity', color: '#cbd5e1' }]} />
               </div>
               <DivergingBars data={d.monthlyVolume} currentMonth={d.currentMonth} />
             </div>
@@ -129,7 +129,7 @@ export default function AnalyticsPage() {
         </section>
 
         <SectionCard className={`col-span-12 md:col-span-6 xl:col-span-3 ${CARD}`} bodyClassName="flex flex-1 flex-col">
-          <div className="flex items-start justify-between gap-3 rounded-2xl bg-[linear-gradient(105deg,#efeafd_0%,#fdece6_100%)] px-4 py-3">
+          <div className="flex items-start justify-between gap-3 rounded-2xl bg-[linear-gradient(105deg,#efeafd_0%,#eaf1ff_100%)] px-4 py-3">
             <div>
               <div className="text-[16px] font-bold text-text">Based on the last 30 days</div>
               <div className="text-[13px] font-medium text-text-secondary">AI Recommendations</div>
@@ -173,16 +173,16 @@ export default function AnalyticsPage() {
           className={`col-span-12 xl:col-span-7 ${CARD}`}
           title={<CardTitle>Turnaround Overview</CardTitle>}
           subtitle="Specimen volume vs revenue, trailing 12 months"
-          action={<div className="flex items-center gap-3"><Legend items={[{ label: 'Volume', color: '#f1592b' }, { label: 'Revenue', color: '#111827' }]} /><PillSelect value="Year" options={['Year']} /></div>}
+          action={<div className="flex items-center gap-3"><Legend items={[{ label: 'Volume', color: '#4f7df9' }, { label: 'Revenue', color: '#111827' }]} /><PillSelect value="Year" options={['Year']} /></div>}
         >
           <DualAreaLine data={d.volumeRevenue} />
         </SectionCard>
 
         <div className="col-span-12 grid grid-cols-6 gap-6 xl:col-span-5">
           <div className="col-span-6 flex flex-col gap-4 sm:col-span-2">
-            <KpiTile label="Revenue" value={money(d.kpis.revenue.value)} spark={d.kpis.revenue.spark} color="#f1592b" />
+            <KpiTile label="Revenue" value={money(d.kpis.revenue.value)} spark={d.kpis.revenue.spark} color="#4f7df9" />
             <KpiTile label="On-time %" value={`${d.kpis.onTimeTat.value}%`} spark={d.kpis.onTimeTat.spark} color="#111827" />
-            <KpiTile label="Cost / spec." value={money(d.kpis.avgCost.value)} spark={d.kpis.avgCost.spark} color="#f1592b" />
+            <KpiTile label="Cost / spec." value={money(d.kpis.avgCost.value)} spark={d.kpis.avgCost.spark} color="#4f7df9" />
           </div>
 
           <SectionCard className={`col-span-6 sm:col-span-4 ${CARD}`} title={<CardTitle size={17}>Turnaround Compliance</CardTitle>} action={<PillSelect value="Week" options={['Week']} />}>
@@ -199,10 +199,10 @@ export default function AnalyticsPage() {
                 <div className="text-[15px] font-medium text-text-secondary">Reports Authorized · this month</div>
                 <div className="text-h3 font-extrabold text-text">{d.reportsAuthorized.count} <span className="text-small font-semibold text-text-secondary">/ {d.reportsAuthorized.target} target</span></div>
               </div>
-              <span className="text-title font-bold text-[#f1592b]">{d.reportsAuthorized.pct}%</span>
+              <span className="text-title font-bold text-[#4f7df9]">{d.reportsAuthorized.pct}%</span>
             </div>
             <div className="mt-3 h-3 w-full overflow-hidden rounded-pill bg-lightgray">
-              <div className="h-full rounded-pill bg-gradient-to-r from-[#f7794f] to-[#f1592b] transition-[width] duration-1000 ease-out" style={{ width: `${d.reportsAuthorized.pct}%` }} />
+              <div className="h-full rounded-pill bg-gradient-to-r from-[#7aa0fb] to-[#4f7df9] transition-[width] duration-1000 ease-out" style={{ width: `${d.reportsAuthorized.pct}%` }} />
             </div>
           </SectionCard>
         </div>

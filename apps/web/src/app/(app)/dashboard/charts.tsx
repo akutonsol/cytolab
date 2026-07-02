@@ -5,8 +5,8 @@ import {
   RadialBar, RadialBarChart, ReferenceDot, ReferenceLine, ResponsiveContainer, XAxis, YAxis,
 } from 'recharts';
 
-const ORANGE = '#f1592b';
-const ORANGE_DEEP = '#dc4718';
+const BLUE = '#4f7df9';
+const BLUE_DEEP = '#2e5ce6';
 const CHARCOAL = '#2b2d31';
 const LAV = '#c3b8f5';
 const GREEN = '#34c759';
@@ -28,8 +28,8 @@ export function ThroughputComb({ data, height = 280 }: { data: any[]; height?: n
           ticks={ticks} tickFormatter={(i) => data[i]?.label ?? ''} tick={{ fontSize: 13, fill: AXIS, fontWeight: 500 }} dy={8} />
         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 13, fill: AXIS, fontWeight: 500 }} width={36}
           tickFormatter={(v) => (v >= 1000 ? `${v / 1000}K` : `${v}`)} />
-        {peak && <ReferenceLine segment={[{ x: peakIdx, y: 0 }, { x: peakIdx, y: peak.value }]} stroke={ORANGE} strokeWidth={3} ifOverflow="visible" />}
-        {peak && <ReferenceDot x={peakIdx} y={peak.value} r={6} fill={ORANGE} stroke="#fff" strokeWidth={2.5} />}
+        {peak && <ReferenceLine segment={[{ x: peakIdx, y: 0 }, { x: peakIdx, y: peak.value }]} stroke={BLUE} strokeWidth={3} ifOverflow="visible" />}
+        {peak && <ReferenceDot x={peakIdx} y={peak.value} r={6} fill={BLUE} stroke="#fff" strokeWidth={2.5} />}
         <Bar dataKey="value" isAnimationActive animationDuration={900} animationEasing="ease-out" maxBarSize={7} radius={[3.5, 3.5, 0, 0]}>
           {data.map((d, i) => <Cell key={i} fill={d.peak ? 'transparent' : BAR} />)}
         </Bar>
@@ -48,8 +48,8 @@ export function RadarMetrics({ data, height = 280 }: { data: any[]; height?: num
         <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10, fill: '#b8bec9' }} tickCount={3} axisLine={false} />
         <Radar name="Last period" dataKey="previous" stroke={CHARCOAL} fill="none" fillOpacity={0} strokeWidth={2}
           isAnimationActive animationDuration={900} dot={{ r: 3.5, fill: CHARCOAL, stroke: CHARCOAL, strokeWidth: 1 }} />
-        <Radar name="This period" dataKey="current" stroke={ORANGE} fill={ORANGE} fillOpacity={0.16} strokeWidth={2.5}
-          isAnimationActive animationDuration={1000} dot={{ r: 4.5, fill: '#fff', stroke: ORANGE, strokeWidth: 2 }} />
+        <Radar name="This period" dataKey="current" stroke={BLUE} fill={BLUE} fillOpacity={0.16} strokeWidth={2.5}
+          isAnimationActive animationDuration={1000} dot={{ r: 4.5, fill: '#fff', stroke: BLUE, strokeWidth: 2 }} />
       </RadarChart>
     </ResponsiveContainer>
   );
@@ -64,8 +64,8 @@ export function OeeDonut({ value, inner, size = 216 }: { value: number; inner: n
           {key === 'outer' && (
             <defs>
               <linearGradient id="oeeGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor={ORANGE} />
-                <stop offset="100%" stopColor={ORANGE_DEEP} />
+                <stop offset="0%" stopColor={BLUE} />
+                <stop offset="100%" stopColor={BLUE_DEEP} />
               </linearGradient>
             </defs>
           )}
@@ -92,7 +92,7 @@ export function OeeDonut({ value, inner, size = 216 }: { value: number; inner: n
 export function ProgressRing({ pct, size = 40 }: { pct: number; size?: number }) {
   const r = (size - 5) / 2;
   const c = 2 * Math.PI * r;
-  const color = pct >= 50 ? GREEN : ORANGE;
+  const color = pct >= 50 ? GREEN : BLUE;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e8edf4" strokeWidth={4.5} />
