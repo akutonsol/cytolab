@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 import { App } from 'antd';
 import {
   ChevronDown, Filter, MoreHorizontal, Paperclip, Plus, Search, Send, Star, Video, X,
@@ -12,8 +13,21 @@ import { ClientSelect } from '@/components/ClientSelect';
 
 // Brand avatar palette (no orange). Colour picked deterministically by name hash.
 const BRAND = ['#4f7df9', '#6366f1', '#0d9488', '#16a34a', '#9333ea', '#0ea5e9'];
-const hueOf = (s: string) => BRAND[(s || '?').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % BRAND.length];
+const hashOf = (s: string) => (s || '?').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+const hueOf = (s: string) => BRAND[hashOf(s) % BRAND.length];
 const initials = (n: string) => (n || '?').split(' ').map((p) => p[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+
+// Decorative stock portraits — picked deterministically by name hash, with the
+// coloured-initials tile as fallback if the image fails to load.
+const AVATAR_POOL = [
+  'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=96&h=96&fit=crop&crop=faces&q=80',
+  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=96&h=96&fit=crop&crop=faces&q=80',
+  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=96&h=96&fit=crop&crop=faces&q=80',
+  'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=96&h=96&fit=crop&crop=faces&q=80',
+  'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=96&h=96&fit=crop&crop=faces&q=80',
+  'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=96&h=96&fit=crop&crop=faces&q=80',
+];
+const photoOf = (s: string) => AVATAR_POOL[hashOf(s) % AVATAR_POOL.length];
 
 const APPROVED = ['Approved', 'Billed', 'Paid', 'Completed'];
 const PENDING = ['Pending', 'Submitted', 'Processing', 'Partial', 'Resulted'];
@@ -34,8 +48,11 @@ const threadTime = (d: string) => {
 
 function Avatar({ name, size = 40 }: { name: string; size?: number }) {
   return (
-    <span className="grid shrink-0 place-items-center rounded-full font-bold text-white"
-      style={{ width: size, height: size, background: hueOf(name), fontSize: size * 0.38 }}>{initials(name)}</span>
+    <span className="relative grid shrink-0 place-items-center overflow-hidden rounded-full font-bold text-white"
+      style={{ width: size, height: size, background: hueOf(name), fontSize: size * 0.38 }}>
+      {initials(name)}
+      <Image src={photoOf(name)} alt="" fill unoptimized sizes={`${size}px`} className="object-cover" />
+    </span>
   );
 }
 
@@ -49,6 +66,7 @@ export default function MessagingPage() {
   const [text, setText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [openMore, setOpenMore] = useState(false);
+  const [msgQ, setMsgQ] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: threads } = useQuery({
@@ -69,7 +87,11 @@ export default function MessagingPage() {
   });
 
   const messages = thread?.messages ?? [];
+  const shownMessages = msgQ.trim()
+    ? messages.filter((m: any) => (m.body ?? '').toLowerCase().includes(msgQ.trim().toLowerCase()))
+    : messages;
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }); }, [messages.length, activeId]);
+  useEffect(() => { setMsgQ(''); }, [activeId]);
 
   const counterpart = useMemo(() => {
     if (!thread) return null;
@@ -168,14 +190,25 @@ export default function MessagingPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button aria-label="Search" className="grid h-9 w-9 place-items-center rounded-full text-text-tertiary hover:bg-lightgray"><Search size={17} /></button>
-                <button aria-label="More" className="grid h-9 w-9 place-items-center rounded-full text-text-tertiary hover:bg-lightgray"><MoreHorizontal size={17} /></button>
+                <div className="flex h-9 items-center gap-2 rounded-full bg-[#f6f8fc] px-3.5 text-[#9ca3af]">
+                  <Search size={15} />
+                  <input
+                    value={msgQ}
+                    onChange={(e) => setMsgQ(e.target.value)}
+                    placeholder="Search…"
+                    className="w-24 border-none bg-transparent text-[13px] text-[#111827] outline-none placeholder:text-[#9ca3af] focus:w-36 transition-all"
+                  />
+                </div>
+                <button aria-label="More" className="grid h-9 w-9 place-items-center rounded-full border border-[#eef2f7] text-[#9ca3af] hover:text-[#111827]"><MoreHorizontal size={17} /></button>
               </div>
             </div>
 
             <div ref={scrollRef} className="premium-scroll flex-1 overflow-y-auto px-6 py-5" style={{ background: '#ffffff' }}>
-              {messages.map((m: any, i: number) => {
-                const prev = messages[i - 1]; const next = messages[i + 1];
+              {msgQ.trim() && !shownMessages.length && (
+                <div className="mt-10 text-center text-[13px] text-[#9ca3af]">No messages match “{msgQ.trim()}”.</div>
+              )}
+              {shownMessages.map((m: any, i: number) => {
+                const prev = shownMessages[i - 1]; const next = shownMessages[i + 1];
                 const mine = m.authorUserId === myId;
                 const showSep = !prev || !sameDay(prev.createdAt, m.createdAt);
                 const endRun = !next || next.authorUserId !== m.authorUserId || !sameDay(next.createdAt, m.createdAt);
