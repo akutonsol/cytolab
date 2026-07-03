@@ -270,21 +270,8 @@ export default function RecordDetailPage() {
 
       {/* ═══════════ LEFT PANEL ═══════════ */}
       <aside className="premium-scroll flex w-[340px] shrink-0 flex-col overflow-y-auto rounded-[20px] border border-[#E4E8F4] bg-[#F4F6FC] p-6">
-        {/* Top bar: Records · lab number · status — tight left-aligned group */}
-        <div className="flex items-center gap-2.5">
-          <button onClick={() => router.back()} className="flex shrink-0 items-center gap-1.5 text-[13px] font-medium text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={15} /> Records</button>
-          <span className="shrink-0 whitespace-nowrap font-mono text-[20px] font-extrabold text-[#0F172A]">{record.labNumber ?? '—'}</span>
-          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1 text-[12px] font-bold" style={{ background: st.bg, color: st.fg }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: st.fg }} />{status}</span>
-        </div>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          {record.formType && <span className="rounded-md px-2 py-0.5 text-[12px] font-bold" style={isGyn ? { background: '#EEF3FF', color: '#4F46E5' } : { background: '#F0FDF4', color: '#16A34A' }}>{isGyn ? 'GYN' : 'NON-GYN'}</span>}
-          {record.urgent && <span className="rounded-md bg-[#FEF2F2] px-2 py-0.5 text-[12px] font-bold text-[#DC2626]">URGENT</span>}
-        </div>
-        <div className="mt-3 text-[17px] font-semibold text-[#1E293B]">{`${record.patient?.firstName ?? ''} ${record.patient?.lastName ?? ''}`.trim() || '—'}</div>
-        <div className="text-[14px] text-[#64748B]">{record.client?.officeName || `${record.client?.firstName ?? ''} ${record.client?.lastName ?? ''}`.trim() || '—'}</div>
-
         {/* Vertical stepper */}
-        <div className="mt-6 flex flex-col">
+        <div className="flex flex-col">
           {STEPS.map((label, i) => {
             const done = i < currentStep; const current = i === currentStep; const passed = i <= currentStep;
             const circle: any = current && special ? { background: STATUS[status].bg, color: STATUS[status].fg }
@@ -367,6 +354,20 @@ export default function RecordDetailPage() {
 
       {/* ═══════════ RIGHT PANEL ═══════════ */}
       <aside className="premium-scroll flex w-[340px] shrink-0 flex-col overflow-y-auto rounded-[20px] border border-[#E4E8F4] bg-white p-6">
+        {/* Record header (moved from left column) */}
+        <div className="mb-5 border-b border-[#F1F5F9] pb-5">
+          <div className="flex items-center gap-2.5">
+            <button onClick={() => router.back()} className="flex shrink-0 items-center gap-1.5 text-[13px] font-medium text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={15} /> Records</button>
+            <span className="shrink-0 whitespace-nowrap font-mono text-[20px] font-extrabold text-[#0F172A]">{record.labNumber ?? '—'}</span>
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1 text-[12px] font-bold" style={{ background: st.bg, color: st.fg }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: st.fg }} />{status}</span>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {record.formType && <span className="rounded-md px-2 py-0.5 text-[12px] font-bold" style={isGyn ? { background: '#EEF3FF', color: '#4F46E5' } : { background: '#F0FDF4', color: '#16A34A' }}>{isGyn ? 'GYN' : 'NON-GYN'}</span>}
+            {record.urgent && <span className="rounded-md bg-[#FEF2F2] px-2 py-0.5 text-[12px] font-bold text-[#DC2626]">URGENT</span>}
+          </div>
+          <div className="mt-3 text-[17px] font-semibold text-[#1E293B]">{`${record.patient?.firstName ?? ''} ${record.patient?.lastName ?? ''}`.trim() || '—'}</div>
+          <div className="text-[14px] text-[#64748B]">{record.client?.officeName || `${record.client?.firstName ?? ''} ${record.client?.lastName ?? ''}`.trim() || '—'}</div>
+        </div>
         <div className={`${LABEL} mb-5`}>Patient Stats</div>
         <Stat icon={Activity} label="Total Records" value={String(totalRecords)} unit="cases" />
         <Stat icon={FlaskConical} label="Open Cases" value={String(openCases)} unit="in progress" />
