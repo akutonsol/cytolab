@@ -20,6 +20,12 @@ interface Rec {
   patient?: { firstName: string; lastName: string; registrationNo?: string };
   specimens?: { id: string; type?: string }[];
   statusHistory?: { status: string; createdAt: string }[];
+  client?: {
+    firstName: string;
+    lastName: string;
+    officeName?: string | null;
+    accountNo?: string | null;
+  };
 }
 
 const SPECIMEN: Record<string, string> = {
@@ -33,6 +39,8 @@ const OPEN = ['Pending', 'Submitted', 'Processing', 'Partial', 'Completed', 'Res
 const ALL_STATUSES = ['Pending', 'Submitted', 'Processing', 'Partial', 'Completed', 'Resulted', 'Approved', 'Billed', 'Paid', 'OnHold', 'Failed'];
 
 const specLabel = (t?: string | null) => (t ? SPECIMEN[t] ?? t : null);
+// Dot-separated specimen code for compact "SP:" display (CERV_SCRAP → CERV.SCRAP).
+const spCode = (type?: string | null) => (type ? type.replace(/_/g, '.') : '—');
 const patientName = (r: Rec) => (r.patient ? `${r.patient.firstName} ${r.patient.lastName}`.trim() : '—');
 const dateFmt = (d?: string | null) => (d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—');
 const clock = (d: string) => new Date(d).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
@@ -195,45 +203,163 @@ export default function SamplesPage() {
           <div className="overflow-x-auto px-2 pb-2 pt-3">
             <table className="w-full min-w-[820px] border-collapse">
               <thead>
-                <tr className="text-left text-caption font-bold uppercase tracking-wide text-text-tertiary">
-                  <th className="px-4 py-3">Lab#</th><th className="px-4 py-3">Patient</th><th className="px-4 py-3">Specimen type</th>
-                  <th className="px-4 py-3">Priority</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Due Date</th><th className="w-10 px-2 py-3" />
+                <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+                  <th style={{ width: 40, padding: '10px 12px' }}>
+                    <input type="checkbox" style={{ width: 15, height: 15, accentColor: '#4F46E5', cursor: 'pointer' }} />
+                  </th>
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Patient</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Client</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Details</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Status</th>
+                  <th style={{ width: 40, padding: '10px 12px' }} />
                 </tr>
               </thead>
               <tbody>
-                {isFetching && view.length === 0 && <tr><td colSpan={7} className="px-4 py-10 text-center text-small text-text-tertiary">Loading samples…</td></tr>}
-                {!isFetching && view.length === 0 && <tr><td colSpan={7} className="px-4 py-10 text-center text-small text-text-tertiary">No samples match your filters.</td></tr>}
-                {view.map((r) => {
-                  const pr = priorityOf(r); const ps = PRIORITY[pr as keyof typeof PRIORITY]; const st = statusStyle(r.status);
-                  const spec = specLabel(r.specimens?.[0]?.type);
-                  return (
-                    <tr key={r.id} onClick={() => router.push(`/records/${r.id}`)} className="cursor-pointer border-t border-border transition-colors hover:bg-[#f8fafd]">
-                      <td className="px-4 py-3"><span className="font-mono text-small font-semibold text-text">{r.labNumber ?? '—'}</span></td>
-                      <td className="px-4 py-3"><span className="text-small font-semibold text-text">{patientName(r)}</span></td>
-                      <td className="px-4 py-3">
-                        {spec ? <span className="text-small font-medium text-text-secondary">{spec}</span>
-                          : r.formType ? <span className="inline-flex items-center rounded-pill bg-lightgray px-2.5 py-1 text-caption font-bold text-text-secondary">{r.formType === 'Gynecology' ? 'GYN' : 'NON-GYN'}</span>
-                            : <span className="text-small text-text-tertiary">—</span>}
-                      </td>
-                      <td className="px-4 py-3"><span className="inline-flex items-center rounded-pill px-2.5 py-1 text-caption font-bold" style={{ background: ps.bg, color: ps.fg }}>{pr}</span></td>
-                      <td className="px-4 py-3"><span className="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-caption font-bold" style={{ background: st.bg, color: st.fg }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: st.fg }} />{r.status}</span></td>
-                      <td className="px-4 py-3"><span className="text-small font-medium text-text-secondary">{dateFmt(r.specimenDate)}</span></td>
-                      <td className="relative px-2 py-3" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => setMenuId(menuId === r.id ? null : r.id)} className="text-text-tertiary hover:text-text"><MoreHorizontal size={18} /></button>
-                        {menuId === r.id && (
-                          <>
-                            <div className="fixed inset-0 z-10" onClick={() => setMenuId(null)} />
-                            <div className="absolute right-6 top-11 z-20 w-32 overflow-hidden rounded-[10px] border border-card bg-white py-1 shadow-float">
-                              <button onClick={() => { setMenuId(null); router.push(`/records/${r.id}`); }} className="block w-full px-3 py-2 text-left text-small font-medium text-text hover:bg-[#f6f8fc]">View</button>
-                              {can('record:change') && <button onClick={() => openEdit(r)} className="block w-full px-3 py-2 text-left text-small font-medium text-text hover:bg-[#f6f8fc]">Edit</button>}
-                              {can('record:delete') && <button onClick={() => { setMenuId(null); if (confirm(`Delete sample ${r.labNumber ?? ''}?`)) del.mutate(r.id); }} className="block w-full px-3 py-2 text-left text-small font-medium text-danger hover:bg-danger-soft">Delete</button>}
+                {isFetching && view.length === 0 && <tr><td colSpan={6} className="px-4 py-10 text-center text-small text-text-tertiary">Loading samples…</td></tr>}
+                {!isFetching && view.length === 0 && <tr><td colSpan={6} className="px-4 py-10 text-center text-small text-text-tertiary">No samples match your filters.</td></tr>}
+                {view.map((r) => (
+                  <tr
+                    key={r.id}
+                    onClick={() => router.push(`/records/${r.id}`)}
+                    style={{ borderBottom: '1px solid #F8FAFC', cursor: 'pointer' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#F8FAFD')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    {/* Checkbox */}
+                    <td style={{ padding: '14px 12px' }} onClick={e => e.stopPropagation()}>
+                      <input type="checkbox" style={{ width: 15, height: 15, accentColor: '#4F46E5', cursor: 'pointer' }} />
+                    </td>
+
+                    {/* Patient column: form icon + initials + name + reg no */}
+                    <td style={{ padding: '14px 16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{
+                          width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                          background: r.formType === 'Gynecology' ? '#EEF3FF' : '#F1F5F9',
+                          display: 'grid', placeItems: 'center',
+                          color: r.formType === 'Gynecology' ? '#4F46E5' : '#64748B',
+                        }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                            <polyline points="10 9 9 9 8 9" />
+                          </svg>
+                        </div>
+
+                        <div style={{
+                          width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                          background: '#E2E8F0', color: '#475569',
+                          display: 'grid', placeItems: 'center',
+                          fontSize: 12, fontWeight: 700, letterSpacing: '0.03em',
+                        }}>
+                          {((r.patient?.firstName?.[0] ?? '') + (r.patient?.lastName?.[0] ?? '')).toUpperCase() || '??'}
+                        </div>
+
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: '#0F172A' }}>
+                            {patientName(r) || '—'}
+                          </div>
+                          {r.patient?.registrationNo && (
+                            <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 1 }}>
+                              Reg. No.: {r.patient.registrationNo}
                             </div>
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                          )}
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Client column: name + account no */}
+                    <td style={{ padding: '14px 16px' }}>
+                      {r.client ? (
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: '#0F172A' }}>
+                            {r.client.officeName || `${r.client.firstName} ${r.client.lastName}`.trim()}
+                          </div>
+                          {r.client.accountNo && (
+                            <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 1 }}>
+                              {r.client.accountNo}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: 13, color: '#CBD5E1' }}>—</span>
+                      )}
+                    </td>
+
+                    {/* Details column: LAB# + specimen code */}
+                    <td style={{ padding: '14px 16px' }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', fontFamily: 'monospace' }}>
+                        LAB#: {r.labNumber ?? '—'}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>
+                        SP: {r.specimens?.[0]?.type
+                          ? spCode(r.specimens[0].type)
+                          : r.formType === 'Gynecology' ? 'GYN' : r.formType === 'NonGynecology' ? 'NON-GYN' : '—'}
+                      </div>
+                    </td>
+
+                    {/* Status column: badge + date + urgent */}
+                    <td style={{ padding: '14px 16px' }}>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 5,
+                        padding: '4px 12px', borderRadius: 999,
+                        fontSize: 12, fontWeight: 700,
+                        background: (() => {
+                          if (['Approved', 'Paid', 'Billed'].includes(r.status)) return '#DCFCE7';
+                          if (['Failed', 'Disabled'].includes(r.status)) return '#FEF2F2';
+                          if (['Resulted', 'Completed'].includes(r.status)) return '#DBEAFE';
+                          if (r.status === 'Processing' || r.status === 'Partial') return '#EDE9FE';
+                          return '#F1F5F9';
+                        })(),
+                        color: (() => {
+                          if (['Approved', 'Paid', 'Billed'].includes(r.status)) return '#16A34A';
+                          if (['Failed', 'Disabled'].includes(r.status)) return '#DC2626';
+                          if (['Resulted', 'Completed'].includes(r.status)) return '#1D4ED8';
+                          if (r.status === 'Processing' || r.status === 'Partial') return '#7C3AED';
+                          return '#64748B';
+                        })(),
+                      }}>
+                        {r.status}
+                      </span>
+                      <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>
+                        {dateFmt(r.specimenDate ?? r.createdAt)}
+                      </div>
+                      {r.urgent && (
+                        <div style={{
+                          display: 'inline-flex', alignItems: 'center',
+                          fontSize: 10, fontWeight: 700, color: '#DC2626',
+                          marginTop: 3, gap: 3,
+                        }}>
+                          ● URGENT
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Actions menu */}
+                    <td style={{ padding: '14px 12px', position: 'relative' }}
+                      onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={() => setMenuId(menuId === r.id ? null : r.id)}
+                        style={{ color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center' }}
+                      >
+                        <MoreHorizontal size={18} />
+                      </button>
+                      {menuId === r.id && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setMenuId(null)} />
+                          <div className="absolute right-6 top-11 z-20 w-32 overflow-hidden rounded-[10px] border border-card bg-white py-1 shadow-float">
+                            <button onClick={() => { setMenuId(null); router.push(`/records/${r.id}`); }} className="block w-full px-3 py-2 text-left text-small font-medium text-text hover:bg-[#f6f8fc]">View</button>
+                            {can('record:change') && <button onClick={() => openEdit(r)} className="block w-full px-3 py-2 text-left text-small font-medium text-text hover:bg-[#f6f8fc]">Edit</button>}
+                            {can('record:delete') && <button onClick={() => { setMenuId(null); if (confirm(`Delete sample ${r.labNumber ?? ''}?`)) del.mutate(r.id); }} className="block w-full px-3 py-2 text-left text-small font-medium text-danger hover:bg-danger-soft">Delete</button>}
+                          </div>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
