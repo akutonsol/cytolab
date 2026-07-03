@@ -186,13 +186,11 @@ export default function RecordDetailPage() {
 
       {/* ═══════════ LEFT PANEL ═══════════ */}
       <aside className="premium-scroll flex flex-1 min-w-[280px] flex-col overflow-y-auto rounded-[20px] border border-[#E4E8F4] bg-[#F4F6FC] p-6">
-        {/* Top bar: Records · lab number · status — all one line */}
-        <div className="flex items-center justify-between gap-3">
+        {/* Top bar: Records · lab number · status — tight left-aligned group */}
+        <div className="flex items-center gap-3">
           <button onClick={() => router.back()} className="flex shrink-0 items-center gap-1.5 text-[13px] font-medium text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={15} /> Records</button>
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="truncate font-mono text-[22px] font-extrabold text-[#0F172A]">{record.labNumber ?? '—'}</span>
-            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-[13px] font-bold" style={{ background: st.bg, color: st.fg }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: st.fg }} />{status}</span>
-          </div>
+          <span className="font-mono text-[22px] font-extrabold text-[#0F172A]">{record.labNumber ?? '—'}</span>
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-[13px] font-bold" style={{ background: st.bg, color: st.fg }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: st.fg }} />{status}</span>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2">
           {record.formType && <span className="rounded-md px-2 py-0.5 text-[12px] font-bold" style={isGyn ? { background: '#EEF3FF', color: '#4F46E5' } : { background: '#F0FDF4', color: '#16A34A' }}>{isGyn ? 'GYN' : 'NON-GYN'}</span>}
