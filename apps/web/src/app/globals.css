@@ -212,6 +212,17 @@ body {
 }
 
 /* ============================================================
+   Record lifecycle rings — current-stage arc pulse.
+   ============================================================ */
+@keyframes ringPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [style*="ringPulse"] { animation: none !important; }
+}
+
+/* ============================================================
    Patient profile — avatar crossfade slideshow.
    ============================================================ */
 @keyframes cyto-avatar-fade {

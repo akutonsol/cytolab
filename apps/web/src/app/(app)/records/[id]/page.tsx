@@ -107,6 +107,74 @@ const ANIM_CSS = `
 `;
 
 // ─── Page ────────────────────────────────────────────────────────────────────
+function LifecycleRings({ status }: { status: string }) {
+  const STAGES = [
+    { label: 'Intake', statuses: ['Pending', 'Submitted'], color: '#6366F1', ghostColor: '#E0E7FF' },
+    { label: 'Processing', statuses: ['Processing', 'Partial'], color: '#8B5CF6', ghostColor: '#EDE9FE' },
+    { label: 'Results', statuses: ['Completed', 'Resulted'], color: '#06B6D4', ghostColor: '#CFFAFE' },
+    { label: 'Authorization', statuses: ['Approved'], color: '#16A34A', ghostColor: '#DCFCE7' },
+    { label: 'Complete', statuses: ['Billed', 'Paid', 'Viewed'], color: '#4F46E5', ghostColor: '#EEF2FF' },
+  ];
+
+  const currentStageIdx = STAGES.findIndex((s) => s.statuses.includes(status));
+
+  const rings = STAGES.map((stage, i) => ({
+    ...stage,
+    pct: i < currentStageIdx ? 100
+      : i === currentStageIdx ? ((stage.statuses.indexOf(status) + 1) / stage.statuses.length) * 100
+        : 0,
+    isCurrent: i === currentStageIdx,
+    isComplete: i < currentStageIdx,
+  }));
+
+  const SIZE = 200;
+  const CENTER = SIZE / 2;
+  const RING_WIDTH = 14;
+  const RING_GAP = 4;
+  const radii = [88, 88 - (RING_WIDTH + RING_GAP), 88 - (RING_WIDTH + RING_GAP) * 2, 88 - (RING_WIDTH + RING_GAP) * 3, 88 - (RING_WIDTH + RING_GAP) * 4];
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 20, padding: '20px 0', marginTop: 8 }}>
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+          {rings.map((ring, i) => {
+            const r = radii[i];
+            const circ = 2 * Math.PI * r;
+            return (
+              <g key={i}>
+                <circle cx={CENTER} cy={CENTER} r={r} fill="none" stroke={ring.ghostColor} strokeWidth={RING_WIDTH} opacity={0.6} />
+                {ring.pct > 0 && (
+                  <circle cx={CENTER} cy={CENTER} r={r} fill="none" stroke={ring.color} strokeWidth={RING_WIDTH} strokeLinecap="round"
+                    strokeDasharray={`${(ring.pct / 100) * circ} ${circ}`} strokeDashoffset={circ / 4}
+                    style={ring.isCurrent ? { animation: 'ringPulse 2s ease-in-out infinite' } : {}} />
+                )}
+              </g>
+            );
+          })}
+          <text x={CENTER} y={CENTER - 8} textAnchor="middle" fontSize="22" fontWeight="800" fill="#0F172A" fontFamily="Geist, sans-serif">
+            {Math.round(rings.reduce((s, r) => s + r.pct, 0) / rings.length)}%
+          </text>
+          <text x={CENTER} y={CENTER + 12} textAnchor="middle" fontSize="10" fontWeight="600" fill="#94A3B8" fontFamily="Geist, sans-serif" letterSpacing="0.06em">OVERALL</text>
+        </svg>
+      </div>
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {rings.map((ring, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: ring.pct === 0 ? 0.4 : 1 }}>
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: ring.pct > 0 ? ring.color : ring.ghostColor, flexShrink: 0, boxShadow: ring.isCurrent ? `0 0 6px ${ring.color}` : 'none' }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: ring.pct > 0 ? '#0F172A' : '#94A3B8' }}>{ring.label}</div>
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: ring.isComplete ? ring.color : ring.isCurrent ? ring.color : '#CBD5E1' }}>
+              {ring.isComplete ? '✓' : ring.isCurrent ? `${Math.round(ring.pct)}%` : '—'}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function RecordDetailPage() {
   const router = useRouter();
   const qc = useQueryClient();
@@ -267,6 +335,8 @@ export default function RecordDetailPage() {
             <div className="mt-4 text-[17px] font-semibold italic text-[#1E293B]">Patient {specLabel(activeSpecimen?.type)} Analysis</div>
             <div className="mt-1 text-[20px] font-bold text-[#4F46E5]">{progress}%<span className="ml-1.5 text-[14px] font-normal text-[#64748B]">completed</span></div>
             <button onClick={() => setSheetModal(true)} className="mt-2 flex items-center gap-1 self-start text-[14px] font-bold text-[#4F46E5] hover:underline">Enter Analysis <ChevronRight size={15} /></button>
+
+            <LifecycleRings status={status} />
 
             <div className="mt-auto pt-6">
               {sheet && aiFinding !== 'Awaiting cytological analysis.' && (
