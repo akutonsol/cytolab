@@ -82,7 +82,7 @@ function DnaBackdrop() {
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'right -20px top -30px',
           backgroundSize: '82% auto',
-          transformOrigin: 'top right',
+          transformOrigin: '66% 20%',
           maskImage: 'radial-gradient(80% 80% at 100% 0%, #000 36%, transparent 70%)',
           WebkitMaskImage: 'radial-gradient(80% 80% at 100% 0%, #000 36%, transparent 70%)',
         }}

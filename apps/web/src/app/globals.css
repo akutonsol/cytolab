@@ -133,20 +133,30 @@ body {
 }
 
 /* ============================================================
-   Dashboard DNA backdrop — twisting "living helix" animation.
-   The scaleX squeeze simulates the double helix rotating around its
-   axis; rotate + translateY make the strand undulate and flow.
+   Dashboard DNA backdrop — swirling "rotating double helix".
+   Two scaleX squeezes per cycle = one full 360° axial rotation
+   (the strand goes edge-on → face-on → edge-on), while skewX gives
+   the corkscrew lean and translateY makes it flow/undulate. A slow
+   counter-rotating hue shift adds living depth.
    ============================================================ */
-@keyframes dna-drift {
-  0%   { transform: translateY(0)    rotate(0deg)    scale(1, 1); }
-  25%  { transform: translateY(10px) rotate(1deg)    scale(0.98, 1.02); }
-  50%  { transform: translateY(20px) rotate(0deg)    scale(1, 1.045); }
-  75%  { transform: translateY(10px) rotate(-1deg)   scale(1.02, 1.02); }
-  100% { transform: translateY(0)    rotate(0deg)    scale(1, 1); }
+@keyframes dna-swirl {
+  0%    { transform: translateY(0px)  rotate(0deg)    scaleX(1)    skewX(0deg); }
+  12.5% { transform: translateY(8px)  rotate(0.9deg)  scaleX(0.9)  skewX(1.6deg); }
+  25%   { transform: translateY(14px) rotate(0deg)    scaleX(0.78) skewX(0deg); }
+  37.5% { transform: translateY(18px) rotate(-0.9deg) scaleX(0.9)  skewX(-1.6deg); }
+  50%   { transform: translateY(20px) rotate(0deg)    scaleX(1.06) skewX(0deg); }
+  62.5% { transform: translateY(18px) rotate(0.9deg)  scaleX(0.9)  skewX(1.6deg); }
+  75%   { transform: translateY(14px) rotate(0deg)    scaleX(0.78) skewX(0deg); }
+  87.5% { transform: translateY(8px)  rotate(-0.9deg) scaleX(0.9)  skewX(-1.6deg); }
+  100%  { transform: translateY(0px)  rotate(0deg)    scaleX(1)    skewX(0deg); }
+}
+@keyframes dna-shimmer {
+  0%, 100% { filter: hue-rotate(0deg)   brightness(1); }
+  50%      { filter: hue-rotate(-14deg) brightness(1.06); }
 }
 .dna-drift {
-  animation: dna-drift 14s ease-in-out infinite;
-  will-change: transform;
+  animation: dna-swirl 15s ease-in-out infinite, dna-shimmer 9s ease-in-out infinite;
+  will-change: transform, filter;
 }
 @media (prefers-reduced-motion: reduce) {
   .dna-drift { animation: none; }
