@@ -374,7 +374,7 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
                 border: '1px solid #E5E7EB',
                 borderRadius: 12,
                 overflow: 'hidden',
-                background: '#F8FAFC',
+                background: isGyn ? '#F8FAFC' : '#EEF3FF',
                 position: 'relative',
               }}>
                 {/* Default specimen image */}
@@ -385,13 +385,13 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
                   overflow: 'hidden',
                 }}>
                   <img
-                    src={isGyn ? '/cytology-sample.png' : '/cytology-nongyn.png'}
-                    alt={isGyn ? 'Cytology specimen' : 'Non-gynecology specimen'}
+                    src={isGyn ? '/cytology-sample.png' : '/specimen-tube.png'}
+                    alt={isGyn ? 'Cytology specimen' : 'Specimen vial'}
                     style={{
                       width: '100%',
                       height: '100%',
-                      objectFit: 'cover',
-                      objectPosition: 'center',
+                      objectFit: isGyn ? 'cover' : 'contain',
+                      objectPosition: isGyn ? 'center' : 'center center',
                       opacity: 0.85,
                     }}
                   />
