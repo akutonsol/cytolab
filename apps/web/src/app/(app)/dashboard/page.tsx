@@ -52,6 +52,48 @@ const specimenTypes = [
   { label: 'Other', color: '#E0E7FF', pct: 6 },
 ];
 
+// ── Specimen icon library: SVG cell-clusters coloured per specimen class ──────
+// Reusable, transparent, crisp — no raster assets. Zero-orange (FNA/body-fluid
+// map to teal/violet instead of the reference's amber suggestions).
+const SPECIMEN_PALETTE: Record<string, { bg: string; cells: string[]; nucleus: string }> = {
+  gyn: { bg: '#DCFCE7', cells: ['#86EFAC', '#4ADE80', '#22C55E'], nucleus: '#15803D' },
+  urine: { bg: '#FFE4E6', cells: ['#FDA4AF', '#FB7185', '#F43F5E'], nucleus: '#BE123C' },
+  csf: { bg: '#E0F2FE', cells: ['#7DD3FC', '#38BDF8', '#0EA5E9'], nucleus: '#0369A1' },
+  fluid: { bg: '#EDE9FE', cells: ['#C4B5FD', '#A78BFA', '#8B5CF6'], nucleus: '#6D28D9' },
+  fna: { bg: '#CCFBF1', cells: ['#5EEAD4', '#2DD4BF', '#14B8A6'], nucleus: '#0F766E' },
+  resp: { bg: '#DBEAFE', cells: ['#93C5FD', '#60A5FA', '#3B82F6'], nucleus: '#1D4ED8' },
+  indigo: { bg: '#E0E7FF', cells: ['#A5B4FC', '#818CF8', '#6366F1'], nucleus: '#4338CA' },
+};
+const paletteFor = (type?: string | null) => {
+  const t = type ?? '';
+  if (['CERV_SCRAP', 'ENDOCERV_ASP', 'VAG_POOL'].includes(t)) return SPECIMEN_PALETTE.gyn;
+  if (t === 'URINE') return SPECIMEN_PALETTE.urine;
+  if (t === 'CSF') return SPECIMEN_PALETTE.csf;
+  if (['PLEURAL_FLD', 'SYNOVIAL_FLD', 'JOINT_ASP', 'OTHER'].includes(t)) return SPECIMEN_PALETTE.fluid;
+  if (['BREAST_ASP', 'THYROID_FNA', 'LYMPH_NODE', 'BONE_MARROW'].includes(t)) return SPECIMEN_PALETTE.fna;
+  if (['SPUTUM', 'BRONCHIAL_WASH'].includes(t)) return SPECIMEN_PALETTE.resp;
+  return SPECIMEN_PALETTE.indigo;
+};
+const SPECIMEN_CELLS = [
+  { x: 50, y: 48, r: 16 }, { x: 31, y: 37, r: 9 }, { x: 68, y: 35, r: 10 },
+  { x: 71, y: 61, r: 8 }, { x: 37, y: 65, r: 9 }, { x: 56, y: 70, r: 7 },
+  { x: 23, y: 55, r: 6 }, { x: 47, y: 25, r: 6 }, { x: 80, y: 49, r: 5 },
+  { x: 61, y: 19, r: 4 }, { x: 21, y: 31, r: 4 }, { x: 76, y: 75, r: 4 },
+];
+function SpecimenIcon({ type, size = 44 }: { type?: string | null; size?: number }) {
+  const p = paletteFor(type);
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" style={{ borderRadius: 12, background: p.bg, flexShrink: 0 }}>
+      {SPECIMEN_CELLS.map((c, i) => (
+        <g key={i}>
+          <circle cx={c.x} cy={c.y} r={c.r} fill={p.cells[i % p.cells.length]} opacity={0.9} />
+          <circle cx={c.x} cy={c.y} r={c.r * 0.42} fill={p.nucleus} opacity={0.92} />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 function SeeAll({ label = 'See all', onClick }: { label?: string; onClick?: () => void }) {
   return (
     <button
@@ -175,7 +217,7 @@ export default function DashboardPage() {
           </div>
 
           {/* ═══ SECTION 2: MAIN 3-COLUMN GRID ═══ */}
-          <div style={{ display: 'grid', gridTemplateColumns: '320px minmax(0,1fr) 400px', gap: 20, alignItems: 'stretch' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '400px minmax(0,1fr) 400px', gap: 20, alignItems: 'stretch' }}>
             {/* LEFT: Specimen Queue */}
             <div style={{ height: 540, background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -193,9 +235,7 @@ export default function DashboardPage() {
                       style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: isFirst ? '#F0F0FF' : 'transparent', border: isFirst ? '1px solid #C7D2FE' : '1px solid transparent', transition: 'all 0.15s' }}
                       onMouseEnter={(e) => { if (!isFirst) (e.currentTarget as HTMLDivElement).style.background = '#F8FAFC'; }}
                       onMouseLeave={(e) => { if (!isFirst) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}>
-                      <div style={{ width: 44, height: 44, borderRadius: 10, overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
-                        <img src="/cytology-sample.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.9 }} />
-                      </div>
+                      <SpecimenIcon type={r.specimen} size={44} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                           <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>{r.labNumber ?? '—'}</span>
