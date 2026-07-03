@@ -64,9 +64,9 @@
   --font-sans: var(--font-inter), 'Inter', system-ui, sans-serif;
   --font-display: 'Geist', var(--font-inter), 'Inter', sans-serif;
 
-  /* Primary — near-black */
-  --primary: #0f172a;
-  --primary-hover: #1e293b;
+  /* Primary — indigo */
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
   --primary-soft: #f1f0ea;
   --primary-foreground: #ffffff;
 
@@ -99,8 +99,8 @@
   --info: #0284c7;
   --info-soft: #f0f9ff;
 
-  /* Accent — slate (blue removed as primary accent) */
-  --accent: #0f172a;
+  /* Accent — indigo */
+  --accent: #4f46e5;
   --accent-soft: #f1f0ea;
 
   /* Radii */
@@ -295,7 +295,7 @@ body {
 
 /* ── Buttons ─────────────────────────────────────────────── */
 .btn-primary {
-  background: #0f172a;
+  background: #4f46e5;
   color: #ffffff;
   border: none;
   border-radius: 999px;
@@ -309,7 +309,7 @@ body {
   font-family: var(--font-display);
   transition: background 0.15s;
 }
-.btn-primary:hover { background: #1e293b; }
+.btn-primary:hover { background: #4338ca; }
 
 .btn-secondary {
   background: #ffffff;
