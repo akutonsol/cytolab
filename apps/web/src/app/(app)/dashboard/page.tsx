@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
 import {
   Activity, ArrowRight, ArrowUpRight, Calendar, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FileCheck, FileText, FlaskConical,
-  Microscope, Monitor, MoreHorizontal, Plus, RotateCw, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
+  Folder, Hourglass, Microscope, Monitor, MoreHorizontal, Plus, RotateCw, ShieldCheck, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
   TestTube, TrendingUp, User, Users,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -199,11 +199,11 @@ export default function DashboardPage() {
           {/* ═══ SECTION 1: KPI STRIP ═══ */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 16 }}>
             {[
-              { icon: <TestTube size={22} color="#EF4444" />, iconBg: '#FEF2F2', label: 'ACTIVE SPECIMENS', value: d.priorityRecords?.length || 0, delta: `+${d.priorityRecords?.filter((r: any) => r.urgent).length || 0} urgent`, deltaColor: '#EF4444' },
-              { icon: <FlaskConical size={22} color="#8B5CF6" />, iconBg: '#F5F3FF', label: 'CASES TODAY', value: d.throughput.series?.slice(-1)[0]?.value || 0, delta: `+${d.throughput.series?.slice(-7).reduce((s: any, i: any) => s + (i.value > 0 ? 1 : 0), 0) || 0} this week`, deltaColor: '#16A34A' },
-              { icon: <Clock size={22} color="#4F46E5" />, iconBg: '#EEF2FF', label: 'TURNAROUND TIME', value: `${kpis?.avgTat ?? '—'}d`, delta: (kpis?.avgTat ?? 99) <= 3 ? '-0.3d improvement' : '+0.3d slower', deltaColor: (kpis?.avgTat ?? 99) <= 3 ? '#16A34A' : '#EF4444' },
-              { icon: <Activity size={22} color="#0EA5E9" />, iconBg: '#F0F9FF', label: 'PENDING REVIEW', value: kpis?.pendingRequisitions || 0, delta: `High priority: ${d.priorityRecords?.filter((r: any) => r.urgent).length || 0}`, deltaColor: '#0EA5E9' },
-              { icon: <CheckCircle2 size={22} color="#16A34A" />, iconBg: '#F0FDF4', label: 'AI CONFIDENCE', value: `${eff?.authorization ?? 92}%`, delta: '+4% vs yesterday', deltaColor: '#16A34A' },
+              { icon: <TestTube size={22} color="#EF4444" />, iconBg: '#FEF2F2', label: 'ACTIVE SPECIMENS', value: totalSpecimens || 0, delta: `+${d.throughput.series?.slice(-1)[0]?.value || 0} today`, deltaColor: '#EF4444' },
+              { icon: <Folder size={22} color="#8B5CF6" />, iconBg: '#F5F3FF', label: 'CASES TODAY', value: d.throughput.series?.slice(-1)[0]?.value || 0, delta: `+${d.throughput.series?.slice(-7).reduce((s: any, i: any) => s + (i.value > 0 ? 1 : 0), 0) || 0} this week`, deltaColor: '#8B5CF6' },
+              { icon: <Clock size={22} color="#4F46E5" />, iconBg: '#EEF2FF', label: 'TURNAROUND TIME', value: `${kpis?.avgTat ?? '—'}d`, delta: (kpis?.avgTat ?? 99) <= 3 ? '-0.3d improvement' : '+0.3d slower', deltaColor: (kpis?.avgTat ?? 99) <= 3 ? '#4F46E5' : '#EF4444' },
+              { icon: <Hourglass size={22} color="#0EA5E9" />, iconBg: '#F0F9FF', label: 'PENDING REVIEW', value: kpis?.pendingRequisitions || 0, delta: `High priority: ${d.priorityRecords?.filter((r: any) => r.urgent).length || 0}`, deltaColor: '#0EA5E9' },
+              { icon: <ShieldCheck size={22} color="#16A34A" />, iconBg: '#F0FDF4', label: 'AI CONFIDENCE', value: `${eff?.authorization ?? 92}%`, delta: '+4% vs yesterday', deltaColor: '#16A34A' },
             ].map(({ icon, iconBg, label, value, delta, deltaColor }, i) => (
               <div key={i} style={{ background: 'white', borderRadius: 16, padding: '20px 20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: iconBg, display: 'grid', placeItems: 'center', flexShrink: 0 }}>{icon}</div>
