@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
 import {
-  Activity, ArrowRight, ArrowUpRight, Calendar, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FlaskConical,
+  Activity, ArrowRight, ArrowUpRight, Calendar, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FileCheck, FileText, FlaskConical,
   Microscope, Monitor, MoreHorizontal, Plus, RotateCw, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
   TestTube, TrendingUp, User, Users,
 } from 'lucide-react';
@@ -429,7 +429,7 @@ export default function DashboardPage() {
           </div>
 
           {/* ═══ SECTION 3: BOTTOM ROW ═══ */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 280px', gap: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
             {/* Monthly Case Volume */}
             <div style={{ background: 'white', borderRadius: 20, padding: '20px 24px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -495,11 +495,13 @@ export default function DashboardPage() {
 
             {/* AI Performance */}
             <div style={{ background: 'white', borderRadius: 20, padding: '20px 24px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                 <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Performance</span>
-                <span style={{ fontSize: 22, fontWeight: 800, color: '#4F46E5', fontFamily: 'Geist,sans-serif' }}>{eff?.authorization ?? 92}%</span>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: '#4F46E5', fontFamily: 'Geist,sans-serif', lineHeight: 1.1 }}>{eff?.authorization ?? 92}%</div>
+                  <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>Accuracy</div>
+                </div>
               </div>
-              <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 12 }}>Accuracy</div>
               <PerformanceArea />
             </div>
 
@@ -510,21 +512,22 @@ export default function DashboardPage() {
                 <button onClick={() => router.push('/records')} style={{ fontSize: 12, fontWeight: 600, color: '#4F46E5', background: 'none', border: 'none', cursor: 'pointer' }}>View all</button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-                {(d.activity || []).slice(0, 5).map((a: any, i: number) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderBottom: i < 4 ? '1px solid #F8FAFC' : 'none' }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 10, background: '#EEF2FF', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                      <Activity size={14} color="#4F46E5" />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-                        {a.status} ·{' '}
-                        <span style={{ background: '#EEF2FF', color: '#4F46E5', borderRadius: 5, padding: '1px 7px', fontSize: 11, fontWeight: 700, fontFamily: 'Geist,sans-serif' }}>{a.labNumber ?? '—'}</span>
+                {(d.activity || []).slice(0, 5).map((a: any, i: number, arr: any[]) => {
+                  const meta = activityMeta(a.status);
+                  const Icon = meta.Icon;
+                  return (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', borderBottom: i < arr.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 11, background: '#EEF2FF', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                        <Icon size={17} color="#4F46E5" />
                       </div>
-                      <div style={{ fontSize: 11, color: '#64748B', marginTop: 1 }}>{a.patient}</div>
-                      <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 1 }}>{new Date(a.at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{meta.title}</div>
+                        {a.labNumber && <div style={{ fontSize: 12, color: '#94A3B8', fontWeight: 500, marginTop: 2 }}>{a.labNumber}</div>}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#94A3B8', fontWeight: 500, flexShrink: 0 }}>{new Date(a.at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -532,6 +535,16 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+}
+
+function activityMeta(status: string): { title: string; Icon: typeof Activity } {
+  const s = (status || '').toLowerCase();
+  if (/(submit|receiv|regist|accession)/.test(s)) return { title: 'New specimen received', Icon: FileText };
+  if (/(process|progress|screen)/.test(s)) return { title: 'Processing started', Icon: FlaskConical };
+  if (/(result|complet|analys)/.test(s)) return { title: 'Analysis completed', Icon: CheckCircle2 };
+  if (/(approv|authoriz|final|report|sign)/.test(s)) return { title: 'Report finalized', Icon: FileCheck };
+  if (/(bill|invoic|paid|charge)/.test(s)) return { title: 'Invoice billed', Icon: FileText };
+  return { title: status || 'Activity', Icon: Activity };
 }
 
 function SkeletonCard() {
