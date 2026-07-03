@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Activity, AlertTriangle, ArrowLeft, Check, CheckCircle2, ChevronRight, Clock, Download,
-  FileText, FlaskConical, Microscope, Pause, Pencil, Receipt, X,
+  FileText, FlaskConical, Microscope, Pause, Pencil, Play, Receipt, RotateCcw, Send, ShieldCheck, Users, X, XCircle,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
@@ -62,8 +62,11 @@ const relTime = (iso?: string | null) => {
 };
 
 // Button styles — rectangular (rounded rectangle), padded, with an icon.
-const actionPrimary = 'flex w-full items-center justify-between gap-2 rounded-xl bg-[#4F46E5] px-5 py-3.5 text-[15px] font-bold text-white transition-colors hover:bg-[#4338CA] disabled:opacity-60';
-const actionSecondary = 'flex w-full items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#F1F5F9] px-5 py-3.5 text-[15px] font-semibold text-[#475569] transition-colors hover:bg-[#E2E8F0] disabled:opacity-60';
+// Action buttons — side-by-side pills. Primary = indigo gradient, secondary =
+// light-blue gradient (glassy) with navy text, matching the reference chip.
+const ACTION_BTN = 'flex min-w-[150px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-2xl px-4 py-3 text-[14px] font-bold transition-all hover:brightness-[0.97] active:scale-[0.99] disabled:opacity-60';
+const PRIM_STYLE = { background: 'linear-gradient(135deg,#4F46E5 0%,#4338CA 100%)', color: '#FFFFFF', boxShadow: '0 6px 16px rgba(79,70,229,0.28)' } as const;
+const SEC_STYLE = { background: 'linear-gradient(135deg,#EFF4FD 0%,#D7E5F8 100%)', color: '#1E40AF', border: '1px solid #C7D7EF', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7), 0 2px 8px rgba(30,64,175,0.10)' } as const;
 const rightBtn = 'flex w-full items-center justify-center gap-2 rounded-xl bg-[#F1F5F9] px-3 py-3.5 text-[15px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#E2E8F0]';
 const LABEL = 'text-[14px] font-bold italic uppercase tracking-[0.05em] text-[#3B5EA8]';
 
@@ -466,52 +469,53 @@ function ActionPanel(p: ActionProps) {
   const { status, pending, go } = p;
   const Title = ({ children }: any) => <div className="mt-2 text-[24px] font-extrabold italic leading-tight text-[#0F172A]">{children}</div>;
   const Desc = ({ children }: any) => <div className="mt-2 text-[16px] font-medium leading-[1.55] text-[#475569]">{children}</div>;
-  const Row = ({ children }: any) => <div className="mt-3.5 flex flex-col gap-2">{children}</div>;
-  const Prim = ({ children, ...rest }: any) => <button {...rest} className={actionPrimary}><span>{children}</span><ChevronRight size={16} /></button>;
+  const Row = ({ children }: any) => <div className="mt-3.5 flex flex-wrap gap-2.5">{children}</div>;
+  const Prim = ({ children, icon, ...rest }: any) => <button {...rest} className={ACTION_BTN} style={PRIM_STYLE}>{icon}<span>{children}</span></button>;
+  const Sec = ({ children, icon, ...rest }: any) => <button {...rest} className={ACTION_BTN} style={SEC_STYLE}>{icon}<span>{children}</span></button>;
 
   switch (status) {
     case 'Pending':
       return (<><Title>Ready to Submit</Title><Desc>Review clinical features and submit this record for processing.</Desc>
         <Row>
-          <Prim disabled={pending} onClick={() => go('Submitted', { title: 'Submit for processing?', desc: 'This moves the record into the processing queue.' })}>Submit for Processing</Prim>
+          <Prim icon={<Send size={16} />} disabled={pending} onClick={() => go('Submitted', { title: 'Submit for processing?', desc: 'This moves the record into the processing queue.' })}>Submit for Processing</Prim>
         </Row></>);
     case 'Submitted':
       return (<><Title>Awaiting Processing</Title><Desc>Mark this record as in processing when the specimen is received in lab.</Desc>
         <Row>
-          <Prim disabled={pending} onClick={() => go('Processing')}>Mark as Processing</Prim>
-          <button disabled={pending} className={actionSecondary} onClick={() => go('OnHold')}>Put On Hold</button>
+          <Prim icon={<Play size={16} />} disabled={pending} onClick={() => go('Processing')}>Mark as Processing</Prim>
+          <Sec icon={<Pause size={16} />} disabled={pending} onClick={() => go('OnHold')}>Put On Hold</Sec>
         </Row></>);
     case 'Processing':
     case 'Partial':
       return (<><Title>Add Result Sheet</Title><Desc>Enter cytology findings for this specimen.</Desc>
         <Row>
-          <Prim onClick={p.onOpenSheet}>Open Result Sheet</Prim>
-          {status === 'Processing' && <button disabled={pending} className={actionSecondary} onClick={() => go('Partial')}>Mark Partial</button>}
-          <button disabled={pending} className={actionSecondary} onClick={() => go('Completed', { title: 'Mark complete?', desc: 'Confirm the result sheet is complete for this record.' })}>Mark Complete</button>
+          <Prim icon={<FileText size={16} />} onClick={p.onOpenSheet}>Open Result Sheet</Prim>
+          {status === 'Processing' && <Sec icon={<Clock size={16} />} disabled={pending} onClick={() => go('Partial')}>Mark Partial</Sec>}
+          <Sec icon={<CheckCircle2 size={16} />} disabled={pending} onClick={() => go('Completed', { title: 'Mark complete?', desc: 'Confirm the result sheet is complete for this record.' })}>Mark Complete</Sec>
         </Row></>);
     case 'Completed':
       return (<><Title>Ready for Review</Title><Desc>Result sheet is complete. Submit for pathologist authorization.</Desc>
-        <Row><Prim disabled={pending} onClick={() => go('Resulted', { title: 'Submit for authorization?', desc: 'This places the record in the pathologist authorization queue.' })}>Submit for Authorization</Prim></Row></>);
+        <Row><Prim icon={<ShieldCheck size={16} />} disabled={pending} onClick={() => go('Resulted', { title: 'Submit for authorization?', desc: 'This places the record in the pathologist authorization queue.' })}>Submit for Authorization</Prim></Row></>);
     case 'Resulted':
       return (<><Title>Awaiting Authorization</Title><Desc>This record is in the authorization queue.</Desc>
-        <Row><Prim onClick={p.onAuthorize}>Authorize Now</Prim>
-          <button onClick={p.onAuthorizer} className={actionSecondary}>Batch Authorizer</button></Row></>);
+        <Row><Prim icon={<ShieldCheck size={16} />} onClick={p.onAuthorize}>Authorize Now</Prim>
+          <Sec icon={<Users size={16} />} onClick={p.onAuthorizer}>Batch Authorizer</Sec></Row></>);
     case 'Approved':
       return (<><CheckHero /><Title>Approved — Ready to Bill</Title><Desc>Record is authorized. Generate an invoice for the referring client.</Desc>
-        <Row><Prim onClick={p.onInvoice}>Create Invoice</Prim>
-          <button className={actionSecondary} onClick={p.onReport}><Download size={14} /> Download Report</button></Row></>);
+        <Row><Prim icon={<Receipt size={16} />} onClick={p.onInvoice}>Create Invoice</Prim>
+          <Sec icon={<Download size={16} />} onClick={p.onReport}>Download Report</Sec></Row></>);
     case 'Billed':
     case 'Paid':
       return (<><CheckHero /><Title>Billing Complete</Title><Desc>This record has been billed{status === 'Paid' ? ' and paid' : ''}.</Desc>
-        <Row><button className={actionSecondary} onClick={p.onReport}><Download size={14} /> Download Report</button></Row></>);
+        <Row><Sec icon={<Download size={16} />} onClick={p.onReport}>Download Report</Sec></Row></>);
     case 'OnHold':
       return (<><Title>Record On Hold</Title><Desc>Resume processing or cancel this record.</Desc>
-        <Row><Prim disabled={pending} onClick={() => go('Submitted')}>Resume Processing</Prim>
-          <button disabled={pending} className={actionSecondary} onClick={() => go('Disabled', { title: 'Cancel record?', desc: 'This marks the record as cancelled.' })}>Cancel Record</button></Row></>);
+        <Row><Prim icon={<Play size={16} />} disabled={pending} onClick={() => go('Submitted')}>Resume Processing</Prim>
+          <Sec icon={<XCircle size={16} />} disabled={pending} onClick={() => go('Disabled', { title: 'Cancel record?', desc: 'This marks the record as cancelled.' })}>Cancel Record</Sec></Row></>);
     case 'Failed':
     case 'Disabled':
       return (<><Title>Record {status === 'Failed' ? 'Failed' : 'Cancelled'}</Title><Desc>Reopen this record to move it back into processing.</Desc>
-        <Row><Prim disabled={pending} onClick={() => go('Submitted', { title: 'Reopen record?', desc: 'This returns the record to the processing workflow.' })}>Reopen Record</Prim></Row></>);
+        <Row><Prim icon={<RotateCcw size={16} />} disabled={pending} onClick={() => go('Submitted', { title: 'Reopen record?', desc: 'This returns the record to the processing workflow.' })}>Reopen Record</Prim></Row></>);
     default:
       return (<><Title>Complete</Title><Desc>This record has completed its lifecycle.</Desc></>);
   }
