@@ -63,7 +63,7 @@ const relTime = (iso?: string | null) => {
 
 // Button styles — rectangular (rounded rectangle), padded, with an icon.
 const actionPrimary = 'flex w-full items-center justify-between gap-2 rounded-xl bg-[#4F46E5] px-5 py-3.5 text-[15px] font-bold text-white transition-colors hover:bg-[#4338CA] disabled:opacity-60';
-const actionSecondary = 'flex w-full items-center justify-center gap-2 rounded-xl border-[1.5px] border-[#CBD5E1] px-5 py-3 text-[15px] font-semibold text-[#475569] transition-colors hover:bg-[#F1F5F9] disabled:opacity-60';
+const actionSecondary = 'flex w-full items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#F1F5F9] px-5 py-3.5 text-[15px] font-semibold text-[#475569] transition-colors hover:bg-[#E2E8F0] disabled:opacity-60';
 const rightBtn = 'flex w-full items-center justify-center gap-2 rounded-xl bg-[#F1F5F9] px-3 py-3.5 text-[15px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#E2E8F0]';
 const LABEL = 'text-[14px] font-bold italic uppercase tracking-[0.05em] text-[#3B5EA8]';
 
