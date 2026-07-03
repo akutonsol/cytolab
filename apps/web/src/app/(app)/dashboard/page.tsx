@@ -146,6 +146,30 @@ export default function DashboardPage() {
   const eff = d.effectiveness;
   const kpis = ov?.kpis;
   const totalSpecimens = d.throughput.series?.reduce((s: any, i: any) => s + (i.value || 0), 0) || 0;
+
+  // Monthly Case Volume — bucket the throughput series into 6 months; `gap`
+  // fills each capsule up to a soft target. Reused by the chart + stat tiles.
+  const volRows = (() => {
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const now = new Date();
+    const series = d.throughput.series ?? [];
+    const chunk = Math.max(1, Math.ceil(series.length / 6));
+    const rows = Array.from({ length: 6 }, (_, i) => {
+      const dt = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+      const current = series.slice(i * chunk, (i + 1) * chunk).reduce((s: any, r: any) => s + (r.value || 0), 0);
+      return { month: MONTHS[dt.getMonth()], current, gap: 0 };
+    });
+    const maxC = Math.max(1, ...rows.map((r) => r.current));
+    const target = Math.round(maxC * 1.3);
+    rows.forEach((r) => { r.gap = Math.max(0, target - r.current); });
+    return rows;
+  })();
+  const volTotal = volRows.reduce((s, r) => s + r.current, 0);
+  const volAvg = Math.round(volTotal / volRows.length);
+  const volPeak = volRows.reduce((a, b) => (b.current > a.current ? b : a), volRows[0]);
+  const volTarget = (volRows[0]?.current ?? 0) + (volRows[0]?.gap ?? 0);
+  const volAttain = volTarget > 0 ? Math.min(100, Math.round((volTotal / (volTarget * volRows.length)) * 100)) : 0;
+
   const emailName = (claims?.email ?? '').split('@')[0].split(/[._-]/)[0].replace(/[^a-z]/gi, '');
   const firstName = ov?.greeting?.firstName || (emailName ? emailName[0].toUpperCase() + emailName.slice(1) : 'there');
 
@@ -369,21 +393,20 @@ export default function DashboardPage() {
                 <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Monthly Case Volume</span>
                 <div style={{ fontSize: 12, fontWeight: 600, color: '#64748B', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 999, padding: '3px 10px', cursor: 'pointer' }}>6 Months ▾</div>
               </div>
-              <SubscriptionBars data={(() => {
-                const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                const now = new Date();
-                const series = d.throughput.series ?? [];
-                const chunk = Math.max(1, Math.ceil(series.length / 6));
-                const rows = Array.from({ length: 6 }, (_, i) => {
-                  const dt = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
-                  const current = series.slice(i * chunk, (i + 1) * chunk).reduce((s: any, r: any) => s + (r.value || 0), 0);
-                  return { month: MONTHS[dt.getMonth()], current, gap: 0 };
-                });
-                const maxC = Math.max(1, ...rows.map((r) => r.current));
-                const target = Math.round(maxC * 1.3);
-                rows.forEach((r) => { r.gap = Math.max(0, target - r.current); });
-                return rows;
-              })()} />
+              <SubscriptionBars data={volRows} />
+              <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {[
+                  { value: volTotal, label: 'Total cases' },
+                  { value: volAvg, label: 'Avg / month' },
+                  { value: volPeak?.month ?? '—', label: 'Peak month' },
+                  { value: `${volAttain}%`, label: 'Target met' },
+                ].map(({ value, label }) => (
+                  <div key={label} style={{ background: '#F8F9FF', borderRadius: 12, padding: '12px 14px' }}>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{value}</div>
+                    <div style={{ fontSize: 12, color: '#64748B', fontWeight: 500, marginTop: 4 }}>{label}</div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Case Distribution by Type */}

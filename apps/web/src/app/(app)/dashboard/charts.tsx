@@ -143,8 +143,8 @@ export function SubscriptionBars({ data }: { data: any[] }) {
     <ResponsiveContainer width="100%" height={150}>
       <BarChart data={data} margin={{ top: 4, right: 4, bottom: 4, left: 0 }} barCategoryGap="30%">
         <CartesianGrid vertical={false} stroke="#F1F5F9" strokeDasharray="4 4" />
-        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94A3B8', fontWeight: 500 }} dy={6} />
-        <YAxis axisLine={false} tickLine={false} width={34} tick={{ fontSize: 10, fill: '#CBD5E1', fontWeight: 500 }} allowDecimals={false} />
+        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#475569', fontWeight: 500 }} dy={6} />
+        <YAxis axisLine={false} tickLine={false} width={40} tick={{ fontSize: 11, fill: '#475569', fontWeight: 500 }} allowDecimals={false} />
         <Tooltip cursor={{ fill: 'rgba(79,70,229,0.04)' }} content={({ active, payload, label }: any) => {
           if (!active || !payload?.length) return null;
           return (
