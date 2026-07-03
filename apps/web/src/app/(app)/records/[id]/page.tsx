@@ -228,26 +228,26 @@ export default function RecordDetailPage() {
 
         {/* Recommended action */}
         <div className="mt-2 border-t-2 border-[#E4E8F4] pt-5">
-          <div className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#EF4444]">Recommended Action</div>
+          <div className="text-[15px] font-bold italic uppercase tracking-[0.06em] text-[#EF4444]">Recommended Action</div>
           <ActionPanel status={status} pending={statusMut.isPending} go={go} onEditFeatures={() => setDrawer(true)} onOpenSheet={() => setSheetModal(true)} onAuthorize={() => setAuthModal(true)} onInvoice={() => router.push(`/billing?recordId=${id}`)} onReport={() => router.push(`/reports?recordId=${id}`)} onAuthorizer={() => router.push('/authorizer')} />
         </div>
 
         {/* Clinical features */}
         <div className="mt-5 border-t border-[#E4E8F4] pt-5">
           <div className="mb-2 flex items-center justify-between">
-            <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#94A3B8]">Clinical Features</div>
+            <div className="text-[14px] font-bold italic uppercase tracking-[0.06em] text-[#334155]">Clinical Features</div>
             <button onClick={() => setDrawer(true)} className="grid h-7 w-7 place-items-center rounded-full text-[#94A3B8] hover:bg-[#E2E8F0] hover:text-[#4F46E5]"><Pencil size={14} /></button>
           </div>
           {!hasFeatures ? (
-            <div className="text-[13px] text-[#94A3B8]">No clinical features recorded.</div>
+            <div className="text-[14px] text-[#64748B]">No clinical features recorded.</div>
           ) : (
             <>
               {shownFields.map((f: any) => {
                 const v = featValue(f.fieldKey);
                 return (
                   <div key={f.fieldKey} className="flex items-center justify-between gap-2 border-b border-[#F1F5F9] py-2.5">
-                    <span className="text-[13px] text-[#94A3B8]">{f.label}</span>
-                    <span className="text-right text-[15px] font-semibold text-[#0F172A]">{f.fieldType === 'CHECKBOX' ? (v ? <Check size={15} className="inline text-[#16A34A]" /> : <span className="text-[#CBD5E1]">—</span>) : (v || <span className="text-[#CBD5E1]">—</span>)}</span>
+                    <span className="text-[14px] font-medium text-[#64748B]">{f.label}</span>
+                    <span className="text-right text-[16px] font-semibold text-[#0F172A]">{f.fieldType === 'CHECKBOX' ? (v ? <Check size={16} className="inline text-[#16A34A]" /> : <span className="text-[#CBD5E1]">—</span>) : (v || <span className="text-[#CBD5E1]">—</span>)}</span>
                   </div>
                 );
               })}
@@ -409,8 +409,8 @@ interface ActionProps {
 }
 function ActionPanel(p: ActionProps) {
   const { status, pending, go } = p;
-  const Title = ({ children }: any) => <div className="mt-1.5 text-[22px] font-bold text-[#0F172A]">{children}</div>;
-  const Desc = ({ children }: any) => <div className="mt-1.5 text-[15px] leading-[1.5] text-[#64748B]">{children}</div>;
+  const Title = ({ children }: any) => <div className="mt-2 text-[24px] font-extrabold italic leading-tight text-[#0F172A]">{children}</div>;
+  const Desc = ({ children }: any) => <div className="mt-2 text-[16px] font-medium leading-[1.55] text-[#475569]">{children}</div>;
   const Row = ({ children }: any) => <div className="mt-3.5 flex flex-col gap-2">{children}</div>;
   const Prim = ({ children, ...rest }: any) => <button {...rest} className={actionPrimary}><span>{children}</span><ChevronRight size={16} /></button>;
 
