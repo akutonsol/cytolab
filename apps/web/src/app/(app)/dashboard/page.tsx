@@ -15,7 +15,7 @@ import { HeroBanner, type HeroChip } from '@/components/dashboard/hero-banner';
 import { NavPills } from '@/components/dashboard/nav-pills';
 import { OeeDonut, ProgressRing, RadarMetrics, ThroughputComb } from './charts';
 
-const GREEN = '#22c55e', BLUE = '#4f7df9', PURPLE = '#8b5cf6';
+const GREEN = '#22c55e', BLUE = '#4F46E5';
 // The page is transparent so it shows the layout's single shared canvas gradient
 // (top bar + content are one continuous surface, no seam). The DNA PNG has a
 // transparent background, so it overlays the gradient directly.
@@ -38,7 +38,7 @@ const dotFor = (status: string) =>
 const CHIPS = [
   { bg: '#eceef2', fg: '#5b6472', Icon: User },
   { bg: '#e3ead9', fg: '#5b6b47', Icon: TestTube },
-  { bg: '#ece2d0', fg: '#8a734e', Icon: Microscope },
+  { bg: '#E0E7FF', fg: '#4338CA', Icon: Microscope },
   { bg: '#dfe3ec', fg: '#5b6472', Icon: FlaskConical },
   { bg: '#e6e1f2', fg: '#6b5ca0', Icon: Stethoscope },
 ];
@@ -66,17 +66,6 @@ function DatePill() {
     </span>
   );
 }
-function Stat({ value, label, dot }: { value: React.ReactNode; label: string; dot?: string }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-[30px] font-extrabold leading-none tracking-tight text-[var(--foreground)]">{value}</span>
-      <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--muted-foreground)]">
-        {dot && <span className="h-2 w-2 rounded-full" style={{ background: dot }} />}{label}
-      </span>
-    </div>
-  );
-}
-
 // Dominant DNA-helix backdrop flowing from the top-right. `background-blend-mode:
 // multiply` knocks the white PNG background out against a full-cover copy of the
 // canvas gradient — self-contained and seamless (avoids the transparent-hole
