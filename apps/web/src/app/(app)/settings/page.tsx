@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, Empty, Typography } from 'antd';
+import { Inbox } from 'lucide-react';
 import { SettingsListPane, type PaneField } from '@/components/SettingsListPane';
 import { AiSettingsPane } from '@/components/AiSettingsPane';
 
@@ -63,8 +63,11 @@ const TAX_FIELDS: PaneField[] = [
 function ComingSoon({ label }: { label: string }) {
   return (
     <div>
-      <Typography.Title level={4} style={{ marginTop: 0 }}>{label}</Typography.Title>
-      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={`${label} settings are coming soon`} style={{ margin: '40px 0' }} />
+      <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">{label}</h3>
+      <div className="my-10 flex flex-col items-center justify-center gap-2 text-secondary">
+        <Inbox size={40} className="text-outline-variant" />
+        <span className="font-body-sm text-body-sm">{label} settings are coming soon</span>
+      </div>
     </div>
   );
 }
@@ -155,25 +158,20 @@ export default function SettingsPage() {
   })();
 
   return (
-    <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-      <Card size="small" title="Settings" style={{ width: 240, flexShrink: 0 }} styles={{ body: { padding: 12 } }}>
+    <div className="flex items-start gap-4">
+      <div className="glass-card w-60 shrink-0 rounded-2xl p-4">
+        <div className="mb-4 font-headline-sm text-headline-sm text-charcoal-heading">Settings</div>
         {NAV_GROUPS.map((group) => (
-          <div key={group.title} style={{ marginBottom: 16 }}>
-            <Typography.Text style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4, color: '#9ca3af', fontWeight: 600 }}>
-              {group.title}
-            </Typography.Text>
-            <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div key={group.title} className="mb-4">
+            <span className="font-label-sm text-label-sm text-outline uppercase tracking-wider">{group.title}</span>
+            <div className="mt-1.5 flex flex-col gap-0.5">
               {group.items.map((item) => {
                 const isActive = item.id === active;
                 return (
                   <button
                     key={item.id}
                     onClick={() => setActive(item.id)}
-                    style={{
-                      textAlign: 'left', border: 'none', cursor: 'pointer', padding: '7px 10px', borderRadius: 8,
-                      background: isActive ? '#eaf0fe' : 'transparent', color: isActive ? '#4f7df9' : '#1a1d21',
-                      fontWeight: isActive ? 600 : 400, fontSize: 14,
-                    }}
+                    className={`rounded-lg px-2.5 py-1.5 text-left font-body-sm text-body-sm transition-colors ${isActive ? 'bg-primary-fixed font-semibold text-primary' : 'text-on-surface hover:bg-surface-container-low'}`}
                   >
                     {item.label}
                   </button>
@@ -182,11 +180,11 @@ export default function SettingsPage() {
             </div>
           </div>
         ))}
-      </Card>
+      </div>
 
       {/* key by section so each pane remounts — otherwise the shared
           SettingsListPane instance leaks its draft/edit state across sections. */}
-      <Card style={{ flex: 1, minWidth: 0 }} key={active}>{pane}</Card>
+      <div className="glass-card min-w-0 flex-1 rounded-2xl p-6" key={active}>{pane}</div>
     </div>
   );
 }

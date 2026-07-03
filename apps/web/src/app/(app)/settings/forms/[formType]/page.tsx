@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { App, Select, Switch } from 'antd';
 import {
   ArrowLeft, CheckCircle2, GripVertical, Info, Pencil, Plus, TextCursorInput, Trash2,
 } from 'lucide-react';
@@ -17,8 +16,12 @@ const PRETTY: Record<string, string> = { Gynecology: 'Gynecology', NonGynecology
 
 export default function EditFormPage() {
   const router = useRouter();
-  const { message } = App.useApp();
   const qc = useQueryClient();
+  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
+  const message = {
+    success: (msg: string) => { setToast({ type: 'ok', msg }); setTimeout(() => setToast(null), 3000); },
+    error: (msg: string) => { setToast({ type: 'err', msg }); setTimeout(() => setToast(null), 3000); },
+  };
   const formType = String(useParams().formType);
 
   const { data } = useQuery<Config>({ queryKey: ['form-config', formType], queryFn: () => api.get(`/form-config/${formType}`).then((r) => r.data), enabled: !!formType });
@@ -148,23 +151,24 @@ export default function EditFormPage() {
                         <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#F3F4F6]" style={{ color: f.fieldType === 'CHECKBOX' ? '#4F46E5' : '#6B7280' }}><Icon size={16} /></span>
                       </div>
                       <button onClick={() => setExpandedId(open ? undefined : f.id)} className="grid h-8 w-8 place-items-center rounded-lg text-[#9CA3AF] hover:bg-[#F3F4F6] hover:text-[#4F46E5]"><Pencil size={15} /></button>
-                      <Switch checked={f.enabled} onChange={(v) => { setFields((s) => s.map((x) => x.id === f.id ? { ...x, enabled: v } : x)); patch.mutate({ id: f.id, body: { enabled: v } }); }} />
+                      <Toggle checked={f.enabled} onChange={(v) => { setFields((s) => s.map((x) => x.id === f.id ? { ...x, enabled: v } : x)); patch.mutate({ id: f.id, body: { enabled: v } }); }} />
                     </div>
                     {open && (
                       <div className="mt-3 ml-8 flex flex-wrap items-center gap-6 rounded-xl bg-[#F8FAFC] p-4">
                         <label className="flex items-center gap-2.5">
                           <span className="text-[13px] font-medium text-[#374151]">Show when printing results?</span>
-                          <Switch checked={f.showWhenPrinting} onChange={(v) => { setFields((s) => s.map((x) => x.id === f.id ? { ...x, showWhenPrinting: v } : x)); patch.mutate({ id: f.id, body: { showWhenPrinting: v } }); }} />
+                          <Toggle checked={f.showWhenPrinting} onChange={(v) => { setFields((s) => s.map((x) => x.id === f.id ? { ...x, showWhenPrinting: v } : x)); patch.mutate({ id: f.id, body: { showWhenPrinting: v } }); }} />
                         </label>
                         <label className="flex items-center gap-2.5">
                           <span className="text-[13px] font-medium text-[#374151]">Print Group</span>
-                          <Select
-                            showSearch allowClear placeholder="Choose a Print Group" style={{ minWidth: 240 }}
-                            value={f.printGroupId ?? undefined}
-                            optionFilterProp="label"
-                            options={groups.map((g) => ({ value: g.id, label: g.name }))}
-                            onChange={(v) => { setFields((s) => s.map((x) => x.id === f.id ? { ...x, printGroupId: v ?? null } : x)); patch.mutate({ id: f.id, body: { printGroupId: v ?? null } }); }}
-                          />
+                          <select
+                            value={f.printGroupId ?? ''}
+                            onChange={(e) => { const v = e.target.value || null; setFields((s) => s.map((x) => x.id === f.id ? { ...x, printGroupId: v } : x)); patch.mutate({ id: f.id, body: { printGroupId: v } }); }}
+                            className="h-9 min-w-[240px] rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] text-[#0F172A] outline-none focus:border-[#4F46E5]"
+                          >
+                            <option value="">Choose a Print Group</option>
+                            {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                          </select>
                         </label>
                       </div>
                     )}
@@ -214,6 +218,22 @@ export default function EditFormPage() {
           </>
         )}
       </div>
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg"
+          style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>
+          {toast.msg}
+        </div>
+      )}
     </div>
+  );
+}
+
+function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)}
+      className="relative h-6 w-11 shrink-0 rounded-full transition-colors" style={{ background: checked ? '#4F46E5' : '#c7c4d8' }}>
+      <span className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all" style={{ left: checked ? 22 : 2 }} />
+    </button>
   );
 }

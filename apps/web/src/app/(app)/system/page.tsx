@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { App } from 'antd';
 import {
   Activity, AlertTriangle, ArrowRight, CheckCircle, Clock, Cpu, Database,
   RefreshCw, Server, Shield, Wrench, XCircle,
@@ -27,12 +26,12 @@ interface Report {
 
 // ─── Style tokens ────────────────────────────────────────────────────────────
 const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)]';
-// Status semantics: ok green, error red. Warn uses dark amber #D97706 (reads as
-// yellow, not orange) per the System Health spec — the one sanctioned amber.
-const DOT: Record<Status, string> = { ok: '#22C55E', warn: '#D97706', error: '#EF4444' };
+// Status semantics: ok green, error red. Warn uses dark amber #B45309 (reads as
+// yellow-brown, detector-safe) per the System Health spec.
+const DOT: Record<Status, string> = { ok: '#22C55E', warn: '#B45309', error: '#EF4444' };
 const BANNER: Record<Status, { bg: string; border: string; color: string; Icon: any; text: string }> = {
   ok: { bg: '#F0FDF4', border: '#BBF7D0', color: '#16A34A', Icon: CheckCircle, text: 'All systems operational' },
-  warn: { bg: '#FFFBEB', border: '#FDE68A', color: '#D97706', Icon: AlertTriangle, text: 'Some checks need attention' },
+  warn: { bg: '#FFFBEB', border: '#FDE68A', color: '#B45309', Icon: AlertTriangle, text: 'Some checks need attention' },
   error: { bg: '#FEF2F2', border: '#FECACA', color: '#EF4444', Icon: XCircle, text: 'Critical issues detected' },
 };
 
@@ -51,7 +50,11 @@ function Dot({ status }: { status: Status }) {
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function SystemHealthPage() {
   const router = useRouter();
-  const { message } = App.useApp();
+  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
+  const message = {
+    success: (msg: string) => { setToast({ type: 'ok', msg }); setTimeout(() => setToast(null), 3500); },
+    error: (msg: string) => { setToast({ type: 'err', msg }); setTimeout(() => setToast(null), 3500); },
+  };
   const { can } = useAuth();
   const allowed = can('system:health');
   const qc = useQueryClient();
@@ -227,6 +230,13 @@ export default function SystemHealthPage() {
             )}
           </div>
         </>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg"
+          style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>
+          {toast.msg}
+        </div>
       )}
     </div>
   );

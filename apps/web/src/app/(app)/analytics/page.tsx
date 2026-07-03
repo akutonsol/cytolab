@@ -1,6 +1,5 @@
 'use client';
 
-import { Skeleton } from 'antd';
 import {
   AlertTriangle, ChevronRight, Clock, FileClock, Receipt, RotateCcw, ShieldCheck, Sparkles, TrendingUp, Zap,
 } from 'lucide-react';
@@ -214,7 +213,12 @@ export default function AnalyticsPage() {
 function SkeletonCard({ h }: { h: number }) {
   return (
     <div className={`rounded-card border border-card p-7 shadow-card ${CARD}`} style={{ height: h }}>
-      <Skeleton active paragraph={{ rows: 6 }} />
+      <div className="mb-5 h-5 w-1/3 animate-pulse rounded-md bg-surface-container" />
+      <div className="flex flex-col gap-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="h-4 animate-pulse rounded-md bg-surface-container" style={{ width: `${92 - (i % 3) * 14}%` }} />
+        ))}
+      </div>
     </div>
   );
 }
