@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Activity, AlertTriangle, ArrowLeft, Check, CheckCircle2, ChevronRight, Clock, Download,
-  FlaskConical, Info, Microscope, Pause, Pencil, X,
+  FileText, FlaskConical, Info, Microscope, Pause, Pencil, Receipt, X,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
@@ -56,10 +56,10 @@ const relTime = (iso?: string | null) => {
   return new Date(iso).toLocaleDateString();
 };
 
-// Button styles.
-const actionPrimary = 'flex w-full items-center justify-between gap-2 rounded-full bg-[#4F46E5] px-5 py-3 text-[14px] font-bold text-white transition-colors hover:bg-[#4338CA] disabled:opacity-60';
-const actionSecondary = 'flex w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-[#CBD5E1] px-5 py-[11px] text-[14px] font-semibold text-[#475569] transition-colors hover:bg-[#F1F5F9] disabled:opacity-60';
-const rightBtn = 'w-full rounded-[10px] bg-[#F1F5F9] px-3 py-2.5 text-center text-[13px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#E2E8F0]';
+// Button styles — rectangular (rounded rectangle), padded, with an icon.
+const actionPrimary = 'flex w-full items-center justify-between gap-2 rounded-xl bg-[#4F46E5] px-5 py-3.5 text-[15px] font-bold text-white transition-colors hover:bg-[#4338CA] disabled:opacity-60';
+const actionSecondary = 'flex w-full items-center justify-center gap-2 rounded-xl border-[1.5px] border-[#CBD5E1] px-5 py-3 text-[15px] font-semibold text-[#475569] transition-colors hover:bg-[#F1F5F9] disabled:opacity-60';
+const rightBtn = 'flex w-full items-center justify-center gap-2 rounded-xl bg-[#F1F5F9] px-3 py-3 text-[14px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#E2E8F0]';
 const LABEL = 'text-[10px] font-bold uppercase tracking-[0.08em] text-[#94A3B8]';
 
 // Floating-particle / glow configs — drifting "cells" over the specimen.
@@ -190,15 +190,15 @@ export default function RecordDetailPage() {
 
         {/* Identity */}
         <div className="flex items-start justify-between gap-2">
-          <span className="font-mono text-[22px] font-extrabold text-[#0F172A]">{record.labNumber ?? '—'}</span>
+          <span className="font-mono text-[26px] font-extrabold text-[#0F172A]">{record.labNumber ?? '—'}</span>
           <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-[13px] font-bold" style={{ background: st.bg, color: st.fg }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: st.fg }} />{status}</span>
         </div>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          {record.formType && <span className="rounded-md px-2 py-0.5 text-[11px] font-bold" style={isGyn ? { background: '#EEF3FF', color: '#4F46E5' } : { background: '#F0FDF4', color: '#16A34A' }}>{isGyn ? 'GYN' : 'NON-GYN'}</span>}
-          {record.urgent && <span className="rounded-md bg-[#FEF2F2] px-2 py-0.5 text-[11px] font-bold text-[#DC2626]">URGENT</span>}
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+          {record.formType && <span className="rounded-md px-2 py-0.5 text-[12px] font-bold" style={isGyn ? { background: '#EEF3FF', color: '#4F46E5' } : { background: '#F0FDF4', color: '#16A34A' }}>{isGyn ? 'GYN' : 'NON-GYN'}</span>}
+          {record.urgent && <span className="rounded-md bg-[#FEF2F2] px-2 py-0.5 text-[12px] font-bold text-[#DC2626]">URGENT</span>}
         </div>
-        <div className="mt-3 text-[15px] font-semibold text-[#1E293B]">{`${record.patient?.firstName ?? ''} ${record.patient?.lastName ?? ''}`.trim() || '—'}</div>
-        <div className="text-[13px] text-[#64748B]">{record.client?.officeName || `${record.client?.firstName ?? ''} ${record.client?.lastName ?? ''}`.trim() || '—'}</div>
+        <div className="mt-3 text-[17px] font-semibold text-[#1E293B]">{`${record.patient?.firstName ?? ''} ${record.patient?.lastName ?? ''}`.trim() || '—'}</div>
+        <div className="text-[14px] text-[#64748B]">{record.client?.officeName || `${record.client?.firstName ?? ''} ${record.client?.lastName ?? ''}`.trim() || '—'}</div>
 
         {/* Vertical stepper */}
         <div className="mt-6 flex flex-col">
@@ -216,8 +216,8 @@ export default function RecordDetailPage() {
                   {i < STEPS.length - 1 && <div style={{ width: 2, height: 20, background: i < currentStep ? INDIGO : '#E2E8F0' }} />}
                 </div>
                 <div className="pt-1">
-                  <div className="text-[15px] font-semibold" style={{ color: passed ? '#0F172A' : '#94A3B8' }}>{label}</div>
-                  <div className="text-[12px]" style={{ color: current ? (special ? STATUS[status].fg : '#4F46E5') : done ? '#22C55E' : '#94A3B8' }}>
+                  <div className="text-[17px] font-semibold" style={{ color: passed ? '#0F172A' : '#94A3B8' }}>{label}</div>
+                  <div className="text-[14px]" style={{ color: current ? (special ? STATUS[status].fg : '#4F46E5') : done ? '#22C55E' : '#94A3B8' }}>
                     {current ? (special ? (status === 'OnHold' ? 'On Hold' : status === 'Failed' ? 'Failed' : 'Cancelled') : 'In progress') : done ? 'Completed' : 'Upcoming'}
                   </div>
                 </div>
@@ -228,30 +228,30 @@ export default function RecordDetailPage() {
 
         {/* Recommended action */}
         <div className="mt-2 border-t-2 border-[#E4E8F4] pt-5">
-          <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#EF4444]">Recommended Action</div>
+          <div className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#EF4444]">Recommended Action</div>
           <ActionPanel status={status} pending={statusMut.isPending} go={go} onEditFeatures={() => setDrawer(true)} onOpenSheet={() => setSheetModal(true)} onAuthorize={() => setAuthModal(true)} onInvoice={() => router.push(`/billing?recordId=${id}`)} onReport={() => router.push(`/reports?recordId=${id}`)} onAuthorizer={() => router.push('/authorizer')} />
         </div>
 
         {/* Clinical features */}
         <div className="mt-5 border-t border-[#E4E8F4] pt-5">
           <div className="mb-2 flex items-center justify-between">
-            <div className={LABEL}>Clinical Features</div>
-            <button onClick={() => setDrawer(true)} className="grid h-7 w-7 place-items-center rounded-full text-[#94A3B8] hover:bg-[#E2E8F0] hover:text-[#4F46E5]"><Pencil size={13} /></button>
+            <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#94A3B8]">Clinical Features</div>
+            <button onClick={() => setDrawer(true)} className="grid h-7 w-7 place-items-center rounded-full text-[#94A3B8] hover:bg-[#E2E8F0] hover:text-[#4F46E5]"><Pencil size={14} /></button>
           </div>
           {!hasFeatures ? (
-            <div className="text-[12px] text-[#94A3B8]">No clinical features recorded.</div>
+            <div className="text-[13px] text-[#94A3B8]">No clinical features recorded.</div>
           ) : (
             <>
               {shownFields.map((f: any) => {
                 const v = featValue(f.fieldKey);
                 return (
-                  <div key={f.fieldKey} className="flex items-center justify-between gap-2 border-b border-[#F1F5F9] py-2">
-                    <span className="text-[11px] text-[#94A3B8]">{f.label}</span>
-                    <span className="text-right text-[13px] font-semibold text-[#0F172A]">{f.fieldType === 'CHECKBOX' ? (v ? <Check size={14} className="inline text-[#16A34A]" /> : <span className="text-[#CBD5E1]">—</span>) : (v || <span className="text-[#CBD5E1]">—</span>)}</span>
+                  <div key={f.fieldKey} className="flex items-center justify-between gap-2 border-b border-[#F1F5F9] py-2.5">
+                    <span className="text-[13px] text-[#94A3B8]">{f.label}</span>
+                    <span className="text-right text-[15px] font-semibold text-[#0F172A]">{f.fieldType === 'CHECKBOX' ? (v ? <Check size={15} className="inline text-[#16A34A]" /> : <span className="text-[#CBD5E1]">—</span>) : (v || <span className="text-[#CBD5E1]">—</span>)}</span>
                   </div>
                 );
               })}
-              {fields.length > 4 && <button onClick={() => setShowAllFeatures((v) => !v)} className="mt-2 text-[12px] font-semibold text-[#4F46E5] hover:underline">{showAllFeatures ? 'Show less' : 'Show all →'}</button>}
+              {fields.length > 4 && <button onClick={() => setShowAllFeatures((v) => !v)} className="mt-2 text-[13px] font-semibold text-[#4F46E5] hover:underline">{showAllFeatures ? 'Show less' : 'Show all →'}</button>}
             </>
           )}
         </div>
@@ -336,7 +336,7 @@ export default function RecordDetailPage() {
         {!sheet ? (
           <>
             <div className="text-[13px] text-[#94A3B8]">No result sheet.</div>
-            <button onClick={() => setSheetModal(true)} className={`${rightBtn} mt-2`}>Add Result Sheet</button>
+            <button onClick={() => setSheetModal(true)} className={`${rightBtn} mt-2`}><FlaskConical size={15} /> Add Result Sheet</button>
           </>
         ) : (
           <div className="flex flex-col gap-3">
@@ -357,11 +357,11 @@ export default function RecordDetailPage() {
 
         <div className={`${LABEL} mb-3`}>Next Steps</div>
         <div className="flex flex-col gap-2">
-          {status === 'Resulted' && <button onClick={() => router.push('/authorizer')} className={rightBtn}>Open Authorizer</button>}
-          {status === 'Approved' && <button onClick={() => router.push(`/reports?recordId=${id}`)} className={rightBtn}>Release Report</button>}
-          {status === 'Approved' && <button onClick={() => router.push(`/billing?recordId=${id}`)} className={rightBtn}>Create Invoice</button>}
-          {['Billed', 'Paid', 'Viewed'].includes(status) && <button onClick={() => router.push(`/reports?recordId=${id}`)} className={rightBtn}>View Report</button>}
-          <button onClick={() => router.push('/records')} className={rightBtn}>Back to Records</button>
+          {status === 'Resulted' && <button onClick={() => router.push('/authorizer')} className={rightBtn}><CheckCircle2 size={15} /> Open Authorizer</button>}
+          {status === 'Approved' && <button onClick={() => router.push(`/reports?recordId=${id}`)} className={rightBtn}><FileText size={15} /> Release Report</button>}
+          {status === 'Approved' && <button onClick={() => router.push(`/billing?recordId=${id}`)} className={rightBtn}><Receipt size={15} /> Create Invoice</button>}
+          {['Billed', 'Paid', 'Viewed'].includes(status) && <button onClick={() => router.push(`/reports?recordId=${id}`)} className={rightBtn}><FileText size={15} /> View Report</button>}
+          <button onClick={() => router.push('/records')} className={rightBtn}><ArrowLeft size={15} /> Back to Records</button>
         </div>
       </aside>
 
@@ -409,8 +409,8 @@ interface ActionProps {
 }
 function ActionPanel(p: ActionProps) {
   const { status, pending, go } = p;
-  const Title = ({ children }: any) => <div className="mt-1.5 text-[18px] font-bold text-[#0F172A]">{children}</div>;
-  const Desc = ({ children }: any) => <div className="mt-1 text-[13px] leading-[1.5] text-[#64748B]">{children}</div>;
+  const Title = ({ children }: any) => <div className="mt-1.5 text-[22px] font-bold text-[#0F172A]">{children}</div>;
+  const Desc = ({ children }: any) => <div className="mt-1.5 text-[15px] leading-[1.5] text-[#64748B]">{children}</div>;
   const Row = ({ children }: any) => <div className="mt-3.5 flex flex-col gap-2">{children}</div>;
   const Prim = ({ children, ...rest }: any) => <button {...rest} className={actionPrimary}><span>{children}</span><ChevronRight size={16} /></button>;
 
