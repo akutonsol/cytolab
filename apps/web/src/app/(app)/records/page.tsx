@@ -136,6 +136,10 @@ export default function SamplesPage() {
   const [goal, setGoal] = useState(150);
   const [editingGoal, setEditingGoal] = useState(false);
   const [showAllActive, setShowAllActive] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [fStatus, setFStatus] = useState('');
+  const [fUrgent, setFUrgent] = useState(false);
+  const [fQuery, setFQuery] = useState('');
 
   const { data } = useQuery({
     queryKey: ['records-all'],
@@ -177,7 +181,17 @@ export default function SamplesPage() {
   const bars = WD.map((w) => ({ l: w.l, v: all.filter((r) => new Date(r.createdAt).getDay() === w.k).length, cur: w.k === todayDow }));
   const barPeak = Math.max(1, ...bars.map((b) => b.v));
 
-  const activeRecs = all.filter((r) => ACTIVE.includes(r.status));
+  const activeRecs = all
+    .filter((r) => ACTIVE.includes(r.status))
+    .filter((r) => (fStatus ? r.status === fStatus : true))
+    .filter((r) => (fUrgent ? r.urgent : true))
+    .filter((r) => {
+      if (!fQuery) return true;
+      const s = fQuery.toLowerCase();
+      return patientName(r).toLowerCase().includes(s) || (r.labNumber ?? '').toLowerCase().includes(s);
+    });
+  const activeFilterCount = (fStatus ? 1 : 0) + (fUrgent ? 1 : 0) + (fQuery ? 1 : 0);
+  const clearFilters = () => { setFStatus(''); setFUrgent(false); setFQuery(''); };
   const worklist = showAllActive ? activeRecs : activeRecs.slice(0, 8);
 
   const events = all
@@ -196,9 +210,44 @@ export default function SamplesPage() {
           <p style={{ fontSize: 14, color: SECONDARY, marginTop: 4 }}>Real-time status tracking for clinical diagnostic samples.</p>
         </div>
         <div className="flex items-center gap-2.5">
-          <button style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 44, padding: '0 18px', borderRadius: 12, background: '#fff', border: '1px solid #e6e9f2', color: HEAD, fontFamily: GEIST, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-            <Filter size={16} /> Filters
-          </button>
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setFiltersOpen((v) => !v)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 44, padding: '0 18px', borderRadius: 12, background: '#fff', border: `1px solid ${filtersOpen || activeFilterCount ? PRIMARY : '#e6e9f2'}`, color: activeFilterCount ? PRIMARY : HEAD, fontFamily: GEIST, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+              <Filter size={16} /> Filters
+              {activeFilterCount > 0 && <span style={{ display: 'grid', placeItems: 'center', minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, background: PRIMARY, color: '#fff', fontSize: 11, fontWeight: 700 }}>{activeFilterCount}</span>}
+            </button>
+            {filtersOpen && (
+              <>
+                <div onClick={() => setFiltersOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+                <div style={{ position: 'absolute', right: 0, top: 52, zIndex: 50, width: 288, background: '#fff', border: '1px solid #ebeef1', borderRadius: 16, boxShadow: '0 20px 40px rgba(0,0,0,0.10), 0 2px 4px rgba(79,70,229,0.05)', padding: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <span style={{ ...cardHead, fontSize: 15 }}>Filter Worklist</span>
+                    {activeFilterCount > 0 && <button onClick={clearFilters} style={{ background: 'none', border: 'none', cursor: 'pointer', color: PRIMARY, fontSize: 12, fontWeight: 600 }}>Clear all</button>}
+                  </div>
+
+                  <label style={{ ...kpiLabel, display: 'block', marginBottom: 6 }}>Search</label>
+                  <input value={fQuery} onChange={(e) => setFQuery(e.target.value)} placeholder="Patient or LAB#"
+                    style={{ width: '100%', height: 38, borderRadius: 10, border: '1px solid #e6e9f2', padding: '0 12px', fontSize: 14, color: HEAD, outline: 'none', boxSizing: 'border-box' }} />
+
+                  <label style={{ ...kpiLabel, display: 'block', margin: '14px 0 6px' }}>Status</label>
+                  <div style={{ position: 'relative' }}>
+                    <select value={fStatus} onChange={(e) => setFStatus(e.target.value)}
+                      style={{ width: '100%', height: 38, borderRadius: 10, border: '1px solid #e6e9f2', padding: '0 32px 0 12px', fontSize: 14, color: HEAD, outline: 'none', appearance: 'none', background: '#fff', cursor: 'pointer', boxSizing: 'border-box' }}>
+                      <option value="">All active statuses</option>
+                      {ACTIVE.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    <ChevronDown size={15} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: SECONDARY, pointerEvents: 'none' }} />
+                  </div>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, cursor: 'pointer', fontSize: 14, color: HEAD }}>
+                    <input type="checkbox" checked={fUrgent} onChange={(e) => setFUrgent(e.target.checked)} style={{ width: 15, height: 15, accentColor: PRIMARY, cursor: 'pointer' }} />
+                    Urgent only
+                  </label>
+
+                  <button onClick={() => setFiltersOpen(false)} style={{ width: '100%', marginTop: 16, height: 40, borderRadius: 10, background: PRIMARY, border: 'none', color: '#fff', fontFamily: GEIST, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Done</button>
+                </div>
+              </>
+            )}
+          </div>
           {can('record:create') && (
             <button onClick={openChoose} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 44, padding: '0 20px', borderRadius: 12, background: PRIMARY, border: 'none', color: '#fff', fontFamily: GEIST, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
               <Plus size={17} /> New Sample
