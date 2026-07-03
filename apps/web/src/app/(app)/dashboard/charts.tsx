@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  Bar, BarChart, CartesianGrid, Cell, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart,
+  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart,
   ReferenceDot, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 
@@ -131,5 +131,89 @@ export function ProgressRing({ pct, size = 40 }: { pct: number; size?: number })
         style={{ transition: 'stroke-dashoffset 1s ease-out' }}
       />
     </svg>
+  );
+}
+
+/* ═══════════ Reference-design placeholder charts (static data; wire later) ═══════════ */
+
+// Monthly Subscription Revenue — stacked indigo bar + green bar per month.
+const SUB = [
+  { m: 'Jan', base: 120, top: 56, green: 176 },
+  { m: 'Feb', base: 84, top: 44, green: 84 },
+  { m: 'Mar', base: 80, top: 44, green: 80 },
+  { m: 'Apr', base: 100, top: 52, green: 120 },
+  { m: 'May', base: 108, top: 56, green: 150 },
+  { m: 'Jun', base: 116, top: 56, green: 162 },
+];
+export function SubscriptionBars({ height = 230 }: { height?: number }) {
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart data={SUB} margin={{ top: 10, right: 4, bottom: 4, left: 4 }} barGap={5} barCategoryGap="26%">
+        <CartesianGrid vertical={false} stroke="#EEF2F7" strokeDasharray="4 6" />
+        <XAxis dataKey="m" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94A3B8', fontWeight: 500 }} dy={6} />
+        <YAxis axisLine={false} tickLine={false} width={50} tick={{ fontSize: 11, fill: '#94A3B8' }} ticks={[0, 88, 176, 264]} domain={[0, 264]} tickFormatter={(v) => (v ? `$ ${v}K` : '0')} />
+        <ReferenceLine y={88} stroke="#CBD5E1" strokeDasharray="5 5" />
+        <Bar dataKey="base" stackId="a" fill="#4F46E5" maxBarSize={18} isAnimationActive animationDuration={800} />
+        <Bar dataKey="top" stackId="a" fill="#A5B4FC" radius={[5, 5, 0, 0]} maxBarSize={18} isAnimationActive animationDuration={800} />
+        <Bar dataKey="green" fill="#22C55E" radius={[5, 5, 0, 0]} maxBarSize={18} isAnimationActive animationDuration={800} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+// Appointment Conversion Rate — stacked solid + ghost bar per month, Jun highlighted.
+const CONV = [
+  { m: 'Jan', done: 70, rest: 24 }, { m: 'Feb', done: 96, rest: 28 }, { m: 'Mar', done: 78, rest: 22 },
+  { m: 'Apr', done: 64, rest: 24 }, { m: 'May', done: 72, rest: 22 }, { m: 'Jun', done: 52, rest: 18 },
+  { m: 'Jul', done: 66, rest: 20 }, { m: 'Aug', done: 84, rest: 26 },
+];
+export function ConversionBars({ height = 180 }: { height?: number }) {
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart data={CONV} margin={{ top: 6, right: 4, bottom: 4, left: 4 }} barCategoryGap="34%">
+        <XAxis dataKey="m" axisLine={false} tickLine={false}
+          tick={(p: any) => {
+            const hi = p.payload.value === 'Jun';
+            return <text x={p.x} y={p.y + 12} textAnchor="middle" fontSize={12} fontWeight={hi ? 700 : 500} fill={hi ? '#0F172A' : '#94A3B8'}>{p.payload.value}</text>;
+          }} />
+        <Bar dataKey="done" stackId="c" fill="#4F46E5" radius={[0, 0, 6, 6]} maxBarSize={26} isAnimationActive animationDuration={800} />
+        <Bar dataKey="rest" stackId="c" fill="#C7D2FE" radius={[6, 6, 0, 0]} maxBarSize={26} isAnimationActive animationDuration={800} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+// Total Revenue — area chart with indigo gradient + hover tooltip.
+const REV = [
+  { m: 'Jan', v: 38 }, { m: 'Feb', v: 30 }, { m: 'Mar', v: 52 }, { m: 'Apr', v: 40 },
+  { m: 'May', v: 72 }, { m: 'Jun', v: 66 }, { m: 'Jul', v: 91 }, { m: 'Aug', v: 84 },
+  { m: 'Sep', v: 83 }, { m: 'Oct', v: 81 }, { m: 'Nov', v: 86 }, { m: 'Dec', v: 72 },
+];
+export function RevenueArea({ height = 300 }: { height?: number }) {
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <AreaChart data={REV} margin={{ top: 10, right: 12, bottom: 4, left: 4 }}>
+        <defs>
+          <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#4F46E5" stopOpacity={0.28} />
+            <stop offset="100%" stopColor="#4F46E5" stopOpacity={0.02} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid vertical={false} stroke="#EEF2F7" strokeDasharray="4 6" />
+        <XAxis dataKey="m" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94A3B8' }} dy={6} />
+        <YAxis axisLine={false} tickLine={false} width={46} tick={{ fontSize: 11, fill: '#94A3B8' }} ticks={[0, 25, 50, 75, 100]} domain={[0, 100]} tickFormatter={(v) => `$${v}k`} />
+        <Tooltip cursor={{ stroke: '#4F46E5', strokeWidth: 1 }}
+          content={({ active, payload, label }: any) => {
+            if (!active || !payload?.length) return null;
+            return (
+              <div style={{ background: 'white', border: '1px solid #E2E8F0', borderRadius: 10, padding: '8px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
+                <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 2 }}>{label}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5' }}>Revenue: ${(payload[0].value * 1000).toLocaleString()}</div>
+              </div>
+            );
+          }} />
+        <Area type="monotone" dataKey="v" stroke="#4F46E5" strokeWidth={2.5} fill="url(#revGrad)" dot={{ r: 4, fill: '#4F46E5', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 5 }} isAnimationActive animationDuration={900} />
+      </AreaChart>
+    </ResponsiveContainer>
   );
 }

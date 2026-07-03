@@ -3,8 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
 import {
-  Activity, ArrowUpRight, Calendar, CheckCircle2, ChevronDown, Clock, FlaskConical, Microscope, MoreHorizontal,
-  Stethoscope, TestTube, TrendingUp, User,
+  Activity, ArrowUpRight, Calendar, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FlaskConical,
+  Microscope, Monitor, MoreHorizontal, Plus, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
+  TestTube, TrendingUp, User,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -12,7 +13,7 @@ import { useAuth } from '@/lib/auth';
 import { GlassCard } from '@/components/dashboard/glass-card';
 import { HeroBanner, type HeroChip } from '@/components/dashboard/hero-banner';
 import { NavPills } from '@/components/dashboard/nav-pills';
-import { OeeDonut, ProgressRing, RadarMetrics, ThroughputComb } from './charts';
+import { ConversionBars, RevenueArea, SubscriptionBars } from './charts';
 
 const GREEN = '#22c55e', BLUE = '#4F46E5';
 // The page is transparent so it shows the layout's single shared canvas gradient
@@ -141,194 +142,153 @@ export default function DashboardPage() {
       <div style={{ position: 'relative', zIndex: 1, padding: '36px 40px 40px' }}>
         <HeroBanner firstName={firstName} featured={featured} chips={chips} nav={<NavPills />} />
 
-        <div style={{ marginTop: 48 }} className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-          {/* Priority Queue — no card background (matches reference "Urgent Tasks") */}
-          <GlassCard title="Priority Queue" action={<SeeAll onClick={() => router.push('/records')} />} style={{ background: 'transparent', backdropFilter: 'none', WebkitBackdropFilter: 'none', border: '1px solid transparent', boxShadow: 'none' }}>
-            <div className="flex flex-col divide-y divide-[var(--border-soft)]">
-              {d.priorityRecords.length === 0 && <div className="py-6 text-center text-xs text-[var(--muted-foreground)]">Nothing urgent — you&apos;re clear.</div>}
-              {d.priorityRecords.slice(0, 4).map((r: any, i: number) => {
-                const chip = CHIPS[i % CHIPS.length];
-                return (
-                  <div key={r.id} className="flex items-center gap-3 py-4 first:pt-0 last:pb-0">
-                    <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl" style={{ background: chip.bg, color: chip.fg }}><chip.Icon size={22} /></span>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-[15px] font-bold text-[var(--foreground)]">{r.patient}</div>
-                      <div className="mt-1 flex min-w-0 items-center gap-2">
-                        <span className="shrink-0 rounded-full bg-[#1b1d21] px-2.5 py-1 text-[11px] font-semibold text-white">{dateShort(r.date)}</span>
-                        <span className="truncate text-[13px] font-medium text-[var(--muted-foreground)]">{[r.client, r.labNumber].filter(Boolean).join(' · ')}</span>
+        <div style={{ marginTop: 40 }} className="flex flex-col gap-5">
+          {/* ═══ Top block ═══ */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.5fr_1fr]">
+            {/* Monthly Subscription Revenue */}
+            <GlassCard
+              title="Monthly Subscription Revenue"
+              action={
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 12, color: '#94A3B8', fontWeight: 500 }}>6 months</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', fontFamily: 'Geist,sans-serif' }}>$487K</div>
+                </div>
+              }
+            >
+              <SubscriptionBars height={230} />
+              <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: 18, marginTop: 14 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', marginBottom: 16 }}>Practice Overview</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                  {[
+                    { icon: <DollarSign size={18} />, value: '$487.3k', label: 'Total Revenue' },
+                    { icon: <ShoppingBag size={18} />, value: '8,547', label: 'Total Appointments' },
+                    { icon: <CreditCard size={18} />, value: '$57.02', label: 'Avg Fee' },
+                  ].map(({ icon, value, label }) => (
+                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span style={{ width: 48, height: 48, borderRadius: '50%', border: '1.5px solid #E2E8F0', display: 'grid', placeItems: 'center', color: '#64748B', flexShrink: 0 }}>{icon}</span>
+                      <div>
+                        <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500 }}>{label}</div>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', fontFamily: 'Geist,sans-serif' }}>{value}</div>
                       </div>
                     </div>
-                    <span className="hidden shrink-0 items-center gap-2 rounded-full bg-[#f1f2f5] py-1 pl-1 pr-3 shadow-[0_1px_2px_rgba(16,24,40,0.06)] sm:inline-flex">
-                      <ProgressRing pct={r.progress} size={34} />
-                      <span className="whitespace-nowrap text-[12px] font-semibold text-[#374151]">{r.progress}% completed</span>
-                    </span>
-                    <button onClick={() => router.push('/records')} className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[#eceef4] bg-white text-[#374151] shadow-[0_2px_6px_rgba(16,24,40,0.08)] transition-colors hover:text-black"><ArrowUpRight size={16} /></button>
-                  </div>
-                );
-              })}
-            </div>
-          </GlassCard>
-
-          {/* Specimen Throughput (left) + Performance Radar (right) — one divided card */}
-          <GlassCard
-            className="lg:col-span-2"
-            title="Specimen Throughput"
-            action={
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500 }}>30 days</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', fontFamily: 'Geist,sans-serif' }}>
-                  {d.throughput.series?.reduce((s: number, i: any) => s + (i.value || 0), 0) || 0} total
+                  ))}
                 </div>
-              </div>
-            }
-          >
-            <div className="flex flex-col gap-6 lg:flex-row">
-              <div className="min-w-0 flex-1">
-                <div className="mt-1"><ThroughputComb data={d.throughput.series.map((s: any) => ({ ...s, capacity: 20 }))} height={220} /></div>
-
-                {/* Lab Overview strip */}
-                <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: 16, marginTop: 16 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>Lab Overview</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                <div style={{ marginTop: 20 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 8 }}>
                     {[
-                      { label: 'On-time', value: `${eff.onTime ?? 0}%`, icon: <Clock size={14} /> },
-                      { label: 'Authorized', value: `${eff.authorization ?? 0}%`, icon: <CheckCircle2 size={14} /> },
-                      { label: 'Avg TAT', value: `${ov?.kpis?.avgTat ?? '—'}d`, icon: <Activity size={14} /> },
-                    ].map(({ label, value, icon }) => (
-                      <div key={label} style={{ textAlign: 'center', padding: '8px 4px', background: '#F8FAFC', borderRadius: 10, border: '1px solid #F1F5F9' }}>
-                        <div style={{ color: '#4F46E5', marginBottom: 4, display: 'flex', justifyContent: 'center' }}>{icon}</div>
-                        <div style={{ fontSize: 18, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.01em', fontFamily: 'Geist,sans-serif' }}>{value}</div>
-                        <div style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600, marginTop: 2 }}>{label}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Specimen mix breakdown */}
-                <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: 14, marginTop: 14 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-                    {(() => {
-                      const gyn = eff.specimensProcessed || 0;
-                      const non = eff.reportsAuthorized || 0;
-                      const urg = d.priorityRecords?.length || 0;
-                      const tot = Math.max(gyn + non + urg, 1);
-                      return [
-                        { label: 'Gynecology', count: gyn, pct: Math.round((gyn / tot) * 100), color: '#4F46E5' },
-                        { label: 'Non-Gynecology', count: non, pct: Math.round((non / tot) * 100), color: '#818CF8' },
-                        { label: 'Urgent', count: urg, pct: Math.round((urg / tot) * 100), color: '#EF4444' },
-                      ];
-                    })().map(({ label, pct, count, color }) => (
+                      { label: 'Online Booking', v: '42% / $204.7K' },
+                      { label: 'Partner Referrals', v: '31% / $151.3K' },
+                      { label: 'Walk-in Patients', v: '27% / $131.3K' },
+                    ].map(({ label, v }) => (
                       <div key={label}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                          <span style={{ fontSize: 11, color: '#64748B', fontWeight: 500 }}>{label}</span>
-                          <span style={{ fontSize: 11, color: '#0F172A', fontWeight: 700 }}>{pct}% / {count}</span>
-                        </div>
-                        <div style={{ height: 4, background: '#EEF2F7', borderRadius: 999 }}>
-                          <div style={{ height: 4, borderRadius: 999, background: color, width: `${Math.min(pct, 100)}%` }} />
-                        </div>
+                        <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500 }}>{label}</div>
+                        <div style={{ fontSize: 12, color: '#0F172A', fontWeight: 700 }}>{v}</div>
                       </div>
                     ))}
                   </div>
+                  <div style={{ display: 'flex', height: 8, borderRadius: 999, overflow: 'hidden', gap: 3 }}>
+                    <div style={{ width: '42%', background: '#22C55E', borderRadius: 999 }} />
+                    <div style={{ width: '31%', background: '#4F46E5', borderRadius: 999 }} />
+                    <div style={{ width: '27%', background: '#0F172A', borderRadius: 999 }} />
+                  </div>
                 </div>
               </div>
-              <div className="hidden w-px shrink-0 bg-[var(--border-soft)] lg:block" />
-              <div className="lg:w-[40%]">
-                <RadarMetrics data={d.radar} height={260} />
-                <div className="mt-1 flex items-center justify-center gap-6">
-                  <span className="flex items-center gap-2 text-[13px] font-semibold text-[var(--foreground)]"><span className="h-3 w-3 rounded-full" style={{ background: BLUE }} /> This period</span>
-                  <span className="flex items-center gap-2 text-[13px] font-semibold text-[var(--foreground)]"><span className="h-3 w-3 rounded-full" style={{ background: '#2b2d31' }} /> Last period</span>
-                </div>
-              </div>
-            </div>
-          </GlassCard>
+            </GlassCard>
 
-          {/* Lab Effectiveness */}
-          <GlassCard title="Lab Effectiveness" action={<DatePill />}>
-            <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-6">
-              <OeeDonut value={eff.oee} inner={eff.authorization} size={196} />
-              <div className="grid flex-1 grid-cols-3 gap-x-4 gap-y-5" style={{ minWidth: 260 }}>
+            {/* Right column */}
+            <div className="flex flex-col gap-5">
+              {/* Appointment Conversion Rate */}
+              <GlassCard title="Appointment Conversion Rate">
+                <div style={{ position: 'relative' }}>
+                  <ConversionBars height={180} />
+                  <div style={{ position: 'absolute', top: -4, right: 0, width: 148 }}>
+                    <div style={{ background: 'white', borderRadius: 14, padding: '10px 12px', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', border: '1px solid #EEF2F7' }}>
+                      <div style={{ fontSize: 12, color: '#64748B', fontWeight: 600 }}>New Patients</div>
+                      <div style={{ height: 4, background: '#EEF2F7', borderRadius: 999, margin: '8px 0' }}><div style={{ width: '60%', height: 4, borderRadius: 999, background: '#4F46E5' }} /></div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>2,847</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 11, fontWeight: 700, color: '#4F46E5', background: '#EEF2FF', borderRadius: 999, padding: '2px 6px' }}><TrendingUp size={10} />24%</span>
+                      </div>
+                    </div>
+                    <div style={{ background: '#0F172A', borderRadius: 14, padding: '10px 12px', marginTop: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 12, color: '#94A3B8', fontWeight: 600 }}>Growth</span>
+                        <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'grid', placeItems: 'center', color: '#94A3B8' }}><Clock size={12} /></span>
+                      </div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: 'white', fontFamily: 'Geist,sans-serif', marginTop: 2 }}>+12%</div>
+                    </div>
+                  </div>
+                </div>
+              </GlassCard>
+
+              {/* Access Platform Distribution */}
+              <GlassCard title="Access Platform Distribution">
+                <div className="flex flex-col gap-4">
+                  {[
+                    { Icon: Monitor, name: 'Hospital Admin Panel', sub: '2,847 consultation', pct: 58, color: '#4F46E5', bg: '#EEF2FF', fg: '#4F46E5' },
+                    { Icon: Smartphone, name: 'Patient Mobile App', sub: '1,523 consultation', pct: 31, color: '#22C55E', bg: '#F0FDF4', fg: '#16A34A' },
+                    { Icon: Tablet, name: 'Doctor Tablet Usage', sub: '542 consultation', pct: 11, color: '#14B8A6', bg: '#F0FDFA', fg: '#0D9488' },
+                  ].map(({ Icon, name, sub, pct, color, bg, fg }) => (
+                    <div key={name}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ width: 36, height: 36, borderRadius: 10, background: bg, color: fg, display: 'grid', placeItems: 'center' }}><Icon size={16} /></span>
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>{name}</div>
+                            <div style={{ fontSize: 12, color: '#94A3B8' }}>{sub}</div>
+                          </div>
+                        </div>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: '#0F172A' }}>{pct}%</span>
+                      </div>
+                      <div style={{ height: 6, background: '#EEF2F7', borderRadius: 999 }}><div style={{ height: 6, borderRadius: 999, background: color, width: `${pct}%` }} /></div>
+                    </div>
+                  ))}
+                </div>
+              </GlassCard>
+            </div>
+          </div>
+
+          {/* ═══ Bottom block ═══ */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[2.3fr_1fr]">
+            {/* Total Revenue */}
+            <GlassCard
+              title={
+                <div>
+                  <div style={{ fontSize: 14, color: '#64748B', fontWeight: 600 }}>Total Revenue</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 2 }}>
+                    <span style={{ fontSize: 40, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.03em', fontFamily: 'Geist,sans-serif' }}>$487,326</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 12, fontWeight: 700, color: '#16A34A', background: '#F0FDF4', borderRadius: 999, padding: '3px 8px' }}><TrendingUp size={12} />8%</span>
+                  </div>
+                </div>
+              }
+              action={
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 12px', borderRadius: 10, border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: 13, fontWeight: 600, color: '#475569', cursor: 'pointer' }}><Calendar size={14} /> Monthly <ChevronDown size={14} /></button>
+                  <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 12px', borderRadius: 10, border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: 13, fontWeight: 600, color: '#475569', cursor: 'pointer' }}>Filter <SlidersHorizontal size={14} /></button>
+                  <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 12px', borderRadius: 10, border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: 13, fontWeight: 600, color: '#475569', cursor: 'pointer' }}>Add widget <Plus size={14} /></button>
+                </div>
+              }
+            >
+              <RevenueArea height={300} />
+            </GlassCard>
+
+            {/* Top Services */}
+            <GlassCard title="Top Services">
+              <div className="flex flex-col">
                 {[
-                  { label: 'On-time', value: `${eff.onTime}%`, icon: '⏱' },
-                  { label: 'Authorization', value: `${eff.authorization}%`, icon: '✓' },
-                  { label: 'Accuracy', value: `${eff.accuracy}%`, icon: '◎' },
-                  { label: 'Specimens', value: eff.specimensProcessed, icon: '⬡' },
-                  { label: 'Reports', value: eff.reportsAuthorized, icon: '📋' },
-                  { label: 'Re-open', value: `${eff.reopenRate}%`, icon: '↺' },
-                ].map(({ label, value, icon }) => (
-                  <div key={label} style={{ textAlign: 'center', padding: '8px 4px' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', border: '1.5px solid #E2E8F0', display: 'grid', placeItems: 'center', fontSize: 16, margin: '0 auto 6px', background: 'white' }}>{icon}</div>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', lineHeight: 1, fontFamily: 'Geist,sans-serif' }}>{value}</div>
-                    <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 3, fontWeight: 500 }}>{label}</div>
+                  { name: 'Cardiology Consultation', value: '$12,847' },
+                  { name: 'General Physician Visit', value: '$9,204' },
+                  { name: 'Dermatology Screening', value: '$7,631' },
+                  { name: 'Orthopedic Review', value: '$5,912' },
+                ].map((s, i, arr) => (
+                  <div key={s.name} style={{ padding: '14px 0', borderBottom: i < arr.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
+                    <div style={{ fontSize: 13, color: '#94A3B8', fontWeight: 500 }}>{s.name}</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', fontFamily: 'Geist,sans-serif', marginTop: 2 }}>{s.value}</div>
                   </div>
                 ))}
               </div>
-            </div>
-            {/* Growth chip */}
-            <div style={{ background: '#0F172A', borderRadius: 12, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 }}>
-              <div>
-                <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Growth</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: 'white', letterSpacing: '-0.02em', fontFamily: 'Geist,sans-serif' }}>{d.throughput.deltaPct >= 0 ? '+' : ''}{d.throughput.deltaPct ?? 0}%</div>
-              </div>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.1)', display: 'grid', placeItems: 'center', color: '#94A3B8' }}>
-                <TrendingUp size={16} />
-              </div>
-            </div>
-          </GlassCard>
-
-          {/* Top Clients — no card background */}
-          <GlassCard title="Top Clients" action={<SeeAll onClick={() => router.push('/clients')} />} style={{ background: 'transparent', backdropFilter: 'none', WebkitBackdropFilter: 'none', border: '1px solid transparent', boxShadow: 'none' }}>
-            <div className="flex flex-col">
-              {d.topClients.length === 0 && <div className="py-6 text-center text-xs text-[var(--muted-foreground)]">No client volume yet.</div>}
-              {d.topClients.map((c: any, i: number) => {
-                const maxCount = d.topClients[0]?.count ?? 1;
-                const pct = Math.round((c.count / maxCount) * 100);
-                const colors = ['#4F46E5', '#818CF8', '#A5B4FC', '#C7D2FE'];
-                const initials = (c.name || '').split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
-                return (
-                  <div key={i} style={{ marginBottom: i < d.topClients.length - 1 ? 20 : 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 10, background: i === 0 ? '#EEF2FF' : i === 1 ? '#F0FDF4' : '#FFF1F2', display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 700, color: i === 0 ? '#4F46E5' : i === 1 ? '#16A34A' : '#DC2626' }}>
-                          {initials}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>{c.name}</div>
-                          <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 1 }}>{c.count} records</div>
-                        </div>
-                      </div>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>{pct}%</span>
-                    </div>
-                    <div style={{ height: 4, background: '#EEF2F7', borderRadius: 999 }}>
-                      <div style={{ height: 4, borderRadius: 999, background: colors[i] || '#C7D2FE', width: `${pct}%`, transition: 'width 0.8s ease-out' }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </GlassCard>
-
-          {/* Activity */}
-          <GlassCard title="Activity" action={<SeeAll label="Clear all" />} style={{ background: '#e8e9f2', backdropFilter: 'none', WebkitBackdropFilter: 'none' }}>
-            <div className="flex flex-col gap-3">
-              {d.activity.length === 0 && <div className="py-6 text-center text-xs text-[var(--muted-foreground)]">No recent activity.</div>}
-              {d.activity.slice(0, 3).map((a: any, i: number) => (
-                <div key={i} className="flex items-start gap-3 rounded-2xl border border-[#edeef3] bg-white p-3.5 shadow-[0_1px_3px_rgba(16,24,40,0.05)]">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-[14px] font-bold text-[var(--foreground)]">{a.status} · {a.labNumber ?? '—'}</span>
-                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: dotFor(a.status) }} />
-                    </div>
-                    <div className="truncate text-xs font-medium text-[var(--muted-foreground)]">{a.patient}</div>
-                    <div className="mt-1.5 flex items-center gap-3 text-[11px] font-medium text-[var(--muted-foreground)]">
-                      <span className="flex items-center gap-1"><Calendar size={13} /> {dateTime(a.at)}</span>
-                      <span className="flex items-center gap-1"><Clock size={13} /> {relDay(a.at)}</span>
-                    </div>
-                  </div>
-                  <button className="shrink-0 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"><MoreHorizontal size={18} /></button>
-                </div>
-              ))}
-            </div>
-          </GlassCard>
+            </GlassCard>
+          </div>
         </div>
       </div>
     </div>
