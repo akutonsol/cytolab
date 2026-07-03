@@ -339,34 +339,36 @@ function BillTimeline({ step1Done, step2Done, step3Done }: { step1Done: boolean;
   );
 }
 
-// Semi-open arc gauge — red→yellow→green spectrum with a marker at `rate`.
+// Large semi-open arc gauge — segmented red→yellow→green spectrum (zero-orange:
+// mid stop is true yellow #FACC15, not amber) with a marker at `rate`.
 function CollectionGauge({ rate, delta }: { rate: number; delta: number }) {
-  const W = 280, H = 172, cx = W / 2, cy = 150, r = 116;
+  const W = 320, H = 196, cx = W / 2, cy = 160, r = 130;
   const START = -125, SWEEP = 250, END = START + SWEEP;
   const polar = (deg: number): [number, number] => { const a = (deg * Math.PI) / 180; return [cx + r * Math.sin(a), cy - r * Math.cos(a)]; };
   const arc = (a: number, b: number) => { const [x1, y1] = polar(a); const [x2, y2] = polar(b); const large = Math.abs(b - a) > 180 ? 1 : 0; return `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`; };
   const clamped = Math.max(0, Math.min(100, rate));
   const [mx, my] = polar(START + (clamped / 100) * SWEEP);
+  const arcLen = (SWEEP / 360) * 2 * Math.PI * r;
+  const seg = arcLen / 30; // ~30 ticked segments for the reference's textured look
   return (
     <div style={{ position: 'relative', width: W, margin: '0 auto' }}>
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
         <defs>
           <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#EF4444" /><stop offset="50%" stopColor="#F59E0B" /><stop offset="100%" stopColor="#16A34A" />
+            <stop offset="0%" stopColor="#EF4444" /><stop offset="50%" stopColor="#FACC15" /><stop offset="100%" stopColor="#16A34A" />
           </linearGradient>
         </defs>
-        <path d={arc(START, END)} fill="none" stroke="#EAEDF3" strokeWidth={14} strokeLinecap="round" />
-        <path d={arc(START, END)} fill="none" stroke="url(#gaugeGrad)" strokeWidth={14} strokeLinecap="round" />
-        <circle cx={mx} cy={my} r={9} fill="#fff" stroke="#0F172A" strokeWidth={3} />
+        <path d={arc(START, END)} fill="none" stroke="url(#gaugeGrad)" strokeWidth={18} strokeLinecap="round" strokeDasharray={`${seg * 0.62} ${seg * 0.38}`} />
+        <circle cx={mx} cy={my} r={10} fill="#fff" stroke="#0F172A" strokeWidth={3} />
       </svg>
-      <span style={{ position: 'absolute', left: 4, top: H - 26, fontSize: 12, color: '#94A3B8' }}>0%</span>
-      <span style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: -2, fontSize: 12, color: '#94A3B8' }}>50%</span>
-      <span style={{ position: 'absolute', right: 4, top: H - 26, fontSize: 12, color: '#94A3B8' }}>100%</span>
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 74, textAlign: 'center' }}>
+      <span style={{ position: 'absolute', left: 6, top: H - 28, fontSize: 13, fontWeight: 500, color: '#94A3B8' }}>0%</span>
+      <span style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: -2, fontSize: 13, fontWeight: 500, color: '#94A3B8' }}>50%</span>
+      <span style={{ position: 'absolute', right: 6, top: H - 28, fontSize: 13, fontWeight: 500, color: '#94A3B8' }}>100%</span>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 82, textAlign: 'center' }}>
         {delta !== 0 && (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: delta > 0 ? '#F0FDF4' : '#FEF2F2', color: delta > 0 ? '#16A34A' : '#DC2626', borderRadius: 999, padding: '2px 10px', fontSize: 12, fontWeight: 700, marginBottom: 4 }}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)} pts</div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: delta > 0 ? '#F0FDF4' : '#FEF2F2', color: delta > 0 ? '#16A34A' : '#DC2626', borderRadius: 999, padding: '3px 12px', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)} pts</div>
         )}
-        <div style={{ fontSize: 48, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{rate}%</div>
+        <div style={{ fontSize: 56, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{rate}%</div>
       </div>
     </div>
   );
