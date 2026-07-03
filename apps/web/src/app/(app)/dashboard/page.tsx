@@ -238,16 +238,16 @@ export default function DashboardPage() {
                 <div style={{ position: 'relative', width: 760, height: 410, maxWidth: '100%', overflow: 'hidden' }}>
                   {(() => {
                     const markers = [
-                      { x: 356, y: 100, color: '#6366F1' },
-                      { x: 214, y: 216, color: '#3B82F6' },
-                      { x: 356, y: 228, color: '#8B5CF6' },
-                      { x: 300, y: 330, color: '#8B5CF6' },
+                      { x: 362, y: 78, color: '#6366F1' },
+                      { x: 188, y: 228, color: '#3B82F6' },
+                      { x: 360, y: 244, color: '#8B5CF6' },
+                      { x: 296, y: 366, color: '#8B5CF6' },
                     ];
                     const findings = [
-                      { label: 'Reactive Mesothelial Cells', conf: 96, color: '#6366F1', y: 100, attention: false },
-                      { label: 'Inflammatory Cells', conf: 89, color: '#3B82F6', y: 190, attention: false },
-                      { label: 'Atypical Cells', conf: 72, color: '#8B5CF6', y: 268, attention: true },
-                      { label: 'Background Debris', conf: 94, color: '#6366F1', y: 352, attention: false },
+                      { label: 'Reactive Mesothelial Cells', conf: 96, color: '#6366F1', y: 78, attention: false },
+                      { label: 'Inflammatory Cells', conf: 89, color: '#3B82F6', y: 176, attention: false },
+                      { label: 'Atypical Cells', conf: 72, color: '#8B5CF6', y: 262, attention: true },
+                      { label: 'Background Debris', conf: 94, color: '#6366F1', y: 360, attention: false },
                     ];
                     const LX = 500; // label dot x
                     return (
@@ -259,14 +259,14 @@ export default function DashboardPage() {
                           ))}
                         </svg>
                         {/* aura */}
-                        <div style={{ position: 'absolute', left: 40, top: -40, width: 500, height: 490, background: 'radial-gradient(46% 44% at 48% 44%, rgba(255,255,255,0.92), rgba(139,92,246,0.16) 46%, rgba(99,102,241,0.06) 62%, transparent 74%)', filter: 'blur(4px)', zIndex: 0 }} />
+                        <div style={{ position: 'absolute', left: 20, top: -70, width: 540, height: 560, background: 'radial-gradient(46% 44% at 48% 44%, rgba(255,255,255,0.92), rgba(139,92,246,0.16) 46%, rgba(99,102,241,0.06) 62%, transparent 74%)', filter: 'blur(4px)', zIndex: 0 }} />
                         {/* glowing base platform */}
-                        <div style={{ position: 'absolute', left: 130, top: 352, width: 320, height: 56, borderRadius: '50%', background: 'radial-gradient(50% 50% at 50% 50%, rgba(255,255,255,0.95), rgba(167,139,250,0.38) 45%, rgba(139,92,246,0.08) 68%, transparent 78%)', filter: 'blur(1px)', zIndex: 1 }} />
-                        {/* head — oversized image, transparent padding clipped by the stage */}
+                        <div style={{ position: 'absolute', left: 130, top: 372, width: 340, height: 58, borderRadius: '50%', background: 'radial-gradient(50% 50% at 50% 50%, rgba(255,255,255,0.95), rgba(167,139,250,0.38) 45%, rgba(139,92,246,0.08) 68%, transparent 78%)', filter: 'blur(1px)', zIndex: 1 }} />
+                        {/* head — large image (~440px visible head), transparent padding clipped by the stage */}
                         <img src="/ai-man.png" alt="AI Cytology Model" className="ai-breathe"
-                          style={{ position: 'absolute', left: 50, top: -150, width: 480, height: 720, objectFit: 'contain', objectPosition: 'center', filter: 'brightness(1.52) contrast(1.14) saturate(0.35) drop-shadow(0 18px 40px rgba(99,102,241,0.3))', zIndex: 2 }} />
+                          style={{ position: 'absolute', left: -20, top: -250, width: 620, height: 930, objectFit: 'contain', objectPosition: 'center', filter: 'brightness(1.52) contrast(1.14) saturate(0.35) drop-shadow(0 18px 40px rgba(99,102,241,0.3))', zIndex: 2 }} />
                         {/* glossy white top-light to mimic the reference render */}
-                        <div style={{ position: 'absolute', left: 90, top: -40, width: 420, height: 360, background: 'radial-gradient(46% 42% at 50% 34%, rgba(255,255,255,0.55), rgba(255,255,255,0.12) 46%, transparent 66%)', mixBlendMode: 'screen', pointerEvents: 'none', zIndex: 2 }} />
+                        <div style={{ position: 'absolute', left: 120, top: -30, width: 360, height: 320, background: 'radial-gradient(46% 42% at 50% 30%, rgba(255,255,255,0.55), rgba(255,255,255,0.12) 46%, transparent 66%)', mixBlendMode: 'screen', pointerEvents: 'none', zIndex: 2 }} />
                         {/* target markers (soft halo + ring + center) */}
                         {markers.map((m, i) => (
                           <div key={i} style={{ position: 'absolute', left: m.x, top: m.y, transform: 'translate(-50%,-50%)', zIndex: 3, width: 48, height: 48, borderRadius: '50%', display: 'grid', placeItems: 'center', background: `radial-gradient(50% 50% at 50% 50%, ${m.color}33, transparent 70%)` }}>
