@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal } from 'antd';
 import {
-  CheckCircle2, DollarSign, Package, Pencil, Plus, Search, ToggleLeft, ToggleRight,
-  Trash2, TrendingUp, XCircle,
+  ArrowRight, CheckCircle2, Package, Pencil, Plus, Search, SlidersHorizontal,
+  ToggleLeft, ToggleRight, Trash2, XCircle,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
@@ -12,19 +12,37 @@ import { DS } from '@/lib/drawer-styles';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (cents: number) => '$' + ((cents ?? 0) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-const CARD = 'rounded-[20px] border border-[#EEF2F7] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)]';
 
 interface Service {
   id: string; name: string; code: string; description?: string | null;
   price: number; active: boolean; createdAt: string;
 }
 
+// Deterministic per-service avatar colour (zero-orange palette).
+const AVATAR = ['#4F46E5', '#0EA5E9', '#8B5CF6', '#EC4899', '#14B8A6', '#F43F5E', '#6366F1', '#0284C7'];
+const colorFor = (key: string) => AVATAR[key.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR.length];
+const initials = (name: string) => name.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+
+function Avatar({ service, size = 40 }: { service: Service; size?: number }) {
+  const c = colorFor(service.code || service.name);
+  return (
+    <div style={{ width: size, height: size, borderRadius: size / 3, background: `${c}1A`, color: c, display: 'grid', placeItems: 'center', flexShrink: 0, fontFamily: 'Geist,sans-serif', fontWeight: 800, fontSize: size * 0.36 }}>
+      {initials(service.name)}
+    </div>
+  );
+}
+function StatusBadge({ active }: { active: boolean }) {
+  return active
+    ? <span className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-bold" style={{ background: '#ECFCCB', color: '#4D7C0F' }}><CheckCircle2 size={13} /> Active</span>
+    : <span className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-bold" style={{ background: '#F1F5F9', color: '#94A3B8' }}><XCircle size={13} /> Inactive</span>;
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function ServicesPage() {
   const qc = useQueryClient();
+  const feedRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-  const [activeOnly, setActiveOnly] = useState(false);
+  const [tab, setTab] = useState<'all' | 'active' | 'inactive'>('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [editService, setEditService] = useState<Service | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -32,11 +50,12 @@ export default function ServicesPage() {
   const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3000); };
   const isEdit = !!editService;
 
+  const { data: overview } = useQuery<any>({ queryKey: ['patients-overview'], queryFn: () => api.get('/patients/overview').then((r) => r.data) });
+  const firstName = overview?.greeting?.firstName || 'there';
   const { data } = useQuery<Paginated<Service>>({ queryKey: ['services'], queryFn: () => api.get('/services', { params: { pageSize: 200 } }).then((r) => r.data) });
   const services = data?.data ?? [];
   const refetch = () => qc.invalidateQueries({ queryKey: ['services'] });
 
-  // ── Row mutations ──
   const toggleMut = useMutation({
     mutationFn: (s: Service) => api.put(`/services/update/${s.id}`, { active: !s.active }).then((r) => r.data),
     onSuccess: (_d, s) => { notify('ok', s.active ? 'Service deactivated' : 'Service activated'); refetch(); },
@@ -48,95 +67,97 @@ export default function ServicesPage() {
     onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Delete failed'),
   });
 
-  // ── KPIs ──
   const activeCount = services.filter((s) => s.active).length;
-  const avgPrice = services.length ? Math.round(services.reduce((s, sv) => s + sv.price, 0) / services.length) : 0;
-  const minPrice = services.length ? Math.min(...services.map((s) => s.price)) : 0;
-  const maxPrice = services.length ? Math.max(...services.map((s) => s.price)) : 0;
 
-  const kpis = [
-    { icon: Package, label: 'Total Services', value: String(services.length), sub: `${activeCount} active` },
-    { icon: DollarSign, label: 'Avg Price', value: services.length ? fmt(avgPrice) : '$0.00', sub: 'per service' },
-    { icon: TrendingUp, label: 'Price Range', value: services.length ? `${fmt(minPrice)} – ${fmt(maxPrice)}` : '—', sub: 'min – max' },
-  ];
-
-  // ── Filters ──
   const filtered = useMemo(() => {
     let rows = services;
-    const status = activeOnly ? 'active' : statusFilter;
-    if (status === 'active') rows = rows.filter((s) => s.active);
-    else if (status === 'inactive') rows = rows.filter((s) => !s.active);
+    if (tab === 'active') rows = rows.filter((s) => s.active);
+    else if (tab === 'inactive') rows = rows.filter((s) => !s.active);
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       rows = rows.filter((s) => `${s.name} ${s.code}`.toLowerCase().includes(q));
     }
     return rows;
-  }, [services, search, statusFilter, activeOnly]);
+  }, [services, search, tab]);
 
   const openAdd = () => { setEditService(null); setModalOpen(true); };
   const openEdit = (s: Service) => { setEditService(s); setModalOpen(true); };
-
-  const th = 'px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wide text-[#94A3B8]';
+  const th = 'px-6 py-3 text-left text-[12px] font-medium uppercase tracking-wide text-[#9CA3AF]';
 
   return (
-    <div className="min-h-full p-8" style={{ background: '#F8FAFC' }}>
-      {/* Header */}
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+    <div className="min-h-full p-8" style={{ background: '#EDEDEB' }}>
+      {/* Welcome header */}
+      <div className="mb-10 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-[28px] font-bold leading-tight tracking-tight text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Services Catalog</h1>
-          <p className="mt-1.5 text-[14px] text-[#6B7280]">Lab test services and pricing</p>
+          <h1 className="text-[28px] font-bold leading-tight tracking-tight text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Welcome {firstName},</h1>
+          <p className="mt-1 text-[16px] text-[#6B7280]">here’s your service catalog ✌️</p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex h-10 w-[240px] items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-4 text-[#9CA3AF]">
-            <Search size={16} />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or code…" className="w-full border-none bg-transparent text-[14px] text-[#0F172A] outline-none placeholder:text-[#9CA3AF]" />
-          </div>
-          <button onClick={openAdd} className="flex items-center gap-1.5 rounded-[10px] px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-[#4338CA]" style={{ background: '#4F46E5' }}><Plus size={16} /> Add Service</button>
-        </div>
+        <button onClick={openAdd} className="flex items-center gap-2 rounded-2xl px-6 py-3.5 text-[15px] font-semibold text-white transition-opacity hover:opacity-90" style={{ background: '#0F172A' }}><Plus size={18} /> Add Service</button>
       </div>
 
-      {/* KPI strip */}
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {kpis.map(({ icon: Icon, label, value, sub }) => (
-          <div key={label} className={`${CARD} flex items-center gap-4 p-5`}>
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#EEF2FF]"><Icon size={20} color="#4F46E5" /></div>
-            <div className="min-w-0">
-              <div className="text-[11px] font-bold uppercase tracking-wide text-[#94A3B8]">{label}</div>
-              <div className="mt-0.5 text-[20px] font-extrabold leading-tight text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>{value}</div>
-              <div className="mt-0.5 text-[12px] font-semibold text-[#94A3B8]">{sub}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Services table */}
-      <div className={CARD}>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F1F5F9] px-6 py-4">
-          <h2 className="text-[16px] font-semibold text-[#0F172A]">Services · {filtered.length}</h2>
+      {/* Catalog cards */}
+      <div className="mb-10">
+        <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <button onClick={() => setActiveOnly((v) => !v)} className="flex items-center gap-1.5 text-[13px] font-medium text-[#64748B]">
-              {activeOnly ? <ToggleRight size={22} color="#4F46E5" /> : <ToggleLeft size={22} color="#94A3B8" />} Active only
+            <h2 className="text-[32px] font-bold tracking-tight text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Catalog</h2>
+            <span className="rounded-lg px-2.5 py-1 text-[12px] font-bold" style={{ background: '#ECFCCB', color: '#4D7C0F' }}>{activeCount} ACTIVE</span>
+          </div>
+          <button onClick={() => feedRef.current?.scrollIntoView({ behavior: 'smooth' })} className="flex items-center gap-2 rounded-2xl bg-white px-5 py-2.5 text-[14px] font-semibold text-[#0F172A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]">Show All <ArrowRight size={16} /></button>
+        </div>
+        <p className="mb-5 text-[14px] text-[#6B7280]">Lab test services and pricing.</p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {services.slice(0, 4).map((s) => (
+            <button key={s.id} onClick={() => openEdit(s)} className="rounded-2xl bg-white p-5 text-left shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-md">
+              <div className="flex items-center gap-3">
+                <Avatar service={s} />
+                <div className="min-w-0">
+                  <div className="truncate text-[16px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>{s.name}</div>
+                  <div className="truncate font-mono text-[13px] text-[#94A3B8]">{s.code}</div>
+                </div>
+              </div>
+              <div className="mt-5 flex items-center justify-between">
+                <StatusBadge active={s.active} />
+                <span className="text-[15px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>{fmt(s.price)}</span>
+              </div>
             </button>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} disabled={activeOnly} className="h-9 rounded-lg border border-[#E2E8F0] bg-white px-3 text-[13px] font-medium text-[#374151] outline-none focus:border-[#4F46E5] disabled:opacity-50">
-              <option value="all">All</option><option value="active">Active</option><option value="inactive">Inactive</option>
-            </select>
+          ))}
+          {services.length === 0 && <div className="col-span-full rounded-2xl bg-white p-8 text-center text-[14px] text-[#94A3B8]">No services yet.</div>}
+        </div>
+      </div>
+
+      {/* Feed */}
+      <div ref={feedRef}>
+        <h2 className="text-[32px] font-bold tracking-tight text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Services</h2>
+        <p className="mb-5 text-[14px] text-[#6B7280]">Manage lab test services and pricing.</p>
+
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="inline-flex gap-1 rounded-2xl bg-white p-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+            {([['all', 'All'], ['active', 'Active'], ['inactive', 'Inactive']] as const).map(([v, l]) => (
+              <button key={v} onClick={() => setTab(v)} className="rounded-xl px-5 py-2 text-[14px] font-semibold transition-colors" style={{ background: tab === v ? '#F1F1EF' : 'transparent', color: tab === v ? '#0F172A' : '#94A3B8' }}>{l}</button>
+            ))}
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-[260px] items-center gap-2 rounded-2xl bg-white px-4 text-[#9CA3AF] shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+              <Search size={17} />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search" className="w-full border-none bg-transparent text-[14px] text-[#0F172A] outline-none placeholder:text-[#9CA3AF]" />
+            </div>
+            <button className="flex h-11 items-center gap-2 rounded-2xl bg-white px-4 text-[14px] font-semibold text-[#0F172A] shadow-[0_1px_3px_rgba(0,0,0,0.05)]"><SlidersHorizontal size={16} /> Filters</button>
           </div>
         </div>
 
-        {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-            <Package size={48} className="text-[#E2E8F0]" />
-            <div className="text-[16px] font-semibold text-[#64748B]">No services yet</div>
-            <div className="text-[13px] text-[#94A3B8]">Add your first lab service to start billing</div>
-            <button onClick={openAdd} className="mt-2 flex items-center gap-1.5 rounded-[10px] px-4 py-2 text-[13px] font-semibold text-white" style={{ background: '#4F46E5' }}><Plus size={15} /> Add Service</button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
+        <div className="overflow-hidden rounded-3xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+              <Package size={48} className="text-[#E2E8F0]" />
+              <div className="text-[16px] font-semibold text-[#64748B]">No services found</div>
+              <div className="text-[13px] text-[#94A3B8]">Add your first lab service to start billing</div>
+              <button onClick={openAdd} className="mt-2 flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-semibold text-white" style={{ background: '#0F172A' }}><Plus size={15} /> Add Service</button>
+            </div>
+          ) : (
             <table className="w-full border-collapse">
               <thead>
-                <tr className="border-b border-[#F1F5F9]">
-                  <th className={th}>Code</th><th className={th}>Name</th><th className={th}>Description</th>
-                  <th className={`${th} text-right`}>Price</th><th className={th}>Status</th><th className={`${th} text-right`}>Actions</th>
+                <tr className="border-b border-[#F1F1EF]">
+                  <th className={th}>Service</th><th className={th}>Code</th><th className={`${th} text-right`}>Price</th><th className={th}>Status</th><th className={`${th} text-right`}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -144,17 +165,20 @@ export default function ServicesPage() {
                   const desc = s.description ?? '';
                   const confirming = confirmId === s.id;
                   return (
-                    <tr key={s.id} className="border-b border-[#F8FAFC] transition-colors hover:bg-[#F9FAFB]">
-                      <td className="px-6 py-3.5"><span className="rounded-md px-2 py-1 font-mono text-[13px] font-bold" style={{ background: '#EEF2FF', color: '#4F46E5' }}>{s.code}</span></td>
-                      <td className="px-6 py-3.5 text-[14px] font-semibold text-[#0F172A]">{s.name}</td>
-                      <td className="px-6 py-3.5 text-[13px] text-[#64748B]" title={desc}>{desc.length > 60 ? `${desc.slice(0, 60)}…` : (desc || '—')}</td>
-                      <td className="px-6 py-3.5 text-right text-[14px] font-bold text-[#0F172A]">{fmt(s.price)}</td>
-                      <td className="px-6 py-3.5">
-                        {s.active
-                          ? <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-[3px] text-[11px] font-bold" style={{ background: '#F0FDF4', color: '#16A34A' }}><CheckCircle2 size={13} /> Active</span>
-                          : <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-[3px] text-[11px] font-bold" style={{ background: '#F1F5F9', color: '#94A3B8' }}><XCircle size={13} /> Inactive</span>}
+                    <tr key={s.id} className="border-b border-[#F4F4F2] transition-colors last:border-0 hover:bg-[#FAFAF9]">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar service={s} />
+                          <div className="min-w-0">
+                            <div className="text-[15px] font-semibold text-[#0F172A]">{s.name}</div>
+                            <div className="truncate text-[12px] text-[#94A3B8]" title={desc} style={{ maxWidth: 320 }}>{desc || '—'}</div>
+                          </div>
+                        </div>
                       </td>
-                      <td className="px-6 py-3.5">
+                      <td className="px-6 py-4"><span className="rounded-md px-2 py-1 font-mono text-[13px] font-bold" style={{ background: '#F1F1EF', color: '#4F46E5' }}>{s.code}</span></td>
+                      <td className="px-6 py-4 text-right text-[15px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>{fmt(s.price)}</td>
+                      <td className="px-6 py-4"><StatusBadge active={s.active} /></td>
+                      <td className="px-6 py-4">
                         {confirming ? (
                           <div className="flex items-center justify-end gap-2 text-[12px]">
                             <span className="text-[#64748B]">Delete?</span>
@@ -163,9 +187,9 @@ export default function ServicesPage() {
                           </div>
                         ) : (
                           <div className="flex items-center justify-end gap-2">
-                            <button title="Edit" onClick={() => openEdit(s)} className="grid h-8 w-8 place-items-center rounded-full border border-[#EEF2F7] text-[#64748B] transition-colors hover:bg-[#F5F7FF] hover:text-[#4F46E5]"><Pencil size={14} /></button>
-                            <button title={s.active ? 'Deactivate' : 'Activate'} onClick={() => toggleMut.mutate(s)} disabled={toggleMut.isPending} className="grid h-8 w-8 place-items-center rounded-full border border-[#EEF2F7] transition-colors hover:bg-[#F5F7FF]" style={{ color: s.active ? '#4F46E5' : '#94A3B8' }}>{s.active ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}</button>
-                            <button title="Delete" onClick={() => setConfirmId(s.id)} className="grid h-8 w-8 place-items-center rounded-full border border-[#EEF2F7] text-[#64748B] transition-colors hover:bg-[#FEF2F2] hover:text-[#DC2626]"><Trash2 size={14} /></button>
+                            <button title="Edit" onClick={() => openEdit(s)} className="grid h-9 w-9 place-items-center rounded-xl border border-[#EEF0EE] text-[#64748B] transition-colors hover:bg-[#F5F7FF] hover:text-[#4F46E5]"><Pencil size={15} /></button>
+                            <button title={s.active ? 'Deactivate' : 'Activate'} onClick={() => toggleMut.mutate(s)} disabled={toggleMut.isPending} className="grid h-9 w-9 place-items-center rounded-xl border border-[#EEF0EE] transition-colors hover:bg-[#F5F7FF]" style={{ color: s.active ? '#4F46E5' : '#94A3B8' }}>{s.active ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}</button>
+                            <button title="Delete" onClick={() => setConfirmId(s.id)} className="grid h-9 w-9 place-items-center rounded-xl border border-[#EEF0EE] text-[#64748B] transition-colors hover:bg-[#FEF2F2] hover:text-[#DC2626]"><Trash2 size={15} /></button>
                           </div>
                         )}
                       </td>
@@ -174,8 +198,8 @@ export default function ServicesPage() {
                 })}
               </tbody>
             </table>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <ServiceModal open={modalOpen} service={editService} isEdit={isEdit} onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); refetch(); notify('ok', isEdit ? 'Service updated' : 'Service created'); }} onError={(m) => notify('err', m)} />
