@@ -370,11 +370,102 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
           </Col>
           <Col span={8}>
             <Form.Item label={isGyn ? 'Slide Samples' : 'Vial Samples'}>
-              <Tooltip title="Specimen image upload arrives with file storage (Phase 6)">
-                <Button block disabled icon={<PlusOutlined />}>
-                  Attach {isGyn ? 'slides' : 'vials'}
-                </Button>
-              </Tooltip>
+              <div style={{
+                border: '1px solid #E5E7EB',
+                borderRadius: 12,
+                overflow: 'hidden',
+                background: '#F8FAFC',
+                position: 'relative',
+              }}>
+                {/* Default specimen image */}
+                <div style={{
+                  position: 'relative',
+                  width: '100%',
+                  height: 160,
+                  overflow: 'hidden',
+                }}>
+                  <img
+                    src={isGyn ? '/cytology-sample.png' : '/cytology-nongyn.png'}
+                    alt={isGyn ? 'Cytology specimen' : 'Non-gynecology specimen'}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      objectPosition: 'center',
+                      opacity: 0.85,
+                    }}
+                  />
+                  {/* Overlay gradient */}
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'linear-gradient(to bottom, transparent 50%, rgba(15,23,42,0.4) 100%)',
+                  }} />
+                  {/* Bottom label */}
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 8,
+                    left: 10,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}>
+                    <img
+                      src="/specimen-tube.png"
+                      alt="Specimen tube"
+                      style={{ width: 20, height: 40, objectFit: 'contain' }}
+                    />
+                    <span style={{
+                      color: 'white',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      letterSpacing: '0.04em',
+                      textShadow: '0 1px 3px rgba(0,0,0,0.4)',
+                    }}>
+                      {isGyn ? 'GYN · CYTOLOGY SLIDE' : 'NON-GYN · SPECIMEN VIAL'}
+                    </span>
+                  </div>
+                  {/* Phase 6 upload badge */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    background: 'rgba(255,255,255,0.85)',
+                    backdropFilter: 'blur(4px)',
+                    borderRadius: 6,
+                    padding: '3px 8px',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: '#4F46E5',
+                    letterSpacing: '0.03em',
+                  }}>
+                    DEFAULT PREVIEW
+                  </div>
+                </div>
+
+                {/* Footer action row */}
+                <div style={{
+                  padding: '10px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderTop: '1px solid #F1F5F9',
+                }}>
+                  <span style={{ fontSize: 12, color: '#94A3B8', fontWeight: 500 }}>
+                    Actual slide upload available in Phase 6
+                  </span>
+                  <span style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: '#4F46E5',
+                    background: '#EEF3FF',
+                    padding: '3px 10px',
+                    borderRadius: 6,
+                  }}>
+                    {isGyn ? 'Pap Smear' : 'FNA / Biopsy'}
+                  </span>
+                </div>
+              </div>
             </Form.Item>
           </Col>
         </Row>
