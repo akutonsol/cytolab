@@ -224,8 +224,8 @@ export default function DashboardPage() {
 
             {/* CENTER: AI Cytology Model */}
             <div style={{ height: 540, background: 'linear-gradient(135deg,#F8F9FF 0%,#EEF0FF 100%)', borderRadius: 20, border: '1px solid #E0E7FF', boxShadow: '0 4px 24px rgba(79,70,229,0.08)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              {/* Header */}
-              <div style={{ padding: '20px 24px 0', position: 'relative', zIndex: 4 }}>
+              {/* Header (overlays the stage so the head can fill the panel) */}
+              <div style={{ padding: '20px 24px 0', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 4 }}>
                 <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Cytology Model</div>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8, background: '#DCFCE7', borderRadius: 999, padding: '4px 11px' }}>
                   <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.6)' }} />
@@ -233,40 +233,40 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Analysis stage — big centered head + target markers wired to labels */}
-              <div style={{ flex: 1, display: 'grid', placeItems: 'center', padding: '0 16px', minHeight: 0, overflow: 'hidden' }}>
-                <div style={{ position: 'relative', width: 760, height: 410, maxWidth: '100%', overflow: 'hidden' }}>
+              {/* Analysis stage — head fills the panel, scalp near the top */}
+              <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
+                <div style={{ position: 'relative', width: 760, height: 520, maxWidth: '100%', overflow: 'hidden' }}>
                   {(() => {
                     const markers = [
-                      { x: 356, y: 58, color: '#6366F1' },
-                      { x: 158, y: 224, color: '#3B82F6' },
-                      { x: 356, y: 246, color: '#8B5CF6' },
-                      { x: 272, y: 388, color: '#8B5CF6' },
+                      { x: 330, y: 96, color: '#6366F1' },
+                      { x: 128, y: 268, color: '#3B82F6' },
+                      { x: 352, y: 290, color: '#8B5CF6' },
+                      { x: 262, y: 458, color: '#8B5CF6' },
                     ];
                     const findings = [
-                      { label: 'Reactive Mesothelial Cells', conf: 96, color: '#6366F1', y: 62, attention: false },
-                      { label: 'Inflammatory Cells', conf: 89, color: '#3B82F6', y: 170, attention: false },
-                      { label: 'Atypical Cells', conf: 72, color: '#8B5CF6', y: 262, attention: true },
-                      { label: 'Background Debris', conf: 94, color: '#6366F1', y: 372, attention: false },
+                      { label: 'Reactive Mesothelial Cells', conf: 96, color: '#6366F1', y: 100, attention: false },
+                      { label: 'Inflammatory Cells', conf: 89, color: '#3B82F6', y: 214, attention: false },
+                      { label: 'Atypical Cells', conf: 72, color: '#8B5CF6', y: 314, attention: true },
+                      { label: 'Background Debris', conf: 94, color: '#6366F1', y: 452, attention: false },
                     ];
                     const LX = 500; // label dot x
                     return (
                       <>
                         {/* dotted connectors marker → label */}
-                        <svg width="760" height="410" viewBox="0 0 760 410" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
+                        <svg width="760" height="520" viewBox="0 0 760 520" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
                           {markers.map((m, i) => (
                             <line key={i} x1={m.x} y1={m.y} x2={LX} y2={findings[i].y} stroke="#C7D2FE" strokeWidth={1.5} strokeDasharray="2 5" />
                           ))}
                         </svg>
                         {/* aura */}
-                        <div style={{ position: 'absolute', left: -20, top: -100, width: 580, height: 620, background: 'radial-gradient(46% 44% at 48% 44%, rgba(255,255,255,0.92), rgba(139,92,246,0.16) 46%, rgba(99,102,241,0.06) 62%, transparent 74%)', filter: 'blur(4px)', zIndex: 0 }} />
+                        <div style={{ position: 'absolute', left: -90, top: -30, width: 680, height: 660, background: 'radial-gradient(44% 44% at 47% 44%, rgba(255,255,255,0.92), rgba(139,92,246,0.16) 46%, rgba(99,102,241,0.06) 62%, transparent 74%)', filter: 'blur(4px)', zIndex: 0 }} />
                         {/* glowing base platform */}
-                        <div style={{ position: 'absolute', left: 100, top: 392, width: 350, height: 60, borderRadius: '50%', background: 'radial-gradient(50% 50% at 50% 50%, rgba(255,255,255,0.95), rgba(167,139,250,0.38) 45%, rgba(139,92,246,0.08) 68%, transparent 78%)', filter: 'blur(1px)', zIndex: 1 }} />
-                        {/* head — very large image (~510px visible head), transparent padding clipped by the stage */}
+                        <div style={{ position: 'absolute', left: 70, top: 468, width: 370, height: 60, borderRadius: '50%', background: 'radial-gradient(50% 50% at 50% 50%, rgba(255,255,255,0.95), rgba(167,139,250,0.38) 45%, rgba(139,92,246,0.08) 68%, transparent 78%)', filter: 'blur(1px)', zIndex: 1 }} />
+                        {/* head — box matches the image's 1.5 aspect (no letterbox); scalp near top */}
                         <img src="/ai-man.png" alt="AI Cytology Model" className="ai-breathe"
-                          style={{ position: 'absolute', left: -90, top: -300, width: 720, height: 1080, objectFit: 'contain', objectPosition: 'center', filter: 'brightness(1.52) contrast(1.14) saturate(0.35) drop-shadow(0 18px 40px rgba(99,102,241,0.3))', zIndex: 2 }} />
+                          style={{ position: 'absolute', left: -167, top: -18, width: 833, height: 555, objectFit: 'contain', objectPosition: 'center', filter: 'brightness(1.52) contrast(1.14) saturate(0.35) drop-shadow(0 18px 40px rgba(99,102,241,0.3))', zIndex: 2 }} />
                         {/* glossy white top-light to mimic the reference render */}
-                        <div style={{ position: 'absolute', left: 100, top: -60, width: 400, height: 360, background: 'radial-gradient(46% 42% at 50% 28%, rgba(255,255,255,0.55), rgba(255,255,255,0.12) 46%, transparent 66%)', mixBlendMode: 'screen', pointerEvents: 'none', zIndex: 2 }} />
+                        <div style={{ position: 'absolute', left: 80, top: 20, width: 360, height: 340, background: 'radial-gradient(46% 42% at 50% 26%, rgba(255,255,255,0.55), rgba(255,255,255,0.12) 46%, transparent 66%)', mixBlendMode: 'screen', pointerEvents: 'none', zIndex: 2 }} />
                         {/* target markers (soft halo + ring + center) */}
                         {markers.map((m, i) => (
                           <div key={i} style={{ position: 'absolute', left: m.x, top: m.y, transform: 'translate(-50%,-50%)', zIndex: 3, width: 48, height: 48, borderRadius: '50%', display: 'grid', placeItems: 'center', background: `radial-gradient(50% 50% at 50% 50%, ${m.color}33, transparent 70%)` }}>
@@ -297,7 +297,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Rotate Model pill */}
-              <div style={{ padding: '0 24px 22px', display: 'flex', justifyContent: 'center' }}>
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 24px 22px', display: 'flex', justifyContent: 'center', zIndex: 4 }}>
                 <button onClick={() => router.push(`/records/${d.priorityRecords?.[0]?.id ?? ''}`)}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'white', border: '1px solid #EEF2F7', boxShadow: '0 6px 18px rgba(79,70,229,0.10)', borderRadius: 999, padding: '11px 24px', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#4F46E5', fontFamily: 'Geist,sans-serif' }}>
                   <RotateCw size={15} /> Rotate Model <ArrowRight size={15} />
