@@ -247,16 +247,16 @@ export default function RecordDetailPage() {
                 const label = /^sample description$/i.test(f.label) ? 'Description' : f.label;
                 if (f.fieldType === 'CHECKBOX') {
                   return (
-                    <div key={f.fieldKey} className="flex items-center justify-between gap-2 border-b border-[#F1F5F9] py-2.5">
+                    <div key={f.fieldKey} className="flex items-center justify-between gap-2 border-b border-[#F1F5F9] py-2">
                       <span className="text-[14px] font-bold text-[#334155]">{label}</span>
                       <span className="text-[16px]">{v ? <Check size={16} className="inline text-[#16A34A]" /> : <span className="text-[#CBD5E1]">—</span>}</span>
                     </div>
                   );
                 }
                 return (
-                  <div key={f.fieldKey} className="border-b border-[#F1F5F9] py-2.5">
+                  <div key={f.fieldKey} className="border-b border-[#F1F5F9] py-2">
                     <div className="text-[14px] font-bold text-[#334155]">{label}</div>
-                    <div className="mt-1 text-[15px] font-medium leading-[1.5] text-[#0F172A]">{v || <span className="text-[#CBD5E1]">—</span>}</div>
+                    <div className="text-[15px] font-medium leading-[1.5] text-[#64748B]">{v || <span className="text-[#CBD5E1]">—</span>}</div>
                   </div>
                 );
               })}
