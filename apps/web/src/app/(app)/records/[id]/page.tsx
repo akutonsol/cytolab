@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Activity, AlertTriangle, ArrowLeft, Check, CheckCircle2, ChevronRight, Clock, Download,
-  FileText, FlaskConical, Info, Microscope, Pause, Pencil, Receipt, X,
+  FileText, FlaskConical, Microscope, Pause, Pencil, Receipt, X,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
@@ -37,6 +37,12 @@ const STEP_OF: Record<string, number> = {
 };
 const SPECIAL = ['OnHold', 'Failed', 'Disabled'];
 const OPEN = ['Pending', 'Submitted', 'Processing', 'Partial', 'Completed', 'Resulted'];
+// Meaningful lifecycle completion % per status.
+const PROGRESS_MAP: Record<string, number> = {
+  Pending: 5, Submitted: 15, Processing: 35, Partial: 55,
+  Completed: 70, Resulted: 85, Approved: 92, Billed: 96,
+  Paid: 98, Viewed: 100, OnHold: 35, Failed: 35, Disabled: 0,
+};
 const INDIGO = '#4F46E5';
 // Activity-dot colour per the reference spec.
 const DOT: Record<string, string> = {
@@ -172,9 +178,20 @@ export default function RecordDetailPage() {
 
   const specimens: any[] = record.specimens ?? [];
   const activeSpecimen = specimens[activeSpec] ?? specimens[0];
-  const totalRecords = patientRecs?.total ?? patientRecs?.data?.length ?? 0;
-  const openCases = (patientRecs?.data ?? []).filter((r: any) => OPEN.includes(r.status)).length || (OPEN.includes(status) ? 1 : 0);
-  const progress = Math.round((currentStep / (STEPS.length - 1)) * 100);
+  const allPatientRecords: any[] = patientRecs?.data ?? [];
+  const totalRecords = allPatientRecords.length || 1; // at least the current record
+  const openCases = allPatientRecords.filter((r: any) => OPEN.includes(r.status)).length || (OPEN.includes(status) ? 1 : 0);
+  const progress = PROGRESS_MAP[status] ?? 0;
+
+  // Turnaround: days between Submitted and Approved for this record.
+  const submittedAt = record.statusHistory?.find((e: any) => e.status === 'Submitted')?.createdAt;
+  const approvedAt = record.statusHistory?.find((e: any) => e.status === 'Approved')?.createdAt;
+  const avgTat = submittedAt && approvedAt
+    ? Math.round((new Date(approvedAt).getTime() - new Date(submittedAt).getTime()) / 86400000 * 10) / 10
+    : null;
+
+  const cytologyImg = isGyn ? '/cytology-sample.png' : '/cytology-nongyn.png';
+  const hasAbnormal = !!sheet && (sheet.resultEntries ?? []).some((e: any) => (e.resultLines ?? []).some((l: any) => l.abnormalFinding));
 
   const aiFinding = sheet?.narrative ? (sheet.narrative.length > 120 ? `${sheet.narrative.slice(0, 120)}…` : sheet.narrative) : 'Awaiting cytological analysis.';
   const activity = [...(record.statusHistory ?? [])].reverse();
@@ -276,12 +293,30 @@ export default function RecordDetailPage() {
           </div>
         </div>
 
-        {/* Segmented control (reference-style pill switcher) */}
+        {/* Segmented control — one pill per specimen in this record */}
         <div className="shrink-0 px-5 pt-4">
           <div className="flex gap-1 rounded-full p-1.5" style={{ background: 'linear-gradient(145deg,#EEF3FB,#DBE5F4)', boxShadow: 'inset 0 1px 3px rgba(148,163,184,0.22)' }}>
-            <button onClick={() => setDrawer(true)} className="flex-1 rounded-full bg-transparent px-4 py-2.5 text-[14px] font-semibold text-[#3B5EA8] transition-all hover:bg-white hover:text-[#1E3A8A] hover:shadow-[0_4px_14px_rgba(110,130,180,0.28)]">Edit Clinical Features</button>
-            <button onClick={() => setSheetModal(true)} className="flex-1 rounded-full bg-transparent px-4 py-2.5 text-[14px] font-semibold text-[#3B5EA8] transition-all hover:bg-white hover:text-[#1E3A8A] hover:shadow-[0_4px_14px_rgba(110,130,180,0.28)]">Add Result Sheet</button>
-            <button className="flex-1 rounded-full bg-white px-4 py-2.5 text-[14px] font-bold text-[#1E3A8A]" style={{ boxShadow: '0 4px 14px rgba(110,130,180,0.28), 0 1px 3px rgba(0,0,0,0.05)' }}>{specLabel(activeSpecimen?.type) || 'Specimen'}</button>
+            {specimens.length > 1 ? (
+              specimens.map((sp, i) => {
+                const active = i === activeSpec;
+                return (
+                  <button
+                    key={sp.id ?? i}
+                    onClick={() => setActiveSpec(i)}
+                    className={active
+                      ? 'flex-1 rounded-full bg-white px-4 py-2.5 text-[14px] font-bold text-[#1E3A8A]'
+                      : 'flex-1 rounded-full bg-transparent px-4 py-2.5 text-[14px] font-semibold text-[#3B5EA8] transition-all hover:bg-white hover:text-[#1E3A8A] hover:shadow-[0_4px_14px_rgba(110,130,180,0.28)]'}
+                    style={active ? { boxShadow: '0 4px 14px rgba(110,130,180,0.28), 0 1px 3px rgba(0,0,0,0.05)' } : undefined}
+                  >
+                    {specLabel(sp.type) || `Specimen ${i + 1}`}
+                  </button>
+                );
+              })
+            ) : (
+              <div className="flex-1 rounded-full bg-white px-4 py-2.5 text-center text-[14px] font-bold text-[#1E3A8A]" style={{ boxShadow: '0 4px 14px rgba(110,130,180,0.28), 0 1px 3px rgba(0,0,0,0.05)' }}>
+                {specLabel(activeSpecimen?.type) || 'Specimen'}
+              </div>
+            )}
           </div>
         </div>
 
@@ -294,14 +329,28 @@ export default function RecordDetailPage() {
             <button onClick={() => setSheetModal(true)} className="mt-2 flex items-center gap-1 self-start text-[14px] font-bold text-[#4F46E5] hover:underline">Enter Analysis <ChevronRight size={15} /></button>
 
             <div className="mt-auto pt-6">
-              <div className="text-[13px] font-bold uppercase tracking-wide text-[#4F46E5]">Attention</div>
-              <div className="mt-1.5 text-[13px] italic leading-relaxed text-[#475569]">{aiFinding}</div>
-              <div className="mt-4 inline-flex items-center gap-2 rounded-full border-[1.5px] border-[#4F46E5] px-3.5 py-1.5 text-[13px] font-semibold text-[#4F46E5]">68% Certainty <Info size={14} /></div>
+              {sheet && aiFinding !== 'Awaiting cytological analysis.' && (
+                <div className="text-[13px] font-bold uppercase tracking-wide text-[#4F46E5]">Attention</div>
+              )}
+              {sheet ? (
+                <div className="mt-1.5 text-[13px] italic leading-relaxed text-[#475569]">{aiFinding}</div>
+              ) : (
+                <div className="mt-1.5 text-[13px] italic text-[#94A3B8]">Awaiting cytological analysis.</div>
+              )}
+              {sheet && (
+                hasAbnormal ? (
+                  <div className="mt-4 inline-flex items-center gap-2 rounded-full border-[1.5px] border-[#DC2626] px-3.5 py-1.5 text-[13px] font-semibold text-[#DC2626]"><AlertTriangle size={14} /> Abnormal findings detected</div>
+                ) : sheet.authorized ? (
+                  <div className="mt-4 inline-flex items-center gap-2 rounded-full border-[1.5px] border-[#16A34A] px-3.5 py-1.5 text-[13px] font-semibold text-[#16A34A]"><CheckCircle2 size={14} /> Authorized</div>
+                ) : (
+                  <div className="mt-4 inline-flex items-center gap-2 rounded-full border-[1.5px] border-[#16A34A] px-3.5 py-1.5 text-[13px] font-semibold text-[#16A34A]"><CheckCircle2 size={14} /> Normal findings</div>
+                )
+              )}
             </div>
           </div>
 
           <div className="relative min-h-0 flex-1 self-stretch overflow-hidden rounded-2xl bg-[#F5F0FA]">
-            <Image src="/cytology-sample.png" alt="Cytology specimen" fill unoptimized sizes="45vw" style={{ objectFit: 'cover', objectPosition: 'center' }} priority />
+            <Image src={cytologyImg} alt="Cytology specimen" fill unoptimized sizes="45vw" style={{ objectFit: 'cover', objectPosition: 'center' }} priority />
             <div className="pointer-events-none absolute inset-0 mix-blend-multiply" style={{ animation: 'colorDrift 7s linear infinite' }} />
             {GLOWS.map((g, i) => (
               <div key={`g${i}`} className="pointer-events-none absolute rounded-full" style={{ left: g.left, top: g.top, width: g.size, height: g.size, background: g.color, filter: 'blur(30px)', animation: `glowPulse ${g.dur} ease-in-out ${g.delay} infinite` }} />
@@ -319,7 +368,7 @@ export default function RecordDetailPage() {
         <div className={`${LABEL} mb-5`}>Patient Stats</div>
         <Stat icon={Activity} label="Total Records" value={String(totalRecords)} unit="cases" />
         <Stat icon={FlaskConical} label="Open Cases" value={String(openCases)} unit="in progress" />
-        <Stat icon={Clock} label="Avg TAT" value="—" unit="days" />
+        <Stat icon={Clock} label="Avg TAT" value={avgTat !== null ? String(avgTat) : '—'} unit="days" />
 
         <div className="mb-4 mt-1 border-t border-[#F1F5F9]" />
 
