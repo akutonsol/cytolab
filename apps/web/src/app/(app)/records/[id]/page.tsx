@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Activity, AlertTriangle, ArrowLeft, Check, CheckCircle2, ChevronRight, Clock, Download,
-  FlaskConical, Pause, Pencil, X,
+  FlaskConical, Info, Microscope, Pause, Pencil, X,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
@@ -167,12 +167,11 @@ export default function RecordDetailPage() {
   const activeSpecimen = specimens[activeSpec] ?? specimens[0];
   const totalRecords = patientRecs?.total ?? patientRecs?.data?.length ?? 0;
   const openCases = (patientRecs?.data ?? []).filter((r: any) => OPEN.includes(r.status)).length || (OPEN.includes(status) ? 1 : 0);
+  const progress = Math.round((currentStep / (STEPS.length - 1)) * 100);
 
-  const abnormal = (sheet?.resultEntries ?? []).some((e: any) => (e.resultLines ?? []).some((l: any) => l.abnormalFinding));
   const aiFinding = sheet?.narrative ? (sheet.narrative.length > 120 ? `${sheet.narrative.slice(0, 120)}…` : sheet.narrative) : 'Awaiting cytological analysis.';
   const activity = [...(record.statusHistory ?? [])].reverse();
   const shownActivity = showAllActivity ? activity : activity.slice(0, 5);
-  const chip = 'rounded-full bg-[#F1F5F9] px-4 py-1.5 text-[13px] font-semibold text-[#64748B]';
 
   return (
     <div className="flex gap-4 p-5" style={{ background: '#EDF0F7', height: 'calc(100vh - 150px)', minHeight: 560 }}>
@@ -253,43 +252,52 @@ export default function RecordDetailPage() {
 
       {/* ═══════════ CENTER PANEL ═══════════ */}
       <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-[#E4E8F4] bg-white">
-        {/* Top bar */}
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#F1F5F9] px-5 py-3.5">
+        {/* Header */}
+        <div className="flex shrink-0 items-center justify-between border-b border-[#F1F5F9] px-5 py-3.5">
           <div className={LABEL}>Specimen Analysis</div>
-          <div className="flex items-center gap-2">
-            {specimens.length === 0 ? <span className="text-[12px] text-[#94A3B8]">No specimens</span> : specimens.map((s: any, i: number) => (
-              <button key={s.id} onClick={() => setActiveSpec(i)} className="rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors" style={i === activeSpec ? { background: '#4F46E5', color: '#fff' } : { background: '#F1F5F9', color: '#64748B' }}>{specLabel(s.type)}</button>
-            ))}
-          </div>
           <div className="flex items-center gap-2">
             <span className="font-mono text-[13px] font-bold text-[#4F46E5]">{record.labNumber ?? '—'}</span>
             <span className="text-[13px] font-semibold text-[#4F46E5]">{openCases} Active</span>
           </div>
         </div>
 
-        {/* Cytology image + animation layers */}
-        <div className="relative flex-1 overflow-hidden bg-[#F5F0FA]" style={{ minHeight: 400 }}>
-          <div className="absolute inset-0" style={{ animation: 'cytoBreathe 8s ease-in-out infinite' }}>
-            <Image src="/cytology-sample.png" alt="Cytology specimen" fill unoptimized sizes="60vw" style={{ objectFit: 'cover', objectPosition: 'center' }} priority />
+        {/* Segmented control (reference-style pill switcher) */}
+        <div className="shrink-0 px-5 pt-4">
+          <div className="flex gap-1 rounded-full p-1" style={{ background: '#DFE7F3' }}>
+            <button onClick={() => setDrawer(true)} className="flex-1 rounded-full px-4 py-2.5 text-[14px] font-semibold text-[#5B7BB4] transition-colors hover:text-[#1E3A8A]">Edit Clinical Features</button>
+            <button onClick={() => setSheetModal(true)} className="flex-1 rounded-full px-4 py-2.5 text-[14px] font-semibold text-[#5B7BB4] transition-colors hover:text-[#1E3A8A]">Add Result Sheet</button>
+            <button className="flex-1 rounded-full bg-white px-4 py-2.5 text-[14px] font-bold text-[#1E3A8A] shadow-sm">{specLabel(activeSpecimen?.type) || 'Specimen'}</button>
           </div>
-          <div className="pointer-events-none absolute inset-0" style={{ animation: 'colorDrift 12s linear infinite' }} />
-          {GLOWS.map((g, i) => (
-            <div key={`g${i}`} className="pointer-events-none absolute rounded-full" style={{ left: g.left, top: g.top, width: g.size, height: g.size, background: g.color, filter: 'blur(30px)', animation: `glowPulse ${g.dur} ease-in-out ${g.delay} infinite` }} />
-          ))}
-          {PARTICLES.map((p, i) => (
-            <div key={`p${i}`} className="pointer-events-none absolute rounded-full" style={{ left: p.left, top: p.top, width: p.size, height: p.size, background: p.color, animation: `${p.anim} ${p.dur} ease-in-out ${p.delay} infinite` }} />
-          ))}
-          <div className="pointer-events-none absolute left-0 right-0" style={{ height: 2, background: 'linear-gradient(to right, transparent, rgba(129,140,248,0.4), transparent)', animation: 'scanLine 4s linear infinite' }} />
         </div>
 
-        {/* Bottom bar */}
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-t border-[#F1F5F9] px-5 py-3.5" style={{ background: '#FAFBFF' }}>
-          <div className="min-w-0 flex-1 basis-[45%] text-[13px]">
-            {abnormal ? <><span className="mr-1.5 text-[11px] font-bold uppercase tracking-wide text-[#4F46E5]">Attention</span><span className="text-[#374151]">{aiFinding}</span></>
-              : <span className="italic text-[#64748B]">Awaiting cytological analysis.</span>}
+        {/* Content: left detail column + right bounded image */}
+        <div className="flex min-h-0 flex-1 gap-6 p-5">
+          <div className="flex w-[38%] shrink-0 flex-col">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#E8EDF7] text-[#4F46E5]"><Microscope size={22} /></span>
+            <div className="mt-4 text-[17px] font-semibold italic text-[#1E293B]">Patient {specLabel(activeSpecimen?.type)} Analysis</div>
+            <div className="mt-1 text-[20px] font-bold text-[#4F46E5]">{progress}%<span className="ml-1.5 text-[14px] font-normal text-[#64748B]">completed</span></div>
+            <button onClick={() => setSheetModal(true)} className="mt-2 flex items-center gap-1 self-start text-[14px] font-bold text-[#4F46E5] hover:underline">Enter Analysis <ChevronRight size={15} /></button>
+
+            <div className="mt-auto pt-6">
+              <div className="text-[13px] font-bold uppercase tracking-wide text-[#4F46E5]">Attention</div>
+              <div className="mt-1.5 text-[13px] italic leading-relaxed text-[#475569]">{aiFinding}</div>
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full border-[1.5px] border-[#4F46E5] px-3.5 py-1.5 text-[13px] font-semibold text-[#4F46E5]">68% Certainty <Info size={14} /></div>
+            </div>
           </div>
-          {activeSpecimen && <span className={chip}>{specLabel(activeSpecimen.type)}</span>}
-          <button onClick={() => setSheetModal(true)} className="flex items-center gap-1 rounded-full border border-[#4F46E5] px-4 py-1.5 text-[14px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#EEF3FF]">{sheet ? 'View Result Sheet' : 'Add Result Sheet'} <ChevronRight size={14} /></button>
+
+          <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl bg-[#F5F0FA]">
+            <div className="absolute inset-0" style={{ animation: 'cytoBreathe 8s ease-in-out infinite' }}>
+              <Image src="/cytology-sample.png" alt="Cytology specimen" fill unoptimized sizes="45vw" style={{ objectFit: 'cover', objectPosition: 'center' }} priority />
+            </div>
+            <div className="pointer-events-none absolute inset-0" style={{ animation: 'colorDrift 12s linear infinite' }} />
+            {GLOWS.map((g, i) => (
+              <div key={`g${i}`} className="pointer-events-none absolute rounded-full" style={{ left: g.left, top: g.top, width: g.size, height: g.size, background: g.color, filter: 'blur(30px)', animation: `glowPulse ${g.dur} ease-in-out ${g.delay} infinite` }} />
+            ))}
+            {PARTICLES.map((p, i) => (
+              <div key={`p${i}`} className="pointer-events-none absolute rounded-full" style={{ left: p.left, top: p.top, width: p.size, height: p.size, background: p.color, animation: `${p.anim} ${p.dur} ease-in-out ${p.delay} infinite` }} />
+            ))}
+            <div className="pointer-events-none absolute left-0 right-0" style={{ height: 2, background: 'linear-gradient(to right, transparent, rgba(129,140,248,0.4), transparent)', animation: 'scanLine 4s linear infinite' }} />
+          </div>
         </div>
       </section>
 
@@ -406,7 +414,6 @@ function ActionPanel(p: ActionProps) {
       return (<><Title>Ready to Submit</Title><Desc>Review clinical features and submit this record for processing.</Desc>
         <Row>
           <Prim disabled={pending} onClick={() => go('Submitted', { title: 'Submit for processing?', desc: 'This moves the record into the processing queue.' })}>Submit for Processing</Prim>
-          <button className={actionSecondary} onClick={p.onEditFeatures}>Edit Clinical Features</button>
         </Row></>);
     case 'Submitted':
       return (<><Title>Awaiting Processing</Title><Desc>Mark this record as in processing when the specimen is received in lab.</Desc>
