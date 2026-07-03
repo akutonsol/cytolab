@@ -199,19 +199,25 @@ export default function DashboardPage() {
           {/* ═══ SECTION 1: KPI STRIP ═══ */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 16 }}>
             {[
-              { icon: <TestTube size={22} color="#EF4444" />, iconBg: '#FEF2F2', label: 'ACTIVE SPECIMENS', value: totalSpecimens || 0, delta: `+${d.throughput.series?.slice(-1)[0]?.value || 0} today`, deltaColor: '#EF4444' },
-              { icon: <Folder size={22} color="#8B5CF6" />, iconBg: '#F5F3FF', label: 'CASES TODAY', value: d.throughput.series?.slice(-1)[0]?.value || 0, delta: `+${d.throughput.series?.slice(-7).reduce((s: any, i: any) => s + (i.value > 0 ? 1 : 0), 0) || 0} this week`, deltaColor: '#8B5CF6' },
-              { icon: <Clock size={22} color="#4F46E5" />, iconBg: '#EEF2FF', label: 'TURNAROUND TIME', value: `${kpis?.avgTat ?? '—'}d`, delta: (kpis?.avgTat ?? 99) <= 3 ? '-0.3d improvement' : '+0.3d slower', deltaColor: (kpis?.avgTat ?? 99) <= 3 ? '#4F46E5' : '#EF4444' },
-              { icon: <Hourglass size={22} color="#0EA5E9" />, iconBg: '#F0F9FF', label: 'PENDING REVIEW', value: kpis?.pendingRequisitions || 0, delta: `High priority: ${d.priorityRecords?.filter((r: any) => r.urgent).length || 0}`, deltaColor: '#0EA5E9' },
-              { icon: <ShieldCheck size={22} color="#16A34A" />, iconBg: '#F0FDF4', label: 'AI CONFIDENCE', value: `${eff?.authorization ?? 92}%`, delta: '+4% vs yesterday', deltaColor: '#16A34A' },
-            ].map(({ icon, iconBg, label, value, delta, deltaColor }, i) => (
-              <div key={i} style={{ background: 'white', borderRadius: 16, padding: '20px 20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: iconBg, display: 'grid', placeItems: 'center', flexShrink: 0 }}>{icon}</div>
+              { solid: true, bg: '#DD7B6B', icon: <TestTube size={24} color="#8B2C1E" />, label: 'ACTIVE SPECIMENS', value: totalSpecimens || 0, delta: `+${d.throughput.series?.slice(-1)[0]?.value || 0} today` },
+              { bg: '#FBE9DB', label: 'CASES TODAY', value: d.throughput.series?.slice(-1)[0]?.value || 0, delta: `+${d.throughput.series?.slice(-7).reduce((s: any, i: any) => s + (i.value > 0 ? 1 : 0), 0) || 0} this week`, deltaColor: '#B06A4E' },
+              { bg: '#ECE7F6', label: 'TURNAROUND TIME', value: `${kpis?.avgTat ?? '—'}d`, delta: (kpis?.avgTat ?? 99) <= 3 ? '-0.3d improvement' : '+0.3d slower', deltaColor: (kpis?.avgTat ?? 99) <= 3 ? '#6D5BC0' : '#EF4444' },
+              { bg: '#E6E9F5', label: 'PENDING REVIEW', value: kpis?.pendingRequisitions || 0, delta: `High priority: ${d.priorityRecords?.filter((r: any) => r.urgent).length || 0}`, deltaColor: '#5B69C4' },
+              { bg: '#EAE6F9', label: 'AI CONFIDENCE', value: `${eff?.authorization ?? 92}%`, delta: '+4% vs yesterday', deltaColor: '#7C5FD3' },
+            ].map((c: any, i: number) => c.solid ? (
+              <div key={i} style={{ background: c.bg, borderRadius: 16, padding: '18px 20px', boxShadow: '0 6px 20px rgba(200,90,70,0.18)', display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 52, height: 52, borderRadius: 13, background: 'rgba(255,255,255,0.28)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>{c.icon}</div>
                 <div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
-                  <div style={{ fontSize: 28, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', lineHeight: 1, fontFamily: 'Geist,sans-serif' }}>{value}</div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: deltaColor, marginTop: 4 }}>{delta}</div>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#5A241B', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>{c.label}</div>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: '#3D160F', letterSpacing: '-0.02em', lineHeight: 1, fontFamily: 'Geist,sans-serif' }}>{c.value}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(90,36,27,0.72)', marginTop: 4 }}>{c.delta}</div>
                 </div>
+              </div>
+            ) : (
+              <div key={i} style={{ background: c.bg, borderRadius: 16, padding: '20px 22px', boxShadow: '0 4px 20px rgba(80,70,120,0.06)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#8B8FA3', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>{c.label}</div>
+                <div style={{ fontSize: 30, fontWeight: 800, color: '#1E1B33', letterSpacing: '-0.02em', lineHeight: 1, fontFamily: 'Geist,sans-serif' }}>{c.value}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: c.deltaColor, marginTop: 8 }}>{c.delta}</div>
               </div>
             ))}
           </div>
