@@ -136,41 +136,51 @@ export function ProgressRing({ pct, size = 40 }: { pct: number; size?: number })
 
 /* ═══════════ Reference-design placeholder charts (static data; wire later) ═══════════ */
 
-// Monthly Case Volume — real (indigo) bar over ghost target bar.
+// Monthly Case Volume — capsule bar: solid indigo current + light headroom to target.
 export function SubscriptionBars({ data }: { data: any[] }) {
+  const R = 10;
   return (
-    <ResponsiveContainer width="100%" height={140}>
-      <BarChart data={data} barGap={3} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+    <ResponsiveContainer width="100%" height={150}>
+      <BarChart data={data} margin={{ top: 4, right: 4, bottom: 4, left: 4 }} barCategoryGap="30%">
         <CartesianGrid vertical={false} stroke="#F1F5F9" strokeDasharray="4 4" />
         <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94A3B8', fontWeight: 500 }} dy={6} />
         <YAxis hide />
-        <Tooltip content={({ active, payload, label }: any) => {
+        <Tooltip cursor={{ fill: 'rgba(79,70,229,0.04)' }} content={({ active, payload, label }: any) => {
           if (!active || !payload?.length) return null;
           return (
             <div style={{ background: 'white', border: '1px solid #E2E8F0', borderRadius: 8, padding: '6px 10px', fontSize: 12 }}>
               <div style={{ fontWeight: 700, color: '#0F172A' }}>{label}</div>
-              <div style={{ color: '#4F46E5' }}>{payload.find((p: any) => p.dataKey === 'current')?.value ?? payload[0]?.value} cases</div>
+              <div style={{ color: '#4F46E5' }}>{payload.find((p: any) => p.dataKey === 'current')?.value ?? 0} cases</div>
             </div>
           );
         }} />
-        <Bar dataKey="target" fill="#E0E7FF" radius={[4, 4, 0, 0]} maxBarSize={20} isAnimationActive={false} />
-        <Bar dataKey="current" fill="#4F46E5" radius={[4, 4, 0, 0]} maxBarSize={20} opacity={0.9} isAnimationActive animationDuration={800} />
+        <Bar dataKey="current" stackId="v" fill="#4F46E5" radius={[0, 0, R, R]} maxBarSize={24} isAnimationActive animationDuration={800} />
+        <Bar dataKey="gap" stackId="v" fill="#DDD6FE" radius={[R, R, 0, 0]} maxBarSize={24} isAnimationActive animationDuration={800} />
       </BarChart>
     </ResponsiveContainer>
   );
 }
 
-// AI Performance — this-period (indigo) over previous-period (ghost) per metric.
-export function ConversionBars({ data }: { data: any[] }) {
+// AI Performance — accuracy trend line with indigo gradient fill.
+const PERF = [
+  { m: 'Jan', v: 74 }, { m: 'Feb', v: 76 }, { m: 'Mar', v: 78 },
+  { m: 'Apr', v: 88 }, { m: 'May', v: 82 }, { m: 'Jun', v: 85 },
+];
+export function PerformanceArea() {
   return (
-    <ResponsiveContainer width="100%" height={120}>
-      <BarChart data={data} margin={{ top: 4, right: 4, bottom: 4, left: 4 }} barGap={2}>
-        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94A3B8' }} dy={4} />
-        <YAxis hide domain={[0, 100]} />
-        <Tooltip formatter={(v: any) => [`${v}%`, '']} contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 11 }} />
-        <Bar dataKey="prev" fill="#E0E7FF" radius={[4, 4, 0, 0]} maxBarSize={16} isAnimationActive={false} />
-        <Bar dataKey="value" fill="#4F46E5" radius={[4, 4, 0, 0]} maxBarSize={16} opacity={0.85} isAnimationActive animationDuration={800} />
-      </BarChart>
+    <ResponsiveContainer width="100%" height={132}>
+      <AreaChart data={PERF} margin={{ top: 6, right: 6, bottom: 4, left: 0 }}>
+        <defs>
+          <linearGradient id="perfGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#4F46E5" stopOpacity={0.22} />
+            <stop offset="100%" stopColor="#4F46E5" stopOpacity={0.02} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid vertical={false} stroke="#F1F5F9" strokeDasharray="4 4" />
+        <XAxis dataKey="m" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94A3B8' }} dy={4} />
+        <YAxis axisLine={false} tickLine={false} width={38} tick={{ fontSize: 9, fill: '#CBD5E1' }} ticks={[0, 25, 50, 75, 100]} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+        <Area type="monotone" dataKey="v" stroke="#4F46E5" strokeWidth={2} fill="url(#perfGrad)" dot={{ r: 3, fill: '#4F46E5', stroke: '#fff', strokeWidth: 1.5 }} activeDot={{ r: 4 }} isAnimationActive animationDuration={900} />
+      </AreaChart>
     </ResponsiveContainer>
   );
 }

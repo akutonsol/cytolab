@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
 import {
-  Activity, ArrowUpRight, Calendar, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FlaskConical,
+  Activity, ArrowRight, ArrowUpRight, Calendar, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FlaskConical,
   Microscope, Monitor, MoreHorizontal, Plus, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
   TestTube, TrendingUp, User,
 } from 'lucide-react';
@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/auth';
 import { GlassCard } from '@/components/dashboard/glass-card';
 import { HeroBanner, type HeroChip } from '@/components/dashboard/hero-banner';
 import { NavPills } from '@/components/dashboard/nav-pills';
-import { ConversionBars, SubscriptionBars } from './charts';
+import { PerformanceArea, SubscriptionBars } from './charts';
 
 const GREEN = '#22c55e', BLUE = '#4F46E5';
 // The page is transparent so it shows the layout's single shared canvas gradient
@@ -200,7 +200,7 @@ export default function DashboardPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                           <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>{r.labNumber ?? '—'}</span>
                           {r.urgent && (
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#DC2626', background: '#FEE2E2', borderRadius: 4, padding: '1px 5px', letterSpacing: '0.04em' }}>HIGH PRIORITY</span>
+                            <span style={{ fontSize: 10, fontWeight: 600, color: '#4F46E5', background: '#EEF2FF', borderRadius: 999, padding: '2px 8px' }}>High Priority</span>
                           )}
                         </div>
                         <div style={{ fontSize: 11, color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -210,7 +210,9 @@ export default function DashboardPage() {
                           Received {new Date(r.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: dotFor(r.status) }} />
+                      {isFirst
+                        ? <ArrowRight size={16} color="#4F46E5" style={{ flexShrink: 0 }} />
+                        : <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: dotFor(r.status) }} />}
                     </div>
                   );
                 })}
@@ -233,7 +235,11 @@ export default function DashboardPage() {
               </div>
               <div style={{ display: 'flex', flex: 1, padding: '12px 24px 16px', gap: 20, alignItems: 'center' }}>
                 <div className="ai-float" style={{ position: 'relative', flex: '0 0 240px', height: 320 }}>
-                  <img src="/ai-man.png" alt="AI Cytology Model" className="ai-breathe" style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', filter: 'drop-shadow(0 20px 40px rgba(99,102,241,0.2))' }} />
+                  {/* soft radial aura behind the model */}
+                  <div style={{ position: 'absolute', inset: '-12% -22%', background: 'radial-gradient(50% 50% at 50% 42%, rgba(139,92,246,0.30), rgba(99,102,241,0.10) 55%, transparent 72%)', filter: 'blur(6px)', zIndex: 0 }} />
+                  {/* glowing base platform ring */}
+                  <div style={{ position: 'absolute', left: '50%', bottom: 12, transform: 'translateX(-50%)', width: 190, height: 36, borderRadius: '50%', background: 'radial-gradient(50% 50% at 50% 50%, rgba(139,92,246,0.38), rgba(139,92,246,0.06) 60%, transparent 76%)', filter: 'blur(2px)', zIndex: 0 }} />
+                  <img src="/ai-man.png" alt="AI Cytology Model" className="ai-breathe" style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', filter: 'brightness(1.12) contrast(1.05) saturate(1.05) drop-shadow(0 16px 34px rgba(99,102,241,0.35))' }} />
                   {[{ top: '18%', left: '52%', color: '#6366F1' }, { top: '42%', left: '18%', color: '#8B5CF6' }, { top: '42%', left: '72%', color: '#06B6D4' }, { top: '68%', left: '45%', color: '#8B5CF6' }].map((dot, i) => (
                     <div key={i} className="ai-pulse" style={{ position: 'absolute', top: dot.top, left: dot.left, width: 16, height: 16, borderRadius: '50%', background: dot.color, border: '2px solid white', transform: 'translate(-50%,-50%)', zIndex: 2 }} />
                   ))}
@@ -315,10 +321,11 @@ export default function DashboardPage() {
                 const rows = Array.from({ length: 6 }, (_, i) => {
                   const dt = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
                   const current = series.slice(i * chunk, (i + 1) * chunk).reduce((s: any, r: any) => s + (r.value || 0), 0);
-                  return { month: MONTHS[dt.getMonth()], current, target: 0 };
+                  return { month: MONTHS[dt.getMonth()], current, gap: 0 };
                 });
                 const maxC = Math.max(1, ...rows.map((r) => r.current));
-                rows.forEach((r) => { r.target = Math.round(maxC * 1.25); });
+                const target = Math.round(maxC * 1.3);
+                rows.forEach((r) => { r.gap = Math.max(0, target - r.current); });
                 return rows;
               })()} />
             </div>
@@ -370,7 +377,7 @@ export default function DashboardPage() {
                 <span style={{ fontSize: 22, fontWeight: 800, color: '#4F46E5', fontFamily: 'Geist,sans-serif' }}>{eff?.authorization ?? 92}%</span>
               </div>
               <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 12 }}>Accuracy</div>
-              <ConversionBars data={(d.radar ?? []).map((r: any) => ({ name: r.dim, value: r.current, prev: r.previous }))} />
+              <PerformanceArea />
             </div>
 
             {/* Recent Activity */}
