@@ -2,18 +2,17 @@
 
 import {
   Bar, BarChart, CartesianGrid, Cell, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart,
-  RadialBar, RadialBarChart, ReferenceDot, ReferenceLine, ResponsiveContainer, XAxis, YAxis,
+  ReferenceDot, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 
-const BLUE = '#4f7df9';
-const BLUE_DEEP = '#2e5ce6';
+const BLUE = '#4F46E5';
+const BLUE_DEEP = '#3730A3';
+const BLUE_GHOST = '#C7D2FE'; // for ghost/capacity bars
+const BLUE_SOFT = '#EEF2FF'; // for backgrounds
 const CHARCOAL = '#2b2d31';
-const LAV = '#c3b8f5';
 const GREEN = '#34c759';
-const INK = '#0f172a';
 const AXIS = '#6b7280';
 const GRID = '#e8edf4';
-const BAR = '#a0a5ad';
 
 /* ---- Dense daily throughput "comb": thick charcoal bars; peak = blue lollipop (ref) ---- */
 export function ThroughputComb({ data, height = 280 }: { data: any[]; height?: number }) {
@@ -22,16 +21,31 @@ export function ThroughputComb({ data, height = 280 }: { data: any[]; height?: n
   const ticks = data.filter((d) => d.label).map((d) => d.i);
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={data} margin={{ top: 18, right: 8, bottom: 4, left: 4 }} barCategoryGap="16%">
+      <BarChart data={data} margin={{ top: 18, right: 8, bottom: 4, left: 4 }} barCategoryGap="16%" barGap={-7}>
         <CartesianGrid vertical={false} stroke={GRID} strokeDasharray="5 6" />
         <XAxis dataKey="i" type="number" domain={[0, data.length - 1]} axisLine={false} tickLine={false}
           ticks={ticks} tickFormatter={(i) => data[i]?.label ?? ''} tick={{ fontSize: 13, fill: AXIS, fontWeight: 500 }} dy={8} />
         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 13, fill: AXIS, fontWeight: 500 }} width={36}
           tickFormatter={(v) => (v >= 1000 ? `${v / 1000}K` : `${v}`)} />
+        <Tooltip
+          cursor={{ fill: 'rgba(79,70,229,0.04)' }}
+          content={({ active, payload, label }: any) => {
+            if (!active || !payload?.length) return null;
+            return (
+              <div style={{ background: 'white', border: '1px solid #E2E8F0', borderRadius: 10, padding: '8px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
+                <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 2 }}>{data[label]?.label || ''}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#4F46E5' }}>{payload[1]?.value ?? payload[0]?.value} specimens</div>
+              </div>
+            );
+          }}
+        />
         {peak && <ReferenceLine segment={[{ x: peakIdx, y: 0 }, { x: peakIdx, y: peak.value }]} stroke={BLUE} strokeWidth={3} ifOverflow="visible" />}
         {peak && <ReferenceDot x={peakIdx} y={peak.value} r={6} fill={BLUE} stroke="#fff" strokeWidth={2.5} />}
-        <Bar dataKey="value" isAnimationActive animationDuration={900} animationEasing="ease-out" maxBarSize={7} radius={[3.5, 3.5, 0, 0]}>
-          {data.map((d, i) => <Cell key={i} fill={d.peak ? 'transparent' : BAR} />)}
+        {/* Ghost capacity bar — full height behind the real bar */}
+        <Bar dataKey="capacity" maxBarSize={7} radius={[3.5, 3.5, 0, 0]} fill={BLUE_GHOST} opacity={0.4} isAnimationActive={false} />
+        {/* Actual bar on top */}
+        <Bar dataKey="value" maxBarSize={7} radius={[3.5, 3.5, 0, 0]} isAnimationActive animationDuration={900} animationEasing="ease-out">
+          {data.map((d, i) => <Cell key={i} fill={d.peak ? 'transparent' : BLUE} opacity={d.peak ? 0 : 0.85} />)}
         </Bar>
       </BarChart>
     </ResponsiveContainer>
@@ -55,34 +69,48 @@ export function RadarMetrics({ data, height = 280 }: { data: any[]; height?: num
   );
 }
 
-/* ---- OEE donut: thick blue-gradient outer ring + thinner purple inner ring ---- */
+/* ---- OEE donut: segmented dual ring (36 individual dashes) ---- */
 export function OeeDonut({ value, inner, size = 216 }: { value: number; inner: number; size?: number }) {
-  const ring = (val: number, fill: string, ir: string, or: string, bar: number, key: string, delay = 0) => (
-    <div style={{ position: 'absolute', inset: 0 }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <RadialBarChart innerRadius={ir} outerRadius={or} data={[{ value: val }]} startAngle={90} endAngle={-270} barSize={bar}>
-          {key === 'outer' && (
-            <defs>
-              <linearGradient id="oeeGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor={BLUE} />
-                <stop offset="100%" stopColor={BLUE_DEEP} />
-              </linearGradient>
-            </defs>
-          )}
-          <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-          <RadialBar dataKey="value" cornerRadius={bar / 2} fill={fill} background={{ fill: '#edf1f8' } as any}
-            isAnimationActive animationDuration={1100} animationBegin={delay} animationEasing="ease-out" />
-        </RadialBarChart>
-      </ResponsiveContainer>
-    </div>
-  );
+  const segments = 36;
+  const gap = 4; // degrees gap between segments
+  const segAngle = (360 / segments) - gap;
+  const r1 = size * 0.46; // outer ring radius
+  const r2 = size * 0.32; // inner ring radius
+  const cx = size / 2;
+  const cy = size / 2;
+
+  const filledOuter = Math.round((value / 100) * segments);
+  const filledInner = Math.round((inner / 100) * segments);
+
+  const arcPath = (cx: number, cy: number, r: number, startAngle: number, endAngle: number) => {
+    const toRad = (deg: number) => (deg - 90) * (Math.PI / 180);
+    const x1 = cx + r * Math.cos(toRad(startAngle));
+    const y1 = cy + r * Math.sin(toRad(startAngle));
+    const x2 = cx + r * Math.cos(toRad(endAngle));
+    const y2 = cy + r * Math.sin(toRad(endAngle));
+    const large = endAngle - startAngle > 180 ? 1 : 0;
+    return `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`;
+  };
+
   return (
     <div style={{ position: 'relative', width: size, height: size }}>
-      {ring(value, 'url(#oeeGrad)', '72%', '100%', 18, 'outer')}
-      {ring(inner, LAV, '48%', '70%', 14, 'inner', 250)}
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {Array.from({ length: segments }).map((_, i) => {
+          const startAngle = i * (360 / segments);
+          const endAngle = startAngle + segAngle;
+          const outerFilled = i < filledOuter;
+          const innerFilled = i < filledInner;
+          return (
+            <g key={i}>
+              <path d={arcPath(cx, cy, r1, startAngle, endAngle)} stroke={outerFilled ? BLUE : '#E2E8F0'} strokeWidth={10} fill="none" strokeLinecap="round" />
+              <path d={arcPath(cx, cy, r2, startAngle, endAngle)} stroke={innerFilled ? '#A5B4FC' : BLUE_SOFT} strokeWidth={7} fill="none" strokeLinecap="round" />
+            </g>
+          );
+        })}
+      </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: 36, fontWeight: 800, color: INK, letterSpacing: '-0.02em' }}>{value}%</span>
-        <span style={{ fontSize: 13, color: AXIS, fontWeight: 700, letterSpacing: '0.06em' }}>OEE</span>
+        <span style={{ fontSize: 36, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', fontFamily: 'Geist,sans-serif' }}>{value}%</span>
+        <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>OEE</span>
       </div>
     </div>
   );

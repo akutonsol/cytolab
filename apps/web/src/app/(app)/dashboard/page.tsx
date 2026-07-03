@@ -3,13 +3,13 @@
 import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
 import {
-  ArrowUpRight, Calendar, ChevronDown, Clock, FlaskConical, Microscope, MoreHorizontal, Plus,
+  ArrowUpRight, Calendar, ChevronDown, Clock, FlaskConical, Microscope, MoreHorizontal,
   Stethoscope, TestTube, TrendingDown, TrendingUp, User,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { AvatarStack, PillSelect } from '@/components/ui';
+import { PillSelect } from '@/components/ui';
 import { GlassCard } from '@/components/dashboard/glass-card';
 import { HeroBanner, type HeroChip } from '@/components/dashboard/hero-banner';
 import { NavPills } from '@/components/dashboard/nav-pills';
@@ -194,11 +194,11 @@ export default function DashboardPage() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2.5">
                   <span className="text-[34px] font-extrabold leading-none tracking-tight text-[var(--foreground)]">{d.throughput.headlinePct}%</span>
-                  <span className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold text-white" style={{ background: BLUE }}>
-                    {up ? <TrendingUp size={15} /> : <TrendingDown size={15} />}{Math.abs(d.throughput.deltaPct)}%
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: up ? '#4F46E5' : '#EF4444', color: 'white', borderRadius: 999, padding: '4px 10px', fontSize: 12, fontWeight: 700, fontFamily: 'Geist,sans-serif' }}>
+                    {up ? <TrendingUp size={12} /> : <TrendingDown size={12} />}{up ? '+' : ''}{Math.abs(d.throughput.deltaPct)}%
                   </span>
                 </div>
-                <div className="mt-4"><ThroughputComb data={d.throughput.series} height={260} /></div>
+                <div className="mt-4"><ThroughputComb data={d.throughput.series.map((s: any) => ({ ...s, capacity: 20 }))} height={260} /></div>
               </div>
               <div className="hidden w-px shrink-0 bg-[var(--border-soft)] lg:block" />
               <div className="lg:w-[40%]">
@@ -215,13 +215,21 @@ export default function DashboardPage() {
           <GlassCard title="Lab Effectiveness" action={<DatePill />}>
             <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-6">
               <OeeDonut value={eff.oee} inner={eff.authorization} size={196} />
-              <div className="grid flex-1 grid-cols-2 gap-x-5 gap-y-6" style={{ minWidth: 200 }}>
-                <Stat value={`${eff.onTime}%`} label="On-time" dot={PURPLE} />
-                <Stat value={`${eff.authorization}%`} label="Authorization" dot={BLUE} />
-                <Stat value={`${eff.accuracy}%`} label="Accuracy" dot={PURPLE} />
-                <Stat value={eff.specimensProcessed} label="Specimens" />
-                <Stat value={eff.reportsAuthorized} label="Authorized" />
-                <Stat value={`${eff.reopenRate}%`} label="Re-open Rate" />
+              <div className="grid flex-1 grid-cols-3 gap-x-4 gap-y-5" style={{ minWidth: 260 }}>
+                {[
+                  { label: 'On-time', value: `${eff.onTime}%`, icon: '⏱' },
+                  { label: 'Authorization', value: `${eff.authorization}%`, icon: '✓' },
+                  { label: 'Accuracy', value: `${eff.accuracy}%`, icon: '◎' },
+                  { label: 'Specimens', value: eff.specimensProcessed, icon: '⬡' },
+                  { label: 'Reports', value: eff.reportsAuthorized, icon: '📋' },
+                  { label: 'Re-open', value: `${eff.reopenRate}%`, icon: '↺' },
+                ].map(({ label, value, icon }) => (
+                  <div key={label} style={{ textAlign: 'center', padding: '8px 4px' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', border: '1.5px solid #E2E8F0', display: 'grid', placeItems: 'center', fontSize: 16, margin: '0 auto 6px', background: 'white' }}>{icon}</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', lineHeight: 1, fontFamily: 'Geist,sans-serif' }}>{value}</div>
+                    <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 3, fontWeight: 500 }}>{label}</div>
+                  </div>
+                ))}
               </div>
             </div>
           </GlassCard>
@@ -230,19 +238,27 @@ export default function DashboardPage() {
           <GlassCard title="Top Clients" action={<SeeAll onClick={() => router.push('/clients')} />} style={{ background: 'transparent', backdropFilter: 'none', WebkitBackdropFilter: 'none', border: '1px solid transparent', boxShadow: 'none' }}>
             <div className="flex flex-col gap-3">
               {d.topClients.length === 0 && <div className="py-6 text-center text-xs text-[var(--muted-foreground)]">No client volume yet.</div>}
-              {d.topClients.slice(0, 3).map((c: any, i: number) => (
-                <div key={i} className="flex items-center gap-3 rounded-2xl border border-[#edeef3] bg-white p-4 shadow-[0_1px_3px_rgba(16,24,40,0.05)]">
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[16px] font-bold text-[var(--foreground)]">{c.name}</div>
-                    <div className="truncate text-[13px] font-medium text-[var(--muted-foreground)]">{c.type || 'Referring client — specimens & billing'}</div>
+              {d.topClients.slice(0, 5).map((c: any, i: number) => {
+                const maxCount = d.topClients[0]?.count ?? 1;
+                const pct = Math.round((c.count / maxCount) * 100);
+                return (
+                  <div key={i} style={{ border: '1px solid #EEF2F7', borderRadius: 12, padding: '14px 16px', marginBottom: 8, background: 'white' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A' }}>{c.name}</div>
+                        <div style={{ fontSize: 12, color: '#94A3B8' }}>{c.type || 'Laboratory'}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#64748B' }}>{c.count} records</span>
+                        <button onClick={() => router.push('/clients')} style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid #EEF2F7', background: 'white', display: 'grid', placeItems: 'center', cursor: 'pointer', color: '#4F46E5', fontSize: 16 }}>+</button>
+                      </div>
+                    </div>
+                    <div style={{ height: 4, background: '#EEF2F7', borderRadius: 999 }}>
+                      <div style={{ height: 4, borderRadius: 999, background: i === 0 ? '#4F46E5' : i === 1 ? '#818CF8' : '#C7D2FE', width: `${pct}%`, transition: 'width 0.8s ease-out' }} />
+                    </div>
                   </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    <span className="text-[13px] font-semibold text-[var(--muted-foreground)]">{c.count} records</span>
-                    <AvatarStack avatars={[{ name: c.name }, { name: c.type ?? 'Lab' }, { name: 'Team' }]} size={26} max={3} />
-                  </div>
-                  <button onClick={() => router.push('/clients')} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#f0f1f4] text-[#5b6472] transition-colors hover:text-black"><Plus size={18} /></button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </GlassCard>
 
