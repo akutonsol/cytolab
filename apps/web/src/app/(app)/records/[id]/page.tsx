@@ -72,6 +72,12 @@ const PARTICLES = [
   { left: '55%', top: '32%', size: 4, color: 'rgba(167,139,250,0.5)', anim: 'drift6', delay: '4s', dur: '9s' },
   { left: '10%', top: '48%', size: 9, color: 'rgba(196,181,253,0.4)', anim: 'drift7', delay: '4.8s', dur: '7s' },
   { left: '78%', top: '82%', size: 6, color: 'rgba(99,102,241,0.7)', anim: 'drift8', delay: '5.6s', dur: '8s' },
+  { left: '32%', top: '38%', size: 7, color: 'rgba(129,140,248,0.55)', anim: 'drift2', delay: '1.2s', dur: '8s' },
+  { left: '60%', top: '72%', size: 5, color: 'rgba(167,139,250,0.5)', anim: 'drift5', delay: '2s', dur: '9s' },
+  { left: '88%', top: '30%', size: 8, color: 'rgba(196,181,253,0.45)', anim: 'drift3', delay: '3.6s', dur: '7s' },
+  { left: '20%', top: '62%', size: 6, color: 'rgba(99,102,241,0.6)', anim: 'drift7', delay: '5s', dur: '10s' },
+  { left: '48%', top: '18%', size: 5, color: 'rgba(129,140,248,0.5)', anim: 'drift4', delay: '2.8s', dur: '8s' },
+  { left: '68%', top: '48%', size: 9, color: 'rgba(167,139,250,0.4)', anim: 'drift6', delay: '4.4s', dur: '9s' },
 ];
 const GLOWS = [
   { left: '18%', top: '22%', size: 100, color: 'rgba(129,140,248,0.15)', delay: '0s', dur: '5s' },
@@ -80,7 +86,6 @@ const GLOWS = [
 ];
 
 const ANIM_CSS = `
-@keyframes cytoBreathe{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.04);filter:brightness(1.05)}}
 @keyframes glowPulse{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:.7;transform:scale(1.15)}}
 @keyframes scanLine{0%{top:0%;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:100%;opacity:0}}
 @keyframes colorDrift{0%{background:rgba(99,102,241,0)}25%{background:rgba(99,102,241,.04)}50%{background:rgba(129,140,248,.06)}75%{background:rgba(167,139,250,.04)}100%{background:rgba(99,102,241,0)}}
@@ -141,9 +146,9 @@ export default function RecordDetailPage() {
   if (isLoading || !record) {
     return (
       <div className="flex gap-4 p-5" style={{ background: '#EDF0F7', height: 'calc(100vh - 150px)', minHeight: 560 }}>
-        <div className="w-[280px] shrink-0 animate-pulse rounded-[20px] bg-white/70" />
+        <div className="w-[300px] shrink-0 animate-pulse rounded-[20px] bg-white/70" />
         <div className="flex-1 animate-pulse rounded-[20px] bg-white/70" />
-        <div className="w-[260px] shrink-0 animate-pulse rounded-[20px] bg-white/70" />
+        <div className="w-[300px] shrink-0 animate-pulse rounded-[20px] bg-white/70" />
       </div>
     );
   }
@@ -178,7 +183,7 @@ export default function RecordDetailPage() {
       <style>{ANIM_CSS}</style>
 
       {/* ═══════════ LEFT PANEL ═══════════ */}
-      <aside className="premium-scroll flex w-[280px] shrink-0 flex-col overflow-y-auto rounded-[20px] border border-[#E4E8F4] bg-[#F4F6FC] p-6">
+      <aside className="premium-scroll flex w-[300px] shrink-0 flex-col overflow-y-auto rounded-[20px] border border-[#E4E8F4] bg-[#F4F6FC] p-6">
         <button onClick={() => router.back()} className="mb-4 flex items-center gap-1.5 self-start text-[12px] font-medium text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={14} /> Records</button>
 
         {/* Identity */}
@@ -263,10 +268,10 @@ export default function RecordDetailPage() {
 
         {/* Segmented control (reference-style pill switcher) */}
         <div className="shrink-0 px-5 pt-4">
-          <div className="flex gap-1 rounded-full p-1" style={{ background: '#DFE7F3' }}>
-            <button onClick={() => setDrawer(true)} className="flex-1 rounded-full px-4 py-2.5 text-[14px] font-semibold text-[#5B7BB4] transition-colors hover:text-[#1E3A8A]">Edit Clinical Features</button>
-            <button onClick={() => setSheetModal(true)} className="flex-1 rounded-full px-4 py-2.5 text-[14px] font-semibold text-[#5B7BB4] transition-colors hover:text-[#1E3A8A]">Add Result Sheet</button>
-            <button className="flex-1 rounded-full bg-white px-4 py-2.5 text-[14px] font-bold text-[#1E3A8A] shadow-sm">{specLabel(activeSpecimen?.type) || 'Specimen'}</button>
+          <div className="flex gap-1 rounded-full p-1.5" style={{ background: 'linear-gradient(145deg,#EEF3FB,#DBE5F4)', boxShadow: 'inset 0 1px 3px rgba(148,163,184,0.22)' }}>
+            <button onClick={() => setDrawer(true)} style={{ background: 'transparent' }} className="flex-1 rounded-full px-4 py-2.5 text-[14px] font-semibold text-[#3B5EA8] transition-colors hover:text-[#1E3A8A]">Edit Clinical Features</button>
+            <button onClick={() => setSheetModal(true)} style={{ background: 'transparent' }} className="flex-1 rounded-full px-4 py-2.5 text-[14px] font-semibold text-[#3B5EA8] transition-colors hover:text-[#1E3A8A]">Add Result Sheet</button>
+            <button className="flex-1 rounded-full bg-white px-4 py-2.5 text-[14px] font-bold text-[#1E3A8A]" style={{ boxShadow: '0 4px 14px rgba(110,130,180,0.28), 0 1px 3px rgba(0,0,0,0.05)' }}>{specLabel(activeSpecimen?.type) || 'Specimen'}</button>
           </div>
         </div>
 
@@ -285,24 +290,24 @@ export default function RecordDetailPage() {
             </div>
           </div>
 
-          <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl bg-[#F5F0FA]">
-            <div className="absolute inset-0" style={{ animation: 'cytoBreathe 8s ease-in-out infinite' }}>
-              <Image src="/cytology-sample.png" alt="Cytology specimen" fill unoptimized sizes="45vw" style={{ objectFit: 'cover', objectPosition: 'center' }} priority />
+          <div className="flex min-h-0 flex-1 items-center justify-center">
+            <div className="relative aspect-square w-full max-w-[420px] overflow-hidden rounded-2xl bg-[#F5F0FA]">
+              <Image src="/cytology-sample.png" alt="Cytology specimen" fill unoptimized sizes="420px" style={{ objectFit: 'cover', objectPosition: 'center' }} priority />
+              <div className="pointer-events-none absolute inset-0" style={{ animation: 'colorDrift 12s linear infinite' }} />
+              {GLOWS.map((g, i) => (
+                <div key={`g${i}`} className="pointer-events-none absolute rounded-full" style={{ left: g.left, top: g.top, width: g.size, height: g.size, background: g.color, filter: 'blur(30px)', animation: `glowPulse ${g.dur} ease-in-out ${g.delay} infinite` }} />
+              ))}
+              {PARTICLES.map((p, i) => (
+                <div key={`p${i}`} className="pointer-events-none absolute rounded-full" style={{ left: p.left, top: p.top, width: p.size, height: p.size, background: p.color, animation: `${p.anim} ${p.dur} ease-in-out ${p.delay} infinite` }} />
+              ))}
+              <div className="pointer-events-none absolute left-0 right-0" style={{ height: 2, background: 'linear-gradient(to right, transparent, rgba(129,140,248,0.4), transparent)', animation: 'scanLine 4s linear infinite' }} />
             </div>
-            <div className="pointer-events-none absolute inset-0" style={{ animation: 'colorDrift 12s linear infinite' }} />
-            {GLOWS.map((g, i) => (
-              <div key={`g${i}`} className="pointer-events-none absolute rounded-full" style={{ left: g.left, top: g.top, width: g.size, height: g.size, background: g.color, filter: 'blur(30px)', animation: `glowPulse ${g.dur} ease-in-out ${g.delay} infinite` }} />
-            ))}
-            {PARTICLES.map((p, i) => (
-              <div key={`p${i}`} className="pointer-events-none absolute rounded-full" style={{ left: p.left, top: p.top, width: p.size, height: p.size, background: p.color, animation: `${p.anim} ${p.dur} ease-in-out ${p.delay} infinite` }} />
-            ))}
-            <div className="pointer-events-none absolute left-0 right-0" style={{ height: 2, background: 'linear-gradient(to right, transparent, rgba(129,140,248,0.4), transparent)', animation: 'scanLine 4s linear infinite' }} />
           </div>
         </div>
       </section>
 
       {/* ═══════════ RIGHT PANEL ═══════════ */}
-      <aside className="premium-scroll flex w-[260px] shrink-0 flex-col overflow-y-auto rounded-[20px] border border-[#E4E8F4] bg-white p-6">
+      <aside className="premium-scroll flex w-[300px] shrink-0 flex-col overflow-y-auto rounded-[20px] border border-[#E4E8F4] bg-white p-6">
         <div className={`${LABEL} mb-5`}>Patient Stats</div>
         <Stat icon={Activity} label="Total Records" value={String(totalRecords)} unit="cases" />
         <Stat icon={FlaskConical} label="Open Cases" value={String(openCases)} unit="in progress" />
