@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (cents: number) => '$' + ((cents ?? 0) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -55,11 +54,11 @@ function BillingWorkspace() {
   const [payBill, setPayBill] = useState<Bill | null>(null);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3200); };
-  const { claims } = useAuth();
   const [period, setPeriod] = useState<'month' | 'last' | 'ytd'>('month');
   const [targetOpen, setTargetOpen] = useState(false);
   const [target, setTarget] = useState('');
 
+  const { data: overview } = useQuery<any>({ queryKey: ['patients-overview'], queryFn: () => api.get('/patients/overview').then((r) => r.data) });
   const { data: summary } = useQuery<any>({ queryKey: ['bills-summary'], queryFn: () => api.get('/bills/summary').then((r) => r.data) });
   const { data: billsPage } = useQuery<Paginated<Bill>>({ queryKey: ['bills-all'], queryFn: () => api.get('/bills', { params: { pageSize: 500 } }).then((r) => r.data) });
   const allBills = billsPage?.data ?? [];
@@ -135,13 +134,12 @@ function BillingWorkspace() {
     const cur = pymByYM.get(key); pymByYM.set(key, { late: (cur?.late ?? false) || late });
   }
   const calYears = [0, 1, 2, 3].map((i) => now.getFullYear() - i);
-  const emailName = (claims?.email ?? '').split('@')[0].split(/[._-]/)[0].replace(/[^a-z]/gi, '');
-  const firstName = emailName ? emailName[0].toUpperCase() + emailName.slice(1) : 'there';
+  const firstName = overview?.greeting?.firstName || 'there';
   const targetPct = target ? Number(target) : null;
 
   return (
     <div className="min-h-full p-8" style={{ background: '#F7FAFD' }}>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.75fr_1fr]">
         {/* ══ LEFT COLUMN ══ */}
         <div className="flex min-w-0 flex-col gap-6">
           <BillTimeline step1Done={step1Done} step2Done={step2Done} step3Done={step3Done} />
