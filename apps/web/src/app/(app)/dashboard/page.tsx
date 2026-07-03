@@ -205,8 +205,8 @@ export default function DashboardPage() {
               { bg: '#E6E9F5', label: 'PENDING REVIEW', value: kpis?.pendingRequisitions || 0, delta: `High priority: ${d.priorityRecords?.filter((r: any) => r.urgent).length || 0}`, deltaColor: '#5B69C4' },
               { bg: '#EAE6F9', label: 'AI CONFIDENCE', value: `${eff?.authorization ?? 92}%`, delta: '+4% vs yesterday', deltaColor: '#7C5FD3' },
             ].map((c: any, i: number) => c.solid ? (
-              <div key={i} style={{ background: c.bg, borderRadius: 16, padding: '18px 20px', boxShadow: '0 6px 20px rgba(200,90,70,0.18)', display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div style={{ width: 52, height: 52, borderRadius: 13, background: 'rgba(255,255,255,0.28)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>{c.icon}</div>
+              <div key={i} style={{ background: c.bg, borderRadius: 16, padding: '14px 18px', boxShadow: '0 6px 20px rgba(200,90,70,0.18)', display: 'flex', alignItems: 'center', gap: 12, overflow: 'hidden' }}>
+                <img src="/specimen-tube.png" alt="" style={{ height: 84, width: 'auto', objectFit: 'contain', flexShrink: 0, filter: 'drop-shadow(0 6px 10px rgba(110,25,18,0.4))' }} />
                 <div>
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#5A241B', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>{c.label}</div>
                   <div style={{ fontSize: 28, fontWeight: 800, color: '#3D160F', letterSpacing: '-0.02em', lineHeight: 1, fontFamily: 'Geist,sans-serif' }}>{c.value}</div>
