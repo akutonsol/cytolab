@@ -291,7 +291,7 @@ export default function RecordDetailPage() {
           </div>
 
           <div className="relative min-h-0 flex-1 self-stretch overflow-hidden rounded-2xl bg-[#F5F0FA]">
-            <Image src={cytologyImg} alt="Cytology specimen" fill unoptimized sizes="45vw" style={{ objectFit: 'cover', objectPosition: 'center' }} priority />
+            <Image src={cytologyImg} alt="Cytology specimen" fill unoptimized sizes="45vw" style={{ objectFit: 'contain', objectPosition: 'center', mixBlendMode: 'multiply' }} priority />
             <div className="pointer-events-none absolute inset-0 mix-blend-multiply" style={{ animation: 'colorDrift 7s linear infinite' }} />
             {GLOWS.map((g, i) => (
               <div key={`g${i}`} className="pointer-events-none absolute rounded-full" style={{ left: g.left, top: g.top, width: g.size, height: g.size, background: g.color, filter: 'blur(30px)', animation: `glowPulse ${g.dur} ease-in-out ${g.delay} infinite` }} />
