@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Activity, AlertTriangle, ArrowLeft, Check, CheckCircle2, ChevronRight, Clock, Download,
@@ -261,9 +260,9 @@ export default function RecordDetailPage() {
           </div>
         </div>
 
-        {/* Content: left detail column + right bounded image */}
-        <div className="flex min-h-0 flex-1 gap-6 p-5">
-          <div className="flex w-[38%] shrink-0 flex-col">
+        {/* Content: left detail column + right image (beside, larger) */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 24, flex: 1, padding: '16px 20px' }}>
+          <div style={{ flexShrink: 0 }} className="flex w-[38%] flex-col">
             <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#E8EDF7] text-[#4F46E5]"><Microscope size={22} /></span>
             <div className="mt-4 text-[17px] font-semibold italic text-[#1E293B]">Patient {specLabel(activeSpecimen?.type)} Analysis</div>
             <div className="mt-1 text-[20px] font-bold text-[#4F46E5]">{progress}%<span className="ml-1.5 text-[14px] font-normal text-[#64748B]">completed</span></div>
@@ -290,8 +289,8 @@ export default function RecordDetailPage() {
             </div>
           </div>
 
-          <div className="relative min-h-0 flex-1 self-stretch overflow-hidden rounded-2xl bg-white">
-            <Image src={cytologyImg} alt="Cytology specimen" fill unoptimized sizes="45vw" style={{ objectFit: 'contain', objectPosition: 'center' }} priority />
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <img src={cytologyImg} alt="Cytology specimen" style={{ width: '100%', maxWidth: 520, height: 'auto', objectFit: 'contain' }} />
           </div>
         </div>
       </section>
