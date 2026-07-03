@@ -18,7 +18,7 @@ const billSelect = {
   dueDate: true,
   viewed: true,
   recordId: true,
-  record: { select: { id: true, identifier: true, status: true } },
+  record: { select: { id: true, identifier: true, labNumber: true, status: true } },
   clientId: true,
   client: { select: { id: true, firstName: true, lastName: true, officeName: true } },
   lines: {

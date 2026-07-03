@@ -27,7 +27,7 @@ interface Bill {
   id: string; referenceNo: string; status: string;
   subtotal: number; taxTotal: number; total: number; amountPaid: number;
   dueDate?: string | null; viewed: boolean; createdAt: string;
-  recordId: string; record?: { id: string; identifier: string; status: string } | null;
+  recordId: string; record?: { id: string; identifier: string; labNumber?: string | null; status: string } | null;
   clientId?: string | null; client?: { firstName?: string; lastName?: string; officeName?: string | null } | null;
   lines?: any[]; taxes?: any[]; payments?: any[];
 }
@@ -78,7 +78,7 @@ function BillingWorkspace() {
     else if (tab === 'paid') rows = rows.filter((b) => b.status === 'Paid');
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      rows = rows.filter((b) => `${b.referenceNo} ${clientName(b.client)} ${b.record?.identifier ?? ''}`.toLowerCase().includes(q));
+      rows = rows.filter((b) => `${b.referenceNo} ${clientName(b.client)} ${b.record?.labNumber ?? ''} ${b.record?.identifier ?? ''}`.toLowerCase().includes(q));
     }
     return rows;
   }, [allBills, tab, search]);
@@ -218,7 +218,7 @@ function BillingWorkspace() {
                       style={over ? { boxShadow: 'inset 3px 0 0 0 #EF4444' } : undefined}>
                       <td className="whitespace-nowrap py-4 pr-4"><span className="font-mono text-[14px] font-bold text-[#0F172A]">{b.referenceNo}</span></td>
                       <td className="whitespace-nowrap py-4 pr-4 text-[15px] font-semibold text-[#0F172A]">{clientName(b.client)}</td>
-                      <td className="whitespace-nowrap py-4 pr-4"><span className="font-mono text-[13px] text-[#9CA3AF]">{b.record?.identifier ?? '—'}</span></td>
+                      <td className="whitespace-nowrap py-4 pr-4"><span className="font-mono text-[13px] text-[#9CA3AF]">{b.record?.labNumber ?? b.record?.identifier ?? '—'}</span></td>
                       <td className="py-4 text-right text-[15px] font-medium text-[#0F172A]">{fmt(b.total)}</td>
                       <td className="py-4 text-right text-[15px] font-medium" style={{ color: b.amountPaid > 0 ? '#16A34A' : '#9CA3AF' }}>{fmt(b.amountPaid)}</td>
                       <td className="py-4 text-right text-[15px] font-semibold" style={{ color: out > 0 ? '#DC2626' : '#16A34A' }}>{fmt(out)}</td>
@@ -357,7 +357,8 @@ function CollectionGauge({ rate, delta }: { rate: number; delta: number }) {
   const START = -125, SWEEP = 250, END = START + SWEEP;
   const polar = (deg: number): [number, number] => { const a = (deg * Math.PI) / 180; return [cx + r * Math.sin(a), cy - r * Math.cos(a)]; };
   const arc = (a: number, b: number) => { const [x1, y1] = polar(a); const [x2, y2] = polar(b); const large = Math.abs(b - a) > 180 ? 1 : 0; return `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`; };
-  const clamped = Math.max(0, Math.min(100, rate));
+  // Clamp the marker to a minimum 2% so the arc always reads as a starting point.
+  const clamped = Math.max(2, Math.min(100, rate));
   const [mx, my] = polar(START + (clamped / 100) * SWEEP);
   const arcLen = (SWEEP / 360) * 2 * Math.PI * r;
   const seg = arcLen / 30; // ~30 ticked segments for the reference's textured look
@@ -380,6 +381,9 @@ function CollectionGauge({ rate, delta }: { rate: number; delta: number }) {
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: delta > 0 ? '#F0FDF4' : '#FEF2F2', color: delta > 0 ? '#16A34A' : '#DC2626', borderRadius: 999, padding: '3px 12px', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)} pts</div>
         )}
         <div style={{ fontSize: 56, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{rate}%</div>
+        {rate === 0 && (
+          <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 4, textAlign: 'center', maxWidth: 120, marginLeft: 'auto', marginRight: 'auto' }}>No payments recorded yet</div>
+        )}
       </div>
     </div>
   );
@@ -463,7 +467,7 @@ function BillDrawer({ id, onClose, onPay, onChanged, notify }: { id: string; onC
               <div className="mt-4 border-t border-[#EEF2F7] pt-3">
                 <div className="text-[11px] font-semibold uppercase tracking-wide text-[#9CA3AF]">Bill To</div>
                 <div className="mt-0.5 text-[14px] font-bold text-[#0F172A]">{clientName(bill.client)}</div>
-                <div className="font-mono text-[12px] text-[#9CA3AF]">{bill.record?.identifier ?? '—'}</div>
+                <div className="font-mono text-[12px] text-[#9CA3AF]">{bill.record?.labNumber ?? bill.record?.identifier ?? '—'}</div>
               </div>
             </div>
 
