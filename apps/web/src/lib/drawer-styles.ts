@@ -120,6 +120,22 @@ export const DS = {
     fontFamily: 'Geist, sans-serif',
   } as CSSProperties,
 
+  // Footer cancel button (white, bordered — centered-modal pattern)
+  btnFooterCancel: {
+    background: '#FFFFFF',
+    color: '#64748B',
+    border: '1px solid #E2E8F0',
+    borderRadius: 12,
+    padding: '10px 24px',
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: 'Geist, sans-serif',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+  } as CSSProperties,
+
   // Danger button
   btnDanger: {
     background: '#FEF2F2',

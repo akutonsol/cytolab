@@ -29,6 +29,33 @@ export function DrawerHeader({ title, subtitle, onClose, actions }: {
   );
 }
 
+/**
+ * Sticky footer action bar for the centered-modal form pattern. Pins to the
+ * bottom of the scrollable modal body; actions are right-aligned (Cancel → Save).
+ */
+export function DrawerFooter({ children }: { children: ReactNode }) {
+  return (
+    <div
+      style={{
+        position: 'sticky',
+        bottom: 0,
+        background: DS.drawerBg,
+        borderTop: '1px solid #E2E8F0',
+        padding: '16px 32px',
+        display: 'flex',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        gap: 8,
+        flexWrap: 'wrap',
+        zIndex: 10,
+        borderRadius: '0 0 20px 20px',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 // Scoped CSS that translates AntD form controls into the DS field language:
 // solid white text inputs, dashed select/search inputs, indigo focus, Geist
 // labels. Scoped to `.ds-form` so it never leaks to the rest of the app.

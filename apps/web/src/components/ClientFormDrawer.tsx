@@ -7,9 +7,9 @@ import {
   Avatar,
   Button,
   Col,
-  Drawer,
   Form,
   Input,
+  Modal,
   Radio,
   Row,
   Space,
@@ -24,7 +24,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { RemoteSelect } from '@/components/RemoteSelect';
 import { DS } from '@/lib/drawer-styles';
-import { DrawerHeader, PremiumFormStyles } from '@/components/DrawerChrome';
+import { DrawerHeader, DrawerFooter, PremiumFormStyles } from '@/components/DrawerChrome';
 
 export interface ClientRecord {
   id: string;
@@ -276,26 +276,35 @@ export function ClientFormDrawer({ open, onClose, client }: Props) {
     </div>
   );
 
+  const actions = (
+    <>
+      <button type="button" style={DS.btnFooterCancel} onClick={onClose}>✕ Cancel</button>
+      <button type="button" style={{ ...DS.btnPrimary, opacity: save.isPending ? 0.6 : 1 }} disabled={save.isPending} onClick={() => form.submit()}>✓ Save</button>
+    </>
+  );
+
   return (
-    <Drawer
-      width={DS.drawerWidth}
+    <Modal
       open={open}
-      onClose={onClose}
-      destroyOnClose
+      onCancel={onClose}
+      width={700}
+      centered
+      destroyOnHidden
+      footer={null}
       closable={false}
-      styles={{ header: { display: 'none' }, body: { background: DS.drawerBg, padding: DS.drawerPadding }, content: { boxShadow: '-8px 0 40px rgba(0,0,0,0.12)' } }}
+      styles={{
+        content: { background: DS.drawerBg, borderRadius: 20, padding: 0, maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.18)' },
+        body: { padding: 0, maxHeight: '90vh', overflowY: 'auto', scrollbarWidth: 'thin' },
+        mask: { backdropFilter: 'blur(8px)', background: 'rgba(15,23,42,0.4)' },
+        header: { display: 'none' },
+      }}
     >
       <PremiumFormStyles />
+      <div style={{ padding: DS.drawerPadding, paddingBottom: 24 }}>
       <DrawerHeader
         title={isEdit ? 'Edit Client' : 'New Client'}
         subtitle="Referring client registration"
         onClose={onClose}
-        actions={
-          <>
-            <button type="button" style={{ ...DS.btnPrimary, opacity: save.isPending ? 0.6 : 1 }} disabled={save.isPending} onClick={() => form.submit()}>Save</button>
-            <button type="button" style={DS.btnSecondary} onClick={onClose}>Cancel</button>
-          </>
-        }
       />
       <Form className="ds-form" layout="vertical" form={form} onFinish={(v) => save.mutate(v)} requiredMark={false}>
         <Tabs
@@ -305,6 +314,9 @@ export function ClientFormDrawer({ open, onClose, client }: Props) {
           ]}
         />
       </Form>
-    </Drawer>
+      </div>
+
+      <DrawerFooter>{actions}</DrawerFooter>
+    </Modal>
   );
 }

@@ -6,10 +6,10 @@ import {
   Button,
   Col,
   DatePicker,
-  Drawer,
   Form,
   Input,
   InputNumber,
+  Modal,
   Row,
   Space,
   Switch,
@@ -26,7 +26,7 @@ import { PatientSelect, patientLabel } from '@/components/PatientSelect';
 import { PatientFormDrawer, type PatientRecord } from '@/components/PatientFormDrawer';
 import { SPECIMEN_LABELS, specimenTypesForForm, type FormType } from '@/lib/specimen-types';
 import { DS } from '@/lib/drawer-styles';
-import { DrawerHeader, PremiumFormStyles } from '@/components/DrawerChrome';
+import { DrawerHeader, DrawerFooter, PremiumFormStyles } from '@/components/DrawerChrome';
 
 // Specimen type multi-select rendered as dark pill chips (legacy form language).
 // Integrates with Form.Item via the injected value/onChange props.
@@ -270,35 +270,42 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
 
   const actions = isEdit ? (
     <>
-      <button type="button" style={{ ...DS.btnPrimary, opacity: locked || save.isPending ? 0.6 : 1 }} disabled={locked || save.isPending} onClick={() => submitForm(false)}>Save</button>
-      <button type="button" style={DS.btnSecondary} onClick={onClose}>Cancel</button>
       <button type="button" style={{ ...DS.btnDanger, opacity: locked || del.isPending ? 0.5 : 1 }} disabled={locked || del.isPending} onClick={confirmDelete}>
         <DeleteOutlined /> Delete
       </button>
+      <button type="button" style={DS.btnFooterCancel} onClick={onClose}>✕ Cancel</button>
+      <button type="button" style={{ ...DS.btnPrimary, opacity: locked || save.isPending ? 0.6 : 1 }} disabled={locked || save.isPending} onClick={() => submitForm(false)}>✓ Save</button>
     </>
   ) : (
     <>
-      <button type="button" style={{ ...DS.btnPrimary, opacity: save.isPending ? 0.6 : 1 }} disabled={save.isPending} onClick={() => submitForm(true)}>Submit to Cytolab</button>
+      <button type="button" style={DS.btnFooterCancel} onClick={onClose}>✕ Cancel</button>
       <button type="button" style={DS.btnSecondary} disabled={save.isPending} onClick={() => submitForm(false)}>Save</button>
-      <button type="button" style={DS.btnSecondary} onClick={onClose}>Cancel</button>
+      <button type="button" style={{ ...DS.btnPrimary, opacity: save.isPending ? 0.6 : 1 }} disabled={save.isPending} onClick={() => submitForm(true)}>✓ Submit to Cytolab</button>
     </>
   );
 
   return (
-    <Drawer
-      width={DS.drawerWidth}
+    <Modal
       open={open}
-      onClose={onClose}
-      destroyOnClose
+      onCancel={onClose}
+      width={760}
+      centered
+      destroyOnHidden
+      footer={null}
       closable={false}
-      styles={{ header: { display: 'none' }, body: { background: DS.drawerBg, padding: DS.drawerPadding }, content: { boxShadow: '-8px 0 40px rgba(0,0,0,0.12)' } }}
+      styles={{
+        content: { background: DS.drawerBg, borderRadius: 20, padding: 0, maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.18)' },
+        body: { padding: 0, maxHeight: '90vh', overflowY: 'auto', scrollbarWidth: 'thin' },
+        mask: { backdropFilter: 'blur(8px)', background: 'rgba(15,23,42,0.4)' },
+        header: { display: 'none' },
+      }}
     >
       <PremiumFormStyles />
+      <div style={{ padding: DS.drawerPadding, paddingBottom: 24 }}>
       <DrawerHeader
         title={`${isEdit ? 'Edit' : 'New'} ${isGyn ? 'Gynecology' : 'Non-Gynecology'} Record`}
         subtitle={isEdit ? `${record?.labNumber ?? '…'}${record?.status ? ` · ${record.status}` : ''}` : 'Complete all fields to register'}
         onClose={onClose}
-        actions={actions}
       />
       {locked && (
         <div style={DS.lockedBanner}>🔒 A record cannot be edited or deleted once it reaches {record?.status}. View only.</div>
@@ -581,6 +588,9 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
           </>
         )}
       </Form>
+      </div>
+
+      <DrawerFooter>{actions}</DrawerFooter>
 
       {/* Inline patient create — auto-selects the new patient on success. */}
       <PatientFormDrawer
@@ -591,6 +601,6 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
           qc.setQueryData(['patient', p.id], p);
         }}
       />
-    </Drawer>
+    </Modal>
   );
 }

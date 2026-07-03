@@ -7,9 +7,9 @@ import {
   Button,
   Col,
   DatePicker,
-  Drawer,
   Form,
   Input,
+  Modal,
   Radio,
   Row,
   Tooltip,
@@ -22,7 +22,7 @@ import { api } from '@/lib/api';
 import { deriveAge } from '@/lib/age';
 import { ClientSelect, clientLabel } from '@/components/ClientSelect';
 import { DS } from '@/lib/drawer-styles';
-import { DrawerHeader, PremiumFormStyles } from '@/components/DrawerChrome';
+import { DrawerHeader, DrawerFooter, PremiumFormStyles } from '@/components/DrawerChrome';
 
 export interface PatientRecord {
   id: string;
@@ -110,26 +110,35 @@ export function PatientFormDrawer({ open, onClose, patient, onCreated }: Props) 
     ? { value: patient.client.id, label: clientLabel(patient.client) }
     : undefined;
 
+  const actions = (
+    <>
+      <button type="button" style={DS.btnFooterCancel} onClick={onClose}>✕ Cancel</button>
+      <button type="button" style={{ ...DS.btnPrimary, opacity: save.isPending ? 0.6 : 1 }} disabled={save.isPending} onClick={() => form.submit()}>✓ Save Patient</button>
+    </>
+  );
+
   return (
-    <Drawer
-      width={DS.drawerWidth}
+    <Modal
       open={open}
-      onClose={onClose}
-      destroyOnClose
+      onCancel={onClose}
+      width={700}
+      centered
+      destroyOnHidden
+      footer={null}
       closable={false}
-      styles={{ header: { display: 'none' }, body: { background: DS.drawerBg, padding: DS.drawerPadding }, content: { boxShadow: '-8px 0 40px rgba(0,0,0,0.12)' } }}
+      styles={{
+        content: { background: DS.drawerBg, borderRadius: 20, padding: 0, maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.18)' },
+        body: { padding: 0, maxHeight: '90vh', overflowY: 'auto', scrollbarWidth: 'thin' },
+        mask: { backdropFilter: 'blur(8px)', background: 'rgba(15,23,42,0.4)' },
+        header: { display: 'none' },
+      }}
     >
       <PremiumFormStyles />
+      <div style={{ padding: DS.drawerPadding, paddingBottom: 24 }}>
       <DrawerHeader
         title={isEdit ? 'Edit Patient' : 'New Patient'}
         subtitle="Register a new patient record"
         onClose={onClose}
-        actions={
-          <>
-            <button type="button" style={{ ...DS.btnPrimary, opacity: save.isPending ? 0.6 : 1 }} disabled={save.isPending} onClick={() => form.submit()}>Save Patient</button>
-            <button type="button" style={DS.btnSecondary} onClick={onClose}>Cancel</button>
-          </>
-        }
       />
       <Form className="ds-form" layout="vertical" form={form} onFinish={(v) => save.mutate(v)} requiredMark={false}>
         {/* Avatar — upload deferred to Phase 6 file storage (stub). */}
@@ -283,6 +292,9 @@ export function PatientFormDrawer({ open, onClose, patient, onCreated }: Props) 
           </Typography.Paragraph>
         )}
       </Form>
-    </Drawer>
+      </div>
+
+      <DrawerFooter>{actions}</DrawerFooter>
+    </Modal>
   );
 }
