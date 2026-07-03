@@ -316,8 +316,14 @@ export default function RecordDetailPage() {
             </div>
           </div>
 
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <img src={cytologyImg} alt="Cytology specimen" style={{ width: '100%', maxWidth: 1040, height: 'auto', objectFit: 'contain' }} />
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+            <div style={{ position: 'relative', width: '100%', maxWidth: 1040 }}>
+              <img src={cytologyImg} alt="Cytology specimen" style={{ display: 'block', width: '100%', height: 'auto', objectFit: 'contain' }} />
+              {/* Drifting particle overlay — animated cells moving over the specimen */}
+              {PARTICLES.map((p, i) => (
+                <div key={`p${i}`} className="pointer-events-none absolute rounded-full" style={{ left: p.left, top: p.top, width: p.size, height: p.size, background: p.color, filter: p.blur ? `blur(${p.blur}px)` : undefined, animation: `${p.anim} ${p.dur} ease-in-out ${p.delay} infinite` }} />
+              ))}
+            </div>
           </div>
         </div>
       </section>
