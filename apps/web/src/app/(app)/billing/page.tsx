@@ -153,9 +153,9 @@ function BillingWorkspace() {
               { n: paidCount, label: 'Paid Bills', circle: '#16A34A' },
               { n: pendingCount, label: 'Pending', circle: '#4F46E5' },
             ].map((p) => (
-              <div key={p.label} className={`${CARD} flex items-center gap-4 p-4`}>
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-[20px] font-extrabold text-white" style={{ background: p.circle, fontFamily: 'Geist,sans-serif' }}>{p.n}</div>
-                <span className="text-[15px] font-semibold text-[#0F172A]">{p.label}</span>
+              <div key={p.label} className={`${CARD} flex items-center gap-4 p-5`}>
+                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full text-[22px] font-extrabold text-white" style={{ background: p.circle, fontFamily: 'Geist,sans-serif' }}>{p.n}</div>
+                <span className="text-[17px] font-semibold text-[#0F172A]">{p.label}</span>
               </div>
             ))}
           </div>
@@ -164,19 +164,19 @@ function BillingWorkspace() {
           <div className={`${CARD} p-6`}>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <h2 className="text-[16px] font-semibold text-[#0F172A]">Bills · {total}</h2>
+                <h2 className="text-[18px] font-bold text-[#0F172A]">Bills · {total}</h2>
                 <div className="flex gap-1 rounded-full bg-[#F1F5F9] p-1">
                   {(['all', 'unpaid', 'paid'] as const).map((t) => (
-                    <button key={t} onClick={() => setTab(t)} className="rounded-full px-3 py-1 text-[13px] font-semibold capitalize transition-colors" style={{ background: tab === t ? '#fff' : 'transparent', color: tab === t ? '#4F46E5' : '#6B7280', boxShadow: tab === t ? '0 1px 2px rgba(0,0,0,0.06)' : 'none' }}>{t}</button>
+                    <button key={t} onClick={() => setTab(t)} className="rounded-full px-4 py-1.5 text-[14px] font-semibold capitalize transition-colors" style={{ background: tab === t ? '#fff' : 'transparent', color: tab === t ? '#4F46E5' : '#6B7280', boxShadow: tab === t ? '0 1px 2px rgba(0,0,0,0.06)' : 'none' }}>{t}</button>
                   ))}
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex h-9 w-[190px] items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-3.5 text-[#9CA3AF]">
-                  <Search size={15} />
-                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search bills…" className="w-full border-none bg-transparent text-[13px] text-[#0F172A] outline-none placeholder:text-[#9CA3AF]" />
+                <div className="flex h-10 w-[220px] items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-4 text-[#9CA3AF]">
+                  <Search size={16} />
+                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search bills…" className="w-full border-none bg-transparent text-[14px] text-[#0F172A] outline-none placeholder:text-[#9CA3AF]" />
                 </div>
-                <button onClick={() => setCreateOpen(true)} className="flex h-9 items-center gap-2 rounded-xl bg-[#4F46E5] px-3.5 text-[13px] font-semibold text-white transition-colors hover:bg-[#4338CA]"><Receipt size={15} /> Create Invoice</button>
+                <button onClick={() => setCreateOpen(true)} className="flex h-10 items-center gap-2 rounded-xl bg-[#4F46E5] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#4338CA]"><Receipt size={16} /> Create Invoice</button>
               </div>
             </div>
 
@@ -191,10 +191,10 @@ function BillingWorkspace() {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="border-b border-[#F3F4F6] text-[12px] font-medium uppercase tracking-wide text-[#9CA3AF]">
-                  <th className="pb-3 font-medium">Bill#</th><th className="pb-3 font-medium">Client</th><th className="pb-3 font-medium">Record</th>
-                  <th className="pb-3 text-right font-medium">Amount</th><th className="pb-3 text-right font-medium">Paid</th><th className="pb-3 text-right font-medium">Outstanding</th>
-                  <th className="pb-3 font-medium">Status</th><th className="pb-3 font-medium">Due</th><th className="pb-3 text-right font-medium">Actions</th>
+                <tr className="border-b border-[#F3F4F6] text-[13px] font-medium uppercase tracking-wide text-[#9CA3AF]">
+                  <th className="pb-3.5 font-medium">Bill#</th><th className="pb-3.5 font-medium">Client</th><th className="pb-3.5 font-medium">Record</th>
+                  <th className="pb-3.5 text-right font-medium">Amount</th><th className="pb-3.5 text-right font-medium">Paid</th><th className="pb-3.5 text-right font-medium">Outstanding</th>
+                  <th className="pb-3.5 font-medium">Status</th><th className="pb-3.5 font-medium">Due</th><th className="pb-3.5 text-right font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -203,15 +203,15 @@ function BillingWorkspace() {
                   return (
                     <tr key={b.id} onClick={() => setDrawerId(b.id)} className="cursor-pointer border-b border-[#F3F4F6] transition-colors hover:bg-[#F9FAFB]"
                       style={over ? { boxShadow: 'inset 3px 0 0 0 #EF4444' } : undefined}>
-                      <td className="py-3.5"><span className="font-mono text-[13px] font-bold text-[#0F172A]">{b.referenceNo}</span></td>
-                      <td className="py-3.5 text-[14px] font-semibold text-[#0F172A]">{clientName(b.client)}</td>
-                      <td className="py-3.5"><span className="font-mono text-[13px] text-[#9CA3AF]">{b.record?.identifier ?? '—'}</span></td>
-                      <td className="py-3.5 text-right text-[14px] font-medium text-[#0F172A]">{fmt(b.total)}</td>
-                      <td className="py-3.5 text-right text-[14px] font-medium" style={{ color: b.amountPaid > 0 ? '#16A34A' : '#9CA3AF' }}>{fmt(b.amountPaid)}</td>
-                      <td className="py-3.5 text-right text-[14px] font-semibold" style={{ color: out > 0 ? '#DC2626' : '#16A34A' }}>{fmt(out)}</td>
-                      <td className="py-3.5"><StatusBadge status={b.status} /></td>
-                      <td className="py-3.5 text-[14px]" style={{ color: over ? '#DC2626' : '#6B7280' }}>{fmtDate(b.dueDate)}</td>
-                      <td className="py-3.5" onClick={(e) => e.stopPropagation()}>
+                      <td className="whitespace-nowrap py-4 pr-4"><span className="font-mono text-[14px] font-bold text-[#0F172A]">{b.referenceNo}</span></td>
+                      <td className="whitespace-nowrap py-4 pr-4 text-[15px] font-semibold text-[#0F172A]">{clientName(b.client)}</td>
+                      <td className="whitespace-nowrap py-4 pr-4"><span className="font-mono text-[13px] text-[#9CA3AF]">{b.record?.identifier ?? '—'}</span></td>
+                      <td className="py-4 text-right text-[15px] font-medium text-[#0F172A]">{fmt(b.total)}</td>
+                      <td className="py-4 text-right text-[15px] font-medium" style={{ color: b.amountPaid > 0 ? '#16A34A' : '#9CA3AF' }}>{fmt(b.amountPaid)}</td>
+                      <td className="py-4 text-right text-[15px] font-semibold" style={{ color: out > 0 ? '#DC2626' : '#16A34A' }}>{fmt(out)}</td>
+                      <td className="py-4"><StatusBadge status={b.status} /></td>
+                      <td className="py-4 text-[15px]" style={{ color: over ? '#DC2626' : '#6B7280' }}>{fmtDate(b.dueDate)}</td>
+                      <td className="py-4" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
                           <IconBtn title="View invoice" onClick={() => setDrawerId(b.id)}><Eye size={15} /></IconBtn>
                           <IconBtn title="Record payment" onClick={() => setPayBill(b)}><CreditCard size={15} /></IconBtn>
@@ -239,24 +239,24 @@ function BillingWorkspace() {
 
           {/* Payment History calendar */}
           <div className={`${CARD} p-6`}>
-            <div className="text-[16px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Payment History</div>
-            <div className="mt-1 text-[13px] text-[#64748B]">You have made {onTimePct}% of payments on time.</div>
+            <div className="text-[18px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Payment History</div>
+            <div className="mt-1.5 text-[14px] text-[#64748B]">You have made {onTimePct}% of payments on time.</div>
             <div className="mt-5 overflow-x-auto">
               <div className="inline-block">
-                <div className="mb-2 flex gap-2 pl-10">
-                  {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'].map((m, i) => <span key={i} className="w-3.5 text-center text-[10px] font-medium text-[#94A3B8]">{m}</span>)}
+                <div className="mb-2.5 flex gap-2 pl-12">
+                  {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'].map((m, i) => <span key={i} className="w-4 text-center text-[11px] font-medium text-[#94A3B8]">{m}</span>)}
                 </div>
                 {calYears.map((y) => (
-                  <div key={y} className="mb-2 flex items-center gap-2">
-                    <span className="w-8 text-[11px] font-medium text-[#94A3B8]">{y}</span>
+                  <div key={y} className="mb-2.5 flex items-center gap-2">
+                    <span className="w-10 text-[12px] font-medium text-[#94A3B8]">{y}</span>
                     {Array.from({ length: 12 }, (_, mo) => {
                       const cell = pymByYM.get(`${y}-${mo}`);
                       const bg = cell ? (cell.late ? '#EF4444' : '#22C55E') : '#E5E7EB';
-                      return <span key={mo} className="h-3.5 w-3.5 rounded-full" style={{ background: bg }} title={`${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][mo]} ${y}`} />;
+                      return <span key={mo} className="h-4 w-4 rounded-full" style={{ background: bg }} title={`${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][mo]} ${y}`} />;
                     })}
                   </div>
                 ))}
-                <div className="mt-4 flex items-center gap-4 pl-10 text-[11px] text-[#94A3B8]">
+                <div className="mt-4 flex items-center gap-4 pl-12 text-[12px] text-[#94A3B8]">
                   <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full" style={{ background: '#22C55E' }} /> On time</span>
                   <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full" style={{ background: '#EF4444' }} /> Late</span>
                   <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full" style={{ background: '#E5E7EB' }} /> No payment</span>
@@ -270,12 +270,12 @@ function BillingWorkspace() {
         <div className="flex min-w-0 flex-col gap-6">
           {/* Financial health */}
           <div className={`${CARD} overflow-hidden`}>
-            <div style={{ background: 'linear-gradient(135deg,#EEF2FF 0%,#F0FDF4 100%)', padding: 28 }}>
-              <div className="text-[24px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Good morning, {firstName}</div>
-              <div className="mt-1 text-[15px] text-[#64748B]">Here is your lab financial health</div>
-              <div className="mt-4 inline-flex gap-1 rounded-full bg-white/70 p-1">
+            <div style={{ background: 'linear-gradient(135deg,#EEF2FF 0%,#F0FDF4 100%)', padding: 32 }}>
+              <div className="text-[30px] font-bold leading-tight text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Good morning, {firstName}</div>
+              <div className="mt-1.5 text-[16px] text-[#64748B]">Here is your lab financial health</div>
+              <div className="mt-5 inline-flex gap-1 rounded-full bg-white/70 p-1">
                 {([['month', 'This Month'], ['last', 'Last Month'], ['ytd', 'YTD']] as const).map(([v, l]) => (
-                  <button key={v} onClick={() => setPeriod(v)} className="rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors" style={{ background: period === v ? '#fff' : 'transparent', color: period === v ? '#0F172A' : '#64748B', boxShadow: period === v ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>{l}</button>
+                  <button key={v} onClick={() => setPeriod(v)} className="rounded-full px-5 py-2 text-[14px] font-semibold transition-colors" style={{ background: period === v ? '#fff' : 'transparent', color: period === v ? '#0F172A' : '#64748B', boxShadow: period === v ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>{l}</button>
                 ))}
               </div>
               <div className="mt-5">
@@ -321,17 +321,17 @@ function BillTimeline({ step1Done, step2Done, step3Done }: { step1Done: boolean;
     { done: step3Done, label: 'Record Closed', sub: 'Paid → Closed' },
   ];
   return (
-    <div className={`${CARD} p-6`}>
+    <div className={`${CARD} p-7`}>
       <div className="relative flex items-start">
         {/* dashed connector behind the circles */}
-        <div className="absolute left-[16%] right-[16%] top-3.5 border-t-2 border-dashed border-[#CBD5E1]" />
+        <div className="absolute left-[16%] right-[16%] top-4 border-t-2 border-dashed border-[#CBD5E1]" />
         {steps.map((s, i) => (
           <div key={i} className="relative z-10 flex flex-1 flex-col items-center text-center">
-            <div className="grid h-7 w-7 place-items-center rounded-full" style={{ background: s.done ? '#4F46E5' : '#F1F5F9', color: s.done ? '#fff' : '#94A3B8' }}>
-              {s.done ? <Check size={16} strokeWidth={3} /> : <span className="text-[12px] font-bold">{i + 1}</span>}
+            <div className="grid h-8 w-8 place-items-center rounded-full" style={{ background: s.done ? '#4F46E5' : '#F1F5F9', color: s.done ? '#fff' : '#94A3B8' }}>
+              {s.done ? <Check size={18} strokeWidth={3} /> : <span className="text-[14px] font-bold">{i + 1}</span>}
             </div>
-            <div className="mt-2 text-[12px] font-semibold text-[#64748B]">{s.label}</div>
-            <div className="text-[10px] text-[#94A3B8]">{s.sub}</div>
+            <div className="mt-3 text-[15px] font-semibold text-[#334155]">{s.label}</div>
+            <div className="mt-0.5 text-[12px] text-[#94A3B8]">{s.sub}</div>
           </div>
         ))}
       </div>
@@ -374,21 +374,21 @@ function CollectionGauge({ rate, delta }: { rate: number; delta: number }) {
 
 function ImpactBadge({ tone, text }: { tone: 'green' | 'yellow' | 'red'; text: string }) {
   const c = tone === 'green' ? { bg: '#F0FDF4', fg: '#16A34A' } : tone === 'yellow' ? { bg: '#FFFBEB', fg: '#D97706' } : { bg: '#FEF2F2', fg: '#DC2626' };
-  return <span style={{ background: c.bg, color: c.fg, fontSize: 10, fontWeight: 700, borderRadius: 999, padding: '2px 8px' }}>{text}</span>;
+  return <span style={{ background: c.bg, color: c.fg, fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '3px 10px' }}>{text}</span>;
 }
 
 function MetricCard({ title, value, tone, badge, sub, onClick }: { title: string; value: string; tone: 'green' | 'yellow' | 'red'; badge: string; sub: string; onClick: () => void }) {
   return (
-    <div onClick={onClick} className={`${CARD} cursor-pointer p-4 transition-shadow hover:shadow-md`}>
+    <div onClick={onClick} className={`${CARD} cursor-pointer p-5 transition-shadow hover:shadow-md`}>
       <div className="flex items-center justify-between">
-        <span className="text-[14px] font-semibold text-[#0F172A]">{title}</span>
-        <ArrowUpRight size={15} className="text-[#94A3B8]" />
+        <span className="text-[16px] font-semibold text-[#0F172A]">{title}</span>
+        <ArrowUpRight size={17} className="text-[#94A3B8]" />
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="text-[26px] font-extrabold leading-none text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>{value}</span>
+      <div className="mt-4 flex flex-wrap items-center gap-2.5">
+        <span className="text-[30px] font-extrabold leading-none text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>{value}</span>
         <ImpactBadge tone={tone} text={badge} />
       </div>
-      <div className="mt-2 text-[12px] leading-snug text-[#94A3B8]">{sub}</div>
+      <div className="mt-2.5 text-[13px] leading-snug text-[#94A3B8]">{sub}</div>
     </div>
   );
 }
