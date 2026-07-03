@@ -50,8 +50,6 @@ export default function ServicesPage() {
   const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3000); };
   const isEdit = !!editService;
 
-  const { data: overview } = useQuery<any>({ queryKey: ['patients-overview'], queryFn: () => api.get('/patients/overview').then((r) => r.data) });
-  const firstName = overview?.greeting?.firstName || 'there';
   const { data } = useQuery<Paginated<Service>>({ queryKey: ['services'], queryFn: () => api.get('/services', { params: { pageSize: 200 } }).then((r) => r.data) });
   const services = data?.data ?? [];
   const refetch = () => qc.invalidateQueries({ queryKey: ['services'] });
@@ -82,70 +80,64 @@ export default function ServicesPage() {
 
   const openAdd = () => { setEditService(null); setModalOpen(true); };
   const openEdit = (s: Service) => { setEditService(s); setModalOpen(true); };
-  const th = 'px-6 py-3 text-left text-[12px] font-medium uppercase tracking-wide text-[#9CA3AF]';
+  const th = 'px-6 py-4 text-left text-[13px] font-semibold uppercase tracking-wide text-[#9CA3AF]';
 
   return (
-    <div className="min-h-full p-8" style={{ background: '#EDEDEB' }}>
-      {/* Welcome header */}
-      <div className="mb-10 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-[28px] font-bold leading-tight tracking-tight text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Welcome {firstName},</h1>
-          <p className="mt-1 text-[16px] text-[#6B7280]">here’s your service catalog ✌️</p>
-        </div>
-        <button onClick={openAdd} className="flex items-center gap-2 rounded-2xl px-6 py-3.5 text-[15px] font-semibold text-white transition-opacity hover:opacity-90" style={{ background: '#0F172A' }}><Plus size={18} /> Add Service</button>
-      </div>
-
+    <div className="min-h-full p-8" style={{ background: '#FFFFFF' }}>
       {/* Catalog cards */}
-      <div className="mb-10">
+      <div className="mb-12">
         <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <h2 className="text-[32px] font-bold tracking-tight text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Catalog</h2>
-            <span className="rounded-lg px-2.5 py-1 text-[12px] font-bold" style={{ background: '#ECFCCB', color: '#4D7C0F' }}>{activeCount} ACTIVE</span>
+            <h2 className="text-[40px] font-bold tracking-tight text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Catalog</h2>
+            <span className="rounded-lg px-3 py-1 text-[13px] font-bold" style={{ background: '#ECFCCB', color: '#4D7C0F' }}>{activeCount} ACTIVE</span>
           </div>
-          <button onClick={() => feedRef.current?.scrollIntoView({ behavior: 'smooth' })} className="flex items-center gap-2 rounded-2xl bg-white px-5 py-2.5 text-[14px] font-semibold text-[#0F172A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]">Show All <ArrowRight size={16} /></button>
+          <div className="flex items-center gap-3">
+            <button onClick={() => feedRef.current?.scrollIntoView({ behavior: 'smooth' })} className="flex items-center gap-2 rounded-2xl border border-[#EAEAEA] bg-white px-5 py-3 text-[15px] font-semibold text-[#0F172A] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors hover:bg-[#FAFAFA]">Show All <ArrowRight size={16} /></button>
+            <button onClick={openAdd} className="flex items-center gap-2 rounded-2xl px-6 py-3 text-[15px] font-semibold text-white transition-opacity hover:opacity-90" style={{ background: '#0F172A' }}><Plus size={18} /> Add Service</button>
+          </div>
         </div>
-        <p className="mb-5 text-[14px] text-[#6B7280]">Lab test services and pricing.</p>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <p className="mb-6 text-[16px] text-[#6B7280]">Lab test services and pricing.</p>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {services.slice(0, 4).map((s) => (
-            <button key={s.id} onClick={() => openEdit(s)} className="rounded-2xl bg-white p-5 text-left shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-md">
-              <div className="flex items-center gap-3">
-                <Avatar service={s} />
+            <button key={s.id} onClick={() => openEdit(s)} className="rounded-3xl border border-[#EDEDED] bg-white p-6 text-left shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
+              <div className="flex items-center gap-3.5">
+                <Avatar service={s} size={46} />
                 <div className="min-w-0">
-                  <div className="truncate text-[16px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>{s.name}</div>
-                  <div className="truncate font-mono text-[13px] text-[#94A3B8]">{s.code}</div>
+                  <div className="truncate text-[18px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>{s.name}</div>
+                  <div className="truncate font-mono text-[14px] text-[#94A3B8]">{s.code}</div>
                 </div>
               </div>
-              <div className="mt-5 flex items-center justify-between">
+              <div className="mt-6 flex items-center justify-between">
                 <StatusBadge active={s.active} />
-                <span className="text-[15px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>{fmt(s.price)}</span>
+                <span className="text-[18px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>{fmt(s.price)}</span>
               </div>
             </button>
           ))}
-          {services.length === 0 && <div className="col-span-full rounded-2xl bg-white p-8 text-center text-[14px] text-[#94A3B8]">No services yet.</div>}
+          {services.length === 0 && <div className="col-span-full rounded-3xl border border-[#EDEDED] bg-white p-8 text-center text-[15px] text-[#94A3B8]">No services yet.</div>}
         </div>
       </div>
 
       {/* Feed */}
       <div ref={feedRef}>
-        <h2 className="text-[32px] font-bold tracking-tight text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Services</h2>
-        <p className="mb-5 text-[14px] text-[#6B7280]">Manage lab test services and pricing.</p>
+        <h2 className="text-[40px] font-bold tracking-tight text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Services</h2>
+        <p className="mb-6 text-[16px] text-[#6B7280]">Manage lab test services and pricing.</p>
 
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex gap-1 rounded-2xl bg-white p-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+          <div className="inline-flex gap-1 rounded-2xl border border-[#EDEDED] bg-white p-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
             {([['all', 'All'], ['active', 'Active'], ['inactive', 'Inactive']] as const).map(([v, l]) => (
-              <button key={v} onClick={() => setTab(v)} className="rounded-xl px-5 py-2 text-[14px] font-semibold transition-colors" style={{ background: tab === v ? '#F1F1EF' : 'transparent', color: tab === v ? '#0F172A' : '#94A3B8' }}>{l}</button>
+              <button key={v} onClick={() => setTab(v)} className="rounded-xl px-5 py-2.5 text-[15px] font-semibold transition-colors" style={{ background: tab === v ? '#F1F1EF' : 'transparent', color: tab === v ? '#0F172A' : '#94A3B8' }}>{l}</button>
             ))}
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-[260px] items-center gap-2 rounded-2xl bg-white px-4 text-[#9CA3AF] shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-              <Search size={17} />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search" className="w-full border-none bg-transparent text-[14px] text-[#0F172A] outline-none placeholder:text-[#9CA3AF]" />
+            <div className="flex h-12 w-[280px] items-center gap-2 rounded-2xl border border-[#EDEDED] bg-white px-4 text-[#9CA3AF] shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+              <Search size={18} />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search" className="w-full border-none bg-transparent text-[15px] text-[#0F172A] outline-none placeholder:text-[#9CA3AF]" />
             </div>
-            <button className="flex h-11 items-center gap-2 rounded-2xl bg-white px-4 text-[14px] font-semibold text-[#0F172A] shadow-[0_1px_3px_rgba(0,0,0,0.05)]"><SlidersHorizontal size={16} /> Filters</button>
+            <button className="flex h-12 items-center gap-2 rounded-2xl border border-[#EDEDED] bg-white px-5 text-[15px] font-semibold text-[#0F172A] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"><SlidersHorizontal size={16} /> Filters</button>
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-3xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+        <div className="overflow-hidden rounded-3xl border border-[#EDEDED] bg-white shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
               <Package size={48} className="text-[#E2E8F0]" />
@@ -166,19 +158,19 @@ export default function ServicesPage() {
                   const confirming = confirmId === s.id;
                   return (
                     <tr key={s.id} className="border-b border-[#F4F4F2] transition-colors last:border-0 hover:bg-[#FAFAF9]">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar service={s} />
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3.5">
+                          <Avatar service={s} size={44} />
                           <div className="min-w-0">
-                            <div className="text-[15px] font-semibold text-[#0F172A]">{s.name}</div>
-                            <div className="truncate text-[12px] text-[#94A3B8]" title={desc} style={{ maxWidth: 320 }}>{desc || '—'}</div>
+                            <div className="text-[16px] font-semibold text-[#0F172A]">{s.name}</div>
+                            <div className="truncate text-[13px] text-[#94A3B8]" title={desc} style={{ maxWidth: 320 }}>{desc || '—'}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4"><span className="rounded-md px-2 py-1 font-mono text-[13px] font-bold" style={{ background: '#F1F1EF', color: '#4F46E5' }}>{s.code}</span></td>
-                      <td className="px-6 py-4 text-right text-[15px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>{fmt(s.price)}</td>
-                      <td className="px-6 py-4"><StatusBadge active={s.active} /></td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-5"><span className="rounded-md px-2.5 py-1 font-mono text-[14px] font-bold" style={{ background: '#F1F1EF', color: '#4F46E5' }}>{s.code}</span></td>
+                      <td className="px-6 py-5 text-right text-[16px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>{fmt(s.price)}</td>
+                      <td className="px-6 py-5"><StatusBadge active={s.active} /></td>
+                      <td className="px-6 py-5">
                         {confirming ? (
                           <div className="flex items-center justify-end gap-2 text-[12px]">
                             <span className="text-[#64748B]">Delete?</span>
