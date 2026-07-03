@@ -136,26 +136,30 @@ export function ProgressRing({ pct, size = 40 }: { pct: number; size?: number })
 
 /* ═══════════ Reference-design placeholder charts (static data; wire later) ═══════════ */
 
-// Monthly Subscription Revenue — stacked indigo bar + green bar per month.
+// Monthly Subscription Revenue — 3-shade indigo capsule + green capsule per month.
 const SUB = [
-  { m: 'Jan', base: 120, top: 56, green: 176 },
-  { m: 'Feb', base: 84, top: 44, green: 84 },
-  { m: 'Mar', base: 80, top: 44, green: 80 },
-  { m: 'Apr', base: 100, top: 52, green: 120 },
-  { m: 'May', base: 108, top: 56, green: 150 },
-  { m: 'Jun', base: 116, top: 56, green: 162 },
+  { m: 'Jan', d: 88, mid: 44, top: 44, green: 190 },
+  { m: 'Feb', d: 60, mid: 28, top: 24, green: 80 },
+  { m: 'Mar', d: 58, mid: 28, top: 24, green: 78 },
+  { m: 'Apr', d: 78, mid: 38, top: 34, green: 120 },
+  { m: 'May', d: 84, mid: 32, top: 24, green: 150 },
+  { m: 'Jun', d: 84, mid: 34, top: 32, green: 158 },
 ];
-export function SubscriptionBars({ height = 230 }: { height?: number }) {
+export function SubscriptionBars({ height = 250 }: { height?: number }) {
+  const R = 11; // capsule radius (≈ half bar width → fully rounded ends)
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={SUB} margin={{ top: 10, right: 4, bottom: 4, left: 4 }} barGap={5} barCategoryGap="26%">
+      <BarChart data={SUB} margin={{ top: 10, right: 4, bottom: 4, left: 4 }} barGap={7} barCategoryGap="24%">
         <CartesianGrid vertical={false} stroke="#EEF2F7" strokeDasharray="4 6" />
-        <XAxis dataKey="m" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94A3B8', fontWeight: 500 }} dy={6} />
-        <YAxis axisLine={false} tickLine={false} width={50} tick={{ fontSize: 11, fill: '#94A3B8' }} ticks={[0, 88, 176, 264]} domain={[0, 264]} tickFormatter={(v) => (v ? `$ ${v}K` : '0')} />
-        <ReferenceLine y={88} stroke="#CBD5E1" strokeDasharray="5 5" />
-        <Bar dataKey="base" stackId="a" fill="#4F46E5" maxBarSize={18} isAnimationActive animationDuration={800} />
-        <Bar dataKey="top" stackId="a" fill="#A5B4FC" radius={[5, 5, 0, 0]} maxBarSize={18} isAnimationActive animationDuration={800} />
-        <Bar dataKey="green" fill="#22C55E" radius={[5, 5, 0, 0]} maxBarSize={18} isAnimationActive animationDuration={800} />
+        <XAxis dataKey="m" axisLine={false} tickLine={false} tick={{ fontSize: 13, fill: '#94A3B8', fontWeight: 500 }} dy={8} />
+        <YAxis axisLine={false} tickLine={false} width={54} tick={{ fontSize: 11, fill: '#94A3B8' }} ticks={[0, 88, 176, 264]} domain={[0, 264]} tickFormatter={(v) => (v ? `$ ${v}K` : '0')} />
+        <ReferenceLine y={88} stroke="#CBD5E1" strokeDasharray="6 6" />
+        {/* Blue capsule: dark bottom (rounded) → medium → light top (rounded) */}
+        <Bar dataKey="d" stackId="a" fill="#4F46E5" radius={[0, 0, R, R]} maxBarSize={22} isAnimationActive animationDuration={800} />
+        <Bar dataKey="mid" stackId="a" fill="#818CF8" maxBarSize={22} isAnimationActive animationDuration={800} />
+        <Bar dataKey="top" stackId="a" fill="#C7D2FE" radius={[R, R, 0, 0]} maxBarSize={22} isAnimationActive animationDuration={800} />
+        {/* Green capsule (both ends rounded) */}
+        <Bar dataKey="green" fill="#4ADE80" radius={[R, R, R, R]} maxBarSize={22} isAnimationActive animationDuration={800} />
       </BarChart>
     </ResponsiveContainer>
   );

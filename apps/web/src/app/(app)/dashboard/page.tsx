@@ -155,20 +155,20 @@ export default function DashboardPage() {
                 </div>
               }
             >
-              <SubscriptionBars height={230} />
-              <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: 18, marginTop: 14 }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', marginBottom: 16 }}>Practice Overview</div>
+              <SubscriptionBars height={250} />
+              <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: 20, marginTop: 14 }}>
+                <div style={{ fontSize: 17, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', marginBottom: 18 }}>Practice Overview</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                   {[
-                    { icon: <DollarSign size={18} />, value: '$487.3k', label: 'Total Revenue' },
-                    { icon: <ShoppingBag size={18} />, value: '8,547', label: 'Total Appointments' },
-                    { icon: <CreditCard size={18} />, value: '$57.02', label: 'Avg Fee' },
+                    { icon: <DollarSign size={20} />, value: '$487.3k', label: 'Total Revenue' },
+                    { icon: <ShoppingBag size={20} />, value: '8,547', label: 'Total Appointments' },
+                    { icon: <CreditCard size={20} />, value: '$57.02', label: 'Avg Fee' },
                   ].map(({ icon, value, label }) => (
-                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ width: 48, height: 48, borderRadius: '50%', border: '1.5px solid #E2E8F0', display: 'grid', placeItems: 'center', color: '#64748B', flexShrink: 0 }}>{icon}</span>
+                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                      <span style={{ width: 56, height: 56, borderRadius: '50%', border: '1.5px solid #E2E8F0', display: 'grid', placeItems: 'center', color: '#64748B', flexShrink: 0 }}>{icon}</span>
                       <div>
-                        <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500 }}>{label}</div>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', fontFamily: 'Geist,sans-serif' }}>{value}</div>
+                        <div style={{ fontSize: 12, color: '#94A3B8', fontWeight: 500 }}>{label}</div>
+                        <div style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', fontFamily: 'Geist,sans-serif' }}>{value}</div>
                       </div>
                     </div>
                   ))}
