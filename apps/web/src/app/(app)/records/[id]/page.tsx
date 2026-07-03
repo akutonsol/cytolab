@@ -293,33 +293,6 @@ export default function RecordDetailPage() {
           </div>
         </div>
 
-        {/* Segmented control — one pill per specimen in this record */}
-        <div className="shrink-0 px-5 pt-4">
-          <div className="flex gap-1 rounded-full p-1.5" style={{ background: 'linear-gradient(145deg,#EEF3FB,#DBE5F4)', boxShadow: 'inset 0 1px 3px rgba(148,163,184,0.22)' }}>
-            {specimens.length > 1 ? (
-              specimens.map((sp, i) => {
-                const active = i === activeSpec;
-                return (
-                  <button
-                    key={sp.id ?? i}
-                    onClick={() => setActiveSpec(i)}
-                    className={active
-                      ? 'flex-1 rounded-full bg-white px-4 py-2.5 text-[14px] font-bold text-[#1E3A8A]'
-                      : 'flex-1 rounded-full bg-transparent px-4 py-2.5 text-[14px] font-semibold text-[#3B5EA8] transition-all hover:bg-white hover:text-[#1E3A8A] hover:shadow-[0_4px_14px_rgba(110,130,180,0.28)]'}
-                    style={active ? { boxShadow: '0 4px 14px rgba(110,130,180,0.28), 0 1px 3px rgba(0,0,0,0.05)' } : undefined}
-                  >
-                    {specLabel(sp.type) || `Specimen ${i + 1}`}
-                  </button>
-                );
-              })
-            ) : (
-              <div className="flex-1 rounded-full bg-white px-4 py-2.5 text-center text-[14px] font-bold text-[#1E3A8A]" style={{ boxShadow: '0 4px 14px rgba(110,130,180,0.28), 0 1px 3px rgba(0,0,0,0.05)' }}>
-                {specLabel(activeSpecimen?.type) || 'Specimen'}
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Content: left detail column + right bounded image */}
         <div className="flex min-h-0 flex-1 gap-6 p-5">
           <div className="flex w-[38%] shrink-0 flex-col">
