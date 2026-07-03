@@ -281,7 +281,7 @@ export default function RecordDetailPage() {
 
         {/* Content: left detail column + right image (beside, larger) */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 24, flex: 1, padding: '16px 20px' }}>
-          <div style={{ flexShrink: 0 }} className="flex w-[38%] flex-col">
+          <div style={{ flexShrink: 0 }} className="flex w-[280px] flex-col">
             <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#E8EDF7] text-[#4F46E5]"><Microscope size={22} /></span>
             <div className="mt-4 text-[17px] font-semibold italic text-[#1E293B]">Patient {specLabel(activeSpecimen?.type)} Analysis</div>
             <div className="mt-1 text-[20px] font-bold text-[#4F46E5]">{progress}%<span className="ml-1.5 text-[14px] font-normal text-[#64748B]">completed</span></div>
@@ -317,7 +317,7 @@ export default function RecordDetailPage() {
           </div>
 
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <img src={cytologyImg} alt="Cytology specimen" style={{ width: '100%', maxWidth: 520, height: 'auto', objectFit: 'contain' }} />
+            <img src={cytologyImg} alt="Cytology specimen" style={{ width: '100%', maxWidth: 1040, height: 'auto', objectFit: 'contain' }} />
           </div>
         </div>
       </section>
