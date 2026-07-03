@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { App } from 'antd';
 import {
@@ -159,7 +159,9 @@ export default function SamplesPage() {
   const [drawer, setDrawer] = useState<{ formType: FormType; recordId?: string } | null>(null);
   const [goal, setGoal] = useState(150);
   const [editingGoal, setEditingGoal] = useState(false);
-  const [showAllActive, setShowAllActive] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(8);
+  const sentinelRef = useRef<HTMLTableRowElement | null>(null);
+  const hasMoreRef = useRef(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [fStatus, setFStatus] = useState('');
   const [fUrgent, setFUrgent] = useState(false);
@@ -216,7 +218,9 @@ export default function SamplesPage() {
     });
   const activeFilterCount = (fStatus ? 1 : 0) + (fUrgent ? 1 : 0) + (fQuery ? 1 : 0);
   const clearFilters = () => { setFStatus(''); setFUrgent(false); setFQuery(''); };
-  const worklist = showAllActive ? activeRecs : activeRecs.slice(0, 8);
+  const worklist = activeRecs.slice(0, visibleCount);
+  const hasMore = visibleCount < activeRecs.length;
+  hasMoreRef.current = hasMore;
 
   const events = all
     .flatMap((r) => (r.statusHistory ?? []).map((h) => ({ status: h.status, createdAt: h.createdAt, user: h.user, labNumber: r.labNumber })))
@@ -224,6 +228,19 @@ export default function SamplesPage() {
     .slice(0, 6);
 
   const openChoose = () => { if (can('record:create')) setChooseOpen(true); };
+
+  // Infinite scroll: reveal more active rows as the sentinel nears the viewport.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMoreRef.current) setVisibleCount((c) => c + 8);
+    }, { rootMargin: '300px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [activeRecs.length]);
+  // Reset the window when filters change.
+  useEffect(() => { setVisibleCount(8); }, [fStatus, fUrgent, fQuery]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -394,14 +411,13 @@ export default function SamplesPage() {
                   </tr>
                 );
               })}
+              <tr ref={sentinelRef}>
+                <td colSpan={4} style={{ padding: '14px 24px', textAlign: 'center', color: '#94A3B8', fontSize: 13, fontWeight: 500 }}>
+                  {hasMore ? 'Loading more…' : activeRecs.length > 0 ? `Showing all ${activeRecs.length} active samples` : ''}
+                </td>
+              </tr>
             </tbody>
           </table>
-
-          <div style={{ padding: '16px 24px', borderTop: '1px solid #ebeef1', textAlign: 'center' }}>
-            <button onClick={() => setShowAllActive(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: PRIMARY, fontFamily: GEIST, fontSize: 14, fontWeight: 600 }}>
-              View All Active Samples →
-            </button>
-          </div>
         </div>
 
       </div>
