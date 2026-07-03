@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/auth';
 import { GlassCard } from '@/components/dashboard/glass-card';
 import { HeroBanner, type HeroChip } from '@/components/dashboard/hero-banner';
 import { NavPills } from '@/components/dashboard/nav-pills';
-import { ConversionBars, RevenueArea, SubscriptionBars } from './charts';
+import { ConversionBars, SubscriptionBars } from './charts';
 
 const GREEN = '#22c55e', BLUE = '#4F46E5';
 // The page is transparent so it shows the layout's single shared canvas gradient
@@ -41,6 +41,15 @@ const CHIPS = [
   { bg: '#E0E7FF', fg: '#4338CA', Icon: Microscope },
   { bg: '#dfe3ec', fg: '#5b6472', Icon: FlaskConical },
   { bg: '#e6e1f2', fg: '#6b5ca0', Icon: Stethoscope },
+];
+
+// Case distribution by specimen class (violet family, zero-orange).
+const specimenTypes = [
+  { label: 'Body Fluid', color: '#6366F1', pct: 42 },
+  { label: 'Respiratory', color: '#8B5CF6', pct: 28 },
+  { label: 'Urine', color: '#A78BFA', pct: 16 },
+  { label: 'CSF', color: '#C4B5FD', pct: 8 },
+  { label: 'Other', color: '#E0E7FF', pct: 6 },
 ];
 
 function SeeAll({ label = 'See all', onClick }: { label?: string; onClick?: () => void }) {
@@ -121,6 +130,8 @@ export default function DashboardPage() {
 
   const up = d.throughput.deltaPct >= 0;
   const eff = d.effectiveness;
+  const kpis = ov?.kpis;
+  const totalSpecimens = d.throughput.series?.reduce((s: any, i: any) => s + (i.value || 0), 0) || 0;
   const emailName = (claims?.email ?? '').split('@')[0].split(/[._-]/)[0].replace(/[^a-z]/gi, '');
   const firstName = ov?.greeting?.firstName || (emailName ? emailName[0].toUpperCase() + emailName.slice(1) : 'there');
 
@@ -143,151 +154,249 @@ export default function DashboardPage() {
         <HeroBanner firstName={firstName} featured={featured} chips={chips} nav={<NavPills />} />
 
         <div style={{ marginTop: 40 }} className="flex flex-col gap-5">
-          {/* ═══ Top block ═══ */}
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.5fr_1fr]">
-            {/* Monthly Subscription Revenue */}
-            <GlassCard
-              title="Monthly Subscription Revenue"
-              action={
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 12, color: '#94A3B8', fontWeight: 500 }}>6 months</div>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', fontFamily: 'Geist,sans-serif' }}>$487K</div>
+          {/* ═══ SECTION 1: KPI STRIP ═══ */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 16 }}>
+            {[
+              { icon: <TestTube size={22} color="#EF4444" />, iconBg: '#FEF2F2', label: 'ACTIVE SPECIMENS', value: d.priorityRecords?.length || 0, delta: `+${d.priorityRecords?.filter((r: any) => r.urgent).length || 0} urgent`, deltaColor: '#EF4444' },
+              { icon: <FlaskConical size={22} color="#8B5CF6" />, iconBg: '#F5F3FF', label: 'CASES TODAY', value: d.throughput.series?.slice(-1)[0]?.value || 0, delta: `+${d.throughput.series?.slice(-7).reduce((s: any, i: any) => s + (i.value > 0 ? 1 : 0), 0) || 0} this week`, deltaColor: '#16A34A' },
+              { icon: <Clock size={22} color="#4F46E5" />, iconBg: '#EEF2FF', label: 'TURNAROUND TIME', value: `${kpis?.avgTat ?? '—'}d`, delta: (kpis?.avgTat ?? 99) <= 3 ? '-0.3d improvement' : '+0.3d slower', deltaColor: (kpis?.avgTat ?? 99) <= 3 ? '#16A34A' : '#EF4444' },
+              { icon: <Activity size={22} color="#0EA5E9" />, iconBg: '#F0F9FF', label: 'PENDING REVIEW', value: kpis?.pendingRequisitions || 0, delta: `High priority: ${d.priorityRecords?.filter((r: any) => r.urgent).length || 0}`, deltaColor: '#0EA5E9' },
+              { icon: <CheckCircle2 size={22} color="#16A34A" />, iconBg: '#F0FDF4', label: 'AI CONFIDENCE', value: `${eff?.authorization ?? 92}%`, delta: '+4% vs yesterday', deltaColor: '#16A34A' },
+            ].map(({ icon, iconBg, label, value, delta, deltaColor }, i) => (
+              <div key={i} style={{ background: 'white', borderRadius: 16, padding: '20px 20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: iconBg, display: 'grid', placeItems: 'center', flexShrink: 0 }}>{icon}</div>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', lineHeight: 1, fontFamily: 'Geist,sans-serif' }}>{value}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: deltaColor, marginTop: 4 }}>{delta}</div>
                 </div>
-              }
-            >
-              <SubscriptionBars height={250} />
-              <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: 20, marginTop: 14 }}>
-                <div style={{ fontSize: 17, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', marginBottom: 18 }}>Practice Overview</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-                  {[
-                    { icon: <DollarSign size={20} />, value: '$487.3k', label: 'Total Revenue' },
-                    { icon: <ShoppingBag size={20} />, value: '8,547', label: 'Total Appointments' },
-                    { icon: <CreditCard size={20} />, value: '$57.02', label: 'Avg Fee' },
-                  ].map(({ icon, value, label }) => (
-                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <span style={{ width: 56, height: 56, borderRadius: '50%', border: '1.5px solid #E2E8F0', display: 'grid', placeItems: 'center', color: '#64748B', flexShrink: 0 }}>{icon}</span>
-                      <div>
-                        <div style={{ fontSize: 12, color: '#94A3B8', fontWeight: 500 }}>{label}</div>
-                        <div style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', fontFamily: 'Geist,sans-serif' }}>{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* ═══ SECTION 2: MAIN 3-COLUMN GRID ═══ */}
+          <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr 320px', gap: 20 }}>
+            {/* LEFT: Specimen Queue */}
+            <div style={{ background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <span style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Specimen Queue</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 999, padding: '4px 10px', cursor: 'pointer' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#64748B' }}>All Types</span>
+                  <ChevronDown size={12} color="#94A3B8" />
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+                {(d.priorityRecords || []).slice(0, 6).map((r: any, i: number) => {
+                  const isFirst = i === 0;
+                  return (
+                    <div key={r.id} onClick={() => router.push(`/records/${r.id}`)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: isFirst ? '#F0F0FF' : 'transparent', border: isFirst ? '1px solid #C7D2FE' : '1px solid transparent', transition: 'all 0.15s' }}
+                      onMouseEnter={(e) => { if (!isFirst) (e.currentTarget as HTMLDivElement).style.background = '#F8FAFC'; }}
+                      onMouseLeave={(e) => { if (!isFirst) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}>
+                      <div style={{ width: 44, height: 44, borderRadius: 10, overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
+                        <img src="/cytology-sample.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.9 }} />
                       </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>{r.labNumber ?? '—'}</span>
+                          {r.urgent && (
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#DC2626', background: '#FEE2E2', borderRadius: 4, padding: '1px 5px', letterSpacing: '0.04em' }}>HIGH PRIORITY</span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {r.specimen?.replace(/_/g, '.') ?? '—'}{r.patient ? ` · ${r.patient}` : ''}
+                        </div>
+                        <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 1 }}>
+                          Received {new Date(r.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: dotFor(r.status) }} />
                     </div>
-                  ))}
-                </div>
-                <div style={{ marginTop: 20 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 8 }}>
-                    {[
-                      { label: 'Online Booking', v: '42% / $204.7K' },
-                      { label: 'Partner Referrals', v: '31% / $151.3K' },
-                      { label: 'Walk-in Patients', v: '27% / $131.3K' },
-                    ].map(({ label, v }) => (
-                      <div key={label}>
-                        <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500 }}>{label}</div>
-                        <div style={{ fontSize: 12, color: '#0F172A', fontWeight: 700 }}>{v}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ display: 'flex', height: 8, borderRadius: 999, overflow: 'hidden', gap: 3 }}>
-                    <div style={{ width: '42%', background: '#22C55E', borderRadius: 999 }} />
-                    <div style={{ width: '31%', background: '#4F46E5', borderRadius: 999 }} />
-                    <div style={{ width: '27%', background: '#0F172A', borderRadius: 999 }} />
+                  );
+                })}
+              </div>
+              <button onClick={() => router.push('/records')} style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: '#4F46E5', background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0' }}>
+                View all specimens <ArrowUpRight size={14} />
+              </button>
+            </div>
+
+            {/* CENTER: AI Cytology Model */}
+            <div style={{ background: 'linear-gradient(135deg,#F8F9FF 0%,#EEF0FF 100%)', borderRadius: 20, border: '1px solid #E0E7FF', boxShadow: '0 4px 24px rgba(79,70,229,0.08)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '20px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Cytology Model</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.6)' }} />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#16A34A' }}>Live Analysis</span>
                   </div>
                 </div>
               </div>
-            </GlassCard>
-
-            {/* Right column */}
-            <div className="flex flex-col gap-5">
-              {/* Appointment Conversion Rate */}
-              <GlassCard title="Appointment Conversion Rate">
-                <div style={{ position: 'relative' }}>
-                  <ConversionBars height={180} />
-                  <div style={{ position: 'absolute', top: -4, right: 0, width: 148 }}>
-                    <div style={{ background: 'white', borderRadius: 14, padding: '10px 12px', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', border: '1px solid #EEF2F7' }}>
-                      <div style={{ fontSize: 12, color: '#64748B', fontWeight: 600 }}>New Patients</div>
-                      <div style={{ height: 4, background: '#EEF2F7', borderRadius: 999, margin: '8px 0' }}><div style={{ width: '60%', height: 4, borderRadius: 999, background: '#4F46E5' }} /></div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>2,847</span>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 11, fontWeight: 700, color: '#4F46E5', background: '#EEF2FF', borderRadius: 999, padding: '2px 6px' }}><TrendingUp size={10} />24%</span>
-                      </div>
-                    </div>
-                    <div style={{ background: '#0F172A', borderRadius: 14, padding: '10px 12px', marginTop: 8 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: 12, color: '#94A3B8', fontWeight: 600 }}>Growth</span>
-                        <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'grid', placeItems: 'center', color: '#94A3B8' }}><Clock size={12} /></span>
-                      </div>
-                      <div style={{ fontSize: 22, fontWeight: 800, color: 'white', fontFamily: 'Geist,sans-serif', marginTop: 2 }}>+12%</div>
-                    </div>
-                  </div>
+              <div style={{ display: 'flex', flex: 1, padding: '12px 24px 16px', gap: 20, alignItems: 'center' }}>
+                <div className="ai-float" style={{ position: 'relative', flex: '0 0 240px', height: 320 }}>
+                  <img src="/ai-man.png" alt="AI Cytology Model" className="ai-breathe" style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', filter: 'drop-shadow(0 20px 40px rgba(99,102,241,0.2))' }} />
+                  {[{ top: '18%', left: '52%', color: '#6366F1' }, { top: '42%', left: '18%', color: '#8B5CF6' }, { top: '42%', left: '72%', color: '#06B6D4' }, { top: '68%', left: '45%', color: '#8B5CF6' }].map((dot, i) => (
+                    <div key={i} className="ai-pulse" style={{ position: 'absolute', top: dot.top, left: dot.left, width: 16, height: 16, borderRadius: '50%', background: dot.color, border: '2px solid white', transform: 'translate(-50%,-50%)', zIndex: 2 }} />
+                  ))}
                 </div>
-              </GlassCard>
-
-              {/* Access Platform Distribution */}
-              <GlassCard title="Access Platform Distribution">
-                <div className="flex flex-col gap-4">
-                  {[
-                    { Icon: Monitor, name: 'Hospital Admin Panel', sub: '2,847 consultation', pct: 58, color: '#4F46E5', bg: '#EEF2FF', fg: '#4F46E5' },
-                    { Icon: Smartphone, name: 'Patient Mobile App', sub: '1,523 consultation', pct: 31, color: '#22C55E', bg: '#F0FDF4', fg: '#16A34A' },
-                    { Icon: Tablet, name: 'Doctor Tablet Usage', sub: '542 consultation', pct: 11, color: '#14B8A6', bg: '#F0FDFA', fg: '#0D9488' },
-                  ].map(({ Icon, name, sub, pct, color, bg, fg }) => (
-                    <div key={name}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ width: 36, height: 36, borderRadius: 10, background: bg, color: fg, display: 'grid', placeItems: 'center' }}><Icon size={16} /></span>
-                          <div>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>{name}</div>
-                            <div style={{ fontSize: 12, color: '#94A3B8' }}>{sub}</div>
-                          </div>
-                        </div>
-                        <span style={{ fontSize: 14, fontWeight: 800, color: '#0F172A' }}>{pct}%</span>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {[{ label: 'Reactive Mesothelial Cells', conf: 96, color: '#6366F1', attention: false }, { label: 'Inflammatory Cells', conf: 89, color: '#06B6D4', attention: false }, { label: 'Atypical Cells', conf: 72, color: '#8B5CF6', attention: true }, { label: 'Background Debris', conf: 94, color: '#6366F1', attention: false }].map(({ label, conf, color, attention }, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', background: 'white', borderRadius: 12, border: '1px solid #EEF2F7', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0, marginTop: 4 }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{label}</div>
+                        <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 1 }}>Confidence {conf}%</div>
+                        {attention && <div style={{ fontSize: 10, fontWeight: 700, color: '#EF4444', marginTop: 3 }}>+ Attention</div>}
                       </div>
-                      <div style={{ height: 6, background: '#EEF2F7', borderRadius: 999 }}><div style={{ height: 6, borderRadius: 999, background: color, width: `${pct}%` }} /></div>
                     </div>
                   ))}
                 </div>
-              </GlassCard>
+              </div>
+              <div style={{ padding: '0 24px 20px' }}>
+                <button onClick={() => router.push(`/records/${d.priorityRecords?.[0]?.id ?? ''}`)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '10px', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 12, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#4F46E5' }}>
+                  <ArrowUpRight size={15} /> View Full Analysis
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* ═══ Bottom block ═══ */}
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[2.3fr_1fr]">
-            {/* Total Revenue */}
-            <GlassCard
-              title={
-                <div>
-                  <div style={{ fontSize: 14, color: '#64748B', fontWeight: 600 }}>Total Revenue</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 2 }}>
-                    <span style={{ fontSize: 40, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.03em', fontFamily: 'Geist,sans-serif' }}>$487,326</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 12, fontWeight: 700, color: '#16A34A', background: '#F0FDF4', borderRadius: 999, padding: '3px 8px' }}><TrendingUp size={12} />8%</span>
-                  </div>
+            {/* RIGHT: AI Findings */}
+            <div style={{ background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Findings</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#4F46E5', background: '#EEF2FF', borderRadius: 6, padding: '2px 8px', fontFamily: 'Geist,sans-serif' }}>{d.priorityRecords?.[0]?.labNumber ?? '—'}</span>
+              </div>
+              <div style={{ background: '#F8F9FF', borderRadius: 14, padding: '14px 16px', border: '1px solid #E0E7FF' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#64748B' }}>Interpretation</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#16A34A', background: '#DCFCE7', borderRadius: 4, padding: '2px 7px' }}>High Confidence</span>
                 </div>
-              }
-              action={
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 12px', borderRadius: 10, border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: 13, fontWeight: 600, color: '#475569', cursor: 'pointer' }}><Calendar size={14} /> Monthly <ChevronDown size={14} /></button>
-                  <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 12px', borderRadius: 10, border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: 13, fontWeight: 600, color: '#475569', cursor: 'pointer' }}>Filter <SlidersHorizontal size={14} /></button>
-                  <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 12px', borderRadius: 10, border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: 13, fontWeight: 600, color: '#475569', cursor: 'pointer' }}>Add widget <Plus size={14} /></button>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', marginBottom: 4 }}>
+                  {d.priorityRecords?.[0]?.urgent ? 'Atypical Cells Detected' : 'Specimen Under Review'}
                 </div>
-              }
-            >
-              <RevenueArea height={300} />
-            </GlassCard>
-
-            {/* Top Services */}
-            <GlassCard title="Top Services">
-              <div className="flex flex-col">
-                {[
-                  { name: 'Cardiology Consultation', value: '$12,847' },
-                  { name: 'General Physician Visit', value: '$9,204' },
-                  { name: 'Dermatology Screening', value: '$7,631' },
-                  { name: 'Orthopedic Review', value: '$5,912' },
-                ].map((s, i, arr) => (
-                  <div key={s.name} style={{ padding: '14px 0', borderBottom: i < arr.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
-                    <div style={{ fontSize: 13, color: '#94A3B8', fontWeight: 500 }}>{s.name}</div>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', fontFamily: 'Geist,sans-serif', marginTop: 2 }}>{s.value}</div>
+                <div style={{ fontSize: 12, color: '#64748B' }}>
+                  {d.priorityRecords?.[0]?.specimen?.replace(/_/g, ' ') ?? 'Awaiting cytological analysis.'}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>Key Observations</div>
+                {[{ icon: <Microscope size={14} color="#6366F1" />, label: 'Cellularity', value: `${eff?.onTime ?? 0}% on-time` }, { icon: <FlaskConical size={14} color="#8B5CF6" />, label: 'Cell Type', value: d.priorityRecords?.[0]?.specimen?.replace(/_/g, ' ') ?? '—' }, { icon: <Activity size={14} color="#06B6D4" />, label: 'Authorization', value: `${eff?.authorization ?? 0}%` }, { icon: <CheckCircle2 size={14} color="#16A34A" />, label: 'Avg TAT', value: `${kpis?.avgTat ?? '—'} days` }].map(({ icon, label, value }, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderBottom: i < 3 ? '1px solid #F1F5F9' : 'none' }}>
+                    <div style={{ width: 28, height: 28, borderRadius: 8, background: '#F8F9FF', border: '1px solid #E0E7FF', display: 'grid', placeItems: 'center', flexShrink: 0 }}>{icon}</div>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500 }}>{label}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{value}</div>
+                    </div>
                   </div>
                 ))}
               </div>
-            </GlassCard>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 'auto' }}>
+                <button onClick={() => router.push(`/records/${d.priorityRecords?.[0]?.id ?? ''}`)} style={{ width: '100%', padding: '12px', background: '#4F46E5', color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'Geist,sans-serif' }}>
+                  View Full Report <ArrowUpRight size={15} />
+                </button>
+                <button onClick={() => router.push('/authorizer')} style={{ width: '100%', padding: '11px', background: '#F8F9FF', color: '#4F46E5', border: '1px solid #E0E7FF', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  Add to Pathologist Review
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ═══ SECTION 3: BOTTOM ROW ═══ */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 280px', gap: 20 }}>
+            {/* Monthly Case Volume */}
+            <div style={{ background: 'white', borderRadius: 20, padding: '20px 24px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Monthly Case Volume</span>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#64748B', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 999, padding: '3px 10px', cursor: 'pointer' }}>6 Months ▾</div>
+              </div>
+              <SubscriptionBars data={(() => {
+                const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const now = new Date();
+                const series = d.throughput.series ?? [];
+                const chunk = Math.max(1, Math.ceil(series.length / 6));
+                const rows = Array.from({ length: 6 }, (_, i) => {
+                  const dt = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+                  const current = series.slice(i * chunk, (i + 1) * chunk).reduce((s: any, r: any) => s + (r.value || 0), 0);
+                  return { month: MONTHS[dt.getMonth()], current, target: 0 };
+                });
+                const maxC = Math.max(1, ...rows.map((r) => r.current));
+                rows.forEach((r) => { r.target = Math.round(maxC * 1.25); });
+                return rows;
+              })()} />
+            </div>
+
+            {/* Case Distribution by Type */}
+            <div style={{ background: 'white', borderRadius: 20, padding: '20px 24px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)' }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', marginBottom: 16 }}>Case Distribution by Type</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                <div style={{ position: 'relative', width: 120, height: 120, flexShrink: 0 }}>
+                  <svg viewBox="0 0 120 120" width="120" height="120">
+                    {specimenTypes.reduce((acc: any, { pct, color }, i) => {
+                      const prev = acc.offset;
+                      const circ = 2 * Math.PI * 46;
+                      const dash = (pct / 100) * circ;
+                      const gap = 2;
+                      acc.elements.push(
+                        <circle key={i} cx="60" cy="60" r="46" fill="none" stroke={color} strokeWidth="14"
+                          strokeDasharray={`${dash - gap} ${circ - (dash - gap)}`}
+                          strokeDashoffset={-(prev * (circ / 100))}
+                          transform="rotate(-90 60 60)" />
+                      );
+                      acc.offset += pct;
+                      return acc;
+                    }, { offset: 0, elements: [] as any[] }).elements}
+                  </svg>
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{totalSpecimens || 0}</div>
+                    <div style={{ fontSize: 9, color: '#94A3B8', fontWeight: 600, textAlign: 'center', marginTop: 2 }}>Total Cases</div>
+                  </div>
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {specimenTypes.map(({ label, color, pct }) => (
+                    <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                        <span style={{ fontSize: 12, color: '#64748B', fontWeight: 500 }}>{label}</span>
+                      </div>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#0F172A' }}>{pct}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* AI Performance */}
+            <div style={{ background: 'white', borderRadius: 20, padding: '20px 24px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Performance</span>
+                <span style={{ fontSize: 22, fontWeight: 800, color: '#4F46E5', fontFamily: 'Geist,sans-serif' }}>{eff?.authorization ?? 92}%</span>
+              </div>
+              <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 12 }}>Accuracy</div>
+              <ConversionBars data={(d.radar ?? []).map((r: any) => ({ name: r.dim, value: r.current, prev: r.previous }))} />
+            </div>
+
+            {/* Recent Activity */}
+            <div style={{ background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Recent Activity</span>
+                <button onClick={() => router.push('/records')} style={{ fontSize: 12, fontWeight: 600, color: '#4F46E5', background: 'none', border: 'none', cursor: 'pointer' }}>View all</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
+                {(d.activity || []).slice(0, 5).map((a: any, i: number) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderBottom: i < 4 ? '1px solid #F8FAFC' : 'none' }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 10, background: '#EEF2FF', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                      <Activity size={14} color="#4F46E5" />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                        {a.status} ·{' '}
+                        <span style={{ background: '#EEF2FF', color: '#4F46E5', borderRadius: 5, padding: '1px 7px', fontSize: 11, fontWeight: 700, fontFamily: 'Geist,sans-serif' }}>{a.labNumber ?? '—'}</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: '#64748B', marginTop: 1 }}>{a.patient}</div>
+                      <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 1 }}>{new Date(a.at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>

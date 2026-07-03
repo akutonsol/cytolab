@@ -153,6 +153,28 @@ body {
 }
 
 /* ============================================================
+   AI Cytology dashboard — living model + annotation pulses.
+   ============================================================ */
+@keyframes aiPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.5), 0 0 0 0 rgba(139,92,246,0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(139,92,246,0.15), 0 0 0 16px rgba(139,92,246,0.05); }
+}
+@keyframes aiBreathe {
+  0%,100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.02); filter: brightness(1.04); }
+}
+@keyframes aiFloat {
+  0%,100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+.ai-pulse { animation: aiPulse 2.5s ease-in-out infinite; }
+.ai-breathe { animation: aiBreathe 6s ease-in-out infinite; }
+.ai-float { animation: aiFloat 4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .ai-pulse, .ai-breathe, .ai-float { animation: none; }
+}
+
+/* ============================================================
    Active-specimen tube — blood drip animation.
    ============================================================ */
 @keyframes blood-drip {

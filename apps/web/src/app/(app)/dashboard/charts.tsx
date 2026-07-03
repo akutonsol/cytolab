@@ -136,52 +136,40 @@ export function ProgressRing({ pct, size = 40 }: { pct: number; size?: number })
 
 /* ═══════════ Reference-design placeholder charts (static data; wire later) ═══════════ */
 
-// Monthly Subscription Revenue — 3-shade indigo capsule + green capsule per month.
-const SUB = [
-  { m: 'Jan', d: 88, mid: 44, top: 44, green: 190 },
-  { m: 'Feb', d: 60, mid: 28, top: 24, green: 80 },
-  { m: 'Mar', d: 58, mid: 28, top: 24, green: 78 },
-  { m: 'Apr', d: 78, mid: 38, top: 34, green: 120 },
-  { m: 'May', d: 84, mid: 32, top: 24, green: 150 },
-  { m: 'Jun', d: 84, mid: 34, top: 32, green: 158 },
-];
-export function SubscriptionBars({ height = 250 }: { height?: number }) {
-  const R = 11; // capsule radius (≈ half bar width → fully rounded ends)
+// Monthly Case Volume — real (indigo) bar over ghost target bar.
+export function SubscriptionBars({ data }: { data: any[] }) {
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={SUB} margin={{ top: 10, right: 4, bottom: 4, left: 4 }} barGap={7} barCategoryGap="24%">
-        <CartesianGrid vertical={false} stroke="#EEF2F7" strokeDasharray="4 6" />
-        <XAxis dataKey="m" axisLine={false} tickLine={false} tick={{ fontSize: 13, fill: '#94A3B8', fontWeight: 500 }} dy={8} />
-        <YAxis axisLine={false} tickLine={false} width={54} tick={{ fontSize: 11, fill: '#94A3B8' }} ticks={[0, 88, 176, 264]} domain={[0, 264]} tickFormatter={(v) => (v ? `$ ${v}K` : '0')} />
-        <ReferenceLine y={88} stroke="#CBD5E1" strokeDasharray="6 6" />
-        {/* Blue capsule: dark bottom (rounded) → medium → light top (rounded) */}
-        <Bar dataKey="d" stackId="a" fill="#4F46E5" radius={[0, 0, R, R]} maxBarSize={22} isAnimationActive animationDuration={800} />
-        <Bar dataKey="mid" stackId="a" fill="#818CF8" maxBarSize={22} isAnimationActive animationDuration={800} />
-        <Bar dataKey="top" stackId="a" fill="#C7D2FE" radius={[R, R, 0, 0]} maxBarSize={22} isAnimationActive animationDuration={800} />
-        {/* Green capsule (both ends rounded) */}
-        <Bar dataKey="green" fill="#4ADE80" radius={[R, R, R, R]} maxBarSize={22} isAnimationActive animationDuration={800} />
+    <ResponsiveContainer width="100%" height={140}>
+      <BarChart data={data} barGap={3} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+        <CartesianGrid vertical={false} stroke="#F1F5F9" strokeDasharray="4 4" />
+        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94A3B8', fontWeight: 500 }} dy={6} />
+        <YAxis hide />
+        <Tooltip content={({ active, payload, label }: any) => {
+          if (!active || !payload?.length) return null;
+          return (
+            <div style={{ background: 'white', border: '1px solid #E2E8F0', borderRadius: 8, padding: '6px 10px', fontSize: 12 }}>
+              <div style={{ fontWeight: 700, color: '#0F172A' }}>{label}</div>
+              <div style={{ color: '#4F46E5' }}>{payload.find((p: any) => p.dataKey === 'current')?.value ?? payload[0]?.value} cases</div>
+            </div>
+          );
+        }} />
+        <Bar dataKey="target" fill="#E0E7FF" radius={[4, 4, 0, 0]} maxBarSize={20} isAnimationActive={false} />
+        <Bar dataKey="current" fill="#4F46E5" radius={[4, 4, 0, 0]} maxBarSize={20} opacity={0.9} isAnimationActive animationDuration={800} />
       </BarChart>
     </ResponsiveContainer>
   );
 }
 
-// Appointment Conversion Rate — stacked solid + ghost bar per month, Jun highlighted.
-const CONV = [
-  { m: 'Jan', done: 70, rest: 24 }, { m: 'Feb', done: 96, rest: 28 }, { m: 'Mar', done: 78, rest: 22 },
-  { m: 'Apr', done: 64, rest: 24 }, { m: 'May', done: 72, rest: 22 }, { m: 'Jun', done: 52, rest: 18 },
-  { m: 'Jul', done: 66, rest: 20 }, { m: 'Aug', done: 84, rest: 26 },
-];
-export function ConversionBars({ height = 180 }: { height?: number }) {
+// AI Performance — this-period (indigo) over previous-period (ghost) per metric.
+export function ConversionBars({ data }: { data: any[] }) {
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={CONV} margin={{ top: 6, right: 4, bottom: 4, left: 4 }} barCategoryGap="34%">
-        <XAxis dataKey="m" axisLine={false} tickLine={false}
-          tick={(p: any) => {
-            const hi = p.payload.value === 'Jun';
-            return <text x={p.x} y={p.y + 12} textAnchor="middle" fontSize={12} fontWeight={hi ? 700 : 500} fill={hi ? '#0F172A' : '#94A3B8'}>{p.payload.value}</text>;
-          }} />
-        <Bar dataKey="done" stackId="c" fill="#4F46E5" radius={[0, 0, 6, 6]} maxBarSize={26} isAnimationActive animationDuration={800} />
-        <Bar dataKey="rest" stackId="c" fill="#C7D2FE" radius={[6, 6, 0, 0]} maxBarSize={26} isAnimationActive animationDuration={800} />
+    <ResponsiveContainer width="100%" height={120}>
+      <BarChart data={data} margin={{ top: 4, right: 4, bottom: 4, left: 4 }} barGap={2}>
+        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94A3B8' }} dy={4} />
+        <YAxis hide domain={[0, 100]} />
+        <Tooltip formatter={(v: any) => [`${v}%`, '']} contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 11 }} />
+        <Bar dataKey="prev" fill="#E0E7FF" radius={[4, 4, 0, 0]} maxBarSize={16} isAnimationActive={false} />
+        <Bar dataKey="value" fill="#4F46E5" radius={[4, 4, 0, 0]} maxBarSize={16} opacity={0.85} isAnimationActive animationDuration={800} />
       </BarChart>
     </ResponsiveContainer>
   );
