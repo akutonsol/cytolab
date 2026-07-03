@@ -290,7 +290,7 @@ export default function RecordDetailPage() {
             </div>
           </div>
 
-          <div className="relative min-h-0 flex-1 self-stretch overflow-hidden rounded-2xl bg-[#F5F0FA]">
+          <div className="relative min-h-0 flex-1 self-stretch overflow-hidden rounded-2xl bg-white">
             <Image src={cytologyImg} alt="Cytology specimen" fill unoptimized sizes="45vw" style={{ objectFit: 'contain', objectPosition: 'center' }} priority />
           </div>
         </div>
