@@ -2,23 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import {
-  Alert,
   App,
   Button,
   Col,
   DatePicker,
-  Divider,
   Drawer,
   Form,
   Input,
   InputNumber,
   Row,
-  Select,
   Space,
   Switch,
   Tag,
   Tooltip,
-  Typography,
 } from 'antd';
 import { DeleteOutlined, PlusOutlined, UserAddOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -29,6 +25,35 @@ import { ClientSelect } from '@/components/ClientSelect';
 import { PatientSelect, patientLabel } from '@/components/PatientSelect';
 import { PatientFormDrawer, type PatientRecord } from '@/components/PatientFormDrawer';
 import { SPECIMEN_LABELS, specimenTypesForForm, type FormType } from '@/lib/specimen-types';
+import { DS } from '@/lib/drawer-styles';
+import { DrawerHeader, PremiumFormStyles } from '@/components/DrawerChrome';
+
+// Specimen type multi-select rendered as dark pill chips (legacy form language).
+// Integrates with Form.Item via the injected value/onChange props.
+function SpecimenChips({ value = [], onChange, options, disabled }: {
+  value?: string[]; onChange?: (v: string[]) => void;
+  options: { value: string; label: string }[]; disabled?: boolean;
+}) {
+  const toggle = (v: string) => {
+    if (disabled) return;
+    const set = new Set(value);
+    if (set.has(v)) set.delete(v); else set.add(v);
+    onChange?.(options.filter((o) => set.has(o.value)).map((o) => o.value));
+  };
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+      {options.map((o) => {
+        const active = value.includes(o.value);
+        return (
+          <button key={o.value} type="button" onClick={() => toggle(o.value)} disabled={disabled}
+            style={{ ...DS.specimenChip, ...(active ? DS.specimenChipActive : DS.specimenChipInactive), opacity: disabled ? 0.6 : 1 }}>
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 // Data edits are rejected server-side once a record reaches Completed. Mirror
 // that set so the edit UI goes read-only rather than letting a save fail.
@@ -243,60 +268,42 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
       onOk: () => del.mutateAsync(),
     });
 
-  const statusTag = isEdit ? record?.status ?? '…' : 'Pending';
+  const actions = isEdit ? (
+    <>
+      <button type="button" style={{ ...DS.btnPrimary, opacity: locked || save.isPending ? 0.6 : 1 }} disabled={locked || save.isPending} onClick={() => submitForm(false)}>Save</button>
+      <button type="button" style={DS.btnSecondary} onClick={onClose}>Cancel</button>
+      <button type="button" style={{ ...DS.btnDanger, opacity: locked || del.isPending ? 0.5 : 1 }} disabled={locked || del.isPending} onClick={confirmDelete}>
+        <DeleteOutlined /> Delete
+      </button>
+    </>
+  ) : (
+    <>
+      <button type="button" style={{ ...DS.btnPrimary, opacity: save.isPending ? 0.6 : 1 }} disabled={save.isPending} onClick={() => submitForm(true)}>Submit to Cytolab</button>
+      <button type="button" style={DS.btnSecondary} disabled={save.isPending} onClick={() => submitForm(false)}>Save</button>
+      <button type="button" style={DS.btnSecondary} onClick={onClose}>Cancel</button>
+    </>
+  );
 
   return (
     <Drawer
-      title={
-        <Space>
-          <span>
-            {isEdit ? 'Edit' : 'New'} {isGyn ? 'Gynecology' : 'Non-Gynecology'} Record
-            {isEdit && record?.labNumber ? ` · ${record.labNumber}` : ''}
-          </span>
-          <Tag color={locked ? 'default' : 'processing'}>{statusTag}</Tag>
-        </Space>
-      }
-      width={860}
+      width={DS.drawerWidth}
       open={open}
       onClose={onClose}
       destroyOnClose
-      extra={
-        <Space>
-          <Button onClick={onClose}>Cancel</Button>
-          {isEdit ? (
-            <>
-              <Button danger icon={<DeleteOutlined />} loading={del.isPending} disabled={locked} onClick={confirmDelete}>
-                Delete
-              </Button>
-              <Button type="primary" loading={save.isPending} disabled={locked} onClick={() => submitForm(false)}>
-                Save
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button loading={save.isPending} onClick={() => submitForm(false)}>
-                Save
-              </Button>
-              <Tooltip title="Submit has Urgent? adds express cost — set the toggle below">
-                <Button type="primary" loading={save.isPending} onClick={() => submitForm(true)}>
-                  Submit to Cytolab
-                </Button>
-              </Tooltip>
-            </>
-          )}
-        </Space>
-      }
+      closable={false}
+      styles={{ header: { display: 'none' }, body: { background: DS.drawerBg, padding: DS.drawerPadding }, content: { boxShadow: '-8px 0 40px rgba(0,0,0,0.12)' } }}
     >
+      <PremiumFormStyles />
+      <DrawerHeader
+        title={`${isEdit ? 'Edit' : 'New'} ${isGyn ? 'Gynecology' : 'Non-Gynecology'} Record`}
+        subtitle={isEdit ? `${record?.labNumber ?? '…'}${record?.status ? ` · ${record.status}` : ''}` : 'Complete all fields to register'}
+        onClose={onClose}
+        actions={actions}
+      />
       {locked && (
-        <Alert
-          type="warning"
-          showIcon
-          style={{ marginBottom: 16 }}
-          message="This record is locked"
-          description={`A record cannot be edited or deleted once it reaches ${record?.status}. View only.`}
-        />
+        <div style={DS.lockedBanner}>🔒 A record cannot be edited or deleted once it reaches {record?.status}. View only.</div>
       )}
-      <Form layout="vertical" form={form} requiredMark={false} disabled={locked}>
+      <Form className="ds-form" layout="vertical" form={form} requiredMark={false} disabled={locked}>
         {/* ---- Common header ---- */}
         <Row gutter={12}>
           <Col span={8}>
@@ -361,10 +368,9 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
         <Row gutter={12}>
           <Col span={16}>
             <Form.Item label="Specimen type(s)" name="specimenTypes">
-              <Select
-                mode="multiple"
-                placeholder="Select specimen types"
+              <SpecimenChips
                 options={specimenTypesForForm(formType).map((t) => ({ value: t, label: SPECIMEN_LABELS[t] }))}
+                disabled={locked}
               />
             </Form.Item>
           </Col>
@@ -470,9 +476,8 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
           </Col>
         </Row>
 
-        <Divider orientation="left" plain>
-          {isGyn ? 'Gynecology clinical features' : 'Non-Gynecology clinical features'}
-        </Divider>
+        <div style={DS.divider} />
+        <div style={DS.sectionLabel}>{isGyn ? 'Gynecology clinical features' : 'Non-Gynecology clinical features'}</div>
 
         {formSchema.length === 0 ? (
           // Fallback while loading or if the schema fetch fails — original hardcoded fields.
@@ -551,7 +556,8 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
 
         {isGyn && (
           <>
-            <Divider orientation="left" plain>Therapy</Divider>
+            <div style={DS.divider} />
+            <div style={DS.sectionLabel}>Therapy</div>
             <Space size="large" wrap>
               <Form.Item label="Hormone" name="therapyHormone" valuePropName="checked"><Switch /></Form.Item>
               <Form.Item label="Radiation" name="therapyRadiation" valuePropName="checked"><Switch /></Form.Item>
@@ -563,16 +569,15 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
 
         {!isEdit && (
           <>
-            <Divider plain />
-            <Space align="center">
+            <div style={DS.divider} />
+            <div style={DS.toggleRow}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
+                Submit as Urgent <span style={{ color: '#94A3B8', fontWeight: 400 }}>· additional cost for express results</span>
+              </span>
               <Form.Item name="urgent" valuePropName="checked" noStyle>
                 <Switch />
               </Form.Item>
-              <span>
-                Submit has Urgent?{' '}
-                <Typography.Text type="secondary">(additional cost for express results)</Typography.Text>
-              </span>
-            </Space>
+            </div>
           </>
         )}
       </Form>

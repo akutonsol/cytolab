@@ -6,7 +6,6 @@ import {
   Button,
   Col,
   DatePicker,
-  Divider,
   Drawer,
   Form,
   Input,
@@ -23,6 +22,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { api } from '@/lib/api';
 import { ClientSelect } from '@/components/ClientSelect';
+import { DS } from '@/lib/drawer-styles';
+import { DrawerHeader, PremiumFormStyles } from '@/components/DrawerChrome';
 
 interface Props {
   open: boolean;
@@ -70,21 +71,26 @@ export function RequisitionFormDrawer({ open, onClose }: Props) {
 
   return (
     <Drawer
-      title="New Requisition"
-      width={720}
+      width={DS.drawerWidth}
       open={open}
       onClose={onClose}
       destroyOnClose
-      extra={
-        <Space>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="primary" loading={save.isPending} onClick={() => form.submit()}>
-            Create
-          </Button>
-        </Space>
-      }
+      closable={false}
+      styles={{ header: { display: 'none' }, body: { background: DS.drawerBg, padding: DS.drawerPadding }, content: { boxShadow: '-8px 0 40px rgba(0,0,0,0.12)' } }}
     >
-      <Form layout="vertical" form={form} onFinish={(v) => save.mutate(v)} requiredMark={false}>
+      <PremiumFormStyles />
+      <DrawerHeader
+        title="New Requisition"
+        subtitle="Log a new sample batch"
+        onClose={onClose}
+        actions={
+          <>
+            <button type="button" style={{ ...DS.btnPrimary, opacity: save.isPending ? 0.6 : 1 }} disabled={save.isPending} onClick={() => form.submit()}>Save</button>
+            <button type="button" style={DS.btnSecondary} onClick={onClose}>Cancel</button>
+          </>
+        }
+      />
+      <Form className="ds-form" layout="vertical" form={form} onFinish={(v) => save.mutate(v)} requiredMark={false}>
         <Row gutter={12}>
           <Col span={14}>
             <Form.Item label="Client" name="clientId" rules={[{ required: true, message: 'Choose the client' }]}>
@@ -103,9 +109,8 @@ export function RequisitionFormDrawer({ open, onClose }: Props) {
           </Col>
         </Row>
 
-        <Divider orientation="left" plain>
-          Item lines
-        </Divider>
+        <div style={DS.divider} />
+        <div style={DS.sectionLabel}>Item lines</div>
 
         <Form.List name="lines">
           {(fields, { add, remove }) => (

@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { App, Button, Descriptions, Divider, Empty, List, Modal, Select, Space, Tag, Typography } from 'antd';
+import { App, Button, Descriptions, Empty, List, Modal, Select, Space, Tag, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { DS } from '@/lib/drawer-styles';
+import { DrawerHeader, PremiumFormStyles } from '@/components/DrawerChrome';
 
 interface CodeSheet {
   id: string;
@@ -73,14 +75,26 @@ export function ResultSheetModal({ open, onClose, record }: Props) {
 
   return (
     <Modal
-      title="Result Sheet"
       open={open}
       onCancel={onClose}
       width={640}
-      okText="Create"
-      okButtonProps={{ disabled: chosen.length === 0, loading: save.isPending }}
-      onOk={() => save.mutate()}
+      closable={false}
+      footer={null}
+      styles={{ content: { background: DS.drawerBg, borderRadius: 20, padding: 32 }, header: { display: 'none' }, footer: { display: 'none' } }}
     >
+      <PremiumFormStyles />
+      <DrawerHeader
+        title="Result Sheet"
+        subtitle={record?.labNumber ?? ''}
+        onClose={onClose}
+        actions={
+          <>
+            <button type="button" style={{ ...DS.btnPrimary, opacity: chosen.length === 0 || save.isPending ? 0.5 : 1 }} disabled={chosen.length === 0 || save.isPending} onClick={() => save.mutate()}>Save</button>
+            <button type="button" style={DS.btnSecondary} onClick={onClose}>Cancel</button>
+          </>
+        }
+      />
+      <div className="ds-form">
       {record && (
         <>
           <Descriptions size="small" column={2} bordered>
@@ -103,7 +117,8 @@ export function ResultSheetModal({ open, onClose, record }: Props) {
             </Descriptions.Item>
           </Descriptions>
 
-          <Divider orientation="left" plain>Code Sheet Results</Divider>
+          <div style={DS.divider} />
+          <div style={DS.sectionLabel}>Code Sheet Results</div>
           <Space.Compact style={{ width: '100%', marginBottom: 12 }}>
             <Select
               showSearch
@@ -144,6 +159,7 @@ export function ResultSheetModal({ open, onClose, record }: Props) {
           )}
         </>
       )}
+      </div>
     </Modal>
   );
 }

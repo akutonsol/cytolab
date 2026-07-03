@@ -7,7 +7,6 @@ import {
   Avatar,
   Button,
   Col,
-  Divider,
   Drawer,
   Form,
   Input,
@@ -24,6 +23,8 @@ import { MinusCircleOutlined, PlusOutlined, SafetyCertificateOutlined, UserOutli
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { RemoteSelect } from '@/components/RemoteSelect';
+import { DS } from '@/lib/drawer-styles';
+import { DrawerHeader, PremiumFormStyles } from '@/components/DrawerChrome';
 
 export interface ClientRecord {
   id: string;
@@ -109,7 +110,7 @@ export function ClientFormDrawer({ open, onClose, client }: Props) {
 
   const clientInfoTab = (
     <>
-      <Divider orientation="left" plain>Workspace</Divider>
+      <div style={DS.sectionLabel}>Workspace</div>
       <Form.Item label="Labcode" name="labCodeId" tooltip="The client's assigned lab code / region">
         <RemoteSelect
           endpoint="/labcodes"
@@ -125,7 +126,8 @@ export function ClientFormDrawer({ open, onClose, client }: Props) {
         />
       </Form.Item>
 
-      <Divider orientation="left" plain>Attributes</Divider>
+      <div style={DS.divider} />
+      <div style={DS.sectionLabel}>Attributes</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
         <Avatar size={64} icon={<UserOutlined />} />
         <Tooltip title="Photo upload arrives with file storage (Phase 6)">
@@ -159,7 +161,8 @@ export function ClientFormDrawer({ open, onClose, client }: Props) {
         </Col>
       </Row>
 
-      <Divider orientation="left" plain>Auth Information</Divider>
+      <div style={DS.divider} />
+      <div style={DS.sectionLabel}>Auth Information</div>
       <Form.Item label="Username">
         <Input readOnly disabled value={isEdit ? primaryLogin?.username ?? '—' : 'Generated on save'} />
       </Form.Item>
@@ -183,7 +186,8 @@ export function ClientFormDrawer({ open, onClose, client }: Props) {
         <Switch />
       </Form.Item>
 
-      <Divider orientation="left" plain>Client Details</Divider>
+      <div style={DS.divider} />
+      <div style={DS.sectionLabel}>Client Details</div>
       <Form.Item label="Office Name" name="officeName">
         <Input />
       </Form.Item>
@@ -274,21 +278,26 @@ export function ClientFormDrawer({ open, onClose, client }: Props) {
 
   return (
     <Drawer
-      title={isEdit ? 'Edit Client' : 'New Client'}
-      width={680}
+      width={DS.drawerWidth}
       open={open}
       onClose={onClose}
       destroyOnClose
-      extra={
-        <Space>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="primary" loading={save.isPending} onClick={() => form.submit()}>
-            {isEdit ? 'Save' : 'Create'}
-          </Button>
-        </Space>
-      }
+      closable={false}
+      styles={{ header: { display: 'none' }, body: { background: DS.drawerBg, padding: DS.drawerPadding }, content: { boxShadow: '-8px 0 40px rgba(0,0,0,0.12)' } }}
     >
-      <Form layout="vertical" form={form} onFinish={(v) => save.mutate(v)} requiredMark={false}>
+      <PremiumFormStyles />
+      <DrawerHeader
+        title={isEdit ? 'Edit Client' : 'New Client'}
+        subtitle="Referring client registration"
+        onClose={onClose}
+        actions={
+          <>
+            <button type="button" style={{ ...DS.btnPrimary, opacity: save.isPending ? 0.6 : 1 }} disabled={save.isPending} onClick={() => form.submit()}>Save</button>
+            <button type="button" style={DS.btnSecondary} onClick={onClose}>Cancel</button>
+          </>
+        }
+      />
+      <Form className="ds-form" layout="vertical" form={form} onFinish={(v) => save.mutate(v)} requiredMark={false}>
         <Tabs
           items={[
             { key: 'info', label: 'Client Info', forceRender: true, children: clientInfoTab },

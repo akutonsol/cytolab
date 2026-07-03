@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, App, Button, Drawer, Form, Input, Segmented, Space, Switch, Transfer, Typography } from 'antd';
+import { App, Button, Drawer, Form, Input, Segmented, Space, Switch, Transfer, Typography } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { DS } from '@/lib/drawer-styles';
+import { DrawerHeader, PremiumFormStyles } from '@/components/DrawerChrome';
 
 interface Permission {
   id: string;
@@ -85,21 +87,26 @@ export function RoleFormDrawer({ open, onClose, role }: Props) {
 
   return (
     <Drawer
-      title={isEdit ? 'Edit Role' : 'New Role'}
-      width={760}
+      width={DS.drawerWidth}
       open={open}
       onClose={onClose}
       destroyOnClose
-      extra={
-        <Space>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="primary" loading={save.isPending} onClick={() => form.submit()}>
-            {isEdit ? 'Save' : 'Create'}
-          </Button>
-        </Space>
-      }
+      closable={false}
+      styles={{ header: { display: 'none' }, body: { background: DS.drawerBg, padding: DS.drawerPadding }, content: { boxShadow: '-8px 0 40px rgba(0,0,0,0.12)' } }}
     >
-      <Form layout="vertical" form={form} onFinish={onFinish} requiredMark={false}>
+      <PremiumFormStyles />
+      <DrawerHeader
+        title={isEdit ? 'Edit Role' : 'New Role'}
+        subtitle="Role & permission configuration"
+        onClose={onClose}
+        actions={
+          <>
+            <button type="button" style={{ ...DS.btnPrimary, opacity: save.isPending ? 0.6 : 1 }} disabled={save.isPending} onClick={() => form.submit()}>Save</button>
+            <button type="button" style={DS.btnSecondary} onClick={onClose}>Cancel</button>
+          </>
+        }
+      />
+      <Form className="ds-form" layout="vertical" form={form} onFinish={onFinish} requiredMark={false}>
         <Form.Item name="name" label="Name" rules={[{ required: true, message: 'Required' }]}>
           <Input placeholder="e.g. Receptionist" />
         </Form.Item>
@@ -130,12 +137,9 @@ export function RoleFormDrawer({ open, onClose, role }: Props) {
         </Space>
 
         {isSuperRole && (
-          <Alert
-            type="warning"
-            showIcon
-            style={{ margin: '8px 0 16px' }}
-            message="Superuser roles bypass every permission check — the selected permissions below are not consulted for holders of this role."
-          />
+          <div style={{ ...DS.lockedBanner, margin: '8px 0 16px' }}>
+            ⚠ Superuser roles bypass every permission check — the selected permissions below are not consulted for holders of this role.
+          </div>
         )}
 
         <Typography.Text strong>Permissions</Typography.Text>

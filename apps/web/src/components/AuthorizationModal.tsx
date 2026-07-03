@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Alert, App, Button, Descriptions, Divider, Empty, Input, List, Modal, Segmented, Space, Tag, Typography } from 'antd';
-import { CheckCircleOutlined, FilePdfOutlined, RobotOutlined } from '@ant-design/icons';
+import { Alert, App, Button, Descriptions, Empty, Input, List, Modal, Segmented, Space, Tag, Typography } from 'antd';
+import { RobotOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { DS } from '@/lib/drawer-styles';
+import { DrawerHeader, PremiumFormStyles } from '@/components/DrawerChrome';
 
 interface RecordLite {
   id: string;
@@ -200,29 +202,28 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
 
   return (
     <Modal
-      title={
-        <Space>
-          <span>Authorize Result Sheet</span>
-          {record?.labNumber && <Tag>{record.labNumber}</Tag>}
-          {authorized && <Tag color="success" icon={<CheckCircleOutlined />}>Approved</Tag>}
-        </Space>
-      }
       open={open}
       onCancel={onClose}
       width={760}
-      footer={
-        <Space>
-          <Button onClick={onClose}>Close</Button>
-          <Button icon={<FilePdfOutlined />} disabled={!authorized} onClick={openReport} title={authorized ? 'Open the released report' : 'Available once signed off'}>
-            Email / Print Report
-          </Button>
-          <Button loading={save.isPending} disabled={!sheetId || lineCount === 0} onClick={() => save.mutate()}>Save</Button>
-          <Button type="primary" loading={signOff.isPending} disabled={!sheetId || lineCount === 0 || authorized} onClick={confirmSignOff}>
-            Sign off &amp; Approve
-          </Button>
-        </Space>
-      }
+      closable={false}
+      footer={null}
+      styles={{ content: { background: DS.drawerBg, borderRadius: 20, padding: 32 }, header: { display: 'none' }, footer: { display: 'none' } }}
     >
+      <PremiumFormStyles />
+      <DrawerHeader
+        title="Authorization"
+        subtitle={`${record?.labNumber ?? ''}${record?.patient ? ` · ${record.patient.firstName} ${record.patient.lastName}` : ''}${authorized ? ' · Approved' : ''}`}
+        onClose={onClose}
+        actions={
+          <>
+            <button type="button" style={{ ...DS.btnPrimary, background: '#16A34A', opacity: !sheetId || lineCount === 0 || authorized || signOff.isPending ? 0.5 : 1 }} disabled={!sheetId || lineCount === 0 || authorized || signOff.isPending} onClick={confirmSignOff}>Sign off &amp; Approve</button>
+            <button type="button" style={{ ...DS.btnSecondary, opacity: !sheetId || lineCount === 0 || save.isPending ? 0.6 : 1 }} disabled={!sheetId || lineCount === 0 || save.isPending} onClick={() => save.mutate()}>Save</button>
+            <button type="button" style={{ ...DS.btnSecondary, opacity: !authorized ? 0.5 : 1 }} disabled={!authorized} onClick={openReport}>Email / Print Report</button>
+            <button type="button" style={DS.btnSecondary} onClick={onClose}>Close</button>
+          </>
+        }
+      />
+      <div className="ds-form">
       {!record ? null : !sheetId ? (
         <Empty description="This record has no result sheet yet" image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (
@@ -249,12 +250,21 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
           {/* ---- AI assist (only when the lab enabled it and a key is configured) ---- */}
           {aiEnabled && (
             <>
-              <Divider orientation="left" plain><Space size={6}><RobotOutlined /> AI assist</Space></Divider>
-              <Space wrap>
-                <Button size="small" loading={genNarrative.isPending} disabled={aiBusy} onClick={() => genNarrative.mutate()}>Generate draft narrative</Button>
-                <Button size="small" loading={suggest.isPending} disabled={aiBusy} onClick={() => suggest.mutate()}>Suggest codes</Button>
-                <Button size="small" loading={consistency.isPending} disabled={aiBusy} onClick={() => consistency.mutate()}>Check consistency</Button>
-              </Space>
+              <div style={{ background: '#EEF2F8', border: '1px solid #DBE5F4', borderRadius: 16, padding: 20, marginTop: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <RobotOutlined style={{ color: '#4F46E5' }} />
+                  <span style={{ fontFamily: 'Geist, sans-serif', fontWeight: 700, fontStyle: 'italic', color: '#1E3A8A', fontSize: 16 }}>AI Reasoning</span>
+                </div>
+                <p style={{ fontSize: 13, fontStyle: 'italic', color: '#475569', margin: '0 0 12px' }}>
+                  Assistive drafting only — you review and own every word before it ships.
+                </p>
+                <Space wrap>
+                  <button type="button" style={{ ...DS.btnOutline, padding: '7px 16px', fontSize: 13, opacity: aiBusy ? 0.6 : 1 }} disabled={aiBusy} onClick={() => genNarrative.mutate()}>Generate draft narrative</button>
+                  <button type="button" style={{ ...DS.btnOutline, padding: '7px 16px', fontSize: 13, opacity: aiBusy ? 0.6 : 1 }} disabled={aiBusy} onClick={() => suggest.mutate()}>Suggest codes</button>
+                  <button type="button" style={{ ...DS.btnOutline, padding: '7px 16px', fontSize: 13, opacity: aiBusy ? 0.6 : 1 }} disabled={aiBusy} onClick={() => consistency.mutate()}>Check consistency</button>
+                  <button type="button" style={{ ...DS.btnOutline, padding: '7px 16px', fontSize: 13 }} onClick={() => message.info('Similar cases view is coming soon')}>View Similar Cases</button>
+                </Space>
+              </div>
 
               {suggestions && (
                 <List
@@ -271,15 +281,21 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
               )}
 
               {flags && (
-                <Alert style={{ marginTop: 10 }} type={flags.length ? 'warning' : 'success'} showIcon
-                  message={flags.length ? 'Consistency check — review before signing' : 'Consistency check — no issues found'}
-                  description={flags.length ? <ul style={{ margin: 0, paddingLeft: 18 }}>{flags.map((f, i) => <li key={i}>{f.message}</li>)}</ul> : undefined} />
+                flags.length ? (
+                  <div style={{ ...DS.lockedBanner, marginTop: 10, display: 'block' }}>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>Consistency check — review before signing</div>
+                    <ul style={{ margin: 0, paddingLeft: 18 }}>{flags.map((f, i) => <li key={i}>{f.message}</li>)}</ul>
+                  </div>
+                ) : (
+                  <Alert style={{ marginTop: 10 }} type="success" showIcon message="Consistency check — no issues found" />
+                )
               )}
             </>
           )}
 
           {/* ---- Report narrative (human-owned; AI can draft into it) ---- */}
-          <Divider orientation="left" plain>Report narrative</Divider>
+          <div style={DS.divider} />
+          <div style={DS.sectionLabel}>Report narrative</div>
           {aiDraftId && (
             <Alert type="info" showIcon style={{ marginBottom: 8 }}
               message="AI-drafted — review & edit before accepting"
@@ -288,7 +304,8 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
           )}
           <Input.TextArea rows={5} placeholder="Report narrative / diagnosis…" value={narrative} onChange={(e) => setNarrative(e.target.value)} />
 
-          <Divider orientation="left" plain>Code Sheet Results — findings &amp; assessment</Divider>
+          <div style={DS.divider} />
+          <div style={DS.sectionLabel}>Code Sheet Results — findings &amp; assessment</div>
           {lineCount === 0 ? (
             <Empty description="No coded results on this sheet" image={Empty.PRESENTED_IMAGE_SIMPLE} />
           ) : (
@@ -315,6 +332,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
           )}
         </>
       )}
+      </div>
     </Modal>
   );
 }

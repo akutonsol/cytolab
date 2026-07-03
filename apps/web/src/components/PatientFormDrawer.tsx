@@ -7,13 +7,11 @@ import {
   Button,
   Col,
   DatePicker,
-  Divider,
   Drawer,
   Form,
   Input,
   Radio,
   Row,
-  Space,
   Tooltip,
   Typography,
 } from 'antd';
@@ -23,6 +21,8 @@ import dayjs from 'dayjs';
 import { api } from '@/lib/api';
 import { deriveAge } from '@/lib/age';
 import { ClientSelect, clientLabel } from '@/components/ClientSelect';
+import { DS } from '@/lib/drawer-styles';
+import { DrawerHeader, PremiumFormStyles } from '@/components/DrawerChrome';
 
 export interface PatientRecord {
   id: string;
@@ -112,21 +112,26 @@ export function PatientFormDrawer({ open, onClose, patient, onCreated }: Props) 
 
   return (
     <Drawer
-      title={isEdit ? 'Edit Patient' : 'New Patient'}
-      width={620}
+      width={DS.drawerWidth}
       open={open}
       onClose={onClose}
       destroyOnClose
-      extra={
-        <Space>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="primary" loading={save.isPending} onClick={() => form.submit()}>
-            {isEdit ? 'Save' : 'Create'}
-          </Button>
-        </Space>
-      }
+      closable={false}
+      styles={{ header: { display: 'none' }, body: { background: DS.drawerBg, padding: DS.drawerPadding }, content: { boxShadow: '-8px 0 40px rgba(0,0,0,0.12)' } }}
     >
-      <Form layout="vertical" form={form} onFinish={(v) => save.mutate(v)} requiredMark={false}>
+      <PremiumFormStyles />
+      <DrawerHeader
+        title={isEdit ? 'Edit Patient' : 'New Patient'}
+        subtitle="Register a new patient record"
+        onClose={onClose}
+        actions={
+          <>
+            <button type="button" style={{ ...DS.btnPrimary, opacity: save.isPending ? 0.6 : 1 }} disabled={save.isPending} onClick={() => form.submit()}>Save Patient</button>
+            <button type="button" style={DS.btnSecondary} onClick={onClose}>Cancel</button>
+          </>
+        }
+      />
+      <Form className="ds-form" layout="vertical" form={form} onFinish={(v) => save.mutate(v)} requiredMark={false}>
         {/* Avatar — upload deferred to Phase 6 file storage (stub). */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
           <Avatar size={64} icon={<UserOutlined />} />
@@ -207,9 +212,8 @@ export function PatientFormDrawer({ open, onClose, patient, onCreated }: Props) 
           </Col>
         </Row>
 
-        <Divider orientation="left" plain>
-          Address
-        </Divider>
+        <div style={DS.divider} />
+        <div style={DS.sectionLabel}>Address</div>
         <Form.List name="addresses">
           {(fields, { add, remove }) => (
             <>
