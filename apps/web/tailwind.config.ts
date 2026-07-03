@@ -24,6 +24,7 @@ const config: Config = {
         },
         border: {
           DEFAULT: 'var(--color-border)',
+          soft: 'var(--color-border-soft)',
           card: 'var(--color-border-card)',
           strong: 'var(--color-border-strong)',
         },

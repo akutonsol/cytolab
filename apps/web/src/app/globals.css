@@ -10,19 +10,20 @@
   /* Font — --font-inter is injected by next/font in layout.tsx */
   --font-family: var(--font-inter), 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-  /* Primary (blue — the app identity) */
-  --color-primary: #4f7df9;
-  --color-primary-hover: #3b6cf5;
-  --color-primary-soft: #eaf1ff; /* light */
+  /* Primary (near-black — UI chrome; blue removed as accent) */
+  --color-primary: #0f172a;
+  --color-primary-hover: #1e293b;
+  --color-primary-soft: #f1f0ea; /* warm light */
   --color-primary-on: #ffffff;
 
   /* Neutrals */
   --color-bg: #f6f8fc;
   --color-surface: #ffffff;
-  --color-surface-alt: #fafbfd; /* table hover / subtle alt */
-  --color-border: #e6eaf2;
-  --color-border-card: #edf2f7; /* the 1px border on cards */
-  --color-border-strong: #e6eaf2;
+  --color-surface-alt: #f9f8f5; /* table hover / subtle alt */
+  --color-border: #e5e3dc; /* warm gray */
+  --color-border-soft: #f1f0ea;
+  --color-border-card: #e5e3dc; /* the 1px border on cards */
+  --color-border-strong: #d4d2cc;
   --color-text: #111827; /* primary */
   --color-text-secondary: #6b7280;
   --color-text-tertiary: #9ca3af; /* muted */
@@ -53,6 +54,54 @@
   --pastel-lavender: #c7b9ff;
   --pastel-sky: #dcebff;
   --pastel-peach: #fbe4d8;
+
+  /* ────────────────────────────────────────────────────────────
+     Reference design tokens (v0 naming) — the app-wide cascade
+     layer. Near-black chrome, warm-gray borders, flat surfaces;
+     colour is reserved for semantic meaning only.
+     ──────────────────────────────────────────────────────────── */
+  /* Typography */
+  --font-sans: var(--font-inter), 'Inter', system-ui, sans-serif;
+  --font-display: 'Geist', var(--font-inter), 'Inter', sans-serif;
+
+  /* Primary — near-black */
+  --primary: #0f172a;
+  --primary-hover: #1e293b;
+  --primary-soft: #f1f0ea;
+  --primary-foreground: #ffffff;
+
+  /* Border — warm gray */
+  --border: #e5e3dc;
+  --border-soft: #f1f0ea;
+  --border-strong: #d4d2cc;
+
+  /* Text hierarchy */
+  --foreground: #0f172a;
+  --text-primary: #0f172a;
+  --text-secondary: #374151;
+  --text-muted: #64748b;
+  --text-subtle: #94a3b8;
+
+  /* Surface / Card */
+  --surface-0: #ffffff;
+  --surface-1: #f9f8f5;
+  --surface-2: #f5f4f0;
+  --card: #ffffff;
+  --card-border: #e5e3dc;
+
+  /* Semantic */
+  --success: #16a34a;
+  --success-soft: #f0fdf4;
+  --danger: #dc2626;
+  --danger-soft: #fef2f2;
+  --warning: #d97706;
+  --warning-soft: #fffbeb;
+  --info: #0284c7;
+  --info-soft: #f0f9ff;
+
+  /* Accent — slate (blue removed as primary accent) */
+  --accent: #0f172a;
+  --accent-soft: #f1f0ea;
 
   /* Radii */
   --radius-card: 24px;
@@ -121,9 +170,9 @@ body {
   --foreground: oklch(0.28 0.035 278);
   --card: oklch(0.995 0.004 280);
   --card-foreground: oklch(0.28 0.035 278);
-  --primary: oklch(0.52 0.19 280);
-  --primary-foreground: oklch(0.99 0.005 280);
-  --primary-soft: oklch(0.52 0.19 280 / 0.1);
+  --primary: #0f172a;
+  --primary-foreground: #ffffff;
+  --primary-soft: #f1f0ea;
   --muted-foreground: oklch(0.55 0.03 278);
   --border-soft: oklch(0.9 0.015 278);
   --accent-from: oklch(0.86 0.07 285);
@@ -236,4 +285,213 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   .cyto-avatar-slide { animation: none; }
+}
+
+/* ============================================================
+   Reference design system — reusable component utilities.
+   Near-black chrome, warm-gray borders, flat (shadowless)
+   surfaces. Colour is reserved for semantic meaning only.
+   ============================================================ */
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn-primary {
+  background: #0f172a;
+  color: #ffffff;
+  border: none;
+  border-radius: 999px;
+  padding: 11px 24px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  transition: background 0.15s;
+}
+.btn-primary:hover { background: #1e293b; }
+
+.btn-secondary {
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #e5e3dc;
+  border-radius: 999px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: border-color 0.15s;
+}
+.btn-secondary:hover { border-color: #0f172a; }
+
+.btn-outline {
+  background: transparent;
+  color: #0f172a;
+  border: 1px solid #e5e3dc;
+  border-radius: 999px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-outline:hover { border-color: #0f172a; background: #f9f8f5; }
+
+.btn-ghost {
+  background: transparent;
+  color: #64748b;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-ghost:hover { background: #f5f4f0; color: #0f172a; }
+
+/* ── Cards ───────────────────────────────────────────────── */
+.card,
+.cyto-card {
+  background: #ffffff;
+  border: 1px solid #e5e3dc;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: none;
+  transition: border-color 0.15s;
+}
+.card:hover { border-color: #0f172a; }
+
+.card-flat {
+  background: #ffffff;
+  border: 1px solid #e5e3dc;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: none;
+}
+
+/* ── Tables ──────────────────────────────────────────────── */
+.table-clean {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table-clean thead th {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f1f0ea;
+  text-align: left;
+  white-space: nowrap;
+}
+.table-clean tbody tr {
+  border-bottom: 1px solid #f5f4f0;
+  transition: background 0.1s;
+}
+.table-clean tbody tr:hover { background: #f9f8f5; }
+.table-clean tbody td {
+  padding: 14px 16px;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+/* ── Tabs ────────────────────────────────────────────────── */
+.tab-container {
+  background: #ffffff;
+  border: 1px solid #e5e3dc;
+  border-radius: 12px;
+  padding: 4px;
+  display: inline-flex;
+  gap: 2px;
+}
+.tab-item {
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  transition: all 0.15s;
+}
+.tab-item.active {
+  background: #0f172a;
+  color: #ffffff;
+  font-weight: 600;
+}
+.tab-item:not(.active):hover { background: #f5f4f0; color: #0f172a; }
+
+/* ── Badges / tags ───────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+.badge-default { background: #ffffff; color: #374151; border-color: #e5e3dc; }
+.badge-success { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+.badge-danger  { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+.badge-warning { background: #fffbeb; color: #d97706; border-color: #fde68a; }
+.badge-primary { background: #f1f0ea; color: #0f172a; border-color: #e5e3dc; }
+.badge-info    { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.badge-awaiting  { background: #fff0f5; color: #9d174d; border-color: #fecdd3; }
+.badge-accepted  { background: #ecfccb; color: #365314; border-color: #d9f99d; }
+.badge-submitted { background: #ffffff; color: #374151; border-color: #e5e3dc; }
+
+/* ── Heading typography ──────────────────────────────────── */
+.heading-xl {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+.heading-lg {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.heading-md {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.015em;
+}
+.heading-sm {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+.text-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.text-body {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.6;
+}
+.text-muted {
+  font-size: 13px;
+  color: #64748b;
 }
