@@ -127,6 +127,29 @@ function Bar({ label, pct, color }: { label: string; pct: number; color: string 
   );
 }
 
+// Form-type icon: requisition form for GYN, specimen tube/vial for NON-GYN.
+function FormTypeIcon({ gyn }: { gyn: boolean }) {
+  return (
+    <div style={{ width: 36, height: 36, borderRadius: 9, flexShrink: 0, background: gyn ? '#EEF3FF' : '#F1F5F9', color: gyn ? PRIMARY : SECONDARY, display: 'grid', placeItems: 'center' }}>
+      {gyn ? (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <polyline points="10 9 9 9 8 9" />
+        </svg>
+      ) : (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="8" y="2" width="8" height="20" rx="4" />
+          <line x1="8" y1="7" x2="16" y2="7" />
+          <line x1="12" y1="12" x2="12" y2="16" />
+        </svg>
+      )}
+    </div>
+  );
+}
+
 export default function SamplesPage() {
   const { can } = useAuth();
   const router = useRouter();
@@ -320,7 +343,7 @@ export default function SamplesPage() {
             <thead>
               <tr>
                 {['Patient', 'Accession / Lab ID', 'Status', 'Details'].map((h) => (
-                  <th key={h} style={{ textAlign: 'left', padding: '12px 24px', borderBottom: '1px solid #ebeef1', fontFamily: GEIST, fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: SECONDARY }}>{h}</th>
+                  <th key={h} style={{ textAlign: 'left', padding: '12px 24px', borderBottom: '1px solid #ebeef1', fontFamily: GEIST, fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: SECONDARY }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -339,33 +362,34 @@ export default function SamplesPage() {
                     {/* Patient */}
                     <td style={{ padding: '16px 24px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, background: av.bg, color: av.fg, display: 'grid', placeItems: 'center', fontFamily: GEIST, fontSize: 14, fontWeight: 700 }}>{initials(r)}</div>
+                        <FormTypeIcon gyn={r.formType === 'Gynecology'} />
+                        <div style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0, background: av.bg, color: av.fg, display: 'grid', placeItems: 'center', fontFamily: GEIST, fontSize: 15, fontWeight: 700 }}>{initials(r)}</div>
                         <div>
-                          <div style={{ fontSize: 15, fontWeight: 600, color: HEAD }}>{patientName(r)}</div>
-                          {r.patient?.registrationNo && <div style={{ fontSize: 12, color: SECONDARY, marginTop: 1 }}>Reg No: {r.patient.registrationNo}</div>}
+                          <div style={{ fontSize: 17, fontWeight: 600, color: HEAD }}>{patientName(r)}</div>
+                          {r.patient?.registrationNo && <div style={{ fontSize: 13, color: SECONDARY, marginTop: 2 }}>Reg No: {r.patient.registrationNo}</div>}
                         </div>
                       </div>
                     </td>
                     {/* Accession / Lab ID */}
                     <td style={{ padding: '16px 24px' }}>
-                      <div style={{ fontFamily: GEIST, fontSize: 14, fontWeight: 700, color: HEAD }}>LAB# {r.labNumber ?? '—'}</div>
-                      <div style={{ fontSize: 12, color: SECONDARY, marginTop: 1 }}>{clientLabel(r)}</div>
+                      <div style={{ fontFamily: GEIST, fontSize: 16, fontWeight: 700, color: HEAD }}>LAB# {r.labNumber ?? '—'}</div>
+                      <div style={{ fontSize: 13, color: SECONDARY, marginTop: 2 }}>{clientLabel(r)}</div>
                     </td>
                     {/* Status */}
                     <td style={{ padding: '16px 24px' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: sb.bg, color: sb.fg }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 13px', borderRadius: 999, fontSize: 13, fontWeight: 700, background: sb.bg, color: sb.fg }}>
                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: sb.fg }} />{r.status}
                       </span>
                       {r.urgent && (
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 10, fontWeight: 700, color: '#E11D48' }}>
-                          <AlertCircle size={10} /> URGENT
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 11, fontWeight: 700, color: '#E11D48' }}>
+                          <AlertCircle size={11} /> URGENT
                         </div>
                       )}
                     </td>
                     {/* Details */}
                     <td style={{ padding: '16px 24px' }}>
-                      <div style={{ fontSize: 14, color: HEAD }}>{specLabel(r.specimens?.[0]?.type) ?? (r.formType === 'Gynecology' ? 'Gynaecology' : 'Non-Gynaecology')}</div>
-                      <div style={{ fontSize: 12, color: SECONDARY, marginTop: 1 }}>{dateFmt(r.specimenDate ?? r.createdAt)}</div>
+                      <div style={{ fontSize: 16, color: HEAD }}>{specLabel(r.specimens?.[0]?.type) ?? (r.formType === 'Gynecology' ? 'Gynaecology' : 'Non-Gynaecology')}</div>
+                      <div style={{ fontSize: 13, color: SECONDARY, marginTop: 2 }}>{dateFmt(r.specimenDate ?? r.createdAt)}</div>
                     </td>
                   </tr>
                 );
