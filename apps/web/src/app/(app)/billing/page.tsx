@@ -1,10 +1,10 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   AlertTriangle, ArrowUpRight, Check, CheckCircle, ChevronLeft, ChevronRight, Clock, CreditCard, DollarSign,
-  ExternalLink, Eye, Plus, Receipt, Search, TrendingUp, X,
+  ExternalLink, Eye, Loader2, Plus, Receipt, Search, TrendingUp, X,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
@@ -48,7 +48,9 @@ function BillingWorkspace() {
 
   const [tab, setTab] = useState<'all' | 'unpaid' | 'paid'>('all');
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
+  const [visible, setVisible] = useState(PAGE_SIZE);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [drawerId, setDrawerId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [payBill, setPayBill] = useState<Bill | null>(null);
@@ -82,9 +84,22 @@ function BillingWorkspace() {
   }, [allBills, tab, search]);
 
   const total = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  useEffect(() => { setPage(1); }, [tab, search]);
+  const pageRows = filtered.slice(0, visible);
+  const hasMore = visible < total;
+  useEffect(() => { setVisible(PAGE_SIZE); }, [tab, search]);
+  // Infinite scroll — reveal the next chunk when the sentinel enters the viewport.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore || loadingMore) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        setLoadingMore(true);
+        setTimeout(() => { setVisible((v) => Math.min(v + PAGE_SIZE, filtered.length)); setLoadingMore(false); }, 450);
+      }
+    }, { rootMargin: '150px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, loadingMore, filtered.length]);
 
   // ?recordId= — open existing bill's drawer, else the create modal.
   const { data: recordForBill } = useQuery<any>({ queryKey: ['record-for-bill', recordIdParam], enabled: !!recordIdParam, queryFn: () => api.get(`/specimens/${recordIdParam}`).then((r) => r.data) });
@@ -224,15 +239,15 @@ function BillingWorkspace() {
           </div>
         )}
 
-        {totalPages > 1 && (
-          <div className="mt-4 flex items-center justify-center gap-2">
-            <button disabled={page === 1} onClick={() => setPage((p) => p - 1)} className="grid h-9 w-9 place-items-center rounded-full border border-[#EEF2F7] text-[#6B7280] disabled:opacity-40 hover:bg-[#F5F7FF]"><ChevronLeft size={16} /></button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).slice(Math.max(0, page - 3), page + 2).map((n) => (
-              <button key={n} onClick={() => setPage(n)} className="grid h-9 min-w-9 place-items-center rounded-full px-2 text-[13px] font-bold" style={{ background: n === page ? '#EEF3FF' : 'transparent', color: n === page ? '#4F46E5' : '#6B7280' }}>{n}</button>
-            ))}
-            <button disabled={page === totalPages} onClick={() => setPage((p) => p + 1)} className="grid h-9 w-9 place-items-center rounded-full border border-[#EEF2F7] text-[#6B7280] disabled:opacity-40 hover:bg-[#F5F7FF]"><ChevronRight size={16} /></button>
+        {hasMore ? (
+          <div ref={sentinelRef} className="mt-4 flex items-center justify-center py-3">
+            <span className="flex items-center gap-2 text-[13px] font-medium text-[#94A3B8]">
+              <Loader2 size={16} className="animate-spin text-[#4F46E5]" /> Loading more…
+            </span>
           </div>
-        )}
+        ) : total > PAGE_SIZE ? (
+          <div className="mt-4 py-2 text-center text-[12px] text-[#CBD5E1]">All {total} bills loaded</div>
+        ) : null}
           </div>
 
         </div>
