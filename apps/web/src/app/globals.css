@@ -193,6 +193,25 @@ body {
 }
 
 /* ============================================================
+   KPI strip — slow drifting tinted-gradient card backgrounds.
+   Each card sets its own gradient via backgroundImage; this class
+   oversizes it and pans the gradient position for a living sheen.
+   ============================================================ */
+@keyframes kpi-drift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.kpi-anim {
+  background-size: 220% 220%;
+  animation: kpi-drift 9s ease-in-out infinite;
+  will-change: background-position;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kpi-anim { animation: none; }
+}
+
+/* ============================================================
    Patient profile — avatar crossfade slideshow.
    ============================================================ */
 @keyframes cyto-avatar-fade {

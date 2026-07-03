@@ -199,14 +199,18 @@ export default function DashboardPage() {
           {/* ═══ SECTION 1: KPI STRIP ═══ */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 16 }}>
             {[
-              { solid: true, bg: '#DD7B6B', icon: <TestTube size={24} color="#8B2C1E" />, label: 'ACTIVE SPECIMENS', value: totalSpecimens || 0, delta: `+${d.throughput.series?.slice(-1)[0]?.value || 0} today` },
-              { bg: '#FBE9DB', label: 'CASES TODAY', value: d.throughput.series?.slice(-1)[0]?.value || 0, delta: `+${d.throughput.series?.slice(-7).reduce((s: any, i: any) => s + (i.value > 0 ? 1 : 0), 0) || 0} this week`, deltaColor: '#B06A4E' },
-              { bg: '#ECE7F6', label: 'TURNAROUND TIME', value: `${kpis?.avgTat ?? '—'}d`, delta: (kpis?.avgTat ?? 99) <= 3 ? '-0.3d improvement' : '+0.3d slower', deltaColor: (kpis?.avgTat ?? 99) <= 3 ? '#6D5BC0' : '#EF4444' },
-              { bg: '#E6E9F5', label: 'PENDING REVIEW', value: kpis?.pendingRequisitions || 0, delta: `High priority: ${d.priorityRecords?.filter((r: any) => r.urgent).length || 0}`, deltaColor: '#5B69C4' },
-              { bg: '#EAE6F9', label: 'AI CONFIDENCE', value: `${eff?.authorization ?? 92}%`, delta: '+4% vs yesterday', deltaColor: '#7C5FD3' },
+              { solid: true, bg: 'linear-gradient(120deg, #DD7B6B 0%, #E48D7B 50%, #D66F5D 100%)', label: 'ACTIVE SPECIMENS', value: totalSpecimens || 0, delta: `+${d.throughput.series?.slice(-1)[0]?.value || 0} today` },
+              { bg: 'linear-gradient(120deg, #FBE9DB 0%, #FCF1E7 50%, #F7DFCD 100%)', label: 'CASES TODAY', value: d.throughput.series?.slice(-1)[0]?.value || 0, delta: `+${d.throughput.series?.slice(-7).reduce((s: any, i: any) => s + (i.value > 0 ? 1 : 0), 0) || 0} this week`, deltaColor: '#B06A4E' },
+              { bg: 'linear-gradient(120deg, #ECE7F6 0%, #F3EFFB 50%, #E4DDF2 100%)', label: 'TURNAROUND TIME', value: `${kpis?.avgTat ?? '—'}d`, delta: (kpis?.avgTat ?? 99) <= 3 ? '-0.3d improvement' : '+0.3d slower', deltaColor: (kpis?.avgTat ?? 99) <= 3 ? '#6D5BC0' : '#EF4444' },
+              { bg: 'linear-gradient(120deg, #E6E9F5 0%, #EFF1FB 50%, #DDE1F1 100%)', label: 'PENDING REVIEW', value: kpis?.pendingRequisitions || 0, delta: `High priority: ${d.priorityRecords?.filter((r: any) => r.urgent).length || 0}`, deltaColor: '#5B69C4' },
+              { bg: 'linear-gradient(120deg, #EAE6F9 0%, #F2EEFC 50%, #E1DBF5 100%)', label: 'AI CONFIDENCE', value: `${eff?.authorization ?? 92}%`, delta: '+4% vs yesterday', deltaColor: '#7C5FD3' },
             ].map((c: any, i: number) => c.solid ? (
-              <div key={i} style={{ background: c.bg, borderRadius: 16, padding: '14px 18px', boxShadow: '0 6px 20px rgba(200,90,70,0.18)', display: 'flex', alignItems: 'center', gap: 12, overflow: 'hidden' }}>
-                <img src="/specimen-tube.png" alt="" style={{ height: 84, width: 'auto', objectFit: 'contain', flexShrink: 0, filter: 'drop-shadow(0 6px 10px rgba(110,25,18,0.4))' }} />
+              <div key={i} className="kpi-anim" style={{ backgroundImage: c.bg, animationDelay: `${i * -1.7}s`, borderRadius: 16, padding: '14px 18px', boxShadow: '0 6px 20px rgba(200,90,70,0.18)', display: 'flex', alignItems: 'center', gap: 12, overflow: 'hidden' }}>
+                <div style={{ position: 'relative', height: 84, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+                  <img src="/specimen-tube.png" alt="" style={{ height: 84, width: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 6px 10px rgba(110,25,18,0.4))' }} />
+                  <span className="blood-drip" style={{ position: 'absolute', left: '50%', bottom: 4, width: 6, height: 8, marginLeft: -3, borderRadius: '50% 50% 50% 50% / 60% 60% 42% 42%', background: '#a01414' }} />
+                  <span className="blood-drip" style={{ position: 'absolute', left: '50%', bottom: 4, width: 5, height: 7, marginLeft: -2.5, borderRadius: '50% 50% 50% 50% / 60% 60% 42% 42%', background: '#8f1111', animationDelay: '1.3s' }} />
+                </div>
                 <div>
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#5A241B', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>{c.label}</div>
                   <div style={{ fontSize: 28, fontWeight: 800, color: '#3D160F', letterSpacing: '-0.02em', lineHeight: 1, fontFamily: 'Geist,sans-serif' }}>{c.value}</div>
@@ -214,7 +218,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             ) : (
-              <div key={i} style={{ background: c.bg, borderRadius: 16, padding: '20px 22px', boxShadow: '0 4px 20px rgba(80,70,120,0.06)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div key={i} className="kpi-anim" style={{ backgroundImage: c.bg, animationDelay: `${i * -1.7}s`, borderRadius: 16, padding: '20px 22px', boxShadow: '0 4px 20px rgba(80,70,120,0.06)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#8B8FA3', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>{c.label}</div>
                 <div style={{ fontSize: 30, fontWeight: 800, color: '#1E1B33', letterSpacing: '-0.02em', lineHeight: 1, fontFamily: 'Geist,sans-serif' }}>{c.value}</div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: c.deltaColor, marginTop: 8 }}>{c.delta}</div>
