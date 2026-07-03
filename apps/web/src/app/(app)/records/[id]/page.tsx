@@ -292,18 +292,16 @@ export default function RecordDetailPage() {
             </div>
           </div>
 
-          <div className="flex min-h-0 flex-1 items-center justify-center">
-            <div className="relative aspect-square w-full max-w-[420px] overflow-hidden rounded-2xl bg-[#F5F0FA]">
-              <Image src="/cytology-sample.png" alt="Cytology specimen" fill unoptimized sizes="420px" style={{ objectFit: 'cover', objectPosition: 'center' }} priority />
-              <div className="pointer-events-none absolute inset-0" style={{ animation: 'colorDrift 12s linear infinite' }} />
-              {GLOWS.map((g, i) => (
-                <div key={`g${i}`} className="pointer-events-none absolute rounded-full" style={{ left: g.left, top: g.top, width: g.size, height: g.size, background: g.color, filter: 'blur(30px)', animation: `glowPulse ${g.dur} ease-in-out ${g.delay} infinite` }} />
-              ))}
-              {PARTICLES.map((p, i) => (
-                <div key={`p${i}`} className="pointer-events-none absolute rounded-full" style={{ left: p.left, top: p.top, width: p.size, height: p.size, background: p.color, filter: p.blur ? `blur(${p.blur}px)` : undefined, animation: `${p.anim} ${p.dur} ease-in-out ${p.delay} infinite` }} />
-              ))}
-              <div className="pointer-events-none absolute left-0 right-0" style={{ height: 2, background: 'linear-gradient(to right, transparent, rgba(129,140,248,0.4), transparent)', animation: 'scanLine 4s linear infinite' }} />
-            </div>
+          <div className="relative min-h-0 flex-1 self-stretch overflow-hidden rounded-2xl bg-[#F5F0FA]">
+            <Image src="/cytology-sample.png" alt="Cytology specimen" fill unoptimized sizes="45vw" style={{ objectFit: 'cover', objectPosition: 'center' }} priority />
+            <div className="pointer-events-none absolute inset-0" style={{ animation: 'colorDrift 12s linear infinite' }} />
+            {GLOWS.map((g, i) => (
+              <div key={`g${i}`} className="pointer-events-none absolute rounded-full" style={{ left: g.left, top: g.top, width: g.size, height: g.size, background: g.color, filter: 'blur(30px)', animation: `glowPulse ${g.dur} ease-in-out ${g.delay} infinite` }} />
+            ))}
+            {PARTICLES.map((p, i) => (
+              <div key={`p${i}`} className="pointer-events-none absolute rounded-full" style={{ left: p.left, top: p.top, width: p.size, height: p.size, background: p.color, filter: p.blur ? `blur(${p.blur}px)` : undefined, animation: `${p.anim} ${p.dur} ease-in-out ${p.delay} infinite` }} />
+            ))}
+            <div className="pointer-events-none absolute left-0 right-0" style={{ height: 2, background: 'linear-gradient(to right, transparent, rgba(129,140,248,0.4), transparent)', animation: 'scanLine 4s linear infinite' }} />
           </div>
         </div>
       </section>
