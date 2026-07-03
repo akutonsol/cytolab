@@ -338,23 +338,6 @@ export default function DashboardPage() {
                       </svg>
                     ),
                   },
-                  {
-                    label: 'Background', value: 'Inflammation present',
-                    icon: (
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="#4F46E5">
-                        {[6, 12, 18].map((y) => [6, 12, 18].map((x) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.7" />))}
-                      </svg>
-                    ),
-                  },
-                  {
-                    label: 'Additional Notes', value: 'Recommend IHC panel',
-                    icon: (
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z" /><polyline points="14 3 14 8 19 8" />
-                        <line x1="9" y1="13" x2="15" y2="13" /><line x1="9" y1="16.5" x2="13" y2="16.5" />
-                      </svg>
-                    ),
-                  },
                 ].map(({ icon, label, value }, i, arr) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 0', borderBottom: i < arr.length - 1 ? '1px solid #EEF0F6' : 'none' }}>
                     <div style={{ width: 46, height: 46, borderRadius: 13, background: '#EEF2FF', display: 'grid', placeItems: 'center', flexShrink: 0 }}>{icon}</div>
