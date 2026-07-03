@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
 import {
@@ -47,11 +48,11 @@ const CHIPS = [
 // are fallbacks only — the donut recomputes them from real priorityRecords when
 // data is present (see specimenTypesDynamic).
 const specimenTypes = [
-  { label: 'Body Fluid', color: '#6366F1', pct: 42 },
-  { label: 'Respiratory', color: '#8B5CF6', pct: 28 },
-  { label: 'Urine', color: '#A78BFA', pct: 16 },
-  { label: 'CSF', color: '#C4B5FD', pct: 8 },
-  { label: 'Other', color: '#E0E7FF', pct: 6 },
+  { label: 'Body Fluid', color: '#4F46E5', pct: 42 },
+  { label: 'Respiratory', color: '#06B6D4', pct: 28 },
+  { label: 'Urine', color: '#8B5CF6', pct: 16 },
+  { label: 'CSF', color: '#3B82F6', pct: 8 },
+  { label: 'Other', color: '#94A3B8', pct: 6 },
 ];
 
 // Human-readable specimen labels (enum → display). Falls back to a de-underscored
@@ -137,9 +138,13 @@ function DatePill() {
   );
 }
 
+const MODEL_VIEWS = ['Cervical', 'Fluid', 'FNA', 'Respiratory'];
+const MODEL_DOT = ['#6366F1', '#14B8A6', '#8B5CF6', '#3B82F6']; // indigo / teal / violet / blue
+
 export default function DashboardPage() {
   const router = useRouter();
   const { claims } = useAuth();
+  const [modelView, setModelView] = useState(0);
   const { data: d, isLoading, isError } = useQuery({
     queryKey: ['dashboard-home'],
     queryFn: () => api.get('/analytics/home').then((r) => r.data),
@@ -286,11 +291,12 @@ export default function DashboardPage() {
               <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
                 <div style={{ position: 'relative', width: 760, height: 520, maxWidth: '100%', overflow: 'hidden' }}>
                   {(() => {
+                    const dot = MODEL_DOT[modelView];
                     const markers = [
-                      { x: 330, y: 96, color: '#6366F1' },
-                      { x: 128, y: 268, color: '#3B82F6' },
-                      { x: 352, y: 290, color: '#8B5CF6' },
-                      { x: 262, y: 458, color: '#8B5CF6' },
+                      { x: 330, y: 96, color: dot },
+                      { x: 128, y: 268, color: dot },
+                      { x: 352, y: 290, color: dot },
+                      { x: 262, y: 458, color: dot },
                     ];
                     const p0 = d.priorityRecords?.[0];
                     const findings = [
@@ -348,9 +354,9 @@ export default function DashboardPage() {
 
               {/* Rotate Model pill */}
               <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 24px 22px', display: 'flex', justifyContent: 'center', zIndex: 4 }}>
-                <button onClick={() => router.push(`/records/${d.priorityRecords?.[0]?.id ?? ''}`)}
+                <button onClick={() => setModelView((v) => (v + 1) % MODEL_VIEWS.length)}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'white', border: '1px solid #EEF2F7', boxShadow: '0 6px 18px rgba(79,70,229,0.10)', borderRadius: 999, padding: '11px 24px', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#4F46E5', fontFamily: 'Geist,sans-serif' }}>
-                  <RotateCw size={15} /> Rotate Model <ArrowRight size={15} />
+                  <RotateCw size={15} /> {MODEL_VIEWS[modelView]} View <ArrowRight size={15} />
                 </button>
               </div>
             </div>
@@ -457,20 +463,22 @@ export default function DashboardPage() {
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
                 <div style={{ position: 'relative', width: 180, height: 180, flexShrink: 0 }}>
                   <svg viewBox="0 0 180 180" width="180" height="180">
-                    {specimenTypesDynamic.reduce((acc: any, { pct, color }, i) => {
-                      const prev = acc.offset;
-                      const circ = 2 * Math.PI * 70;
-                      const dash = (pct / 100) * circ;
-                      const gap = 2.5;
-                      acc.elements.push(
-                        <circle key={i} cx="90" cy="90" r="70" fill="none" stroke={color} strokeWidth="20"
-                          strokeDasharray={`${dash - gap} ${circ - (dash - gap)}`}
-                          strokeDashoffset={-(prev * (circ / 100))}
-                          transform="rotate(-90 90 90)" />
-                      );
-                      acc.offset += pct;
-                      return acc;
-                    }, { offset: 0, elements: [] as any[] }).elements}
+                    {(() => {
+                      const types = specimenTypesDynamic.filter((t) => t.pct > 0);
+                      const r = 70, circ = 2 * Math.PI * r, gap = 2.5;
+                      let offset = 0;
+                      return types.map(({ color, pct }, i) => {
+                        const dash = (pct / 100) * circ;
+                        const el = (
+                          <circle key={i} cx="90" cy="90" r={r} fill="none" stroke={color} strokeWidth="20"
+                            strokeDasharray={`${dash - gap} ${circ - dash + gap}`}
+                            strokeDashoffset={-(offset / 100) * circ}
+                            transform="rotate(-90 90 90)" />
+                        );
+                        offset += pct;
+                        return el;
+                      });
+                    })()}
                   </svg>
                   <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                     <div style={{ fontSize: 30, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{totalSpecimens || d.priorityRecords?.length || 0}</div>
