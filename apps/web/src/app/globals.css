@@ -140,20 +140,17 @@ body {
    counter-rotating hue shift adds living depth.
    ============================================================ */
 @keyframes dna-swirl {
-  0%   { transform: perspective(1400px) rotateY(0deg)   translateY(0px)  scale(1); }
-  25%  { transform: perspective(1400px) rotateY(90deg)  translateY(8px)  scale(0.99); }
-  50%  { transform: perspective(1400px) rotateY(180deg) translateY(14px) scale(1); }
-  75%  { transform: perspective(1400px) rotateY(270deg) translateY(8px)  scale(0.99); }
-  100% { transform: perspective(1400px) rotateY(360deg) translateY(0px)  scale(1); }
+  0%   { transform: perspective(1600px) rotateY(-24deg) translateY(0px); }
+  50%  { transform: perspective(1600px) rotateY(24deg)  translateY(10px); }
+  100% { transform: perspective(1600px) rotateY(-24deg) translateY(0px); }
 }
 @keyframes dna-shimmer {
   0%, 100% { filter: hue-rotate(0deg)   brightness(1); }
   50%      { filter: hue-rotate(-14deg) brightness(1.06); }
 }
 .dna-drift {
-  animation: dna-swirl 22s linear infinite, dna-shimmer 9s ease-in-out infinite;
+  animation: dna-swirl 16s ease-in-out infinite, dna-shimmer 11s ease-in-out infinite;
   transform-style: preserve-3d;
-  backface-visibility: visible;
   will-change: transform, filter;
 }
 @media (prefers-reduced-motion: reduce) {
