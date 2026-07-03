@@ -230,6 +230,88 @@ export default function DashboardPage() {
         <HeroBanner firstName={firstName} featured={featured} chips={chips} nav={<NavPills />} />
 
         <div style={{ marginTop: 40 }} className="flex flex-col gap-5">
+          {/* ═══ SECTION 1: KPI STRIP ═══ */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            gap: 16,
+            marginBottom: 20,
+          }}>
+            {[
+              {
+                icon: <TestTube size={20} color="#4F46E5" />,
+                label: 'Active Specimens',
+                value: d.priorityRecords?.length || 0,
+                sub: `${d.priorityRecords?.filter((r: any) => r.urgent).length || 0} urgent`,
+                subColor: '#EF4444',
+              },
+              {
+                icon: <FlaskConical size={20} color="#4F46E5" />,
+                label: 'Cases Today',
+                value: ov?.today?.requisitionsToday || 0,
+                sub: 'received today',
+                subColor: '#94A3B8',
+              },
+              {
+                icon: <Clock size={20} color="#4F46E5" />,
+                label: 'Avg Turnaround',
+                value: kpis?.avgTat ? `${kpis.avgTat}d` : '—',
+                sub: kpis?.avgTat <= 3 ? 'Within target' : 'Above target',
+                subColor: kpis?.avgTat <= 3 ? '#16A34A' : '#EF4444',
+              },
+              {
+                icon: <Activity size={20} color="#4F46E5" />,
+                label: 'Pending Review',
+                value: kpis?.pendingRequisitions || 0,
+                sub: `${d.priorityRecords?.filter((r: any) => r.urgent).length || 0} high priority`,
+                subColor: '#94A3B8',
+              },
+              {
+                icon: <CheckCircle2 size={20} color="#4F46E5" />,
+                label: 'Auth Rate',
+                value: `${eff?.authorization || 0}%`,
+                sub: eff?.authorization >= 80 ? 'On target' : 'Below target',
+                subColor: eff?.authorization >= 80 ? '#16A34A' : '#EF4444',
+              },
+            ].map(({ icon, label, value, sub, subColor }, i) => (
+              <div key={i} style={{
+                background: 'white',
+                borderRadius: 16,
+                padding: '18px 20px',
+                border: '1px solid #EEF2F7',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.04)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+              }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 12,
+                  background: '#EEF2FF',
+                  display: 'grid', placeItems: 'center',
+                  flexShrink: 0,
+                }}>
+                  {icon}
+                </div>
+                <div>
+                  <div style={{
+                    fontSize: 11, fontWeight: 700, color: '#94A3B8',
+                    letterSpacing: '0.06em', textTransform: 'uppercase',
+                    marginBottom: 2,
+                  }}>{label}</div>
+                  <div style={{
+                    fontSize: 24, fontWeight: 800, color: '#0F172A',
+                    letterSpacing: '-0.02em', lineHeight: 1,
+                    fontFamily: 'Geist, sans-serif',
+                  }}>{value}</div>
+                  <div style={{
+                    fontSize: 11, fontWeight: 600,
+                    color: subColor, marginTop: 3,
+                  }}>{sub}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
           {/* ═══ SECTION 2: MAIN 3-COLUMN GRID ═══ */}
           <div style={{ display: 'grid', gridTemplateColumns: '400px minmax(0,1fr) 400px', gap: 20, alignItems: 'stretch' }}>
             {/* LEFT: Specimen Queue */}
