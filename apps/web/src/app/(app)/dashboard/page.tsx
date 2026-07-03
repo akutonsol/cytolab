@@ -389,37 +389,37 @@ export default function DashboardPage() {
             {/* Case Distribution by Type */}
             <div style={{ background: 'white', borderRadius: 20, padding: '20px 24px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)' }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', marginBottom: 16 }}>Case Distribution by Type</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-                <div style={{ position: 'relative', width: 120, height: 120, flexShrink: 0 }}>
-                  <svg viewBox="0 0 120 120" width="120" height="120">
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+                <div style={{ position: 'relative', width: 180, height: 180, flexShrink: 0 }}>
+                  <svg viewBox="0 0 180 180" width="180" height="180">
                     {specimenTypes.reduce((acc: any, { pct, color }, i) => {
                       const prev = acc.offset;
-                      const circ = 2 * Math.PI * 46;
+                      const circ = 2 * Math.PI * 70;
                       const dash = (pct / 100) * circ;
-                      const gap = 2;
+                      const gap = 2.5;
                       acc.elements.push(
-                        <circle key={i} cx="60" cy="60" r="46" fill="none" stroke={color} strokeWidth="14"
+                        <circle key={i} cx="90" cy="90" r="70" fill="none" stroke={color} strokeWidth="20"
                           strokeDasharray={`${dash - gap} ${circ - (dash - gap)}`}
                           strokeDashoffset={-(prev * (circ / 100))}
-                          transform="rotate(-90 60 60)" />
+                          transform="rotate(-90 90 90)" />
                       );
                       acc.offset += pct;
                       return acc;
                     }, { offset: 0, elements: [] as any[] }).elements}
                   </svg>
                   <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{totalSpecimens || 0}</div>
-                    <div style={{ fontSize: 9, color: '#94A3B8', fontWeight: 600, textAlign: 'center', marginTop: 2 }}>Total Cases</div>
+                    <div style={{ fontSize: 30, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{totalSpecimens || 0}</div>
+                    <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600, textAlign: 'center', marginTop: 3 }}>Total Cases</div>
                   </div>
                 </div>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ width: '100%', maxWidth: 280, display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {specimenTypes.map(({ label, color, pct }) => (
                     <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                        <span style={{ fontSize: 12, color: '#64748B', fontWeight: 500 }}>{label}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 9, height: 9, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                        <span style={{ fontSize: 13, color: '#64748B', fontWeight: 500 }}>{label}</span>
                       </div>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#0F172A' }}>{pct}%</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{pct}%</span>
                     </div>
                   ))}
                 </div>
