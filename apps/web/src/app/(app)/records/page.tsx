@@ -25,6 +25,7 @@ interface Rec {
 const SPECIMEN: Record<string, string> = {
   ENDOCERV_ASP: 'Endocervical asp.', CERV_SCRAP: 'Cervical scrape', VAG_POOL: 'Vaginal pool', URINE: 'Urine cytology',
   CSF: 'CSF', PLEURAL_FLD: 'Pleural fluid', BREAST_ASP: 'Breast asp.', JOINT_ASP: 'Joint asp.', SYNOVIAL_FLD: 'Synovial fluid', OTHER: 'Other',
+  SPUTUM: 'Sputum cytology', BRONCHIAL_WASH: 'Bronchial wash', THYROID_FNA: 'Thyroid FNA', LYMPH_NODE: 'Lymph node FNA', BONE_MARROW: 'Bone marrow', SKIN_SCRAPING: 'Skin scraping',
 };
 const ACTIVE = ['Pending', 'Submitted', 'Processing', 'Partial', 'Completed', 'Resulted'];
 const COMPLETED_SET = ['Approved', 'Billed', 'Paid', 'Viewed'];

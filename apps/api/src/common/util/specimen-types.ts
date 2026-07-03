@@ -19,6 +19,12 @@ export const NONGYN_SPECIMEN_TYPES: SpecimenType[] = [
   SpecimenType.JOINT_ASP,
   SpecimenType.SYNOVIAL_FLD,
   SpecimenType.OTHER,
+  SpecimenType.SPUTUM,
+  SpecimenType.BRONCHIAL_WASH,
+  SpecimenType.THYROID_FNA,
+  SpecimenType.LYMPH_NODE,
+  SpecimenType.BONE_MARROW,
+  SpecimenType.SKIN_SCRAPING,
 ];
 
 export function specimenTypesForForm(formType: RequisitionFormType): SpecimenType[] {

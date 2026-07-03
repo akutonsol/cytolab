@@ -36,6 +36,12 @@ enum SpecimenType {
   JOINT_ASP
   SYNOVIAL_FLD
   OTHER
+  SPUTUM
+  BRONCHIAL_WASH
+  THYROID_FNA
+  LYMPH_NODE
+  BONE_MARROW
+  SKIN_SCRAPING
 }
 
 enum RecordStatus {

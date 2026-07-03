@@ -14,6 +14,12 @@ export const SPECIMEN_LABELS: Record<string, string> = {
   JOINT_ASP: 'JOINT.ASP',
   SYNOVIAL_FLD: 'SYNOVIAL.FLD',
   OTHER: 'OTHER',
+  SPUTUM: 'SPUTUM',
+  BRONCHIAL_WASH: 'BRONCHIAL.WASH',
+  THYROID_FNA: 'THYROID.FNA',
+  LYMPH_NODE: 'LYMPH.NODE',
+  BONE_MARROW: 'BONE.MARROW',
+  SKIN_SCRAPING: 'SKIN.SCRAPING',
 };
 
 export const GYN_SPECIMEN_TYPES = ['ENDOCERV_ASP', 'CERV_SCRAP', 'VAG_POOL'];
@@ -25,6 +31,12 @@ export const NONGYN_SPECIMEN_TYPES = [
   'JOINT_ASP',
   'SYNOVIAL_FLD',
   'OTHER',
+  'SPUTUM',
+  'BRONCHIAL_WASH',
+  'THYROID_FNA',
+  'LYMPH_NODE',
+  'BONE_MARROW',
+  'SKIN_SCRAPING',
 ];
 
 export function specimenTypesForForm(formType: FormType): string[] {
