@@ -5,7 +5,7 @@ import { Skeleton } from 'antd';
 import {
   Activity, ArrowRight, ArrowUpRight, Calendar, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FlaskConical,
   Microscope, Monitor, MoreHorizontal, Plus, RotateCw, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
-  TestTube, TrendingUp, User,
+  TestTube, TrendingUp, User, Users,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -348,39 +348,81 @@ export default function DashboardPage() {
             {/* RIGHT: AI Findings */}
             <div className="premium-scroll" style={{ height: 540, background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Findings</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#4F46E5', background: '#EEF2FF', borderRadius: 6, padding: '2px 8px', fontFamily: 'Geist,sans-serif' }}>{d.priorityRecords?.[0]?.labNumber ?? '—'}</span>
+                <span style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Findings</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#4F46E5', fontFamily: 'Geist,sans-serif' }}>{d.priorityRecords?.[0]?.labNumber ?? '—'}</span>
               </div>
-              <div style={{ background: '#F8F9FF', borderRadius: 14, padding: '14px 16px', border: '1px solid #E0E7FF' }}>
+
+              {/* Interpretation */}
+              <div style={{ background: '#F4F4FB', borderRadius: 16, padding: '16px 18px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#64748B' }}>Interpretation</span>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#16A34A', background: '#DCFCE7', borderRadius: 4, padding: '2px 7px' }}>High Confidence</span>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: '#64748B' }}>Interpretation</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#4F46E5', background: '#EEF2FF', borderRadius: 999, padding: '3px 10px' }}>High Confidence</span>
                 </div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', marginBottom: 4 }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', letterSpacing: '-0.02em', marginBottom: 4 }}>
                   {d.priorityRecords?.[0]?.urgent ? 'Atypical Cells Detected' : 'Specimen Under Review'}
                 </div>
-                <div style={{ fontSize: 12, color: '#64748B' }}>
-                  {d.priorityRecords?.[0]?.specimen?.replace(/_/g, ' ') ?? 'Awaiting cytological analysis.'}
+                <div style={{ fontSize: 14, color: '#64748B' }}>
+                  {d.priorityRecords?.[0]?.urgent ? 'Suspicious for malignancy.' : 'Awaiting cytological analysis.'}
                 </div>
               </div>
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>Key Observations</div>
-                {[{ icon: <Microscope size={14} color="#6366F1" />, label: 'Cellularity', value: `${eff?.onTime ?? 0}% on-time` }, { icon: <FlaskConical size={14} color="#8B5CF6" />, label: 'Cell Type', value: d.priorityRecords?.[0]?.specimen?.replace(/_/g, ' ') ?? '—' }, { icon: <Activity size={14} color="#06B6D4" />, label: 'Authorization', value: `${eff?.authorization ?? 0}%` }, { icon: <CheckCircle2 size={14} color="#16A34A" />, label: 'Avg TAT', value: `${kpis?.avgTat ?? '—'} days` }].map(({ icon, label, value }, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderBottom: i < 3 ? '1px solid #F1F5F9' : 'none' }}>
-                    <div style={{ width: 28, height: 28, borderRadius: 8, background: '#F8F9FF', border: '1px solid #E0E7FF', display: 'grid', placeItems: 'center', flexShrink: 0 }}>{icon}</div>
+
+              {/* Key Observations */}
+              <div style={{ background: '#FAFAFE', borderRadius: 16, padding: '16px 18px' }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', marginBottom: 12 }}>Key Observations</div>
+                {[
+                  {
+                    label: 'Cellularity', value: 'Moderate to high',
+                    icon: (
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="#4F46E5">
+                        <circle cx="8" cy="7" r="1.6" /><circle cx="13" cy="6" r="1.6" /><circle cx="17" cy="9" r="1.6" />
+                        <circle cx="7" cy="12" r="1.6" /><circle cx="12" cy="11" r="2.1" /><circle cx="16.5" cy="14" r="1.6" />
+                        <circle cx="9" cy="16" r="1.6" /><circle cx="13.5" cy="17" r="1.6" />
+                      </svg>
+                    ),
+                  },
+                  {
+                    label: 'Cell Type', value: 'Atypical mesothelial cells',
+                    icon: (
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2">
+                        <circle cx="12" cy="12" r="7.5" /><circle cx="12" cy="12" r="2.6" fill="#4F46E5" stroke="none" />
+                      </svg>
+                    ),
+                  },
+                  {
+                    label: 'Background', value: 'Inflammation present',
+                    icon: (
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="#4F46E5">
+                        {[6, 12, 18].map((y) => [6, 12, 18].map((x) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.7" />))}
+                      </svg>
+                    ),
+                  },
+                  {
+                    label: 'Additional Notes', value: 'Recommend IHC panel',
+                    icon: (
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z" /><polyline points="14 3 14 8 19 8" />
+                        <line x1="9" y1="13" x2="15" y2="13" /><line x1="9" y1="16.5" x2="13" y2="16.5" />
+                      </svg>
+                    ),
+                  },
+                ].map(({ icon, label, value }, i, arr) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < arr.length - 1 ? '1px solid #EEF0F6' : 'none' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: '#EEF2FF', display: 'grid', placeItems: 'center', flexShrink: 0 }}>{icon}</div>
                     <div>
-                      <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500 }}>{label}</div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{value}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>{label}</div>
+                      <div style={{ fontSize: 13, color: '#64748B', marginTop: 1 }}>{value}</div>
                     </div>
                   </div>
                 ))}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 'auto' }}>
-                <button onClick={() => router.push(`/records/${d.priorityRecords?.[0]?.id ?? ''}`)} style={{ width: '100%', padding: '12px', background: '#4F46E5', color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'Geist,sans-serif' }}>
-                  View Full Report <ArrowUpRight size={15} />
+
+              {/* CTAs */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 'auto' }}>
+                <button onClick={() => router.push(`/records/${d.priorityRecords?.[0]?.id ?? ''}`)} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg,#4F46E5 0%,#6D28D9 100%)', color: 'white', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Geist,sans-serif', boxShadow: '0 8px 20px rgba(79,70,229,0.28)' }}>
+                  View Full Report <ArrowRight size={16} />
                 </button>
-                <button onClick={() => router.push('/authorizer')} style={{ width: '100%', padding: '11px', background: '#F8F9FF', color: '#4F46E5', border: '1px solid #E0E7FF', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                  Add to Pathologist Review
+                <button onClick={() => router.push('/authorizer')} style={{ width: '100%', padding: '13px', background: '#EEF0FB', color: '#4F46E5', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Geist,sans-serif' }}>
+                  Add to Pathologist Review <Users size={16} />
                 </button>
               </div>
             </div>
