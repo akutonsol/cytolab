@@ -60,45 +60,45 @@ const relTime = (iso?: string | null) => {
 const actionPrimary = 'flex w-full items-center justify-between gap-2 rounded-xl bg-[#4F46E5] px-5 py-3.5 text-[15px] font-bold text-white transition-colors hover:bg-[#4338CA] disabled:opacity-60';
 const actionSecondary = 'flex w-full items-center justify-center gap-2 rounded-xl border-[1.5px] border-[#CBD5E1] px-5 py-3 text-[15px] font-semibold text-[#475569] transition-colors hover:bg-[#F1F5F9] disabled:opacity-60';
 const rightBtn = 'flex w-full items-center justify-center gap-2 rounded-xl bg-[#F1F5F9] px-3 py-3 text-[14px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#E2E8F0]';
-const LABEL = 'text-[10px] font-bold uppercase tracking-[0.08em] text-[#94A3B8]';
+const LABEL = 'text-[13px] font-bold italic uppercase tracking-[0.05em] text-[#3B5EA8]';
 
 // Floating-particle / glow configs — drifting "cells" over the specimen.
 const PARTICLES = [
-  { left: '14%', top: '22%', size: 16, color: 'rgba(129,140,248,0.55)', anim: 'drift1', delay: '0s', dur: '9s', blur: 1 },
-  { left: '72%', top: '16%', size: 12, color: 'rgba(167,139,250,0.5)', anim: 'drift2', delay: '0.7s', dur: '11s', blur: 0 },
-  { left: '40%', top: '60%', size: 24, color: 'rgba(196,181,253,0.4)', anim: 'drift3', delay: '1.4s', dur: '12s', blur: 2 },
-  { left: '84%', top: '54%', size: 10, color: 'rgba(99,102,241,0.65)', anim: 'drift4', delay: '2.1s', dur: '10s', blur: 0 },
-  { left: '24%', top: '78%', size: 14, color: 'rgba(129,140,248,0.55)', anim: 'drift5', delay: '2.8s', dur: '9s', blur: 1 },
-  { left: '55%', top: '30%', size: 8, color: 'rgba(167,139,250,0.6)', anim: 'drift6', delay: '3.5s', dur: '11s', blur: 0 },
-  { left: '10%', top: '48%', size: 20, color: 'rgba(196,181,253,0.4)', anim: 'drift7', delay: '4.2s', dur: '10s', blur: 2 },
-  { left: '78%', top: '82%', size: 11, color: 'rgba(99,102,241,0.6)', anim: 'drift8', delay: '4.9s', dur: '12s', blur: 0 },
-  { left: '34%', top: '38%', size: 9, color: 'rgba(129,140,248,0.55)', anim: 'drift2', delay: '1.1s', dur: '10s', blur: 0 },
-  { left: '62%', top: '70%', size: 13, color: 'rgba(167,139,250,0.45)', anim: 'drift5', delay: '2.4s', dur: '11s', blur: 1 },
-  { left: '88%', top: '32%', size: 15, color: 'rgba(196,181,253,0.45)', anim: 'drift3', delay: '3.2s', dur: '9s', blur: 1 },
-  { left: '18%', top: '64%', size: 10, color: 'rgba(99,102,241,0.6)', anim: 'drift7', delay: '4.6s', dur: '12s', blur: 0 },
-  { left: '48%', top: '16%', size: 8, color: 'rgba(129,140,248,0.5)', anim: 'drift4', delay: '2.6s', dur: '10s', blur: 0 },
-  { left: '68%', top: '46%', size: 22, color: 'rgba(167,139,250,0.35)', anim: 'drift6', delay: '3.9s', dur: '13s', blur: 2 },
-  { left: '30%', top: '52%', size: 7, color: 'rgba(99,102,241,0.7)', anim: 'drift1', delay: '1.8s', dur: '8s', blur: 0 },
-  { left: '52%', top: '85%', size: 12, color: 'rgba(129,140,248,0.5)', anim: 'drift8', delay: '5.4s', dur: '11s', blur: 1 },
+  { left: '14%', top: '22%', size: 22, color: 'rgba(99,102,241,0.85)', anim: 'drift1', delay: '0s', dur: '7s', blur: 0 },
+  { left: '72%', top: '16%', size: 17, color: 'rgba(139,92,246,0.8)', anim: 'drift2', delay: '0.5s', dur: '8s', blur: 0 },
+  { left: '40%', top: '60%', size: 30, color: 'rgba(129,140,248,0.6)', anim: 'drift3', delay: '1.1s', dur: '9s', blur: 1 },
+  { left: '84%', top: '54%', size: 14, color: 'rgba(79,70,229,0.9)', anim: 'drift4', delay: '1.7s', dur: '7s', blur: 0 },
+  { left: '24%', top: '78%', size: 20, color: 'rgba(99,102,241,0.8)', anim: 'drift5', delay: '2.2s', dur: '7s', blur: 0 },
+  { left: '55%', top: '30%', size: 12, color: 'rgba(167,139,250,0.85)', anim: 'drift6', delay: '2.8s', dur: '8s', blur: 0 },
+  { left: '10%', top: '48%', size: 26, color: 'rgba(129,140,248,0.6)', anim: 'drift7', delay: '3.3s', dur: '8s', blur: 1 },
+  { left: '78%', top: '82%', size: 16, color: 'rgba(99,102,241,0.85)', anim: 'drift8', delay: '3.8s', dur: '9s', blur: 0 },
+  { left: '34%', top: '38%', size: 13, color: 'rgba(139,92,246,0.8)', anim: 'drift2', delay: '0.9s', dur: '8s', blur: 0 },
+  { left: '62%', top: '70%', size: 18, color: 'rgba(167,139,250,0.65)', anim: 'drift5', delay: '1.9s', dur: '8s', blur: 0 },
+  { left: '88%', top: '32%', size: 20, color: 'rgba(129,140,248,0.7)', anim: 'drift3', delay: '2.5s', dur: '7s', blur: 0 },
+  { left: '18%', top: '64%', size: 14, color: 'rgba(79,70,229,0.85)', anim: 'drift7', delay: '3.6s', dur: '9s', blur: 0 },
+  { left: '48%', top: '16%', size: 12, color: 'rgba(99,102,241,0.8)', anim: 'drift4', delay: '2.1s', dur: '8s', blur: 0 },
+  { left: '68%', top: '46%', size: 28, color: 'rgba(167,139,250,0.55)', anim: 'drift6', delay: '3.1s', dur: '10s', blur: 1 },
+  { left: '30%', top: '52%', size: 10, color: 'rgba(79,70,229,0.95)', anim: 'drift1', delay: '1.4s', dur: '6s', blur: 0 },
+  { left: '52%', top: '85%', size: 16, color: 'rgba(99,102,241,0.8)', anim: 'drift8', delay: '4.2s', dur: '9s', blur: 0 },
 ];
 const GLOWS = [
-  { left: '18%', top: '22%', size: 100, color: 'rgba(129,140,248,0.15)', delay: '0s', dur: '5s' },
-  { left: '62%', top: '58%', size: 120, color: 'rgba(167,139,250,0.12)', delay: '1.5s', dur: '6s' },
-  { left: '45%', top: '38%', size: 90, color: 'rgba(99,102,241,0.10)', delay: '3s', dur: '4s' },
+  { left: '18%', top: '22%', size: 130, color: 'rgba(129,140,248,0.32)', delay: '0s', dur: '4s' },
+  { left: '62%', top: '58%', size: 150, color: 'rgba(167,139,250,0.28)', delay: '1.2s', dur: '5s' },
+  { left: '45%', top: '38%', size: 110, color: 'rgba(99,102,241,0.26)', delay: '2.4s', dur: '3.5s' },
 ];
 
 const ANIM_CSS = `
-@keyframes glowPulse{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:.7;transform:scale(1.15)}}
-@keyframes scanLine{0%{top:0%;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:100%;opacity:0}}
-@keyframes colorDrift{0%{background:rgba(99,102,241,0)}25%{background:rgba(99,102,241,.04)}50%{background:rgba(129,140,248,.06)}75%{background:rgba(167,139,250,.04)}100%{background:rgba(99,102,241,0)}}
-@keyframes drift1{0%{transform:translate(0,0) scale(1);opacity:.5}25%{transform:translate(28px,-34px) scale(1.25);opacity:.85}50%{transform:translate(-20px,-12px) scale(.85);opacity:.45}75%{transform:translate(16px,26px) scale(1.1);opacity:.7}100%{transform:translate(0,0) scale(1);opacity:.5}}
-@keyframes drift2{0%{transform:translate(0,0) scale(1);opacity:.5}25%{transform:translate(-32px,22px) scale(1.3);opacity:.8}50%{transform:translate(14px,-28px) scale(.9);opacity:.4}75%{transform:translate(-16px,-18px) scale(1.1);opacity:.65}100%{transform:translate(0,0) scale(1);opacity:.5}}
-@keyframes drift3{0%{transform:translate(0,0) scale(1);opacity:.4}25%{transform:translate(36px,24px) scale(1.15);opacity:.7}50%{transform:translate(-24px,-30px) scale(.82);opacity:.35}75%{transform:translate(20px,-16px) scale(1.05);opacity:.6}100%{transform:translate(0,0) scale(1);opacity:.4}}
-@keyframes drift4{0%{transform:translate(0,0) scale(1);opacity:.6}25%{transform:translate(-28px,-26px) scale(1.3);opacity:.9}50%{transform:translate(22px,18px) scale(.88);opacity:.5}75%{transform:translate(-14px,28px) scale(1.05);opacity:.7}100%{transform:translate(0,0) scale(1);opacity:.6}}
-@keyframes drift5{0%{transform:translate(0,0) scale(1);opacity:.55}25%{transform:translate(24px,32px) scale(1.15);opacity:.8}50%{transform:translate(-30px,-12px) scale(.9);opacity:.4}75%{transform:translate(16px,-26px) scale(1.1);opacity:.65}100%{transform:translate(0,0) scale(1);opacity:.55}}
-@keyframes drift6{0%{transform:translate(0,0) scale(1);opacity:.5}25%{transform:translate(-22px,-32px) scale(1.3);opacity:.8}50%{transform:translate(28px,14px) scale(.8);opacity:.4}75%{transform:translate(-18px,24px) scale(1.05);opacity:.6}100%{transform:translate(0,0) scale(1);opacity:.5}}
-@keyframes drift7{0%{transform:translate(0,0) scale(1);opacity:.4}25%{transform:translate(32px,-20px) scale(1.2);opacity:.75}50%{transform:translate(-20px,26px) scale(.85);opacity:.35}75%{transform:translate(24px,12px) scale(1.05);opacity:.6}100%{transform:translate(0,0) scale(1);opacity:.4}}
-@keyframes drift8{0%{transform:translate(0,0) scale(1);opacity:.6}25%{transform:translate(-34px,18px) scale(1.15);opacity:.85}50%{transform:translate(20px,-24px) scale(.9);opacity:.45}75%{transform:translate(-16px,-18px) scale(1.1);opacity:.65}100%{transform:translate(0,0) scale(1);opacity:.6}}
+@keyframes glowPulse{0%,100%{opacity:.45;transform:scale(1)}50%{opacity:1;transform:scale(1.4)}}
+@keyframes scanLine{0%{top:0%;opacity:0}8%{opacity:1}92%{opacity:1}100%{top:100%;opacity:0}}
+@keyframes colorDrift{0%{background:rgba(99,102,241,.02)}25%{background:rgba(99,102,241,.13)}50%{background:rgba(129,140,248,.18)}75%{background:rgba(167,139,250,.13)}100%{background:rgba(99,102,241,.02)}}
+@keyframes drift1{0%{transform:translate(0,0) scale(1);opacity:.6}25%{transform:translate(48px,-58px) scale(1.5);opacity:1}50%{transform:translate(-36px,-22px) scale(.75);opacity:.55}75%{transform:translate(28px,44px) scale(1.25);opacity:.9}100%{transform:translate(0,0) scale(1);opacity:.6}}
+@keyframes drift2{0%{transform:translate(0,0) scale(1);opacity:.6}25%{transform:translate(-54px,38px) scale(1.55);opacity:1}50%{transform:translate(24px,-48px) scale(.8);opacity:.5}75%{transform:translate(-28px,-30px) scale(1.25);opacity:.85}100%{transform:translate(0,0) scale(1);opacity:.6}}
+@keyframes drift3{0%{transform:translate(0,0) scale(1);opacity:.5}25%{transform:translate(60px,40px) scale(1.4);opacity:.95}50%{transform:translate(-40px,-50px) scale(.72);opacity:.45}75%{transform:translate(34px,-28px) scale(1.2);opacity:.85}100%{transform:translate(0,0) scale(1);opacity:.5}}
+@keyframes drift4{0%{transform:translate(0,0) scale(1);opacity:.7}25%{transform:translate(-48px,-44px) scale(1.55);opacity:1}50%{transform:translate(38px,30px) scale(.78);opacity:.55}75%{transform:translate(-24px,48px) scale(1.2);opacity:.9}100%{transform:translate(0,0) scale(1);opacity:.7}}
+@keyframes drift5{0%{transform:translate(0,0) scale(1);opacity:.65}25%{transform:translate(42px,54px) scale(1.4);opacity:1}50%{transform:translate(-50px,-22px) scale(.8);opacity:.5}75%{transform:translate(28px,-44px) scale(1.25);opacity:.85}100%{transform:translate(0,0) scale(1);opacity:.65}}
+@keyframes drift6{0%{transform:translate(0,0) scale(1);opacity:.6}25%{transform:translate(-38px,-54px) scale(1.55);opacity:1}50%{transform:translate(48px,24px) scale(.7);opacity:.5}75%{transform:translate(-30px,42px) scale(1.2);opacity:.85}100%{transform:translate(0,0) scale(1);opacity:.6}}
+@keyframes drift7{0%{transform:translate(0,0) scale(1);opacity:.5}25%{transform:translate(54px,-34px) scale(1.45);opacity:.95}50%{transform:translate(-34px,44px) scale(.75);opacity:.45}75%{transform:translate(40px,20px) scale(1.2);opacity:.85}100%{transform:translate(0,0) scale(1);opacity:.5}}
+@keyframes drift8{0%{transform:translate(0,0) scale(1);opacity:.7}25%{transform:translate(-58px,30px) scale(1.4);opacity:1}50%{transform:translate(34px,-42px) scale(.8);opacity:.55}75%{transform:translate(-28px,-30px) scale(1.25);opacity:.85}100%{transform:translate(0,0) scale(1);opacity:.7}}
 `;
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -294,14 +294,14 @@ export default function RecordDetailPage() {
 
           <div className="relative min-h-0 flex-1 self-stretch overflow-hidden rounded-2xl bg-[#F5F0FA]">
             <Image src="/cytology-sample.png" alt="Cytology specimen" fill unoptimized sizes="45vw" style={{ objectFit: 'cover', objectPosition: 'center' }} priority />
-            <div className="pointer-events-none absolute inset-0" style={{ animation: 'colorDrift 12s linear infinite' }} />
+            <div className="pointer-events-none absolute inset-0 mix-blend-multiply" style={{ animation: 'colorDrift 7s linear infinite' }} />
             {GLOWS.map((g, i) => (
               <div key={`g${i}`} className="pointer-events-none absolute rounded-full" style={{ left: g.left, top: g.top, width: g.size, height: g.size, background: g.color, filter: 'blur(30px)', animation: `glowPulse ${g.dur} ease-in-out ${g.delay} infinite` }} />
             ))}
             {PARTICLES.map((p, i) => (
               <div key={`p${i}`} className="pointer-events-none absolute rounded-full" style={{ left: p.left, top: p.top, width: p.size, height: p.size, background: p.color, filter: p.blur ? `blur(${p.blur}px)` : undefined, animation: `${p.anim} ${p.dur} ease-in-out ${p.delay} infinite` }} />
             ))}
-            <div className="pointer-events-none absolute left-0 right-0" style={{ height: 2, background: 'linear-gradient(to right, transparent, rgba(129,140,248,0.4), transparent)', animation: 'scanLine 4s linear infinite' }} />
+            <div className="pointer-events-none absolute left-0 right-0" style={{ height: 5, background: 'linear-gradient(to right, transparent, rgba(129,140,248,0.9), transparent)', boxShadow: '0 0 16px 2px rgba(129,140,248,0.6)', animation: 'scanLine 3s linear infinite' }} />
           </div>
         </div>
       </section>
@@ -321,12 +321,12 @@ export default function RecordDetailPage() {
             <div key={ev.id} className="flex items-start gap-2.5 border-b border-[#F8FAFC] py-2">
               <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: DOT[ev.status] ?? '#94A3B8' }} />
               <div className="min-w-0">
-                <div className="text-[13px] font-semibold text-[#0F172A]">{ev.status}</div>
-                <div className="truncate text-[11px] text-[#94A3B8]">{ev.user ? `${ev.user.firstName ?? ''} ${ev.user.lastName ?? ''}`.trim() : 'System'} · {relTime(ev.createdAt)}</div>
+                <div className="text-[14px] font-semibold text-[#0F172A]">{ev.status}</div>
+                <div className="truncate text-[12px] text-[#64748B]">{ev.user ? `${ev.user.firstName ?? ''} ${ev.user.lastName ?? ''}`.trim() : 'System'} · {relTime(ev.createdAt)}</div>
               </div>
             </div>
           ))}
-          {activity.length === 0 && <div className="text-[12px] text-[#94A3B8]">No activity yet.</div>}
+          {activity.length === 0 && <div className="text-[13px] text-[#64748B]">No activity yet.</div>}
           {activity.length > 5 && <button onClick={() => setShowAllActivity((v) => !v)} className="mt-2 self-start text-[12px] font-semibold text-[#4F46E5] hover:underline">{showAllActivity ? 'Show less' : `Show more (${activity.length})`}</button>}
         </div>
 
@@ -335,7 +335,7 @@ export default function RecordDetailPage() {
         <div className={`${LABEL} mb-3`}>Result Sheet</div>
         {!sheet ? (
           <>
-            <div className="text-[13px] text-[#94A3B8]">No result sheet.</div>
+            <div className="text-[14px] text-[#64748B]">No result sheet.</div>
             <button onClick={() => setSheetModal(true)} className={`${rightBtn} mt-2`}><FlaskConical size={15} /> Add Result Sheet</button>
           </>
         ) : (
@@ -394,7 +394,7 @@ function Stat({ icon: Icon, label, value, unit }: { icon: any; label: string; va
     <div className="mb-5 flex items-center gap-3.5">
       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#EEF2FF] text-[#4F46E5]"><Icon size={20} /></span>
       <div>
-        <div className="text-[12px] text-[#94A3B8]">{label}</div>
+        <div className="text-[13px] font-medium text-[#64748B]">{label}</div>
         <div className="flex items-baseline gap-1.5"><span className="text-[28px] font-bold leading-none text-[#0F172A]">{value}</span><span className="text-[14px] text-[#64748B]">{unit}</span></div>
       </div>
     </div>
