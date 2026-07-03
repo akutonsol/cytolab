@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { App } from 'antd';
 import {
-  AlertCircle, AlertTriangle, CheckCircle, ChevronDown, FlaskConical, MoreHorizontal, Pencil, Plus,
+  AlertCircle, AlertTriangle, CheckCircle, ChevronDown, Filter, FlaskConical, MoreHorizontal, Pencil, Plus,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
@@ -188,7 +188,27 @@ export default function SamplesPage() {
   const openChoose = () => { if (can('record:create')) setChooseOpen(true); };
 
   return (
-    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+    <div className="flex flex-col gap-6">
+      {/* ═══════════ HEADER ═══════════ */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 style={{ fontFamily: GEIST, fontSize: 28, fontWeight: 700, color: HEAD, lineHeight: 1.1 }}>Sample Management</h1>
+          <p style={{ fontSize: 14, color: SECONDARY, marginTop: 4 }}>Real-time status tracking for clinical diagnostic samples.</p>
+        </div>
+        <div className="flex items-center gap-2.5">
+          <button style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 44, padding: '0 18px', borderRadius: 12, background: '#fff', border: '1px solid #e6e9f2', color: HEAD, fontFamily: GEIST, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+            <Filter size={16} /> Filters
+          </button>
+          {can('record:create') && (
+            <button onClick={openChoose} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 44, padding: '0 20px', borderRadius: 12, background: PRIMARY, border: 'none', color: '#fff', fontFamily: GEIST, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+              <Plus size={17} /> New Sample
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ═══════════ CONTENT GRID ═══════════ */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
       {/* ═══════════ LEFT COLUMN ═══════════ */}
       <div className="flex min-w-0 flex-col gap-6">
         {/* Top band: compact KPIs next to Urgent Flagged + Automation */}
@@ -400,6 +420,7 @@ export default function SamplesPage() {
       )}
 
       {drawer && <RecordFormDrawer open onClose={() => { setDrawer(null); qc.invalidateQueries({ queryKey: ['records-all'] }); }} formType={drawer.formType} recordId={drawer.recordId} />}
+      </div>
     </div>
   );
 }
