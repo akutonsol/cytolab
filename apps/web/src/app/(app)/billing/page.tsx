@@ -3,11 +3,12 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  AlertTriangle, CheckCircle, ChevronLeft, ChevronRight, Clock, CreditCard, DollarSign,
+  AlertTriangle, ArrowUpRight, Check, CheckCircle, ChevronLeft, ChevronRight, Clock, CreditCard, DollarSign,
   ExternalLink, Eye, Plus, Receipt, Search, TrendingUp, X,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (cents: number) => '$' + ((cents ?? 0) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -54,6 +55,10 @@ function BillingWorkspace() {
   const [payBill, setPayBill] = useState<Bill | null>(null);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3200); };
+  const { claims } = useAuth();
+  const [period, setPeriod] = useState<'month' | 'last' | 'ytd'>('month');
+  const [targetOpen, setTargetOpen] = useState(false);
+  const [target, setTarget] = useState('');
 
   const { data: summary } = useQuery<any>({ queryKey: ['bills-summary'], queryFn: () => api.get('/bills/summary').then((r) => r.data) });
   const { data: billsPage } = useQuery<Paginated<Bill>>({ queryKey: ['bills-all'], queryFn: () => api.get('/bills', { params: { pageSize: 500 } }).then((r) => r.data) });
@@ -92,44 +97,88 @@ function BillingWorkspace() {
   }, [recordIdParam, billsPage, recordForBill]); // eslint-disable-line react-hooks/exhaustive-deps
   const clearParam = () => router.replace('/billing');
 
+  // ── Redesign-derived values (all from allBills; no new endpoints) ──
+  const paidCount = allBills.filter((b) => b.status === 'Paid').length;
+  const pendingCount = allBills.filter((b) => ['Draft', 'Issued', 'PartiallyPaid'].includes(b.status)).length;
+  const voidCount = allBills.filter((b) => b.status === 'Void').length;
+  const issuedCount = allBills.filter((b) => b.status !== 'Draft').length;
+  const onTimePct = issuedCount > 0 ? Math.round((paidCount / issuedCount) * 100) : 0;
+  const step1Done = allBills.length > 0;
+  const step2Done = allBills.some((b) => b.status === 'Paid' || b.status === 'PartiallyPaid');
+  const step3Done = allBills.some((b) => b.status === 'Paid');
+  const totalBilled = allBills.reduce((s, b) => s + (b.total ?? 0), 0);
+  const totalCollected = allBills.reduce((s, b) => s + (b.amountPaid ?? 0), 0);
+  const collectionRate = totalBilled > 0 ? Math.round((totalCollected / totalBilled) * 100) : 0;
+  const outstandingTotal = allBills.reduce((s, b) => s + Math.max(0, (b.total ?? 0) - (b.amountPaid ?? 0)), 0);
+  const tats = allBills.flatMap((b) => (b.payments ?? []).map((p: any) => Math.round((new Date(p.datePaid ?? b.createdAt).getTime() - new Date(b.createdAt).getTime()) / 86400000)));
+  const avgTat = tats.length ? Math.round(tats.reduce((s, v) => s + v, 0) / tats.length) : 0;
+
+  // Period-scoped collection rate for the gauge (+ delta vs previous window).
+  const now = new Date();
+  const som = (y: number, m: number) => new Date(y, m, 1).getTime();
+  const rateOf = (bs: Bill[]) => { const tb = bs.reduce((s, b) => s + (b.total ?? 0), 0); const tc = bs.reduce((s, b) => s + (b.amountPaid ?? 0), 0); return tb > 0 ? Math.round((tc / tb) * 100) : 0; };
+  const inWin = (b: Bill, from: number, to: number) => { const t = new Date(b.createdAt).getTime(); return t >= from && t < to; };
+  const INF = Number.MAX_SAFE_INTEGER;
+  const mStart = som(now.getFullYear(), now.getMonth()), mPrev = som(now.getFullYear(), now.getMonth() - 1), m2Prev = som(now.getFullYear(), now.getMonth() - 2);
+  const yStart = som(now.getFullYear(), 0), yPrev = som(now.getFullYear() - 1, 0);
+  const curWin = period === 'month' ? allBills.filter((b) => inWin(b, mStart, INF)) : period === 'last' ? allBills.filter((b) => inWin(b, mPrev, mStart)) : allBills.filter((b) => inWin(b, yStart, INF));
+  const prevWin = period === 'month' ? allBills.filter((b) => inWin(b, mPrev, mStart)) : period === 'last' ? allBills.filter((b) => inWin(b, m2Prev, mPrev)) : allBills.filter((b) => inWin(b, yPrev, yStart));
+  const gaugeRate = rateOf(curWin.length ? curWin : allBills);
+  const deltaPts = curWin.length && prevWin.length ? gaugeRate - rateOf(prevWin) : 0;
+
+  // Payment calendar — year × month grid (green on-time, red late, grey none).
+  const pymByYM = new Map<string, { late: boolean }>();
+  for (const b of allBills) for (const p of (b.payments ?? []) as any[]) {
+    if (!p.datePaid) continue;
+    const d = new Date(p.datePaid); const key = `${d.getFullYear()}-${d.getMonth()}`;
+    const late = !!b.dueDate && new Date(p.datePaid).getTime() > new Date(b.dueDate).getTime();
+    const cur = pymByYM.get(key); pymByYM.set(key, { late: (cur?.late ?? false) || late });
+  }
+  const calYears = [0, 1, 2, 3].map((i) => now.getFullYear() - i);
+  const emailName = (claims?.email ?? '').split('@')[0].split(/[._-]/)[0].replace(/[^a-z]/gi, '');
+  const firstName = emailName ? emailName[0].toUpperCase() + emailName.slice(1) : 'there';
+  const targetPct = target ? Number(target) : null;
+
   return (
-    <div className="min-h-full px-6 pb-10 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}>
-      {/* Header */}
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-[28px] font-bold leading-tight tracking-tight text-[#0F172A]">Billing</h1>
-          <p className="mt-1.5 text-[14px] text-[#6B7280]">Invoice and payment management</p>
-        </div>
-        <button onClick={() => setCreateOpen(true)} className="flex h-10 items-center gap-2 rounded-xl bg-[#4F46E5] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#4338CA]"><Receipt size={16} /> Create Invoice</button>
-      </div>
+    <div className="min-h-full p-8" style={{ background: '#F7FAFD' }}>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
+        {/* ══ LEFT COLUMN ══ */}
+        <div className="flex min-w-0 flex-col gap-6">
+          <BillTimeline step1Done={step1Done} step2Done={step2Done} step3Done={step3Done} />
 
-      {/* KPI strip */}
-      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-        <Kpi icon={DollarSign} label="Total Billed" value={fmt(summary?.billed ?? 0)} />
-        <Kpi icon={CheckCircle} label="Total Paid" value={fmt(summary?.collected ?? 0)} color="#16A34A" />
-        <Kpi icon={Clock} label="Outstanding" value={fmt(summary?.outstanding ?? 0)} color={(summary?.outstanding ?? 0) > 0 ? '#DC2626' : '#16A34A'} />
-        <Kpi icon={AlertTriangle} label="Overdue" value={`${overdueCount} bills`} color={overdueCount > 0 ? '#DC2626' : '#6B7280'} />
-        <Kpi icon={TrendingUp} label="This Month" value={fmt(thisMonth)} />
-      </div>
-
-      {/* Tabs */}
-      <div className="mb-4 flex gap-6 border-b border-[#EEF2F7]">
-        {(['all', 'unpaid', 'paid'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className="relative pb-3 text-[14px] font-semibold capitalize transition-colors" style={{ color: tab === t ? '#4F46E5' : '#6B7280' }}>
-            {t}{tab === t && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-[#4F46E5]" />}
-          </button>
-        ))}
-      </div>
-
-      {/* Table card */}
-      <div className={`${CARD} p-6`}>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-[16px] font-semibold text-[#0F172A]">Bills · {total}</h2>
-          <div className="flex h-9 w-[260px] items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-3.5 text-[#9CA3AF]">
-            <Search size={15} />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search bills…" className="w-full border-none bg-transparent text-[13px] text-[#0F172A] outline-none placeholder:text-[#9CA3AF]" />
+          {/* KPI pills */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {[
+              { n: overdueCount, label: 'Overdue Bills', circle: '#EF4444' },
+              { n: paidCount, label: 'Paid Bills', circle: '#16A34A' },
+              { n: pendingCount, label: 'Pending', circle: '#4F46E5' },
+            ].map((p) => (
+              <div key={p.label} className={`${CARD} flex items-center gap-4 p-4`}>
+                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-[20px] font-extrabold text-white" style={{ background: p.circle, fontFamily: 'Geist,sans-serif' }}>{p.n}</div>
+                <span className="text-[15px] font-semibold text-[#0F172A]">{p.label}</span>
+              </div>
+            ))}
           </div>
-        </div>
+
+          {/* Bills table */}
+          <div className={`${CARD} p-6`}>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <h2 className="text-[16px] font-semibold text-[#0F172A]">Bills · {total}</h2>
+                <div className="flex gap-1 rounded-full bg-[#F1F5F9] p-1">
+                  {(['all', 'unpaid', 'paid'] as const).map((t) => (
+                    <button key={t} onClick={() => setTab(t)} className="rounded-full px-3 py-1 text-[13px] font-semibold capitalize transition-colors" style={{ background: tab === t ? '#fff' : 'transparent', color: tab === t ? '#4F46E5' : '#6B7280', boxShadow: tab === t ? '0 1px 2px rgba(0,0,0,0.06)' : 'none' }}>{t}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex h-9 w-[190px] items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-3.5 text-[#9CA3AF]">
+                  <Search size={15} />
+                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search bills…" className="w-full border-none bg-transparent text-[13px] text-[#0F172A] outline-none placeholder:text-[#9CA3AF]" />
+                </div>
+                <button onClick={() => setCreateOpen(true)} className="flex h-9 items-center gap-2 rounded-xl bg-[#4F46E5] px-3.5 text-[13px] font-semibold text-white transition-colors hover:bg-[#4338CA]"><Receipt size={15} /> Create Invoice</button>
+              </div>
+            </div>
 
         {pageRows.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
@@ -186,6 +235,73 @@ function BillingWorkspace() {
             <button disabled={page === totalPages} onClick={() => setPage((p) => p + 1)} className="grid h-9 w-9 place-items-center rounded-full border border-[#EEF2F7] text-[#6B7280] disabled:opacity-40 hover:bg-[#F5F7FF]"><ChevronRight size={16} /></button>
           </div>
         )}
+          </div>
+
+          {/* Payment History calendar */}
+          <div className={`${CARD} p-6`}>
+            <div className="text-[16px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Payment History</div>
+            <div className="mt-1 text-[13px] text-[#64748B]">You have made {onTimePct}% of payments on time.</div>
+            <div className="mt-5 overflow-x-auto">
+              <div className="inline-block">
+                <div className="mb-2 flex gap-2 pl-10">
+                  {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'].map((m, i) => <span key={i} className="w-3.5 text-center text-[10px] font-medium text-[#94A3B8]">{m}</span>)}
+                </div>
+                {calYears.map((y) => (
+                  <div key={y} className="mb-2 flex items-center gap-2">
+                    <span className="w-8 text-[11px] font-medium text-[#94A3B8]">{y}</span>
+                    {Array.from({ length: 12 }, (_, mo) => {
+                      const cell = pymByYM.get(`${y}-${mo}`);
+                      const bg = cell ? (cell.late ? '#EF4444' : '#22C55E') : '#E5E7EB';
+                      return <span key={mo} className="h-3.5 w-3.5 rounded-full" style={{ background: bg }} title={`${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][mo]} ${y}`} />;
+                    })}
+                  </div>
+                ))}
+                <div className="mt-4 flex items-center gap-4 pl-10 text-[11px] text-[#94A3B8]">
+                  <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full" style={{ background: '#22C55E' }} /> On time</span>
+                  <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full" style={{ background: '#EF4444' }} /> Late</span>
+                  <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full" style={{ background: '#E5E7EB' }} /> No payment</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ══ RIGHT COLUMN ══ */}
+        <div className="flex min-w-0 flex-col gap-6">
+          {/* Financial health */}
+          <div className={`${CARD} overflow-hidden`}>
+            <div style={{ background: 'linear-gradient(135deg,#EEF2FF 0%,#F0FDF4 100%)', padding: 28 }}>
+              <div className="text-[24px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Good morning, {firstName}</div>
+              <div className="mt-1 text-[15px] text-[#64748B]">Here is your lab financial health</div>
+              <div className="mt-4 inline-flex gap-1 rounded-full bg-white/70 p-1">
+                {([['month', 'This Month'], ['last', 'Last Month'], ['ytd', 'YTD']] as const).map(([v, l]) => (
+                  <button key={v} onClick={() => setPeriod(v)} className="rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors" style={{ background: period === v ? '#fff' : 'transparent', color: period === v ? '#0F172A' : '#64748B', boxShadow: period === v ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>{l}</button>
+                ))}
+              </div>
+              <div className="mt-5">
+                <CollectionGauge rate={gaugeRate} delta={deltaPts} />
+              </div>
+              <button onClick={() => setTargetOpen((o) => !o)} className="mt-5 w-full rounded-full py-3.5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90" style={{ background: '#0F172A' }}>Update Financial Target</button>
+              {targetOpen && (
+                <div className="mt-3 flex items-center gap-2">
+                  <input type="number" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Target collection %" className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]" />
+                  <button onClick={() => setTargetOpen(false)} className="h-10 shrink-0 rounded-xl bg-[#4F46E5] px-4 text-[13px] font-semibold text-white">Set</button>
+                </div>
+              )}
+              {targetPct != null && !targetOpen && <div className="mt-2 text-[12px] text-[#64748B]">Financial target: <span className="font-semibold text-[#0F172A]">{targetPct}%</span> · {collectionRate >= targetPct ? 'on track ✓' : `${targetPct - collectionRate} pts to go`}</div>}
+            </div>
+          </div>
+
+          {/* 6 metric cards */}
+          <div className="grid grid-cols-2 gap-4">
+            <MetricCard title="Collection Rate" value={`${collectionRate}%`} tone={collectionRate >= 80 ? 'green' : collectionRate >= 60 ? 'yellow' : 'red'} badge={collectionRate >= 80 ? 'High' : collectionRate >= 60 ? 'Medium' : 'Low'} sub="Percentage of invoices collected" onClick={() => setTab('paid')} />
+            <MetricCard title="Outstanding" value={fmt(outstandingTotal)} tone={outstandingTotal > 0 ? 'red' : 'green'} badge={outstandingTotal > 0 ? 'High Impact' : 'Low Impact'} sub="Total amount pending collection" onClick={() => setTab('unpaid')} />
+            <MetricCard title="Overdue Bills" value={String(overdueCount)} tone={overdueCount > 0 ? 'red' : 'green'} badge={overdueCount > 0 ? 'High Impact' : 'Low Impact'} sub="Bills past their due date" onClick={() => setTab('unpaid')} />
+            <MetricCard title="Avg Payment TAT" value={`${avgTat} days`} tone={avgTat <= 7 ? 'green' : 'red'} badge={avgTat <= 7 ? 'Low Impact' : 'High Impact'} sub="Average days to receive payment" onClick={() => setTab('paid')} />
+            <MetricCard title="Total Invoices" value={String(allBills.length)} tone="green" badge="Low Impact" sub="Total invoices issued to date" onClick={() => setTab('all')} />
+            <MetricCard title="Disputed / Void" value={String(voidCount)} tone={voidCount > 0 ? 'red' : 'green'} badge={voidCount > 0 ? 'High Impact' : 'Low Impact'} sub="Voided or disputed invoices" onClick={() => setTab('all')} />
+          </div>
+        </div>
       </div>
 
       {drawerId && <BillDrawer id={drawerId} onClose={() => setDrawerId(null)} onPay={(b) => setPayBill(b)} onChanged={refetch} notify={notify} />}
@@ -193,6 +309,86 @@ function BillingWorkspace() {
       {payBill && <PaymentModal bill={payBill} onClose={() => setPayBill(null)} onPaid={() => { setPayBill(null); refetch(); notify('ok', 'Payment recorded'); }} notify={notify} />}
 
       {toast && <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>{toast.msg}</div>}
+    </div>
+  );
+}
+
+// ─── Redesign components ─────────────────────────────────────────────────────
+function BillTimeline({ step1Done, step2Done, step3Done }: { step1Done: boolean; step2Done: boolean; step3Done: boolean }) {
+  const steps = [
+    { done: step1Done, label: 'Invoice Created', sub: 'Draft → Issued' },
+    { done: step2Done, label: 'Payment Received', sub: 'Issued → Partial/Paid' },
+    { done: step3Done, label: 'Record Closed', sub: 'Paid → Closed' },
+  ];
+  return (
+    <div className={`${CARD} p-6`}>
+      <div className="relative flex items-start">
+        {/* dashed connector behind the circles */}
+        <div className="absolute left-[16%] right-[16%] top-3.5 border-t-2 border-dashed border-[#CBD5E1]" />
+        {steps.map((s, i) => (
+          <div key={i} className="relative z-10 flex flex-1 flex-col items-center text-center">
+            <div className="grid h-7 w-7 place-items-center rounded-full" style={{ background: s.done ? '#4F46E5' : '#F1F5F9', color: s.done ? '#fff' : '#94A3B8' }}>
+              {s.done ? <Check size={16} strokeWidth={3} /> : <span className="text-[12px] font-bold">{i + 1}</span>}
+            </div>
+            <div className="mt-2 text-[12px] font-semibold text-[#64748B]">{s.label}</div>
+            <div className="text-[10px] text-[#94A3B8]">{s.sub}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Semi-open arc gauge — red→yellow→green spectrum with a marker at `rate`.
+function CollectionGauge({ rate, delta }: { rate: number; delta: number }) {
+  const W = 280, H = 172, cx = W / 2, cy = 150, r = 116;
+  const START = -125, SWEEP = 250, END = START + SWEEP;
+  const polar = (deg: number): [number, number] => { const a = (deg * Math.PI) / 180; return [cx + r * Math.sin(a), cy - r * Math.cos(a)]; };
+  const arc = (a: number, b: number) => { const [x1, y1] = polar(a); const [x2, y2] = polar(b); const large = Math.abs(b - a) > 180 ? 1 : 0; return `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`; };
+  const clamped = Math.max(0, Math.min(100, rate));
+  const [mx, my] = polar(START + (clamped / 100) * SWEEP);
+  return (
+    <div style={{ position: 'relative', width: W, margin: '0 auto' }}>
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+        <defs>
+          <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#EF4444" /><stop offset="50%" stopColor="#F59E0B" /><stop offset="100%" stopColor="#16A34A" />
+          </linearGradient>
+        </defs>
+        <path d={arc(START, END)} fill="none" stroke="#EAEDF3" strokeWidth={14} strokeLinecap="round" />
+        <path d={arc(START, END)} fill="none" stroke="url(#gaugeGrad)" strokeWidth={14} strokeLinecap="round" />
+        <circle cx={mx} cy={my} r={9} fill="#fff" stroke="#0F172A" strokeWidth={3} />
+      </svg>
+      <span style={{ position: 'absolute', left: 4, top: H - 26, fontSize: 12, color: '#94A3B8' }}>0%</span>
+      <span style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: -2, fontSize: 12, color: '#94A3B8' }}>50%</span>
+      <span style={{ position: 'absolute', right: 4, top: H - 26, fontSize: 12, color: '#94A3B8' }}>100%</span>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 74, textAlign: 'center' }}>
+        {delta !== 0 && (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: delta > 0 ? '#F0FDF4' : '#FEF2F2', color: delta > 0 ? '#16A34A' : '#DC2626', borderRadius: 999, padding: '2px 10px', fontSize: 12, fontWeight: 700, marginBottom: 4 }}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)} pts</div>
+        )}
+        <div style={{ fontSize: 48, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{rate}%</div>
+      </div>
+    </div>
+  );
+}
+
+function ImpactBadge({ tone, text }: { tone: 'green' | 'yellow' | 'red'; text: string }) {
+  const c = tone === 'green' ? { bg: '#F0FDF4', fg: '#16A34A' } : tone === 'yellow' ? { bg: '#FFFBEB', fg: '#D97706' } : { bg: '#FEF2F2', fg: '#DC2626' };
+  return <span style={{ background: c.bg, color: c.fg, fontSize: 10, fontWeight: 700, borderRadius: 999, padding: '2px 8px' }}>{text}</span>;
+}
+
+function MetricCard({ title, value, tone, badge, sub, onClick }: { title: string; value: string; tone: 'green' | 'yellow' | 'red'; badge: string; sub: string; onClick: () => void }) {
+  return (
+    <div onClick={onClick} className={`${CARD} cursor-pointer p-4 transition-shadow hover:shadow-md`}>
+      <div className="flex items-center justify-between">
+        <span className="text-[14px] font-semibold text-[#0F172A]">{title}</span>
+        <ArrowUpRight size={15} className="text-[#94A3B8]" />
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className="text-[26px] font-extrabold leading-none text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>{value}</span>
+        <ImpactBadge tone={tone} text={badge} />
+      </div>
+      <div className="mt-2 text-[12px] leading-snug text-[#94A3B8]">{sub}</div>
     </div>
   );
 }
