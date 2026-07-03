@@ -62,22 +62,24 @@ const actionSecondary = 'flex w-full items-center justify-center gap-2 rounded-f
 const rightBtn = 'w-full rounded-[10px] bg-[#F1F5F9] px-3 py-2.5 text-center text-[13px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#E2E8F0]';
 const LABEL = 'text-[10px] font-bold uppercase tracking-[0.08em] text-[#94A3B8]';
 
-// Floating-particle / glow configs for the cytology-image animation layers.
+// Floating-particle / glow configs — drifting "cells" over the specimen.
 const PARTICLES = [
-  { left: '15%', top: '20%', size: 8, color: 'rgba(129,140,248,0.6)', anim: 'drift1', delay: '0s', dur: '7s' },
-  { left: '70%', top: '15%', size: 6, color: 'rgba(167,139,250,0.5)', anim: 'drift2', delay: '0.8s', dur: '9s' },
-  { left: '40%', top: '62%', size: 10, color: 'rgba(196,181,253,0.4)', anim: 'drift3', delay: '1.6s', dur: '8s' },
-  { left: '85%', top: '55%', size: 5, color: 'rgba(99,102,241,0.7)', anim: 'drift4', delay: '2.4s', dur: '10s' },
-  { left: '25%', top: '78%', size: 7, color: 'rgba(129,140,248,0.6)', anim: 'drift5', delay: '3.2s', dur: '6s' },
-  { left: '55%', top: '32%', size: 4, color: 'rgba(167,139,250,0.5)', anim: 'drift6', delay: '4s', dur: '9s' },
-  { left: '10%', top: '48%', size: 9, color: 'rgba(196,181,253,0.4)', anim: 'drift7', delay: '4.8s', dur: '7s' },
-  { left: '78%', top: '82%', size: 6, color: 'rgba(99,102,241,0.7)', anim: 'drift8', delay: '5.6s', dur: '8s' },
-  { left: '32%', top: '38%', size: 7, color: 'rgba(129,140,248,0.55)', anim: 'drift2', delay: '1.2s', dur: '8s' },
-  { left: '60%', top: '72%', size: 5, color: 'rgba(167,139,250,0.5)', anim: 'drift5', delay: '2s', dur: '9s' },
-  { left: '88%', top: '30%', size: 8, color: 'rgba(196,181,253,0.45)', anim: 'drift3', delay: '3.6s', dur: '7s' },
-  { left: '20%', top: '62%', size: 6, color: 'rgba(99,102,241,0.6)', anim: 'drift7', delay: '5s', dur: '10s' },
-  { left: '48%', top: '18%', size: 5, color: 'rgba(129,140,248,0.5)', anim: 'drift4', delay: '2.8s', dur: '8s' },
-  { left: '68%', top: '48%', size: 9, color: 'rgba(167,139,250,0.4)', anim: 'drift6', delay: '4.4s', dur: '9s' },
+  { left: '14%', top: '22%', size: 16, color: 'rgba(129,140,248,0.55)', anim: 'drift1', delay: '0s', dur: '9s', blur: 1 },
+  { left: '72%', top: '16%', size: 12, color: 'rgba(167,139,250,0.5)', anim: 'drift2', delay: '0.7s', dur: '11s', blur: 0 },
+  { left: '40%', top: '60%', size: 24, color: 'rgba(196,181,253,0.4)', anim: 'drift3', delay: '1.4s', dur: '12s', blur: 2 },
+  { left: '84%', top: '54%', size: 10, color: 'rgba(99,102,241,0.65)', anim: 'drift4', delay: '2.1s', dur: '10s', blur: 0 },
+  { left: '24%', top: '78%', size: 14, color: 'rgba(129,140,248,0.55)', anim: 'drift5', delay: '2.8s', dur: '9s', blur: 1 },
+  { left: '55%', top: '30%', size: 8, color: 'rgba(167,139,250,0.6)', anim: 'drift6', delay: '3.5s', dur: '11s', blur: 0 },
+  { left: '10%', top: '48%', size: 20, color: 'rgba(196,181,253,0.4)', anim: 'drift7', delay: '4.2s', dur: '10s', blur: 2 },
+  { left: '78%', top: '82%', size: 11, color: 'rgba(99,102,241,0.6)', anim: 'drift8', delay: '4.9s', dur: '12s', blur: 0 },
+  { left: '34%', top: '38%', size: 9, color: 'rgba(129,140,248,0.55)', anim: 'drift2', delay: '1.1s', dur: '10s', blur: 0 },
+  { left: '62%', top: '70%', size: 13, color: 'rgba(167,139,250,0.45)', anim: 'drift5', delay: '2.4s', dur: '11s', blur: 1 },
+  { left: '88%', top: '32%', size: 15, color: 'rgba(196,181,253,0.45)', anim: 'drift3', delay: '3.2s', dur: '9s', blur: 1 },
+  { left: '18%', top: '64%', size: 10, color: 'rgba(99,102,241,0.6)', anim: 'drift7', delay: '4.6s', dur: '12s', blur: 0 },
+  { left: '48%', top: '16%', size: 8, color: 'rgba(129,140,248,0.5)', anim: 'drift4', delay: '2.6s', dur: '10s', blur: 0 },
+  { left: '68%', top: '46%', size: 22, color: 'rgba(167,139,250,0.35)', anim: 'drift6', delay: '3.9s', dur: '13s', blur: 2 },
+  { left: '30%', top: '52%', size: 7, color: 'rgba(99,102,241,0.7)', anim: 'drift1', delay: '1.8s', dur: '8s', blur: 0 },
+  { left: '52%', top: '85%', size: 12, color: 'rgba(129,140,248,0.5)', anim: 'drift8', delay: '5.4s', dur: '11s', blur: 1 },
 ];
 const GLOWS = [
   { left: '18%', top: '22%', size: 100, color: 'rgba(129,140,248,0.15)', delay: '0s', dur: '5s' },
@@ -89,14 +91,14 @@ const ANIM_CSS = `
 @keyframes glowPulse{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:.7;transform:scale(1.15)}}
 @keyframes scanLine{0%{top:0%;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:100%;opacity:0}}
 @keyframes colorDrift{0%{background:rgba(99,102,241,0)}25%{background:rgba(99,102,241,.04)}50%{background:rgba(129,140,248,.06)}75%{background:rgba(167,139,250,.04)}100%{background:rgba(99,102,241,0)}}
-@keyframes drift1{0%{transform:translate(0,0) scale(1);opacity:.6}33%{transform:translate(12px,-18px) scale(1.2);opacity:.9}66%{transform:translate(-8px,10px) scale(.8);opacity:.4}100%{transform:translate(0,0) scale(1);opacity:.6}}
-@keyframes drift2{0%{transform:translate(0,0) scale(1);opacity:.5}33%{transform:translate(-16px,12px) scale(1.3);opacity:.8}66%{transform:translate(10px,-14px) scale(.9);opacity:.3}100%{transform:translate(0,0) scale(1);opacity:.5}}
-@keyframes drift3{0%{transform:translate(0,0) scale(1);opacity:.4}33%{transform:translate(18px,14px) scale(1.1);opacity:.7}66%{transform:translate(-12px,-16px) scale(.85);opacity:.3}100%{transform:translate(0,0) scale(1);opacity:.4}}
-@keyframes drift4{0%{transform:translate(0,0) scale(1);opacity:.7}33%{transform:translate(-14px,-12px) scale(1.25);opacity:.95}66%{transform:translate(8px,16px) scale(.8);opacity:.45}100%{transform:translate(0,0) scale(1);opacity:.7}}
-@keyframes drift5{0%{transform:translate(0,0) scale(1);opacity:.6}33%{transform:translate(10px,20px) scale(1.15);opacity:.85}66%{transform:translate(-16px,-8px) scale(.9);opacity:.4}100%{transform:translate(0,0) scale(1);opacity:.6}}
-@keyframes drift6{0%{transform:translate(0,0) scale(1);opacity:.5}33%{transform:translate(-10px,-20px) scale(1.3);opacity:.8}66%{transform:translate(14px,8px) scale(.75);opacity:.3}100%{transform:translate(0,0) scale(1);opacity:.5}}
-@keyframes drift7{0%{transform:translate(0,0) scale(1);opacity:.4}33%{transform:translate(16px,-10px) scale(1.2);opacity:.75}66%{transform:translate(-10px,14px) scale(.85);opacity:.35}100%{transform:translate(0,0) scale(1);opacity:.4}}
-@keyframes drift8{0%{transform:translate(0,0) scale(1);opacity:.7}33%{transform:translate(-18px,10px) scale(1.1);opacity:.9}66%{transform:translate(12px,-12px) scale(.8);opacity:.4}100%{transform:translate(0,0) scale(1);opacity:.7}}
+@keyframes drift1{0%{transform:translate(0,0) scale(1);opacity:.5}25%{transform:translate(28px,-34px) scale(1.25);opacity:.85}50%{transform:translate(-20px,-12px) scale(.85);opacity:.45}75%{transform:translate(16px,26px) scale(1.1);opacity:.7}100%{transform:translate(0,0) scale(1);opacity:.5}}
+@keyframes drift2{0%{transform:translate(0,0) scale(1);opacity:.5}25%{transform:translate(-32px,22px) scale(1.3);opacity:.8}50%{transform:translate(14px,-28px) scale(.9);opacity:.4}75%{transform:translate(-16px,-18px) scale(1.1);opacity:.65}100%{transform:translate(0,0) scale(1);opacity:.5}}
+@keyframes drift3{0%{transform:translate(0,0) scale(1);opacity:.4}25%{transform:translate(36px,24px) scale(1.15);opacity:.7}50%{transform:translate(-24px,-30px) scale(.82);opacity:.35}75%{transform:translate(20px,-16px) scale(1.05);opacity:.6}100%{transform:translate(0,0) scale(1);opacity:.4}}
+@keyframes drift4{0%{transform:translate(0,0) scale(1);opacity:.6}25%{transform:translate(-28px,-26px) scale(1.3);opacity:.9}50%{transform:translate(22px,18px) scale(.88);opacity:.5}75%{transform:translate(-14px,28px) scale(1.05);opacity:.7}100%{transform:translate(0,0) scale(1);opacity:.6}}
+@keyframes drift5{0%{transform:translate(0,0) scale(1);opacity:.55}25%{transform:translate(24px,32px) scale(1.15);opacity:.8}50%{transform:translate(-30px,-12px) scale(.9);opacity:.4}75%{transform:translate(16px,-26px) scale(1.1);opacity:.65}100%{transform:translate(0,0) scale(1);opacity:.55}}
+@keyframes drift6{0%{transform:translate(0,0) scale(1);opacity:.5}25%{transform:translate(-22px,-32px) scale(1.3);opacity:.8}50%{transform:translate(28px,14px) scale(.8);opacity:.4}75%{transform:translate(-18px,24px) scale(1.05);opacity:.6}100%{transform:translate(0,0) scale(1);opacity:.5}}
+@keyframes drift7{0%{transform:translate(0,0) scale(1);opacity:.4}25%{transform:translate(32px,-20px) scale(1.2);opacity:.75}50%{transform:translate(-20px,26px) scale(.85);opacity:.35}75%{transform:translate(24px,12px) scale(1.05);opacity:.6}100%{transform:translate(0,0) scale(1);opacity:.4}}
+@keyframes drift8{0%{transform:translate(0,0) scale(1);opacity:.6}25%{transform:translate(-34px,18px) scale(1.15);opacity:.85}50%{transform:translate(20px,-24px) scale(.9);opacity:.45}75%{transform:translate(-16px,-18px) scale(1.1);opacity:.65}100%{transform:translate(0,0) scale(1);opacity:.6}}
 `;
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -179,7 +181,7 @@ export default function RecordDetailPage() {
   const shownActivity = showAllActivity ? activity : activity.slice(0, 5);
 
   return (
-    <div className="flex gap-4 p-5" style={{ background: '#EDF0F7', height: 'calc(100vh - 150px)', minHeight: 560 }}>
+    <div className="flex justify-center gap-4 p-5" style={{ background: '#EDF0F7', height: 'calc(100vh - 150px)', minHeight: 560 }}>
       <style>{ANIM_CSS}</style>
 
       {/* ═══════════ LEFT PANEL ═══════════ */}
@@ -256,7 +258,7 @@ export default function RecordDetailPage() {
       </aside>
 
       {/* ═══════════ CENTER PANEL ═══════════ */}
-      <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-[#E4E8F4] bg-white">
+      <section className="flex w-[640px] max-w-full shrink-0 flex-col overflow-hidden rounded-[20px] border border-[#E4E8F4] bg-white">
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-[#F1F5F9] px-5 py-3.5">
           <div className={LABEL}>Specimen Analysis</div>
@@ -269,8 +271,8 @@ export default function RecordDetailPage() {
         {/* Segmented control (reference-style pill switcher) */}
         <div className="shrink-0 px-5 pt-4">
           <div className="flex gap-1 rounded-full p-1.5" style={{ background: 'linear-gradient(145deg,#EEF3FB,#DBE5F4)', boxShadow: 'inset 0 1px 3px rgba(148,163,184,0.22)' }}>
-            <button onClick={() => setDrawer(true)} style={{ background: 'transparent' }} className="flex-1 rounded-full px-4 py-2.5 text-[14px] font-semibold text-[#3B5EA8] transition-colors hover:text-[#1E3A8A]">Edit Clinical Features</button>
-            <button onClick={() => setSheetModal(true)} style={{ background: 'transparent' }} className="flex-1 rounded-full px-4 py-2.5 text-[14px] font-semibold text-[#3B5EA8] transition-colors hover:text-[#1E3A8A]">Add Result Sheet</button>
+            <button onClick={() => setDrawer(true)} className="flex-1 rounded-full bg-transparent px-4 py-2.5 text-[14px] font-semibold text-[#3B5EA8] transition-all hover:bg-white hover:text-[#1E3A8A] hover:shadow-[0_4px_14px_rgba(110,130,180,0.28)]">Edit Clinical Features</button>
+            <button onClick={() => setSheetModal(true)} className="flex-1 rounded-full bg-transparent px-4 py-2.5 text-[14px] font-semibold text-[#3B5EA8] transition-all hover:bg-white hover:text-[#1E3A8A] hover:shadow-[0_4px_14px_rgba(110,130,180,0.28)]">Add Result Sheet</button>
             <button className="flex-1 rounded-full bg-white px-4 py-2.5 text-[14px] font-bold text-[#1E3A8A]" style={{ boxShadow: '0 4px 14px rgba(110,130,180,0.28), 0 1px 3px rgba(0,0,0,0.05)' }}>{specLabel(activeSpecimen?.type) || 'Specimen'}</button>
           </div>
         </div>
@@ -298,7 +300,7 @@ export default function RecordDetailPage() {
                 <div key={`g${i}`} className="pointer-events-none absolute rounded-full" style={{ left: g.left, top: g.top, width: g.size, height: g.size, background: g.color, filter: 'blur(30px)', animation: `glowPulse ${g.dur} ease-in-out ${g.delay} infinite` }} />
               ))}
               {PARTICLES.map((p, i) => (
-                <div key={`p${i}`} className="pointer-events-none absolute rounded-full" style={{ left: p.left, top: p.top, width: p.size, height: p.size, background: p.color, animation: `${p.anim} ${p.dur} ease-in-out ${p.delay} infinite` }} />
+                <div key={`p${i}`} className="pointer-events-none absolute rounded-full" style={{ left: p.left, top: p.top, width: p.size, height: p.size, background: p.color, filter: p.blur ? `blur(${p.blur}px)` : undefined, animation: `${p.anim} ${p.dur} ease-in-out ${p.delay} infinite` }} />
               ))}
               <div className="pointer-events-none absolute left-0 right-0" style={{ height: 2, background: 'linear-gradient(to right, transparent, rgba(129,140,248,0.4), transparent)', animation: 'scanLine 4s linear infinite' }} />
             </div>
