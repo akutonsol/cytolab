@@ -268,42 +268,6 @@ export default function RecordDetailPage() {
     <div className="flex gap-4 p-5" style={{ background: '#EDF0F7', height: 'calc(100vh - 150px)', minHeight: 560 }}>
       <style>{ANIM_CSS}</style>
 
-      {/* ═══════════ LEFT PANEL ═══════════ */}
-      <aside className="premium-scroll flex w-[340px] shrink-0 flex-col overflow-y-auto rounded-[20px] border border-[#E4E8F4] bg-[#F4F6FC] p-6">
-        {/* Vertical stepper */}
-        <div className="flex flex-col">
-          {STEPS.map((label, i) => {
-            const done = i < currentStep; const current = i === currentStep; const passed = i <= currentStep;
-            const circle: any = current && special ? { background: STATUS[status].bg, color: STATUS[status].fg }
-              : passed ? { background: INDIGO, color: '#fff', boxShadow: current && !special ? '0 0 0 4px rgba(79,70,229,0.2)' : undefined }
-                : { background: '#F1F5F9', color: '#94A3B8' };
-            return (
-              <div key={label} className="flex items-start gap-3">
-                <div className="flex flex-col items-center">
-                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[14px] font-bold" style={circle}>
-                    {current && special ? (status === 'OnHold' ? <Pause size={14} /> : <X size={14} />) : done ? <Check size={15} /> : <span>{i + 1}</span>}
-                  </div>
-                  {i < STEPS.length - 1 && <div style={{ width: 2, height: 20, background: i < currentStep ? INDIGO : '#E2E8F0' }} />}
-                </div>
-                <div className="pt-1">
-                  <div className="text-[17px] font-semibold" style={{ color: passed ? '#0F172A' : '#94A3B8' }}>{label}</div>
-                  <div className="text-[14px]" style={{ color: current ? (special ? STATUS[status].fg : '#4F46E5') : done ? '#22C55E' : '#94A3B8' }}>
-                    {current ? (special ? (status === 'OnHold' ? 'On Hold' : status === 'Failed' ? 'Failed' : 'Cancelled') : 'In progress') : done ? 'Completed' : 'Upcoming'}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Recommended action */}
-        <div className="mt-2 border-t-2 border-[#E4E8F4] pt-5">
-          <div className="text-[15px] font-bold italic uppercase tracking-[0.06em] text-[#EF4444]">Recommended Action</div>
-          <ActionPanel status={status} pending={statusMut.isPending} go={go} onEditFeatures={() => setDrawer(true)} onOpenSheet={() => setSheetModal(true)} onAuthorize={() => setAuthModal(true)} onInvoice={() => router.push(`/billing?recordId=${id}`)} onReport={() => router.push(`/reports?recordId=${id}`)} onAuthorizer={() => router.push('/authorizer')} />
-        </div>
-
-      </aside>
-
       {/* ═══════════ CENTER PANEL ═══════════ */}
       <section className="flex flex-1 min-w-0 flex-col overflow-hidden rounded-[20px] border border-[#E4E8F4] bg-white">
         {/* Header */}
@@ -343,6 +307,12 @@ export default function RecordDetailPage() {
                   <div className="mt-4 inline-flex items-center gap-2 rounded-full border-[1.5px] border-[#16A34A] px-3.5 py-1.5 text-[13px] font-semibold text-[#16A34A]"><CheckCircle2 size={14} /> Normal findings</div>
                 )
               )}
+            </div>
+
+            {/* Recommended action (moved from left column) */}
+            <div className="mt-5 border-t-2 border-[#E4E8F4] pt-5">
+              <div className="text-[15px] font-bold italic uppercase tracking-[0.06em] text-[#EF4444]">Recommended Action</div>
+              <ActionPanel status={status} pending={statusMut.isPending} go={go} onEditFeatures={() => setDrawer(true)} onOpenSheet={() => setSheetModal(true)} onAuthorize={() => setAuthModal(true)} onInvoice={() => router.push(`/billing?recordId=${id}`)} onReport={() => router.push(`/reports?recordId=${id}`)} onAuthorizer={() => router.push('/authorizer')} />
             </div>
           </div>
 
