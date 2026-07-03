@@ -137,19 +137,21 @@ function LifecycleRings({ status }: { status: string }) {
   const radii = [R0, R0 - (RING_WIDTH + RING_GAP), R0 - (RING_WIDTH + RING_GAP) * 2, R0 - (RING_WIDTH + RING_GAP) * 3, R0 - (RING_WIDTH + RING_GAP) * 4];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: '8px 0 16px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 24, padding: '8px 0 16px' }}>
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           {rings.map((ring, i) => {
             const r = radii[i];
             const circ = 2 * Math.PI * r;
+            // Spiral effect: every ring slowly spins, each at a staggered speed + phase.
+            const spin = `ringSpin ${(8 + i * 1.6).toFixed(1)}s linear ${(-i * 1.2).toFixed(1)}s infinite`;
             return (
               <g key={i}>
                 <circle cx={CENTER} cy={CENTER} r={r} fill="none" stroke={ring.ghostColor} strokeWidth={RING_WIDTH} opacity={0.6} />
                 {ring.pct > 0 && (
                   <circle cx={CENTER} cy={CENTER} r={r} fill="none" stroke={ring.color} strokeWidth={RING_WIDTH} strokeLinecap="round"
                     strokeDasharray={`${(ring.pct / 100) * circ} ${circ}`} strokeDashoffset={circ / 4}
-                    style={ring.isCurrent ? { transformBox: 'fill-box', transformOrigin: 'center', animation: 'ringSpin 7s linear infinite, ringPulse 2s ease-in-out infinite' } : {}} />
+                    style={{ transformBox: 'fill-box', transformOrigin: 'center', animation: ring.isCurrent ? `${spin}, ringPulse 2s ease-in-out infinite` : spin }} />
                 )}
               </g>
             );
@@ -161,7 +163,7 @@ function LifecycleRings({ status }: { status: string }) {
         </svg>
       </div>
 
-      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
         {rings.map((ring, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: ring.pct === 0 ? 0.45 : 1 }}>
             <div style={{ width: 16, height: 16, borderRadius: '50%', background: ring.pct > 0 ? ring.color : ring.ghostColor, flexShrink: 0, boxShadow: ring.isCurrent ? `0 0 10px ${ring.color}` : 'none', animation: ring.isCurrent ? 'ringPulse 2s ease-in-out infinite' : undefined }} />
@@ -284,12 +286,16 @@ export default function RecordDetailPage() {
 
         {/* Content: left detail column + right image (beside, larger) */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 24, flex: 1, padding: '16px 20px' }}>
-          <div style={{ flexShrink: 0 }} className="flex w-[440px] flex-col">
+          <div style={{ flexShrink: 0 }} className="flex w-[560px] flex-col">
             <LifecycleRings status={status} />
-            <span className="mt-2 grid h-12 w-12 place-items-center rounded-2xl bg-[#E8EDF7] text-[#4F46E5]"><Microscope size={22} /></span>
-            <div className="mt-4 text-[17px] font-semibold italic text-[#1E293B]">Patient {specLabel(activeSpecimen?.type)} Analysis</div>
-            <div className="mt-1 text-[20px] font-bold text-[#4F46E5]">{progress}%<span className="ml-1.5 text-[14px] font-normal text-[#64748B]">completed</span></div>
-            <button onClick={() => setSheetModal(true)} className="mt-2 flex items-center gap-1 self-start text-[14px] font-bold text-[#4F46E5] hover:underline">Enter Analysis <ChevronRight size={15} /></button>
+            <div className="mt-4 flex items-center gap-4">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#E8EDF7] text-[#4F46E5]"><Microscope size={22} /></span>
+              <div>
+                <div className="text-[17px] font-semibold italic text-[#1E293B]">Patient {specLabel(activeSpecimen?.type)} Analysis</div>
+                <div className="mt-1 text-[20px] font-bold text-[#4F46E5]">{progress}%<span className="ml-1.5 text-[14px] font-normal text-[#64748B]">completed</span></div>
+                <button onClick={() => setSheetModal(true)} className="mt-1.5 flex items-center gap-1 self-start text-[14px] font-bold text-[#4F46E5] hover:underline">Enter Analysis <ChevronRight size={15} /></button>
+              </div>
+            </div>
 
             <div className="mt-auto pt-6">
               {sheet && aiFinding !== 'Awaiting cytological analysis.' && (
