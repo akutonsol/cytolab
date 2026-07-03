@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { App } from 'antd';
 import {
   AlertTriangle, ArrowRight, ArrowUpDown, Calendar, ChevronDown, ChevronLeft, ChevronRight,
   Clock, FileText, Filter, Maximize2, MoreHorizontal, Phone, Plus, Search, UserX, Video, X,
@@ -26,7 +25,7 @@ interface Overview {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)]';
+const CARD = 'glass-card rounded-2xl';
 const midMins = (iso: string) => { const d = new Date(iso); return d.getHours() * 60 + d.getMinutes(); };
 const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 const timeRange = (iso: string, dur: number) => `${fmtTime(iso)} – ${fmtTime(new Date(new Date(iso).getTime() + dur * 60000).toISOString())}`;
@@ -68,6 +67,8 @@ export default function AppointmentsPage() {
   const { can } = useAuth();
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
+  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3000); };
   const qc = useQueryClient();
 
   const { data: me } = useQuery<{ firstName?: string }>({ queryKey: ['auth-me'], queryFn: () => api.get('/auth/me').then((r) => r.data) });
@@ -134,7 +135,15 @@ export default function AppointmentsPage() {
         <NewAppointmentModal
           onClose={() => setModalOpen(false)}
           onCreated={() => { setModalOpen(false); qc.invalidateQueries({ queryKey: ['appointments-overview'] }); }}
+          notify={notify}
         />
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[130] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg"
+          style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>
+          {toast.msg}
+        </div>
       )}
     </div>
   );
@@ -460,8 +469,7 @@ function AlertsCard({ alerts, onOpen }: { alerts: Overview['alerts']; onOpen: (a
 }
 
 // ─── New appointment modal ───────────────────────────────────────────────────
-function NewAppointmentModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const { message } = App.useApp();
+function NewAppointmentModal({ onClose, onCreated, notify }: { onClose: () => void; onCreated: () => void; notify: (type: 'ok' | 'err', msg: string) => void }) {
   const today = new Date().toISOString().slice(0, 10);
   const [title, setTitle] = useState('');
   const [type, setType] = useState<ApptType>('COLLECTION');
@@ -478,8 +486,8 @@ function NewAppointmentModal({ onClose, onCreated }: { onClose: () => void; onCr
       type, scheduledAt: new Date(`${date}T${time}`).toISOString(), duration,
       patientId, clientId, notes: notes.trim() || undefined,
     }).then((r) => r.data),
-    onSuccess: () => { message.success('Appointment created'); onCreated(); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not create appointment'),
+    onSuccess: () => { notify('ok', 'Appointment created'); onCreated(); },
+    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Could not create appointment'),
   });
 
   const inputCls = 'h-11 w-full rounded-[10px] border border-[#E2E8F0] bg-white px-3.5 text-[14px] text-[#0F172A] outline-none transition-colors focus:border-[#4F46E5]';

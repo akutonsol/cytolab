@@ -2,9 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { App } from 'antd';
-import { FolderFilled, PlusOutlined } from '@ant-design/icons';
-import { ArrowUpRight, ChevronDown, MoreHorizontal, Search, SlidersHorizontal } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, Folder, MoreHorizontal, Plus, Search, SlidersHorizontal } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { ClientSelect } from '@/components/ClientSelect';
@@ -42,9 +40,10 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function CabinetsPage() {
-  const { message } = App.useApp();
   const router = useRouter();
   const qc = useQueryClient();
+  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
+  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3000); };
   const [selectedId, setSelectedId] = useState<string>();
   const [surname, setSurname] = useState<string>();
   const [formType, setFormType] = useState<string>();
@@ -90,7 +89,7 @@ export default function CabinetsPage() {
             <div className="text-[19px] font-extrabold tracking-tight text-text">Cabinets</div>
             <div className="mt-0.5 text-caption font-semibold text-text-tertiary">{cabinets.length} folder{cabinets.length === 1 ? '' : 's'}</div>
           </div>
-          <button onClick={() => setModalOpen(true)} aria-label="New folder" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-white shadow-card transition-colors hover:bg-primary-hover"><PlusOutlined /></button>
+          <button onClick={() => setModalOpen(true)} aria-label="New folder" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-white shadow-card transition-colors hover:bg-primary-hover"><Plus size={20} /></button>
         </div>
 
         {/* A–Z surname index */}
@@ -113,7 +112,7 @@ export default function CabinetsPage() {
                 style={{ background: active ? '#eef3ff' : 'transparent' }}
               >
                 {active && <span className="absolute inset-y-2 left-0 w-1 rounded-pill bg-primary" />}
-                <FolderFilled style={{ color: COLOR_HEX[c.color ?? 'blue'] ?? '#4f7df9', fontSize: 18 }} />
+                <Folder size={18} fill={COLOR_HEX[c.color ?? 'blue'] ?? '#4f7df9'} color={COLOR_HEX[c.color ?? 'blue'] ?? '#4f7df9'} />
                 <span className={`min-w-0 flex-1 truncate text-small ${active ? 'font-bold text-text' : 'font-semibold text-text-secondary'}`}>{folderName(c)}</span>
                 {active && <span className="shrink-0 rounded-pill bg-white px-2 py-0.5 text-tiny font-bold text-text-secondary">{rows.length}</span>}
               </button>
@@ -125,11 +124,11 @@ export default function CabinetsPage() {
       {/* ===== RIGHT SIDE ===== */}
       <div className="flex min-w-0 flex-1 flex-col gap-6">
         {!selected ? (
-          <div className="flex flex-col items-center justify-center rounded-card border border-card bg-gradient-to-b from-white to-[#f5f7fd] p-16 text-center shadow-card">
-            <FolderFilled style={{ color: '#c7ccd6', fontSize: 40 }} />
-            <div className="mt-3 text-[18px] font-bold text-text">No folder selected</div>
+          <div className="glass-card flex flex-col items-center justify-center rounded-2xl p-16 text-center">
+            <Folder size={40} fill="#c7ccd6" color="#c7ccd6" />
+            <div className="mt-3 font-headline-sm text-headline-sm text-charcoal-heading">No folder selected</div>
             <div className="mt-1 text-small font-medium text-text-secondary">Add a folder to start filing client records.</div>
-            <button onClick={() => setModalOpen(true)} className="mt-4 flex items-center gap-1.5 rounded-pill bg-primary px-4 py-2.5 text-small font-bold text-white hover:bg-primary-hover"><PlusOutlined /> New folder</button>
+            <button onClick={() => setModalOpen(true)} className="btn-primary mt-4"><Plus size={16} /> New folder</button>
           </div>
         ) : (
           <>
@@ -138,7 +137,7 @@ export default function CabinetsPage() {
               <div className="min-w-0">
                 <div className="text-[15px] font-semibold uppercase tracking-wide text-text-tertiary">Cabinet /</div>
                 <div className="flex items-center gap-2.5">
-                  <FolderFilled style={{ color: COLOR_HEX[selected.color ?? 'blue'], fontSize: 26 }} />
+                  <Folder size={26} fill={COLOR_HEX[selected.color ?? 'blue']} color={COLOR_HEX[selected.color ?? 'blue']} />
                   <span className="truncate text-[30px] font-extrabold leading-none tracking-tight text-text">{folderName(selected)}</span>
                 </div>
                 <div className="mt-1.5 text-small font-medium text-text-secondary">
@@ -189,9 +188,9 @@ export default function CabinetsPage() {
             </div>
 
             {/* Records table */}
-            <div className="flex flex-col rounded-card border border-card bg-gradient-to-b from-white to-[#f5f7fd] shadow-card">
+            <div className="glass-card flex flex-col rounded-2xl">
               <div className="flex flex-wrap items-center justify-between gap-3 px-6 pt-6">
-                <h2 className="text-[20px] font-extrabold tracking-tight text-text">{folderName(selected)} records · {view.length}</h2>
+                <h2 className="font-headline-sm text-headline-sm text-charcoal-heading">{folderName(selected)} records · {view.length}</h2>
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="flex h-10 items-center gap-2 rounded-pill border border-card bg-surface px-3 text-text-tertiary">
                     <Search size={16} />
@@ -200,33 +199,33 @@ export default function CabinetsPage() {
                   <FilterSelect value={formType} onChange={setFormType} placeholder="Form type"
                     options={[{ value: 'Gynecology', label: 'Gynecology' }, { value: 'NonGynecology', label: 'Non-Gynecology' }]} />
                   <FilterSelect value={status} onChange={setStatus} placeholder="Status" options={ALL_STATUSES.map((s) => ({ value: s, label: s }))} />
-                  <button onClick={() => setModalOpen(true)} className="flex h-10 items-center gap-1.5 rounded-pill bg-primary px-4 text-small font-bold text-white hover:bg-primary-hover"><PlusOutlined /> Add</button>
+                  <button onClick={() => setModalOpen(true)} className="btn-primary"><Plus size={16} /> Add</button>
                 </div>
               </div>
 
               <div className="overflow-x-auto px-2 pb-4 pt-3">
                 <table className="w-full min-w-[820px] border-collapse">
                   <thead>
-                    <tr className="text-left text-caption font-bold uppercase tracking-wide text-text-tertiary">
-                      <th className="px-4 py-3 font-bold">Lab#</th>
-                      <th className="px-4 py-3 font-bold">Patient</th>
-                      <th className="px-4 py-3 font-bold">Client</th>
-                      <th className="px-4 py-3 font-bold">Form</th>
-                      <th className="px-4 py-3 font-bold">Status</th>
-                      <th className="px-4 py-3 font-bold">Urgent</th>
-                      <th className="px-4 py-3 font-bold">Date</th>
+                    <tr className="border-b border-outline-variant/20">
+                      <th className="px-4 py-3 text-left font-label-sm text-label-sm text-secondary uppercase tracking-wider">Lab#</th>
+                      <th className="px-4 py-3 text-left font-label-sm text-label-sm text-secondary uppercase tracking-wider">Patient</th>
+                      <th className="px-4 py-3 text-left font-label-sm text-label-sm text-secondary uppercase tracking-wider">Client</th>
+                      <th className="px-4 py-3 text-left font-label-sm text-label-sm text-secondary uppercase tracking-wider">Form</th>
+                      <th className="px-4 py-3 text-left font-label-sm text-label-sm text-secondary uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-left font-label-sm text-label-sm text-secondary uppercase tracking-wider">Urgent</th>
+                      <th className="px-4 py-3 text-left font-label-sm text-label-sm text-secondary uppercase tracking-wider">Date</th>
                       <th className="w-10 px-2 py-3" />
                     </tr>
                   </thead>
                   <tbody>
                     {isFetching && view.length === 0 && (
-                      <tr><td colSpan={8} className="px-4 py-10 text-center text-small text-text-tertiary">Loading records…</td></tr>
+                      <tr><td colSpan={8} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">Loading records…</td></tr>
                     )}
                     {!isFetching && view.length === 0 && (
-                      <tr><td colSpan={8} className="px-4 py-10 text-center text-small text-text-tertiary">{surname ? `No patients with surname “${surname}”` : 'No records filed here yet.'}</td></tr>
+                      <tr><td colSpan={8} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">{surname ? `No patients with surname “${surname}”` : 'No records filed here yet.'}</td></tr>
                     )}
                     {view.map((r) => (
-                      <tr key={r.id} className="border-t border-border transition-colors hover:bg-[#f8fafd]">
+                      <tr key={r.id} className="border-b border-outline-variant/10 transition-colors hover:bg-surface-container-low/60">
                         <td className="px-4 py-3">
                           <div className="text-small font-bold text-text">{r.labNumber ?? '—'}</div>
                           <div className="truncate text-tiny font-medium text-text-tertiary">{(r.specimens ?? []).map((s) => s.type).join(', ') || '—'}</div>
@@ -261,8 +260,16 @@ export default function CabinetsPage() {
       <CabinetFormModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onCreated={(c) => { qc.invalidateQueries({ queryKey: ['cabinets'] }); setSelectedId(c.id); message.success('Folder created'); }}
+        onCreated={(c) => { qc.invalidateQueries({ queryKey: ['cabinets'] }); setSelectedId(c.id); notify('ok', 'Folder created'); }}
+        notify={notify}
       />
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 font-label-md text-label-md text-white shadow-lg"
+          style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }
@@ -317,8 +324,7 @@ function FilterSelect({ value, onChange, placeholder, options }: { value?: strin
   );
 }
 
-function CabinetFormModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (c: Cabinet) => void }) {
-  const { message } = App.useApp();
+function CabinetFormModal({ open, onClose, onCreated, notify }: { open: boolean; onClose: () => void; onCreated: (c: Cabinet) => void; notify: (type: 'ok' | 'err', msg: string) => void }) {
   const [label, setLabel] = useState('');
   const [clientId, setClientId] = useState<string | undefined>();
   const [color, setColor] = useState('blue');
@@ -327,7 +333,7 @@ function CabinetFormModal({ open, onClose, onCreated }: { open: boolean; onClose
   const save = useMutation({
     mutationFn: () => api.post('/cabinet/create', { label, color, clientId }).then((r) => r.data),
     onSuccess: (c: Cabinet) => { onCreated(c); reset(); onClose(); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not create folder'),
+    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Could not create folder'),
   });
 
   if (!open) return null;

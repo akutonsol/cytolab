@@ -2,8 +2,6 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Skeleton, Table } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import {
   ArrowRight, ArrowUpRight, BarChart3, Clock, FlaskConical, MoreHorizontal, Plus, Search, SlidersHorizontal,
 } from 'lucide-react';
@@ -18,6 +16,7 @@ const SPECIMEN: Record<string, string> = {
   CSF: 'CSF', PLEURAL_FLD: 'Pleural fluid', BREAST_ASP: 'Breast asp.', JOINT_ASP: 'Joint asp.', SYNOVIAL_FLD: 'Synovial fluid', OTHER: 'Other',
 };
 const specLabel = (t?: string | null) => (t ? SPECIMEN[t] ?? t : '—');
+const TH = 'px-4 py-3 text-left font-label-sm text-label-sm text-secondary uppercase tracking-wider whitespace-nowrap';
 const time = (d: string) => new Date(d).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 const longDate = (d: string) => new Date(d).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good Morning' : h < 18 ? 'Good Afternoon' : 'Good Evening'; };
@@ -50,38 +49,6 @@ export default function PatientsPage() {
 
   if (isError) return <div className="p-2 text-small text-text-secondary">The daily queue is unavailable right now.</div>;
   if (isLoading || !d) return <PageSkeleton />;
-
-  const columns: ColumnsType<any> = [
-    {
-      title: 'Patient', dataIndex: 'patient',
-      render: (_, r) => (
-        <div className="flex items-center gap-3">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-soft text-caption font-bold text-primary">
-            {r.patient.split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
-          </span>
-          <div className="min-w-0">
-            <div className="truncate text-small font-bold text-text">{r.patient}</div>
-            <div className="truncate text-caption font-medium text-text-tertiary">{r.labNumber ?? '—'}</div>
-          </div>
-        </div>
-      ),
-    },
-    { title: 'Specimen type', dataIndex: 'specimenType', render: (t) => <span className="text-small font-medium text-text-secondary">{specLabel(t)}</span> },
-    { title: 'Status', dataIndex: 'status', width: 130, render: (_, r) => <StatusChip status={r.status} urgent={r.urgent} /> },
-    { title: 'Received', dataIndex: 'receivedAt', width: 130, render: (v) => <span className="text-small font-medium text-text-secondary">{time(v)}</span> },
-    {
-      title: 'Stage', dataIndex: 'stage', width: 190,
-      render: (st) => (
-        <div className="flex items-center gap-2.5">
-          <div className="h-2 w-24 overflow-hidden rounded-pill bg-lightgray">
-            <div className="h-full rounded-pill bg-gradient-to-r from-primary to-[#2e5ce6]" style={{ width: `${st.pct}%` }} />
-          </div>
-          <span className="whitespace-nowrap text-caption font-semibold text-text-secondary">{st.label}</span>
-        </div>
-      ),
-    },
-    { title: '', width: 44, render: () => <button className="text-text-tertiary hover:text-text"><MoreHorizontal size={18} /></button> },
-  ];
 
   return (
     <div className="flex flex-col gap-6 xl:flex-row">
@@ -186,22 +153,66 @@ export default function PatientsPage() {
         </div>
 
         {/* Records table */}
-        <div className="flex flex-col rounded-card border border-card bg-gradient-to-b from-white to-[#f5f7fd] shadow-card">
+        <div className="glass-card flex flex-col rounded-2xl">
           <div className="flex flex-wrap items-center justify-between gap-3 px-6 pt-6">
-            <h2 className="text-[20px] font-extrabold tracking-tight text-text">Today&apos;s records · {d.records.length}</h2>
+            <h2 className="font-headline-sm text-headline-sm text-charcoal-heading">Today&apos;s records · {d.records.length}</h2>
             <div className="flex items-center gap-2">
               <div className="flex h-10 items-center gap-2 rounded-pill border border-card bg-surface px-3 text-text-tertiary">
                 <Search size={16} />
                 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search records" className="w-40 border-none bg-transparent text-small text-text outline-none placeholder:text-text-tertiary" />
               </div>
               <button aria-label="Filter" className="grid h-10 w-10 place-items-center rounded-full border border-card bg-surface text-text-secondary hover:text-text"><SlidersHorizontal size={16} /></button>
-              <button onClick={() => setDrawerOpen(true)} className="flex h-10 items-center gap-1.5 rounded-pill bg-primary px-4 text-small font-bold text-white hover:bg-primary-hover"><Plus size={16} /> Add</button>
+              <button onClick={() => setDrawerOpen(true)} className="btn-primary"><Plus size={16} /> Add</button>
             </div>
           </div>
-          <div className="px-3 pb-3 pt-2">
-            <Table rowKey="id" columns={columns} dataSource={rows} pagination={false} size="middle"
-              onRow={(r: any) => ({ onClick: () => r.patientId && router.push(`/patients/${r.patientId}`), style: { cursor: 'pointer' } })}
-              locale={{ emptyText: 'No records today yet.' }} />
+          <div className="overflow-x-auto px-3 pb-3 pt-3">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-outline-variant/20">
+                  <th className={TH}>Patient</th>
+                  <th className={TH}>Specimen type</th>
+                  <th className={TH}>Status</th>
+                  <th className={TH}>Received</th>
+                  <th className={TH}>Stage</th>
+                  <th className={TH}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.length === 0 && (
+                  <tr><td colSpan={6} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">No records today yet.</td></tr>
+                )}
+                {rows.map((r: any) => (
+                  <tr key={r.id} onClick={() => r.patientId && router.push(`/patients/${r.patientId}`)}
+                    className="cursor-pointer border-b border-outline-variant/10 transition-colors hover:bg-surface-container-low/60">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-soft text-caption font-bold text-primary">
+                          {r.patient.split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="truncate text-small font-bold text-text">{r.patient}</div>
+                          <div className="truncate text-caption font-medium text-text-tertiary">{r.labNumber ?? '—'}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3"><span className="text-small font-medium text-text-secondary">{specLabel(r.specimenType)}</span></td>
+                    <td className="px-4 py-3"><StatusChip status={r.status} urgent={r.urgent} /></td>
+                    <td className="px-4 py-3"><span className="text-small font-medium text-text-secondary">{time(r.receivedAt)}</span></td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-2 w-24 overflow-hidden rounded-pill bg-lightgray">
+                          <div className="h-full rounded-pill bg-gradient-to-r from-primary to-[#2e5ce6]" style={{ width: `${r.stage.pct}%` }} />
+                        </div>
+                        <span className="whitespace-nowrap text-caption font-semibold text-text-secondary">{r.stage.label}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button onClick={(e) => e.stopPropagation()} className="text-text-tertiary hover:text-text"><MoreHorizontal size={18} /></button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -233,16 +244,26 @@ function AlertStat({ tint, label, value, labelColor, onClick }: { tint: string; 
   );
 }
 
+function SkeletonLines({ rows }: { rows: number }) {
+  return (
+    <div className="flex flex-col gap-3">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="h-4 animate-pulse rounded-md bg-surface-container" style={{ width: `${90 - (i % 4) * 12}%` }} />
+      ))}
+    </div>
+  );
+}
+
 function PageSkeleton() {
   return (
     <div className="flex flex-col gap-6 xl:flex-row">
-      <div className="h-[620px] w-full rounded-card border border-card bg-surface p-5 shadow-card xl:w-[340px]"><Skeleton active paragraph={{ rows: 10 }} /></div>
+      <div className="h-[620px] w-full rounded-card border border-card bg-surface p-5 shadow-card xl:w-[340px]"><SkeletonLines rows={10} /></div>
       <div className="flex flex-1 flex-col gap-6">
         <div className="h-20 rounded-card" />
         <div className="grid grid-cols-4 gap-6">
           <div className="col-span-2 h-40 rounded-card bg-[#eef3ff]" /><div className="h-40 rounded-card bg-[#eef3ff]" /><div className="h-40 rounded-card bg-[#edfaf4]" />
         </div>
-        <div className="rounded-card border border-card bg-surface p-6 shadow-card"><Skeleton active paragraph={{ rows: 8 }} /></div>
+        <div className="rounded-card border border-card bg-surface p-6 shadow-card"><SkeletonLines rows={8} /></div>
       </div>
     </div>
   );
