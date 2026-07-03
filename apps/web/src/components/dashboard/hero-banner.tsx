@@ -1,5 +1,3 @@
-import Image from 'next/image';
-
 export interface HeroChip {
   label: string;
   value: string | number;
@@ -12,52 +10,22 @@ export interface HeroFeatured {
   status: string;
 }
 
-const glass: React.CSSProperties = {
-  borderRadius: 24,
-  border: '1px solid rgba(255,255,255,0.7)',
-  background: 'rgba(255,255,255,0.58)',
-  backdropFilter: 'blur(14px)',
-  WebkitBackdropFilter: 'blur(14px)',
-  boxShadow: '0 1px 2px rgba(16,24,40,0.06)',
-  padding: 16,
-};
-// Solid colour-coded card. The specimen (blood) card is red; the first three KPI
-// chips use peach / lavender / light-blue; the last chip keeps the frosted glass.
-const SPECIMEN_BG = '#e87b72';
-const CHIP_BG: (string | undefined)[] = ['#f5ddca', '#e6e1ee', '#d6e0f0'];
-const solid = (bg: string): React.CSSProperties => ({
-  borderRadius: 24,
-  border: '1px solid rgba(255,255,255,0.55)',
-  background: bg,
-  boxShadow: '0 1px 2px rgba(16,24,40,0.06)',
-  padding: 16,
-});
-const kicker: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 700,
-  letterSpacing: '0.05em',
-  textTransform: 'uppercase',
-  color: '#334155',
-};
-
 /**
  * Dashboard hero. Nav lives in the app top bar, so this carries only the
- * greeting, the active-specimen widget and the KPI chips — all real lab data.
+ * greeting and the nav pills.
  */
 export function HeroBanner({
   firstName,
-  featured,
-  chips,
   nav,
 }: {
   firstName: string;
-  featured: HeroFeatured | null;
-  chips: HeroChip[];
+  featured?: HeroFeatured | null;
+  chips?: HeroChip[];
   nav?: React.ReactNode;
 }) {
   return (
     <section>
-      {/* Row 1 — greeting (left) + nav pills (right) */}
+      {/* Greeting (left) + nav pills (right) */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap' }}>
         <div>
           <p style={{ fontSize: 20, color: '#4b5563', fontWeight: 500, margin: '0 0 6px' }}>Hi, {firstName}!</p>
@@ -66,44 +34,6 @@ export function HeroBanner({
           </h1>
         </div>
         {nav}
-      </div>
-
-      {/* Row 2 — active specimen + KPI chips in one horizontal row */}
-      <div style={{ display: 'flex', gap: 16, marginTop: 48, flexWrap: 'wrap' }}>
-        <div style={{ ...solid(SPECIMEN_BG), display: 'flex', gap: 12, alignItems: 'center', flex: '0 0 auto', minWidth: 250 }}>
-          <div style={{ position: 'relative', width: 48, height: 96, flexShrink: 0 }}>
-            <Image src="/specimen-tube.png" alt="" width={48} height={96} style={{ objectFit: 'contain' }} />
-            {/* Two staggered blood drops falling from the tube tip */}
-            <span className="blood-drip" style={{ position: 'absolute', left: '50%', bottom: 10, width: 6, height: 8, marginLeft: -3, borderRadius: '50% 50% 50% 50% / 60% 60% 42% 42%', background: '#a01414' }} />
-            <span className="blood-drip" style={{ position: 'absolute', left: '50%', bottom: 10, width: 5, height: 7, marginLeft: -2.5, borderRadius: '50% 50% 50% 50% / 60% 60% 42% 42%', background: '#8f1111', animationDelay: '1.3s' }} />
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ ...kicker, color: '#7a231c' }}>Active Specimen</div>
-            {featured ? (
-              <>
-                <div style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 14, fontWeight: 600, color: '#3f120e', marginTop: 2 }}>
-                  {featured.labNumber ?? '—'}
-                </div>
-                <div style={{ fontSize: 12, color: '#6e241e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{featured.patient}</div>
-                <span style={{ display: 'inline-block', marginTop: 6, borderRadius: 999, background: 'rgba(255,255,255,0.55)', color: '#7a231c', fontSize: 11, fontWeight: 600, padding: '2px 8px' }}>
-                  {featured.status}
-                </span>
-              </>
-            ) : (
-              <div style={{ fontSize: 12, color: '#6e241e', marginTop: 4 }}>No open cases today</div>
-            )}
-          </div>
-        </div>
-
-        {chips.map((chip, i) => (
-          <div key={chip.label} style={{ ...(CHIP_BG[i] ? solid(CHIP_BG[i]!) : glass), flex: '1 1 0', minWidth: 150 }}>
-            <div style={kicker}>{chip.label}</div>
-            <div style={{ marginTop: 6, display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ fontSize: 30, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>{chip.value}</span>
-              {chip.delta ? <span style={{ fontSize: 13, fontWeight: 700, color: '#4f46e5' }}>{chip.delta}</span> : null}
-            </div>
-          </div>
-        ))}
       </div>
     </section>
   );
