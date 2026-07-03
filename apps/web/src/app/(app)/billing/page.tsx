@@ -235,33 +235,6 @@ function BillingWorkspace() {
         )}
           </div>
 
-          {/* Payment History calendar */}
-          <div className={`${CARD} p-6`}>
-            <div className="text-[18px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Payment History</div>
-            <div className="mt-1.5 text-[14px] text-[#64748B]">You have made {onTimePct}% of payments on time.</div>
-            <div className="mt-5 overflow-x-auto">
-              <div className="inline-block">
-                <div className="mb-2.5 flex gap-2 pl-12">
-                  {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'].map((m, i) => <span key={i} className="w-4 text-center text-[11px] font-medium text-[#94A3B8]">{m}</span>)}
-                </div>
-                {calYears.map((y) => (
-                  <div key={y} className="mb-2.5 flex items-center gap-2">
-                    <span className="w-10 text-[12px] font-medium text-[#94A3B8]">{y}</span>
-                    {Array.from({ length: 12 }, (_, mo) => {
-                      const cell = pymByYM.get(`${y}-${mo}`);
-                      const bg = cell ? (cell.late ? '#EF4444' : '#22C55E') : '#E5E7EB';
-                      return <span key={mo} className="h-4 w-4 rounded-full" style={{ background: bg }} title={`${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][mo]} ${y}`} />;
-                    })}
-                  </div>
-                ))}
-                <div className="mt-4 flex items-center gap-4 pl-12 text-[12px] text-[#94A3B8]">
-                  <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full" style={{ background: '#22C55E' }} /> On time</span>
-                  <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full" style={{ background: '#EF4444' }} /> Late</span>
-                  <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full" style={{ background: '#E5E7EB' }} /> No payment</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* ══ RIGHT COLUMN ══ */}
@@ -298,6 +271,31 @@ function BillingWorkspace() {
             <MetricCard title="Avg Payment TAT" value={`${avgTat} days`} tone={avgTat <= 7 ? 'green' : 'red'} badge={avgTat <= 7 ? 'Low Impact' : 'High Impact'} sub="Average days to receive payment" onClick={() => setTab('paid')} />
             <MetricCard title="Total Invoices" value={String(allBills.length)} tone="green" badge="Low Impact" sub="Total invoices issued to date" onClick={() => setTab('all')} />
             <MetricCard title="Disputed / Void" value={String(voidCount)} tone={voidCount > 0 ? 'red' : 'green'} badge={voidCount > 0 ? 'High Impact' : 'Low Impact'} sub="Voided or disputed invoices" onClick={() => setTab('all')} />
+          </div>
+
+          {/* Payment History (under the stats cards) */}
+          <div className={`${CARD} p-6`}>
+            <div className="text-[18px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Payment History</div>
+            <div className="mt-1.5 text-[14px] text-[#64748B]">You have made {onTimePct}% of payments on time.</div>
+            <div className="mt-6 overflow-x-auto">
+              <div className="inline-block">
+                <div className="mb-3 flex gap-2 pl-11">
+                  {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'].map((m, i) => <span key={i} className="w-6 text-center text-[12px] font-medium text-[#94A3B8]">{m}</span>)}
+                </div>
+                {calYears.map((y) => (
+                  <div key={y} className="mb-2.5 flex items-center gap-2">
+                    <span className="w-9 text-[13px] font-medium text-[#94A3B8]">{y}</span>
+                    {Array.from({ length: 12 }, (_, mo) => {
+                      const cell = pymByYM.get(`${y}-${mo}`);
+                      const title = `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][mo]} ${y}`;
+                      if (!cell) return <span key={mo} className="h-6 w-6 rounded-full bg-[#E5E7EB]" title={title} />;
+                      if (cell.late) return <span key={mo} className="grid h-6 w-6 place-items-center rounded-full" style={{ background: '#EF4444' }} title={`${title} · late`}><X size={13} strokeWidth={3} color="#fff" /></span>;
+                      return <span key={mo} className="h-6 w-6 rounded-full" style={{ background: '#4ADE80' }} title={`${title} · on time`} />;
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
