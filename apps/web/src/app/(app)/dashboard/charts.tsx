@@ -177,8 +177,8 @@ export function PerformanceArea() {
           </linearGradient>
         </defs>
         <CartesianGrid vertical={false} stroke="#F1F5F9" strokeDasharray="4 4" />
-        <XAxis dataKey="m" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94A3B8' }} dy={4} />
-        <YAxis axisLine={false} tickLine={false} width={38} tick={{ fontSize: 9, fill: '#CBD5E1' }} ticks={[0, 25, 50, 75, 100]} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+        <XAxis dataKey="m" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#475569', fontWeight: 500 }} dy={4} />
+        <YAxis axisLine={false} tickLine={false} width={40} tick={{ fontSize: 11, fill: '#475569', fontWeight: 500 }} ticks={[0, 25, 50, 75, 100]} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
         <Area type="monotone" dataKey="v" stroke="#4F46E5" strokeWidth={2} fill="url(#perfGrad)" dot={{ r: 3, fill: '#4F46E5', stroke: '#fff', strokeWidth: 1.5 }} activeDot={{ r: 4 }} isAnimationActive animationDuration={900} />
       </AreaChart>
     </ResponsiveContainer>
