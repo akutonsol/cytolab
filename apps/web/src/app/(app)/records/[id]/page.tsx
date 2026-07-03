@@ -258,7 +258,7 @@ export default function RecordDetailPage() {
       </aside>
 
       {/* ═══════════ CENTER PANEL ═══════════ */}
-      <section className="flex w-[640px] max-w-full shrink-0 flex-col overflow-hidden rounded-[20px] border border-[#E4E8F4] bg-white">
+      <section className="flex w-[780px] max-w-full shrink-0 flex-col overflow-hidden rounded-[20px] border border-[#E4E8F4] bg-white">
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-[#F1F5F9] px-5 py-3.5">
           <div className={LABEL}>Specimen Analysis</div>
