@@ -104,7 +104,8 @@ const ANIM_CSS = `
 @keyframes drift6{0%{transform:translate(0,0) scale(1);opacity:.6}25%{transform:translate(-38px,-54px) scale(1.55);opacity:1}50%{transform:translate(48px,24px) scale(.7);opacity:.5}75%{transform:translate(-30px,42px) scale(1.2);opacity:.85}100%{transform:translate(0,0) scale(1);opacity:.6}}
 @keyframes drift7{0%{transform:translate(0,0) scale(1);opacity:.5}25%{transform:translate(54px,-34px) scale(1.45);opacity:.95}50%{transform:translate(-34px,44px) scale(.75);opacity:.45}75%{transform:translate(40px,20px) scale(1.2);opacity:.85}100%{transform:translate(0,0) scale(1);opacity:.5}}
 @keyframes drift8{0%{transform:translate(0,0) scale(1);opacity:.7}25%{transform:translate(-58px,30px) scale(1.4);opacity:1}50%{transform:translate(34px,-42px) scale(.8);opacity:.55}75%{transform:translate(-28px,-30px) scale(1.25);opacity:.85}100%{transform:translate(0,0) scale(1);opacity:.7}}
-@keyframes microDrift{0%{transform:translate(0px,0px) scale(1.06)}20%{transform:translate(-15px,11px) scale(1.09)}40%{transform:translate(11px,-9px) scale(1.07)}60%{transform:translate(-9px,-13px) scale(1.1)}80%{transform:translate(13px,9px) scale(1.08)}100%{transform:translate(0px,0px) scale(1.06)}}
+@keyframes microDrift{0%{transform:translate(0px,0px) scale(1.02)}25%{transform:translate(-10px,7px) scale(1.05)}50%{transform:translate(8px,-6px) scale(1.03)}75%{transform:translate(-6px,-9px) scale(1.06)}100%{transform:translate(0px,0px) scale(1.02)}}
+@keyframes ringSpin{to{transform:rotate(360deg)}}
 `;
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -128,14 +129,15 @@ function LifecycleRings({ status }: { status: string }) {
     isComplete: i < currentStageIdx,
   }));
 
-  const SIZE = 200;
+  const SIZE = 360;
   const CENTER = SIZE / 2;
-  const RING_WIDTH = 14;
-  const RING_GAP = 4;
-  const radii = [88, 88 - (RING_WIDTH + RING_GAP), 88 - (RING_WIDTH + RING_GAP) * 2, 88 - (RING_WIDTH + RING_GAP) * 3, 88 - (RING_WIDTH + RING_GAP) * 4];
+  const RING_WIDTH = 22;
+  const RING_GAP = 6;
+  const R0 = 168;
+  const radii = [R0, R0 - (RING_WIDTH + RING_GAP), R0 - (RING_WIDTH + RING_GAP) * 2, R0 - (RING_WIDTH + RING_GAP) * 3, R0 - (RING_WIDTH + RING_GAP) * 4];
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 20, padding: '20px 0', marginTop: 8 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: '8px 0 16px' }}>
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           {rings.map((ring, i) => {
@@ -147,26 +149,26 @@ function LifecycleRings({ status }: { status: string }) {
                 {ring.pct > 0 && (
                   <circle cx={CENTER} cy={CENTER} r={r} fill="none" stroke={ring.color} strokeWidth={RING_WIDTH} strokeLinecap="round"
                     strokeDasharray={`${(ring.pct / 100) * circ} ${circ}`} strokeDashoffset={circ / 4}
-                    style={ring.isCurrent ? { animation: 'ringPulse 2s ease-in-out infinite' } : {}} />
+                    style={ring.isCurrent ? { transformBox: 'fill-box', transformOrigin: 'center', animation: 'ringSpin 7s linear infinite, ringPulse 2s ease-in-out infinite' } : {}} />
                 )}
               </g>
             );
           })}
-          <text x={CENTER} y={CENTER - 8} textAnchor="middle" fontSize="22" fontWeight="800" fill="#0F172A" fontFamily="Geist, sans-serif">
+          <text x={CENTER} y={CENTER - 12} textAnchor="middle" fontSize="42" fontWeight="800" fill="#0F172A" fontFamily="Geist, sans-serif">
             {Math.round(rings.reduce((s, r) => s + r.pct, 0) / rings.length)}%
           </text>
-          <text x={CENTER} y={CENTER + 12} textAnchor="middle" fontSize="10" fontWeight="600" fill="#94A3B8" fontFamily="Geist, sans-serif" letterSpacing="0.06em">OVERALL</text>
+          <text x={CENTER} y={CENTER + 22} textAnchor="middle" fontSize="15" fontWeight="600" fill="#94A3B8" fontFamily="Geist, sans-serif" letterSpacing="0.08em">OVERALL</text>
         </svg>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {rings.map((ring, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: ring.pct === 0 ? 0.4 : 1 }}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: ring.pct > 0 ? ring.color : ring.ghostColor, flexShrink: 0, boxShadow: ring.isCurrent ? `0 0 6px ${ring.color}` : 'none' }} />
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: ring.pct === 0 ? 0.45 : 1 }}>
+            <div style={{ width: 16, height: 16, borderRadius: '50%', background: ring.pct > 0 ? ring.color : ring.ghostColor, flexShrink: 0, boxShadow: ring.isCurrent ? `0 0 10px ${ring.color}` : 'none', animation: ring.isCurrent ? 'ringPulse 2s ease-in-out infinite' : undefined }} />
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: ring.pct > 0 ? '#0F172A' : '#94A3B8' }}>{ring.label}</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: ring.pct > 0 ? '#0F172A' : '#94A3B8' }}>{ring.label}</div>
             </div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: ring.isComplete ? ring.color : ring.isCurrent ? ring.color : '#CBD5E1' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: ring.isComplete ? ring.color : ring.isCurrent ? ring.color : '#CBD5E1' }}>
               {ring.isComplete ? '✓' : ring.isCurrent ? `${Math.round(ring.pct)}%` : '—'}
             </div>
           </div>
@@ -282,13 +284,12 @@ export default function RecordDetailPage() {
 
         {/* Content: left detail column + right image (beside, larger) */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 24, flex: 1, padding: '16px 20px' }}>
-          <div style={{ flexShrink: 0 }} className="flex w-[280px] flex-col">
-            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#E8EDF7] text-[#4F46E5]"><Microscope size={22} /></span>
+          <div style={{ flexShrink: 0 }} className="flex w-[440px] flex-col">
+            <LifecycleRings status={status} />
+            <span className="mt-2 grid h-12 w-12 place-items-center rounded-2xl bg-[#E8EDF7] text-[#4F46E5]"><Microscope size={22} /></span>
             <div className="mt-4 text-[17px] font-semibold italic text-[#1E293B]">Patient {specLabel(activeSpecimen?.type)} Analysis</div>
             <div className="mt-1 text-[20px] font-bold text-[#4F46E5]">{progress}%<span className="ml-1.5 text-[14px] font-normal text-[#64748B]">completed</span></div>
             <button onClick={() => setSheetModal(true)} className="mt-2 flex items-center gap-1 self-start text-[14px] font-bold text-[#4F46E5] hover:underline">Enter Analysis <ChevronRight size={15} /></button>
-
-            <LifecycleRings status={status} />
 
             <div className="mt-auto pt-6">
               {sheet && aiFinding !== 'Awaiting cytological analysis.' && (
@@ -318,9 +319,12 @@ export default function RecordDetailPage() {
           </div>
 
           <div style={{ flex: 1, alignSelf: 'stretch', display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
-            {/* Living-microscope view: the whole specimen field slowly pans + zooms (overflow clips the drift) */}
-            <div style={{ position: 'relative', width: '100%', maxWidth: 1040, overflow: 'hidden', borderRadius: 16 }}>
+            {/* Living-microscope view: specimen field slowly pans + zooms, with drifting particles over it */}
+            <div style={{ position: 'relative', width: '100%', maxWidth: 1040 }}>
               <img src={cytologyImg} alt="Cytology specimen" style={{ display: 'block', width: '100%', height: 'auto', transformOrigin: 'center', animation: 'microDrift 20s ease-in-out infinite' }} />
+              {PARTICLES.map((p, i) => (
+                <div key={`p${i}`} className="pointer-events-none absolute rounded-full" style={{ left: p.left, top: p.top, width: p.size, height: p.size, background: p.color, filter: p.blur ? `blur(${p.blur}px)` : undefined, animation: `${p.anim} ${p.dur} ease-in-out ${p.delay} infinite` }} />
+              ))}
             </div>
           </div>
         </div>
