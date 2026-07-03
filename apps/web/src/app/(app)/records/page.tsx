@@ -101,13 +101,13 @@ const cardHead: React.CSSProperties = { fontFamily: GEIST, fontSize: 18, fontWei
 function Kpi({ label, value, delta, deltaColor, icon, iconBg, iconFg, borderLeft }:
   { label: string; value: number; delta: string; deltaColor: string; icon: React.ReactNode; iconBg: string; iconFg: string; borderLeft?: string }) {
   return (
-    <div style={{ ...glass, padding: 24, display: 'flex', flexDirection: 'column', ...(borderLeft ? { borderLeft: `4px solid ${borderLeft}` } : {}) }}>
+    <div style={{ ...glass, padding: 16, display: 'flex', flexDirection: 'column', ...(borderLeft ? { borderLeft: `4px solid ${borderLeft}` } : {}) }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <span style={kpiLabel}>{label}</span>
-        <span style={{ width: 34, height: 34, borderRadius: 9, display: 'grid', placeItems: 'center', background: iconBg, color: iconFg }}>{icon}</span>
+        <span style={{ ...kpiLabel, fontSize: 10 }}>{label}</span>
+        <span style={{ width: 28, height: 28, borderRadius: 8, display: 'grid', placeItems: 'center', background: iconBg, color: iconFg }}>{icon}</span>
       </div>
-      <span style={{ fontFamily: GEIST, fontSize: 48, fontWeight: 700, lineHeight: 1, color: HEAD, marginTop: 14 }}>{value.toLocaleString()}</span>
-      <span style={{ fontSize: 13, fontWeight: 600, color: deltaColor, marginTop: 8 }}>{delta}</span>
+      <span style={{ fontFamily: GEIST, fontSize: 30, fontWeight: 700, lineHeight: 1, color: HEAD, marginTop: 8 }}>{value.toLocaleString()}</span>
+      <span style={{ fontSize: 12, fontWeight: 600, color: deltaColor, marginTop: 5 }}>{delta}</span>
     </div>
   );
 }
@@ -191,21 +191,50 @@ export default function SamplesPage() {
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
       {/* ═══════════ LEFT COLUMN ═══════════ */}
       <div className="flex min-w-0 flex-col gap-6">
-        {/* KPI strip */}
-        <div className="grid grid-cols-2 gap-4">
-          <Kpi label="New Samples" value={newToday}
-            delta={`${newDelta >= 0 ? '↑ +' : '↓ '}${newDelta}% vs yesterday`}
-            deltaColor={newDelta >= 0 ? '#16A34A' : '#E11D48'}
-            icon={<Plus size={17} />} iconBg="#EEF2FF" iconFg={PRIMARY} />
-          <Kpi label="Completed" value={completedCount}
-            delta={`${accuracy}% Accuracy`} deltaColor="#16A34A"
-            icon={<CheckCircle size={17} />} iconBg="#F0FDF4" iconFg="#16A34A" borderLeft="#65A30D" />
-          <Kpi label="Processing" value={processingCount}
-            delta="Active in lab" deltaColor={PRIMARY}
-            icon={<FlaskConical size={17} />} iconBg="#EEF2FF" iconFg={PRIMARY} />
-          <Kpi label="Urgent" value={urgentAll.length}
-            delta="Requires attention" deltaColor="#E11D48"
-            icon={<AlertTriangle size={17} />} iconBg="#FFF1F2" iconFg="#E11D48" borderLeft="#E11D48" />
+        {/* Top band: compact KPIs next to Urgent Flagged + Automation */}
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.25fr_1fr_1fr]">
+          <div className="grid grid-cols-2 gap-4">
+            <Kpi label="New Samples" value={newToday}
+              delta={`${newDelta >= 0 ? '↑ +' : '↓ '}${newDelta}% vs yesterday`}
+              deltaColor={newDelta >= 0 ? '#16A34A' : '#E11D48'}
+              icon={<Plus size={15} />} iconBg="#EEF2FF" iconFg={PRIMARY} />
+            <Kpi label="Completed" value={completedCount}
+              delta={`${accuracy}% Accuracy`} deltaColor="#16A34A"
+              icon={<CheckCircle size={15} />} iconBg="#F0FDF4" iconFg="#16A34A" borderLeft="#65A30D" />
+            <Kpi label="Processing" value={processingCount}
+              delta="Active in lab" deltaColor={PRIMARY}
+              icon={<FlaskConical size={15} />} iconBg="#EEF2FF" iconFg={PRIMARY} />
+            <Kpi label="Urgent" value={urgentAll.length}
+              delta="Requires attention" deltaColor="#E11D48"
+              icon={<AlertTriangle size={15} />} iconBg="#FFF1F2" iconFg="#E11D48" borderLeft="#E11D48" />
+          </div>
+
+          {/* Urgent Flagged Cases */}
+          <div style={{ ...glass, padding: 20 }}>
+            <div style={{ ...cardHead, fontSize: 16 }}>Urgent Flagged Cases</div>
+            <div style={{ marginTop: 12 }}>
+              {urgentAll.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '18px 0', color: '#16A34A', fontSize: 14, fontWeight: 600 }}>✓ No urgent cases</div>
+              ) : (
+                urgentAll.slice(0, 4).map((r) => (
+                  <div key={r.id} onClick={() => router.push(`/records/${r.id}`)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '8px 12px', background: '#fff1f2', borderRadius: 10, marginBottom: 8, cursor: 'pointer' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: HEAD, whiteSpace: 'nowrap' }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: '#E11D48' }} />LAB# {r.labNumber ?? '—'}
+                    </span>
+                    <span style={{ fontSize: 12, color: '#E11D48', fontWeight: 600, whiteSpace: 'nowrap' }}>{overdueH(r.createdAt)}h overdue</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Automation Overview */}
+          <div style={{ ...glass, padding: 20 }}>
+            <div style={{ ...cardHead, fontSize: 16 }}>Automation Overview</div>
+            <div style={{ fontSize: 12, color: SECONDARY, marginTop: 2 }}>Instrument efficiency for current shift</div>
+            <Bar label="Analyzer Performance" pct={analyzerPct} color={PRIMARY} />
+            <Bar label="Avg TAT Performance" pct={tatPct} color="#16A34A" />
+          </div>
         </div>
 
         {/* Active Worklist */}
@@ -281,35 +310,6 @@ export default function SamplesPage() {
           </div>
         </div>
 
-        {/* Bottom row */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {/* Urgent Flagged Cases */}
-          <div style={{ ...glass, padding: 24 }}>
-            <div style={cardHead}>Urgent Flagged Cases</div>
-            <div style={{ marginTop: 16 }}>
-              {urgentAll.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '18px 0', color: '#16A34A', fontSize: 14, fontWeight: 600 }}>✓ No urgent cases</div>
-              ) : (
-                urgentAll.slice(0, 4).map((r) => (
-                  <div key={r.id} onClick={() => router.push(`/records/${r.id}`)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#fff1f2', borderRadius: 12, marginBottom: 8, cursor: 'pointer' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600, color: HEAD }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#E11D48' }} />LAB# {r.labNumber ?? '—'}
-                    </span>
-                    <span style={{ fontSize: 13, color: '#E11D48', fontWeight: 600 }}>{overdueH(r.createdAt)}h overdue</span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Automation Overview */}
-          <div style={{ ...glass, padding: 24 }}>
-            <div style={cardHead}>Automation Overview</div>
-            <div style={{ fontSize: 13, color: SECONDARY, marginTop: 2 }}>Instrument efficiency for current shift</div>
-            <Bar label="Analyzer Performance" pct={analyzerPct} color={PRIMARY} />
-            <Bar label="Avg TAT Performance" pct={tatPct} color="#16A34A" />
-          </div>
-        </div>
       </div>
 
       {/* ═══════════ RIGHT COLUMN ═══════════ */}
