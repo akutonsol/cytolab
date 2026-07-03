@@ -104,6 +104,7 @@ const ANIM_CSS = `
 @keyframes drift6{0%{transform:translate(0,0) scale(1);opacity:.6}25%{transform:translate(-38px,-54px) scale(1.55);opacity:1}50%{transform:translate(48px,24px) scale(.7);opacity:.5}75%{transform:translate(-30px,42px) scale(1.2);opacity:.85}100%{transform:translate(0,0) scale(1);opacity:.6}}
 @keyframes drift7{0%{transform:translate(0,0) scale(1);opacity:.5}25%{transform:translate(54px,-34px) scale(1.45);opacity:.95}50%{transform:translate(-34px,44px) scale(.75);opacity:.45}75%{transform:translate(40px,20px) scale(1.2);opacity:.85}100%{transform:translate(0,0) scale(1);opacity:.5}}
 @keyframes drift8{0%{transform:translate(0,0) scale(1);opacity:.7}25%{transform:translate(-58px,30px) scale(1.4);opacity:1}50%{transform:translate(34px,-42px) scale(.8);opacity:.55}75%{transform:translate(-28px,-30px) scale(1.25);opacity:.85}100%{transform:translate(0,0) scale(1);opacity:.7}}
+@keyframes microDrift{0%{transform:translate(0px,0px) scale(1.06)}20%{transform:translate(-15px,11px) scale(1.09)}40%{transform:translate(11px,-9px) scale(1.07)}60%{transform:translate(-9px,-13px) scale(1.1)}80%{transform:translate(13px,9px) scale(1.08)}100%{transform:translate(0px,0px) scale(1.06)}}
 `;
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -316,13 +317,10 @@ export default function RecordDetailPage() {
             </div>
           </div>
 
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-            <div style={{ position: 'relative', width: '100%', maxWidth: 1040 }}>
-              <img src={cytologyImg} alt="Cytology specimen" style={{ display: 'block', width: '100%', height: 'auto', objectFit: 'contain' }} />
-              {/* Drifting particle overlay — animated cells moving over the specimen */}
-              {PARTICLES.map((p, i) => (
-                <div key={`p${i}`} className="pointer-events-none absolute rounded-full" style={{ left: p.left, top: p.top, width: p.size, height: p.size, background: p.color, filter: p.blur ? `blur(${p.blur}px)` : undefined, animation: `${p.anim} ${p.dur} ease-in-out ${p.delay} infinite` }} />
-              ))}
+          <div style={{ flex: 1, alignSelf: 'stretch', display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
+            {/* Living-microscope view: the whole specimen field slowly pans + zooms (overflow clips the drift) */}
+            <div style={{ position: 'relative', width: '100%', maxWidth: 1040, overflow: 'hidden', borderRadius: 16 }}>
+              <img src={cytologyImg} alt="Cytology specimen" style={{ display: 'block', width: '100%', height: 'auto', transformOrigin: 'center', animation: 'microDrift 20s ease-in-out infinite' }} />
             </div>
           </div>
         </div>
