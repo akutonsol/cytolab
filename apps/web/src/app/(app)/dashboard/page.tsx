@@ -264,7 +264,9 @@ export default function DashboardPage() {
                         <div style={{ position: 'absolute', left: 130, top: 352, width: 320, height: 56, borderRadius: '50%', background: 'radial-gradient(50% 50% at 50% 50%, rgba(255,255,255,0.95), rgba(167,139,250,0.38) 45%, rgba(139,92,246,0.08) 68%, transparent 78%)', filter: 'blur(1px)', zIndex: 1 }} />
                         {/* head — oversized image, transparent padding clipped by the stage */}
                         <img src="/ai-man.png" alt="AI Cytology Model" className="ai-breathe"
-                          style={{ position: 'absolute', left: 50, top: -150, width: 480, height: 720, objectFit: 'contain', objectPosition: 'center', filter: 'brightness(1.28) contrast(1.06) saturate(0.85) drop-shadow(0 18px 40px rgba(99,102,241,0.28))', zIndex: 2 }} />
+                          style={{ position: 'absolute', left: 50, top: -150, width: 480, height: 720, objectFit: 'contain', objectPosition: 'center', filter: 'brightness(1.52) contrast(1.14) saturate(0.35) drop-shadow(0 18px 40px rgba(99,102,241,0.3))', zIndex: 2 }} />
+                        {/* glossy white top-light to mimic the reference render */}
+                        <div style={{ position: 'absolute', left: 90, top: -40, width: 420, height: 360, background: 'radial-gradient(46% 42% at 50% 34%, rgba(255,255,255,0.55), rgba(255,255,255,0.12) 46%, transparent 66%)', mixBlendMode: 'screen', pointerEvents: 'none', zIndex: 2 }} />
                         {/* target markers (soft halo + ring + center) */}
                         {markers.map((m, i) => (
                           <div key={i} style={{ position: 'absolute', left: m.x, top: m.y, transform: 'translate(-50%,-50%)', zIndex: 3, width: 48, height: 48, borderRadius: '50%', display: 'grid', placeItems: 'center', background: `radial-gradient(50% 50% at 50% 50%, ${m.color}33, transparent 70%)` }}>
