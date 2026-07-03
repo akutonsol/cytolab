@@ -136,50 +136,52 @@ function LifecycleRings({ status }: { status: string }) {
   const R0 = 168;
   const radii = [R0, R0 - (RING_WIDTH + RING_GAP), R0 - (RING_WIDTH + RING_GAP) * 2, R0 - (RING_WIDTH + RING_GAP) * 3, R0 - (RING_WIDTH + RING_GAP) * 4];
 
+  const TOFF = 8;
+  const LR = R0 + 30; // label radius — just outside the outer ring
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 24, padding: '8px 0 16px' }}>
-      <div style={{ position: 'relative', flexShrink: 0 }}>
-        <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
-          {rings.map((ring, i) => {
-            const r = radii[i];
-            const circ = 2 * Math.PI * r;
-            // Spiral effect: every ring slowly spins, each at a staggered speed + phase.
-            const spin = `ringSpin ${(8 + i * 1.6).toFixed(1)}s linear ${(-i * 1.2).toFixed(1)}s infinite`;
-            return (
-              <g key={i}>
-                <circle cx={CENTER} cy={CENTER} r={r} fill="none" stroke={ring.ghostColor} strokeWidth={RING_WIDTH} opacity={0.6} />
-                {ring.pct > 0 && (
-                  <circle cx={CENTER} cy={CENTER} r={r} fill="none" stroke={ring.color} strokeWidth={RING_WIDTH} strokeLinecap="round"
-                    strokeDasharray={`${(ring.pct / 100) * circ} ${circ}`} strokeDashoffset={circ / 4}
-                    style={{ transformBox: 'fill-box', transformOrigin: 'center', animation: ring.isCurrent ? `${spin}, ringPulse 2s ease-in-out infinite` : spin }} />
-                )}
-                {/* Spiralling highlight — a short bright segment orbits each ring at a staggered speed */}
-                <circle cx={CENTER} cy={CENTER} r={r} fill="none" stroke={ring.color} strokeWidth={RING_WIDTH * 0.5} strokeLinecap="round"
-                  strokeDasharray={`${circ * 0.09} ${circ}`} opacity={0.55}
-                  style={{ transformBox: 'fill-box', transformOrigin: 'center', animation: `ringSpin ${(5 + i * 1.1).toFixed(1)}s linear ${(-i * 0.7).toFixed(1)}s infinite` }} />
-              </g>
-            );
-          })}
-          <text x={CENTER} y={CENTER - 12} textAnchor="middle" fontSize="42" fontWeight="800" fill="#0F172A" fontFamily="Geist, sans-serif">
-            {Math.round(rings.reduce((s, r) => s + r.pct, 0) / rings.length)}%
-          </text>
-          <text x={CENTER} y={CENTER + 22} textAnchor="middle" fontSize="15" fontWeight="600" fill="#94A3B8" fontFamily="Geist, sans-serif" letterSpacing="0.08em">OVERALL</text>
-        </svg>
-      </div>
+    <div style={{ position: 'relative', width: 540, height: SIZE + TOFF * 2 }}>
+      <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ position: 'absolute', left: 0, top: TOFF }}>
+        {rings.map((ring, i) => {
+          const r = radii[i];
+          const circ = 2 * Math.PI * r;
+          // Spiral effect: every ring slowly spins, each at a staggered speed + phase.
+          const spin = `ringSpin ${(8 + i * 1.6).toFixed(1)}s linear ${(-i * 1.2).toFixed(1)}s infinite`;
+          return (
+            <g key={i}>
+              <circle cx={CENTER} cy={CENTER} r={r} fill="none" stroke={ring.ghostColor} strokeWidth={RING_WIDTH} opacity={0.6} />
+              {ring.pct > 0 && (
+                <circle cx={CENTER} cy={CENTER} r={r} fill="none" stroke={ring.color} strokeWidth={RING_WIDTH} strokeLinecap="round"
+                  strokeDasharray={`${(ring.pct / 100) * circ} ${circ}`} strokeDashoffset={circ / 4}
+                  style={{ transformBox: 'fill-box', transformOrigin: 'center', animation: ring.isCurrent ? `${spin}, ringPulse 2s ease-in-out infinite` : spin }} />
+              )}
+              {/* Spiralling highlight — a short bright segment orbits each ring at a staggered speed */}
+              <circle cx={CENTER} cy={CENTER} r={r} fill="none" stroke={ring.color} strokeWidth={RING_WIDTH * 0.5} strokeLinecap="round"
+                strokeDasharray={`${circ * 0.09} ${circ}`} opacity={0.55}
+                style={{ transformBox: 'fill-box', transformOrigin: 'center', animation: `ringSpin ${(5 + i * 1.1).toFixed(1)}s linear ${(-i * 0.7).toFixed(1)}s infinite` }} />
+            </g>
+          );
+        })}
+        <text x={CENTER} y={CENTER - 12} textAnchor="middle" fontSize="42" fontWeight="800" fill="#0F172A" fontFamily="Geist, sans-serif">
+          {Math.round(rings.reduce((s, r) => s + r.pct, 0) / rings.length)}%
+        </text>
+        <text x={CENTER} y={CENTER + 22} textAnchor="middle" fontSize="15" fontWeight="600" fill="#94A3B8" fontFamily="Geist, sans-serif" letterSpacing="0.08em">OVERALL</text>
+      </svg>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {rings.map((ring, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: ring.pct === 0 ? 0.45 : 1 }}>
+      {/* Data points curved around the outer ring (right-side arc) */}
+      {rings.map((ring, i) => {
+        const theta = ((-60 + i * 30) * Math.PI) / 180;
+        const x = CENTER + LR * Math.cos(theta);
+        const y = TOFF + CENTER + LR * Math.sin(theta);
+        return (
+          <div key={i} style={{ position: 'absolute', left: x, top: y, transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 10, opacity: ring.pct === 0 ? 0.45 : 1, whiteSpace: 'nowrap' }}>
             <div style={{ width: 16, height: 16, borderRadius: '50%', background: ring.pct > 0 ? ring.color : ring.ghostColor, flexShrink: 0, boxShadow: ring.isCurrent ? `0 0 10px ${ring.color}` : 'none', animation: ring.isCurrent ? 'ringPulse 2s ease-in-out infinite' : undefined }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 18, fontWeight: 600, color: ring.pct > 0 ? '#0F172A' : '#94A3B8' }}>{ring.label}</div>
-            </div>
+            <div style={{ fontSize: 18, fontWeight: 600, color: ring.pct > 0 ? '#0F172A' : '#94A3B8' }}>{ring.label}</div>
             <div style={{ fontSize: 18, fontWeight: 700, color: ring.isComplete ? ring.color : ring.isCurrent ? ring.color : '#CBD5E1' }}>
               {ring.isComplete ? '✓' : ring.isCurrent ? '●' : '—'}
             </div>
           </div>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }
