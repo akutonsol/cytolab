@@ -153,6 +153,10 @@ function LifecycleRings({ status }: { status: string }) {
                     strokeDasharray={`${(ring.pct / 100) * circ} ${circ}`} strokeDashoffset={circ / 4}
                     style={{ transformBox: 'fill-box', transformOrigin: 'center', animation: ring.isCurrent ? `${spin}, ringPulse 2s ease-in-out infinite` : spin }} />
                 )}
+                {/* Spiralling highlight — a short bright segment orbits each ring at a staggered speed */}
+                <circle cx={CENTER} cy={CENTER} r={r} fill="none" stroke={ring.color} strokeWidth={RING_WIDTH * 0.5} strokeLinecap="round"
+                  strokeDasharray={`${circ * 0.09} ${circ}`} opacity={0.55}
+                  style={{ transformBox: 'fill-box', transformOrigin: 'center', animation: `ringSpin ${(5 + i * 1.1).toFixed(1)}s linear ${(-i * 0.7).toFixed(1)}s infinite` }} />
               </g>
             );
           })}
@@ -168,10 +172,10 @@ function LifecycleRings({ status }: { status: string }) {
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: ring.pct === 0 ? 0.45 : 1 }}>
             <div style={{ width: 16, height: 16, borderRadius: '50%', background: ring.pct > 0 ? ring.color : ring.ghostColor, flexShrink: 0, boxShadow: ring.isCurrent ? `0 0 10px ${ring.color}` : 'none', animation: ring.isCurrent ? 'ringPulse 2s ease-in-out infinite' : undefined }} />
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 15, fontWeight: 600, color: ring.pct > 0 ? '#0F172A' : '#94A3B8' }}>{ring.label}</div>
+              <div style={{ fontSize: 18, fontWeight: 600, color: ring.pct > 0 ? '#0F172A' : '#94A3B8' }}>{ring.label}</div>
             </div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: ring.isComplete ? ring.color : ring.isCurrent ? ring.color : '#CBD5E1' }}>
-              {ring.isComplete ? '✓' : ring.isCurrent ? `${Math.round(ring.pct)}%` : '—'}
+            <div style={{ fontSize: 18, fontWeight: 700, color: ring.isComplete ? ring.color : ring.isCurrent ? ring.color : '#CBD5E1' }}>
+              {ring.isComplete ? '✓' : ring.isCurrent ? '●' : '—'}
             </div>
           </div>
         ))}
@@ -274,7 +278,7 @@ export default function RecordDetailPage() {
       <style>{ANIM_CSS}</style>
 
       {/* ═══════════ CENTER PANEL ═══════════ */}
-      <section className="flex flex-1 min-w-0 flex-col overflow-hidden rounded-[20px] border border-[#E4E8F4] bg-white">
+      <section className="relative flex flex-1 min-w-0 flex-col rounded-[20px] border border-[#E4E8F4] bg-white">
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-[#F1F5F9] px-5 py-3.5">
           <div className={LABEL}>Specimen Analysis</div>
@@ -324,7 +328,7 @@ export default function RecordDetailPage() {
             </div>
           </div>
 
-          <div style={{ flex: 1, alignSelf: 'stretch', display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
+          <div style={{ flex: 1, alignSelf: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', zIndex: 20 }}>
             {/* Living-microscope view: specimen field slowly pans + zooms, with drifting particles over it */}
             <div style={{ position: 'relative', width: '100%', maxWidth: 1040 }}>
               <img src={cytologyImg} alt="Cytology specimen" style={{ display: 'block', width: '100%', height: 'auto', transformOrigin: 'center', animation: 'microDrift 20s ease-in-out infinite' }} />
