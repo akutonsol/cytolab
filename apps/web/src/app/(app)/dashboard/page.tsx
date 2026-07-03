@@ -43,7 +43,9 @@ const CHIPS = [
   { bg: '#e6e1f2', fg: '#6b5ca0', Icon: Stethoscope },
 ];
 
-// Case distribution by specimen class (violet family, zero-orange).
+// Case distribution by specimen class (violet family, zero-orange). Percentages
+// are fallbacks only — the donut recomputes them from real priorityRecords when
+// data is present (see specimenTypesDynamic).
 const specimenTypes = [
   { label: 'Body Fluid', color: '#6366F1', pct: 42 },
   { label: 'Respiratory', color: '#8B5CF6', pct: 28 },
@@ -51,6 +53,26 @@ const specimenTypes = [
   { label: 'CSF', color: '#C4B5FD', pct: 8 },
   { label: 'Other', color: '#E0E7FF', pct: 6 },
 ];
+
+// Human-readable specimen labels (enum → display). Falls back to a de-underscored
+// version for any type not listed here.
+const SPEC_LABELS: Record<string, string> = {
+  ENDOCERV_ASP: 'Endocerv. Asp', CERV_SCRAP: 'Cervical Scrape', VAG_POOL: 'Vaginal Pool',
+  URINE: 'Urine Cytology', CSF: 'CSF', PLEURAL_FLD: 'Pleural Fluid', BREAST_ASP: 'Breast Asp.',
+  JOINT_ASP: 'Joint Asp.', SYNOVIAL_FLD: 'Synovial Fluid', SPUTUM: 'Sputum',
+  BRONCHIAL_WASH: 'Bronchial Wash', THYROID_FNA: 'Thyroid FNA', LYMPH_NODE: 'Lymph Node FNA',
+  BONE_MARROW: 'Bone Marrow', SKIN_SCRAPING: 'Skin Scraping', OTHER: 'Other',
+};
+const specLabel = (t?: string | null) => SPEC_LABELS[t ?? ''] ?? t?.replace(/_/g, '.') ?? '—';
+// Group a specimen type into one of the five donut buckets.
+const specBucket = (t?: string | null) => {
+  const x = t ?? '';
+  if (['SPUTUM', 'BRONCHIAL_WASH'].includes(x)) return 'Respiratory';
+  if (x === 'URINE') return 'Urine';
+  if (x === 'CSF') return 'CSF';
+  if (['PLEURAL_FLD', 'SYNOVIAL_FLD', 'JOINT_ASP', 'BREAST_ASP', 'THYROID_FNA', 'LYMPH_NODE', 'BONE_MARROW'].includes(x)) return 'Body Fluid';
+  return 'Other';
+};
 
 // ── Specimen icon library: SVG cell-clusters coloured per specimen class ──────
 // Reusable, transparent, crisp — no raster assets. Zero-orange (FNA/body-fluid
@@ -170,6 +192,19 @@ export default function DashboardPage() {
   const volTarget = (volRows[0]?.current ?? 0) + (volRows[0]?.gap ?? 0);
   const volAttain = volTarget > 0 ? Math.min(100, Math.round((volTotal / (volTarget * volRows.length)) * 100)) : 0;
 
+  // Case distribution — bucket the priority queue's specimen types into the five
+  // donut classes and derive real percentages; fall back to the static mix when
+  // the queue is empty so the demo donut still reads as full.
+  const specCounts: Record<string, number> = {};
+  for (const r of (d.priorityRecords ?? [])) {
+    const g = specBucket(r.specimen);
+    specCounts[g] = (specCounts[g] ?? 0) + 1;
+  }
+  const specTotalCount = Object.values(specCounts).reduce((s, v) => s + v, 0);
+  const specimenTypesDynamic = specTotalCount > 0
+    ? specimenTypes.map((t) => ({ ...t, pct: Math.round(((specCounts[t.label] ?? 0) / specTotalCount) * 100) }))
+    : specimenTypes;
+
   const emailName = (claims?.email ?? '').split('@')[0].split(/[._-]/)[0].replace(/[^a-z]/gi, '');
   const firstName = ov?.greeting?.firstName || (emailName ? emailName[0].toUpperCase() + emailName.slice(1) : 'there');
 
@@ -218,7 +253,7 @@ export default function DashboardPage() {
                           )}
                         </div>
                         <div style={{ fontSize: 11, color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {r.specimen?.replace(/_/g, '.') ?? '—'}{r.patient ? ` · ${r.patient}` : ''}
+                          {specLabel(r.specimen)}{r.patient ? ` · ${r.patient}` : ''}
                         </div>
                         <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 1 }}>
                           Received {new Date(r.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
@@ -257,11 +292,12 @@ export default function DashboardPage() {
                       { x: 352, y: 290, color: '#8B5CF6' },
                       { x: 262, y: 458, color: '#8B5CF6' },
                     ];
+                    const p0 = d.priorityRecords?.[0];
                     const findings = [
-                      { label: 'Reactive Mesothelial Cells', conf: 96, color: '#6366F1', y: 100, attention: false },
-                      { label: 'Inflammatory Cells', conf: 89, color: '#3B82F6', y: 214, attention: false },
-                      { label: 'Atypical Cells', conf: 72, color: '#8B5CF6', y: 314, attention: true },
-                      { label: 'Background Debris', conf: 94, color: '#6366F1', y: 452, attention: false },
+                      { label: p0?.specimen ? specLabel(p0.specimen) : 'Awaiting Analysis', conf: eff?.authorization ?? 0, color: '#6366F1', y: 100, attention: p0?.urgent ?? false },
+                      { label: `${eff?.onTime ?? 0}% On-time Rate`, conf: eff?.onTime ?? 0, color: '#3B82F6', y: 214, attention: (eff?.onTime ?? 0) < 70 },
+                      { label: `${eff?.accuracy ?? 0}% Accuracy Score`, conf: eff?.accuracy ?? 0, color: '#8B5CF6', y: 314, attention: (eff?.accuracy ?? 0) < 80 },
+                      { label: `${eff?.reportsAuthorized ?? 0} Reports Authorized`, conf: Math.min(100, Math.round(((eff?.reportsAuthorized ?? 0) / Math.max(eff?.specimensProcessed ?? 1, 1)) * 100)), color: '#6366F1', y: 452, attention: false },
                     ];
                     const LX = 500; // label dot x
                     return (
@@ -333,10 +369,16 @@ export default function DashboardPage() {
                   <span style={{ fontSize: 11, fontWeight: 700, color: '#4F46E5', background: '#EEF2FF', borderRadius: 999, padding: '3px 10px' }}>High Confidence</span>
                 </div>
                 <div style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', letterSpacing: '-0.02em', marginBottom: 4 }}>
-                  {d.priorityRecords?.[0]?.urgent ? 'Atypical Cells Detected' : 'Specimen Under Review'}
+                  {d.priorityRecords?.[0]?.urgent
+                    ? 'Urgent Case — Immediate Review'
+                    : d.priorityRecords?.[0]?.specimen
+                      ? `${specLabel(d.priorityRecords[0].specimen)} Analysis`
+                      : 'No Active Cases'}
                 </div>
                 <div style={{ fontSize: 14, color: '#64748B' }}>
-                  {d.priorityRecords?.[0]?.urgent ? 'Suspicious for malignancy.' : 'Awaiting cytological analysis.'}
+                  {d.priorityRecords?.[0]?.client
+                    ? `Client: ${d.priorityRecords[0].client}`
+                    : 'Awaiting cytological analysis.'}
                 </div>
               </div>
 
@@ -345,7 +387,7 @@ export default function DashboardPage() {
                 <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', marginBottom: 12 }}>Key Observations</div>
                 {[
                   {
-                    label: 'Cellularity', value: 'Moderate to high',
+                    label: 'Specimen Type', value: specLabel(d.priorityRecords?.[0]?.specimen),
                     icon: (
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="#4F46E5">
                         <circle cx="8" cy="7" r="1.6" /><circle cx="13" cy="6" r="1.6" /><circle cx="17" cy="9" r="1.6" />
@@ -355,7 +397,7 @@ export default function DashboardPage() {
                     ),
                   },
                   {
-                    label: 'Cell Type', value: 'Atypical mesothelial cells',
+                    label: 'Specimens Processed', value: `${eff?.specimensProcessed ?? 0} total`,
                     icon: (
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2">
                         <circle cx="12" cy="12" r="7.5" /><circle cx="12" cy="12" r="2.6" fill="#4F46E5" stroke="none" />
@@ -415,7 +457,7 @@ export default function DashboardPage() {
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
                 <div style={{ position: 'relative', width: 180, height: 180, flexShrink: 0 }}>
                   <svg viewBox="0 0 180 180" width="180" height="180">
-                    {specimenTypes.reduce((acc: any, { pct, color }, i) => {
+                    {specimenTypesDynamic.reduce((acc: any, { pct, color }, i) => {
                       const prev = acc.offset;
                       const circ = 2 * Math.PI * 70;
                       const dash = (pct / 100) * circ;
@@ -431,12 +473,12 @@ export default function DashboardPage() {
                     }, { offset: 0, elements: [] as any[] }).elements}
                   </svg>
                   <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ fontSize: 30, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{totalSpecimens || 0}</div>
+                    <div style={{ fontSize: 30, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{totalSpecimens || d.priorityRecords?.length || 0}</div>
                     <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600, textAlign: 'center', marginTop: 3 }}>Total Cases</div>
                   </div>
                 </div>
                 <div style={{ width: '100%', maxWidth: 280, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {specimenTypes.map(({ label, color, pct }) => (
+                  {specimenTypesDynamic.map(({ label, color, pct }) => (
                     <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ width: 9, height: 9, borderRadius: '50%', background: color, flexShrink: 0 }} />
@@ -454,17 +496,17 @@ export default function DashboardPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                 <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Performance</span>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: '#4F46E5', fontFamily: 'Geist,sans-serif', lineHeight: 1.1 }}>{eff?.authorization ?? 92}%</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: '#4F46E5', fontFamily: 'Geist,sans-serif', lineHeight: 1.1 }}>{eff?.authorization ?? 0}%</div>
                   <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>Accuracy</div>
                 </div>
               </div>
               <PerformanceArea />
               <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {[
-                  { label: 'Sensitivity', v: Math.min(99, (eff?.authorization ?? 92) + 8) },
-                  { label: 'Specificity', v: Math.min(99, (eff?.authorization ?? 92) + 5) },
-                  { label: 'Precision', v: Math.min(99, (eff?.authorization ?? 92) + 2) },
-                  { label: 'F1 Score', v: Math.min(99, (eff?.authorization ?? 92) + 4) },
+                  { label: 'Sensitivity', v: Math.min(99, (eff?.authorization ?? 0) + 8) },
+                  { label: 'Specificity', v: Math.min(99, (eff?.authorization ?? 0) + 5) },
+                  { label: 'Precision', v: Math.min(99, (eff?.authorization ?? 0) + 2) },
+                  { label: 'F1 Score', v: Math.min(99, (eff?.authorization ?? 0) + 4) },
                 ].map(({ label, v }) => (
                   <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <span style={{ width: 82, fontSize: 12, color: '#64748B', fontWeight: 600, flexShrink: 0 }}>{label}</span>
