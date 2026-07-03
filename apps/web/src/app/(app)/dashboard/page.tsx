@@ -368,12 +368,12 @@ export default function DashboardPage() {
 
               {/* Key Observations */}
               <div style={{ background: '#FAFAFE', borderRadius: 16, padding: '16px 18px' }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', marginBottom: 12 }}>Key Observations</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', marginBottom: 12 }}>Key Observations</div>
                 {[
                   {
                     label: 'Cellularity', value: 'Moderate to high',
                     icon: (
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="#4F46E5">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="#4F46E5">
                         <circle cx="8" cy="7" r="1.6" /><circle cx="13" cy="6" r="1.6" /><circle cx="17" cy="9" r="1.6" />
                         <circle cx="7" cy="12" r="1.6" /><circle cx="12" cy="11" r="2.1" /><circle cx="16.5" cy="14" r="1.6" />
                         <circle cx="9" cy="16" r="1.6" /><circle cx="13.5" cy="17" r="1.6" />
@@ -383,7 +383,7 @@ export default function DashboardPage() {
                   {
                     label: 'Cell Type', value: 'Atypical mesothelial cells',
                     icon: (
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2">
                         <circle cx="12" cy="12" r="7.5" /><circle cx="12" cy="12" r="2.6" fill="#4F46E5" stroke="none" />
                       </svg>
                     ),
@@ -391,7 +391,7 @@ export default function DashboardPage() {
                   {
                     label: 'Background', value: 'Inflammation present',
                     icon: (
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="#4F46E5">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="#4F46E5">
                         {[6, 12, 18].map((y) => [6, 12, 18].map((x) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.7" />))}
                       </svg>
                     ),
@@ -399,18 +399,18 @@ export default function DashboardPage() {
                   {
                     label: 'Additional Notes', value: 'Recommend IHC panel',
                     icon: (
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z" /><polyline points="14 3 14 8 19 8" />
                         <line x1="9" y1="13" x2="15" y2="13" /><line x1="9" y1="16.5" x2="13" y2="16.5" />
                       </svg>
                     ),
                   },
                 ].map(({ icon, label, value }, i, arr) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < arr.length - 1 ? '1px solid #EEF0F6' : 'none' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: '#EEF2FF', display: 'grid', placeItems: 'center', flexShrink: 0 }}>{icon}</div>
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 0', borderBottom: i < arr.length - 1 ? '1px solid #EEF0F6' : 'none' }}>
+                    <div style={{ width: 46, height: 46, borderRadius: 13, background: '#EEF2FF', display: 'grid', placeItems: 'center', flexShrink: 0 }}>{icon}</div>
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>{label}</div>
-                      <div style={{ fontSize: 13, color: '#64748B', marginTop: 1 }}>{value}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A' }}>{label}</div>
+                      <div style={{ fontSize: 14, color: '#64748B', marginTop: 2 }}>{value}</div>
                     </div>
                   </div>
                 ))}
