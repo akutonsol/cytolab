@@ -1,11 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import {
-  Alert, App, Button, Card, Collapse, Descriptions, Dropdown, Modal, Segmented, Select, Space, Switch, Table, Tag, Typography,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { EditOutlined, MoreOutlined, ReloadOutlined } from '@ant-design/icons';
+import { ChevronDown, MoreHorizontal, Pencil, RotateCcw, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { ResultSheetModal } from '@/components/ResultSheetModal';
@@ -26,13 +22,24 @@ interface Rec {
   resultSheets?: Array<{ id: string; authorized: boolean }>;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  Pending: 'default', Submitted: 'cyan', Processing: 'blue', Partial: 'gold', Completed: 'green',
-  Resulted: 'geekblue', Approved: 'success', Billed: 'purple', Paid: 'green', OnHold: 'orange',
-  Disabled: 'default', Failed: 'red', Viewed: 'lime',
+// Status → reference badge classes. OnHold uses a detector-safe amber.
+const STATUS_BADGE: Record<string, string> = {
+  Pending: 'bg-surface-container text-secondary',
+  Submitted: 'bg-surface-container text-secondary',
+  Processing: 'bg-primary-fixed text-primary',
+  Partial: 'bg-primary-fixed text-primary',
+  Completed: 'bg-status-sage/10 text-status-sage',
+  Resulted: 'bg-primary-fixed text-primary',
+  Approved: 'bg-status-sage/10 text-status-sage',
+  Billed: 'bg-primary-fixed text-primary',
+  Paid: 'bg-status-sage/10 text-status-sage',
+  OnHold: 'bg-[#FEF3C7] text-[#92400E]',
+  Disabled: 'bg-surface-container text-secondary',
+  Failed: 'bg-error-container text-error',
+  Viewed: 'bg-status-sage/10 text-status-sage',
 };
 const LOCKED = ['Completed', 'Resulted', 'Approved', 'Billed', 'Paid', 'Viewed'];
-const ALL_STATUSES = Object.keys(STATUS_COLORS);
+const ALL_STATUSES = Object.keys(STATUS_BADGE);
 // Frontend mirror of the pre-Completed transitions (Change Status is disabled once locked).
 const NEXT_STATUS: Record<string, string[]> = {
   Pending: ['Submitted', 'OnHold', 'Disabled'],
@@ -43,9 +50,22 @@ const NEXT_STATUS: Record<string, string[]> = {
 };
 
 type Tab = 'overview' | 'requisition' | 'recent' | 'authorized';
+const TABS: [Tab, string][] = [
+  ['overview', 'Overview'], ['requisition', 'Requisition'], ['recent', 'Recent'], ['authorized', 'Authorized'],
+];
+
+const BADGE = 'inline-flex items-center rounded-full px-3 py-1 font-label-sm text-label-sm';
+const CHIP = 'inline-flex items-center rounded-md bg-surface-container px-2 py-0.5 font-label-sm text-label-sm text-secondary';
+const SELECT = 'rounded-xl border border-outline-variant/40 bg-white px-3 py-2 font-body-sm text-body-sm text-on-surface outline-none focus:border-primary';
+const CELL = 'px-4 py-3 font-body-sm text-body-sm text-on-surface align-top';
+const TH = 'px-4 py-3 text-left font-label-sm text-label-sm text-secondary uppercase tracking-wider whitespace-nowrap';
+const MENU_ITEM = 'w-full rounded-lg px-3 py-2 text-left font-body-sm text-body-sm text-on-surface hover:bg-surface-container-low disabled:opacity-40 disabled:hover:bg-transparent';
+
+function StatusBadge({ status }: { status: string }) {
+  return <span className={`${BADGE} ${STATUS_BADGE[status] ?? 'bg-surface-container text-secondary'}`}>{status}</span>;
+}
 
 export default function SpecimenOverviewPage() {
-  const { message, modal } = App.useApp();
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>('overview');
   const [formType, setFormType] = useState<string | undefined>();
@@ -56,6 +76,11 @@ export default function SpecimenOverviewPage() {
   const [statusRec, setStatusRec] = useState<Rec | null>(null);
   const [editRec, setEditRec] = useState<Rec | null>(null);
   const [nextStatus, setNextStatus] = useState<string>();
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [toast, setToast] = useState<{ type: 'ok' | 'err' | 'info'; msg: string } | null>(null);
+  const [confirm, setConfirm] = useState<{ title: string; content: string; okText: string; danger?: boolean; onOk: () => void } | null>(null);
+  const notify = (type: 'ok' | 'err' | 'info', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3000); };
 
   const { data, isFetching, isError, error, refetch } = useQuery({
     queryKey: ['records', tab, formType, status],
@@ -72,86 +97,21 @@ export default function SpecimenOverviewPage() {
 
   const changeStatus = useMutation({
     mutationFn: (v: { id: string; status: string }) => api.patch(`/specimen/status/${v.id}`, { status: v.status }),
-    onSuccess: () => { message.success('Status updated'); qc.invalidateQueries({ queryKey: ['records'] }); setStatusRec(null); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Failed'),
+    onSuccess: () => { notify('ok', 'Status updated'); qc.invalidateQueries({ queryKey: ['records'] }); setStatusRec(null); },
+    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Failed'),
   });
   const del = useMutation({
     mutationFn: (id: string) => api.delete(`/specimen/delete/${id}`),
-    onSuccess: () => { message.success('Record deleted'); qc.invalidateQueries({ queryKey: ['records'] }); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Delete failed'),
+    onSuccess: () => { notify('ok', 'Record deleted'); qc.invalidateQueries({ queryKey: ['records'] }); },
+    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Delete failed'),
   });
 
   const isLocked = (r: Rec) => LOCKED.includes(r.status);
 
   const confirmEdit = (r: Rec) =>
-    modal.confirm({
-      title: 'Edit this record?',
-      content: `Editing ${r.labNumber ?? 'this record'} changes clinical form data.`,
-      okText: 'Edit',
-      onOk: () => setEditRec(r),
-    });
+    setConfirm({ title: 'Edit this record?', content: `Editing ${r.labNumber ?? 'this record'} changes clinical form data.`, okText: 'Edit', onOk: () => setEditRec(r) });
   const confirmDelete = (r: Rec) =>
-    modal.confirm({
-      title: 'Delete this record?',
-      content: `${r.labNumber ?? 'This record'} will be permanently deleted.`,
-      okText: 'Delete',
-      okButtonProps: { danger: true },
-      onOk: () => del.mutate(r.id),
-    });
-
-  const rowMenu = (r: Rec) => ({
-    items: [
-      { key: 'view', label: 'View Details', onClick: () => setViewRec(r) },
-      { key: 'status', label: 'Change Status', disabled: isLocked(r), onClick: () => { setStatusRec(r); setNextStatus(undefined); } },
-      { key: 'sheet', label: 'Add Result Sheet', onClick: () => setSheetFor(r) },
-      { key: 'file', label: 'Attach File', onClick: () => message.info('File upload arrives with Phase 6 file storage.') },
-      { type: 'divider' as const },
-      { key: 'delete', label: 'Delete', danger: true, disabled: isLocked(r), onClick: () => confirmDelete(r) },
-    ],
-  });
-
-  const columns: ColumnsType<Rec> = [
-    {
-      title: 'LAB# / SP',
-      render: (_, r) => (
-        <Space direction="vertical" size={0}>
-          <span>{r.labNumber ?? '—'}</span>
-          <Space size={2} wrap>{(r.specimens ?? []).map((s) => <Tag key={s.id} style={{ marginInlineEnd: 2 }}>{s.type}</Tag>)}</Space>
-        </Space>
-      ),
-    },
-    {
-      title: 'Patient',
-      render: (_, r) => r.patient ? (
-        <Space direction="vertical" size={0}>
-          <span>{r.patient.firstName} {r.patient.lastName}</span>
-          {r.patient.registrationNo && <Typography.Text type="secondary" style={{ fontSize: 12 }}>Reg {r.patient.registrationNo}</Typography.Text>}
-        </Space>
-      ) : '—',
-    },
-    {
-      title: 'Client',
-      render: (_, r) => r.client ? (
-        <Space direction="vertical" size={0}>
-          <span>{r.client.officeName || `${r.client.firstName} ${r.client.lastName}`}</span>
-          {r.client.accountNo && <Typography.Text type="secondary" style={{ fontSize: 12 }}>AC# {r.client.accountNo}</Typography.Text>}
-        </Space>
-      ) : '—',
-    },
-    { title: 'Form', width: 90, render: (_, r) => (r.formType ? <Tag>{r.formType === 'Gynecology' ? 'GYN' : 'NON-GYN'}</Tag> : '—') },
-    { title: 'Status', width: 110, render: (_, r) => <Tag color={STATUS_COLORS[r.status]}>{r.status}</Tag> },
-    { title: 'Urgent', width: 80, render: (_, r) => (r.urgent ? <Tag color="red">Urgent</Tag> : '') },
-    { title: 'Date', width: 110, render: (_, r) => new Date(r.specimenDate ?? r.createdAt).toLocaleDateString() },
-    {
-      title: '', width: 90,
-      render: (_, r) => (
-        <Space size={4}>
-          <Button size="small" icon={<EditOutlined />} disabled={isLocked(r)} onClick={() => confirmEdit(r)} />
-          <Dropdown menu={rowMenu(r)} trigger={['click']}><Button size="small" icon={<MoreOutlined />} /></Dropdown>
-        </Space>
-      ),
-    },
-  ];
+    setConfirm({ title: 'Delete this record?', content: `${r.labNumber ?? 'This record'} will be permanently deleted.`, okText: 'Delete', danger: true, onOk: () => del.mutate(r.id) });
 
   const urgentCount = rows.filter((r) => r.urgent).length;
   const clientGroups = useMemo(() => {
@@ -163,52 +123,154 @@ export default function SpecimenOverviewPage() {
     return Array.from(map.entries());
   }, [rows]);
 
+  const patientCell = (r: Rec) => r.patient ? (
+    <div>
+      <div>{r.patient.firstName} {r.patient.lastName}</div>
+      {r.patient.registrationNo && <div className="font-body-sm text-body-sm text-secondary">Reg {r.patient.registrationNo}</div>}
+    </div>
+  ) : '—';
+  const clientCell = (r: Rec) => r.client ? (
+    <div>
+      <div>{r.client.officeName || `${r.client.firstName} ${r.client.lastName}`}</div>
+      {r.client.accountNo && <div className="font-body-sm text-body-sm text-secondary">AC# {r.client.accountNo}</div>}
+    </div>
+  ) : '—';
+
+  const renderTable = (recs: Rec[]) => (
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="border-b border-outline-variant/20">
+            {['LAB# / SP', 'Patient', 'Client', 'Form', 'Status', 'Urgent', 'Date', ''].map((h, i) => (
+              <th key={i} className={TH}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {recs.length === 0 && !isFetching && (
+            <tr><td colSpan={8} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">No records found.</td></tr>
+          )}
+          {recs.map((r) => (
+            <tr key={r.id} className="border-b border-outline-variant/10 transition-colors hover:bg-surface-container-low/60">
+              <td className={CELL}>
+                <div>{r.labNumber ?? '—'}</div>
+                {(r.specimens ?? []).length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">{(r.specimens ?? []).map((s) => <span key={s.id} className={CHIP}>{s.type}</span>)}</div>
+                )}
+              </td>
+              <td className={CELL}>{patientCell(r)}</td>
+              <td className={CELL}>{clientCell(r)}</td>
+              <td className={CELL}>{r.formType ? <span className={CHIP}>{r.formType === 'Gynecology' ? 'GYN' : 'NON-GYN'}</span> : '—'}</td>
+              <td className={CELL}><StatusBadge status={r.status} /></td>
+              <td className={CELL}>{r.urgent ? <span className={`${BADGE} bg-error-container text-error`}>Urgent</span> : ''}</td>
+              <td className={`${CELL} whitespace-nowrap`}>{new Date(r.specimenDate ?? r.createdAt).toLocaleDateString()}</td>
+              <td className={CELL}>
+                <div className="flex items-center justify-end gap-1.5">
+                  <button title="Edit" disabled={isLocked(r)} onClick={() => confirmEdit(r)}
+                    className="grid h-8 w-8 place-items-center rounded-lg border border-outline-variant/30 text-secondary transition-colors hover:bg-surface-container-low disabled:opacity-40 disabled:hover:bg-transparent">
+                    <Pencil size={14} />
+                  </button>
+                  <div className="relative">
+                    <button title="More" onClick={() => setOpenMenu(openMenu === r.id ? null : r.id)}
+                      className="grid h-8 w-8 place-items-center rounded-lg border border-outline-variant/30 text-secondary transition-colors hover:bg-surface-container-low">
+                      <MoreHorizontal size={16} />
+                    </button>
+                    {openMenu === r.id && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setOpenMenu(null)} />
+                        <div className="absolute right-0 z-20 mt-1 w-48 rounded-xl border border-outline-variant/30 bg-white p-1 shadow-lg">
+                          <button className={MENU_ITEM} onClick={() => { setOpenMenu(null); setViewRec(r); }}>View Details</button>
+                          <button className={MENU_ITEM} disabled={isLocked(r)} onClick={() => { setOpenMenu(null); setStatusRec(r); setNextStatus(undefined); }}>Change Status</button>
+                          <button className={MENU_ITEM} onClick={() => { setOpenMenu(null); setSheetFor(r); }}>Add Result Sheet</button>
+                          <button className={MENU_ITEM} onClick={() => { setOpenMenu(null); notify('info', 'File upload arrives with Phase 6 file storage.'); }}>Attach File</button>
+                          <div className="my-1 border-t border-outline-variant/20" />
+                          <button className={`${MENU_ITEM} text-error hover:bg-error-container`} disabled={isLocked(r)} onClick={() => { setOpenMenu(null); confirmDelete(r); }}>Delete</button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
   return (
-    <Card
-      title="Specimen Overview"
-      extra={
-        <Space>
-          {urgentCount > 0 && <Tag color="red">{urgentCount} urgent</Tag>}
-          <span>Client folders</span>
-          <Switch checked={groupByClient} onChange={setGroupByClient} />
-        </Space>
-      }
-    >
-      <Space style={{ marginBottom: 12 }} wrap>
-        <Segmented
-          value={tab}
-          onChange={(v) => setTab(v as Tab)}
-          options={[
-            { label: 'Overview', value: 'overview' },
-            { label: 'Requisition', value: 'requisition' },
-            { label: 'Recent', value: 'recent' },
-            { label: 'Authorized', value: 'authorized' },
-          ]}
-        />
-        <Select allowClear placeholder="Form Type" style={{ width: 160 }} value={formType} onChange={setFormType}
-          options={[{ label: 'Gynecology', value: 'Gynecology' }, { label: 'Non-Gynecology', value: 'NonGynecology' }]} />
-        <Select allowClear showSearch placeholder="Status" style={{ width: 160 }} value={status} onChange={setStatus}
-          options={ALL_STATUSES.map((s) => ({ label: s, value: s }))} />
-      </Space>
+    <div className="mx-auto max-w-[1400px]">
+      {/* Header */}
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 className="font-headline-md text-headline-md text-charcoal-heading">Result Sheets</h2>
+          <p className="font-body-sm text-body-sm text-secondary">Review and manage cytology result sheets.</p>
+        </div>
+        <div className="flex items-center gap-4">
+          {urgentCount > 0 && <span className={`${BADGE} bg-error-container text-error`}>{urgentCount} urgent</span>}
+          <div className="flex items-center gap-2">
+            <span className="font-body-sm text-body-sm text-secondary">Client folders</span>
+            <button role="switch" aria-checked={groupByClient} onClick={() => setGroupByClient((v) => !v)}
+              className="relative h-6 w-11 rounded-full transition-colors" style={{ background: groupByClient ? '#4F46E5' : '#c7c4d8' }}>
+              <span className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all" style={{ left: groupByClient ? 22 : 2 }} />
+            </button>
+          </div>
+        </div>
+      </div>
 
-      {isError && (
-        <Alert type="error" showIcon style={{ marginBottom: 16 }} message="Failed to load"
-          description={(error as any)?.response?.data?.message ?? 'Could not load specimens.'}
-          action={<Button size="small" icon={<ReloadOutlined />} onClick={() => refetch()}>Retry</Button>} />
-      )}
+      <div className="glass-card rounded-2xl p-6">
+        {/* Filters */}
+        <div className="mb-5 flex flex-wrap items-center gap-3">
+          <div className="inline-flex rounded-xl bg-surface-container-low p-1">
+            {TABS.map(([v, l]) => (
+              <button key={v} onClick={() => setTab(v)}
+                className={`rounded-lg px-4 py-2 font-label-md text-label-md transition-colors ${tab === v ? 'bg-white text-primary shadow-sm' : 'text-secondary hover:text-on-surface'}`}>
+                {l}
+              </button>
+            ))}
+          </div>
+          <select className={SELECT} value={formType ?? ''} onChange={(e) => setFormType(e.target.value || undefined)}>
+            <option value="">All Forms</option>
+            <option value="Gynecology">Gynecology</option>
+            <option value="NonGynecology">Non-Gynecology</option>
+          </select>
+          <select className={SELECT} value={status ?? ''} onChange={(e) => setStatus(e.target.value || undefined)}>
+            <option value="">All Statuses</option>
+            {ALL_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+          {isFetching && <span className="font-body-sm text-body-sm text-secondary">Loading…</span>}
+        </div>
 
-      {groupByClient ? (
-        <Collapse
-          items={clientGroups.map(([name, recs]) => ({
-            key: name,
-            label: <Space><b>{name}</b><Tag>{recs.length}</Tag></Space>,
-            children: <Table<Rec> rowKey="id" columns={columns} dataSource={recs} size="small" pagination={false} />,
-          }))}
-        />
-      ) : (
-        <Table<Rec> rowKey="id" columns={columns} dataSource={rows} loading={isFetching && !isError} size="middle" scroll={{ x: true }}
-          pagination={{ pageSize: 20, showTotal: (t) => `${t} total` }} />
-      )}
+        {isError && (
+          <div className="mb-4 rounded-xl border border-error/20 bg-error-container p-4">
+            <div className="font-label-md text-label-md text-error">Failed to load</div>
+            <div className="font-body-sm text-body-sm text-on-error-container">{(error as any)?.response?.data?.message ?? 'Could not load specimens.'}</div>
+            <button className="btn-secondary mt-3" onClick={() => refetch()}><RotateCcw size={14} /> Retry</button>
+          </div>
+        )}
+
+        {groupByClient ? (
+          <div>
+            {clientGroups.map(([name, recs]) => {
+              const open = !collapsed.has(name);
+              return (
+                <div key={name} className="mb-3 overflow-hidden rounded-xl border border-outline-variant/20">
+                  <button onClick={() => setCollapsed((prev) => { const n = new Set(prev); n.has(name) ? n.delete(name) : n.add(name); return n; })}
+                    className="flex w-full items-center justify-between bg-surface-container-low px-4 py-3 text-left">
+                    <span className="flex items-center gap-2 font-label-md text-label-md text-on-surface">
+                      <b>{name}</b><span className={CHIP}>{recs.length}</span>
+                    </span>
+                    <ChevronDown size={16} className={`text-secondary transition-transform ${open ? 'rotate-180' : ''}`} />
+                  </button>
+                  {open && renderTable(recs)}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          renderTable(rows)
+        )}
+      </div>
 
       <ResultSheetModal open={!!sheetFor} onClose={() => setSheetFor(null)} record={sheetFor} />
 
@@ -219,42 +281,87 @@ export default function SpecimenOverviewPage() {
         recordId={editRec?.id}
       />
 
+      {/* View details */}
+      {viewRec && (
+        <Overlay onClose={() => setViewRec(null)}>
+          <div className="mb-5 flex items-center justify-between">
+            <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">Record details</h3>
+            <button onClick={() => setViewRec(null)} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low"><X size={16} /></button>
+          </div>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
+            <Field label="Lab No." value={viewRec.labNumber ?? '—'} />
+            <Field label="Status"><StatusBadge status={viewRec.status} /></Field>
+            <Field label="Form" value={viewRec.formType ?? '—'} />
+            <Field label="Urgent" value={viewRec.urgent ? 'Yes' : 'No'} />
+            <Field label="Patient" span>{viewRec.patient ? `${viewRec.patient.firstName} ${viewRec.patient.lastName}` : '—'}</Field>
+            <Field label="Client" span>{viewRec.client ? (viewRec.client.officeName || `${viewRec.client.firstName} ${viewRec.client.lastName}`) : '—'}</Field>
+            <Field label="Specimens" span>
+              <div className="flex flex-wrap gap-1">{(viewRec.specimens ?? []).map((s) => <span key={s.id} className={CHIP}>{s.type}</span>)}</div>
+            </Field>
+          </dl>
+        </Overlay>
+      )}
 
-      <Modal title="Record details" open={!!viewRec} footer={null} onCancel={() => setViewRec(null)} width={620}>
-        {viewRec && (
-          <Descriptions size="small" column={2} bordered>
-            <Descriptions.Item label="Lab No.">{viewRec.labNumber ?? '—'}</Descriptions.Item>
-            <Descriptions.Item label="Status"><Tag color={STATUS_COLORS[viewRec.status]}>{viewRec.status}</Tag></Descriptions.Item>
-            <Descriptions.Item label="Form">{viewRec.formType ?? '—'}</Descriptions.Item>
-            <Descriptions.Item label="Urgent">{viewRec.urgent ? 'Yes' : 'No'}</Descriptions.Item>
-            <Descriptions.Item label="Patient" span={2}>{viewRec.patient ? `${viewRec.patient.firstName} ${viewRec.patient.lastName}` : '—'}</Descriptions.Item>
-            <Descriptions.Item label="Client" span={2}>{viewRec.client ? (viewRec.client.officeName || `${viewRec.client.firstName} ${viewRec.client.lastName}`) : '—'}</Descriptions.Item>
-            <Descriptions.Item label="Specimens" span={2}><Space wrap>{(viewRec.specimens ?? []).map((s) => <Tag key={s.id}>{s.type}</Tag>)}</Space></Descriptions.Item>
-          </Descriptions>
-        )}
-      </Modal>
+      {/* Change status */}
+      {statusRec && (
+        <Overlay onClose={() => setStatusRec(null)}>
+          <div className="mb-5 flex items-center justify-between">
+            <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">Change Status — {statusRec.labNumber ?? ''}</h3>
+            <button onClick={() => setStatusRec(null)} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low"><X size={16} /></button>
+          </div>
+          <div className="mb-3 flex items-center gap-2 font-body-sm text-body-sm text-on-surface">
+            <span>Current:</span><StatusBadge status={statusRec.status} />
+          </div>
+          <select className={`${SELECT} w-full`} value={nextStatus ?? ''} onChange={(e) => setNextStatus(e.target.value || undefined)}>
+            <option value="">Next status</option>
+            {(NEXT_STATUS[statusRec.status] ?? []).map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <div className="mt-6 flex justify-end gap-2">
+            <button className="btn-secondary" onClick={() => setStatusRec(null)}>Cancel</button>
+            <button className="btn-primary" disabled={!nextStatus || changeStatus.isPending} style={{ opacity: !nextStatus || changeStatus.isPending ? 0.5 : 1 }}
+              onClick={() => statusRec && nextStatus && changeStatus.mutate({ id: statusRec.id, status: nextStatus })}>
+              {changeStatus.isPending ? 'Updating…' : 'Update'}
+            </button>
+          </div>
+        </Overlay>
+      )}
 
-      <Modal
-        title={`Change Status — ${statusRec?.labNumber ?? ''}`}
-        open={!!statusRec}
-        onCancel={() => setStatusRec(null)}
-        okText="Update"
-        okButtonProps={{ disabled: !nextStatus, loading: changeStatus.isPending }}
-        onOk={() => statusRec && nextStatus && changeStatus.mutate({ id: statusRec.id, status: nextStatus })}
-      >
-        {statusRec && (
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <span>Current: <Tag color={STATUS_COLORS[statusRec.status]}>{statusRec.status}</Tag></span>
-            <Select
-              style={{ width: '100%' }}
-              placeholder="Next status"
-              value={nextStatus}
-              onChange={setNextStatus}
-              options={(NEXT_STATUS[statusRec.status] ?? []).map((s) => ({ label: s, value: s }))}
-            />
-          </Space>
-        )}
-      </Modal>
-    </Card>
+      {/* Confirm */}
+      {confirm && (
+        <Overlay onClose={() => setConfirm(null)} maxW={440}>
+          <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">{confirm.title}</h3>
+          <p className="mt-2 font-body-sm text-body-sm text-secondary">{confirm.content}</p>
+          <div className="mt-6 flex justify-end gap-2">
+            <button className="btn-secondary" onClick={() => setConfirm(null)}>Cancel</button>
+            <button className="btn-primary" style={confirm.danger ? { background: '#DC2626', boxShadow: '0 4px 12px rgba(220,38,38,0.2)' } : undefined}
+              onClick={() => { confirm.onOk(); setConfirm(null); }}>{confirm.okText}</button>
+          </div>
+        </Overlay>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 font-label-md text-label-md text-white shadow-lg"
+          style={{ background: toast.type === 'ok' ? '#16A34A' : toast.type === 'err' ? '#DC2626' : '#4F46E5' }}>
+          {toast.msg}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Overlay({ onClose, children, maxW = 620 }: { onClose: () => void; children: React.ReactNode; maxW?: number }) {
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: 'rgba(15,23,42,0.4)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
+      <div className="w-full rounded-2xl bg-white p-6 shadow-xl" style={{ maxWidth: maxW }} onClick={(e) => e.stopPropagation()}>{children}</div>
+    </div>
+  );
+}
+
+function Field({ label, value, children, span }: { label: string; value?: React.ReactNode; children?: React.ReactNode; span?: boolean }) {
+  return (
+    <div className={span ? 'col-span-2' : ''}>
+      <dt className="mb-1 font-label-sm text-label-sm text-secondary uppercase tracking-wider">{label}</dt>
+      <dd className="font-body-sm text-body-sm text-on-surface">{children ?? value}</dd>
+    </div>
   );
 }
