@@ -175,9 +175,9 @@ export default function DashboardPage() {
           </div>
 
           {/* ═══ SECTION 2: MAIN 3-COLUMN GRID ═══ */}
-          <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr 320px', gap: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '320px minmax(0,1fr) 400px', gap: 20, alignItems: 'stretch' }}>
             {/* LEFT: Specimen Queue */}
-            <div style={{ background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ height: 540, background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <span style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Specimen Queue</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 999, padding: '4px 10px', cursor: 'pointer' }}>
@@ -185,7 +185,7 @@ export default function DashboardPage() {
                   <ChevronDown size={12} color="#94A3B8" />
                 </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+              <div className="premium-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, overflowY: 'auto', minHeight: 0 }}>
                 {(d.priorityRecords || []).slice(0, 6).map((r: any, i: number) => {
                   const isFirst = i === 0;
                   return (
@@ -223,7 +223,7 @@ export default function DashboardPage() {
             </div>
 
             {/* CENTER: AI Cytology Model */}
-            <div style={{ background: 'linear-gradient(135deg,#F8F9FF 0%,#EEF0FF 100%)', borderRadius: 20, border: '1px solid #E0E7FF', boxShadow: '0 4px 24px rgba(79,70,229,0.08)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ height: 540, background: 'linear-gradient(135deg,#F8F9FF 0%,#EEF0FF 100%)', borderRadius: 20, border: '1px solid #E0E7FF', boxShadow: '0 4px 24px rgba(79,70,229,0.08)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               {/* Header */}
               <div style={{ padding: '20px 24px 0', position: 'relative', zIndex: 4 }}>
                 <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Cytology Model</div>
@@ -234,8 +234,8 @@ export default function DashboardPage() {
               </div>
 
               {/* Analysis stage — big centered head + target markers wired to labels */}
-              <div style={{ flex: 1, display: 'grid', placeItems: 'center', padding: '4px 16px' }}>
-                <div style={{ position: 'relative', width: 640, height: 480, maxWidth: '100%' }}>
+              <div style={{ flex: 1, display: 'grid', placeItems: 'center', padding: '0 16px', minHeight: 0, overflow: 'hidden' }}>
+                <div style={{ position: 'relative', width: 640, height: 480, maxWidth: '100%', transform: 'scale(0.82)', transformOrigin: 'center' }}>
                   {(() => {
                     const markers = [
                       { x: 308, y: 112, color: '#6366F1' },
@@ -304,7 +304,7 @@ export default function DashboardPage() {
             </div>
 
             {/* RIGHT: AI Findings */}
-            <div style={{ background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
+            <div className="premium-scroll" style={{ height: 540, background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Findings</span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#4F46E5', background: '#EEF2FF', borderRadius: 6, padding: '2px 8px', fontFamily: 'Geist,sans-serif' }}>{d.priorityRecords?.[0]?.labNumber ?? '—'}</span>
