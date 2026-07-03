@@ -148,9 +148,9 @@ export default function RecordDetailPage() {
   if (isLoading || !record) {
     return (
       <div className="flex gap-4 p-5" style={{ background: '#EDF0F7', height: 'calc(100vh - 150px)', minHeight: 560 }}>
-        <div className="w-[300px] shrink-0 animate-pulse rounded-[20px] bg-white/70" />
+        <div className="flex-1 min-w-[280px] animate-pulse rounded-[20px] bg-white/70" />
         <div className="flex-1 animate-pulse rounded-[20px] bg-white/70" />
-        <div className="w-[300px] shrink-0 animate-pulse rounded-[20px] bg-white/70" />
+        <div className="flex-1 min-w-[280px] animate-pulse rounded-[20px] bg-white/70" />
       </div>
     );
   }
@@ -181,11 +181,11 @@ export default function RecordDetailPage() {
   const shownActivity = showAllActivity ? activity : activity.slice(0, 5);
 
   return (
-    <div className="flex justify-center gap-4 p-5" style={{ background: '#EDF0F7', height: 'calc(100vh - 150px)', minHeight: 560 }}>
+    <div className="flex gap-4 p-5" style={{ background: '#EDF0F7', height: 'calc(100vh - 150px)', minHeight: 560 }}>
       <style>{ANIM_CSS}</style>
 
       {/* ═══════════ LEFT PANEL ═══════════ */}
-      <aside className="premium-scroll flex w-[300px] shrink-0 flex-col overflow-y-auto rounded-[20px] border border-[#E4E8F4] bg-[#F4F6FC] p-6">
+      <aside className="premium-scroll flex flex-1 min-w-[280px] flex-col overflow-y-auto rounded-[20px] border border-[#E4E8F4] bg-[#F4F6FC] p-6">
         <button onClick={() => router.back()} className="mb-4 flex items-center gap-1.5 self-start text-[12px] font-medium text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={14} /> Records</button>
 
         {/* Identity */}
@@ -309,7 +309,7 @@ export default function RecordDetailPage() {
       </section>
 
       {/* ═══════════ RIGHT PANEL ═══════════ */}
-      <aside className="premium-scroll flex w-[300px] shrink-0 flex-col overflow-y-auto rounded-[20px] border border-[#E4E8F4] bg-white p-6">
+      <aside className="premium-scroll flex flex-1 min-w-[280px] flex-col overflow-y-auto rounded-[20px] border border-[#E4E8F4] bg-white p-6">
         <div className={`${LABEL} mb-5`}>Patient Stats</div>
         <Stat icon={Activity} label="Total Records" value={String(totalRecords)} unit="cases" />
         <Stat icon={FlaskConical} label="Open Cases" value={String(openCases)} unit="in progress" />
