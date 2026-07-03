@@ -248,38 +248,6 @@ export default function RecordDetailPage() {
           <ActionPanel status={status} pending={statusMut.isPending} go={go} onEditFeatures={() => setDrawer(true)} onOpenSheet={() => setSheetModal(true)} onAuthorize={() => setAuthModal(true)} onInvoice={() => router.push(`/billing?recordId=${id}`)} onReport={() => router.push(`/reports?recordId=${id}`)} onAuthorizer={() => router.push('/authorizer')} />
         </div>
 
-        {/* Clinical features */}
-        <div className="mt-5 border-t border-[#E4E8F4] pt-5">
-          <div className="mb-2 flex items-center justify-between">
-            <div className="text-[14px] font-bold italic uppercase tracking-[0.06em] text-[#334155]">Clinical Features</div>
-            <button onClick={() => setDrawer(true)} className="grid h-7 w-7 place-items-center rounded-full text-[#94A3B8] hover:bg-[#E2E8F0] hover:text-[#4F46E5]"><Pencil size={14} /></button>
-          </div>
-          {!hasFeatures ? (
-            <div className="text-[14px] text-[#64748B]">No clinical features recorded.</div>
-          ) : (
-            <>
-              {shownFields.map((f: any) => {
-                const v = featValue(f.fieldKey);
-                const label = /^sample description$/i.test(f.label) ? 'Description' : f.label;
-                if (f.fieldType === 'CHECKBOX') {
-                  return (
-                    <div key={f.fieldKey} className="flex items-center justify-between gap-2 border-b border-[#F1F5F9] py-2">
-                      <span className="text-[14px] font-bold text-[#334155]">{label}</span>
-                      <span className="text-[16px]">{v ? <Check size={16} className="inline text-[#16A34A]" /> : <span className="text-[#CBD5E1]">—</span>}</span>
-                    </div>
-                  );
-                }
-                return (
-                  <div key={f.fieldKey} className="border-b border-[#F1F5F9] py-2">
-                    <div className="text-[14px] font-bold text-[#334155]">{label}</div>
-                    <div className="text-[15px] font-medium leading-[1.5] text-[#64748B]">{v || <span className="text-[#CBD5E1]">—</span>}</div>
-                  </div>
-                );
-              })}
-              {fields.length > 4 && <button onClick={() => setShowAllFeatures((v) => !v)} className="mt-2 text-[13px] font-semibold text-[#4F46E5] hover:underline">{showAllFeatures ? 'Show less' : 'Show all →'}</button>}
-            </>
-          )}
-        </div>
       </aside>
 
       {/* ═══════════ CENTER PANEL ═══════════ */}
@@ -382,6 +350,11 @@ export default function RecordDetailPage() {
             ))}
           </div>
         )}
+
+        <div className="my-4 border-t border-[#F1F5F9]" />
+
+        <div className={`${LABEL} mb-3`}>Clinical Features</div>
+        <button onClick={() => setDrawer(true)} className={rightBtn}><Pencil size={15} /> Edit Clinical Features</button>
 
         <div className="my-4 border-t border-[#F1F5F9]" />
 
