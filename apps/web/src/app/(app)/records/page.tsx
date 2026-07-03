@@ -4,10 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { App } from 'antd';
 import {
-  AlertTriangle, ArrowUpRight, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Clock, FlaskConical,
-  Maximize2, MoreHorizontal, Package, Pencil, Plus, Search, Star,
+  AlertCircle, AlertTriangle, CheckCircle, ChevronDown, FlaskConical, MoreHorizontal, Pencil, Plus,
 } from 'lucide-react';
-import { Bar, BarChart, Cell, LabelList, ResponsiveContainer, XAxis } from 'recharts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -19,34 +17,52 @@ interface Rec {
   specimenDate?: string | null; createdAt: string;
   patient?: { firstName: string; lastName: string; registrationNo?: string };
   specimens?: { id: string; type?: string }[];
-  statusHistory?: { status: string; createdAt: string }[];
-  client?: {
-    firstName: string;
-    lastName: string;
-    officeName?: string | null;
-    accountNo?: string | null;
-  };
+  resultSheets?: { id: string; authorized: boolean }[];
+  statusHistory?: { status: string; createdAt: string; user?: { firstName?: string; lastName?: string } | null }[];
+  client?: { firstName: string; lastName: string; officeName?: string | null; accountNo?: string | null };
 }
 
 const SPECIMEN: Record<string, string> = {
   ENDOCERV_ASP: 'Endocervical asp.', CERV_SCRAP: 'Cervical scrape', VAG_POOL: 'Vaginal pool', URINE: 'Urine cytology',
   CSF: 'CSF', PLEURAL_FLD: 'Pleural fluid', BREAST_ASP: 'Breast asp.', JOINT_ASP: 'Joint asp.', SYNOVIAL_FLD: 'Synovial fluid', OTHER: 'Other',
 };
-const GREEN = ['Approved', 'Billed', 'Paid', 'Completed'];
-const RED = ['Failed', 'Disabled'];
-const PROCESSING = ['Processing', 'Partial', 'Submitted'];
-const OPEN = ['Pending', 'Submitted', 'Processing', 'Partial', 'Completed', 'Resulted'];
-const ALL_STATUSES = ['Pending', 'Submitted', 'Processing', 'Partial', 'Completed', 'Resulted', 'Approved', 'Billed', 'Paid', 'OnHold', 'Failed'];
+const ACTIVE = ['Pending', 'Submitted', 'Processing', 'Partial', 'Completed', 'Resulted'];
+const COMPLETED_SET = ['Approved', 'Billed', 'Paid', 'Viewed'];
+const PROCESSING_SET = ['Processing', 'Partial', 'Submitted'];
+
+// ── Design tokens (DESIGN.md) ────────────────────────────────────────────────
+const GEIST = "'Geist', 'Inter', system-ui, sans-serif";
+const HEAD = '#0F172A';
+const SECONDARY = '#49607e';
+const PRIMARY = '#4F46E5';
+const glass: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.85)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
+  border: '1px solid rgba(73,96,126,0.05)',
+  boxShadow: '0 20px 40px rgba(0,0,0,0.04), 0 2px 4px rgba(79,70,229,0.05)',
+  borderRadius: 16,
+};
+
+// Avatar palette (name-hashed). Amber swatch from the template swapped for
+// violet to keep the zero-orange rule.
+const AVATARS = [
+  { bg: '#EEF2FF', fg: '#4F46E5' },
+  { bg: '#F0FDF4', fg: '#16A34A' },
+  { bg: '#FFF1F2', fg: '#E11D48' },
+  { bg: '#F5F3FF', fg: '#7C3AED' },
+  { bg: '#F0F9FF', fg: '#0284C7' },
+];
+const nameHash = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
+const avatarFor = (name: string) => AVATARS[nameHash(name || '?') % AVATARS.length];
 
 const specLabel = (t?: string | null) => (t ? SPECIMEN[t] ?? t : null);
-// Dot-separated specimen code for compact "SP:" display (CERV_SCRAP → CERV.SCRAP).
-const spCode = (type?: string | null) => (type ? type.replace(/_/g, '.') : '—');
 const patientName = (r: Rec) => (r.patient ? `${r.patient.firstName} ${r.patient.lastName}`.trim() : '—');
+const initials = (r: Rec) => ((r.patient?.firstName?.[0] ?? '') + (r.patient?.lastName?.[0] ?? '')).toUpperCase() || '??';
+const clientLabel = (r: Rec) => (r.client ? (r.client.officeName || `${r.client.firstName} ${r.client.lastName}`.trim()) : '—');
 const dateFmt = (d?: string | null) => (d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—');
 const clock = (d: string) => new Date(d).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 const sameDay = (a: string | number, b: string | number) => new Date(a).toDateString() === new Date(b).toDateString();
-const ageDays = (d: string) => Math.floor((Date.now() - new Date(d).getTime()) / 86_400_000);
-const priorityOf = (r: Rec) => (r.urgent ? 'High' : ageDays(r.createdAt) > 7 ? 'Medium' : 'Low');
 const relTime = (d: string) => {
   const s = (Date.now() - new Date(d).getTime()) / 1000;
   if (s < 3600) return `${Math.max(1, Math.floor(s / 60))}m ago`;
@@ -54,431 +70,309 @@ const relTime = (d: string) => {
   if (sameDay(d, Date.now() - 86_400_000)) return 'Yesterday';
   return `${Math.floor(s / 86400)}d ago`;
 };
+const overdueH = (d: string) => Math.round(((Date.now() - new Date(d).getTime()) / 3_600_000) * 10) / 10;
 
-// Priority pill palette (severity colours — amber/red/green, no accent-orange).
-const PRIORITY = {
-  High: { bg: '#fef2f2', fg: '#dc2626' },
-  Medium: { bg: '#fff7ed', fg: '#c2410c' },
-  Low: { bg: '#f0fdf4', fg: '#16a34a' },
-} as const;
-// Status badge colours (no orange/gold).
-const statusStyle = (s: string) =>
-  GREEN.includes(s) ? { bg: '#f0fdf4', fg: '#16a34a' }
-    : RED.includes(s) ? { bg: '#fef2f2', fg: '#dc2626' }
-      : s === 'OnHold' ? { bg: '#f1f5f9', fg: '#64748b' }
-        : { bg: '#eef3ff', fg: '#4f7df9' };
+const statusBadge = (s: string): { bg: string; fg: string } => {
+  switch (s) {
+    case 'Processing':
+    case 'Partial': return { bg: '#EEF2FF', fg: '#4F46E5' };
+    case 'Completed': return { bg: '#dcfce7', fg: '#16A34A' };
+    case 'Resulted': return { bg: '#dbeafe', fg: '#1d4ed8' };
+    case 'Approved':
+    case 'Billed':
+    case 'Paid':
+    case 'Viewed': return { bg: '#dcfce7', fg: '#16A34A' };
+    case 'Submitted': return { bg: '#e2e8f0', fg: '#49607e' };
+    case 'Failed':
+    case 'Disabled': return { bg: '#fef2f2', fg: '#dc2626' };
+    default: return { bg: '#f1f4f7', fg: '#49607e' };
+  }
+};
+const STATUS_ACTION: Record<string, string> = {
+  Pending: 'created', Submitted: 'submitted', Processing: 'in processing', Partial: 'partially resulted',
+  Completed: 'completed', Resulted: 'resulted', Approved: 'approved', Billed: 'billed', Paid: 'paid',
+  Viewed: 'viewed', OnHold: 'put on hold', Failed: 'failed', Disabled: 'cancelled',
+};
+const statusAction = (s: string) => STATUS_ACTION[s] ?? s.toLowerCase();
 
-function KpiCard({ label, sub, value, Icon }: { label: string; sub: string; value: number; Icon: any }) {
+const kpiLabel: React.CSSProperties = { fontFamily: GEIST, fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: SECONDARY };
+const cardHead: React.CSSProperties = { fontFamily: GEIST, fontSize: 18, fontWeight: 600, color: HEAD };
+
+function Kpi({ label, value, delta, deltaColor, icon, iconBg, iconFg, borderLeft }:
+  { label: string; value: number; delta: string; deltaColor: string; icon: React.ReactNode; iconBg: string; iconFg: string; borderLeft?: string }) {
   return (
-    <div className="flex flex-col rounded-[16px] border border-card bg-surface p-5 shadow-card">
-      <div className="flex items-start justify-between">
-        <span className="text-[15px] font-bold text-text">{label}</span>
-        <Icon size={18} className="text-text-tertiary" />
+    <div style={{ ...glass, padding: 24, display: 'flex', flexDirection: 'column', ...(borderLeft ? { borderLeft: `4px solid ${borderLeft}` } : {}) }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <span style={kpiLabel}>{label}</span>
+        <span style={{ width: 34, height: 34, borderRadius: 9, display: 'grid', placeItems: 'center', background: iconBg, color: iconFg }}>{icon}</span>
       </div>
-      <span className="mt-0.5 text-caption font-medium text-text-tertiary">{sub}</span>
-      <div className="mt-4 flex items-end gap-2">
-        <span className="text-[34px] font-extrabold leading-none tracking-tight text-text">{value.toLocaleString()}</span>
-        <ArrowUpRight size={16} className="mb-1 text-text-tertiary" />
-      </div>
+      <span style={{ fontFamily: GEIST, fontSize: 48, fontWeight: 700, lineHeight: 1, color: HEAD, marginTop: 14 }}>{value.toLocaleString()}</span>
+      <span style={{ fontSize: 13, fontWeight: 600, color: deltaColor, marginTop: 8 }}>{delta}</span>
     </div>
   );
 }
 
-const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+function Bar({ label, pct, color }: { label: string; pct: number; color: string }) {
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <span style={{ fontSize: 14, color: HEAD }}>{label}</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color }}>{pct}%</span>
+      </div>
+      <div style={{ width: '100%', height: 8, borderRadius: 999, background: '#ebeef1', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${Math.min(100, pct)}%`, borderRadius: 999, background: color }} />
+      </div>
+    </div>
+  );
+}
 
 export default function SamplesPage() {
   const { can } = useAuth();
   const router = useRouter();
   const { message } = App.useApp();
   const qc = useQueryClient();
-  const [page, setPage] = useState(1);
-  const pageSize = 11;
   const [chooseOpen, setChooseOpen] = useState(false);
   const [drawer, setDrawer] = useState<{ formType: FormType; recordId?: string } | null>(null);
-  const [statusFilter, setStatusFilter] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('');
-  const [q, setQ] = useState('');
   const [goal, setGoal] = useState(150);
   const [editingGoal, setEditingGoal] = useState(false);
-  const [menuId, setMenuId] = useState<string | null>(null);
+  const [showAllActive, setShowAllActive] = useState(false);
 
-  const { data, isFetching } = useQuery({
-    queryKey: ['records', page, pageSize],
-    queryFn: () => api.get<Paginated<Rec>>('/specimens', { params: { page, pageSize } }).then((r) => r.data),
+  const { data } = useQuery({
+    queryKey: ['records-all'],
+    queryFn: () => api.get<Paginated<Rec>>('/specimens', { params: { page: 1, pageSize: 500 } }).then((r) => r.data),
   });
-  const rows = data?.data ?? [];
-  const total = data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-
-  // Stats window (same endpoint) for the KPI cards + gauge.
-  const { data: statsData } = useQuery({
-    queryKey: ['records-stats'],
-    queryFn: () => api.get<Paginated<Rec>>('/specimens', { params: { page: 1, pageSize: 100 } }).then((r) => r.data),
-  });
-  const all = statsData?.data ?? [];
-
-  const { data: recentData } = useQuery({
-    queryKey: ['records-recent'],
-    queryFn: () => api.get<Paginated<Rec>>('/specimens/recent', { params: { pageSize: 14 } }).then((r) => r.data),
-  });
-  const recent = recentData?.data ?? [];
-
-  const startToday = new Date(); startToday.setHours(0, 0, 0, 0);
-  const startMonth = new Date(); startMonth.setDate(1); startMonth.setHours(0, 0, 0, 0);
-  const kpis = {
-    newToday: all.filter((r) => new Date(r.createdAt) >= startToday).length,
-    completed: all.filter((r) => GREEN.includes(r.status) && new Date(r.createdAt) >= startMonth).length,
-    processing: all.filter((r) => PROCESSING.includes(r.status)).length,
-    delayed: all.filter((r) => r.urgent && OPEN.includes(r.status)).length,
-  };
-  const approved = all.filter((r) => ['Approved', 'Billed', 'Paid'].includes(r.status)).length;
-  const approvedPct = all.length ? Math.round((approved / all.length) * 100) : 0;
-
-  // Bar chart: samples processed bucketed by day-of-week. Uses the wider stats
-  // window (recent-14 clusters on a single day, leaving the chart empty).
-  const chartSrc = all.length ? all : recent;
-  const buckets = DOW.map((d, i) => ({ day: d[0], full: d, v: chartSrc.filter((r) => new Date(r.createdAt).getDay() === i).length }));
-  const peak = Math.max(1, ...buckets.map((b) => b.v));
-  const chart = buckets.map((b) => ({ ...b, peak: b.v === peak && b.v > 0 }));
-  const weekTotal = chartSrc.length;
-
-  // Filtered current-page rows.
-  const view = rows.filter((r) => {
-    if (statusFilter && r.status !== statusFilter) return false;
-    if (priorityFilter && priorityOf(r) !== priorityFilter) return false;
-    if (q) { const s = q.toLowerCase(); if (!(r.labNumber ?? '').toLowerCase().includes(s) && !patientName(r).toLowerCase().includes(s)) return false; }
-    return true;
-  });
+  const all = data?.data ?? [];
 
   const del = useMutation({
     mutationFn: (id: string) => api.delete(`/specimen/delete/${id}`),
-    onSuccess: () => { message.success('Sample deleted'); qc.invalidateQueries({ queryKey: ['records'] }); qc.invalidateQueries({ queryKey: ['records-stats'] }); },
+    onSuccess: () => { message.success('Sample deleted'); qc.invalidateQueries({ queryKey: ['records-all'] }); },
     onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not delete'),
   });
-  const openEdit = (r: Rec) => { setMenuId(null); setDrawer({ formType: r.formType === 'Gynecology' ? 'Gynecology' : 'NonGynecology', recordId: r.id }); };
 
-  const selCls = 'h-10 appearance-none rounded-[10px] border border-card bg-surface pl-3 pr-8 text-small font-medium text-text outline-none focus:border-primary';
+  // ── Derived counts (all client-side from the loaded window) ────────────────
+  const startToday = new Date(); startToday.setHours(0, 0, 0, 0);
+  const startYest = new Date(startToday); startYest.setDate(startYest.getDate() - 1);
+  const newToday = all.filter((r) => new Date(r.createdAt) >= startToday).length;
+  const newYest = all.filter((r) => { const d = new Date(r.createdAt); return d >= startYest && d < startToday; }).length;
+  const newDelta = newYest ? Math.round(((newToday - newYest) / newYest) * 100) : (newToday > 0 ? 100 : 0);
+
+  const completedCount = all.filter((r) => COMPLETED_SET.includes(r.status)).length;
+  const authorized = all.filter((r) => (r.resultSheets ?? []).some((s) => s.authorized)).length;
+  const accuracy = all.length ? Math.round((authorized / all.length) * 100) : 0;
+  const processingCount = all.filter((r) => PROCESSING_SET.includes(r.status)).length;
+  const urgentAll = all.filter((r) => r.urgent);
+
+  const approvedRecs = all.filter((r) => COMPLETED_SET.includes(r.status));
+  const analyzerPct = all.length ? Math.round((approvedRecs.length / all.length) * 100) : 0;
+  const withinTat = approvedRecs.filter((r) => {
+    const sub = r.statusHistory?.find((h) => h.status === 'Submitted')?.createdAt;
+    const app = r.statusHistory?.find((h) => h.status === 'Approved')?.createdAt;
+    return sub && app && (new Date(app).getTime() - new Date(sub).getTime()) <= 3 * 86_400_000;
+  }).length;
+  const tatPct = approvedRecs.length ? Math.round((withinTat / approvedRecs.length) * 100) : 0;
+
+  // Bars: bucket by day of week (Mon→Sun), current day highlighted.
+  const WD = [{ k: 1, l: 'M' }, { k: 2, l: 'T' }, { k: 3, l: 'W' }, { k: 4, l: 'T' }, { k: 5, l: 'F' }, { k: 6, l: 'S' }, { k: 0, l: 'S' }];
+  const todayDow = new Date().getDay();
+  const bars = WD.map((w) => ({ l: w.l, v: all.filter((r) => new Date(r.createdAt).getDay() === w.k).length, cur: w.k === todayDow }));
+  const barPeak = Math.max(1, ...bars.map((b) => b.v));
+
+  const activeRecs = all.filter((r) => ACTIVE.includes(r.status));
+  const worklist = showAllActive ? activeRecs : activeRecs.slice(0, 8);
+
+  const events = all
+    .flatMap((r) => (r.statusHistory ?? []).map((h) => ({ status: h.status, createdAt: h.createdAt, user: h.user, labNumber: r.labNumber })))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 6);
+
+  const openChoose = () => { if (can('record:create')) setChooseOpen(true); };
 
   return (
-    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_360px]">
-      {/* ================= LEFT COLUMN ================= */}
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+      {/* ═══════════ LEFT COLUMN ═══════════ */}
       <div className="flex min-w-0 flex-col gap-6">
-        {/* KPI cards */}
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <KpiCard label="New Samples" sub="Today" value={kpis.newToday} Icon={Package} />
-          <KpiCard label="Completed" sub="This Month" value={kpis.completed} Icon={CheckCircle} />
-          <KpiCard label="Processing" sub="In progress" value={kpis.processing} Icon={Clock} />
-          <KpiCard label="Delayed" sub="Requires attention" value={kpis.delayed} Icon={AlertTriangle} />
+        {/* KPI strip */}
+        <div className="grid grid-cols-2 gap-4">
+          <Kpi label="New Samples" value={newToday}
+            delta={`${newDelta >= 0 ? '↑ +' : '↓ '}${newDelta}% vs yesterday`}
+            deltaColor={newDelta >= 0 ? '#16A34A' : '#E11D48'}
+            icon={<Plus size={17} />} iconBg="#EEF2FF" iconFg={PRIMARY} />
+          <Kpi label="Completed" value={completedCount}
+            delta={`${accuracy}% Accuracy`} deltaColor="#16A34A"
+            icon={<CheckCircle size={17} />} iconBg="#F0FDF4" iconFg="#16A34A" borderLeft="#65A30D" />
+          <Kpi label="Processing" value={processingCount}
+            delta="Active in lab" deltaColor={PRIMARY}
+            icon={<FlaskConical size={17} />} iconBg="#EEF2FF" iconFg={PRIMARY} />
+          <Kpi label="Urgent" value={urgentAll.length}
+            delta="Requires attention" deltaColor="#E11D48"
+            icon={<AlertTriangle size={17} />} iconBg="#FFF1F2" iconFg="#E11D48" borderLeft="#E11D48" />
         </div>
 
-        {/* Samples table */}
-        <div className="flex flex-col rounded-[16px] border border-card bg-surface shadow-card">
-          <div className="flex flex-wrap items-center justify-between gap-3 px-6 pt-6">
-            <h2 className="text-[20px] font-extrabold tracking-tight text-text">Samples</h2>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative">
-                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={selCls}>
-                  <option value="">All statuses</option>
-                  {ALL_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-                <ChevronDown size={15} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
-              </div>
-              <div className="relative">
-                <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className={selCls}>
-                  <option value="">All priorities</option>
-                  {['High', 'Medium', 'Low'].map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-                <ChevronDown size={15} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
-              </div>
-              <div className="flex h-10 items-center gap-2 rounded-[10px] border border-card bg-surface px-3 text-text-tertiary">
-                <Search size={15} />
-                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" className="w-28 border-none bg-transparent text-small text-text outline-none placeholder:text-text-tertiary" />
-              </div>
-              {can('record:create') && (
-                <button onClick={() => setChooseOpen(true)} className="flex h-10 items-center gap-1.5 rounded-[10px] bg-primary px-4 text-small font-bold text-white hover:bg-primary-hover"><Plus size={16} /> New Sample</button>
+        {/* Active Worklist */}
+        <div style={{ ...glass, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #ebeef1' }}>
+            <span style={cardHead}>Active Worklist</span>
+            <button onClick={openChoose} title="New sample" style={{ color: SECONDARY, background: 'none', border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>
+              <MoreHorizontal size={18} />
+            </button>
+          </div>
+
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                {['Patient', 'Accession / Lab ID', 'Status', 'Details'].map((h) => (
+                  <th key={h} style={{ textAlign: 'left', padding: '12px 24px', borderBottom: '1px solid #ebeef1', fontFamily: GEIST, fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: SECONDARY }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {worklist.length === 0 && (
+                <tr><td colSpan={4} style={{ padding: '40px 24px', textAlign: 'center', color: '#94A3B8', fontSize: 14 }}>No active samples.</td></tr>
+              )}
+              {worklist.map((r) => {
+                const av = avatarFor(patientName(r));
+                const sb = statusBadge(r.status);
+                return (
+                  <tr key={r.id} onClick={() => router.push(`/records/${r.id}`)}
+                    style={{ cursor: 'pointer', borderBottom: '1px solid #f1f4f7' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#f7fafd')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
+                    {/* Patient */}
+                    <td style={{ padding: '16px 24px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, background: av.bg, color: av.fg, display: 'grid', placeItems: 'center', fontFamily: GEIST, fontSize: 14, fontWeight: 700 }}>{initials(r)}</div>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: HEAD }}>{patientName(r)}</div>
+                          {r.patient?.registrationNo && <div style={{ fontSize: 12, color: SECONDARY, marginTop: 1 }}>Reg No: {r.patient.registrationNo}</div>}
+                        </div>
+                      </div>
+                    </td>
+                    {/* Accession / Lab ID */}
+                    <td style={{ padding: '16px 24px' }}>
+                      <div style={{ fontFamily: GEIST, fontSize: 14, fontWeight: 700, color: HEAD }}>LAB# {r.labNumber ?? '—'}</div>
+                      <div style={{ fontSize: 12, color: SECONDARY, marginTop: 1 }}>{clientLabel(r)}</div>
+                    </td>
+                    {/* Status */}
+                    <td style={{ padding: '16px 24px' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: sb.bg, color: sb.fg }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: sb.fg }} />{r.status}
+                      </span>
+                      {r.urgent && (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 10, fontWeight: 700, color: '#E11D48' }}>
+                          <AlertCircle size={10} /> URGENT
+                        </div>
+                      )}
+                    </td>
+                    {/* Details */}
+                    <td style={{ padding: '16px 24px' }}>
+                      <div style={{ fontSize: 14, color: HEAD }}>{specLabel(r.specimens?.[0]?.type) ?? (r.formType === 'Gynecology' ? 'Gynaecology' : 'Non-Gynaecology')}</div>
+                      <div style={{ fontSize: 12, color: SECONDARY, marginTop: 1 }}>{dateFmt(r.specimenDate ?? r.createdAt)}</div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          <div style={{ padding: '16px 24px', borderTop: '1px solid #ebeef1', textAlign: 'center' }}>
+            <button onClick={() => setShowAllActive(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: PRIMARY, fontFamily: GEIST, fontSize: 14, fontWeight: 600 }}>
+              View All Active Samples →
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom row */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {/* Urgent Flagged Cases */}
+          <div style={{ ...glass, padding: 24 }}>
+            <div style={cardHead}>Urgent Flagged Cases</div>
+            <div style={{ marginTop: 16 }}>
+              {urgentAll.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '18px 0', color: '#16A34A', fontSize: 14, fontWeight: 600 }}>✓ No urgent cases</div>
+              ) : (
+                urgentAll.slice(0, 4).map((r) => (
+                  <div key={r.id} onClick={() => router.push(`/records/${r.id}`)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#fff1f2', borderRadius: 12, marginBottom: 8, cursor: 'pointer' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600, color: HEAD }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#E11D48' }} />LAB# {r.labNumber ?? '—'}
+                    </span>
+                    <span style={{ fontSize: 13, color: '#E11D48', fontWeight: 600 }}>{overdueH(r.createdAt)}h overdue</span>
+                  </div>
+                ))
               )}
             </div>
           </div>
 
-          <div className="overflow-x-auto px-2 pb-2 pt-3">
-            <table className="w-full min-w-[820px] border-collapse">
-              <thead>
-                <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
-                  <th style={{ width: 40, padding: '10px 12px' }}>
-                    <input type="checkbox" style={{ width: 15, height: 15, accentColor: '#4F46E5', cursor: 'pointer' }} />
-                  </th>
-                  <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Patient</th>
-                  <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Client</th>
-                  <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Details</th>
-                  <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Status</th>
-                  <th style={{ width: 40, padding: '10px 12px' }} />
-                </tr>
-              </thead>
-              <tbody>
-                {isFetching && view.length === 0 && <tr><td colSpan={6} className="px-4 py-10 text-center text-small text-text-tertiary">Loading samples…</td></tr>}
-                {!isFetching && view.length === 0 && <tr><td colSpan={6} className="px-4 py-10 text-center text-small text-text-tertiary">No samples match your filters.</td></tr>}
-                {view.map((r) => (
-                  <tr
-                    key={r.id}
-                    onClick={() => router.push(`/records/${r.id}`)}
-                    style={{ borderBottom: '1px solid #F8FAFC', cursor: 'pointer' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#F8FAFD')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    {/* Checkbox */}
-                    <td style={{ padding: '14px 12px' }} onClick={e => e.stopPropagation()}>
-                      <input type="checkbox" style={{ width: 15, height: 15, accentColor: '#4F46E5', cursor: 'pointer' }} />
-                    </td>
-
-                    {/* Patient column: form icon + initials + name + reg no */}
-                    <td style={{ padding: '14px 16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{
-                          width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                          background: r.formType === 'Gynecology' ? '#EEF3FF' : '#F1F5F9',
-                          display: 'grid', placeItems: 'center',
-                          color: r.formType === 'Gynecology' ? '#4F46E5' : '#64748B',
-                        }}>
-                          {r.formType === 'Gynecology' ? (
-                            /* GYN → requisition form/document */
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                              stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                              <polyline points="14 2 14 8 20 8" />
-                              <line x1="16" y1="13" x2="8" y2="13" />
-                              <line x1="16" y1="17" x2="8" y2="17" />
-                              <polyline points="10 9 9 9 8 9" />
-                            </svg>
-                          ) : (
-                            /* NON-GYN → specimen tube / vial */
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                              stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                              <rect x="8" y="2" width="8" height="20" rx="4" />
-                              <line x1="8" y1="7" x2="16" y2="7" />
-                              <line x1="12" y1="12" x2="12" y2="16" />
-                            </svg>
-                          )}
-                        </div>
-
-                        <div style={{
-                          width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                          background: '#E2E8F0', color: '#475569',
-                          display: 'grid', placeItems: 'center',
-                          fontSize: 12, fontWeight: 700, letterSpacing: '0.03em',
-                        }}>
-                          {((r.patient?.firstName?.[0] ?? '') + (r.patient?.lastName?.[0] ?? '')).toUpperCase() || '??'}
-                        </div>
-
-                        <div>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: '#0F172A' }}>
-                            {patientName(r) || '—'}
-                          </div>
-                          {r.patient?.registrationNo && (
-                            <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 1 }}>
-                              Reg. No.: {r.patient.registrationNo}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Client column: name + account no */}
-                    <td style={{ padding: '14px 16px' }}>
-                      {r.client ? (
-                        <div>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: '#0F172A' }}>
-                            {r.client.officeName || `${r.client.firstName} ${r.client.lastName}`.trim()}
-                          </div>
-                          {r.client.accountNo && (
-                            <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 1 }}>
-                              {r.client.accountNo}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <span style={{ fontSize: 13, color: '#CBD5E1' }}>—</span>
-                      )}
-                    </td>
-
-                    {/* Details column: LAB# + specimen code */}
-                    <td style={{ padding: '14px 16px' }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', fontFamily: 'monospace' }}>
-                        LAB#: {r.labNumber ?? '—'}
-                      </div>
-                      <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>
-                        SP: {r.specimens?.[0]?.type
-                          ? spCode(r.specimens[0].type)
-                          : r.formType === 'Gynecology' ? 'GYN' : r.formType === 'NonGynecology' ? 'NON-GYN' : '—'}
-                      </div>
-                    </td>
-
-                    {/* Status column: badge + date + urgent */}
-                    <td style={{ padding: '14px 16px' }}>
-                      <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 5,
-                        padding: '4px 12px', borderRadius: 999,
-                        fontSize: 12, fontWeight: 700,
-                        background: (() => {
-                          if (['Approved', 'Paid', 'Billed'].includes(r.status)) return '#DCFCE7';
-                          if (['Failed', 'Disabled'].includes(r.status)) return '#FEF2F2';
-                          if (['Resulted', 'Completed'].includes(r.status)) return '#DBEAFE';
-                          if (r.status === 'Processing' || r.status === 'Partial') return '#EDE9FE';
-                          return '#F1F5F9';
-                        })(),
-                        color: (() => {
-                          if (['Approved', 'Paid', 'Billed'].includes(r.status)) return '#16A34A';
-                          if (['Failed', 'Disabled'].includes(r.status)) return '#DC2626';
-                          if (['Resulted', 'Completed'].includes(r.status)) return '#1D4ED8';
-                          if (r.status === 'Processing' || r.status === 'Partial') return '#7C3AED';
-                          return '#64748B';
-                        })(),
-                      }}>
-                        {r.status}
-                      </span>
-                      <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>
-                        {dateFmt(r.specimenDate ?? r.createdAt)}
-                      </div>
-                      {r.urgent && (
-                        <div style={{
-                          display: 'inline-flex', alignItems: 'center',
-                          fontSize: 10, fontWeight: 700, color: '#DC2626',
-                          marginTop: 3, gap: 3,
-                        }}>
-                          ● URGENT
-                        </div>
-                      )}
-                    </td>
-
-                    {/* Actions menu */}
-                    <td style={{ padding: '14px 12px', position: 'relative' }}
-                      onClick={e => e.stopPropagation()}>
-                      <button
-                        onClick={() => setMenuId(menuId === r.id ? null : r.id)}
-                        style={{ color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center' }}
-                      >
-                        <MoreHorizontal size={18} />
-                      </button>
-                      {menuId === r.id && (
-                        <>
-                          <div className="fixed inset-0 z-10" onClick={() => setMenuId(null)} />
-                          <div className="absolute right-6 top-11 z-20 w-32 overflow-hidden rounded-[10px] border border-card bg-white py-1 shadow-float">
-                            <button onClick={() => { setMenuId(null); router.push(`/records/${r.id}`); }} className="block w-full px-3 py-2 text-left text-small font-medium text-text hover:bg-[#f6f8fc]">View</button>
-                            {can('record:change') && <button onClick={() => openEdit(r)} className="block w-full px-3 py-2 text-left text-small font-medium text-text hover:bg-[#f6f8fc]">Edit</button>}
-                            {can('record:delete') && <button onClick={() => { setMenuId(null); if (confirm(`Delete sample ${r.labNumber ?? ''}?`)) del.mutate(r.id); }} className="block w-full px-3 py-2 text-left text-small font-medium text-danger hover:bg-danger-soft">Delete</button>}
-                          </div>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Footer */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-6 py-4">
-            <div className="flex items-center gap-2.5">
-              <Ring pct={approvedPct} />
-              <span className="text-caption font-bold text-text-secondary">{approvedPct}% completed</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button disabled={page === 1} onClick={() => setPage((p) => p - 1)} className="grid h-9 w-9 place-items-center rounded-full border border-card text-text-secondary disabled:opacity-40 hover:text-text"><ChevronLeft size={16} /></button>
-              {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
-                const n = page <= 2 ? i + 1 : page - 1 + i;
-                if (n > totalPages) return null;
-                return <button key={n} onClick={() => setPage(n)} className="grid h-9 min-w-9 place-items-center rounded-full px-2 text-small font-bold" style={{ background: n === page ? '#eef3ff' : 'transparent', color: n === page ? '#4f7df9' : '#6b7280' }}>{n}</button>;
-              })}
-              <button disabled={page === totalPages} onClick={() => setPage((p) => p + 1)} className="grid h-9 w-9 place-items-center rounded-full border border-card text-text-secondary disabled:opacity-40 hover:text-text"><ChevronRight size={16} /></button>
-            </div>
-            <div className="flex items-center gap-2">
-              {can('record:create') && <button onClick={() => setChooseOpen(true)} className="grid h-9 w-9 place-items-center rounded-full bg-primary text-white hover:bg-primary-hover"><Plus size={17} /></button>}
-              <button className="grid h-9 w-9 place-items-center rounded-full border border-card text-text-secondary hover:text-text"><Maximize2 size={15} /></button>
-            </div>
+          {/* Automation Overview */}
+          <div style={{ ...glass, padding: 24 }}>
+            <div style={cardHead}>Automation Overview</div>
+            <div style={{ fontSize: 13, color: SECONDARY, marginTop: 2 }}>Instrument efficiency for current shift</div>
+            <Bar label="Analyzer Performance" pct={analyzerPct} color={PRIMARY} />
+            <Bar label="Avg TAT Performance" pct={tatPct} color="#16A34A" />
           </div>
         </div>
       </div>
 
-      {/* ================= RIGHT SIDEBAR ================= */}
+      {/* ═══════════ RIGHT COLUMN ═══════════ */}
       <div className="flex flex-col gap-6">
         {/* Samples Processed */}
-        <div className="rounded-[16px] border border-card bg-surface p-5 shadow-card">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="grid h-9 w-9 place-items-center rounded-[10px] bg-primary-soft text-primary"><Package size={17} /></span>
-              <div>
-                <div className="text-[15px] font-extrabold text-text">Samples Processed</div>
-                <div className="text-tiny font-medium text-text-tertiary">Last 14 samples</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="inline-flex items-center gap-1 rounded-pill border border-card px-2.5 py-1 text-caption font-bold text-text-secondary">Week <ChevronDown size={13} /></span>
-              <button className="grid h-8 w-8 place-items-center rounded-full border border-card text-text-secondary"><ArrowUpRight size={14} /></button>
-            </div>
+        <div style={{ ...glass, padding: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={cardHead}>Samples Processed</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, border: '1px solid #ebeef1', borderRadius: 999, padding: '4px 10px', fontSize: 12, fontWeight: 600, color: SECONDARY, cursor: 'pointer' }}>Week <ChevronDown size={13} /></span>
           </div>
-          <div className="mt-4 flex items-center justify-between">
-            <div>
-              <div className="text-[30px] font-extrabold leading-none tracking-tight text-text">{weekTotal}</div>
-              <div className="mt-1 text-caption font-medium text-text-tertiary">Total samples processed</div>
-            </div>
-            <span className="inline-flex items-center gap-1 rounded-pill bg-text px-2.5 py-1 text-tiny font-semibold text-white"><Star size={11} /> Load peak</span>
+          <div style={{ fontFamily: GEIST, fontSize: 56, fontWeight: 700, lineHeight: 1, color: HEAD, marginTop: 12 }}>{all.length}</div>
+          <div style={{ fontSize: 13, color: SECONDARY, marginTop: 4 }}>Total samples today</div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 120, marginTop: 18 }}>
+            {bars.map((b, i) => (
+              <div key={i} style={{ flex: 1, height: `${(b.v / barPeak) * 100}%`, minHeight: 4, background: b.cur ? PRIMARY : '#e2dfff', borderRadius: '6px 6px 0 0' }} />
+            ))}
           </div>
-          <div className="mt-3" style={{ width: '100%', height: 140 }}>
-            <ResponsiveContainer width="100%" height={140}>
-              <BarChart data={chart} margin={{ top: 22, right: 4, bottom: 0, left: 4 }} barCategoryGap="26%">
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af' }} />
-                <Bar dataKey="v" radius={[5, 5, 5, 5]} isAnimationActive={false}>
-                  <LabelList dataKey="v" position="top" style={{ fontSize: 11, fontWeight: 700, fill: '#6b7280' }} formatter={(v: any) => (v ? v : '')} />
-                  {chart.map((c, i) => <Cell key={i} fill={c.peak ? '#4f7df9' : '#e2e8f0'} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            {bars.map((b, i) => (
+              <div key={i} style={{ flex: 1, textAlign: 'center', fontFamily: GEIST, fontSize: 12, fontWeight: b.cur ? 700 : 500, color: b.cur ? PRIMARY : '#94A3B8' }}>{b.l}</div>
+            ))}
           </div>
         </div>
 
         {/* Completion Rate */}
-        <div className="rounded-[16px] border border-card bg-surface p-5 shadow-card">
-          <div className="text-[15px] font-extrabold text-text">Completion Rate</div>
-          <div className="mt-0.5 text-caption font-medium text-text-tertiary">Track today&apos;s fulfillment rate to keep operations on schedule.</div>
-          <div className="mt-2 flex items-center justify-center"><Gauge value={approved} goal={goal} /></div>
-          <div className="mt-2 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-text text-white"><Pencil size={14} /></span>
-              <span className="text-small font-bold text-text">Change Target</span>
-            </div>
+        <div style={{ ...glass, padding: 24 }}>
+          <div style={cardHead}>Completion Rate</div>
+          <div style={{ fontSize: 13, color: SECONDARY, marginTop: 2 }}>Shift objective status</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}><Gauge value={approvedRecs.length} goal={goal} /></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderTop: '1px solid #ebeef1', paddingTop: 16, marginTop: 16 }}>
+            <span style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, background: '#f1f4f7', color: SECONDARY, display: 'grid', placeItems: 'center' }}><Pencil size={15} /></span>
             {editingGoal ? (
-              <input autoFocus type="number" defaultValue={goal} onBlur={(e) => { setGoal(Math.max(1, +e.target.value || goal)); setEditingGoal(false); }}
+              <input autoFocus type="number" defaultValue={goal}
+                onBlur={(e) => { setGoal(Math.max(1, +e.target.value || goal)); setEditingGoal(false); }}
                 onKeyDown={(e) => { if (e.key === 'Enter') { setGoal(Math.max(1, +(e.target as HTMLInputElement).value || goal)); setEditingGoal(false); } }}
-                className="h-9 w-20 rounded-[10px] border border-primary px-2 text-small font-bold text-text outline-none" />
+                style={{ flex: 1, height: 40, borderRadius: 12, border: `1px solid ${PRIMARY}`, padding: '0 12px', fontSize: 14, fontWeight: 600, color: HEAD, outline: 'none' }} />
             ) : (
-              <button onClick={() => setEditingGoal(true)} className="text-small font-bold text-primary hover:underline">{goal}</button>
+              <button onClick={() => setEditingGoal(true)} style={{ flex: 1, background: PRIMARY, color: '#fff', border: 'none', borderRadius: 12, padding: '10px 20px', fontFamily: GEIST, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Change Target</button>
             )}
           </div>
         </div>
 
         {/* Recent Activity */}
-        <div className="rounded-[16px] border border-card bg-surface p-5 shadow-card">
-          <div className="flex items-center justify-between">
-            <div className="text-[15px] font-extrabold text-text">Recent Activity</div>
-            <button className="text-caption font-semibold text-text-secondary hover:text-text">See All</button>
+        <div style={{ ...glass, padding: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={cardHead}>Recent Activity</span>
+            <button onClick={() => router.push('/records')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: PRIMARY, fontFamily: GEIST, fontSize: 11, fontWeight: 700, letterSpacing: '0.06em' }}>VIEW ALL</button>
           </div>
-          <div className="mt-3 flex flex-col gap-3.5">
-            {recent.length === 0 && <div className="py-4 text-center text-small text-text-tertiary">No recent activity.</div>}
-            {recent.slice(0, 5).map((r) => {
-              const isGreen = GREEN.includes(r.status); const isRed = r.urgent || RED.includes(r.status);
-              const hue = isGreen ? '#16a34a' : isRed ? '#dc2626' : '#4f7df9';
-              const action = isGreen ? 'marked as Completed' : isRed ? (r.urgent ? 'flagged urgent' : 'failed') : `${r.status.toLowerCase()}`;
-              const when = r.statusHistory?.[r.statusHistory.length - 1]?.createdAt ?? r.createdAt;
+          <div style={{ marginTop: 12 }}>
+            {events.length === 0 && <div style={{ padding: '16px 0', textAlign: 'center', color: '#94A3B8', fontSize: 14 }}>No recent activity.</div>}
+            {events.map((ev, i) => {
+              const ui = ((ev.user?.firstName?.[0] ?? '') + (ev.user?.lastName?.[0] ?? '')).toUpperCase();
               return (
-                <div key={r.id} className="flex items-center gap-3">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full" style={{ background: `${hue}1a`, color: hue }}>
-                    {isGreen ? <CheckCircle size={16} /> : isRed ? <AlertTriangle size={16} /> : <Package size={16} />}
+                <div key={i} style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid #f1f4f7' }}>
+                  <span style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, background: '#EEF2FF', color: PRIMARY, display: 'grid', placeItems: 'center', fontFamily: GEIST, fontSize: 12, fontWeight: 700 }}>
+                    {ui || <FlaskConical size={15} />}
                   </span>
-                  <div className="min-w-0 flex-1 text-small">
-                    <span className="text-text-secondary">Sample </span>
-                    <span className="rounded-md bg-text px-1.5 py-0.5 font-mono text-tiny font-bold text-white">{r.labNumber ?? '—'}</span>
-                    <span className="text-text-secondary"> {action}</span>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: HEAD }}>
+                      Sample <span style={{ background: '#EEF2FF', color: PRIMARY, padding: '2px 8px', borderRadius: 999, fontFamily: GEIST, fontSize: 11, fontWeight: 700 }}>{ev.labNumber ?? '—'}</span> {statusAction(ev.status)}
+                    </div>
+                    <div style={{ fontSize: 12, color: SECONDARY, marginTop: 2 }}>{relTime(ev.createdAt)}</div>
                   </div>
-                  <span className="shrink-0 text-tiny font-medium text-text-tertiary">{relTime(when)}</span>
                 </div>
               );
             })}
@@ -490,8 +384,8 @@ export default function SamplesPage() {
       {chooseOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setChooseOpen(false)}>
           <div className="w-full max-w-md rounded-card bg-white p-6 shadow-float" onClick={(e) => e.stopPropagation()}>
-            <div className="text-[20px] font-extrabold tracking-tight text-text">New sample</div>
-            <div className="mt-0.5 text-small font-medium text-text-secondary">Choose the form type to begin.</div>
+            <div style={{ ...cardHead, fontSize: 20 }}>New sample</div>
+            <div style={{ fontSize: 14, color: SECONDARY, marginTop: 2 }}>Choose the form type to begin.</div>
             <div className="mt-5 grid grid-cols-2 gap-3">
               {(['Gynecology', 'NonGynecology'] as FormType[]).map((ft) => (
                 <button key={ft} onClick={() => { setChooseOpen(false); setDrawer({ formType: ft }); }}
@@ -505,19 +399,8 @@ export default function SamplesPage() {
         </div>
       )}
 
-      {drawer && <RecordFormDrawer open onClose={() => { setDrawer(null); qc.invalidateQueries({ queryKey: ['records'] }); }} formType={drawer.formType} recordId={drawer.recordId} />}
+      {drawer && <RecordFormDrawer open onClose={() => { setDrawer(null); qc.invalidateQueries({ queryKey: ['records-all'] }); }} formType={drawer.formType} recordId={drawer.recordId} />}
     </div>
-  );
-}
-
-function Ring({ pct }: { pct: number }) {
-  const size = 34, sw = 4, r = (size - sw) / 2, c = 2 * Math.PI * r;
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e8edf4" strokeWidth={sw} />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#16a34a" strokeWidth={sw} strokeLinecap="round"
-        strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(100, pct) / 100)} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
-    </svg>
   );
 }
 
@@ -534,13 +417,13 @@ function Gauge({ value, goal }: { value: number; goal: number }) {
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         <circle cx={cx} cy={cy} r={r} fill="none" stroke="#eef2f7" strokeWidth={sw} strokeLinecap="round"
           strokeDasharray={`${arc * c} ${c}`} transform={`rotate(${start} ${cx} ${cy})`} />
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#4f7df9" strokeWidth={sw} strokeLinecap="round"
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#4F46E5" strokeWidth={sw} strokeLinecap="round"
           strokeDasharray={`${frac * arc * c} ${c}`} transform={`rotate(${start} ${cx} ${cy})`} />
-        <circle cx={mx} cy={my} r={5} fill="#fff" stroke="#4f7df9" strokeWidth={3} />
+        <circle cx={mx} cy={my} r={5} fill="#fff" stroke="#4F46E5" strokeWidth={3} />
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: 40, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>{value}</span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: '#9ca3af' }}>Goal {goal}</span>
+        <span style={{ fontFamily: GEIST, fontSize: 48, fontWeight: 700, color: HEAD, letterSpacing: '-0.02em' }}>{value}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: SECONDARY }}>Goal {goal}</span>
       </div>
     </div>
   );
