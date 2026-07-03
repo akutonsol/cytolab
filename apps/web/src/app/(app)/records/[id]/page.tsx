@@ -59,8 +59,8 @@ const relTime = (iso?: string | null) => {
 // Button styles — rectangular (rounded rectangle), padded, with an icon.
 const actionPrimary = 'flex w-full items-center justify-between gap-2 rounded-xl bg-[#4F46E5] px-5 py-3.5 text-[15px] font-bold text-white transition-colors hover:bg-[#4338CA] disabled:opacity-60';
 const actionSecondary = 'flex w-full items-center justify-center gap-2 rounded-xl border-[1.5px] border-[#CBD5E1] px-5 py-3 text-[15px] font-semibold text-[#475569] transition-colors hover:bg-[#F1F5F9] disabled:opacity-60';
-const rightBtn = 'flex w-full items-center justify-center gap-2 rounded-xl bg-[#F1F5F9] px-3 py-3 text-[14px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#E2E8F0]';
-const LABEL = 'text-[13px] font-bold italic uppercase tracking-[0.05em] text-[#3B5EA8]';
+const rightBtn = 'flex w-full items-center justify-center gap-2 rounded-xl bg-[#F1F5F9] px-3 py-3.5 text-[15px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#E2E8F0]';
+const LABEL = 'text-[14px] font-bold italic uppercase tracking-[0.05em] text-[#3B5EA8]';
 
 // Floating-particle / glow configs — drifting "cells" over the specimen.
 const PARTICLES = [
@@ -244,10 +244,19 @@ export default function RecordDetailPage() {
             <>
               {shownFields.map((f: any) => {
                 const v = featValue(f.fieldKey);
+                const label = /^sample description$/i.test(f.label) ? 'Description' : f.label;
+                if (f.fieldType === 'CHECKBOX') {
+                  return (
+                    <div key={f.fieldKey} className="flex items-center justify-between gap-2 border-b border-[#F1F5F9] py-2.5">
+                      <span className="text-[14px] font-bold text-[#334155]">{label}</span>
+                      <span className="text-[16px]">{v ? <Check size={16} className="inline text-[#16A34A]" /> : <span className="text-[#CBD5E1]">—</span>}</span>
+                    </div>
+                  );
+                }
                 return (
-                  <div key={f.fieldKey} className="flex items-center justify-between gap-2 border-b border-[#F1F5F9] py-2.5">
-                    <span className="text-[14px] font-medium text-[#64748B]">{f.label}</span>
-                    <span className="text-right text-[16px] font-semibold text-[#0F172A]">{f.fieldType === 'CHECKBOX' ? (v ? <Check size={16} className="inline text-[#16A34A]" /> : <span className="text-[#CBD5E1]">—</span>) : (v || <span className="text-[#CBD5E1]">—</span>)}</span>
+                  <div key={f.fieldKey} className="border-b border-[#F1F5F9] py-2.5">
+                    <div className="text-[14px] font-bold text-[#334155]">{label}</div>
+                    <div className="mt-1 text-[15px] font-medium leading-[1.5] text-[#0F172A]">{v || <span className="text-[#CBD5E1]">—</span>}</div>
                   </div>
                 );
               })}
@@ -321,8 +330,8 @@ export default function RecordDetailPage() {
             <div key={ev.id} className="flex items-start gap-2.5 border-b border-[#F8FAFC] py-2">
               <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: DOT[ev.status] ?? '#94A3B8' }} />
               <div className="min-w-0">
-                <div className="text-[14px] font-semibold text-[#0F172A]">{ev.status}</div>
-                <div className="truncate text-[12px] text-[#64748B]">{ev.user ? `${ev.user.firstName ?? ''} ${ev.user.lastName ?? ''}`.trim() : 'System'} · {relTime(ev.createdAt)}</div>
+                <div className="text-[15px] font-semibold text-[#0F172A]">{ev.status}</div>
+                <div className="truncate text-[13px] text-[#64748B]">{ev.user ? `${ev.user.firstName ?? ''} ${ev.user.lastName ?? ''}`.trim() : 'System'} · {relTime(ev.createdAt)}</div>
               </div>
             </div>
           ))}
@@ -335,14 +344,14 @@ export default function RecordDetailPage() {
         <div className={`${LABEL} mb-3`}>Result Sheet</div>
         {!sheet ? (
           <>
-            <div className="text-[14px] text-[#64748B]">No result sheet.</div>
+            <div className="text-[15px] text-[#64748B]">No result sheet.</div>
             <button onClick={() => setSheetModal(true)} className={`${rightBtn} mt-2`}><FlaskConical size={15} /> Add Result Sheet</button>
           </>
         ) : (
           <div className="flex flex-col gap-3">
             <span className="inline-flex w-fit items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-bold" style={sheet.authorized ? { background: '#DCFCE7', color: '#16A34A' } : { background: '#EEF3FF', color: '#4F46E5' }}>{sheet.authorized ? <CheckCircle2 size={12} /> : <Clock size={12} />}{sheet.authorized ? 'Authorized' : 'Pending'}</span>
             {sheet.narrative && (
-              <div className="text-[12px] leading-relaxed text-[#374151]">
+              <div className="text-[14px] leading-relaxed text-[#374151]">
                 {showFullNarrative || sheet.narrative.length <= 100 ? sheet.narrative : `${sheet.narrative.slice(0, 100)}…`}
                 {sheet.narrative.length > 100 && <button onClick={() => setShowFullNarrative((v) => !v)} className="ml-1 font-semibold text-[#4F46E5]">{showFullNarrative ? 'less' : 'Read more'}</button>}
               </div>
@@ -394,8 +403,8 @@ function Stat({ icon: Icon, label, value, unit }: { icon: any; label: string; va
     <div className="mb-5 flex items-center gap-3.5">
       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#EEF2FF] text-[#4F46E5]"><Icon size={20} /></span>
       <div>
-        <div className="text-[13px] font-medium text-[#64748B]">{label}</div>
-        <div className="flex items-baseline gap-1.5"><span className="text-[28px] font-bold leading-none text-[#0F172A]">{value}</span><span className="text-[14px] text-[#64748B]">{unit}</span></div>
+        <div className="text-[14px] font-medium text-[#64748B]">{label}</div>
+        <div className="flex items-baseline gap-1.5"><span className="text-[30px] font-bold leading-none text-[#0F172A]">{value}</span><span className="text-[15px] text-[#64748B]">{unit}</span></div>
       </div>
     </div>
   );
