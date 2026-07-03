@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
 import {
   Activity, ArrowRight, ArrowUpRight, Calendar, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FlaskConical,
-  Microscope, Monitor, MoreHorizontal, Plus, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
+  Microscope, Monitor, MoreHorizontal, Plus, RotateCw, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
   TestTube, TrendingUp, User,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -224,42 +224,79 @@ export default function DashboardPage() {
 
             {/* CENTER: AI Cytology Model */}
             <div style={{ background: 'linear-gradient(135deg,#F8F9FF 0%,#EEF0FF 100%)', borderRadius: 20, border: '1px solid #E0E7FF', boxShadow: '0 4px 24px rgba(79,70,229,0.08)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ padding: '20px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Cytology Model</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.6)' }} />
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#16A34A' }}>Live Analysis</span>
-                  </div>
+              {/* Header */}
+              <div style={{ padding: '20px 24px 0', position: 'relative', zIndex: 4 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Cytology Model</div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8, background: '#DCFCE7', borderRadius: 999, padding: '4px 11px' }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.6)' }} />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#16A34A' }}>Live Analysis</span>
                 </div>
               </div>
-              <div style={{ display: 'flex', flex: 1, padding: '12px 24px 16px', gap: 20, alignItems: 'center' }}>
-                <div className="ai-float" style={{ position: 'relative', flex: '0 0 240px', height: 320 }}>
-                  {/* soft radial aura behind the model */}
-                  <div style={{ position: 'absolute', inset: '-12% -22%', background: 'radial-gradient(50% 50% at 50% 42%, rgba(139,92,246,0.30), rgba(99,102,241,0.10) 55%, transparent 72%)', filter: 'blur(6px)', zIndex: 0 }} />
-                  {/* glowing base platform ring */}
-                  <div style={{ position: 'absolute', left: '50%', bottom: 12, transform: 'translateX(-50%)', width: 190, height: 36, borderRadius: '50%', background: 'radial-gradient(50% 50% at 50% 50%, rgba(139,92,246,0.38), rgba(139,92,246,0.06) 60%, transparent 76%)', filter: 'blur(2px)', zIndex: 0 }} />
-                  <img src="/ai-man.png" alt="AI Cytology Model" className="ai-breathe" style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', filter: 'brightness(1.12) contrast(1.05) saturate(1.05) drop-shadow(0 16px 34px rgba(99,102,241,0.35))' }} />
-                  {[{ top: '18%', left: '52%', color: '#6366F1' }, { top: '42%', left: '18%', color: '#8B5CF6' }, { top: '42%', left: '72%', color: '#06B6D4' }, { top: '68%', left: '45%', color: '#8B5CF6' }].map((dot, i) => (
-                    <div key={i} className="ai-pulse" style={{ position: 'absolute', top: dot.top, left: dot.left, width: 16, height: 16, borderRadius: '50%', background: dot.color, border: '2px solid white', transform: 'translate(-50%,-50%)', zIndex: 2 }} />
-                  ))}
-                </div>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {[{ label: 'Reactive Mesothelial Cells', conf: 96, color: '#6366F1', attention: false }, { label: 'Inflammatory Cells', conf: 89, color: '#06B6D4', attention: false }, { label: 'Atypical Cells', conf: 72, color: '#8B5CF6', attention: true }, { label: 'Background Debris', conf: 94, color: '#6366F1', attention: false }].map(({ label, conf, color, attention }, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', background: 'white', borderRadius: 12, border: '1px solid #EEF2F7', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0, marginTop: 4 }} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{label}</div>
-                        <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 1 }}>Confidence {conf}%</div>
-                        {attention && <div style={{ fontSize: 10, fontWeight: 700, color: '#EF4444', marginTop: 3 }}>+ Attention</div>}
-                      </div>
-                    </div>
-                  ))}
+
+              {/* Analysis stage — big centered head + target markers wired to labels */}
+              <div style={{ flex: 1, display: 'grid', placeItems: 'center', padding: '4px 16px' }}>
+                <div style={{ position: 'relative', width: 620, height: 440, maxWidth: '100%' }}>
+                  {(() => {
+                    const markers = [
+                      { x: 300, y: 90, color: '#6366F1' },
+                      { x: 168, y: 200, color: '#3B82F6' },
+                      { x: 292, y: 214, color: '#8B5CF6' },
+                      { x: 250, y: 312, color: '#8B5CF6' },
+                    ];
+                    const findings = [
+                      { label: 'Reactive Mesothelial Cells', conf: 96, color: '#6366F1', y: 96, attention: false },
+                      { label: 'Inflammatory Cells', conf: 89, color: '#3B82F6', y: 186, attention: false },
+                      { label: 'Atypical Cells', conf: 72, color: '#8B5CF6', y: 274, attention: true },
+                      { label: 'Background Debris', conf: 94, color: '#6366F1', y: 366, attention: false },
+                    ];
+                    const LX = 414; // label dot x
+                    return (
+                      <>
+                        {/* dotted connectors marker → label */}
+                        <svg width="620" height="440" viewBox="0 0 620 440" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
+                          {markers.map((m, i) => (
+                            <line key={i} x1={m.x} y1={m.y} x2={LX} y2={findings[i].y} stroke="#C7D2FE" strokeWidth={1.5} strokeDasharray="2 5" />
+                          ))}
+                        </svg>
+                        {/* aura */}
+                        <div style={{ position: 'absolute', left: 40, top: 10, width: 380, height: 400, background: 'radial-gradient(50% 46% at 46% 44%, rgba(255,255,255,0.9), rgba(139,92,246,0.16) 46%, rgba(99,102,241,0.06) 62%, transparent 74%)', filter: 'blur(4px)', zIndex: 0 }} />
+                        {/* glowing base platform */}
+                        <div style={{ position: 'absolute', left: 70, top: 372, width: 300, height: 54, borderRadius: '50%', background: 'radial-gradient(50% 50% at 50% 50%, rgba(255,255,255,0.95), rgba(167,139,250,0.35) 45%, rgba(139,92,246,0.08) 68%, transparent 78%)', filter: 'blur(1px)', zIndex: 1 }} />
+                        {/* head */}
+                        <img src="/ai-man.png" alt="AI Cytology Model" className="ai-breathe"
+                          style={{ position: 'absolute', left: 70, top: 8, width: 320, height: 400, objectFit: 'contain', objectPosition: 'center', filter: 'brightness(1.28) contrast(1.06) saturate(0.85) drop-shadow(0 18px 40px rgba(99,102,241,0.28))', zIndex: 2 }} />
+                        {/* target markers */}
+                        {markers.map((m, i) => (
+                          <div key={i} className="ai-pulse" style={{ position: 'absolute', left: m.x, top: m.y, transform: 'translate(-50%,-50%)', width: 26, height: 26, borderRadius: '50%', background: 'white', border: `2px solid ${m.color}`, boxShadow: `0 0 10px ${m.color}66`, display: 'grid', placeItems: 'center', zIndex: 3 }}>
+                            <div style={{ width: 9, height: 9, borderRadius: '50%', background: m.color }} />
+                          </div>
+                        ))}
+                        {/* findings labels (plain, connected) */}
+                        {findings.map((f, i) => (
+                          <div key={i} style={{ position: 'absolute', left: LX, top: f.y, transform: 'translateY(-50%)', width: 190, zIndex: 3 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                              <div style={{ width: 10, height: 10, borderRadius: '50%', background: f.color, flexShrink: 0 }} />
+                              <span style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>{f.label}</span>
+                            </div>
+                            <div style={{ fontSize: 12, color: '#94A3B8', marginLeft: 19, marginTop: 2 }}>Confidence {f.conf}%</div>
+                            {f.attention && (
+                              <div style={{ marginLeft: 19, marginTop: 5 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: '#EF4444', background: '#FEF2F2', borderRadius: 6, padding: '2px 8px' }}>+ Attention</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
-              <div style={{ padding: '0 24px 20px' }}>
-                <button onClick={() => router.push(`/records/${d.priorityRecords?.[0]?.id ?? ''}`)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', padding: '10px', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 12, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#4F46E5' }}>
-                  <ArrowUpRight size={15} /> View Full Analysis
+
+              {/* Rotate Model pill */}
+              <div style={{ padding: '0 24px 22px', display: 'flex', justifyContent: 'center' }}>
+                <button onClick={() => router.push(`/records/${d.priorityRecords?.[0]?.id ?? ''}`)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'white', border: '1px solid #EEF2F7', boxShadow: '0 6px 18px rgba(79,70,229,0.10)', borderRadius: 999, padding: '11px 24px', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#4F46E5', fontFamily: 'Geist,sans-serif' }}>
+                  <RotateCw size={15} /> Rotate Model <ArrowRight size={15} />
                 </button>
               </div>
             </div>
