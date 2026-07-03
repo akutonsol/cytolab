@@ -235,47 +235,47 @@ export default function DashboardPage() {
 
               {/* Analysis stage — big centered head + target markers wired to labels */}
               <div style={{ flex: 1, display: 'grid', placeItems: 'center', padding: '0 16px', minHeight: 0, overflow: 'hidden' }}>
-                <div style={{ position: 'relative', width: 640, height: 480, maxWidth: '100%', transform: 'scale(0.82)', transformOrigin: 'center' }}>
+                <div style={{ position: 'relative', width: 760, height: 410, maxWidth: '100%', overflow: 'hidden' }}>
                   {(() => {
                     const markers = [
-                      { x: 308, y: 112, color: '#6366F1' },
-                      { x: 150, y: 252, color: '#3B82F6' },
-                      { x: 300, y: 268, color: '#8B5CF6' },
-                      { x: 244, y: 372, color: '#8B5CF6' },
+                      { x: 356, y: 100, color: '#6366F1' },
+                      { x: 214, y: 216, color: '#3B82F6' },
+                      { x: 356, y: 228, color: '#8B5CF6' },
+                      { x: 300, y: 330, color: '#8B5CF6' },
                     ];
                     const findings = [
-                      { label: 'Reactive Mesothelial Cells', conf: 96, color: '#6366F1', y: 112, attention: false },
-                      { label: 'Inflammatory Cells', conf: 89, color: '#3B82F6', y: 212, attention: false },
-                      { label: 'Atypical Cells', conf: 72, color: '#8B5CF6', y: 302, attention: true },
-                      { label: 'Background Debris', conf: 94, color: '#6366F1', y: 396, attention: false },
+                      { label: 'Reactive Mesothelial Cells', conf: 96, color: '#6366F1', y: 100, attention: false },
+                      { label: 'Inflammatory Cells', conf: 89, color: '#3B82F6', y: 190, attention: false },
+                      { label: 'Atypical Cells', conf: 72, color: '#8B5CF6', y: 268, attention: true },
+                      { label: 'Background Debris', conf: 94, color: '#6366F1', y: 352, attention: false },
                     ];
-                    const LX = 430; // label dot x
+                    const LX = 500; // label dot x
                     return (
                       <>
                         {/* dotted connectors marker → label */}
-                        <svg width="640" height="480" viewBox="0 0 640 480" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
+                        <svg width="760" height="410" viewBox="0 0 760 410" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
                           {markers.map((m, i) => (
                             <line key={i} x1={m.x} y1={m.y} x2={LX} y2={findings[i].y} stroke="#C7D2FE" strokeWidth={1.5} strokeDasharray="2 5" />
                           ))}
                         </svg>
                         {/* aura */}
-                        <div style={{ position: 'absolute', left: 0, top: -20, width: 470, height: 500, background: 'radial-gradient(48% 44% at 47% 42%, rgba(255,255,255,0.92), rgba(139,92,246,0.16) 46%, rgba(99,102,241,0.06) 62%, transparent 74%)', filter: 'blur(4px)', zIndex: 0 }} />
+                        <div style={{ position: 'absolute', left: 40, top: -40, width: 500, height: 490, background: 'radial-gradient(46% 44% at 48% 44%, rgba(255,255,255,0.92), rgba(139,92,246,0.16) 46%, rgba(99,102,241,0.06) 62%, transparent 74%)', filter: 'blur(4px)', zIndex: 0 }} />
                         {/* glowing base platform */}
-                        <div style={{ position: 'absolute', left: 80, top: 372, width: 310, height: 52, borderRadius: '50%', background: 'radial-gradient(50% 50% at 50% 50%, rgba(255,255,255,0.95), rgba(167,139,250,0.38) 45%, rgba(139,92,246,0.08) 68%, transparent 78%)', filter: 'blur(1px)', zIndex: 1 }} />
-                        {/* head */}
+                        <div style={{ position: 'absolute', left: 130, top: 352, width: 320, height: 56, borderRadius: '50%', background: 'radial-gradient(50% 50% at 50% 50%, rgba(255,255,255,0.95), rgba(167,139,250,0.38) 45%, rgba(139,92,246,0.08) 68%, transparent 78%)', filter: 'blur(1px)', zIndex: 1 }} />
+                        {/* head — oversized image, transparent padding clipped by the stage */}
                         <img src="/ai-man.png" alt="AI Cytology Model" className="ai-breathe"
-                          style={{ position: 'absolute', left: 5, top: -45, width: 460, height: 570, objectFit: 'contain', objectPosition: 'center', filter: 'brightness(1.28) contrast(1.06) saturate(0.85) drop-shadow(0 18px 40px rgba(99,102,241,0.28))', zIndex: 2 }} />
+                          style={{ position: 'absolute', left: 50, top: -150, width: 480, height: 720, objectFit: 'contain', objectPosition: 'center', filter: 'brightness(1.28) contrast(1.06) saturate(0.85) drop-shadow(0 18px 40px rgba(99,102,241,0.28))', zIndex: 2 }} />
                         {/* target markers (soft halo + ring + center) */}
                         {markers.map((m, i) => (
-                          <div key={i} style={{ position: 'absolute', left: m.x, top: m.y, transform: 'translate(-50%,-50%)', zIndex: 3, width: 46, height: 46, borderRadius: '50%', display: 'grid', placeItems: 'center', background: `radial-gradient(50% 50% at 50% 50%, ${m.color}33, transparent 70%)` }}>
-                            <div className="ai-pulse" style={{ width: 26, height: 26, borderRadius: '50%', background: 'white', border: `2px solid ${m.color}`, boxShadow: `0 0 10px ${m.color}66`, display: 'grid', placeItems: 'center' }}>
-                              <div style={{ width: 9, height: 9, borderRadius: '50%', background: m.color }} />
+                          <div key={i} style={{ position: 'absolute', left: m.x, top: m.y, transform: 'translate(-50%,-50%)', zIndex: 3, width: 48, height: 48, borderRadius: '50%', display: 'grid', placeItems: 'center', background: `radial-gradient(50% 50% at 50% 50%, ${m.color}33, transparent 70%)` }}>
+                            <div className="ai-pulse" style={{ width: 28, height: 28, borderRadius: '50%', background: 'white', border: `2px solid ${m.color}`, boxShadow: `0 0 10px ${m.color}66`, display: 'grid', placeItems: 'center' }}>
+                              <div style={{ width: 10, height: 10, borderRadius: '50%', background: m.color }} />
                             </div>
                           </div>
                         ))}
                         {/* findings labels (plain, connected) */}
                         {findings.map((f, i) => (
-                          <div key={i} style={{ position: 'absolute', left: LX, top: f.y, transform: 'translateY(-50%)', width: 200, zIndex: 3 }}>
+                          <div key={i} style={{ position: 'absolute', left: LX, top: f.y, transform: 'translateY(-50%)', width: 210, zIndex: 3 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                               <div style={{ width: 10, height: 10, borderRadius: '50%', background: f.color, flexShrink: 0 }} />
                               <span style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>{f.label}</span>
