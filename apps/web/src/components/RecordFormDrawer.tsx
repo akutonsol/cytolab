@@ -296,7 +296,10 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
       styles={{
         content: { background: DS.drawerBg, borderRadius: 20, padding: 0, maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.18)' },
         body: { padding: 0, maxHeight: '90vh', overflowY: 'auto', scrollbarWidth: 'thin' },
-        mask: { backdropFilter: 'blur(8px)', background: 'rgba(15,23,42,0.4)' },
+        // No backdrop-filter blur: the record detail page runs many continuous
+        // full-viewport animations, and blurring them each frame crashes Chrome's
+        // GPU process. A solid mask gives the same focus without the hazard.
+        mask: { background: 'rgba(15,23,42,0.55)' },
         header: { display: 'none' },
       }}
     >

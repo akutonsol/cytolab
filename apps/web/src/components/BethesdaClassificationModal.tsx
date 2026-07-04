@@ -75,7 +75,7 @@ export function BethesdaClassificationModal({ open, onClose, recordId, onApply }
   if (!open || typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2000, background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(6px)' }} onClick={onClose}>
+    <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2000, background: 'rgba(15,23,42,0.6)' }} onClick={onClose}>
       <div className="flex max-h-[90vh] w-full max-w-[940px] flex-col rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-200 p-5 pb-4">

@@ -129,7 +129,7 @@ export function PatientFormDrawer({ open, onClose, patient, onCreated }: Props) 
       styles={{
         content: { background: DS.drawerBg, borderRadius: 20, padding: 0, maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.18)' },
         body: { padding: 0, maxHeight: '90vh', overflowY: 'auto', scrollbarWidth: 'thin' },
-        mask: { backdropFilter: 'blur(8px)', background: 'rgba(15,23,42,0.4)' },
+        mask: { background: 'rgba(15,23,42,0.55)' }, // solid (no blur): avoids GPU crash blurring animated pages
         header: { display: 'none' },
       }}
     >
