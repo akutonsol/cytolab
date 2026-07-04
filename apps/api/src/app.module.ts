@@ -34,6 +34,7 @@ import { FormConfigModule } from './modules/form-config/form-config.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SearchModule } from './modules/search/search.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
+import { FilesModule } from './modules/files/files.module';
 
 /**
  * Cytolab modular monolith.
@@ -80,6 +81,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
     NotificationsModule,
     SearchModule,
     WorkspacesModule,
+    FilesModule,
   ],
   controllers: [HealthController],
   providers: [

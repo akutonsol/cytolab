@@ -11,6 +11,7 @@ import { api, type Paginated } from '@/lib/api';
 import { RecordFormDrawer } from '@/components/RecordFormDrawer';
 import { ResultSheetModal } from '@/components/ResultSheetModal';
 import { AuthorizationModal } from '@/components/AuthorizationModal';
+import { RecordAttachments } from '@/components/RecordAttachments';
 import { SPECIMEN_LABELS, type FormType } from '@/lib/specimen-types';
 
 // ─── Status + step maps (zero-orange) ────────────────────────────────────────
@@ -267,8 +268,8 @@ export default function RecordDetailPage() {
   // Turnaround: days between Submitted and Approved for this record.
   const submittedAt = record.statusHistory?.find((e: any) => e.status === 'Submitted')?.createdAt;
   const approvedAt = record.statusHistory?.find((e: any) => e.status === 'Approved')?.createdAt;
-  const avgTat = submittedAt && approvedAt
-    ? Math.round((new Date(approvedAt).getTime() - new Date(submittedAt).getTime()) / 86400000 * 10) / 10
+  const avgTat = submittedAt
+    ? Math.round((new Date(approvedAt || Date.now()).getTime() - new Date(submittedAt).getTime()) / 86400000 * 10) / 10
     : null;
 
   const cytologyImg = isGyn ? '/cytology-sample.png' : '/cytology-nongyn.png';
@@ -364,7 +365,7 @@ export default function RecordDetailPage() {
         <div className={`${LABEL} mb-5`}>Patient Stats</div>
         <Stat icon={Activity} label="Total Records" value={String(totalRecords)} unit="cases" />
         <Stat icon={FlaskConical} label="Open Cases" value={String(openCases)} unit="in progress" />
-        <Stat icon={Clock} label="Avg TAT" value={avgTat !== null ? String(avgTat) : '—'} unit="days" />
+        <Stat icon={Clock} label="Avg TAT" value={avgTat !== null ? `${avgTat}d` : '—'} unit={approvedAt ? 'days TAT' : 'days so far'} />
 
         <div className="mb-4 mt-1 border-t border-[#F1F5F9]" />
 
@@ -405,6 +406,11 @@ export default function RecordDetailPage() {
             ))}
           </div>
         )}
+
+        <div className="my-4 border-t border-[#F1F5F9]" />
+
+        <div className={`${LABEL} mb-3`}>Attachments</div>
+        <RecordAttachments recordId={id} />
 
         <div className="my-4 border-t border-[#F1F5F9]" />
 
