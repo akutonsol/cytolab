@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { App } from 'antd';
 import {
   AlertCircle, AlertTriangle, CheckCircle, ChevronDown, Filter, FlaskConical, MoreHorizontal, Pencil, Plus,
 } from 'lucide-react';
@@ -153,8 +152,12 @@ function FormTypeIcon({ gyn }: { gyn: boolean }) {
 export default function SamplesPage() {
   const { can } = useAuth();
   const router = useRouter();
-  const { message } = App.useApp();
   const qc = useQueryClient();
+  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
+  const message = {
+    success: (msg: string) => { setToast({ type: 'ok', msg }); setTimeout(() => setToast(null), 3000); },
+    error: (msg: string) => { setToast({ type: 'err', msg }); setTimeout(() => setToast(null), 3000); },
+  };
   const [chooseOpen, setChooseOpen] = useState(false);
   const [drawer, setDrawer] = useState<{ formType: FormType; recordId?: string } | null>(null);
   const [goal, setGoal] = useState(150);
@@ -511,6 +514,13 @@ export default function SamplesPage() {
 
       {drawer && <RecordFormDrawer open onClose={() => { setDrawer(null); qc.invalidateQueries({ queryKey: ['records-all'] }); }} formType={drawer.formType} recordId={drawer.recordId} />}
       </div>
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg"
+          style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }
