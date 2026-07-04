@@ -18,7 +18,7 @@ export default function PayslipPage() {
 
   return (
     <div className="min-h-full" style={{ background: '#F8FAFC' }}>
-      <div className="mx-auto max-w-[980px] px-6 py-8">
+      <div className="px-6 py-8 lg:px-8">
         <button onClick={() => router.back()} className="no-print mb-4 flex items-center gap-1.5 text-[13px] font-medium text-[#64748B] hover:text-[#0F172A]">
           <ArrowLeft size={15} /> Back
         </button>

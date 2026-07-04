@@ -30,7 +30,7 @@ export default function PayrollLandingPage() {
           <div className="flex items-center gap-5">
             <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-white shadow-sm" style={{ color: '#4F46E5' }}><Calculator size={30} /></span>
             <div>
-              <h1 className="font-headline-lg text-headline-lg text-charcoal-heading">Run Payroll for {monthYear(thisMonth())}</h1>
+              <h1 className="text-3xl font-bold text-charcoal-heading lg:text-4xl">Run Payroll for {monthYear(thisMonth())}</h1>
               <p className="mt-1 font-body-sm text-body-sm text-secondary">Process payroll for all active employees for this period.</p>
             </div>
           </div>
@@ -42,11 +42,11 @@ export default function PayrollLandingPage() {
         {/* KPI + Most Recent Payroll */}
         <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <div className="glass-card rounded-2xl p-6">
-            <div className="font-display text-[30px] font-bold leading-none text-[#0F172A]">{stats?.totalRuns ?? 0}</div>
+            <div className="font-display text-4xl font-bold leading-none text-[#0F172A] lg:text-5xl">{stats?.totalRuns ?? 0}</div>
             <div className="mt-2 font-label-sm text-label-sm uppercase tracking-wider text-secondary">Payroll Runs</div>
           </div>
           <div className="glass-card rounded-2xl p-6">
-            <div className="font-display text-[30px] font-bold leading-none text-[#0F172A]">{advices.length}</div>
+            <div className="font-display text-4xl font-bold leading-none text-[#0F172A] lg:text-5xl">{advices.length}</div>
             <div className="mt-2 font-label-sm text-label-sm uppercase tracking-wider text-secondary">Pay Advices</div>
           </div>
 
@@ -58,7 +58,7 @@ export default function PayrollLandingPage() {
                 <Link href={`/payroll/run/${latest.id}`} className="flex items-center gap-1 font-label-sm text-label-sm font-semibold text-primary hover:underline">View Details <ArrowRight size={13} /></Link>
               </div>
               <div className="mt-2 font-body-sm text-body-sm text-secondary">{fmtDate(latest.payrollDate)}</div>
-              <div className="mt-1 font-display text-[26px] font-bold leading-none text-[#0F172A]">{money(latest.totalGross)}</div>
+              <div className="mt-1 font-display text-3xl font-bold leading-none text-[#0F172A]">{money(latest.totalGross)}</div>
               <div className="mt-2 flex items-center gap-4">
                 <span className="inline-flex items-center gap-1.5 font-body-sm text-body-sm text-secondary"><Users size={14} /> {latest.employeeCount} paid</span>
                 <span className="font-body-sm text-body-sm text-secondary">NET {money(latest.totalNet)}</span>

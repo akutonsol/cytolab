@@ -80,11 +80,11 @@ export default function PayrollWizardPage() {
 
   return (
     <div className="min-h-full" style={{ background: '#F8FAFC' }}>
-      <div className="mx-auto max-w-[1100px] px-6 py-8">
+      <div className="px-6 py-8 lg:px-8">
         {/* Header + progress */}
         <div className="mb-6">
           <button onClick={() => router.push('/payroll')} className="mb-3 flex items-center gap-1.5 text-[13px] font-medium text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={15} /> Payroll</button>
-          <h1 className="font-headline-lg text-headline-lg text-charcoal-heading">Run Salary Payroll</h1>
+          <h1 className="text-3xl font-bold text-charcoal-heading">Run Salary Payroll</h1>
           <div className="mt-4 flex items-center gap-2">
             {STEPS.map((s, i) => (
               <div key={s} className="flex flex-1 items-center gap-2">
@@ -110,7 +110,7 @@ export default function PayrollWizardPage() {
                 <input type="date" value={payrollDate} onChange={(e) => setPayrollDate(e.target.value)} className={inp} /></div>
               <div className="ml-auto text-right">
                 <div className="font-label-sm text-label-sm uppercase tracking-wider text-secondary">Gross (preview)</div>
-                <div className="font-display text-[24px] font-bold text-[#0F172A]">{money(totals.gross)}</div>
+                <div className="font-display text-4xl font-bold leading-none text-[#0F172A] lg:text-5xl">{money(totals.gross)}</div>
               </div>
             </div>
 
@@ -192,13 +192,13 @@ export default function PayrollWizardPage() {
         {/* ── Step 2: Taxes ── */}
         {step === 1 && (
           <div className="glass-card rounded-2xl p-8">
-            <h2 className="font-headline-sm text-headline-sm text-charcoal-heading">Statutory Taxes</h2>
+            <h2 className="text-xl font-semibold text-charcoal-heading">Statutory Taxes</h2>
             <p className="mt-1 font-body-sm text-body-sm text-secondary">These employee-side statutory rates are applied automatically to each pay advice.</p>
             <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
               {[{ n: 'N.I.S', r: '3.0%' }, { n: 'N.H.T', r: '2.0%' }, { n: 'EDU. TAX', r: '2.25%' }].map((t) => (
-                <div key={t.n} className="rounded-xl border border-outline-variant/30 bg-surface-container-low p-6 text-center">
-                  <div className="font-label-sm text-label-sm uppercase tracking-wider text-secondary">{t.n}</div>
-                  <div className="mt-2 font-display text-[32px] font-bold text-[#4F46E5]">{t.r}</div>
+                <div key={t.n} className="rounded-2xl border border-outline-variant/30 bg-surface-container-low px-6 py-12 text-center">
+                  <div className="font-label-md text-label-md uppercase tracking-wider text-secondary">{t.n}</div>
+                  <div className="mt-3 font-display text-5xl font-bold text-[#4F46E5] lg:text-6xl">{t.r}</div>
                 </div>
               ))}
             </div>
@@ -337,7 +337,7 @@ function Banner({ label, value, big }: { label: string; value: string; big?: boo
   return (
     <div>
       <div className="font-label-sm text-label-sm uppercase tracking-wider text-secondary">{label}</div>
-      <div className={`font-display font-bold text-[#0F172A] ${big ? 'text-[28px]' : 'text-[20px]'}`}>{value}</div>
+      <div className={`font-display font-bold leading-none text-[#0F172A] ${big ? 'text-4xl lg:text-5xl' : 'text-2xl lg:text-3xl'}`}>{value}</div>
     </div>
   );
 }

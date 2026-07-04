@@ -35,7 +35,7 @@ export function PayslipCard({ slip, showActions = false }: { slip: SlipData; sho
       </div>
 
       {/* ── Info header table ── */}
-      <table className="w-full border-collapse text-[13px]" style={{ border: '1px solid #E2E8F0', borderTop: `3px solid ${INDIGO}` }}>
+      <table className="w-full border-collapse text-sm" style={{ border: '1px solid #E2E8F0', borderTop: `3px solid ${INDIGO}` }}>
         <tbody>
           <tr>
             <InfoCell label="Company Name" value={slip.lab?.name ?? '—'} className="border-b border-r border-slate-200" />
@@ -52,7 +52,7 @@ export function PayslipCard({ slip, showActions = false }: { slip: SlipData; sho
       </table>
 
       {/* ── Earnings | Deductions (single unified table, vertical divider) ── */}
-      <table className="mt-4 w-full border-collapse border border-slate-200 text-[13px]">
+      <table className="mt-4 w-full border-collapse border border-slate-200 text-sm">
         <tbody>
           {/* Section headers */}
           <tr>
@@ -111,7 +111,7 @@ export function PayslipCard({ slip, showActions = false }: { slip: SlipData; sho
       </table>
 
       {/* ── YTD strip ── */}
-      <table className="mt-4 w-full border-collapse border border-slate-200 text-[13px]">
+      <table className="mt-4 w-full border-collapse border border-slate-200 text-sm">
         <tbody>
           <tr>
             <td rowSpan={2} className="w-[90px] border border-slate-200 bg-slate-100 px-4 text-center align-middle">
@@ -158,7 +158,7 @@ function Ytd({ label, value, colSpan }: { label: string; value: string; colSpan?
   return (
     <td colSpan={colSpan} className="border border-slate-200 bg-slate-50 px-3 py-2.5 align-top">
       <div className="text-[10px] uppercase leading-tight tracking-wider text-slate-400">{label}</div>
-      <div className="mt-1 text-[13px] font-semibold text-slate-900">{value}</div>
+      <div className="mt-1 text-sm font-semibold text-slate-900">{value}</div>
     </td>
   );
 }
