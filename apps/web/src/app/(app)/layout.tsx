@@ -154,7 +154,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {screens.md && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 52, width: 300, borderRadius: 999, padding: '0 8px', color: '#9ca3af', border: '2px solid transparent', background: 'linear-gradient(#fff,#fff) padding-box, linear-gradient(135deg,#d3d9e6 0%,#aeb9d0 100%) border-box', boxShadow: '0 2px 6px rgba(16,24,40,0.05)' }}>
                   <span style={{ display: 'grid', placeItems: 'center', width: 36, height: 36, borderRadius: 999, background: '#d8dde9', color: '#5b6472', flexShrink: 0 }}><SearchOutlined /></span>
-                  <input placeholder="Search…" style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: 14, color: '#111827' }} />
+                  <input placeholder="Search…" onFocus={() => router.push('/search')} onChange={(e) => router.push(`/search?q=${encodeURIComponent(e.target.value)}`)} style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: 14, color: '#111827' }} />
                 </div>
               )}
               {quickAdd.items && quickAdd.items.length > 0 && (

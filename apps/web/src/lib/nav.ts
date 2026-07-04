@@ -86,7 +86,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Client Requests', path: '/change-requests', permission: 'changerequest:view', icon: MessageSquare },
       { label: 'Notifications', path: '/notifications', permission: 'notification:view' },
       { label: 'Appointments', path: '/appointments', phase: 8 },
-      { label: 'Search', path: '/search', phase: 8 },
+      { label: 'Search', path: '/search' },
       { label: 'Settings', path: '/settings', permission: 'applicationprefs:view' },
       { label: 'Form Setup', path: '/settings/forms', permission: 'formconfig:view' },
       { label: 'System Health', path: '/system', permission: 'system:health' },
