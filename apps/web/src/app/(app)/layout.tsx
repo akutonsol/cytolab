@@ -9,10 +9,11 @@ import {
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { Microscope } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { ACCOUNT_GROUP_KEY, ANALYTICS_ITEM, HOME_ITEM, NAV_GROUPS } from '@/lib/nav';
 import { NavPills } from '@/components/dashboard/nav-pills';
 import { useAuth, useAuthStore } from '@/lib/auth';
-import { refreshSession } from '@/lib/api';
+import { api, refreshSession } from '@/lib/api';
 
 function Logo() {
   return (
@@ -35,6 +36,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const clear = useAuthStore((s) => s.clear);
   const [refreshing, setRefreshing] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Live unread-notification count for the bell badge (polls every 30s).
+  const { data: unread = 0 } = useQuery({
+    queryKey: ['notifications-unread'],
+    queryFn: () => api.get('/notifications/unread-count').then((r) => r.data.count as number),
+    refetchInterval: 30_000,
+    enabled: isAuthed && can('notification:view'),
+  });
   const screens = Grid.useBreakpoint();
 
   useEffect(() => { if (hydrated && !isAuthed) router.replace('/login'); }, [hydrated, isAuthed, router]);
@@ -152,7 +161,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <Dropdown trigger={['click']} menu={quickAdd}><button aria-label="Quick add" style={iconBtnHero}><ReadOutlined /></button></Dropdown>
               )}
               <button aria-label="Messages" onClick={() => navigate('/messaging')} style={iconBtnHero}><MessageOutlined /></button>
-              <button aria-label="Notifications" style={iconBtnHero}><BellOutlined /></button>
+              <button aria-label="Notifications" onClick={() => router.push('/notifications')} style={{ ...iconBtnHero, position: 'relative' }}>
+                <BellOutlined />
+                {unread > 0 && (
+                  <span style={{ position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, padding: '0 4px', borderRadius: 999, background: '#EF4444', color: 'white', fontSize: 10, fontWeight: 700, display: 'grid', placeItems: 'center' }}>
+                    {unread > 9 ? '9+' : unread}
+                  </span>
+                )}
+              </button>
               <button aria-label="Settings" onClick={() => router.push('/settings')} style={iconBtnHero}><SettingOutlined /></button>
             </div>
           </div>

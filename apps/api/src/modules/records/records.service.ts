@@ -1,7 +1,8 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, RecordStatus, RequisitionFormType, RequisitionStatus } from '@prisma/client';
+import { NotificationType, Prisma, RecordStatus, RequisitionFormType, RequisitionStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { LabContext } from '../../common/tenancy/lab-context';
+import { NotificationsHelper } from '../notifications/notifications.helper';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { allocateSequence, isUniqueConflict } from '../../common/util/lab-sequence';
@@ -113,6 +114,7 @@ export class RecordsService {
   constructor(
     private prisma: PrismaService,
     private labContext: LabContext,
+    private notifs: NotificationsHelper,
   ) {}
 
   // Record queries are lab-scoped automatically by the tenancy extension; nested
@@ -460,7 +462,43 @@ export class RecordsService {
     // Batch fulfillment: cache the line's fulfilled flag off this record's new
     // status, then recompute the parent requisition's Partial/Completed status.
     await this.syncRequisitionForRecord(id, newStatus);
+
+    // Fire-and-forget lifecycle notifications (never break the transition).
+    await this.emitStatusNotifications(id, newStatus, (updated as any).labNumber ?? '');
     return updated;
+  }
+
+  /** Lifecycle notifications keyed to the new status. Best-effort. */
+  private async emitStatusNotifications(id: string, newStatus: RecordStatus, labNumber: string) {
+    const label = labNumber || 'A record';
+    if (newStatus === RecordStatus.Resulted) {
+      // Authorizers need to act.
+      await this.notifs.notifyPermission('resultsheet:authorize', {
+        type: NotificationType.AUTHORIZATION_NEEDED,
+        title: 'Authorization needed',
+        body: `Record ${label} is ready for authorization.`,
+        link: `/records/${id}`,
+        entityId: id,
+        entityType: 'record',
+      });
+      return;
+    }
+    if (newStatus === RecordStatus.Approved || newStatus === RecordStatus.Failed) {
+      // No createdBy on Record — notify the submitter (earliest status event).
+      const first = await this.prisma.recordStatusEvent
+        .findFirst({ where: { recordId: id }, orderBy: { createdAt: 'asc' }, select: { userId: true } })
+        .catch(() => null);
+      if (!first?.userId) return;
+      const approved = newStatus === RecordStatus.Approved;
+      await this.notifs.notifyUser(first.userId, {
+        type: approved ? NotificationType.RECORD_APPROVED : NotificationType.RECORD_FAILED,
+        title: approved ? 'Record authorized' : 'Record failed',
+        body: approved ? `${label} has been authorized.` : `${label} has been marked as failed.`,
+        link: `/records/${id}`,
+        entityId: id,
+        entityType: 'record',
+      });
+    }
   }
 
   /**

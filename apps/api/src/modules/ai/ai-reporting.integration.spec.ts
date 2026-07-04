@@ -22,7 +22,7 @@ describeIf('AI-assisted reporting (integration)', () => {
   const raw = new PrismaClient();
   const labContext = new LabContext();
   const prisma = new PrismaService(labContext);
-  const records = new RecordsService(prisma, labContext);
+  const records = new RecordsService(prisma, labContext, { notifyUser: async () => {}, notifyPermission: async () => {} } as any);
   const resultSheets = new ResultSheetsService(prisma, records);
 
   // Stubbed AI: available + returns a fixed draft. Swapped per-test for the down case.

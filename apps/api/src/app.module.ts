@@ -31,6 +31,7 @@ import { MessagingModule } from './modules/messaging/messaging.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { SystemModule } from './modules/system/system-health.module';
 import { FormConfigModule } from './modules/form-config/form-config.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 /**
  * Cytolab modular monolith.
@@ -74,6 +75,7 @@ import { FormConfigModule } from './modules/form-config/form-config.module';
     AppointmentsModule,
     SystemModule,
     FormConfigModule,
+    NotificationsModule,
   ],
   controllers: [HealthController],
   providers: [

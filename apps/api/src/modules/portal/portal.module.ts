@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { PrismaModule } from '../../database/prisma.module';
 import { ReportsModule } from '../reports/reports.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { MailModule } from './mail/mail.module';
 import { PortalAuthController } from './auth/portal-auth.controller';
 import { PortalAuthService } from './auth/portal-auth.service';
@@ -22,7 +23,7 @@ import { PortalChangeRequestsService } from './change-requests/portal-change-req
  * tracking, reports, change requests) are added here as they are built.
  */
 @Module({
-  imports: [PrismaModule, PassportModule, JwtModule.register({}), MailModule, ReportsModule],
+  imports: [PrismaModule, PassportModule, JwtModule.register({}), MailModule, ReportsModule, NotificationsModule],
   controllers: [
     PortalAuthController,
     PortalUsersController,

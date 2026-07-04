@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { NotificationType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { paginate } from '../../../common/dto/pagination.dto';
 import { portalCreate } from '../../../common/tenancy/tenancy.extension';
+import { NotificationsHelper } from '../../notifications/notifications.helper';
 import { PortalPrincipal } from '../common/portal-principal';
 import {
   CreateChangeRequestDto,
@@ -36,7 +37,7 @@ const changeRequestSelect = {
  */
 @Injectable()
 export class PortalChangeRequestsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private notifs: NotificationsHelper) {}
 
   async create(dto: CreateChangeRequestDto, principal: PortalPrincipal) {
     // If a record is referenced it must be the client's own (client-scoped).
@@ -45,7 +46,7 @@ export class PortalChangeRequestsService {
       if (!record) throw new NotFoundException('Record not found');
     }
 
-    return this.prisma.changeRequest.create({
+    const cr = await this.prisma.changeRequest.create({
       data: portalCreate<Prisma.ChangeRequestUncheckedCreateInput>({
         type: dto.type,
         subject: dto.subject,
@@ -62,6 +63,23 @@ export class PortalChangeRequestsService {
       }),
       select: changeRequestSelect,
     });
+
+    // Alert lab staff who triage requests.
+    const who = await this.portalUserName(principal.portalUserId);
+    await this.notifs.notifyPermission('changerequest:view', {
+      type: NotificationType.CHANGE_REQUEST_RECEIVED,
+      title: 'New client request',
+      body: `${who} sent: "${cr.subject}"`,
+      link: '/change-requests',
+      entityId: cr.id,
+      entityType: 'changerequest',
+    });
+    return cr;
+  }
+
+  private async portalUserName(portalUserId: string): Promise<string> {
+    const u = await this.prisma.portalUser.findFirst({ where: { id: portalUserId }, select: { firstName: true, lastName: true } }).catch(() => null);
+    return u ? `${u.firstName} ${u.lastName}`.trim() || 'A client' : 'A client';
   }
 
   async findAll(query: PortalChangeRequestQueryDto) {
@@ -87,7 +105,7 @@ export class PortalChangeRequestsService {
   /** Add a message to the client's own change request thread. */
   async addMessage(id: string, dto: CreatePortalMessageDto, principal: PortalPrincipal) {
     // Client-scoped: a foreign change request resolves to null -> 404.
-    const cr = await this.prisma.changeRequest.findFirst({ where: { id }, select: { id: true } });
+    const cr = await this.prisma.changeRequest.findFirst({ where: { id }, select: { id: true, subject: true } });
     if (!cr) throw new NotFoundException('Change request not found');
 
     await this.prisma.changeRequestMessage.create({
@@ -96,6 +114,16 @@ export class PortalChangeRequestsService {
         body: dto.body,
         authorPortalUserId: principal.portalUserId,
       }),
+    });
+
+    const who = await this.portalUserName(principal.portalUserId);
+    await this.notifs.notifyPermission('changerequest:view', {
+      type: NotificationType.CHANGE_REQUEST_REPLIED,
+      title: 'Client replied',
+      body: `${who} replied on "${cr.subject}"`,
+      link: '/change-requests',
+      entityId: id,
+      entityType: 'changerequest',
     });
     return this.findOne(id);
   }

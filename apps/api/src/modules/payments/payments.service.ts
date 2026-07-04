@@ -1,9 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { BillStatus, Prisma, RecordStatus } from '@prisma/client';
+import { BillStatus, NotificationType, Prisma, RecordStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { RecordsService } from '../records/records.service';
+import { NotificationsHelper } from '../notifications/notifications.helper';
 import { CreatePaymentDto, PaymentQueryDto } from './dto/payment.dto';
 
 const paymentSelect = {
@@ -24,6 +25,7 @@ export class PaymentsService {
   constructor(
     private prisma: PrismaService,
     private records: RecordsService,
+    private notifs: NotificationsHelper,
   ) {}
 
   /**
@@ -34,7 +36,7 @@ export class PaymentsService {
   async create(dto: CreatePaymentDto, userId: string) {
     const bill = await this.prisma.bill.findFirst({
       where: { id: dto.billId },
-      select: { id: true, total: true, amountPaid: true, status: true, recordId: true },
+      select: { id: true, total: true, amountPaid: true, status: true, recordId: true, referenceNo: true },
     });
     if (!bill) throw new NotFoundException('Bill not found');
     if (bill.status === BillStatus.Draft) {
@@ -81,6 +83,16 @@ export class PaymentsService {
         });
       }
     }
+
+    // Notify finance staff of the received payment (best-effort).
+    await this.notifs.notifyPermission('payment:view', {
+      type: NotificationType.PAYMENT_RECEIVED,
+      title: 'Payment received',
+      body: `$${(payment.amount / 100).toFixed(2)} received for ${bill.referenceNo ?? 'a bill'}.`,
+      link: '/billing',
+      entityId: payment.id,
+      entityType: 'payment',
+    });
 
     return payment;
   }

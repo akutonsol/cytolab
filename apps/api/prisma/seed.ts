@@ -35,8 +35,8 @@ const STANDARD_EXTRA: Record<string, string[]> = {
 };
 // Objects with a non-CRUD action set.
 const SPECIAL_OBJECTS: Record<string, string[]> = {
-  // System-generated — legacy allows only view/delete (no create/change).
-  notification: ['view', 'delete'],
+  // System-generated in-app notifications: view + mark-read (change) + delete.
+  notification: ['view', 'change', 'delete'],
   applicationprefs: ['view', 'change', 'reports', 'dashboard'],
   accountprefs: ['view', 'change'],
   // Internal System Health dashboard — intentionally assigned to NO default role,

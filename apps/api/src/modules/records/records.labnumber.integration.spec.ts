@@ -15,7 +15,7 @@ describeIf('Record Lab No. (integration)', () => {
   const raw = new PrismaClient();
   const labContext = new LabContext();
   const prisma = new PrismaService(labContext);
-  const records = new RecordsService(prisma, labContext);
+  const records = new RecordsService(prisma, labContext, { notifyUser: async () => {}, notifyPermission: async () => {} } as any);
 
   const tag = `labno-${Date.now().toString(36)}`;
   let labId: string;

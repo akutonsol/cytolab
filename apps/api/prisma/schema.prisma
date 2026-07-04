@@ -194,6 +194,7 @@ model Lab {
   threads                Thread[]
   appointments           Appointment[]
   formConfigs            FormConfig[]
+  notifications          Notification[]
 }
 
 model Account {
@@ -257,6 +258,7 @@ model User {
   threadParticipants     ThreadParticipant[]
   authoredMessages       Message[]
   assignedAppointments   Appointment[]
+  notifications          Notification[]
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -1417,4 +1419,41 @@ model FormPrintGroup {
 enum FormFieldType {
   TEXT
   CHECKBOX
+}
+
+// ─── Notifications (Phase 6) ──────────────────────────────────────────────────
+// Per-user, lab-scoped in-app notifications. Created internally by services when
+// lifecycle events occur (never via a public create endpoint); read/marked-read
+// by the owning user.
+model Notification {
+  id         String           @id @default(cuid())
+  labId      String
+  lab        Lab              @relation(fields: [labId], references: [id])
+  userId     String
+  user       User             @relation(fields: [userId], references: [id])
+  type       NotificationType
+  title      String
+  body       String
+  read       Boolean          @default(false)
+  readAt     DateTime?
+  link       String? // e.g. /records/xxx or /authorizer
+  entityId   String? // recordId, changeRequestId etc
+  entityType String? // 'record', 'changerequest', 'appointment'
+  createdAt  DateTime         @default(now())
+
+  @@index([labId, userId])
+  @@index([labId, userId, read])
+}
+
+enum NotificationType {
+  RECORD_SUBMITTED
+  RECORD_RESULTED
+  RECORD_APPROVED
+  RECORD_FAILED
+  AUTHORIZATION_NEEDED
+  CHANGE_REQUEST_RECEIVED
+  CHANGE_REQUEST_REPLIED
+  PAYMENT_RECEIVED
+  APPOINTMENT_REMINDER
+  SYSTEM_ALERT
 }
