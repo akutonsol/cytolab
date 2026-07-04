@@ -46,6 +46,7 @@ import { EscalationModule } from './modules/escalation/escalation.module';
 import { WorkloadModule } from './modules/workload/workload.module';
 import { QcModule } from './modules/qc/qc.module';
 import { BatchModule } from './modules/batch/batch.module';
+import { ReqTrackingModule } from './modules/req-tracking/req-tracking.module';
 
 /**
  * Cytolab modular monolith.
@@ -104,6 +105,7 @@ import { BatchModule } from './modules/batch/batch.module';
     WorkloadModule,
     QcModule,
     BatchModule,
+    ReqTrackingModule,
   ],
   controllers: [HealthController],
   providers: [

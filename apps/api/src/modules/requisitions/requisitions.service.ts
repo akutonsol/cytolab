@@ -120,7 +120,7 @@ export class RequisitionsService {
     for (let attempt = 0; ; attempt++) {
       const referenceNo = await this.allocateReferenceNo();
       try {
-        return await this.prisma.requisition.create({
+        const created = await this.prisma.requisition.create({
           data: tenantCreate<Prisma.RequisitionUncheckedCreateInput>({
             referenceNo,
             amount,
@@ -129,6 +129,13 @@ export class RequisitionsService {
           }),
           select: requisitionSelect,
         });
+        // Auto-create the physical-form tracking record (stage Pending). This is
+        // unconditional (the Requisition Tracking UI is feature-gated, not the
+        // custody trail); best-effort so it never blocks requisition creation.
+        await this.prisma.requisitionTracking
+          .create({ data: tenantCreate<Prisma.RequisitionTrackingUncheckedCreateInput>({ requisitionId: created.id }) })
+          .catch(() => undefined);
+        return created;
       } catch (e) {
         if (isUniqueConflict(e, 'referenceNo') && attempt < MAX_REF_RETRIES) continue;
         if (isUniqueConflict(e, 'referenceNo')) {

@@ -9,6 +9,7 @@ import {
   FlaskConical,
   LayoutDashboard,
   MessageSquare,
+  ScanLine,
   ToggleRight,
   Users,
   Users2,
@@ -50,6 +51,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Workload', path: '/workload', permission: 'record:view', feature: 'CASE_ASSIGNMENT', icon: Users2 },
       { label: 'Quality Control', path: '/qc', permission: 'record:view', feature: 'QC_MODULE', icon: CheckSquare },
       { label: 'Equipment', path: '/qc/equipment', permission: 'record:view', feature: 'QC_MODULE', icon: Wrench },
+      { label: 'Req Tracking', path: '/req-tracking', permission: 'requisition:view', feature: 'REQUISITION_TRACKING', icon: ScanLine },
     ],
   },
   {

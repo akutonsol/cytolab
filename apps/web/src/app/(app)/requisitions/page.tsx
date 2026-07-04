@@ -5,7 +5,9 @@ import { AlertCircle, Plus, RotateCcw } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useFeatures } from '@/lib/feature-context';
 import { RequisitionFormDrawer } from '@/components/RequisitionFormDrawer';
+import { STAGE_META, type TrackingCard } from '@/lib/req-tracking';
 
 interface RequisitionLine { id: string; isCompleted: boolean }
 interface Requisition {
@@ -40,11 +42,21 @@ export default function RequisitionsPage() {
   const [pageSize, setPageSize] = useState(20);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  const { isEnabled } = useFeatures();
+  const showTracking = isEnabled('REQUISITION_TRACKING');
+
   const { data, isFetching, isError, error, refetch } = useQuery({
     queryKey: ['requisitions', page, pageSize],
     queryFn: () =>
       api.get<Paginated<Requisition>>('/requisitions', { params: { page, pageSize } }).then((r) => r.data),
   });
+
+  const { data: tracking } = useQuery<TrackingCard[]>({
+    queryKey: ['req-tracking-list', ''],
+    queryFn: () => api.get('/req-tracking').then((r) => r.data),
+    enabled: showTracking && can('requisition:view'),
+  });
+  const stageByReq = new Map((tracking ?? []).map((t) => [t.requisitionId, t.currentStage]));
 
   const errorMessage =
     (error as any)?.code === 'ECONNABORTED'
@@ -90,6 +102,7 @@ export default function RequisitionsPage() {
                 <th className={TH}>Fulfilled</th>
                 <th className={TH}>Amount</th>
                 <th className={TH}>Status</th>
+                {showTracking && <th className={TH}>Tracking</th>}
                 <th className={TH}>Received</th>
               </tr>
             </thead>
@@ -97,12 +110,12 @@ export default function RequisitionsPage() {
               {isFetching && !isError && rows.length === 0 && (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="border-b border-outline-variant/10">
-                    <td colSpan={7} className="px-4 py-3"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></td>
+                    <td colSpan={showTracking ? 8 : 7} className="px-4 py-3"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></td>
                   </tr>
                 ))
               )}
               {!isFetching && rows.length === 0 && !isError && (
-                <tr><td colSpan={7} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">No requisitions found.</td></tr>
+                <tr><td colSpan={showTracking ? 8 : 7} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">No requisitions found.</td></tr>
               )}
               {rows.map((r) => (
                 <tr key={r.id} className="border-b border-outline-variant/10 transition-colors hover:bg-surface-container-low/60">
@@ -119,6 +132,13 @@ export default function RequisitionsPage() {
                   <td className={CELL}>{(r.lines ?? []).filter((l) => l.isCompleted).length}</td>
                   <td className={CELL}>{money(r.amount)}</td>
                   <td className={CELL}><span className={`${BADGE} ${STATUS_BADGE[r.status] ?? 'bg-surface-container text-secondary'}`}>{r.status.toUpperCase()}</span></td>
+                  {showTracking && (
+                    <td className={CELL}>
+                      {stageByReq.has(r.id)
+                        ? <span className={BADGE} style={{ background: STAGE_META[stageByReq.get(r.id)!].bg, color: STAGE_META[stageByReq.get(r.id)!].fg }}>{STAGE_META[stageByReq.get(r.id)!].label}</span>
+                        : <span className="text-secondary">—</span>}
+                    </td>
+                  )}
                   <td className={`${CELL} whitespace-nowrap`}>{r.dateReceived ? new Date(r.dateReceived).toLocaleDateString() : '—'}</td>
                 </tr>
               ))}

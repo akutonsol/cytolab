@@ -48,6 +48,7 @@ export const BUILT_FEATURES: ReadonlySet<FeatureKey> = new Set<FeatureKey>([
   'CASE_ASSIGNMENT',
   'QC_MODULE',
   'BATCH_AUTHORIZATION',
+  'REQUISITION_TRACKING',
   'VOICE_TO_TEXT',
   'RESULT_TEMPLATES',
 ]);

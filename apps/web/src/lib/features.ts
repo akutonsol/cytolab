@@ -123,8 +123,8 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
   REQUISITION_TRACKING: {
     key: 'REQUISITION_TRACKING',
     name: 'Requisition Tracking',
-    description: 'Track requisition batches from intake through completion with per-batch progress.',
-    tier: 3, tierName: 'Operational', icon: 'PackageSearch', docsUrl: null, navPath: null, dependsOn: [], comingSoon: true,
+    description: 'Track the paper requisition form from receipt to filing — a full chain-of-custody trail.',
+    tier: 3, tierName: 'Operational', icon: 'PackageSearch', docsUrl: null, navPath: '/req-tracking', dependsOn: [],
   },
   SLIDE_LABEL_PRINTING: {
     key: 'SLIDE_LABEL_PRINTING',

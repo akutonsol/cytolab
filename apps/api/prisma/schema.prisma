@@ -209,6 +209,8 @@ model Lab {
   qcChecks               QCCheck[]
   equipment              Equipment[]
   qcFailureAlerts        QCFailureAlert[]
+  requisitionTrackings   RequisitionTracking[]
+  trackingEvents         TrackingEvent[]
 }
 
 model Account {
@@ -288,6 +290,11 @@ model User {
   assignedRecords        Record[]               @relation("RecordAssignee")
   workloadTarget         WorkloadTarget?
   qcChecks               QCCheck[]
+  formsReceived          RequisitionTracking[]  @relation("FormReceiver")
+  benchReceived          RequisitionTracking[]  @relation("BenchReceiver")
+  formsVerified          RequisitionTracking[]  @relation("FormVerifier")
+  formsFiled             RequisitionTracking[]  @relation("FormFiler")
+  trackingEvents         TrackingEvent[]        @relation("TrackingEventActor")
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -478,6 +485,8 @@ model Requisition {
   workspace    Workspace?        @relation(fields: [workspaceId], references: [id])
   lines        RequisitionLine[]
   dateReceived DateTime?
+  tracking       RequisitionTracking?
+  trackingEvents TrackingEvent[]
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
@@ -2078,4 +2087,86 @@ model QCFailureAlert {
   createdAt    DateTime    @default(now())
 
   @@index([labId, status])
+}
+
+// ─── Requisition Tracking (Tier 3 Operational) — physical form chain of custody ─
+
+enum TrackingStage {
+  Pending // not yet received
+  FormReceived // paper form received at front desk
+  BenchReceived // specimen received at bench
+  Verified // form verified against specimen
+  Processing // in processing
+  Filed // form filed, complete
+  Rejected // rejected (wrong patient, damaged, etc.)
+}
+
+enum FormCondition {
+  Good
+  Damaged
+  Incomplete
+  Illegible
+}
+
+// One-to-one custody record for a requisition's paper form. Auto-created (stage
+// Pending) when a requisition is created.
+model RequisitionTracking {
+  id            String      @id @default(cuid())
+  labId         String
+  lab           Lab         @relation(fields: [labId], references: [id])
+  requisitionId String      @unique
+  requisition   Requisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+
+  // Physical form receipt.
+  formReceivedAt     DateTime?
+  formReceivedById   String?
+  formReceivedBy     User?         @relation("FormReceiver", fields: [formReceivedById], references: [id])
+  formCondition      FormCondition @default(Good)
+  formConditionNotes String?
+
+  // Specimen bench receipt.
+  benchReceivedAt   DateTime?
+  benchReceivedById String?
+  benchReceivedBy   User?     @relation("BenchReceiver", fields: [benchReceivedById], references: [id])
+
+  // Verification.
+  verifiedAt        DateTime?
+  verifiedById      String?
+  verifiedBy        User?     @relation("FormVerifier", fields: [verifiedById], references: [id])
+  verificationNotes String?
+
+  // Filing.
+  filedAt      DateTime?
+  filedById    String?
+  filedBy      User?     @relation("FormFiler", fields: [filedById], references: [id])
+  fileLocation String? // e.g. "Cabinet A, Drawer 3"
+
+  // Barcode / QR.
+  barcodeScanned Boolean @default(false)
+  barcodeValue   String?
+
+  currentStage TrackingStage @default(Pending)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([labId, currentStage])
+}
+
+// Append-only audit of every stage transition.
+model TrackingEvent {
+  id             String        @id @default(cuid())
+  labId          String
+  lab            Lab           @relation(fields: [labId], references: [id])
+  requisitionId  String
+  requisition    Requisition   @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  stage          TrackingStage
+  performedById  String
+  performedBy    User          @relation("TrackingEventActor", fields: [performedById], references: [id])
+  notes          String?
+  scannedBarcode String?
+  performedAt    DateTime      @default(now())
+
+  @@index([requisitionId])
+  @@index([labId, performedAt])
 }
