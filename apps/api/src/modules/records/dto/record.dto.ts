@@ -121,6 +121,16 @@ export class UpdateRecordStatusDto {
   @IsString() @IsOptional() notes?: string;
 }
 
+export class AssignRecordDto {
+  // null/empty clears the assignment (unassign).
+  @IsString() @IsOptional() assignedToId?: string | null;
+}
+
+export class BulkAssignDto {
+  @IsArray() @IsString({ each: true }) recordIds!: string[];
+  @IsString() @IsOptional() assignedToId?: string | null;
+}
+
 export class RecordQueryDto extends PaginationDto {
   @IsString() @IsOptional() patientId?: string;
   @IsString() @IsOptional() clientId?: string;

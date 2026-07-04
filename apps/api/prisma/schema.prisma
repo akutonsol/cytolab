@@ -205,6 +205,7 @@ model Lab {
   tatAlerts              TATAlert[]
   features               LabFeature[]
   escalations            EscalationRecord[]
+  workloadTargets        WorkloadTarget[]
 }
 
 model Account {
@@ -281,6 +282,8 @@ model User {
   toggledFeatures        LabFeature[]           @relation("LabFeatureToggler")
   escalationsAssigned    EscalationRecord[]     @relation("EscalationAssignee")
   escalationsReviewed    EscalationRecord[]     @relation("EscalationReviewer")
+  assignedRecords        Record[]               @relation("RecordAssignee")
+  workloadTarget         WorkloadTarget?
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -541,6 +544,12 @@ model Record {
   bethesdaResult    BethesdaResult?
   tatAlerts         TATAlert[]
   escalations       EscalationRecord[]
+  // Case assignment (Tier 2 — workload balancing). Fields are unconditional in
+  // the schema; only the UI is feature-gated.
+  assignedToId      String?
+  assignedTo        User?                   @relation("RecordAssignee", fields: [assignedToId], references: [id])
+  assignedAt        DateTime?
+  assignedById      String?
   bills             Bill[]
   changeRequests    ChangeRequest[]
   attachments       RecordAttachment[]
@@ -1851,6 +1860,7 @@ enum FeatureKey {
   PRIOR_HISTORY
   BETHESDA_SYSTEM
   ABNORMAL_ESCALATION
+  CASE_ASSIGNMENT
   QC_MODULE
 
   // Tier 3 — Operational
@@ -1955,4 +1965,20 @@ model EscalationRecord {
 
   @@index([labId, status])
   @@index([recordId])
+}
+
+// Per-pathologist daily/weekly throughput targets (Case Assignment & Workload
+// Balancing, Tier 2). One row per (lab, user).
+model WorkloadTarget {
+  id           String  @id @default(cuid())
+  labId        String
+  lab          Lab     @relation(fields: [labId], references: [id])
+  userId       String  @unique
+  user         User    @relation(fields: [userId], references: [id])
+  dailyTarget  Int     @default(20)
+  weeklyTarget Int     @default(100)
+  isActive     Boolean @default(true)
+
+  @@unique([labId, userId])
+  @@index([labId])
 }

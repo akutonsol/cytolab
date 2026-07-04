@@ -43,6 +43,7 @@ import { BethesdaModule } from './modules/bethesda/bethesda.module';
 import { TatModule } from './modules/tat/tat.module';
 import { LabFeaturesModule } from './modules/lab-features/lab-features.module';
 import { EscalationModule } from './modules/escalation/escalation.module';
+import { WorkloadModule } from './modules/workload/workload.module';
 
 /**
  * Cytolab modular monolith.
@@ -98,6 +99,7 @@ import { EscalationModule } from './modules/escalation/escalation.module';
     TatModule,
     LabFeaturesModule,
     EscalationModule,
+    WorkloadModule,
   ],
   controllers: [HealthController],
   providers: [

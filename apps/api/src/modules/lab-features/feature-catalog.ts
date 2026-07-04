@@ -17,6 +17,7 @@ export const FEATURE_TIERS: Record<FeatureKey, number> = {
   PRIOR_HISTORY: 2,
   BETHESDA_SYSTEM: 2,
   ABNORMAL_ESCALATION: 2,
+  CASE_ASSIGNMENT: 2,
   QC_MODULE: 2,
   // Tier 3 — Operational
   VOICE_TO_TEXT: 3,
@@ -43,6 +44,8 @@ export const BUILT_FEATURES: ReadonlySet<FeatureKey> = new Set<FeatureKey>([
   'TAT_ALERTS',
   'PRIOR_HISTORY',
   'BETHESDA_SYSTEM',
+  'ABNORMAL_ESCALATION',
+  'CASE_ASSIGNMENT',
   'VOICE_TO_TEXT',
   'RESULT_TEMPLATES',
 ]);

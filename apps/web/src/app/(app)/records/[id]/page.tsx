@@ -14,6 +14,9 @@ import { AuthorizationModal } from '@/components/AuthorizationModal';
 import { RecordAttachments } from '@/components/RecordAttachments';
 import { PriorHistoryPanel } from '@/components/PriorHistoryPanel';
 import { FeatureGate } from '@/components/FeatureGate';
+import { useFeatures } from '@/lib/feature-context';
+import { useAuth } from '@/lib/auth';
+import { avatarColor, type WorkloadUser } from '@/lib/workload';
 import { SPECIMEN_LABELS, type FormType } from '@/lib/specimen-types';
 
 // ─── Status + step maps (zero-orange) ────────────────────────────────────────
@@ -219,6 +222,16 @@ export default function RecordDetailPage() {
   const { data: recordEscalations } = useQuery<any[]>({ queryKey: ['escalations', 'record', id], enabled: !!id, queryFn: () => api.get('/escalations', { params: { recordId: id } }).then((r) => r.data) });
   const openEscalation = (recordEscalations ?? []).find((e) => ['Pending', 'Acknowledged', 'UnderReview'].includes(e.status));
 
+  const { can } = useAuth();
+  const { isEnabled } = useFeatures();
+  const canAssign = can('record:change') && isEnabled('CASE_ASSIGNMENT');
+  const { data: team = [] } = useQuery<WorkloadUser[]>({ queryKey: ['workload-summary'], enabled: canAssign, queryFn: () => api.get('/workload/summary').then((r) => r.data) });
+  const assignMut = useMutation({
+    mutationFn: (userId: string | null) => api.patch(`/records/${id}/assign`, { assignedToId: userId }).then((r) => r.data),
+    onSuccess: () => { notify('ok', 'Assignment updated'); refetchAll(); qc.invalidateQueries({ queryKey: ['workload-summary'] }); },
+    onError: () => notify('err', 'Could not update assignment'),
+  });
+
   const refetchAll = () => { qc.invalidateQueries({ queryKey: ['record-detail', id] }); qc.invalidateQueries({ queryKey: ['record-sheets', id] }); };
 
   const statusMut = useMutation({
@@ -387,6 +400,31 @@ export default function RecordDetailPage() {
               </button>
             </FeatureGate>
           )}
+          <FeatureGate feature="CASE_ASSIGNMENT">
+            <div className="mt-3 rounded-[10px] border border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-3">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">Assignment</div>
+              <div className="mt-1.5 flex items-center gap-2">
+                {record.assignedTo ? (
+                  <>
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-bold" style={{ background: avatarColor(`${record.assignedTo.firstName} ${record.assignedTo.lastName}`).bg, color: avatarColor(`${record.assignedTo.firstName} ${record.assignedTo.lastName}`).fg }}>
+                      {`${record.assignedTo.firstName?.[0] ?? ''}${record.assignedTo.lastName?.[0] ?? ''}`.toUpperCase()}
+                    </span>
+                    <span className="text-[13px] font-semibold text-[#0F172A]">{record.assignedTo.firstName} {record.assignedTo.lastName}</span>
+                  </>
+                ) : (
+                  <span className="text-[13px] text-[#94A3B8]">Unassigned</span>
+                )}
+              </div>
+              {record.assignedAt && <div className="mt-1 text-[11px] text-[#94A3B8]">Assigned {new Date(record.assignedAt).toLocaleDateString()}</div>}
+              {canAssign && (
+                <select value={record.assignedToId ?? ''} onChange={(e) => assignMut.mutate(e.target.value || null)}
+                  className="mt-2 h-8 w-full rounded-lg border border-[#E2E8F0] bg-white px-2 text-[13px] outline-none focus:border-[#4F46E5]">
+                  <option value="">Unassigned</option>
+                  {team.map((u) => <option key={u.userId} value={u.userId}>{u.userName}</option>)}
+                </select>
+              )}
+            </div>
+          </FeatureGate>
         </div>
         <div className={`${LABEL} mb-5`}>Patient Stats</div>
         <Stat icon={Activity} label="Total Records" value={String(totalRecords)} unit="cases" />

@@ -3,6 +3,8 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import {
+  AssignRecordDto,
+  BulkAssignDto,
   CreateRecordDto,
   RecordQueryDto,
   SubmitRecordDto,
@@ -56,6 +58,26 @@ export class RecordsController {
   @ApiOperation({ summary: 'Records linked to a requisition (query: requisitionId)' })
   findByRequisition(@Query('requisitionId') requisitionId: string, @Query() query: RecordQueryDto) {
     return this.records.findByRequisition(requisitionId, query);
+  }
+
+  // ── Case assignment (Tier 2 — Case Assignment & Workload) ──
+  @Get('records/my-queue')
+  @RequirePermissions('record:view')
+  @ApiOperation({ summary: "Current user's assigned open records, TAT-prioritized" })
+  myQueue(@CurrentUser() user: AuthUser) {
+    return this.records.myQueue(user.userId);
+  }
+
+  @Patch('records/bulk-assign')
+  @RequirePermissions('record:change')
+  bulkAssign(@CurrentUser() user: AuthUser, @Body() dto: BulkAssignDto) {
+    return this.records.bulkAssign(user.userId, dto.recordIds, dto.assignedToId);
+  }
+
+  @Patch('records/:id/assign')
+  @RequirePermissions('record:change')
+  assign(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: AssignRecordDto) {
+    return this.records.assign(id, user.userId, dto.assignedToId);
   }
 
   @Get('specimens')

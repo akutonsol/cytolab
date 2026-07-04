@@ -57,6 +57,7 @@ export class SystemLogService {
       maintenanceLogs,
       paymentEvents,
       featureToggles,
+      assignments,
     ] = await Promise.all([
       // Record status changes (labId auto-scoped by the tenancy extension).
       this.prisma.recordStatusEvent.findMany({
@@ -144,7 +145,30 @@ export class SystemLogService {
         orderBy: { enabledAt: 'desc' },
         take: 30,
       }),
+
+      // Case assignments (labId auto-scoped). Latest assignment per record.
+      this.prisma.record.findMany({
+        where: {
+          assignedAt: { not: null },
+          ...(userId && { assignedById: userId }),
+          ...(dateRange && { assignedAt: dateRange }),
+        },
+        select: {
+          id: true, labNumber: true, identifier: true, assignedAt: true, assignedById: true,
+          assignedTo: { select: { firstName: true, lastName: true } },
+        },
+        orderBy: { assignedAt: 'desc' },
+        take: 30,
+      }),
     ]);
+
+    // Resolve the actors who performed the assignments (assignedById has no
+    // relation on Record) so the log can attribute each entry.
+    const actorIds = [...new Set(assignments.map((a) => a.assignedById).filter(Boolean) as string[])];
+    const actors = actorIds.length
+      ? await this.prisma.user.findMany({ where: { id: { in: actorIds } }, select: { id: true, firstName: true, lastName: true, email: true } })
+      : [];
+    const actorById = new Map(actors.map((u) => [u.id, u]));
 
     const entries: LogEntry[] = [
       ...statusEvents.map((e): LogEntry => ({
@@ -248,6 +272,23 @@ export class SystemLogService {
         createdAt: e.enabledAt!.toISOString(),
         severity: e.isEnabled ? 'success' : 'warning',
       })),
+
+      ...assignments.map((e): LogEntry => {
+        const actor = e.assignedById ? actorById.get(e.assignedById) : undefined;
+        const assignee = e.assignedTo ? `${e.assignedTo.firstName} ${e.assignedTo.lastName}`.trim() : 'unassigned';
+        return {
+          id: `assign-${e.id}`,
+          type: 'ASSIGNMENT',
+          action: `Record ${e.labNumber ?? e.identifier} assigned to ${assignee}`,
+          subject: e.labNumber ?? e.identifier,
+          userId: e.assignedById ?? null,
+          userName: actor ? `${actor.firstName} ${actor.lastName}`.trim() : 'System',
+          userEmail: actor?.email ?? null,
+          metadata: { recordId: e.id },
+          createdAt: e.assignedAt!.toISOString(),
+          severity: 'info',
+        };
+      }),
     ];
 
     // Final date bound applied uniformly so sources without a DB-level date

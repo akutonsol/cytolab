@@ -6,6 +6,7 @@ import { NotificationsHelper } from '../notifications/notifications.helper';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { allocateSequence, isUniqueConflict } from '../../common/util/lab-sequence';
+import { TAT_PRIORITY_RANK, hoursElapsed, tatPriority } from '../../common/util/tat-priority';
 import {
   CreateRecordDto,
   GynClinicalFeaturesDto,
@@ -62,6 +63,10 @@ const recordSelect = {
   gynFeatures: true,
   nonGynFeatures: true,
   resultSheets: { select: { id: true, authorized: true, authorizedAt: true } },
+  assignedToId: true,
+  assignedAt: true,
+  assignedById: true,
+  assignedTo: { select: { id: true, firstName: true, lastName: true } },
   statusHistory: {
     select: { id: true, status: true, notes: true, userId: true, createdAt: true, user: { select: { firstName: true, lastName: true } } },
     orderBy: { createdAt: 'asc' as const },
@@ -531,6 +536,125 @@ export class RecordsService {
         fulfilledCount === ordered ? RequisitionStatus.Completed : RequisitionStatus.Partial;
       await this.prisma.requisition.update({ where: { id: requisitionId }, data: { status } });
     }
+  }
+
+  // ── Case assignment & workload (Tier 2) ──────────────────────────────
+  // Open, assignable statuses — everything before authorization (excludes
+  // Approved/Billed/Paid/Viewed/Disabled/Failed). Used by my-queue + unassigned.
+  static readonly OPEN_ASSIGNABLE: RecordStatus[] = [
+    RecordStatus.Pending, RecordStatus.Submitted, RecordStatus.Processing,
+    RecordStatus.Partial, RecordStatus.Completed, RecordStatus.Resulted,
+  ];
+
+  private async labTatThresholdHours(): Promise<number> {
+    const labId = this.labContext.getLabId();
+    const lab = labId ? await this.prisma.lab.findFirst({ where: { id: labId }, select: { targetTatDays: true } }) : null;
+    return (lab?.targetTatDays ?? 3) * 24;
+  }
+
+  /** Assign (or, with a null assignee, unassign) a single record. */
+  async assign(id: string, actorId: string, assignedToId: string | null | undefined) {
+    const record = await this.prisma.record.findFirst({ where: { id }, select: { id: true, labNumber: true, identifier: true } });
+    if (!record) throw new NotFoundException('Record not found');
+
+    const target = assignedToId || null;
+    if (target) {
+      const user = await this.prisma.user.findFirst({ where: { id: target, isActive: true }, select: { id: true } });
+      if (!user) throw new BadRequestException('Assignee not found in this lab');
+    }
+
+    const updated = await this.prisma.record.update({
+      where: { id },
+      data: { assignedToId: target, assignedAt: target ? new Date() : null, assignedById: target ? actorId : null },
+      select: recordSelect,
+    });
+
+    if (target) {
+      await this.notifs.notifyUser(target, {
+        type: NotificationType.SYSTEM_ALERT,
+        title: 'Case assigned to you',
+        body: `Record ${record.labNumber ?? record.identifier} assigned to you for review.`,
+        link: '/workload',
+        entityId: id,
+        entityType: 'record',
+      });
+    }
+    return updated;
+  }
+
+  /** Assign many records to one user at once (one summary notification). */
+  async bulkAssign(actorId: string, recordIds: string[], assignedToId: string | null | undefined) {
+    if (!recordIds?.length) throw new BadRequestException('No records selected');
+    const target = assignedToId || null;
+    if (target) {
+      const user = await this.prisma.user.findFirst({ where: { id: target, isActive: true }, select: { id: true } });
+      if (!user) throw new BadRequestException('Assignee not found in this lab');
+    }
+    const res = await this.prisma.record.updateMany({
+      where: { id: { in: recordIds } },
+      data: { assignedToId: target, assignedAt: target ? new Date() : null, assignedById: target ? actorId : null },
+    });
+    if (target && res.count > 0) {
+      await this.notifs.notifyUser(target, {
+        type: NotificationType.SYSTEM_ALERT,
+        title: 'Cases assigned to you',
+        body: `${res.count} record${res.count === 1 ? '' : 's'} assigned to you for review.`,
+        link: '/workload',
+        entityType: 'record',
+      });
+    }
+    return { assigned: res.count };
+  }
+
+  /** The current user's personal queue, prioritized by TAT then age. */
+  async myQueue(userId: string) {
+    const threshold = await this.labTatThresholdHours();
+    const rows = await this.prisma.record.findMany({
+      where: { assignedToId: userId, status: { in: RecordsService.OPEN_ASSIGNABLE } },
+      select: {
+        id: true, labNumber: true, identifier: true, formType: true, status: true, urgent: true,
+        specimenDate: true, createdAt: true, assignedAt: true,
+        patient: { select: { firstName: true, lastName: true } },
+        specimens: { select: { type: true }, take: 1 },
+      },
+    });
+    return this.decorateAndSort(rows, threshold);
+  }
+
+  /** Open records with no assignee, prioritized by TAT then age. */
+  async unassigned() {
+    const threshold = await this.labTatThresholdHours();
+    const rows = await this.prisma.record.findMany({
+      where: { assignedToId: null, status: { in: RecordsService.OPEN_ASSIGNABLE } },
+      select: {
+        id: true, labNumber: true, identifier: true, formType: true, status: true, urgent: true,
+        specimenDate: true, createdAt: true, assignedAt: true,
+        patient: { select: { firstName: true, lastName: true } },
+        specimens: { select: { type: true }, take: 1 },
+      },
+    });
+    return this.decorateAndSort(rows, threshold);
+  }
+
+  private decorateAndSort(rows: Array<{ urgent: boolean; specimenDate: Date | null; createdAt: Date; assignedAt: Date | null; patient: { firstName: string; lastName: string } | null; specimens: { type: string }[] }>, threshold: number) {
+    const now = Date.now();
+    const decorated = rows.map((r) => {
+      const startedAt = r.specimenDate ?? r.createdAt;
+      const priority = tatPriority({ urgent: r.urgent, startedAt, thresholdHours: threshold, now });
+      return {
+        ...r,
+        tatPriority: priority,
+        hoursElapsed: hoursElapsed(startedAt, now),
+        patientName: r.patient ? `${r.patient.firstName} ${r.patient.lastName}`.trim() : '—',
+        specimenType: r.specimens[0]?.type ?? null,
+      };
+    });
+    return decorated.sort(
+      (a, b) =>
+        TAT_PRIORITY_RANK[b.tatPriority] - TAT_PRIORITY_RANK[a.tatPriority] ||
+        (a.assignedAt ? +new Date(a.assignedAt) : 0) - (b.assignedAt ? +new Date(b.assignedAt) : 0) ||
+        b.hoursElapsed - a.hoursElapsed,
+    );
   }
 
   private generateIdentifier() {

@@ -9,6 +9,7 @@ import {
   MessageSquare,
   ToggleRight,
   Users,
+  Users2,
   type LucideIcon,
 } from 'lucide-react';
 import type { FeatureKey } from './features';
@@ -43,6 +44,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Clients', path: '/clients', permission: 'client:view' },
       { label: 'Requisitions', path: '/requisitions', permission: 'requisition:view' },
       { label: 'Samples', path: '/records', permission: 'record:view' },
+      { label: 'Workload', path: '/workload', permission: 'record:view', feature: 'CASE_ASSIGNMENT', icon: Users2 },
     ],
   },
   {

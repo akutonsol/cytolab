@@ -17,6 +17,8 @@ interface Rec {
   id: string; labNumber?: string | null; identifier: string; formType?: string | null; status: string; urgent: boolean;
   specimenDate?: string | null; createdAt: string;
   patient?: { firstName: string; lastName: string; registrationNo?: string };
+  assignedToId?: string | null;
+  assignedTo?: { id: string; firstName: string; lastName: string } | null;
   specimens?: { id: string; type?: string }[];
   resultSheets?: { id: string; authorized: boolean }[];
   statusHistory?: { status: string; createdAt: string; user?: { firstName?: string; lastName?: string } | null }[];
@@ -152,7 +154,7 @@ function FormTypeIcon({ gyn }: { gyn: boolean }) {
 }
 
 export default function SamplesPage() {
-  const { can } = useAuth();
+  const { can, claims } = useAuth();
   const router = useRouter();
   const qc = useQueryClient();
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
@@ -170,6 +172,7 @@ export default function SamplesPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [fStatus, setFStatus] = useState('');
   const [fUrgent, setFUrgent] = useState(false);
+  const [fMine, setFMine] = useState(false);
   const [fQuery, setFQuery] = useState('');
 
   const { data } = useQuery({
@@ -229,13 +232,15 @@ export default function SamplesPage() {
     .filter((r) => ACTIVE.includes(r.status))
     .filter((r) => (fStatus ? r.status === fStatus : true))
     .filter((r) => (fUrgent ? r.urgent : true))
+    .filter((r) => (fMine ? r.assignedToId === claims?.userId : true))
     .filter((r) => {
       if (!fQuery) return true;
       const s = fQuery.toLowerCase();
       return patientName(r).toLowerCase().includes(s) || (r.labNumber ?? '').toLowerCase().includes(s);
     });
-  const activeFilterCount = (fStatus ? 1 : 0) + (fUrgent ? 1 : 0) + (fQuery ? 1 : 0);
-  const clearFilters = () => { setFStatus(''); setFUrgent(false); setFQuery(''); };
+  const activeFilterCount = (fStatus ? 1 : 0) + (fUrgent ? 1 : 0) + (fQuery ? 1 : 0) + (fMine ? 1 : 0);
+  const showAssignee = isEnabled('CASE_ASSIGNMENT');
+  const clearFilters = () => { setFStatus(''); setFUrgent(false); setFQuery(''); setFMine(false); };
   const worklist = activeRecs.slice(0, visibleCount);
   const hasMore = visibleCount < activeRecs.length;
   hasMoreRef.current = hasMore;
@@ -258,7 +263,7 @@ export default function SamplesPage() {
     return () => io.disconnect();
   }, [activeRecs.length]);
   // Reset the window when filters change.
-  useEffect(() => { setVisibleCount(8); }, [fStatus, fUrgent, fQuery]);
+  useEffect(() => { setVisibleCount(8); }, [fStatus, fUrgent, fQuery, fMine]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -301,6 +306,13 @@ export default function SamplesPage() {
                     <input type="checkbox" checked={fUrgent} onChange={(e) => setFUrgent(e.target.checked)} style={{ width: 15, height: 15, accentColor: PRIMARY, cursor: 'pointer' }} />
                     Urgent only
                   </label>
+
+                  {showAssignee && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, cursor: 'pointer', fontSize: 14, color: HEAD }}>
+                      <input type="checkbox" checked={fMine} onChange={(e) => setFMine(e.target.checked)} style={{ width: 15, height: 15, accentColor: PRIMARY, cursor: 'pointer' }} />
+                      My Cases only
+                    </label>
+                  )}
 
                   <button onClick={() => setFiltersOpen(false)} style={{ width: '100%', marginTop: 16, height: 40, borderRadius: 10, background: PRIMARY, border: 'none', color: '#fff', fontFamily: GEIST, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Done</button>
                 </div>
@@ -379,14 +391,14 @@ export default function SamplesPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                {['Patient', 'Accession / Lab ID', 'Status', 'Details'].map((h) => (
+                {['Patient', 'Accession / Lab ID', 'Status', ...(showAssignee ? ['Assigned To'] : []), 'Details'].map((h) => (
                   <th key={h} style={{ textAlign: 'left', padding: '12px 24px', borderBottom: '1px solid #ebeef1', fontFamily: GEIST, fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: SECONDARY }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {worklist.length === 0 && (
-                <tr><td colSpan={4} style={{ padding: '40px 24px', textAlign: 'center', color: '#94A3B8', fontSize: 14 }}>No active samples.</td></tr>
+                <tr><td colSpan={showAssignee ? 5 : 4} style={{ padding: '40px 24px', textAlign: 'center', color: '#94A3B8', fontSize: 14 }}>No active samples.</td></tr>
               )}
               {worklist.map((r) => {
                 const av = avatarFor(patientName(r));
@@ -430,6 +442,22 @@ export default function SamplesPage() {
                         </div>
                       )}
                     </td>
+                    {/* Assigned To */}
+                    {showAssignee && (
+                      <td style={{ padding: '16px 24px' }}>
+                        {r.assignedTo ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                            {(() => { const av = avatarFor(`${r.assignedTo.firstName} ${r.assignedTo.lastName}`); return (
+                              <span style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, background: av.bg, color: av.fg, display: 'grid', placeItems: 'center', fontFamily: GEIST, fontSize: 12, fontWeight: 700 }}>
+                                {`${r.assignedTo.firstName?.[0] ?? ''}${r.assignedTo.lastName?.[0] ?? ''}`.toUpperCase()}
+                              </span>); })()}
+                            <span style={{ fontSize: 14, color: HEAD }}>{r.assignedTo.firstName} {r.assignedTo.lastName}</span>
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 13, color: '#94A3B8' }}>Unassigned</span>
+                        )}
+                      </td>
+                    )}
                     {/* Details */}
                     <td style={{ padding: '16px 24px' }}>
                       <div style={{ fontSize: 16, color: HEAD }}>{specLabel(r.specimens?.[0]?.type) ?? (r.formType === 'Gynecology' ? 'Gynaecology' : 'Non-Gynaecology')}</div>
@@ -439,7 +467,7 @@ export default function SamplesPage() {
                 );
               })}
               <tr ref={sentinelRef}>
-                <td colSpan={4} style={{ padding: '14px 24px', textAlign: 'center', color: '#94A3B8', fontSize: 13, fontWeight: 500 }}>
+                <td colSpan={showAssignee ? 5 : 4} style={{ padding: '14px 24px', textAlign: 'center', color: '#94A3B8', fontSize: 13, fontWeight: 500 }}>
                   {hasMore ? 'Loading more…' : activeRecs.length > 0 ? `Showing all ${activeRecs.length} active samples` : ''}
                 </td>
               </tr>

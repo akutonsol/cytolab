@@ -9,6 +9,7 @@ export type FeatureKey =
   | 'PRIOR_HISTORY'
   | 'BETHESDA_SYSTEM'
   | 'ABNORMAL_ESCALATION'
+  | 'CASE_ASSIGNMENT'
   | 'QC_MODULE'
   // Tier 3 — Operational
   | 'VOICE_TO_TEXT'
@@ -85,7 +86,13 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     key: 'ABNORMAL_ESCALATION',
     name: 'Abnormal Escalation',
     description: 'Route abnormal findings to a senior pathologist for mandatory secondary review.',
-    tier: 2, tierName: 'Clinical', icon: 'AlertTriangle', docsUrl: null, navPath: null, dependsOn: [], comingSoon: true,
+    tier: 2, tierName: 'Clinical', icon: 'AlertTriangle', docsUrl: null, navPath: '/escalations', dependsOn: [],
+  },
+  CASE_ASSIGNMENT: {
+    key: 'CASE_ASSIGNMENT',
+    name: 'Case Assignment & Workload',
+    description: 'Assign cases to pathologists and balance workload against daily throughput targets.',
+    tier: 2, tierName: 'Clinical', icon: 'Users2', docsUrl: null, navPath: '/workload', dependsOn: [],
   },
   QC_MODULE: {
     key: 'QC_MODULE',

@@ -6,6 +6,8 @@ import { ArrowUpRight, CheckCircle2, ClipboardCheck, Clock, Eye, RefreshCw, Sear
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { AuthorizationModal } from '@/components/AuthorizationModal';
+import { useAuth } from '@/lib/auth';
+import { useFeatures } from '@/lib/feature-context';
 
 interface Rec {
   id: string;
@@ -19,6 +21,8 @@ interface Rec {
   patient?: { firstName: string; lastName: string; registrationNo?: string | null } | null;
   client?: { firstName: string; lastName: string; officeName?: string | null; accountNo?: string | null } | null;
   specimens?: Array<{ id: string; type: string }>;
+  assignedToId?: string | null;
+  assignedTo?: { id: string; firstName: string; lastName: string } | null;
 }
 
 type Tab = 'awaiting' | 'approved';
@@ -47,6 +51,9 @@ export default function AuthorizerPage() {
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>('awaiting');
   const [authorizeRec, setAuthorizeRec] = useState<Rec | null>(null);
+  const { claims } = useAuth();
+  const { isEnabled } = useFeatures();
+  const showAssignee = isEnabled('CASE_ASSIGNMENT');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
@@ -153,9 +160,10 @@ export default function AuthorizerPage() {
                 {filtered.map((r) => {
                   const expanded = expandedId === r.id;
                   const gyn = r.formType === 'Gynecology';
+                  const mine = showAssignee && !!r.assignedToId && r.assignedToId === claims?.userId;
                   return (
                     <Fragment key={r.id}>
-                      <tr className="border-b border-[#F8FAFC] transition-colors hover:bg-[#F9FAFB]" style={r.urgent ? { boxShadow: 'inset 3px 0 0 0 #EF4444' } : undefined}>
+                      <tr className="border-b border-[#F8FAFC] transition-colors hover:bg-[#F9FAFB]" style={{ ...(r.urgent ? { boxShadow: 'inset 3px 0 0 0 #EF4444' } : {}), ...(mine ? { background: '#EEF2FF' } : {}) }}>
                         <td className="px-4 py-3.5">
                           <div className="font-mono text-[14px] font-bold text-[#0F172A]">{r.labNumber ?? '—'}</div>
                           {r.urgent && <span className="mt-1 inline-block rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide" style={{ background: '#FEF2F2', color: '#DC2626' }}>Urgent</span>}
@@ -163,6 +171,11 @@ export default function AuthorizerPage() {
                         <td className="px-4 py-3.5">
                           <div className="text-[14px] font-semibold text-[#0F172A]">{patientName(r)}</div>
                           {r.patient?.registrationNo && <div className="text-[11px] text-[#94A3B8]">{r.patient.registrationNo}</div>}
+                          {showAssignee && (
+                            <div className="mt-0.5 text-[11px] font-medium" style={{ color: mine ? '#4F46E5' : '#94A3B8' }}>
+                              {r.assignedTo ? `${mine ? '★ ' : ''}${r.assignedTo.firstName} ${r.assignedTo.lastName}` : 'Unassigned'}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3.5">
                           <div className="text-[14px] text-[#0F172A]">{clientName(r)}</div>
