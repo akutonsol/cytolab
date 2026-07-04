@@ -8,6 +8,7 @@ export const LOG_TYPES = [
   'CHANGE_REQUEST',
   'PAYMENT',
   'MAINTENANCE',
+  'FEATURE',
 ] as const;
 export type LogType = (typeof LOG_TYPES)[number];
 

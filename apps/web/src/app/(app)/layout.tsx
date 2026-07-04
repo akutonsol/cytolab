@@ -8,10 +8,11 @@ import {
   ReadOutlined, SearchOutlined, SettingOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { Microscope, Mic } from 'lucide-react';
+import { Microscope, Mic, ToggleRight } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useDictationContext } from '@/lib/dictation-context';
 import { ACCOUNT_GROUP_KEY, ANALYTICS_ITEM, HOME_ITEM, NAV_GROUPS } from '@/lib/nav';
+import { useFeatures } from '@/lib/feature-context';
 import { NavPills } from '@/components/dashboard/nav-pills';
 import { useAuth, useAuthStore } from '@/lib/auth';
 import { api, refreshSession } from '@/lib/api';
@@ -58,9 +59,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const navigate = (key: string) => { setDrawerOpen(false); router.push(key); };
 
+  const { isEnabled } = useFeatures();
+  // A nav item shows when its permission is held AND (if feature-gated) the
+  // feature is enabled for the lab.
+  const navVisible = (i: { permission?: string; feature?: string }) =>
+    can(i.permission) && (!i.feature || isEnabled(i.feature as any));
+
   const analyticsVisible = can(ANALYTICS_ITEM.permission);
   const accountGroup = NAV_GROUPS.find((g) => g.key === ACCOUNT_GROUP_KEY)!;
-  const accountItems = accountGroup.items.filter((i) => can(i.permission));
+  const accountItems = accountGroup.items.filter(navVisible);
+  const superGroup = NAV_GROUPS.find((g) => g.key === 'superuser');
+  const superItems = superGroup ? superGroup.items.filter(navVisible) : [];
 
   // Full grouped menu (used in the mobile drawer).
   const drawerMenu: MenuProps['items'] = useMemo(
@@ -68,13 +77,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       [
         can(HOME_ITEM.permission) ? { key: HOME_ITEM.path, label: HOME_ITEM.label } : null,
         ...NAV_GROUPS.map((group) => {
-          const items = group.items.filter((i) => can(i.permission));
+          const items = group.items.filter(navVisible);
           if (!items.length) return null;
           return { key: group.key, label: group.label, icon: createElement(group.icon, { size: 16 }), children: items.map((i) => ({ key: i.path, label: i.label })) };
         }).filter(Boolean),
         analyticsVisible ? { key: ANALYTICS_ITEM.path, label: ANALYTICS_ITEM.label } : null,
       ].filter(Boolean) as MenuProps['items'],
-    [claims], // eslint-disable-line react-hooks/exhaustive-deps
+    [claims, isEnabled], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   if (!hydrated || !isAuthed || stale || refreshing) {
@@ -98,7 +107,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       { key: 'who', label: <span style={{ color: '#9ca3af', fontSize: 12 }}>{claims?.email}</span>, disabled: true },
       { type: 'divider' },
       ...accountItems.map((i) => ({ key: i.path, label: i.label, icon: i.path === '/settings' ? <SettingOutlined /> : undefined })),
-      ...(accountItems.length ? [{ type: 'divider' as const }] : []),
+      ...(superItems.length
+        ? [
+            { type: 'divider' as const },
+            { key: 'superuser-label', label: <span style={{ color: '#9ca3af', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4 }}>Superuser</span>, disabled: true },
+            ...superItems.map((i) => ({ key: i.path, label: i.label, icon: <ToggleRight size={15} /> })),
+          ]
+        : []),
+      { type: 'divider' as const },
       { key: 'logout', label: 'Sign out', icon: <LogoutOutlined />, danger: true },
     ],
     onClick: ({ key }) => (key === 'logout' ? logout() : navigate(key)),

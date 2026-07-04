@@ -4,6 +4,7 @@ import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useRef,
 import { Loader2, Mic, MicOff } from 'lucide-react';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useDictationContext } from '@/lib/dictation-context';
+import { useFeatures } from '@/lib/feature-context';
 import { MicPermissionPrompt } from './MicPermissionPrompt';
 
 export interface DictationButtonHandle { toggle: () => void; }
@@ -28,6 +29,7 @@ export const DictationButton = forwardRef<DictationButtonHandle, Props>(function
 ) {
   const id = useId();
   const { activeDictationId, setActive } = useDictationContext();
+  const { isEnabled } = useFeatures();
   const [prompt, setPrompt] = useState<null | 'ask' | 'denied'>(null);
   const [processing, setProcessing] = useState(false);
   const cbRef = useRef({ onTranscript, onInterim });
@@ -58,6 +60,9 @@ export const DictationButton = forwardRef<DictationButtonHandle, Props>(function
   const allow = () => { if (typeof window !== 'undefined') localStorage.setItem(SEEN_KEY, '1'); setPrompt(null); startListening(); };
 
   useImperativeHandle(ref, () => ({ toggle }), [toggle]);
+
+  // Feature-gated: when Voice-to-Text is disabled for the lab, render nothing.
+  if (!isEnabled('VOICE_TO_TEXT')) return null;
 
   const { box, icon } = SIZES[size];
   const denied = !!error && /denied|not allowed/i.test(error);

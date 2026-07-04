@@ -14,6 +14,7 @@ import { PriorHistoryPanel } from './PriorHistoryPanel';
 import { BethesdaClassificationModal } from './BethesdaClassificationModal';
 import { DictationTextarea } from './DictationTextarea';
 import type { DictationButtonHandle } from './DictationButton';
+import { FeatureGate } from './FeatureGate';
 
 interface RecordLite {
   id: string;
@@ -288,7 +289,11 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
             <button type="button" style={{ ...DS.btnPrimary, background: '#16A34A', opacity: !sheetId || lineCount === 0 || authorized || signOff.isPending ? 0.5 : 1 }} disabled={!sheetId || lineCount === 0 || authorized || signOff.isPending} onClick={confirmSignOff}>Sign off &amp; Approve</button>
             <button type="button" style={{ ...DS.btnSecondary, opacity: !sheetId || lineCount === 0 || save.isPending ? 0.6 : 1 }} disabled={!sheetId || lineCount === 0 || save.isPending} onClick={() => save.mutate()}>Save</button>
             <button type="button" style={{ ...DS.btnSecondary, opacity: !authorized ? 0.5 : 1 }} disabled={!authorized} onClick={openReport}>Email / Print Report</button>
-            {record?.patientId && <button type="button" style={DS.btnSecondary} onClick={() => setHistoryOpen(true)}>Prior History</button>}
+            {record?.patientId && (
+              <FeatureGate feature="PRIOR_HISTORY">
+                <button type="button" style={DS.btnSecondary} onClick={() => setHistoryOpen(true)}>Prior History</button>
+              </FeatureGate>
+            )}
             <button type="button" style={DS.btnSecondary} onClick={onClose}>Close</button>
           </>
         }
@@ -368,8 +373,14 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
             <div style={DS.sectionLabel}>Report narrative</div>
             <div style={{ display: 'flex', gap: 8 }}>
-              {isGyn && record?.id && <button type="button" style={{ ...DS.btnOutline, padding: '6px 14px', fontSize: 13 }} onClick={() => setBethesdaOpen(true)}>Bethesda</button>}
-              <button type="button" style={{ ...DS.btnOutline, padding: '6px 14px', fontSize: 13 }} onClick={() => setTemplateOpen(true)}>Use Template</button>
+              {isGyn && record?.id && (
+                <FeatureGate feature="BETHESDA_SYSTEM">
+                  <button type="button" style={{ ...DS.btnOutline, padding: '6px 14px', fontSize: 13 }} onClick={() => setBethesdaOpen(true)}>Bethesda</button>
+                </FeatureGate>
+              )}
+              <FeatureGate feature="RESULT_TEMPLATES">
+                <button type="button" style={{ ...DS.btnOutline, padding: '6px 14px', fontSize: 13 }} onClick={() => setTemplateOpen(true)}>Use Template</button>
+              </FeatureGate>
             </div>
           </div>
           {aiDraftId && (
@@ -378,17 +389,30 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
               description="This text was AI-generated. You are responsible for the final wording. Accept to record it into the report, or edit freely."
               action={<Space direction="vertical"><Button size="small" type="primary" loading={acceptDraft.isPending} disabled={!narrative.trim()} onClick={() => acceptDraft.mutate()}>Accept into report</Button><Button size="small" onClick={() => rejectDraft.mutate()}>Reject</Button></Space>} />
           )}
-          <DictationTextarea
-            dictationRef={narrativeDictation}
-            rows={5}
-            placeholder="Report narrative / diagnosis…"
-            value={narrative}
-            onChange={(e) => setNarrative(e.target.value)}
-            style={{ width: '100%', borderRadius: 18, border: '1px solid #d9d9d9', padding: '12px 14px', fontSize: 16, lineHeight: 1.5, fontFamily: 'inherit', outline: 'none', resize: 'vertical', color: '#111827' }}
-          />
-          <div style={{ marginTop: 6, fontSize: 12, color: '#8a93a6' }}>
-            Click 🎤 to dictate — speak clearly, punctuation is spoken (e.g. &ldquo;comma&rdquo;, &ldquo;period&rdquo;, &ldquo;new line&rdquo;). Press <strong>{typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform) ? '⌘' : 'Ctrl'}+Shift+D</strong> to toggle.
-          </div>
+          <FeatureGate
+            feature="VOICE_TO_TEXT"
+            fallback={
+              <textarea
+                rows={5}
+                placeholder="Report narrative / diagnosis…"
+                value={narrative}
+                onChange={(e) => setNarrative(e.target.value)}
+                style={{ width: '100%', borderRadius: 18, border: '1px solid #d9d9d9', padding: '12px 14px', fontSize: 16, lineHeight: 1.5, fontFamily: 'inherit', outline: 'none', resize: 'vertical', color: '#111827' }}
+              />
+            }
+          >
+            <DictationTextarea
+              dictationRef={narrativeDictation}
+              rows={5}
+              placeholder="Report narrative / diagnosis…"
+              value={narrative}
+              onChange={(e) => setNarrative(e.target.value)}
+              style={{ width: '100%', borderRadius: 18, border: '1px solid #d9d9d9', padding: '12px 14px', fontSize: 16, lineHeight: 1.5, fontFamily: 'inherit', outline: 'none', resize: 'vertical', color: '#111827' }}
+            />
+            <div style={{ marginTop: 6, fontSize: 12, color: '#8a93a6' }}>
+              Click 🎤 to dictate — speak clearly, punctuation is spoken (e.g. &ldquo;comma&rdquo;, &ldquo;period&rdquo;, &ldquo;new line&rdquo;). Press <strong>{typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform) ? '⌘' : 'Ctrl'}+Shift+D</strong> to toggle.
+            </div>
+          </FeatureGate>
 
           <div style={DS.divider} />
           <div style={DS.sectionLabel}>Code Sheet Results — findings &amp; assessment</div>

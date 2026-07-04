@@ -6,6 +6,7 @@ import { Dropdown } from 'antd';
 import { ChevronDown } from 'lucide-react';
 import { ANALYTICS_ITEM, CENTER_GROUP_KEYS, HOME_ITEM, NAV_GROUPS } from '@/lib/nav';
 import { useAuth } from '@/lib/auth';
+import { useFeatures } from '@/lib/feature-context';
 
 const pill: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: 10, padding: '7px 9px', borderRadius: 999,
@@ -35,10 +36,12 @@ export function NavPills({ justify = 'flex-end' }: { justify?: React.CSSProperti
   const router = useRouter();
   const pathname = usePathname();
   const { can } = useAuth();
+  const { isEnabled } = useFeatures();
+  const visible = (i: any) => can(i.permission) && (!i.feature || isEnabled(i.feature));
 
   const centerGroups = CENTER_GROUP_KEYS.map((k) => NAV_GROUPS.find((g) => g.key === k))
     .filter(Boolean)
-    .map((g) => ({ ...(g as any), visible: (g as any).items.filter((i: any) => can(i.permission)) }))
+    .map((g) => ({ ...(g as any), visible: (g as any).items.filter(visible) }))
     .filter((g) => g.visible.length > 0);
   const analyticsVisible = can(ANALYTICS_ITEM.permission);
   const groupActive = (items: any[]) => items.some((i: any) => i.path === pathname);

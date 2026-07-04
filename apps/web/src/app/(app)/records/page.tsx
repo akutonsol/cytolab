@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { RecordFormDrawer } from '@/components/RecordFormDrawer';
+import { FeatureGate } from '@/components/FeatureGate';
 import type { FormType } from '@/lib/specimen-types';
 
 interface Rec {
@@ -346,7 +347,9 @@ export default function SamplesPage() {
             <div style={{ ...cardHead, fontSize: 16 }}>Automation Overview</div>
             <div style={{ fontSize: 12, color: SECONDARY, marginTop: 2 }}>Instrument efficiency for current shift</div>
             <Bar label="Analyzer Performance" pct={analyzerPct} color={PRIMARY} />
-            <Bar label="Avg TAT Performance" pct={tatPct} color="#16A34A" />
+            <FeatureGate feature="TAT_ALERTS">
+              <Bar label="Avg TAT Performance" pct={tatPct} color="#16A34A" />
+            </FeatureGate>
           </div>
         </div>
 

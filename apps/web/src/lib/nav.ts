@@ -6,15 +6,19 @@ import {
   FlaskConical,
   LayoutDashboard,
   MessageSquare,
+  ToggleRight,
   Users,
   type LucideIcon,
 } from 'lucide-react';
+import type { FeatureKey } from './features';
 
 export interface NavItem {
   label: string;
   path: string;
   /** View-permission code required to see this item. Omitted = always visible to authed users. */
   permission?: string;
+  /** If set, the item is hidden unless this feature flag is enabled for the lab. */
+  feature?: FeatureKey;
   /** If set, the page is a placeholder for the given build phase. */
   phase?: number;
   /** Optional Lucide icon (used by standalone hero-nav pills like Home/Analytics). */
@@ -48,8 +52,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Result Sheets', path: '/result-sheets', permission: 'resultsheet:view', phase: 3 },
       { label: 'Authorization', path: '/authorizer', permission: 'resultsheet:authorize', phase: 3 },
       { label: 'Code Sheets', path: '/code-sheets', permission: 'codesheet:view' },
-      { label: 'Result Templates', path: '/result-templates', permission: 'resultentry:view' },
-      { label: 'TAT Alerts', path: '/tat', permission: 'record:view' },
+      { label: 'Result Templates', path: '/result-templates', permission: 'resultentry:view', feature: 'RESULT_TEMPLATES' },
+      { label: 'TAT Alerts', path: '/tat', permission: 'record:view', feature: 'TAT_ALERTS' },
       { label: 'Lab Codes', path: '/lab-codes', permission: 'labcode:view' },
       { label: 'Cabinets', path: '/cabinets', permission: 'cabinet:view', phase: 3 },
       { label: 'Reports', path: '/reports', permission: 'report:view', phase: 3 },
@@ -94,6 +98,16 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'System Health', path: '/system', permission: 'system:health' },
       { label: 'System Log', path: '/system/logs', permission: 'system:health' },
       { label: 'Files', path: '/files', permission: 'record:view' },
+    ],
+  },
+  {
+    key: 'superuser',
+    label: 'Superuser',
+    icon: ToggleRight,
+    // Superuser-only: no default role holds 'system:health', so only superusers
+    // (who bypass permission checks) ever see this section.
+    items: [
+      { label: 'Features', path: '/superuser/features', permission: 'system:health', icon: ToggleRight },
     ],
   },
 ];

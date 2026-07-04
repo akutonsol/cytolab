@@ -203,6 +203,7 @@ model Lab {
   bethesdaResults        BethesdaResult[]
   tatConfigs             TATConfig[]
   tatAlerts              TATAlert[]
+  features               LabFeature[]
 }
 
 model Account {
@@ -276,6 +277,7 @@ model User {
   resultTemplates        ResultTemplate[]       @relation("ResultTemplateCreator")
   bethesdaResults        BethesdaResult[]       @relation("BethesdaReporter")
   acknowledgedTatAlerts  TATAlert[]             @relation("TATAcknowledger")
+  toggledFeatures        LabFeature[]           @relation("LabFeatureToggler")
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -1833,4 +1835,58 @@ model TATAlert {
   @@unique([recordId, level])
   @@index([labId])
   @@index([labId, status])
+}
+
+// ─── Feature Management — superuser-controlled per-lab feature flags ──────────
+
+// Feature keys, grouped by tier. Tier 1 (Standard/core) features are always on
+// and NOT stored here (enforced in code). Only tier 2-5 keys are persisted.
+enum FeatureKey {
+  // Tier 2 — Clinical
+  TAT_ALERTS
+  PRIOR_HISTORY
+  BETHESDA_SYSTEM
+  ABNORMAL_ESCALATION
+  QC_MODULE
+
+  // Tier 3 — Operational
+  VOICE_TO_TEXT
+  RESULT_TEMPLATES
+  BATCH_AUTHORIZATION
+  REQUISITION_TRACKING
+  SLIDE_LABEL_PRINTING
+
+  // Tier 4 — Compliance
+  BETHESDA_ANALYTICS
+  CORRELATION_TRACKING
+  PROFICIENCY_TESTING
+  REAGENT_TRACKING
+  PATIENT_RECALL
+
+  // Tier 5 — Enterprise
+  WSI_VIEWER
+  AI_SCREENING
+  TELECONSULTATION
+  LOINC_SNOMED
+  HL7_FHIR
+}
+
+// One row per (lab, feature). Toggle history is not retained — each toggle
+// overwrites isEnabled/enabledAt/enabledBy with the latest state and actor.
+model LabFeature {
+  id          String     @id @default(cuid())
+  labId       String
+  lab         Lab        @relation(fields: [labId], references: [id])
+  featureKey  FeatureKey
+  tier        Int // 1-5
+  isEnabled   Boolean    @default(false)
+  enabledAt   DateTime?
+  enabledById String?
+  enabledBy   User?      @relation("LabFeatureToggler", fields: [enabledById], references: [id])
+  notes       String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([labId, featureKey])
+  @@index([labId])
 }

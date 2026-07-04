@@ -5,6 +5,7 @@ import { AntdRegistry } from '@ant-design/nextjs-registry';
 import { App as AntdApp, ConfigProvider, theme } from 'antd';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DictationProvider } from '@/lib/dictation-context';
+import { FeatureProvider } from '@/lib/feature-context';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -60,7 +61,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       >
         <AntdApp>
           <QueryClientProvider client={queryClient}>
-            <DictationProvider>{children}</DictationProvider>
+            <FeatureProvider>
+              <DictationProvider>{children}</DictationProvider>
+            </FeatureProvider>
           </QueryClientProvider>
         </AntdApp>
       </ConfigProvider>

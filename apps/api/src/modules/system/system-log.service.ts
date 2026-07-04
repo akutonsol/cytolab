@@ -56,6 +56,7 @@ export class SystemLogService {
       resultSheetEvents,
       maintenanceLogs,
       paymentEvents,
+      featureToggles,
     ] = await Promise.all([
       // Record status changes (labId auto-scoped by the tenancy extension).
       this.prisma.recordStatusEvent.findMany({
@@ -124,6 +125,23 @@ export class SystemLogService {
           bill: { select: { referenceNo: true, client: { select: { officeName: true } } } },
         },
         orderBy: { createdAt: 'desc' },
+        take: 30,
+      }),
+
+      // Feature toggles (labId auto-scoped). Only the latest state per feature is
+      // retained (enabledAt/enabledBy overwrite on each toggle), so this surfaces
+      // the most recent enable/disable for every feature that has ever changed.
+      this.prisma.labFeature.findMany({
+        where: {
+          enabledAt: { not: null },
+          ...(userId && { enabledById: userId }),
+          ...(dateRange && { enabledAt: dateRange }),
+        },
+        include: {
+          enabledBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+          lab: { select: { name: true } },
+        },
+        orderBy: { enabledAt: 'desc' },
         take: 30,
       }),
     ]);
@@ -216,6 +234,19 @@ export class SystemLogService {
         metadata: { amount: e.amount, type: e.type },
         createdAt: e.createdAt.toISOString(),
         severity: 'success',
+      })),
+
+      ...featureToggles.map((e): LogEntry => ({
+        id: `feat-${e.id}`,
+        type: 'FEATURE',
+        action: `Feature ${e.featureKey} ${e.isEnabled ? 'enabled' : 'disabled'} for lab ${e.lab?.name ?? '—'}`,
+        subject: e.featureKey,
+        userId: e.enabledById,
+        userName: e.enabledBy ? `${e.enabledBy.firstName} ${e.enabledBy.lastName}`.trim() : 'System',
+        userEmail: e.enabledBy?.email ?? null,
+        metadata: { featureKey: e.featureKey, tier: e.tier, isEnabled: e.isEnabled },
+        createdAt: e.enabledAt!.toISOString(),
+        severity: e.isEnabled ? 'success' : 'warning',
       })),
     ];
 

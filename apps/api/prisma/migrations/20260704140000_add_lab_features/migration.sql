@@ -1,0 +1,31 @@
+-- CreateEnum
+CREATE TYPE "FeatureKey" AS ENUM ('TAT_ALERTS', 'PRIOR_HISTORY', 'BETHESDA_SYSTEM', 'ABNORMAL_ESCALATION', 'QC_MODULE', 'VOICE_TO_TEXT', 'RESULT_TEMPLATES', 'BATCH_AUTHORIZATION', 'REQUISITION_TRACKING', 'SLIDE_LABEL_PRINTING', 'BETHESDA_ANALYTICS', 'CORRELATION_TRACKING', 'PROFICIENCY_TESTING', 'REAGENT_TRACKING', 'PATIENT_RECALL', 'WSI_VIEWER', 'AI_SCREENING', 'TELECONSULTATION', 'LOINC_SNOMED', 'HL7_FHIR');
+
+-- CreateTable
+CREATE TABLE "LabFeature" (
+    "id" TEXT NOT NULL,
+    "labId" TEXT NOT NULL,
+    "featureKey" "FeatureKey" NOT NULL,
+    "tier" INTEGER NOT NULL,
+    "isEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "enabledAt" TIMESTAMP(3),
+    "enabledById" TEXT,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "LabFeature_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE INDEX "LabFeature_labId_idx" ON "LabFeature"("labId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "LabFeature_labId_featureKey_key" ON "LabFeature"("labId", "featureKey");
+
+-- AddForeignKey
+ALTER TABLE "LabFeature" ADD CONSTRAINT "LabFeature_labId_fkey" FOREIGN KEY ("labId") REFERENCES "Lab"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LabFeature" ADD CONSTRAINT "LabFeature_enabledById_fkey" FOREIGN KEY ("enabledById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
