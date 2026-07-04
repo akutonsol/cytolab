@@ -118,7 +118,7 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     key: 'BATCH_AUTHORIZATION',
     name: 'Batch Authorization',
     description: 'Review and sign off multiple result sheets in a single guided pass.',
-    tier: 3, tierName: 'Operational', icon: 'ListChecks', docsUrl: null, navPath: null, dependsOn: [], comingSoon: true,
+    tier: 3, tierName: 'Operational', icon: 'ListChecks', docsUrl: null, navPath: '/batch-authorize', dependsOn: [],
   },
   REQUISITION_TRACKING: {
     key: 'REQUISITION_TRACKING',

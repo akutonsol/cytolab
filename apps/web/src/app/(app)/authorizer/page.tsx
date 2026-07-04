@@ -2,12 +2,13 @@
 
 import { Fragment, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowUpRight, CheckCircle2, ClipboardCheck, Clock, Eye, RefreshCw, Search } from 'lucide-react';
+import { ArrowUpRight, CheckCheck, CheckCircle2, ClipboardCheck, Clock, Eye, RefreshCw, Search } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { AuthorizationModal } from '@/components/AuthorizationModal';
 import { useAuth } from '@/lib/auth';
 import { useFeatures } from '@/lib/feature-context';
+import { FeatureGate } from '@/components/FeatureGate';
 
 interface Rec {
   id: string;
@@ -54,6 +55,9 @@ export default function AuthorizerPage() {
   const { claims } = useAuth();
   const { isEnabled } = useFeatures();
   const showAssignee = isEnabled('CASE_ASSIGNMENT');
+  const [batchMode, setBatchMode] = useState(false);
+  const [batchSelected, setBatchSelected] = useState<Set<string>>(new Set());
+  const toggleBatch = (id: string) => setBatchSelected((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
@@ -105,6 +109,21 @@ export default function AuthorizerPage() {
           <p className="mt-1.5 text-[14px] text-[#6B7280]">Review and authorize cytology result sheets</p>
         </div>
         <div className="flex items-center gap-3">
+          <FeatureGate feature="BATCH_AUTHORIZATION">
+            {batchMode && batchSelected.size > 0 && (
+              <button onClick={() => router.push(`/batch-authorize?recordIds=${Array.from(batchSelected).join(',')}`)}
+                className="flex items-center gap-2 rounded-full bg-[#4F46E5] px-4 py-2 text-[13px] font-semibold text-white">
+                <CheckCheck size={16} /> Authorize Selected ({batchSelected.size})
+              </button>
+            )}
+            {tab === 'awaiting' && (
+              <button onClick={() => { setBatchMode((v) => !v); setBatchSelected(new Set()); }}
+                className="rounded-full px-4 py-2 text-[13px] font-semibold transition-colors"
+                style={batchMode ? { background: '#EEF2FF', color: '#4F46E5', border: '1px solid #C7D2FE' } : { background: '#fff', color: '#64748B', border: '1px solid #E5E7EB' }}>
+                Batch Mode {batchMode ? 'On' : 'Off'}
+              </button>
+            )}
+          </FeatureGate>
           <button onClick={() => qc.invalidateQueries({ queryKey: ['records', 'authorizer'] })} title="Refresh" className="grid h-10 w-10 place-items-center rounded-full border border-[#E5E7EB] bg-white text-[#6B7280] transition-colors hover:bg-[#F5F7FF] hover:text-[#4F46E5]">
             <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
           </button>
@@ -151,6 +170,7 @@ export default function AuthorizerPage() {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-[#F1F5F9]">
+                  {batchMode && tab === 'awaiting' && <th className={th} />}
                   <th className={th}>Lab#</th><th className={th}>Patient</th><th className={th}>Client</th>
                   <th className={th}>Form</th><th className={th}>Specimen</th><th className={th}>Date</th>
                   <th className={`${th} text-right`}>Actions</th>
@@ -163,7 +183,10 @@ export default function AuthorizerPage() {
                   const mine = showAssignee && !!r.assignedToId && r.assignedToId === claims?.userId;
                   return (
                     <Fragment key={r.id}>
-                      <tr className="border-b border-[#F8FAFC] transition-colors hover:bg-[#F9FAFB]" style={{ ...(r.urgent ? { boxShadow: 'inset 3px 0 0 0 #EF4444' } : {}), ...(mine ? { background: '#EEF2FF' } : {}) }}>
+                      <tr className="border-b border-[#F8FAFC] transition-colors hover:bg-[#F9FAFB]" style={{ ...(r.urgent ? { boxShadow: 'inset 3px 0 0 0 #EF4444' } : {}), ...((mine || (batchMode && batchSelected.has(r.id))) ? { background: '#EEF2FF' } : {}) }}>
+                        {batchMode && tab === 'awaiting' && (
+                          <td className="pl-4"><input type="checkbox" checked={batchSelected.has(r.id)} onChange={() => toggleBatch(r.id)} style={{ accentColor: '#4F46E5' }} /></td>
+                        )}
                         <td className="px-4 py-3.5">
                           <div className="font-mono text-[14px] font-bold text-[#0F172A]">{r.labNumber ?? '—'}</div>
                           {r.urgent && <span className="mt-1 inline-block rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide" style={{ background: '#FEF2F2', color: '#DC2626' }}>Urgent</span>}
@@ -204,7 +227,7 @@ export default function AuthorizerPage() {
                       </tr>
                       {expanded && (
                         <tr>
-                          <td colSpan={7} style={{ background: '#F8F9FF', padding: '16px 24px' }}>
+                          <td colSpan={batchMode && tab === 'awaiting' ? 8 : 7} style={{ background: '#F8F9FF', padding: '16px 24px' }}>
                             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                               <div>
                                 <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#94A3B8]">Patient</div>

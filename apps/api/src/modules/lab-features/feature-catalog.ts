@@ -47,6 +47,7 @@ export const BUILT_FEATURES: ReadonlySet<FeatureKey> = new Set<FeatureKey>([
   'ABNORMAL_ESCALATION',
   'CASE_ASSIGNMENT',
   'QC_MODULE',
+  'BATCH_AUTHORIZATION',
   'VOICE_TO_TEXT',
   'RESULT_TEMPLATES',
 ]);

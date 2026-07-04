@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   AppWindow,
   BarChart2,
+  CheckCheck,
   CheckSquare,
   CreditCard,
   FileSearch,
@@ -58,6 +59,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Result Sheets', path: '/result-sheets', permission: 'resultsheet:view', phase: 3 },
       { label: 'Authorization', path: '/authorizer', permission: 'resultsheet:authorize', phase: 3 },
+      { label: 'Batch Auth', path: '/batch-authorize', permission: 'resultsheet:authorize', feature: 'BATCH_AUTHORIZATION', icon: CheckCheck },
       { label: 'Code Sheets', path: '/code-sheets', permission: 'codesheet:view' },
       { label: 'Result Templates', path: '/result-templates', permission: 'resultentry:view', feature: 'RESULT_TEMPLATES' },
       { label: 'TAT Alerts', path: '/tat', permission: 'record:view', feature: 'TAT_ALERTS' },
