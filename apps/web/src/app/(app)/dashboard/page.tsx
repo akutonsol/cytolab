@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
 import {
   Activity, AlertTriangle, ArrowRight, ArrowUpRight, Calendar, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FileCheck, FileText, FlaskConical,
-  Folder, Hourglass, Microscope, Monitor, MoreHorizontal, Plus, ShieldCheck, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
+  Folder, GraduationCap, Hourglass, Microscope, Monitor, MoreHorizontal, Plus, ShieldCheck, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
   TestTube, TrendingUp, User, Users,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -185,6 +185,12 @@ export default function DashboardPage() {
     enabled: isEnabled('ABNORMAL_ESCALATION'),
     refetchInterval: 60_000,
   });
+  const { data: profTests } = useQuery({
+    queryKey: ['proficiency'],
+    queryFn: () => api.get('/proficiency').then((r) => r.data as { status: string }[]),
+    enabled: isEnabled('PROFICIENCY_TESTING'),
+  });
+  const activeProfTests = (profTests ?? []).filter((t) => t.status === 'Active').length;
 
   // The queue drives an in-place selection: which record the AI stage + findings
   // reflect. Defaults to the top-priority record once data arrives.
@@ -214,8 +220,8 @@ export default function DashboardPage() {
   if (isError) return <div className="p-2 text-sm text-text-secondary">Dashboard is unavailable right now.</div>;
   if (isLoading || !d) {
     return (
-      <div className="dashboard-theme -m-4 md:-m-8" style={{ minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'relative', zIndex: 1, padding: '36px 40px 40px' }}>
+      <div className="dashboard-theme -m-4" style={{ minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', zIndex: 1, padding: '36px 16px 40px' }}>
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
@@ -280,8 +286,8 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="dashboard-theme -m-4 md:-m-8" style={{ minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'relative', zIndex: 1, padding: '36px 40px 40px' }}>
+    <div className="dashboard-theme -m-4" style={{ minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'relative', zIndex: 1, padding: '36px 16px 40px', background: '#dce3ee' }}>
         <HeroBanner firstName={firstName} featured={featured} chips={chips} nav={<NavPills />} />
 
         <FeatureGate feature="ABNORMAL_ESCALATION">
@@ -302,7 +308,21 @@ export default function DashboardPage() {
           )}
         </FeatureGate>
 
-        <div style={{ marginTop: 40 }} className="flex flex-col gap-5">
+        <FeatureGate feature="PROFICIENCY_TESTING">
+          {activeProfTests > 0 && (
+            <button onClick={() => router.push('/proficiency')}
+              style={{ marginTop: 16, width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 18, border: '1px solid #C7D2FE', background: '#EEF2FF', cursor: 'pointer', textAlign: 'left' }}>
+              <span style={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: 12, background: '#E0E7FF', color: '#4F46E5', flexShrink: 0 }}><GraduationCap size={22} /></span>
+              <span style={{ flex: 1 }}>
+                <span style={{ display: 'block', fontSize: 16, fontWeight: 700, color: '#0F172A' }}>{activeProfTests} active proficiency test{activeProfTests === 1 ? '' : 's'}</span>
+                <span style={{ display: 'block', fontSize: 13, color: '#64748B', marginTop: 2 }}>Complete your blind review before the deadline</span>
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5' }}>Open →</span>
+            </button>
+          )}
+        </FeatureGate>
+
+        <div style={{ marginTop: 40, background: '#F9FAFC', marginLeft: -16, marginRight: -16, marginBottom: -40, paddingLeft: 16, paddingRight: 16, paddingTop: 24, paddingBottom: 40 }} className="flex flex-col gap-5">
           {/* ═══ SECTION 1: KPI STRIP ═══ */}
           <div style={{
             display: 'grid',

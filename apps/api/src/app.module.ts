@@ -48,6 +48,7 @@ import { QcModule } from './modules/qc/qc.module';
 import { BatchModule } from './modules/batch/batch.module';
 import { ReqTrackingModule } from './modules/req-tracking/req-tracking.module';
 import { CorrelationModule } from './modules/correlation/correlation.module';
+import { ProficiencyModule } from './modules/proficiency/proficiency.module';
 
 /**
  * Cytolab modular monolith.
@@ -108,6 +109,7 @@ import { CorrelationModule } from './modules/correlation/correlation.module';
     BatchModule,
     ReqTrackingModule,
     CorrelationModule,
+    ProficiencyModule,
   ],
   controllers: [HealthController],
   providers: [

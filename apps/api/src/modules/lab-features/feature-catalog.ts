@@ -52,6 +52,7 @@ export const BUILT_FEATURES: ReadonlySet<FeatureKey> = new Set<FeatureKey>([
   'SLIDE_LABEL_PRINTING',
   'BETHESDA_ANALYTICS',
   'CORRELATION_TRACKING',
+  'PROFICIENCY_TESTING',
   'VOICE_TO_TEXT',
   'RESULT_TEMPLATES',
 ]);

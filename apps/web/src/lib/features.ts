@@ -149,8 +149,8 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
   PROFICIENCY_TESTING: {
     key: 'PROFICIENCY_TESTING',
     name: 'Proficiency Testing',
-    description: 'Manage screener proficiency testing cycles and competency records.',
-    tier: 4, tierName: 'Compliance', icon: 'GraduationCap', docsUrl: null, navPath: null, dependsOn: [], comingSoon: true,
+    description: 'Circulate unknown cases for blind review and track pathologist accuracy for CAP/CLIA.',
+    tier: 4, tierName: 'Compliance', icon: 'GraduationCap', docsUrl: null, navPath: '/proficiency', dependsOn: [],
   },
   REAGENT_TRACKING: {
     key: 'REAGENT_TRACKING',

@@ -212,6 +212,9 @@ model Lab {
   requisitionTrackings   RequisitionTracking[]
   trackingEvents         TrackingEvent[]
   correlationCases       CorrelationCase[]
+  proficiencyTests       ProficiencyTest[]
+  proficiencyCases       ProficiencyCase[]
+  proficiencyResponses   ProficiencyResponse[]
 }
 
 model Account {
@@ -298,6 +301,8 @@ model User {
   trackingEvents         TrackingEvent[]        @relation("TrackingEventActor")
   correlationsReviewed   CorrelationCase[]      @relation("CorrelationReviewer")
   correlationsCreated    CorrelationCase[]      @relation("CorrelationCreator")
+  proficiencyTests       ProficiencyTest[]      @relation("ProfTestCreator")
+  proficiencyResponses   ProficiencyResponse[]  @relation("ProfResponder")
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -2234,4 +2239,103 @@ model CorrelationCase {
 
   @@index([labId, cytologyDate])
   @@index([patientId])
+}
+
+// ─── Proficiency Testing (Tier 4 Compliance) — blind-review competency ───────
+
+enum ProfTestType {
+  Internal // created by the lab
+  CAP // College of American Pathologists survey
+  CLIA // CLIA proficiency test
+  External // other external program
+}
+
+enum ProfTestStatus {
+  Draft // being set up
+  Active // pathologists can respond
+  Grading // responses locked, being graded
+  Completed // graded and scores released
+  Archived
+}
+
+enum CaseDifficulty {
+  Easy
+  Standard
+  Difficult
+  Expert
+}
+
+enum ConfidenceLevel {
+  Low
+  Moderate
+  High
+}
+
+model ProficiencyTest {
+  id           String                @id @default(cuid())
+  labId        String
+  lab          Lab                   @relation(fields: [labId], references: [id])
+  name         String
+  description  String?
+  testType     ProfTestType          @default(Internal)
+  status       ProfTestStatus        @default(Draft)
+  startDate    DateTime
+  endDate      DateTime
+  passingScore Int                   @default(80) // percentage
+  createdById  String?
+  createdBy    User?                 @relation("ProfTestCreator", fields: [createdById], references: [id])
+  cases        ProficiencyCase[]
+  responses    ProficiencyResponse[]
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@unique([labId, name])
+}
+
+model ProficiencyCase {
+  id         String          @id @default(cuid())
+  labId      String
+  lab        Lab             @relation(fields: [labId], references: [id])
+  testId     String
+  test       ProficiencyTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  caseNumber Int // 1, 2, 3... within the test
+
+  // De-identified case info (no patient name).
+  specimenType    String
+  clinicalHistory String?
+  imageUrl        String?
+
+  // Expected answer (hidden from reviewers).
+  expectedDiagnosis String
+  expectedBethesda  String?
+  difficulty        CaseDifficulty @default(Standard)
+
+  responses ProficiencyResponse[]
+  createdAt DateTime              @default(now())
+}
+
+model ProficiencyResponse {
+  id          String          @id @default(cuid())
+  labId       String
+  lab         Lab             @relation(fields: [labId], references: [id])
+  testId      String
+  test        ProficiencyTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  caseId      String
+  case        ProficiencyCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  responderId String
+  responder   User            @relation("ProfResponder", fields: [responderId], references: [id])
+
+  diagnosis      String
+  bethesdaAnswer String?
+  confidence     ConfidenceLevel @default(Moderate)
+  notes          String?
+
+  isCorrect   Boolean?
+  score       Int?
+  gradedAt    DateTime?
+  gradedById  String?
+  submittedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([caseId, responderId])
 }
