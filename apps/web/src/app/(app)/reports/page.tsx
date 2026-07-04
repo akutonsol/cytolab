@@ -25,7 +25,7 @@ interface Report {
   } | null;
 }
 
-const CARD = 'rounded-[20px] border border-[#EEF2F7] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)]';
+const CARD = 'glass-card rounded-2xl';
 const PAGE_SIZE = 20;
 
 const fmtDateTime = (iso?: string | null) =>
@@ -126,57 +126,75 @@ function ReportsWorkspace() {
       <style>{`@keyframes rowflash{0%{background:#EEF3FF}100%{background:transparent}}`}</style>
 
       {/* Header */}
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-[28px] font-bold leading-tight tracking-tight text-[#0F172A]">Reports</h1>
-          <p className="mt-1.5 text-[14px] text-[#6B7280]">Released laboratory reports</p>
+          <h1 className="font-headline-lg text-headline-lg text-charcoal-heading">Reports</h1>
+          <p className="mt-1 font-body-sm text-body-sm text-secondary">Released laboratory reports and PDF downloads.</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-[280px] items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-4 text-[#9CA3AF]">
+          <div className="flex h-11 w-[280px] items-center gap-2 rounded-full border border-outline-variant/30 bg-white px-4 text-secondary">
             <Search size={16} />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search reports…"
-              className="w-full border-none bg-transparent text-[14px] text-[#0F172A] outline-none placeholder:text-[#9CA3AF]" />
+              className="w-full border-none bg-transparent font-body-sm text-body-sm text-on-surface outline-none placeholder:text-secondary/60" />
+            {search && (
+              <button onClick={() => setSearch('')}><X size={14} className="text-secondary" /></button>
+            )}
           </div>
-          <button className="grid h-10 w-10 place-items-center rounded-lg border border-[#EEF2F7] bg-white text-[#6B7280] hover:bg-[#F5F7FF]"><Filter size={16} /></button>
+          <button className="flex h-11 items-center gap-2 rounded-xl border border-outline-variant/30 bg-white px-4 font-label-md text-label-md text-secondary transition-all hover:bg-surface-container-low"><Filter size={15} /> Filters</button>
         </div>
       </div>
 
       {/* KPI strip */}
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Kpi icon={FileText} label="Total Reports" value={summary?.total ?? 0} />
-        <Kpi icon={CheckCircle} label="This Month" value={summary?.thisMonth ?? 0} />
-        <Kpi icon={Award} label="Authorized" value={summary?.authorized ?? 0} />
-        <Kpi icon={Clock} label="Pending Release" value={summary?.pending ?? 0} />
+        <Kpi icon={CheckCircle} label="This Month" value={summary?.thisMonth ?? 0} accent="#16A34A" />
+        <Kpi icon={Award} label="Authorized" value={summary?.authorized ?? 0} accent="#4F46E5" />
+        <Kpi icon={Clock} label="Pending Release" value={summary?.pending ?? 0} accent={(summary?.pending ?? 0) > 0 ? '#DC2626' : '#16A34A'} />
       </div>
 
       {/* Table card */}
       <div className={`${CARD} p-6`}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-[16px] font-semibold text-[#0F172A]">Released Reports · {total}</h2>
+          <h2 className="font-headline-sm text-headline-sm text-charcoal-heading">Released Reports · {total}</h2>
           <div className="flex items-center gap-2">
-            <Pill value={formFilter} onChange={(v) => setFormFilter(v as any)} options={[['all', 'All Forms'], ['Gynecology', 'Gynecology'], ['NonGynecology', 'Non-Gynecology']]} />
-            <Pill value={dateFilter} onChange={(v) => setDateFilter(v as any)} options={[['all', 'All Time'], ['week', 'This Week'], ['month', 'This Month']]} />
+            <select value={formFilter} onChange={(e) => setFormFilter(e.target.value as any)}
+              className="cursor-pointer rounded-xl border border-outline-variant/30 bg-white px-3 py-2 font-label-md text-label-md text-secondary outline-none hover:bg-surface-container-low">
+              <option value="all">All Forms</option>
+              <option value="Gynecology">Gynecology</option>
+              <option value="NonGynecology">Non-Gynecology</option>
+            </select>
+            <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value as any)}
+              className="cursor-pointer rounded-xl border border-outline-variant/30 bg-white px-3 py-2 font-label-md text-label-md text-secondary outline-none hover:bg-surface-container-low">
+              <option value="all">All Time</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+            </select>
           </div>
         </div>
 
         {isLoading ? (
           <div className="grid h-40 place-items-center text-[13px] text-[#9CA3AF]">Loading…</div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-            <FileText size={30} className="text-[#D1D5DB]" />
-            <div className="text-[15px] font-semibold text-[#0F172A]">No reports released yet</div>
-            <div className="max-w-sm text-[13px] text-[#9CA3AF]">Reports appear here once a result sheet is authorized and released.</div>
-            <button onClick={() => router.push('/authorizer')} className="mt-2 text-[13px] font-semibold text-[#4F46E5] hover:underline">Go to Authorizer →</button>
+          <div className="flex flex-col items-center justify-center gap-4 py-20">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-container-low">
+              <FileText size={28} className="text-secondary/40" />
+            </div>
+            <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">No reports yet</h3>
+            <p className="max-w-xs text-center font-body-sm text-body-sm text-secondary">Reports appear here once result sheets are authorized and released.</p>
+            <button onClick={() => router.push('/authorizer')}
+              className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-label-md text-label-md text-on-primary transition-all hover:brightness-110">
+              Go to Authorizer <ChevronDown size={14} className="rotate-[-90deg]" />
+            </button>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="border-b border-[#F3F4F6] text-[12px] font-medium uppercase tracking-wide text-[#9CA3AF]">
-                  <th className="pb-3 font-medium">Report#</th><th className="pb-3 font-medium">Patient</th>
-                  <th className="pb-3 font-medium">Client</th><th className="pb-3 font-medium">Form</th>
-                  <th className="pb-3 font-medium">Released</th><th className="pb-3 font-medium">Authorized By</th>
-                  <th className="pb-3 text-right font-medium">Actions</th>
+                <tr>
+                  {['Report#', 'Patient', 'Client', 'Form', 'Released', 'Authorized By'].map((c) => (
+                    <th key={c} className="border-b border-outline-variant/20 px-4 py-3 text-left font-label-sm text-label-sm text-secondary uppercase tracking-wider">{c}</th>
+                  ))}
+                  <th className="border-b border-outline-variant/20 px-4 py-3 text-right font-label-sm text-label-sm text-secondary uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -186,21 +204,21 @@ function ReportsWorkspace() {
                   const isGyn = rec?.formType === 'Gynecology';
                   return (
                     <tr key={r.id} ref={(el) => { rowRefs.current[r.id] = el; }}
-                      className="cursor-pointer border-b border-[#F3F4F6] transition-colors hover:bg-[#F9FAFB]"
-                      style={highlightId === r.id ? { animation: 'rowflash 2.2s ease-out' } : undefined}>
-                      <td className="py-3.5"><span className="font-mono text-[13px] font-bold text-[#0F172A]">{rec?.identifier ?? '—'}</span></td>
-                      <td className="py-3.5 text-[14px] font-semibold text-[#0F172A]">{patientName(r)}</td>
-                      <td className="py-3.5 text-[14px] text-[#6B7280]">{clientName(r)}</td>
-                      <td className="py-3.5">
+                      className="cursor-pointer border-b border-surface-container-low transition-colors hover:bg-surface-container-low/50"
+                      style={highlightId === r.id ? { animation: 'rowflash 2.2s ease-out forwards' } : undefined}>
+                      <td className="px-4 py-3.5"><span className="font-mono font-label-md text-label-md text-charcoal-heading">{rec?.identifier ?? '—'}</span></td>
+                      <td className="px-4 py-3.5 font-body-sm text-body-sm font-medium text-on-surface">{patientName(r)}</td>
+                      <td className="px-4 py-3.5 font-body-sm text-body-sm text-secondary">{clientName(r)}</td>
+                      <td className="px-4 py-3.5">
                         {rec?.formType ? (
-                          <span className="rounded-md px-2.5 py-1 text-[12px] font-bold" style={isGyn ? { background: '#EEF3FF', color: '#4F46E5' } : { background: '#F0FDF4', color: '#16A34A' }}>
+                          <span className={`inline-flex items-center rounded-full px-3 py-1 font-label-sm text-label-sm ${isGyn ? 'bg-primary-fixed text-primary' : 'bg-status-sage/10 text-status-sage'}`}>
                             {isGyn ? 'GYN' : 'NON-GYN'}
                           </span>
-                        ) : <span className="text-[#D1D5DB]">—</span>}
+                        ) : <span className="text-outline-variant">—</span>}
                       </td>
-                      <td className="py-3.5 text-[14px] text-[#6B7280]">{fmtDateTime(r.releasedAt)}</td>
-                      <td className="py-3.5 text-[14px] text-[#6B7280]">{authorName(r)}</td>
-                      <td className="py-3.5">
+                      <td className="px-4 py-3.5 font-body-sm text-body-sm text-secondary">{fmtDateTime(r.releasedAt)}</td>
+                      <td className="px-4 py-3.5 font-body-sm text-body-sm text-secondary">{authorName(r)}</td>
+                      <td className="px-4 py-3.5">
                         <div className="flex items-center justify-end gap-2">
                           <IconBtn title="Preview" onClick={() => openPdf(recordId)}><Eye size={15} /></IconBtn>
                           <IconBtn title="Download" onClick={() => downloadPdf(recordId, rec?.identifier ?? 'report')}><Download size={15} /></IconBtn>
@@ -216,13 +234,18 @@ function ReportsWorkspace() {
         )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="mt-4 flex items-center justify-center gap-2">
-            <button disabled={page === 1} onClick={() => setPage((p) => p - 1)} className="grid h-9 w-9 place-items-center rounded-full border border-[#EEF2F7] text-[#6B7280] disabled:opacity-40 hover:bg-[#F5F7FF]"><ChevronLeft size={16} /></button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-              <button key={n} onClick={() => setPage(n)} className="grid h-9 min-w-9 place-items-center rounded-full px-2 text-[13px] font-bold" style={{ background: n === page ? '#EEF3FF' : 'transparent', color: n === page ? '#4F46E5' : '#6B7280' }}>{n}</button>
-            ))}
-            <button disabled={page === totalPages} onClick={() => setPage((p) => p + 1)} className="grid h-9 w-9 place-items-center rounded-full border border-[#EEF2F7] text-[#6B7280] disabled:opacity-40 hover:bg-[#F5F7FF]"><ChevronRight size={16} /></button>
+        {total > 0 && (
+          <div className="mt-6 flex items-center justify-between">
+            <p className="font-body-sm text-body-sm text-secondary">
+              Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}
+            </p>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
+                className="grid h-9 w-9 place-items-center rounded-lg border border-outline-variant/20 bg-white hover:bg-surface-container-low disabled:opacity-40"><ChevronLeft size={16} /></button>
+              <span className="px-4 font-label-md text-label-md text-on-surface">{page} / {totalPages}</span>
+              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                className="grid h-9 w-9 place-items-center rounded-lg border border-outline-variant/20 bg-white hover:bg-surface-container-low disabled:opacity-40"><ChevronRight size={16} /></button>
+            </div>
           </div>
         )}
       </div>
@@ -250,32 +273,28 @@ function ReportsWorkspace() {
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
-function Kpi({ icon: Icon, label, value }: { icon: any; label: string; value: number }) {
+function Kpi({ icon: Icon, label, value, accent }: { icon: any; label: string; value: number; accent?: string }) {
   return (
-    <div className="rounded-2xl border border-[#EEF2F7] bg-white p-5 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
-      <div className="flex items-center gap-2 text-[#6B7280]"><Icon size={18} /><span className="text-[13px]">{label}</span></div>
-      <div className="mt-3 text-[32px] font-bold leading-none text-[#0F172A]">{value}</div>
+    <div className="glass-card relative overflow-hidden rounded-2xl p-6">
+      <div className="mb-4 flex items-start justify-between">
+        <div>
+          <p className="font-label-sm text-label-sm text-secondary uppercase tracking-wider">{label}</p>
+          <h3 className="mt-2 font-display text-display leading-none" style={{ color: accent || '#0F172A' }}>{value}</h3>
+        </div>
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: accent ? `${accent}15` : '#EEF2FF' }}>
+          <Icon size={20} style={{ color: accent || '#4F46E5' }} />
+        </div>
+      </div>
     </div>
   );
 }
 
 function IconBtn({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button title={title} onClick={onClick} className="grid h-8 w-8 place-items-center rounded-full border border-[#EEF2F7] text-[#6B7280] transition-colors hover:bg-[#F5F7FF] hover:text-[#4F46E5]">{children}</button>
+    <button title={title} onClick={onClick} className="grid h-8 w-8 place-items-center rounded-lg border border-outline-variant/20 bg-white text-secondary transition-all hover:bg-surface-container-low hover:text-primary">{children}</button>
   );
 }
 
-function Pill({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: [string, string][] }) {
-  return (
-    <div className="relative">
-      <select value={value} onChange={(e) => onChange(e.target.value)}
-        className="h-9 cursor-pointer appearance-none rounded-lg border border-[#EEF2F7] bg-white pl-3 pr-8 text-[13px] font-medium text-[#374151] outline-none hover:bg-[#F9FAFB]">
-        {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-      </select>
-      <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
-    </div>
-  );
-}
 
 function ReleaseModal({ record, onClose, onReleased, onError }: { record: any; onClose: () => void; onReleased: () => void; onError: (m: string) => void }) {
   const [authorizerReference, setAuthorizerReference] = useState('');
