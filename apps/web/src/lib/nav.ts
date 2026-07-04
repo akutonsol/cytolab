@@ -66,6 +66,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Result Templates', path: '/result-templates', permission: 'resultentry:view', feature: 'RESULT_TEMPLATES' },
       { label: 'TAT Alerts', path: '/tat', permission: 'record:view', feature: 'TAT_ALERTS' },
       { label: 'Escalations', path: '/escalations', permission: 'record:view', feature: 'ABNORMAL_ESCALATION', icon: AlertTriangle },
+      { label: 'Bethesda Analytics', path: '/bethesda-analytics', permission: 'resultentry:view', feature: 'BETHESDA_ANALYTICS', icon: BarChart2 },
       { label: 'Lab Codes', path: '/lab-codes', permission: 'labcode:view' },
       { label: 'Cabinets', path: '/cabinets', permission: 'cabinet:view', phase: 3 },
       { label: 'Reports', path: '/reports', permission: 'report:view', phase: 3 },

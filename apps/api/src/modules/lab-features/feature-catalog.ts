@@ -50,6 +50,7 @@ export const BUILT_FEATURES: ReadonlySet<FeatureKey> = new Set<FeatureKey>([
   'BATCH_AUTHORIZATION',
   'REQUISITION_TRACKING',
   'SLIDE_LABEL_PRINTING',
+  'BETHESDA_ANALYTICS',
   'VOICE_TO_TEXT',
   'RESULT_TEMPLATES',
 ]);

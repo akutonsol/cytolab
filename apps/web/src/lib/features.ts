@@ -137,8 +137,8 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
   BETHESDA_ANALYTICS: {
     key: 'BETHESDA_ANALYTICS',
     name: 'Bethesda Analytics',
-    description: 'Aggregate TBS category distributions, ASC/SIL ratios, and reporting benchmarks.',
-    tier: 4, tierName: 'Compliance', icon: 'BarChart3', docsUrl: null, navPath: null, dependsOn: ['BETHESDA_SYSTEM'], comingSoon: true,
+    description: 'Aggregate TBS category distributions, ASC/SIL ratios, and CAP reporting benchmarks.',
+    tier: 4, tierName: 'Compliance', icon: 'BarChart3', docsUrl: null, navPath: '/bethesda-analytics', dependsOn: ['BETHESDA_SYSTEM'],
   },
   CORRELATION_TRACKING: {
     key: 'CORRELATION_TRACKING',
