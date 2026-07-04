@@ -201,6 +201,8 @@ model Lab {
   payAdvices             PayAdvice[]
   resultTemplates        ResultTemplate[]
   bethesdaResults        BethesdaResult[]
+  tatConfigs             TATConfig[]
+  tatAlerts              TATAlert[]
 }
 
 model Account {
@@ -273,6 +275,7 @@ model User {
   approvedPayrollRuns    PayrollRun[]           @relation("PayrollApprover")
   resultTemplates        ResultTemplate[]       @relation("ResultTemplateCreator")
   bethesdaResults        BethesdaResult[]       @relation("BethesdaReporter")
+  acknowledgedTatAlerts  TATAlert[]             @relation("TATAcknowledger")
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -531,6 +534,7 @@ model Record {
   nonGynFeatures    NonGynClinicalFeatures?
   resultSheets      ResultSheet[]
   bethesdaResult    BethesdaResult?
+  tatAlerts         TATAlert[]
   bills             Bill[]
   changeRequests    ChangeRequest[]
   attachments       RecordAttachment[]
@@ -1768,4 +1772,65 @@ model BethesdaResult {
   updatedAt    DateTime @updatedAt
 
   @@index([labId])
+}
+
+// ─── TAT (Turnaround Time) monitoring & breach alerts ────────────────────────
+
+enum TATAlertLevel {
+  Approaching
+  Breached
+}
+
+enum TATAlertStatus {
+  Open
+  Acknowledged
+  Resolved
+}
+
+// Per-lab TAT thresholds. specimenType null = default (applies to all types).
+// urgentThresholdHours applies when the record is urgent or its Bethesda
+// classification is high-grade (HSIL/SCC/AGUS/malignant).
+model TATConfig {
+  id                   String     @id @default(cuid())
+  labId                String
+  lab                  Lab        @relation(fields: [labId], references: [id])
+  name                 String
+  specimenType         String?
+  thresholdHours       Int
+  warningHours         Int        @default(24)
+  urgentThresholdHours Int?
+  isActive             Boolean    @default(true)
+  alerts               TATAlert[]
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  @@index([labId])
+}
+
+// A detected TAT event for a record. One row per (record, level); auto-resolved
+// when the record is authorized.
+model TATAlert {
+  id               String         @id @default(cuid())
+  labId            String
+  lab              Lab            @relation(fields: [labId], references: [id])
+  recordId         String
+  record           Record         @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  level            TATAlertLevel
+  status           TATAlertStatus @default(Open)
+  thresholdHours   Int
+  elapsedHours     Int
+  dueAt            DateTime
+  configId         String?
+  config           TATConfig?     @relation(fields: [configId], references: [id])
+  notifiedAt       DateTime?
+  acknowledgedAt   DateTime?
+  acknowledgedById String?
+  acknowledgedBy   User?          @relation("TATAcknowledger", fields: [acknowledgedById], references: [id])
+  resolvedAt       DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([recordId, level])
+  @@index([labId])
+  @@index([labId, status])
 }

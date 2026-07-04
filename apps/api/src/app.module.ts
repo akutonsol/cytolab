@@ -40,6 +40,7 @@ import { EmployeesModule } from './modules/employees/employees.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
 import { ResultTemplatesModule } from './modules/result-templates/result-templates.module';
 import { BethesdaModule } from './modules/bethesda/bethesda.module';
+import { TatModule } from './modules/tat/tat.module';
 
 /**
  * Cytolab modular monolith.
@@ -92,6 +93,7 @@ import { BethesdaModule } from './modules/bethesda/bethesda.module';
     PayrollModule,
     ResultTemplatesModule,
     BethesdaModule,
+    TatModule,
   ],
   controllers: [HealthController],
   providers: [
