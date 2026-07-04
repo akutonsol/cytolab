@@ -375,9 +375,9 @@ export default function DashboardPage() {
               {/* Header (overlays the stage so the head can fill the panel) */}
               <div style={{ padding: '20px 24px 0', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 4 }}>
                 <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Cytology Model</div>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8, background: '#DCFCE7', borderRadius: 999, padding: '4px 11px' }}>
-                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.6)' }} />
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#16A34A' }}>Live Analysis</span>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 600, color: '#16A34A', marginTop: 6 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.6)', animation: 'livePulse 2s ease-in-out infinite' }} />
+                  Live Analysis
                 </div>
               </div>
 
@@ -405,18 +405,18 @@ export default function DashboardPage() {
                         {/* dotted connectors marker → label */}
                         <svg width="760" height="520" viewBox="0 0 760 520" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
                           {markers.map((m, i) => (
-                            <line key={i} x1={m.x} y1={m.y} x2={LX} y2={findings[i].y} stroke="#C7D2FE" strokeWidth={1.5} strokeDasharray="2 5" />
+                            <line key={i} x1={m.x} y1={m.y} x2={LX} y2={findings[i].y} stroke="#A5B4FC" strokeWidth={2} strokeDasharray="3 4" />
                           ))}
                         </svg>
                         {/* aura */}
-                        <div style={{ position: 'absolute', left: -90, top: -30, width: 680, height: 660, background: 'radial-gradient(44% 44% at 47% 44%, rgba(255,255,255,0.92), rgba(139,92,246,0.16) 46%, rgba(99,102,241,0.06) 62%, transparent 74%)', filter: 'blur(4px)', zIndex: 0 }} />
+                        <div style={{ position: 'absolute', left: -90, top: -30, width: 680, height: 660, background: 'radial-gradient(50% 50% at 47% 44%, rgba(255,255,255,0.88) 0%, rgba(139,92,246,0.28) 42%, rgba(99,102,241,0.14) 62%, transparent 75%)', filter: 'blur(6px)', zIndex: 0 }} />
                         {/* floating cytology particles */}
                         {[
-                          { size: 8, top: '15%', left: '12%', delay: '0s', dur: '7s', color: 'rgba(139,92,246,0.4)' },
-                          { size: 5, top: '35%', left: '8%', delay: '1.5s', dur: '9s', color: 'rgba(99,102,241,0.3)' },
-                          { size: 6, top: '65%', left: '15%', delay: '3s', dur: '8s', color: 'rgba(167,139,250,0.35)' },
-                          { size: 4, top: '80%', left: '72%', delay: '2s', dur: '10s', color: 'rgba(139,92,246,0.25)' },
-                          { size: 7, top: '20%', left: '75%', delay: '4s', dur: '7.5s', color: 'rgba(99,102,241,0.3)' },
+                          { size: 10, top: '15%', left: '12%', delay: '0s', dur: '7s', color: 'rgba(139,92,246,0.65)' },
+                          { size: 7, top: '35%', left: '8%', delay: '1.5s', dur: '9s', color: 'rgba(99,102,241,0.55)' },
+                          { size: 8, top: '65%', left: '15%', delay: '3s', dur: '8s', color: 'rgba(167,139,250,0.6)' },
+                          { size: 6, top: '80%', left: '72%', delay: '2s', dur: '10s', color: 'rgba(139,92,246,0.5)' },
+                          { size: 9, top: '20%', left: '75%', delay: '4s', dur: '7.5s', color: 'rgba(99,102,241,0.5)' },
                         ].map((p, i) => (
                           <div key={i} style={{ position: 'absolute', top: p.top, left: p.left, width: p.size, height: p.size, borderRadius: '50%', background: p.color, pointerEvents: 'none', zIndex: 1, animation: `particleFloat ${p.dur} ease-in-out infinite`, animationDelay: p.delay }} />
                         ))}
@@ -466,6 +466,7 @@ export default function DashboardPage() {
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{d.priorityRecords?.[0]?.labNumber ?? '—'}</div>
                     <div style={{ fontSize: 11, color: '#64748B' }}>{d.priorityRecords?.[0]?.specimen ? specLabel(d.priorityRecords[0].specimen) : 'No active specimen'}</div>
+                    <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 1 }}>{d.priorityRecords?.[0]?.patient ?? ''}</div>
                   </div>
                 </div>
                 {(() => {
