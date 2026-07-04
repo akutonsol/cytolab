@@ -35,6 +35,9 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { SearchModule } from './modules/search/search.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { FilesModule } from './modules/files/files.module';
+import { DepartmentsModule } from './modules/departments/departments.module';
+import { EmployeesModule } from './modules/employees/employees.module';
+import { PayrollModule } from './modules/payroll/payroll.module';
 
 /**
  * Cytolab modular monolith.
@@ -82,6 +85,9 @@ import { FilesModule } from './modules/files/files.module';
     SearchModule,
     WorkspacesModule,
     FilesModule,
+    DepartmentsModule,
+    EmployeesModule,
+    PayrollModule,
   ],
   controllers: [HealthController],
   providers: [

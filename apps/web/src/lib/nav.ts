@@ -69,9 +69,9 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'People',
     icon: Users,
     items: [
-      { label: 'Employees', path: '/employees', permission: 'employee:view', phase: 7 },
-      { label: 'Departments', path: '/departments', permission: 'department:view', phase: 7 },
-      { label: 'Payroll', path: '/payroll', permission: 'payroll:view', phase: 7 },
+      { label: 'Employees', path: '/employees', permission: 'employee:view' },
+      { label: 'Departments', path: '/departments', permission: 'department:view' },
+      { label: 'Payroll', path: '/payroll', permission: 'payroll:view' },
     ],
   },
   {

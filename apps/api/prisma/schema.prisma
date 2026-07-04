@@ -195,6 +195,10 @@ model Lab {
   appointments           Appointment[]
   formConfigs            FormConfig[]
   notifications          Notification[]
+  departments            Department[]
+  employees              Employee[]
+  payrollRuns            PayrollRun[]
+  payAdvices             PayAdvice[]
 }
 
 model Account {
@@ -260,6 +264,10 @@ model User {
   assignedAppointments   Appointment[]
   notifications          Notification[]
   typingIndicators       TypingIndicator[]
+  // HR / Payroll (Phase 7)
+  employeeProfile        Employee?              @relation("EmployeeUser")
+  managedDepartments     Department[]           @relation("DepartmentManager")
+  processedPayrollRuns   PayrollRun[]           @relation("PayrollProcessor")
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -1252,18 +1260,18 @@ model SpecimenImage {
 // Lab-scoped via labId; participants gate read access.
 
 model Thread {
-  id           String              @id @default(cuid())
-  labId        String
-  type         ThreadType          @default(INTERNAL)
-  subject      String?
-  clientId     String?
-  client       Client?             @relation(fields: [clientId], references: [id])
-  participants ThreadParticipant[]
-  messages     Message[]
+  id               String              @id @default(cuid())
+  labId            String
+  type             ThreadType          @default(INTERNAL)
+  subject          String?
+  clientId         String?
+  client           Client?             @relation(fields: [clientId], references: [id])
+  participants     ThreadParticipant[]
+  messages         Message[]
   typingIndicators TypingIndicator[]
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  lab          Lab                 @relation(fields: [labId], references: [id])
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  lab              Lab                 @relation(fields: [labId], references: [id])
 
   @@index([labId])
   @@index([clientId])
@@ -1475,4 +1483,129 @@ enum NotificationType {
   PAYMENT_RECEIVED
   APPOINTMENT_REMINDER
   SYSTEM_ALERT
+}
+
+// ─── Phase 7: HR / Payroll ───────────────────────────────────────────────────
+
+enum EmploymentType {
+  FullTime
+  PartTime
+  Contract
+}
+
+enum PayAdviceStatus {
+  Draft
+  Issued
+  Paid
+}
+
+enum PayrollRunStatus {
+  Draft
+  Processing
+  Completed
+}
+
+// A department/team within the lab. managerId links to a staff User (optional).
+model Department {
+  id          String     @id @default(uuid())
+  labId       String
+  lab         Lab        @relation(fields: [labId], references: [id])
+  name        String
+  description String?
+  managerId   String?
+  manager     User?      @relation("DepartmentManager", fields: [managerId], references: [id])
+  employees   Employee[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([labId])
+  @@index([managerId])
+}
+
+// HR record for a staff member. One Employee per User (1:1). salary is the
+// MONTHLY basic in minor units (cents).
+model Employee {
+  id                    String         @id @default(uuid())
+  labId                 String
+  lab                   Lab            @relation(fields: [labId], references: [id])
+  userId                String         @unique
+  user                  User           @relation("EmployeeUser", fields: [userId], references: [id])
+  departmentId          String?
+  department            Department?    @relation(fields: [departmentId], references: [id])
+  employeeNo            String
+  jobTitle              String
+  employmentType        EmploymentType @default(FullTime)
+  startDate             DateTime
+  endDate               DateTime?
+  salary                Int            @default(0) // monthly basic, minor units (cents)
+  bankName              String?
+  bankAccount           String?
+  bankBranch            String?
+  trn                   String? // Tax Registration Number
+  nis                   String? // National Insurance Scheme #
+  nht                   String? // National Housing Trust #
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  address               String?
+  isActive              Boolean        @default(true)
+  payAdvices            PayAdvice[]
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@unique([labId, employeeNo])
+  @@index([labId])
+  @@index([departmentId])
+}
+
+// A payroll batch for one period (YYYY-MM). Processing generates one PayAdvice
+// per active employee and rolls up the totals.
+model PayrollRun {
+  id              String           @id @default(uuid())
+  labId           String
+  lab             Lab              @relation(fields: [labId], references: [id])
+  period          String // YYYY-MM
+  status          PayrollRunStatus @default(Draft)
+  totalGross      Int              @default(0)
+  totalDeductions Int              @default(0)
+  totalNet        Int              @default(0)
+  employeeCount   Int              @default(0)
+  processedAt     DateTime?
+  processedById   String?
+  processedBy     User?            @relation("PayrollProcessor", fields: [processedById], references: [id])
+  payAdvices      PayAdvice[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([labId, period])
+  @@index([labId])
+}
+
+// A single employee's pay slip for a period. All money fields are minor units.
+model PayAdvice {
+  id              String          @id @default(uuid())
+  labId           String
+  lab             Lab             @relation(fields: [labId], references: [id])
+  employeeId      String
+  employee        Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  payrollRunId    String?
+  payrollRun      PayrollRun?     @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  period          String // YYYY-MM
+  basicPay        Int             @default(0)
+  overtime        Int             @default(0)
+  allowances      Int             @default(0)
+  grossPay        Int             @default(0)
+  nis             Int             @default(0)
+  nht             Int             @default(0)
+  edTax           Int             @default(0)
+  paye            Int             @default(0)
+  otherDeductions Int             @default(0)
+  netPay          Int             @default(0)
+  status          PayAdviceStatus @default(Draft)
+  issuedAt        DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([labId])
+  @@index([employeeId])
+  @@index([payrollRunId])
 }
