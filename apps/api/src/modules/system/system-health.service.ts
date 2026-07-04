@@ -160,6 +160,10 @@ export class SystemHealthService {
         businessHealth: { authorizationRate, avgTat, pendingChangeRequests, failedRecords },
         security: { usersWithNoRole, recentFailedLogins },
         maintenanceLog,
+        backup: {
+          configured: !!process.env.BACKUP_SHEET_ID,
+          sheetId: process.env.BACKUP_SHEET_ID ?? null,
+        },
       };
     });
   }

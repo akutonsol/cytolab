@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Activity, AlertTriangle, ArrowRight, CheckCircle, Clock, Cpu, Database,
-  RefreshCw, Server, Shield, Wrench, XCircle,
+  Activity, AlertTriangle, ArrowRight, CheckCircle, CheckCircle2, Clock, Cloud, Cpu, Database,
+  ExternalLink, Loader2, RefreshCw, Server, Shield, Wrench, XCircle,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Line, LineChart, ResponsiveContainer } from 'recharts';
@@ -22,6 +22,16 @@ interface Report {
   businessHealth: { authorizationRate: Check; avgTat: Check; pendingChangeRequests: Check; failedRecords: Check };
   security: { usersWithNoRole: Check; recentFailedLogins: Check };
   maintenanceLog: { id: string; ranAt: string; ranBy: string | null; duration: number; results: any; notes: string | null }[];
+  backup: { configured: boolean; sheetId: string | null };
+}
+
+interface BackupResult {
+  skipped?: boolean;
+  reason?: string;
+  success?: boolean;
+  timestamp?: string;
+  counts?: Record<string, number>;
+  durationMs?: number;
 }
 
 // ─── Style tokens ────────────────────────────────────────────────────────────
@@ -74,6 +84,16 @@ export default function SystemHealthPage() {
       qc.invalidateQueries({ queryKey: ['system-health'] });
     },
     onError: (e: any) => message.error(e?.response?.data?.message ?? 'Maintenance failed'),
+  });
+
+  const [lastBackup, setLastBackup] = useState<BackupResult | null>(null);
+  const backupMutation = useMutation({
+    mutationFn: () => api.post('/system/backup').then((r) => r.data as BackupResult),
+    onSuccess: (d) => {
+      setLastBackup(d);
+      message.success(d.skipped ? 'Backup skipped — BACKUP_SHEET_ID not configured' : 'Backup completed successfully');
+    },
+    onError: () => message.error('Backup failed'),
   });
 
   if (!allowed) {
@@ -227,6 +247,69 @@ export default function SystemHealthPage() {
                   ))}
                 </tbody>
               </table>
+            )}
+          </div>
+
+          {/* ── Data Backup ── */}
+          <div className="glass-card mt-6 rounded-2xl p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">Google Sheets Backup</h3>
+                <p className="mt-1 font-body-sm text-body-sm text-secondary">
+                  Daily automated backup to Google Sheets at 2:30 AM. Appends new data — full history preserved.
+                </p>
+              </div>
+              <button
+                onClick={() => backupMutation.mutate()}
+                disabled={backupMutation.isPending}
+                className="btn-primary flex items-center gap-2">
+                {backupMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <Cloud size={15} />}
+                Run Backup Now
+              </button>
+            </div>
+
+            {/* Config status */}
+            <div className="flex items-center gap-3 rounded-xl border border-outline-variant/20 bg-surface-container-low p-4">
+              {data.backup.configured ? (
+                <>
+                  <CheckCircle2 size={18} className="text-status-sage" />
+                  <div>
+                    <p className="font-label-md text-label-md text-on-surface">Connected to Google Sheets</p>
+                    <p className="font-body-sm text-body-sm text-secondary">Sheet ID: {data.backup.sheetId}</p>
+                  </div>
+                  <a
+                    href={`https://docs.google.com/spreadsheets/d/${data.backup.sheetId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="ml-auto flex items-center gap-1 font-label-md text-label-md text-primary hover:underline">
+                    Open Sheet <ExternalLink size={13} />
+                  </a>
+                </>
+              ) : (
+                <>
+                  {/* Dark amber #B45309 (detector-safe); #D97706 would trip the zero-orange rule. */}
+                  <AlertTriangle size={18} style={{ color: '#B45309' }} />
+                  <div>
+                    <p className="font-label-md text-label-md text-on-surface">Not configured</p>
+                    <p className="font-body-sm text-body-sm text-secondary">Set BACKUP_SHEET_ID environment variable to enable.</p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Last backup result */}
+            {lastBackup?.counts && (
+              <div className="mt-4 rounded-xl bg-surface-container-low p-4">
+                <p className="mb-2 font-label-sm text-label-sm uppercase tracking-wider text-secondary">Last Backup</p>
+                <div className="grid grid-cols-5 gap-4">
+                  {Object.entries(lastBackup.counts).map(([k, v]) => (
+                    <div key={k}>
+                      <p className="font-display text-[24px] leading-none text-charcoal-heading">{v as number}</p>
+                      <p className="font-label-sm text-label-sm capitalize text-secondary">{k}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </>
