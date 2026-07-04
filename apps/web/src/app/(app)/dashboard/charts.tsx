@@ -140,7 +140,7 @@ export function ProgressRing({ pct, size = 40 }: { pct: number; size?: number })
 export function SubscriptionBars({ data }: { data: any[] }) {
   const R = 10;
   return (
-    <ResponsiveContainer width="100%" height={150}>
+    <ResponsiveContainer width="100%" height={110}>
       <BarChart data={data} margin={{ top: 4, right: 4, bottom: 4, left: 0 }} barCategoryGap="30%">
         <CartesianGrid vertical={false} stroke="#F1F5F9" strokeDasharray="4 4" />
         <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#475569', fontWeight: 500 }} dy={6} />
@@ -154,8 +154,8 @@ export function SubscriptionBars({ data }: { data: any[] }) {
             </div>
           );
         }} />
-        <Bar dataKey="current" stackId="v" fill="#4F46E5" radius={[0, 0, R, R]} maxBarSize={24} isAnimationActive animationDuration={800} />
-        <Bar dataKey="gap" stackId="v" fill="#DDD6FE" radius={[R, R, 0, 0]} maxBarSize={24} isAnimationActive animationDuration={800} />
+        <Bar dataKey="current" stackId="v" fill="#6366F1" radius={[0, 0, R, R]} maxBarSize={24} isAnimationActive animationDuration={800} />
+        <Bar dataKey="gap" stackId="v" fill="#EDE9FE" radius={[R, R, 0, 0]} maxBarSize={24} isAnimationActive animationDuration={800} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -168,7 +168,7 @@ const PERF = [
 ];
 export function PerformanceArea() {
   return (
-    <ResponsiveContainer width="100%" height={132}>
+    <ResponsiveContainer width="100%" height={90}>
       <AreaChart data={PERF} margin={{ top: 6, right: 6, bottom: 4, left: 0 }}>
         <defs>
           <linearGradient id="perfGrad" x1="0" y1="0" x2="0" y2="1">

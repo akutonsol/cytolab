@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
 import {
   Activity, ArrowRight, ArrowUpRight, Calendar, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FileCheck, FileText, FlaskConical,
-  Folder, Hourglass, Microscope, Monitor, MoreHorizontal, Plus, RotateCw, ShieldCheck, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
+  Folder, Hourglass, Microscope, Monitor, MoreHorizontal, Plus, ShieldCheck, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
   TestTube, TrendingUp, User, Users,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -140,6 +140,12 @@ function DatePill() {
 
 const MODEL_VIEWS = ['Cervical', 'Fluid', 'FNA', 'Respiratory'];
 const MODEL_DOT = ['#6366F1', '#14B8A6', '#8B5CF6', '#3B82F6']; // indigo / teal / violet / blue
+// Analysis progress by record status — drives the "Processing Specimen" bar.
+const PROGRESS_MAP: Record<string, number> = {
+  Pending: 5, Submitted: 15, Processing: 76, Partial: 60, Resulted: 85,
+  Completed: 90, Approved: 100, Billed: 100, Paid: 100, Viewed: 100,
+  OnHold: 30, Failed: 0, Disabled: 0,
+};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -244,6 +250,7 @@ export default function DashboardPage() {
                 value: d.priorityRecords?.length || 0,
                 sub: `${d.priorityRecords?.filter((r: any) => r.urgent).length || 0} urgent`,
                 subColor: '#EF4444',
+                isPriority: true,
               },
               {
                 icon: <FlaskConical size={20} color="#4F46E5" />,
@@ -265,6 +272,7 @@ export default function DashboardPage() {
                 value: kpis?.pendingRequisitions || 0,
                 sub: `${d.priorityRecords?.filter((r: any) => r.urgent).length || 0} high priority`,
                 subColor: '#94A3B8',
+                isPriority: true,
               },
               {
                 icon: <CheckCircle2 size={20} color="#4F46E5" />,
@@ -273,7 +281,7 @@ export default function DashboardPage() {
                 sub: eff?.authorization >= 80 ? 'On target' : 'Below target',
                 subColor: eff?.authorization >= 80 ? '#16A34A' : '#EF4444',
               },
-            ].map(({ icon, label, value, sub, subColor }, i) => (
+            ].map(({ icon, label, value, sub, subColor, isPriority }, i) => (
               <div key={i} style={{
                 background: 'white',
                 borderRadius: 16,
@@ -283,6 +291,10 @@ export default function DashboardPage() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 14,
+                ...(isPriority ? {
+                  borderLeft: '3px solid #4F46E5',
+                  background: 'linear-gradient(135deg, #FAFBFF 0%, #F4F4FE 100%)',
+                } : {}),
               }}>
                 <div style={{
                   width: 40, height: 40, borderRadius: 12,
@@ -299,7 +311,7 @@ export default function DashboardPage() {
                     marginBottom: 2,
                   }}>{label}</div>
                   <div style={{
-                    fontSize: 24, fontWeight: 800, color: '#0F172A',
+                    fontSize: isPriority ? 36 : 28, fontWeight: 800, color: '#0F172A',
                     letterSpacing: '-0.02em', lineHeight: 1,
                     fontFamily: 'Geist, sans-serif',
                   }}>{value}</div>
@@ -328,10 +340,10 @@ export default function DashboardPage() {
                   const isFirst = i === 0;
                   return (
                     <div key={r.id} onClick={() => router.push(`/records/${r.id}`)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: isFirst ? '#F0F0FF' : 'transparent', border: isFirst ? '1px solid #C7D2FE' : '1px solid transparent', transition: 'all 0.15s' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 14, minHeight: 72, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: isFirst ? '#F0F0FF' : 'transparent', border: isFirst ? '1px solid #C7D2FE' : '1px solid transparent', transition: 'all 0.15s' }}
                       onMouseEnter={(e) => { if (!isFirst) (e.currentTarget as HTMLDivElement).style.background = '#F8FAFC'; }}
                       onMouseLeave={(e) => { if (!isFirst) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}>
-                      <SpecimenIcon type={r.specimen} size={44} />
+                      <SpecimenIcon type={r.specimen} size={56} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                           <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>{r.labNumber ?? '—'}</span>
@@ -398,8 +410,18 @@ export default function DashboardPage() {
                         </svg>
                         {/* aura */}
                         <div style={{ position: 'absolute', left: -90, top: -30, width: 680, height: 660, background: 'radial-gradient(44% 44% at 47% 44%, rgba(255,255,255,0.92), rgba(139,92,246,0.16) 46%, rgba(99,102,241,0.06) 62%, transparent 74%)', filter: 'blur(4px)', zIndex: 0 }} />
-                        {/* glowing base platform */}
-                        <div style={{ position: 'absolute', left: 70, top: 468, width: 370, height: 60, borderRadius: '50%', background: 'radial-gradient(50% 50% at 50% 50%, rgba(255,255,255,0.95), rgba(167,139,250,0.38) 45%, rgba(139,92,246,0.08) 68%, transparent 78%)', filter: 'blur(1px)', zIndex: 1 }} />
+                        {/* floating cytology particles */}
+                        {[
+                          { size: 8, top: '15%', left: '12%', delay: '0s', dur: '7s', color: 'rgba(139,92,246,0.4)' },
+                          { size: 5, top: '35%', left: '8%', delay: '1.5s', dur: '9s', color: 'rgba(99,102,241,0.3)' },
+                          { size: 6, top: '65%', left: '15%', delay: '3s', dur: '8s', color: 'rgba(167,139,250,0.35)' },
+                          { size: 4, top: '80%', left: '72%', delay: '2s', dur: '10s', color: 'rgba(139,92,246,0.25)' },
+                          { size: 7, top: '20%', left: '75%', delay: '4s', dur: '7.5s', color: 'rgba(99,102,241,0.3)' },
+                        ].map((p, i) => (
+                          <div key={i} style={{ position: 'absolute', top: p.top, left: p.left, width: p.size, height: p.size, borderRadius: '50%', background: p.color, pointerEvents: 'none', zIndex: 1, animation: `particleFloat ${p.dur} ease-in-out infinite`, animationDelay: p.delay }} />
+                        ))}
+                        {/* rotating halo beneath the bust */}
+                        <div style={{ position: 'absolute', left: 70, top: 450, width: 370, height: 80, borderRadius: '50%', background: 'radial-gradient(50% 50% at 50% 50%, rgba(167,139,250,0.3) 0%, rgba(99,102,241,0.15) 45%, transparent 70%)', filter: 'blur(8px)', zIndex: 1, animation: 'haloRotate 6s ease-in-out infinite' }} />
                         {/* head — box matches the image's 1.5 aspect (no letterbox); scalp near top */}
                         <img src="/ai-man.png" alt="AI Cytology Model" className="ai-breathe"
                           style={{ position: 'absolute', left: -167, top: -18, width: 833, height: 555, objectFit: 'contain', objectPosition: 'center', filter: 'brightness(1.52) contrast(1.14) saturate(0.35) drop-shadow(0 18px 40px rgba(99,102,241,0.3))', zIndex: 2 }} />
@@ -434,12 +456,53 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Rotate Model pill */}
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 24px 22px', display: 'flex', justifyContent: 'center', zIndex: 4 }}>
+              {/* Processing Specimen overlay */}
+              <div style={{ position: 'absolute', left: 20, bottom: 90, zIndex: 4, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(12px)', borderRadius: 16, padding: '14px 18px', border: '1px solid rgba(79,70,229,0.12)', boxShadow: '0 8px 24px rgba(79,70,229,0.12)', width: 220 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Processing Specimen</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: '#EEF2FF', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                    <FlaskConical size={18} color="#4F46E5" />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{d.priorityRecords?.[0]?.labNumber ?? '—'}</div>
+                    <div style={{ fontSize: 11, color: '#64748B' }}>{d.priorityRecords?.[0]?.specimen ? specLabel(d.priorityRecords[0].specimen) : 'No active specimen'}</div>
+                  </div>
+                </div>
+                {(() => {
+                  const pct = PROGRESS_MAP[d.priorityRecords?.[0]?.status ?? 'Pending'] ?? 5;
+                  return (
+                    <>
+                      <div style={{ fontSize: 11, color: '#64748B', marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Analyzing Cells…</span>
+                        <span style={{ fontWeight: 700, color: '#4F46E5' }}>{pct}%</span>
+                      </div>
+                      <div style={{ height: 5, background: '#EEF2FF', borderRadius: 999, overflow: 'hidden' }}>
+                        <div style={{ height: 5, borderRadius: 999, background: 'linear-gradient(90deg,#4F46E5,#7C3AED)', width: `${pct}%`, transition: 'width 1s ease-out' }} />
+                      </div>
+                    </>
+                  );
+                })()}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: '#94A3B8' }}>
+                  <span>Estimated completion</span>
+                  <span style={{ fontWeight: 600, color: '#4F46E5', fontFamily: 'monospace' }}>00:00:18</span>
+                </div>
+              </div>
+
+              {/* View selector pill + marker hint */}
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 24px 22px', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 4 }}>
                 <button onClick={() => setModelView((v) => (v + 1) % MODEL_VIEWS.length)}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'white', border: '1px solid #EEF2F7', boxShadow: '0 6px 18px rgba(79,70,229,0.10)', borderRadius: 999, padding: '11px 24px', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#4F46E5', fontFamily: 'Geist,sans-serif' }}>
-                  <RotateCw size={15} /> {MODEL_VIEWS[modelView]} View <ArrowRight size={15} />
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2">
+                    <circle cx="12" cy="12" r="3" /><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
+                  </svg>
+                  {MODEL_VIEWS[modelView]} View <ChevronDown size={14} />
                 </button>
+                <div style={{ textAlign: 'center', marginTop: 6, fontSize: 11, color: '#94A3B8', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  Click on markers to view cell details
+                </div>
               </div>
             </div>
 
@@ -470,37 +533,54 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Key Observations */}
-              <div style={{ background: '#FAFAFE', borderRadius: 16, padding: '16px 18px' }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', marginBottom: 12 }}>Key Observations</div>
+              {/* DIAGNOSIS */}
+              <div style={{ marginBottom: 0 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Diagnosis</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>
+                  {d.priorityRecords?.[0]?.urgent ? 'Atypical Cells Detected' : 'Specimen Under Review'}
+                </div>
+                <div style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>
+                  {d.priorityRecords?.[0]?.client ?? 'Awaiting analysis'}
+                </div>
+              </div>
+
+              {/* CONFIDENCE */}
+              <div style={{ padding: '12px 14px', background: '#F4F4FB', borderRadius: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Confidence</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ flex: 1, height: 6, background: '#E2E8F0', borderRadius: 999 }}>
+                    <div style={{ height: 6, borderRadius: 999, background: 'linear-gradient(90deg,#4F46E5,#7C3AED)', width: `${eff?.authorization ?? 0}%`, transition: 'width 1s' }} />
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: '#4F46E5', fontFamily: 'Geist,sans-serif', minWidth: 36 }}>{eff?.authorization ?? 0}%</span>
+                </div>
+                <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 4 }}>Based on {eff?.specimensProcessed ?? 0} processed specimens</div>
+              </div>
+
+              {/* DETECTED FEATURES */}
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Detected Features</div>
                 {[
-                  {
-                    label: 'Specimen Type', value: specLabel(d.priorityRecords?.[0]?.specimen),
-                    icon: (
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="#4F46E5">
-                        <circle cx="8" cy="7" r="1.6" /><circle cx="13" cy="6" r="1.6" /><circle cx="17" cy="9" r="1.6" />
-                        <circle cx="7" cy="12" r="1.6" /><circle cx="12" cy="11" r="2.1" /><circle cx="16.5" cy="14" r="1.6" />
-                        <circle cx="9" cy="16" r="1.6" /><circle cx="13.5" cy="17" r="1.6" />
-                      </svg>
-                    ),
-                  },
-                  {
-                    label: 'Specimens Processed', value: `${eff?.specimensProcessed ?? 0} total`,
-                    icon: (
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2">
-                        <circle cx="12" cy="12" r="7.5" /><circle cx="12" cy="12" r="2.6" fill="#4F46E5" stroke="none" />
-                      </svg>
-                    ),
-                  },
-                ].map(({ icon, label, value }, i, arr) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 0', borderBottom: i < arr.length - 1 ? '1px solid #EEF0F6' : 'none' }}>
-                    <div style={{ width: 46, height: 46, borderRadius: 13, background: '#EEF2FF', display: 'grid', placeItems: 'center', flexShrink: 0 }}>{icon}</div>
-                    <div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A' }}>{label}</div>
-                      <div style={{ fontSize: 14, color: '#64748B', marginTop: 2 }}>{value}</div>
-                    </div>
+                  { label: 'Specimen Type', value: specLabel(d.priorityRecords?.[0]?.specimen) },
+                  { label: 'Specimens Processed', value: `${eff?.specimensProcessed ?? 0} total` },
+                  { label: 'Abnormal Cells', value: d.priorityRecords?.[0]?.urgent ? 'Detected — Moderate' : 'Not detected' },
+                ].map(({ label, value }, i, arr) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: i < arr.length - 1 ? '1px solid #F1F0EA' : 'none' }}>
+                    <span style={{ fontSize: 13, color: '#64748B' }}>{label}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{value}</span>
                   </div>
                 ))}
+              </div>
+
+              {/* RECOMMENDED ACTION */}
+              <div style={{ padding: '12px 14px', background: '#F0FDF4', borderRadius: 12, border: '1px solid #BBF7D0' }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#16A34A', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Recommended Action</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>
+                  {d.priorityRecords?.[0]?.urgent
+                    ? 'Priority review — escalate to senior pathologist'
+                    : (eff?.authorization ?? 0) >= 80
+                      ? 'Standard processing — no action required'
+                      : 'Review pending cases — authorization rate below threshold'}
+                </div>
               </div>
 
               {/* CTAs */}
@@ -518,7 +598,7 @@ export default function DashboardPage() {
           {/* ═══ SECTION 3: BOTTOM ROW ═══ */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
             {/* Monthly Case Volume */}
-            <div style={{ background: 'white', borderRadius: 20, padding: '20px 24px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)' }}>
+            <div style={{ background: '#FAFBFF', borderRadius: 20, padding: '20px 24px', border: '1px solid #F1F0EA' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Monthly Case Volume</span>
                 <div style={{ fontSize: 12, fontWeight: 600, color: '#64748B', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 999, padding: '3px 10px', cursor: 'pointer' }}>6 Months ▾</div>
@@ -540,7 +620,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Case Distribution by Type */}
-            <div style={{ background: 'white', borderRadius: 20, padding: '20px 24px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)' }}>
+            <div style={{ background: '#FAFBFF', borderRadius: 20, padding: '20px 24px', border: '1px solid #F1F0EA' }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', marginBottom: 16 }}>Case Distribution by Type</div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
                 <div style={{ position: 'relative', width: 180, height: 180, flexShrink: 0 }}>
@@ -582,7 +662,7 @@ export default function DashboardPage() {
             </div>
 
             {/* AI Performance */}
-            <div style={{ background: 'white', borderRadius: 20, padding: '20px 24px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)' }}>
+            <div style={{ background: '#FAFBFF', borderRadius: 20, padding: '20px 24px', border: '1px solid #F1F0EA' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                 <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Performance</span>
                 <div style={{ textAlign: 'right' }}>
@@ -610,7 +690,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Recent Activity */}
-            <div style={{ background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ background: '#FAFBFF', borderRadius: 20, padding: '20px', border: '1px solid #F1F0EA', display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Recent Activity</span>
                 <button onClick={() => router.push('/records')} style={{ fontSize: 12, fontWeight: 600, color: '#4F46E5', background: 'none', border: 'none', cursor: 'pointer' }}>View all</button>

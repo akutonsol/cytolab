@@ -273,6 +273,23 @@ body {
 }
 
 /* ============================================================
+   Dashboard AI stage — drifting cytology particles + rotating halo.
+   ============================================================ */
+@keyframes particleFloat {
+  0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0.6; }
+  25% { transform: translateY(-12px) translateX(4px); opacity: 1; }
+  50% { transform: translateY(-6px) translateX(-4px); opacity: 0.7; }
+  75% { transform: translateY(-16px) translateX(2px); opacity: 0.9; }
+}
+@keyframes haloRotate {
+  0%, 100% { transform: scaleX(1) scaleY(1); opacity: 0.7; }
+  50% { transform: scaleX(1.1) scaleY(1.2); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [style*="particleFloat"], [style*="haloRotate"] { animation: none !important; }
+}
+
+/* ============================================================
    Messaging — typing-indicator bouncing dots.
    ============================================================ */
 @keyframes typingDot {
