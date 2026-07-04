@@ -8,8 +8,9 @@ import {
   ReadOutlined, SearchOutlined, SettingOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { Microscope } from 'lucide-react';
+import { Microscope, Mic } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { useDictationContext } from '@/lib/dictation-context';
 import { ACCOUNT_GROUP_KEY, ANALYTICS_ITEM, HOME_ITEM, NAV_GROUPS } from '@/lib/nav';
 import { NavPills } from '@/components/dashboard/nav-pills';
 import { useAuth, useAuthStore } from '@/lib/auth';
@@ -34,6 +35,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { claims, hydrated, isAuthed, stale, can } = useAuth();
   const clear = useAuthStore((s) => s.clear);
+  const { isAnyDictationActive } = useDictationContext();
   const [refreshing, setRefreshing] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -151,6 +153,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+              {isAnyDictationActive && (
+                <div title="Dictation active" style={{ display: 'flex', alignItems: 'center', gap: 7, height: 36, padding: '0 12px', borderRadius: 999, background: '#EEF2FF', color: '#4F46E5', fontSize: 13, fontWeight: 600 }}>
+                  <span style={{ position: 'relative', display: 'grid', placeItems: 'center' }}>
+                    <Mic size={16} />
+                    <span className="animate-pulse" style={{ position: 'absolute', top: -3, right: -3, width: 8, height: 8, borderRadius: 999, background: '#EF4444' }} />
+                  </span>
+                  {screens.md && <span>Listening…</span>}
+                </div>
+              )}
               {screens.md && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 52, width: 300, borderRadius: 999, padding: '0 8px', color: '#9ca3af', border: '2px solid transparent', background: 'linear-gradient(#fff,#fff) padding-box, linear-gradient(135deg,#d3d9e6 0%,#aeb9d0 100%) border-box', boxShadow: '0 2px 6px rgba(16,24,40,0.05)' }}>
                   <span style={{ display: 'grid', placeItems: 'center', width: 36, height: 36, borderRadius: 999, background: '#d8dde9', color: '#5b6472', flexShrink: 0 }}><SearchOutlined /></span>

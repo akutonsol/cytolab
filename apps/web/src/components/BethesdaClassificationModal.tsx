@@ -11,6 +11,7 @@ import {
   type BethesdaRecommendation, type BethesdaResult, type BethesdaSelections, type GeneralCategory,
   type GlandularCategory, type HPVResult, type SquamousCategory,
 } from '@/lib/bethesda';
+import { DictationButton } from './DictationButton';
 
 interface Props {
   open: boolean;
@@ -26,6 +27,9 @@ export function BethesdaClassificationModal({ open, onClose, recordId, onApply }
   const [s, setS] = useState<BethesdaSelections>({ ...empty });
   const [toast, setToast] = useState<string | null>(null);
   const set = <K extends keyof BethesdaSelections>(k: K, v: BethesdaSelections[K]) => setS((p) => ({ ...p, [k]: v }));
+  // Append dictated text to a free-text field (functional update avoids stale reads on rapid chunks).
+  const dictate = (k: 'unsatisfactoryReason' | 'glandularSubtype' | 'otherMalignancy' | 'recommendationNotes', text: string) =>
+    setS((p) => { const cur = ((p[k] as string) ?? ''); return { ...p, [k]: cur && !/\s$/.test(cur) ? `${cur} ${text}` : `${cur}${text}` }; });
   const toggle = (k: 'organisms' | 'otherNonNeoplastic', v: string) =>
     setS((p) => { const arr = p[k] ?? []; return { ...p, [k]: arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v] }; });
 
@@ -95,7 +99,12 @@ export function BethesdaClassificationModal({ open, onClose, recordId, onApply }
                 <Field label="Specimen Adequacy" required>
                   <Pills value={s.specimenAdequacy} onChange={(v) => set('specimenAdequacy', v as any)}
                     options={[['Satisfactory', 'Satisfactory for evaluation'], ['Unsatisfactory', 'Unsatisfactory']]} />
-                  {!sat && <input value={s.unsatisfactoryReason ?? ''} onChange={(e) => set('unsatisfactoryReason', e.target.value)} placeholder="Reason (e.g. insufficient squamous cellularity)" className={`${inp} mt-2`} />}
+                  {!sat && (
+                    <div className="relative mt-2">
+                      <input value={s.unsatisfactoryReason ?? ''} onChange={(e) => set('unsatisfactoryReason', e.target.value)} placeholder="Reason (e.g. insufficient squamous cellularity)" className={`${inp} pr-10`} />
+                      <div className="absolute right-1 top-1/2 -translate-y-1/2"><DictationButton size="sm" onTranscript={(t) => dictate('unsatisfactoryReason', t)} /></div>
+                    </div>
+                  )}
                 </Field>
 
                 {sat && (
@@ -124,13 +133,23 @@ export function BethesdaClassificationModal({ open, onClose, recordId, onApply }
                     <Field label="Glandular Cell Abnormality">
                       <Pills value={s.glandularCategory ?? ''} onChange={(v) => set('glandularCategory', (v || null) as GlandularCategory | null)}
                         options={[['', 'None'], ...(Object.keys(GLANDULAR_LABEL) as GlandularCategory[]).map((k) => [k, GLANDULAR_LABEL[k]] as [string, string])]} />
-                      {s.glandularCategory === 'Other' && <input value={s.glandularSubtype ?? ''} onChange={(e) => set('glandularSubtype', e.target.value)} placeholder="Describe glandular finding…" className={`${inp} mt-2`} />}
+                      {s.glandularCategory === 'Other' && (
+                        <div className="relative mt-2">
+                          <input value={s.glandularSubtype ?? ''} onChange={(e) => set('glandularSubtype', e.target.value)} placeholder="Describe glandular finding…" className={`${inp} pr-10`} />
+                          <div className="absolute right-1 top-1/2 -translate-y-1/2"><DictationButton size="sm" onTranscript={(t) => dictate('glandularSubtype', t)} /></div>
+                        </div>
+                      )}
                     </Field>
                   </>
                 )}
 
                 {sat && s.generalCategory === 'OtherMalignancy' && (
-                  <Field label="Other Malignancy"><textarea value={s.otherMalignancy ?? ''} onChange={(e) => set('otherMalignancy', e.target.value)} rows={2} placeholder="Describe…" className={`${inp} h-auto py-2.5`} /></Field>
+                  <Field label="Other Malignancy">
+                    <div className="relative">
+                      <textarea value={s.otherMalignancy ?? ''} onChange={(e) => set('otherMalignancy', e.target.value)} rows={2} placeholder="Describe…" className={`${inp} h-auto py-2.5 pr-10`} />
+                      <div className="absolute right-1 top-1.5"><DictationButton size="sm" onTranscript={(t) => dictate('otherMalignancy', t)} /></div>
+                    </div>
+                  </Field>
                 )}
 
                 <div className="border-t border-slate-100 pt-4">
@@ -146,7 +165,10 @@ export function BethesdaClassificationModal({ open, onClose, recordId, onApply }
                     <option value="">— Select —</option>
                     {(Object.keys(RECOMMENDATION_LABEL) as BethesdaRecommendation[]).map((k) => <option key={k} value={k}>{RECOMMENDATION_LABEL[k]}</option>)}
                   </select>
-                  <input value={s.recommendationNotes ?? ''} onChange={(e) => set('recommendationNotes', e.target.value)} placeholder="Additional notes…" className={`${inp} mt-2`} />
+                  <div className="relative mt-2">
+                    <input value={s.recommendationNotes ?? ''} onChange={(e) => set('recommendationNotes', e.target.value)} placeholder="Additional notes…" className={`${inp} pr-10`} />
+                    <div className="absolute right-1 top-1/2 -translate-y-1/2"><DictationButton size="sm" onTranscript={(t) => dictate('recommendationNotes', t)} /></div>
+                  </div>
                 </Field>
               </div>
             )}

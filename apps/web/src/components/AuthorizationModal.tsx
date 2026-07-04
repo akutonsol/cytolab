@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, App, Button, Descriptions, Empty, Input, List, Modal, Segmented, Space, Tag, Typography } from 'antd';
 import { RobotOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -12,6 +12,8 @@ import { ResultTemplateSelector } from './ResultTemplateSelector';
 import { composeNarrative, type ResultTemplate } from '@/lib/result-templates';
 import { PriorHistoryPanel } from './PriorHistoryPanel';
 import { BethesdaClassificationModal } from './BethesdaClassificationModal';
+import { DictationTextarea } from './DictationTextarea';
+import type { DictationButtonHandle } from './DictationButton';
 
 interface RecordLite {
   id: string;
@@ -75,6 +77,20 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
   const [saveSignature, setSaveSignature] = useState(false);
   const [savedSignature, setSavedSignature] = useState<string | null>(null);
   const isGyn = record?.formType === 'Gynecology';
+  const narrativeDictation = useRef<DictationButtonHandle>(null);
+
+  // Cmd+Shift+D (Mac) / Ctrl+Shift+D (Win) toggles narrative dictation.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'd' || e.key === 'D')) {
+        e.preventDefault();
+        narrativeDictation.current?.toggle();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
 
   // Load the authorizer's saved profile signature so they can reuse it.
   useEffect(() => {
@@ -362,7 +378,17 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
               description="This text was AI-generated. You are responsible for the final wording. Accept to record it into the report, or edit freely."
               action={<Space direction="vertical"><Button size="small" type="primary" loading={acceptDraft.isPending} disabled={!narrative.trim()} onClick={() => acceptDraft.mutate()}>Accept into report</Button><Button size="small" onClick={() => rejectDraft.mutate()}>Reject</Button></Space>} />
           )}
-          <Input.TextArea rows={5} placeholder="Report narrative / diagnosis…" value={narrative} onChange={(e) => setNarrative(e.target.value)} />
+          <DictationTextarea
+            dictationRef={narrativeDictation}
+            rows={5}
+            placeholder="Report narrative / diagnosis…"
+            value={narrative}
+            onChange={(e) => setNarrative(e.target.value)}
+            style={{ width: '100%', borderRadius: 18, border: '1px solid #d9d9d9', padding: '12px 14px', fontSize: 16, lineHeight: 1.5, fontFamily: 'inherit', outline: 'none', resize: 'vertical', color: '#111827' }}
+          />
+          <div style={{ marginTop: 6, fontSize: 12, color: '#8a93a6' }}>
+            Click 🎤 to dictate — speak clearly, punctuation is spoken (e.g. &ldquo;comma&rdquo;, &ldquo;period&rdquo;, &ldquo;new line&rdquo;). Press <strong>{typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform) ? '⌘' : 'Ctrl'}+Shift+D</strong> to toggle.
+          </div>
 
           <div style={DS.divider} />
           <div style={DS.sectionLabel}>Code Sheet Results — findings &amp; assessment</div>
