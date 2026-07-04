@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
 import {
@@ -140,6 +140,21 @@ function DatePill() {
 
 const MODEL_VIEWS = ['Cervical', 'Fluid', 'FNA', 'Respiratory'];
 const MODEL_DOT = ['#6366F1', '#14B8A6', '#8B5CF6', '#3B82F6']; // indigo / teal / violet / blue
+// Hotspot marker layouts vary by GYN vs non-GYN specimen for visual variety.
+const MARKER_SETS: Record<string, { x: number; y: number; color: string }[]> = {
+  GYN: [
+    { x: 352, y: 100, color: '#6366F1' },
+    { x: 262, y: 290, color: '#8B5CF6' },
+    { x: 420, y: 320, color: '#06B6D4' },
+    { x: 310, y: 458, color: '#8B5CF6' },
+  ],
+  NONGYN: [
+    { x: 300, y: 120, color: '#6366F1' },
+    { x: 240, y: 310, color: '#8B5CF6' },
+    { x: 440, y: 290, color: '#06B6D4' },
+    { x: 352, y: 440, color: '#6366F1' },
+  ],
+};
 // Analysis progress by record status — drives the "Processing Specimen" bar.
 const PROGRESS_MAP: Record<string, number> = {
   Pending: 5, Submitted: 15, Processing: 76, Partial: 60, Resulted: 85,
@@ -161,6 +176,31 @@ export default function DashboardPage() {
     queryKey: ['patients-overview'],
     queryFn: () => api.get('/patients/overview').then((r) => r.data),
   });
+
+  // The queue drives an in-place selection: which record the AI stage + findings
+  // reflect. Defaults to the top-priority record once data arrives.
+  const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  useEffect(() => {
+    if (d?.priorityRecords?.[0] && !selectedRecord) setSelectedRecord(d.priorityRecords[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d?.priorityRecords]);
+  // Reset the view label whenever the selection changes.
+  useEffect(() => { setModelView(0); }, [selectedRecord?.id]);
+
+  // Count-up animation for the confidence figure on each selection.
+  const [displayConf, setDisplayConf] = useState(0);
+  const targetConf = d?.effectiveness?.authorization ?? 0;
+  useEffect(() => {
+    let start = 0;
+    const end = targetConf;
+    const step = (end - start) / (800 / 16);
+    const timer = setInterval(() => {
+      start += step;
+      if (start >= end) { setDisplayConf(end); clearInterval(timer); }
+      else setDisplayConf(Math.round(start));
+    }, 16);
+    return () => clearInterval(timer);
+  }, [selectedRecord?.id, targetConf]);
 
   if (isError) return <div className="p-2 text-sm text-text-secondary">Dashboard is unavailable right now.</div>;
   if (isLoading || !d) {
@@ -336,13 +376,13 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="premium-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, overflowY: 'auto', minHeight: 0 }}>
-                {(d.priorityRecords || []).slice(0, 6).map((r: any, i: number) => {
-                  const isFirst = i === 0;
+                {(d.priorityRecords || []).slice(0, 6).map((r: any) => {
+                  const sel = selectedRecord?.id === r.id;
                   return (
-                    <div key={r.id} onClick={() => router.push(`/records/${r.id}`)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 14, minHeight: 72, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: isFirst ? '#F0F0FF' : 'transparent', border: isFirst ? '1px solid #C7D2FE' : '1px solid transparent', transition: 'all 0.15s' }}
-                      onMouseEnter={(e) => { if (!isFirst) (e.currentTarget as HTMLDivElement).style.background = '#F8FAFC'; }}
-                      onMouseLeave={(e) => { if (!isFirst) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}>
+                    <div key={r.id} onClick={() => setSelectedRecord(r)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 14, minHeight: 72, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: sel ? '#EEF2FF' : 'transparent', border: sel ? '1px solid #C7D2FE' : '1px solid transparent', transition: 'all 0.15s' }}
+                      onMouseEnter={(e) => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = '#F8FAFC'; }}
+                      onMouseLeave={(e) => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}>
                       <SpecimenIcon type={r.specimen} size={56} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
@@ -358,8 +398,8 @@ export default function DashboardPage() {
                           Received {new Date(r.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
-                      {isFirst
-                        ? <ArrowRight size={16} color="#4F46E5" style={{ flexShrink: 0 }} />
+                      {sel
+                        ? <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: '#4F46E5' }} />
                         : <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: dotFor(r.status) }} />}
                     </div>
                   );
@@ -385,16 +425,10 @@ export default function DashboardPage() {
               <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
                 <div style={{ position: 'relative', width: 760, height: 520, maxWidth: '100%', overflow: 'hidden' }}>
                   {(() => {
-                    const dot = MODEL_DOT[modelView];
-                    const markers = [
-                      { x: 330, y: 96, color: dot },
-                      { x: 128, y: 268, color: dot },
-                      { x: 352, y: 290, color: dot },
-                      { x: 262, y: 458, color: dot },
-                    ];
-                    const p0 = d.priorityRecords?.[0];
+                    const isGyn = ['CERV_SCRAP', 'ENDOCERV_ASP', 'VAG_POOL'].includes(selectedRecord?.specimen ?? '');
+                    const markers = MARKER_SETS[isGyn ? 'GYN' : 'NONGYN'].map((m) => ({ ...m, color: selectedRecord?.urgent ? '#EF4444' : m.color }));
                     const findings = [
-                      { label: p0?.specimen ? specLabel(p0.specimen) : 'Awaiting Analysis', conf: eff?.authorization ?? 0, color: '#6366F1', y: 100, attention: p0?.urgent ?? false },
+                      { label: selectedRecord?.specimen ? specLabel(selectedRecord.specimen) : 'Awaiting Analysis', conf: eff?.authorization ?? 0, color: '#6366F1', y: 100, attention: selectedRecord?.urgent ?? false },
                       { label: `${eff?.onTime ?? 0}% On-time Rate`, conf: eff?.onTime ?? 0, color: '#3B82F6', y: 214, attention: (eff?.onTime ?? 0) < 70 },
                       { label: `${eff?.accuracy ?? 0}% Accuracy Score`, conf: eff?.accuracy ?? 0, color: '#8B5CF6', y: 314, attention: (eff?.accuracy ?? 0) < 80 },
                       { label: `${eff?.reportsAuthorized ?? 0} Reports Authorized`, conf: Math.min(100, Math.round(((eff?.reportsAuthorized ?? 0) / Math.max(eff?.specimensProcessed ?? 1, 1)) * 100)), color: '#6366F1', y: 452, attention: false },
@@ -465,16 +499,16 @@ export default function DashboardPage() {
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Processing Specimen</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 10, background: 'transparent', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                    <SpecimenIcon type={d.priorityRecords?.[0]?.specimen} size={36} />
+                    <SpecimenIcon type={selectedRecord?.specimen} size={36} />
                   </div>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{d.priorityRecords?.[0]?.labNumber ?? '—'}</div>
-                    <div style={{ fontSize: 11, color: '#64748B' }}>{d.priorityRecords?.[0]?.specimen ? specLabel(d.priorityRecords[0].specimen) : 'No active specimen'}</div>
-                    <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 1 }}>{d.priorityRecords?.[0]?.patient ?? ''}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{selectedRecord?.labNumber ?? '—'}</div>
+                    <div style={{ fontSize: 11, color: '#64748B' }}>{selectedRecord?.specimen ? specLabel(selectedRecord.specimen) : 'No active specimen'}</div>
+                    <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 1 }}>{selectedRecord?.patient ?? ''}</div>
                   </div>
                 </div>
                 {(() => {
-                  const pct = PROGRESS_MAP[d.priorityRecords?.[0]?.status ?? 'Pending'] ?? 5;
+                  const pct = PROGRESS_MAP[selectedRecord?.status ?? 'Pending'] ?? 5;
                   return (
                     <>
                       <div style={{ fontSize: 11, color: '#64748B', marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}>
@@ -511,11 +545,11 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* RIGHT: AI Findings */}
-            <div className="premium-scroll" style={{ height: 540, background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
+            {/* RIGHT: AI Findings — re-keyed so it fades in on each selection */}
+            <div key={selectedRecord?.id} className="premium-scroll" style={{ height: 540, background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', animation: 'findingsFadeIn 0.4s ease-out' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Findings</span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: '#4F46E5', fontFamily: 'Geist,sans-serif' }}>{d.priorityRecords?.[0]?.labNumber ?? '—'}</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#4F46E5', fontFamily: 'Geist,sans-serif' }}>{selectedRecord?.labNumber ?? '—'}</span>
               </div>
 
               {/* Interpretation */}
@@ -525,15 +559,15 @@ export default function DashboardPage() {
                   <span style={{ fontSize: 11, fontWeight: 700, color: '#4F46E5', background: '#EEF2FF', borderRadius: 999, padding: '3px 10px' }}>High Confidence</span>
                 </div>
                 <div style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', letterSpacing: '-0.02em', marginBottom: 4 }}>
-                  {d.priorityRecords?.[0]?.urgent
+                  {selectedRecord?.urgent
                     ? 'Urgent Case — Immediate Review'
-                    : d.priorityRecords?.[0]?.specimen
-                      ? `${specLabel(d.priorityRecords[0].specimen)} Analysis`
+                    : selectedRecord?.specimen
+                      ? `${specLabel(selectedRecord.specimen)} Analysis`
                       : 'No Active Cases'}
                 </div>
                 <div style={{ fontSize: 14, color: '#64748B' }}>
-                  {d.priorityRecords?.[0]?.client
-                    ? `Client: ${d.priorityRecords[0].client}`
+                  {selectedRecord?.client
+                    ? `Client: ${selectedRecord.client}`
                     : 'Awaiting cytological analysis.'}
                 </div>
               </div>
@@ -542,10 +576,10 @@ export default function DashboardPage() {
               <div style={{ marginBottom: 0 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Diagnosis</div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>
-                  {d.priorityRecords?.[0]?.urgent ? 'Atypical Cells Detected' : 'Specimen Under Review'}
+                  {selectedRecord?.urgent ? 'Atypical Cells Detected' : 'Specimen Under Review'}
                 </div>
                 <div style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>
-                  {d.priorityRecords?.[0]?.client ?? 'Awaiting analysis'}
+                  {selectedRecord?.client ?? 'Awaiting analysis'}
                 </div>
               </div>
 
@@ -554,9 +588,9 @@ export default function DashboardPage() {
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Confidence</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ flex: 1, height: 6, background: '#E2E8F0', borderRadius: 999 }}>
-                    <div style={{ height: 6, borderRadius: 999, background: 'linear-gradient(90deg,#4F46E5,#7C3AED)', width: `${eff?.authorization ?? 0}%`, transition: 'width 1s' }} />
+                    <div style={{ height: 6, borderRadius: 999, background: 'linear-gradient(90deg,#4F46E5,#7C3AED)', width: `${targetConf}%`, transition: 'width 1s' }} />
                   </div>
-                  <span style={{ fontSize: 14, fontWeight: 800, color: '#4F46E5', fontFamily: 'Geist,sans-serif', minWidth: 36 }}>{eff?.authorization ?? 0}%</span>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: '#4F46E5', fontFamily: 'Geist,sans-serif', minWidth: 36 }}>{displayConf}%</span>
                 </div>
                 <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 4 }}>Based on {eff?.specimensProcessed ?? 0} processed specimens</div>
               </div>
@@ -565,9 +599,9 @@ export default function DashboardPage() {
               <div>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Detected Features</div>
                 {[
-                  { label: 'Specimen Type', value: specLabel(d.priorityRecords?.[0]?.specimen) },
+                  { label: 'Specimen Type', value: specLabel(selectedRecord?.specimen) },
                   { label: 'Specimens Processed', value: `${eff?.specimensProcessed ?? 0} total` },
-                  { label: 'Abnormal Cells', value: d.priorityRecords?.[0]?.urgent ? 'Detected — Moderate' : 'Not detected' },
+                  { label: 'Abnormal Cells', value: selectedRecord?.urgent ? 'Detected — Moderate' : 'Not detected' },
                 ].map(({ label, value }, i, arr) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: i < arr.length - 1 ? '1px solid #F1F0EA' : 'none' }}>
                     <span style={{ fontSize: 13, color: '#64748B' }}>{label}</span>
@@ -580,7 +614,7 @@ export default function DashboardPage() {
               <div style={{ padding: '12px 14px', background: '#F0FDF4', borderRadius: 12, border: '1px solid #BBF7D0' }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#16A34A', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Recommended Action</div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>
-                  {d.priorityRecords?.[0]?.urgent
+                  {selectedRecord?.urgent
                     ? 'Priority review — escalate to senior pathologist'
                     : (eff?.authorization ?? 0) >= 80
                       ? 'Standard processing — no action required'
@@ -590,7 +624,7 @@ export default function DashboardPage() {
 
               {/* CTAs */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 'auto' }}>
-                <button onClick={() => router.push(`/records/${d.priorityRecords?.[0]?.id ?? ''}`)} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg,#4F46E5 0%,#6D28D9 100%)', color: 'white', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Geist,sans-serif', boxShadow: '0 8px 20px rgba(79,70,229,0.28)' }}>
+                <button onClick={() => router.push(`/records/${selectedRecord?.id ?? ''}`)} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg,#4F46E5 0%,#6D28D9 100%)', color: 'white', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Geist,sans-serif', boxShadow: '0 8px 20px rgba(79,70,229,0.28)' }}>
                   View Full Report <ArrowRight size={16} />
                 </button>
                 <button onClick={() => router.push('/authorizer')} style={{ width: '100%', padding: '13px', background: '#EEF0FB', color: '#4F46E5', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Geist,sans-serif' }}>
