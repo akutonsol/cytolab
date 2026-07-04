@@ -259,6 +259,7 @@ model User {
   authoredMessages       Message[]
   assignedAppointments   Appointment[]
   notifications          Notification[]
+  typingIndicators       TypingIndicator[]
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -1259,6 +1260,7 @@ model Thread {
   client       Client?             @relation(fields: [clientId], references: [id])
   participants ThreadParticipant[]
   messages     Message[]
+  typingIndicators TypingIndicator[]
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
   lab          Lab                 @relation(fields: [labId], references: [id])
@@ -1266,6 +1268,21 @@ model Thread {
   @@index([labId])
   @@index([clientId])
   @@index([labId, updatedAt])
+}
+
+// Ephemeral "user is typing" signal, one row per (thread, user), refreshed on
+// each keystroke burst and expiring ~5s later. Rows are upserted and read with
+// an expiry filter, so stale indicators simply age out.
+model TypingIndicator {
+  id        String   @id @default(cuid())
+  threadId  String
+  thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime // typing indicators expire after 5 seconds
+
+  @@unique([threadId, userId])
+  @@index([threadId])
 }
 
 model ThreadParticipant {
@@ -1292,6 +1309,8 @@ model Message {
   authorUser         User?       @relation(fields: [authorUserId], references: [id])
   authorPortalUserId String?
   authorPortalUser   PortalUser? @relation(fields: [authorPortalUserId], references: [id])
+  readAt             DateTime? // set when the recipient reads the message
+  deliveredAt        DateTime? // set when the message is fetched by the recipient
   createdAt          DateTime    @default(now())
 
   @@index([threadId])

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -40,5 +40,23 @@ export class MessagingController {
   @RequirePermissions('message:send')
   sendMessage(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: SendMessageDto) {
     return this.messaging.sendMessage(user.userId, id, dto);
+  }
+
+  @Put('messaging/threads/:id/read')
+  @RequirePermissions('message:view')
+  markRead(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.messaging.markThreadRead(user.userId, id);
+  }
+
+  @Post('messaging/threads/:id/typing')
+  @RequirePermissions('message:view')
+  setTyping(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.messaging.setTyping(user.userId, id);
+  }
+
+  @Get('messaging/threads/:id/typing')
+  @RequirePermissions('message:view')
+  getTyping(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.messaging.getTyping(user.userId, id);
   }
 }

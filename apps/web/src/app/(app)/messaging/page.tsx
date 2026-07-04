@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import {
-  ChevronDown, Filter, MoreHorizontal, Paperclip, Plus, Search, Send, Star, Video, X,
+  ChevronDown, Filter, MoreHorizontal, Paperclip, Plus, Search, Send, Video, X,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
@@ -45,6 +45,26 @@ const threadTime = (d: string) => {
   return new Date(d).toLocaleDateString(undefined, { weekday: 'short' });
 };
 
+const getMessageStatus = (m: any): 'sent' | 'delivered' | 'read' =>
+  m.readAt ? 'read' : m.deliveredAt ? 'delivered' : 'sent';
+
+function ReadReceipt({ status }: { status: 'sent' | 'delivered' | 'read' }) {
+  const color = status === 'read' ? '#4F46E5' : '#94A3B8';
+  if (status === 'sent') {
+    return (
+      <svg width="16" height="10" viewBox="0 0 16 10" aria-label="sent">
+        <polyline points="1,5 4,8 9,1" stroke={color} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="20" height="10" viewBox="0 0 20 10" aria-label={status}>
+      <polyline points="1,5 4,8 9,1" stroke={color} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points="6,5 9,8 14,1" stroke={color} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function Avatar({ name, size = 40 }: { name: string; size?: number }) {
   return (
     <span className="relative grid shrink-0 place-items-center overflow-hidden rounded-full font-bold text-white"
@@ -83,8 +103,30 @@ export default function MessagingPage() {
     queryKey: ['msg-thread', activeId],
     enabled: !!activeId,
     queryFn: () => api.get(`/messaging/threads/${activeId}`).then((r) => r.data),
-    refetchInterval: 5000, // poll for new messages
+    refetchInterval: 5000, // poll for new messages (and refreshed read receipts)
   });
+
+  // Typing indicators from other participants (poll every 2s while open).
+  const { data: typingUsers = [] } = useQuery({
+    queryKey: ['msg-typing', activeId],
+    queryFn: () => api.get(`/messaging/threads/${activeId}/typing`).then((r) => r.data),
+    refetchInterval: 2000,
+    enabled: !!activeId,
+  });
+  const sendTyping = useMutation({ mutationFn: () => api.post(`/messaging/threads/${activeId}/typing`) });
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Mark inbound messages read; refreshes the thread-list unread state + bell.
+  const markRead = useMutation({
+    mutationFn: (threadId: string) => api.put(`/messaging/threads/${threadId}/read`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['msg-threads'] }); qc.invalidateQueries({ queryKey: ['notifications-unread'] }); },
+  });
+  const openThread = (id: string) => { setActiveId(id); markRead.mutate(id); };
+  const handleCompose = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setText(e.target.value);
+    clearTimeout(typingTimeoutRef.current);
+    if (e.target.value && activeId) { sendTyping.mutate(); typingTimeoutRef.current = setTimeout(() => {}, 4000); }
+  };
 
   const messages = thread?.messages ?? [];
   const shownMessages = msgQ.trim()
@@ -92,6 +134,9 @@ export default function MessagingPage() {
     : messages;
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }); }, [messages.length, activeId]);
   useEffect(() => { setMsgQ(''); }, [activeId]);
+  // Viewing a thread's messages marks them read.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (activeId && thread?.messages?.length) markRead.mutate(activeId); }, [activeId, thread?.messages?.length]);
 
   const counterpart = useMemo(() => {
     if (!thread) return null;
@@ -148,18 +193,18 @@ export default function MessagingPage() {
           {threadRows.map((t: any) => {
             const on = t.id === activeId;
             return (
-              <button key={t.id} onClick={() => setActiveId(t.id)}
+              <button key={t.id} onClick={() => openThread(t.id)}
                 className="flex w-full items-center gap-3 border-b border-[#f3f4f6] px-4 py-3.5 text-left transition-colors hover:bg-[#f8fafd]"
                 style={{ background: on ? '#eef3ff' : undefined }}>
                 <Avatar name={t.title} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-[15px] font-semibold text-[#111827]">{t.title}</span>
+                    <span className="truncate text-[15px]" style={{ fontWeight: t.unread ? 700 : 500, color: t.unread ? '#0F172A' : '#374151' }}>{t.title}</span>
                     <span className="shrink-0 text-[12px] font-medium text-[#9ca3af]">{t.lastMessage ? threadTime(t.lastMessage.createdAt) : ''}</span>
                   </div>
                   <div className="mt-0.5 flex items-center justify-between gap-2">
-                    <span className="truncate text-[13px] font-medium text-[#9ca3af]">{t.lastMessage?.body ?? 'No messages yet'}</span>
-                    {t.unread && <Star size={14} className="shrink-0 fill-[#4f7df9] text-[#4f7df9]" />}
+                    <span className="truncate text-[13px]" style={{ fontWeight: t.unread ? 700 : 500, color: t.unread ? '#374151' : '#9ca3af' }}>{t.lastMessage?.body ?? 'No messages yet'}</span>
+                    {t.unread && <span className="shrink-0" style={{ width: 8, height: 8, borderRadius: '50%', background: '#4F46E5' }} />}
                   </div>
                 </div>
               </button>
@@ -180,13 +225,13 @@ export default function MessagingPage() {
           <>
             <div className="flex items-center justify-between border-b border-card px-5 py-3.5">
               <div className="flex items-center gap-3">
-                <Avatar name={counterName} size={38} />
+                <div className="relative inline-flex">
+                  <Avatar name={counterName} size={38} />
+                  <span style={{ position: 'absolute', bottom: 1, right: 1, width: 10, height: 10, borderRadius: '50%', background: '#22C55E', border: '2px solid white' }} />
+                </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[15px] font-bold text-text">{counterName}</span>
-                    <span className="h-2 w-2 rounded-full bg-success" />
-                  </div>
-                  <span className="text-caption font-medium text-text-tertiary">{thread.subject ?? (thread.type === 'CLIENT' ? 'Client thread' : 'Internal thread')}</span>
+                  <span className="text-[15px] font-bold text-text">{counterName}</span>
+                  <div className="text-caption font-medium text-text-tertiary">{thread.subject ?? (thread.type === 'CLIENT' ? 'Client thread' : 'Internal thread')}</div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -222,7 +267,12 @@ export default function MessagingPage() {
                           : 'rounded-[18px] bg-[#eef1fb] px-[18px] py-[11px] text-[15px] font-normal leading-[1.55] text-[#1f2937]'}>
                           {m.body}
                         </div>
-                        {endRun && <div className={`mt-1.5 text-[12px] font-medium text-[#9ca3af] ${mine ? 'text-right' : 'text-left'}`}>{clock(m.createdAt)}</div>}
+                        {endRun && (
+                          <div className={`mt-1.5 flex items-center gap-1.5 text-[12px] font-medium text-[#9ca3af] ${mine ? 'justify-end' : 'justify-start'}`}>
+                            <span>{clock(m.createdAt)}</span>
+                            {mine && <ReadReceipt status={getMessageStatus(m)} />}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -230,12 +280,26 @@ export default function MessagingPage() {
               })}
             </div>
 
+            {typingUsers.length > 0 && (
+              <div className="flex items-center gap-2 px-5 pb-2 pt-0">
+                <div className="flex gap-[3px]">
+                  {[0, 1, 2].map((i) => (
+                    <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#94A3B8', display: 'inline-block', animation: 'typingDot 1.4s ease-in-out infinite', animationDelay: `${i * 0.2}s` }} />
+                  ))}
+                </div>
+                <span className="text-[12px] italic text-[#94A3B8]">
+                  {typingUsers.length === 1 ? `${typingUsers[0].name} is typing…` : `${typingUsers.length} people are typing…`}
+                </span>
+              </div>
+            )}
+
             <div className="flex items-center gap-3 border-t border-card px-5 py-4">
               <button aria-label="Attach" className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-text-tertiary hover:bg-lightgray"><Paperclip size={18} /></button>
-              <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
+              <input value={text} onChange={handleCompose} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
                 placeholder="Type your message..." className="h-11 flex-1 rounded-pill bg-[#f6f8fc] px-4 text-small text-text outline-none placeholder:text-text-tertiary" />
               <button onClick={submit} disabled={!text.trim() || send.isPending}
-                className="flex h-11 items-center gap-1.5 rounded-pill bg-primary px-5 text-small font-bold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"><Send size={16} /> Send</button>
+                style={{ opacity: text.trim() ? 1 : 0.5, cursor: text.trim() ? 'pointer' : 'not-allowed' }}
+                className="flex h-11 items-center gap-1.5 rounded-pill bg-primary px-5 text-small font-bold text-white transition-colors hover:bg-primary-hover"><Send size={16} /> Send</button>
             </div>
           </>
         )}

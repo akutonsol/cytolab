@@ -47,18 +47,31 @@ export class MessagingService {
       this.prisma.thread.count({ where }),
     ]);
 
+    // Per-thread unread count = inbound messages this user hasn't read yet.
+    const threadIds = threads.map((t) => t.id);
+    const unreadGroups = threadIds.length
+      ? await this.prisma.message.groupBy({
+          by: ['threadId'],
+          where: { threadId: { in: threadIds }, authorUserId: { not: userId }, readAt: null },
+          _count: { _all: true },
+        })
+      : [];
+    const unreadMap = new Map(unreadGroups.map((g) => [g.threadId, g._count._all]));
+
     const data = threads.map((t) => {
       const last = t.messages[0] ?? null;
       const others = t.participants.filter((p) => p.userId !== userId);
+      const unreadCount = unreadMap.get(t.id) ?? 0;
       return {
         id: t.id, type: t.type, subject: t.subject, clientId: t.clientId,
         client: t.client, updatedAt: t.updatedAt, messageCount: t._count.messages,
         participants: t.participants.map((p) => ({ userId: p.userId, portalUserId: p.portalUserId, name: this.name(p) })),
         title: t.subject || (t.type === 'CLIENT' ? (t.client?.officeName || `${t.client?.firstName ?? ''} ${t.client?.lastName ?? ''}`.trim() || 'Client') : (others[0] ? this.name(others[0]) : 'Thread')),
         lastMessage: last ? { body: last.body, createdAt: last.createdAt, authorUserId: last.authorUserId } : null,
-        // No read-state model yet: a thread is "unread" when the latest message
-        // was written by someone other than the current user.
-        unread: !!last && last.authorUserId !== userId,
+        unreadCount,
+        // A thread is unread when it holds inbound messages this user has not
+        // yet read — so opening it (which marks them read) clears the flag.
+        unread: unreadCount > 0,
       };
     });
     return paginate(data, total, page, pageSize);
@@ -78,12 +91,57 @@ export class MessagingService {
       },
     });
     if (!thread) throw new NotFoundException('Thread not found');
+
+    // Fetching a thread delivers the recipient's inbound, not-yet-delivered
+    // messages. The returned payload already carries readAt/deliveredAt scalars
+    // (getThread uses `include`, so all message columns come back).
+    await this.prisma.message.updateMany({
+      where: { threadId, deliveredAt: null, authorUserId: { not: userId } },
+      data: { deliveredAt: new Date() },
+    });
+
     const others = thread.participants.filter((p) => p.userId !== userId);
     return {
       ...thread,
       title: thread.subject || (thread.type === 'CLIENT' ? (thread.client?.officeName || `${thread.client?.firstName ?? ''} ${thread.client?.lastName ?? ''}`.trim() || 'Client') : (others[0] ? this.name(others[0]) : 'Thread')),
       counterpart: others[0] ? this.name(others[0]) : null,
     };
+  }
+
+  /** Mark every inbound message in a thread as read (and delivered) by the user. */
+  async markThreadRead(userId: string, threadId: string) {
+    await this.getThread(userId, threadId); // participant-gate
+    await this.prisma.message.updateMany({
+      where: { threadId, readAt: null, authorUserId: { not: userId } },
+      data: { readAt: new Date(), deliveredAt: new Date() },
+    });
+    return { ok: true };
+  }
+
+  /** Refresh this user's typing indicator on the thread (expires in 5s). */
+  async setTyping(userId: string, threadId: string) {
+    await this.getThread(userId, threadId); // participant-gate
+    const expiresAt = new Date(Date.now() + 5000);
+    await this.prisma.typingIndicator.upsert({
+      where: { threadId_userId: { threadId, userId } },
+      create: { threadId, userId, expiresAt },
+      update: { expiresAt },
+    });
+    return { ok: true };
+  }
+
+  /** Active (non-expired) typing indicators from OTHER participants. */
+  async getTyping(userId: string, threadId: string) {
+    await this.getThread(userId, threadId); // participant-gate
+    const typing = await this.prisma.typingIndicator.findMany({
+      where: { threadId, expiresAt: { gt: new Date() }, userId: { not: userId } },
+      include: { user: { select: { id: true, firstName: true, lastName: true } } },
+    });
+    return typing.map((t) => ({
+      userId: t.userId,
+      name: `${t.user.firstName} ${t.user.lastName}`.trim(),
+      expiresAt: t.expiresAt,
+    }));
   }
 
   /** Create a thread, adding the creator + any other staff as participants. */
