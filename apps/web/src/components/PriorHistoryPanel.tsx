@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, CalendarClock, FileText, History, Stethoscope, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -70,10 +71,10 @@ export function PriorHistoryPanel({ open, onClose, patientId, excludeRecordId }:
     return Array.from(s);
   }, [data]);
 
-  if (!open) return null;
+  if (!open || typeof document === 'undefined') return null;
   const age = ageFrom(data?.patientDob);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 flex justify-end" style={{ zIndex: 2100, background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
       <div className="flex h-full w-full max-w-[560px] flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
@@ -172,6 +173,7 @@ export function PriorHistoryPanel({ open, onClose, patientId, excludeRecordId }:
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

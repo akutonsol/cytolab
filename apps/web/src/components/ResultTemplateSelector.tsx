@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Loader2, Search, X } from 'lucide-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -35,9 +36,9 @@ export function ResultTemplateSelector({ open, onClose, onSelect }: Props) {
       (!q || t.name.toLowerCase().includes(q) || (t.shortCode ?? '').toLowerCase().includes(q) || (t.interpretation ?? '').toLowerCase().includes(q)));
   }, [templates, category, search]);
 
-  if (!open) return null;
+  if (!open || typeof document === 'undefined') return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2000, background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(6px)' }} onClick={onClose}>
       <div className="flex max-h-[85vh] w-full max-w-[760px] flex-col rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-200 p-5 pb-4">
@@ -83,6 +84,7 @@ export function ResultTemplateSelector({ open, onClose, onSelect }: Props) {
           ))}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

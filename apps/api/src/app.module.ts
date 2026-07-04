@@ -39,6 +39,7 @@ import { DepartmentsModule } from './modules/departments/departments.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
 import { ResultTemplatesModule } from './modules/result-templates/result-templates.module';
+import { BethesdaModule } from './modules/bethesda/bethesda.module';
 
 /**
  * Cytolab modular monolith.
@@ -90,6 +91,7 @@ import { ResultTemplatesModule } from './modules/result-templates/result-templat
     EmployeesModule,
     PayrollModule,
     ResultTemplatesModule,
+    BethesdaModule,
   ],
   controllers: [HealthController],
   providers: [

@@ -11,6 +11,7 @@ import { DrawPad } from './DrawPad';
 import { ResultTemplateSelector } from './ResultTemplateSelector';
 import { composeNarrative, type ResultTemplate } from '@/lib/result-templates';
 import { PriorHistoryPanel } from './PriorHistoryPanel';
+import { BethesdaClassificationModal } from './BethesdaClassificationModal';
 
 interface RecordLite {
   id: string;
@@ -66,6 +67,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
   const [narrative, setNarrative] = useState('');
   const [templateOpen, setTemplateOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [bethesdaOpen, setBethesdaOpen] = useState(false);
   const [aiDraftId, setAiDraftId] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<CodeSuggestion[] | null>(null);
   const [flags, setFlags] = useState<ConsistencyFlag[] | null>(null);
@@ -242,6 +244,14 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
     } else done();
   };
 
+  // Apply a saved Bethesda classification's generated narrative into the report.
+  const applyBethesda = (text: string, shortCode: string | null) => {
+    const done = () => { setNarrative(text); message.success(`Bethesda classification${shortCode ? ` (${shortCode})` : ''} applied to the report narrative.`); };
+    if (narrative.trim()) {
+      modal.confirm({ title: 'Replace the current narrative?', content: 'The Bethesda narrative will overwrite the report narrative you have.', okText: 'Replace', cancelText: 'Keep mine', onOk: done });
+    } else done();
+  };
+
   return (
     <>
     <Modal
@@ -341,7 +351,10 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
           <div style={DS.divider} />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
             <div style={DS.sectionLabel}>Report narrative</div>
-            <button type="button" style={{ ...DS.btnOutline, padding: '6px 14px', fontSize: 13 }} onClick={() => setTemplateOpen(true)}>Use Template</button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {isGyn && record?.id && <button type="button" style={{ ...DS.btnOutline, padding: '6px 14px', fontSize: 13 }} onClick={() => setBethesdaOpen(true)}>Bethesda</button>}
+              <button type="button" style={{ ...DS.btnOutline, padding: '6px 14px', fontSize: 13 }} onClick={() => setTemplateOpen(true)}>Use Template</button>
+            </div>
           </div>
           {aiDraftId && (
             <Alert type="info" showIcon style={{ marginBottom: 8 }}
@@ -442,6 +455,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
     </Modal>
     <ResultTemplateSelector open={templateOpen} onClose={() => setTemplateOpen(false)} onSelect={applyTemplate} />
     <PriorHistoryPanel open={historyOpen} onClose={() => setHistoryOpen(false)} patientId={record?.patientId} excludeRecordId={record?.id} />
+    {record?.id && <BethesdaClassificationModal open={bethesdaOpen} onClose={() => setBethesdaOpen(false)} recordId={record.id} onApply={applyBethesda} />}
     </>
   );
 }

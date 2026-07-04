@@ -200,6 +200,7 @@ model Lab {
   payrollRuns            PayrollRun[]
   payAdvices             PayAdvice[]
   resultTemplates        ResultTemplate[]
+  bethesdaResults        BethesdaResult[]
 }
 
 model Account {
@@ -271,6 +272,7 @@ model User {
   processedPayrollRuns   PayrollRun[]           @relation("PayrollProcessor")
   approvedPayrollRuns    PayrollRun[]           @relation("PayrollApprover")
   resultTemplates        ResultTemplate[]       @relation("ResultTemplateCreator")
+  bethesdaResults        BethesdaResult[]       @relation("BethesdaReporter")
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -528,6 +530,7 @@ model Record {
   gynFeatures       GynClinicalFeatures?
   nonGynFeatures    NonGynClinicalFeatures?
   resultSheets      ResultSheet[]
+  bethesdaResult    BethesdaResult?
   bills             Bill[]
   changeRequests    ChangeRequest[]
   attachments       RecordAttachment[]
@@ -1673,4 +1676,96 @@ model ResultTemplate {
   @@unique([labId, shortCode])
   @@index([labId])
   @@index([category])
+}
+
+// ─── Bethesda System (TBS 2014) — structured cervical cytology classification ─
+
+enum SpecimenAdequacy {
+  Satisfactory
+  Unsatisfactory
+}
+
+enum GeneralCategory {
+  NILM // Negative for Intraepithelial Lesion or Malignancy
+  EpithelialAbnormality
+  OtherMalignancy
+}
+
+enum SquamousCategory {
+  ASC // Atypical Squamous Cells
+  LSIL
+  HSIL
+  SCC // Squamous Cell Carcinoma
+}
+
+enum ASCSubtype {
+  ASCUS // of undetermined significance
+  ASCH // cannot exclude HSIL
+}
+
+// Inferred (spec truncated) from TBS 2014 glandular categories.
+enum GlandularCategory {
+  AGC // Atypical Glandular Cells
+  AGC_FavorNeoplastic
+  AIS // Endocervical Adenocarcinoma in situ
+  Adenocarcinoma
+  Other
+}
+
+// Inferred (spec truncated): ancillary HPV testing result.
+enum HPVResult {
+  Positive
+  Negative
+  NotPerformed
+}
+
+// Inferred (spec truncated): structured management recommendations.
+enum BethesdaRecommendation {
+  RoutineScreening
+  RepeatIn1Year
+  HPVReflexTesting
+  Colposcopy
+  UrgentColposcopy
+  EndocervicalSampling
+  RepeatSpecimen
+  ClinicalCorrelation
+}
+
+model BethesdaResult {
+  id       String @id @default(cuid())
+  labId    String
+  lab      Lab    @relation(fields: [labId], references: [id])
+  recordId String @unique
+  record   Record @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  specimenAdequacy     SpecimenAdequacy
+  unsatisfactoryReason String?
+
+  generalCategory GeneralCategory?
+
+  organisms          String[]
+  otherNonNeoplastic String[]
+
+  squamousCategory SquamousCategory?
+  ascSubtype       ASCSubtype?
+
+  glandularCategory GlandularCategory?
+  glandularSubtype  String?
+
+  otherMalignancy String?
+
+  hpvResult   HPVResult?
+  hpvGenotype String?
+
+  recommendation      BethesdaRecommendation?
+  recommendationNotes String?
+
+  generatedNarrative String?
+
+  reportedById String?
+  reportedBy   User?    @relation("BethesdaReporter", fields: [reportedById], references: [id])
+  reportedAt   DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([labId])
 }
