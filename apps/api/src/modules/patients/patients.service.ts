@@ -299,4 +299,69 @@ export class PatientsService {
     }
     return where;
   }
+
+  /**
+   * Prior cytology history for a patient — every record with its specimen(s),
+   * result-sheet narrative (when authorized), and coded findings — so a reporter
+   * can weigh a new result against past diagnoses without leaving the workflow.
+   * Lab-scoped: the patient is fetched in the current lab, so its records are too.
+   */
+  async getHistory(patientId: string, excludeRecordId?: string) {
+    const patient = await this.prisma.patient.findFirst({
+      where: { id: patientId },
+      select: {
+        id: true, firstName: true, middleName: true, lastName: true, dateOfBirth: true,
+        records: {
+          where: excludeRecordId ? { id: { not: excludeRecordId } } : undefined,
+          orderBy: [{ specimenDate: 'desc' }, { createdAt: 'desc' }],
+          select: {
+            id: true, identifier: true, labNumber: true, formType: true, doctor: true,
+            clinicalDiagnosis: true, specimenDate: true, status: true, createdAt: true,
+            specimens: { select: { type: true, label: true } },
+            requisitionLines: { select: { requisitionId: true }, take: 1 },
+            resultSheets: {
+              orderBy: { createdAt: 'desc' }, take: 1,
+              select: {
+                authorized: true, authorizedAt: true, narrative: true,
+                resultEntries: { select: { resultLines: { select: { abbreviation: true, abnormalFinding: true } } } },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!patient) throw new NotFoundException('Patient not found');
+
+    const uniq = (xs: (string | null | undefined)[]) => [...new Set(xs.filter((x): x is string => !!x))];
+    const records = patient.records.map((r) => {
+      const sheet = r.resultSheets[0] ?? null;
+      const lines = (sheet?.resultEntries ?? []).flatMap((e) => e.resultLines);
+      return {
+        id: r.id,
+        recordNumber: r.identifier,
+        labNumber: r.labNumber,
+        formType: r.formType,
+        specimenDate: r.specimenDate,
+        specimenType: uniq((r.specimens ?? []).map((s) => s.label || s.type)).join(', ') || null,
+        requisitionId: r.requisitionLines[0]?.requisitionId ?? null,
+        doctorName: r.doctor,
+        clinicalDiagnosis: r.clinicalDiagnosis,
+        status: r.status,
+        authorized: sheet?.authorized ?? false,
+        authorizedAt: sheet?.authorizedAt ?? null,
+        narrative: sheet?.authorized ? (sheet.narrative ?? null) : null,
+        findings: uniq(lines.map((l) => l.abbreviation)),
+        abnormalFindings: uniq(lines.filter((l) => l.abnormalFinding).map((l) => l.abbreviation)),
+        createdAt: r.createdAt,
+      };
+    });
+
+    return {
+      patientId: patient.id,
+      patientName: [patient.firstName, patient.middleName, patient.lastName].filter(Boolean).join(' '),
+      patientDob: patient.dateOfBirth,
+      totalRecords: records.length,
+      records,
+    };
+  }
 }

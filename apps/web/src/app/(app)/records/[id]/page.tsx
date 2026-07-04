@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Activity, AlertTriangle, ArrowLeft, Check, CheckCircle2, ChevronRight, Clock, Download,
-  FileText, FlaskConical, Microscope, Pause, Pencil, Play, Receipt, RotateCcw, Send, ShieldCheck, Users, X, XCircle,
+  FileText, FlaskConical, History, Microscope, Pause, Pencil, Play, Receipt, RotateCcw, Send, ShieldCheck, Users, X, XCircle,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
@@ -12,6 +12,7 @@ import { RecordFormDrawer } from '@/components/RecordFormDrawer';
 import { ResultSheetModal } from '@/components/ResultSheetModal';
 import { AuthorizationModal } from '@/components/AuthorizationModal';
 import { RecordAttachments } from '@/components/RecordAttachments';
+import { PriorHistoryPanel } from '@/components/PriorHistoryPanel';
 import { SPECIMEN_LABELS, type FormType } from '@/lib/specimen-types';
 
 // ─── Status + step maps (zero-orange) ────────────────────────────────────────
@@ -200,6 +201,7 @@ export default function RecordDetailPage() {
   const [drawer, setDrawer] = useState(false);
   const [sheetModal, setSheetModal] = useState(false);
   const [authModal, setAuthModal] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [showFullNarrative, setShowFullNarrative] = useState(false);
   const [activeSpec, setActiveSpec] = useState(0);
   const [showAllFeatures, setShowAllFeatures] = useState(false);
@@ -361,6 +363,11 @@ export default function RecordDetailPage() {
           </div>
           <div className="mt-3 text-[17px] font-semibold text-[#1E293B]">{`${record.patient?.firstName ?? ''} ${record.patient?.lastName ?? ''}`.trim() || '—'}</div>
           <div className="text-[14px] text-[#64748B]">{record.client?.officeName || `${record.client?.firstName ?? ''} ${record.client?.lastName ?? ''}`.trim() || '—'}</div>
+          {record.patientId && (
+            <button onClick={() => setHistoryOpen(true)} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-[10px] border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-[7px] text-[13px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#EEF3FF]">
+              <History size={15} /> Prior History
+            </button>
+          )}
         </div>
         <div className={`${LABEL} mb-5`}>Patient Stats</div>
         <Stat icon={Activity} label="Total Records" value={String(totalRecords)} unit="cases" />
@@ -433,6 +440,7 @@ export default function RecordDetailPage() {
       {record.formType && <RecordFormDrawer open={drawer} onClose={() => { setDrawer(false); refetchAll(); }} formType={record.formType as FormType} recordId={id} />}
       <ResultSheetModal open={sheetModal} onClose={() => { setSheetModal(false); refetchAll(); }} record={record} />
       <AuthorizationModal open={authModal} onClose={() => { setAuthModal(false); refetchAll(); }} record={record} />
+      <PriorHistoryPanel open={historyOpen} onClose={() => setHistoryOpen(false)} patientId={record.patientId} excludeRecordId={id} />
 
       {confirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setConfirm(null)}>

@@ -37,6 +37,14 @@ export class PatientsController {
     return this.patients.findAll(query);
   }
 
+  // Prior cytology history for a patient — used from the result-reporting
+  // workflow. Gated to the clinical audience (result reporters), not front desk.
+  @Get('patients/:patientId/history')
+  @RequirePermissions('resultentry:view')
+  history(@Param('patientId') patientId: string, @Query('excludeRecordId') excludeRecordId?: string) {
+    return this.patients.getHistory(patientId, excludeRecordId || undefined);
+  }
+
   @Get('patient/:id')
   @RequirePermissions('patient:view')
   findOne(@Param('id') id: string) {

@@ -10,12 +10,14 @@ import { DrawerHeader, PremiumFormStyles } from '@/components/DrawerChrome';
 import { DrawPad } from './DrawPad';
 import { ResultTemplateSelector } from './ResultTemplateSelector';
 import { composeNarrative, type ResultTemplate } from '@/lib/result-templates';
+import { PriorHistoryPanel } from './PriorHistoryPanel';
 
 interface RecordLite {
   id: string;
   labNumber?: string | null;
   formType?: string | null;
   status?: string;
+  patientId?: string | null;
   patient?: { firstName: string; lastName: string; registrationNo?: string | null } | null;
   client?: { firstName: string; lastName: string; officeName?: string | null; accountNo?: string | null } | null;
   specimens?: Array<{ id: string; type: string }>;
@@ -63,6 +65,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [narrative, setNarrative] = useState('');
   const [templateOpen, setTemplateOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [aiDraftId, setAiDraftId] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<CodeSuggestion[] | null>(null);
   const [flags, setFlags] = useState<ConsistencyFlag[] | null>(null);
@@ -259,6 +262,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
             <button type="button" style={{ ...DS.btnPrimary, background: '#16A34A', opacity: !sheetId || lineCount === 0 || authorized || signOff.isPending ? 0.5 : 1 }} disabled={!sheetId || lineCount === 0 || authorized || signOff.isPending} onClick={confirmSignOff}>Sign off &amp; Approve</button>
             <button type="button" style={{ ...DS.btnSecondary, opacity: !sheetId || lineCount === 0 || save.isPending ? 0.6 : 1 }} disabled={!sheetId || lineCount === 0 || save.isPending} onClick={() => save.mutate()}>Save</button>
             <button type="button" style={{ ...DS.btnSecondary, opacity: !authorized ? 0.5 : 1 }} disabled={!authorized} onClick={openReport}>Email / Print Report</button>
+            {record?.patientId && <button type="button" style={DS.btnSecondary} onClick={() => setHistoryOpen(true)}>Prior History</button>}
             <button type="button" style={DS.btnSecondary} onClick={onClose}>Close</button>
           </>
         }
@@ -437,6 +441,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
       </div>
     </Modal>
     <ResultTemplateSelector open={templateOpen} onClose={() => setTemplateOpen(false)} onSelect={applyTemplate} />
+    <PriorHistoryPanel open={historyOpen} onClose={() => setHistoryOpen(false)} patientId={record?.patientId} excludeRecordId={record?.id} />
     </>
   );
 }

@@ -15,6 +15,7 @@ interface Rec {
   urgent: boolean;
   specimenDate?: string | null;
   createdAt: string;
+  patientId?: string | null;
   patient?: { firstName: string; lastName: string; registrationNo?: string | null } | null;
   client?: { firstName: string; lastName: string; officeName?: string | null; accountNo?: string | null } | null;
   specimens?: Array<{ id: string; type: string }>;
