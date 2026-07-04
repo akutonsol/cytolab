@@ -47,8 +47,8 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Result Sheets', path: '/result-sheets', permission: 'resultsheet:view', phase: 3 },
       { label: 'Authorization', path: '/authorizer', permission: 'resultsheet:authorize', phase: 3 },
-      { label: 'Code Sheets', path: '/code-sheets', permission: 'codesheet:view', phase: 3 },
-      { label: 'Lab Codes', path: '/lab-codes', permission: 'labcode:view', phase: 3 },
+      { label: 'Code Sheets', path: '/code-sheets', permission: 'codesheet:view' },
+      { label: 'Lab Codes', path: '/lab-codes', permission: 'labcode:view' },
       { label: 'Cabinets', path: '/cabinets', permission: 'cabinet:view', phase: 3 },
       { label: 'Reports', path: '/reports', permission: 'report:view', phase: 3 },
     ],
