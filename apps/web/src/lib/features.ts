@@ -130,7 +130,7 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     key: 'SLIDE_LABEL_PRINTING',
     name: 'Slide Label Printing',
     description: 'Generate and print barcoded slide and cassette labels for specimens.',
-    tier: 3, tierName: 'Operational', icon: 'Printer', docsUrl: null, navPath: null, dependsOn: [], comingSoon: true,
+    tier: 3, tierName: 'Operational', icon: 'Printer', docsUrl: null, navPath: null, dependsOn: [],
   },
 
   // ── Tier 4 — Compliance ────────────────────────────────────────────

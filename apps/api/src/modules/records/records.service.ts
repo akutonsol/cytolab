@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { NotificationType, Prisma, RecordStatus, RequisitionFormType, RequisitionStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { LabContext } from '../../common/tenancy/lab-context';
@@ -116,6 +116,7 @@ const ALLOWED_TRANSITIONS: Partial<Record<RecordStatus, RecordStatus[]>> = {
 
 @Injectable()
 export class RecordsService {
+  private readonly logger = new Logger(RecordsService.name);
   constructor(
     private prisma: PrismaService,
     private labContext: LabContext,
@@ -655,6 +656,50 @@ export class RecordsService {
         (a.assignedAt ? +new Date(a.assignedAt) : 0) - (b.assignedAt ? +new Date(b.assignedAt) : 0) ||
         b.hoursElapsed - a.hoursElapsed,
     );
+  }
+
+  // ── Slide label printing (Tier 3) ────────────────────────────────────
+  // Labels are generated on demand from Record + Patient. Print history is
+  // recorded to the server log (there is no writable SystemLog table).
+  private static readonly labelSelect = {
+    id: true, labNumber: true, identifier: true, specimenDate: true, createdAt: true,
+    patient: { select: { firstName: true, lastName: true, dateOfBirth: true } },
+    client: { select: { officeName: true, firstName: true, lastName: true } },
+    specimens: { select: { type: true }, take: 1 },
+    lab: { select: { name: true } },
+  } satisfies Prisma.RecordSelect;
+
+  private toLabel(rec: Prisma.RecordGetPayload<{ select: typeof RecordsService.labelSelect }>) {
+    const labNo = rec.labNumber ?? rec.identifier;
+    return {
+      labNo,
+      patientName: rec.patient ? `${rec.patient.firstName} ${rec.patient.lastName}`.trim() : '—',
+      patientDob: rec.patient?.dateOfBirth?.toISOString() ?? null,
+      specimenType: rec.specimens[0]?.type ?? null,
+      collectionDate: (rec.specimenDate ?? rec.createdAt).toISOString(),
+      clientName: rec.client ? (rec.client.officeName || `${rec.client.firstName} ${rec.client.lastName}`.trim()) : '—',
+      labName: rec.lab?.name ?? '',
+      barcodeValue: labNo,
+      printedAt: new Date().toISOString(),
+      copies: 2,
+    };
+  }
+
+  async labelData(id: string, userName?: string) {
+    const rec = await this.prisma.record.findFirst({ where: { id }, select: RecordsService.labelSelect });
+    if (!rec) throw new NotFoundException('Record not found');
+    const label = this.toLabel(rec);
+    this.logger.log(`Label printed for ${label.labNo}${userName ? ` by ${userName}` : ''}`);
+    return label;
+  }
+
+  async batchLabels(recordIds: string[], userName?: string) {
+    const ids = [...new Set(recordIds)].slice(0, 20);
+    if (ids.length === 0) throw new BadRequestException('No records provided');
+    const recs = await this.prisma.record.findMany({ where: { id: { in: ids } }, select: RecordsService.labelSelect });
+    const labels = recs.map((r) => this.toLabel(r));
+    this.logger.log(`Batch labels printed for ${labels.map((l) => l.labNo).join(', ')}${userName ? ` by ${userName}` : ''}`);
+    return labels;
   }
 
   private generateIdentifier() {

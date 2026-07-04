@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  AlertCircle, AlertTriangle, CheckCircle, ChevronDown, Filter, FlaskConical, MoreHorizontal, Pencil, Plus,
+  AlertCircle, AlertTriangle, CheckCircle, ChevronDown, Filter, FlaskConical, MoreHorizontal, Pencil, Plus, Printer,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { RecordFormDrawer } from '@/components/RecordFormDrawer';
 import { FeatureGate } from '@/components/FeatureGate';
+import { PrintLabelsModal } from '@/components/PrintLabelsModal';
 import { useFeatures } from '@/lib/feature-context';
 import type { FormType } from '@/lib/specimen-types';
 
@@ -248,6 +249,11 @@ export default function SamplesPage() {
     });
   const activeFilterCount = (fStatus ? 1 : 0) + (fUrgent ? 1 : 0) + (fQuery ? 1 : 0) + (fMine ? 1 : 0);
   const showAssignee = isEnabled('CASE_ASSIGNMENT');
+  const showLabels = isEnabled('SLIDE_LABEL_PRINTING');
+  const totalCols = 4 + (showAssignee ? 1 : 0) + (showLabels ? 1 : 0);
+  const [labelSel, setLabelSel] = useState<Set<string>>(new Set());
+  const [printIds, setPrintIds] = useState<string[] | null>(null);
+  const toggleLabelSel = (id: string) => setLabelSel((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const clearFilters = () => { setFStatus(''); setFUrgent(false); setFQuery(''); setFMine(false); };
   const worklist = activeRecs.slice(0, visibleCount);
   const hasMore = visibleCount < activeRecs.length;
@@ -391,22 +397,32 @@ export default function SamplesPage() {
         <div style={{ ...glass, overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #ebeef1' }}>
             <span style={cardHead}>Active Worklist</span>
-            <button onClick={openChoose} title="New sample" style={{ color: SECONDARY, background: 'none', border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>
-              <MoreHorizontal size={18} />
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {showLabels && labelSel.size > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button onClick={() => setPrintIds(Array.from(labelSel))} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 10, background: PRIMARY, border: 'none', color: '#fff', fontFamily: GEIST, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    <Printer size={15} /> Print Labels ({labelSel.size})
+                  </button>
+                  <button onClick={() => setLabelSel(new Set())} style={{ height: 34, padding: '0 10px', borderRadius: 10, background: '#fff', border: '1px solid #E2E8F0', color: SECONDARY, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Clear</button>
+                </div>
+              )}
+              <button onClick={openChoose} title="New sample" style={{ color: SECONDARY, background: 'none', border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>
+                <MoreHorizontal size={18} />
+              </button>
+            </div>
           </div>
 
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                {['Patient', 'Accession / Lab ID', 'Status', ...(showAssignee ? ['Assigned To'] : []), 'Details'].map((h) => (
+                {['Patient', 'Accession / Lab ID', 'Status', ...(showAssignee ? ['Assigned To'] : []), 'Details', ...(showLabels ? ['Labels'] : [])].map((h) => (
                   <th key={h} style={{ textAlign: 'left', padding: '12px 24px', borderBottom: '1px solid #ebeef1', fontFamily: GEIST, fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: SECONDARY }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {worklist.length === 0 && (
-                <tr><td colSpan={showAssignee ? 5 : 4} style={{ padding: '40px 24px', textAlign: 'center', color: '#94A3B8', fontSize: 14 }}>No active samples.</td></tr>
+                <tr><td colSpan={totalCols} style={{ padding: '40px 24px', textAlign: 'center', color: '#94A3B8', fontSize: 14 }}>No active samples.</td></tr>
               )}
               {worklist.map((r) => {
                 const av = avatarFor(patientName(r));
@@ -476,11 +492,22 @@ export default function SamplesPage() {
                       <div style={{ fontSize: 16, color: HEAD }}>{specLabel(r.specimens?.[0]?.type) ?? (r.formType === 'Gynecology' ? 'Gynaecology' : 'Non-Gynaecology')}</div>
                       <div style={{ fontSize: 13, color: SECONDARY, marginTop: 2 }}>{dateFmt(r.specimenDate ?? r.createdAt)}</div>
                     </td>
+                    {/* Labels */}
+                    {showLabels && (
+                      <td style={{ padding: '16px 24px' }} onClick={(e) => e.stopPropagation()}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <input type="checkbox" checked={labelSel.has(r.id)} onChange={() => toggleLabelSel(r.id)} title="Select for batch print" style={{ accentColor: PRIMARY, width: 15, height: 15, cursor: 'pointer' }} />
+                          <button onClick={() => setPrintIds([r.id])} title="Print labels" style={{ display: 'grid', placeItems: 'center', width: 32, height: 32, borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', color: PRIMARY, cursor: 'pointer' }}>
+                            <Printer size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
               <tr ref={sentinelRef}>
-                <td colSpan={showAssignee ? 5 : 4} style={{ padding: '14px 24px', textAlign: 'center', color: '#94A3B8', fontSize: 13, fontWeight: 500 }}>
+                <td colSpan={totalCols} style={{ padding: '14px 24px', textAlign: 'center', color: '#94A3B8', fontSize: 13, fontWeight: 500 }}>
                   {hasMore ? 'Loading more…' : activeRecs.length > 0 ? `Showing all ${activeRecs.length} active samples` : ''}
                 </td>
               </tr>
@@ -578,6 +605,7 @@ export default function SamplesPage() {
       )}
 
       {drawer && <RecordFormDrawer open onClose={() => { setDrawer(null); qc.invalidateQueries({ queryKey: ['records-all'] }); }} formType={drawer.formType} recordId={drawer.recordId} />}
+      {printIds && <PrintLabelsModal recordIds={printIds} onClose={() => setPrintIds(null)} />}
       </div>
 
       {toast && (

@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Activity, AlertTriangle, ArrowLeft, Check, CheckCircle2, ChevronRight, Clock, Download,
-  FileText, FlaskConical, History, Microscope, Pause, Pencil, Play, Receipt, RotateCcw, Send, ShieldCheck, Users, X, XCircle,
+  FileText, FlaskConical, History, Microscope, Pause, Pencil, Play, Printer, Receipt, RotateCcw, Send, ShieldCheck, Users, X, XCircle,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
@@ -14,6 +14,7 @@ import { AuthorizationModal } from '@/components/AuthorizationModal';
 import { RecordAttachments } from '@/components/RecordAttachments';
 import { PriorHistoryPanel } from '@/components/PriorHistoryPanel';
 import { FeatureGate } from '@/components/FeatureGate';
+import { PrintLabelsModal } from '@/components/PrintLabelsModal';
 import { useFeatures } from '@/lib/feature-context';
 import { useAuth } from '@/lib/auth';
 import { avatarColor, type WorkloadUser } from '@/lib/workload';
@@ -205,6 +206,7 @@ export default function RecordDetailPage() {
   const [drawer, setDrawer] = useState(false);
   const [sheetModal, setSheetModal] = useState(false);
   const [authModal, setAuthModal] = useState(false);
+  const [printLabels, setPrintLabels] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [showFullNarrative, setShowFullNarrative] = useState(false);
   const [activeSpec, setActiveSpec] = useState(0);
@@ -505,6 +507,9 @@ export default function RecordDetailPage() {
 
         <div className={`${LABEL} mb-3`}>Next Steps</div>
         <div className="flex flex-col gap-2">
+          <FeatureGate feature="SLIDE_LABEL_PRINTING">
+            <button onClick={() => setPrintLabels(true)} className={rightBtn}><Printer size={15} /> Print Labels</button>
+          </FeatureGate>
           {status === 'Resulted' && <button onClick={() => router.push('/authorizer')} className={rightBtn}><CheckCircle2 size={15} /> Open Authorizer</button>}
           {status === 'Approved' && <button onClick={() => router.push(`/reports?recordId=${id}`)} className={rightBtn}><FileText size={15} /> Release Report</button>}
           {status === 'Approved' && <button onClick={() => router.push(`/billing?recordId=${id}`)} className={rightBtn}><Receipt size={15} /> Create Invoice</button>}
@@ -518,6 +523,7 @@ export default function RecordDetailPage() {
       <ResultSheetModal open={sheetModal} onClose={() => { setSheetModal(false); refetchAll(); }} record={record} />
       <AuthorizationModal open={authModal} onClose={() => { setAuthModal(false); refetchAll(); }} record={record} />
       <PriorHistoryPanel open={historyOpen} onClose={() => setHistoryOpen(false)} patientId={record.patientId} excludeRecordId={id} />
+      {printLabels && <PrintLabelsModal recordIds={[id]} onClose={() => setPrintLabels(false)} />}
 
       {confirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setConfirm(null)}>

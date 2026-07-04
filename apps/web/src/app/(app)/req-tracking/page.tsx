@@ -12,6 +12,7 @@ import {
   NEXT_ACTION, PIPELINE, STAGE_META, timeInStage,
   type TrackingCard, type TrackingDetail, type TrackingStats,
 } from '@/lib/req-tracking';
+import { PrintLabelsModal } from '@/components/PrintLabelsModal';
 
 function StageBadge({ stage }: { stage: keyof typeof STAGE_META }) {
   const m = STAGE_META[stage];
@@ -185,11 +186,30 @@ export default function ReqTrackingPage() {
     enabled, refetchInterval: 60_000,
   });
 
+  const labelsEnabled = isEnabled('SLIDE_LABEL_PRINTING');
+  const [benchPromptReq, setBenchPromptReq] = useState<string | null>(null);
+  const [printRecordIds, setPrintRecordIds] = useState<string[] | null>(null);
+
   const quickAdvance = useMutation({
     mutationFn: ({ id, endpoint }: { id: string; endpoint: string }) => api.post(`/req-tracking/${id}/${endpoint}`, {}).then((r) => r.data),
-    onSuccess: () => { ['req-tracking-list', 'req-tracking-stats'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); },
+    onSuccess: (_d, vars) => {
+      ['req-tracking-list', 'req-tracking-stats'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+      // Natural workflow: specimen arrives at bench → offer to print slide labels.
+      if (vars.endpoint === 'receive-bench' && labelsEnabled) setBenchPromptReq(vars.id);
+    },
     onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not advance'),
   });
+
+  // On "Yes", resolve the requisition's linked records and open the print modal.
+  const openLabelsForRequisition = async (requisitionId: string) => {
+    setBenchPromptReq(null);
+    try {
+      const res = await api.get('/specimens/requisition', { params: { requisitionId } });
+      const ids = (res.data?.data ?? []).map((r: any) => r.id).filter(Boolean);
+      if (ids.length === 0) { message.info('No records linked to this requisition yet.'); return; }
+      setPrintRecordIds(ids);
+    } catch { message.error('Could not load records for label printing.'); }
+  };
 
   const byStage = useMemo(() => {
     const m: Record<string, TrackingCard[]> = { Pending: [], FormReceived: [], BenchReceived: [], Verified: [], Filed: [] };
@@ -295,6 +315,22 @@ export default function ReqTrackingPage() {
 
       {scanner && <ScannerModal onClose={() => setScanner(false)} onOpenDetail={(id) => setDetailId(id)} />}
       {detailId && <DetailDrawer requisitionId={detailId} onClose={() => setDetailId(null)} />}
+
+      {/* Bench-received → offer to print slide labels (natural workflow). */}
+      {benchPromptReq && createPortal(
+        <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2200, background: 'rgba(15,23,42,0.55)' }} onClick={() => setBenchPromptReq(null)}>
+          <div className="w-full max-w-[380px] rounded-2xl bg-white p-6 text-center shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="text-[17px] font-bold text-[#0F172A]">Specimen received at bench</div>
+            <p className="mt-1.5 text-[14px] text-[#64748B]">Print slide labels now?</p>
+            <div className="mt-5 flex justify-center gap-2">
+              <button onClick={() => setBenchPromptReq(null)} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#64748B]">Not now</button>
+              <button onClick={() => openLabelsForRequisition(benchPromptReq)} className="rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white">Print Labels</button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+      {printRecordIds && <PrintLabelsModal recordIds={printRecordIds} onClose={() => setPrintRecordIds(null)} />}
     </div>
   );
 }

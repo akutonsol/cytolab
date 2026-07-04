@@ -49,6 +49,7 @@ export const BUILT_FEATURES: ReadonlySet<FeatureKey> = new Set<FeatureKey>([
   'QC_MODULE',
   'BATCH_AUTHORIZATION',
   'REQUISITION_TRACKING',
+  'SLIDE_LABEL_PRINTING',
   'VOICE_TO_TEXT',
   'RESULT_TEMPLATES',
 ]);

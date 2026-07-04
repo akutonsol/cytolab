@@ -80,6 +80,19 @@ export class RecordsController {
     return this.records.assign(id, user.userId, dto.assignedToId);
   }
 
+  // ── Slide label printing (Tier 3) ──
+  @Get('records/batch-labels')
+  @RequirePermissions('record:view')
+  batchLabels(@CurrentUser() user: AuthUser, @Query('recordIds') recordIds: string) {
+    return this.records.batchLabels((recordIds ?? '').split(',').map((s) => s.trim()).filter(Boolean), user.email);
+  }
+
+  @Get('records/:id/label')
+  @RequirePermissions('record:view')
+  label(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.records.labelData(id, user.email);
+  }
+
   @Get('specimens')
   @RequirePermissions('record:view')
   findAll(@Query() query: RecordQueryDto) {
