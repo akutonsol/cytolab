@@ -55,3 +55,10 @@ export class UpdateResultSheetDto {
 export class ResultSheetQueryDto extends PaginationDto {
   @IsString() @IsOptional() recordId?: string;
 }
+
+export class AuthorizeResultSheetDto {
+  // Optional signature the authorizer signs with (PNG data URI). When present it
+  // becomes the authorizer's stored signature, which the report renders in place
+  // of the typed-name fallback.
+  @IsString() @IsOptional() signature?: string;
+}

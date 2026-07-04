@@ -4,6 +4,7 @@ import { AuthUser, CurrentUser } from '../../common/decorators/current-user.deco
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { ResultSheetsService } from './result-sheets.service';
 import {
+  AuthorizeResultSheetDto,
   CreateResultSheetDto,
   ResultSheetQueryDto,
   UpdateResultSheetDto,
@@ -46,7 +47,7 @@ export class ResultSheetsController {
   @Put('resultsheet/authorize/:id')
   @RequirePermissions('resultsheet:authorize')
   @ApiOperation({ summary: 'Authorize a result sheet (legacy: PUT /resultsheet/approve/:id)' })
-  authorize(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.resultSheets.authorize(id, user.userId);
+  authorize(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: AuthorizeResultSheetDto) {
+    return this.resultSheets.authorize(id, user.userId, dto.signature);
   }
 }

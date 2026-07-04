@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Patch, Post, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { ChangePasswordDto, CreateUserDto, UpdateUserDto } from './dto/user.dto';
+import { ChangePasswordDto, CreateUserDto, SaveSignatureDto, UpdateUserDto } from './dto/user.dto';
 import { UsersService } from './users.service';
 
 @ApiTags('users')
@@ -10,6 +10,18 @@ import { UsersService } from './users.service';
 @Controller('users')
 export class UsersController {
   constructor(private users: UsersService) {}
+
+  // ── Own signature (no extra permission — a user manages their own). Declared
+  //    before :id so the two-segment path is unambiguous. ──
+  @Get('me/signature')
+  getMySignature(@CurrentUser() user: AuthUser) {
+    return this.users.getMySignature(user.userId);
+  }
+
+  @Put('me/signature')
+  saveMySignature(@CurrentUser() user: AuthUser, @Body() dto: SaveSignatureDto) {
+    return this.users.saveMySignature(user.userId, dto.signatureDataUri);
+  }
 
   // Queries are lab-scoped automatically by the tenancy guard (labId from JWT).
   @Get()

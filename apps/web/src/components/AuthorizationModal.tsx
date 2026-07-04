@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { DS } from '@/lib/drawer-styles';
 import { DrawerHeader, PremiumFormStyles } from '@/components/DrawerChrome';
+import { DrawPad } from './DrawPad';
 
 interface RecordLite {
   id: string;
@@ -62,7 +63,20 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
   const [aiDraftId, setAiDraftId] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<CodeSuggestion[] | null>(null);
   const [flags, setFlags] = useState<ConsistencyFlag[] | null>(null);
+  const [signatureDataUri, setSignatureDataUri] = useState<string | null>(null);
+  const [saveSignature, setSaveSignature] = useState(false);
+  const [savedSignature, setSavedSignature] = useState<string | null>(null);
   const isGyn = record?.formType === 'Gynecology';
+
+  // Load the authorizer's saved profile signature so they can reuse it.
+  useEffect(() => {
+    if (!open) return;
+    setSignatureDataUri(null);
+    setSaveSignature(false);
+    api.get('/users/me/signature')
+      .then((r) => { if (r.data?.signatureUrl) setSavedSignature(r.data.signatureUrl); })
+      .catch(() => {});
+  }, [open]);
 
   const { data: aiSettings } = useQuery<AiSettings>({
     queryKey: ['ai-settings'],
@@ -126,7 +140,14 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
   });
 
   const signOff = useMutation({
-    mutationFn: async () => { await saveContent(); await api.put(`/resultsheet/authorize/${sheetId}`, {}); },
+    mutationFn: async () => {
+      await saveContent();
+      await api.put(`/resultsheet/authorize/${sheetId}`, { signature: signatureDataUri ?? undefined });
+      // Best-effort profile save; never block the authorization on it.
+      if (saveSignature && signatureDataUri) {
+        await api.put('/users/me/signature', { signatureDataUri }).catch(() => {});
+      }
+    },
     onSuccess: () => { message.success('Signed off — record Approved, report releasable'); invalidate(); onClose(); },
     onError: (e: any) => message.error(e?.response?.data?.message ?? 'Sign-off failed'),
   });
@@ -330,6 +351,65 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
               </div>
             ))
           )}
+
+          {/* Signature section */}
+          <div style={{
+            background: '#F8F9FF', borderRadius: 14,
+            border: '1px solid #E0E7FF', padding: '16px 18px',
+            marginTop: 16,
+          }}>
+            <div style={{
+              display: 'flex', justifyContent: 'space-between',
+              alignItems: 'center', marginBottom: 12,
+            }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>
+                  Authorization Signature
+                </div>
+                <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>
+                  Your signature will appear on the released report
+                </div>
+              </div>
+              {/* Load saved signature button */}
+              {savedSignature && !signatureDataUri && (
+                <button
+                  type="button"
+                  onClick={() => setSignatureDataUri(savedSignature)}
+                  style={{
+                    fontSize: 12, fontWeight: 600, color: '#4F46E5',
+                    background: '#EEF2FF', border: 'none',
+                    borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
+                  }}>
+                  Use saved signature
+                </button>
+              )}
+            </div>
+
+            <DrawPad
+              value={signatureDataUri}
+              onChange={setSignatureDataUri}
+              width={460}
+              height={130}
+            />
+
+            {/* Save for future use */}
+            {signatureDataUri && (
+              <label style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                marginTop: 10, cursor: 'pointer',
+              }}>
+                <input
+                  type="checkbox"
+                  checked={saveSignature}
+                  onChange={(e) => setSaveSignature(e.target.checked)}
+                  style={{ accentColor: '#4F46E5', width: 15, height: 15 }}
+                />
+                <span style={{ fontSize: 12, color: '#64748B' }}>
+                  Save signature to my profile for future authorizations
+                </span>
+              </label>
+            )}
+          </div>
         </>
       )}
       </div>

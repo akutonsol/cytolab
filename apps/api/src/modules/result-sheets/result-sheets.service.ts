@@ -200,9 +200,16 @@ export class ResultSheetsService {
    * Authorization gate. Sets authorized + records who/when. The controller
    * restricts this to holders of resultsheet:authorize (the Authorizer role).
    */
-  async authorize(id: string, userId: string) {
+  async authorize(id: string, userId: string, signature?: string) {
     const sheet = await this.findOne(id);
     if (sheet.authorized) throw new BadRequestException('Result sheet is already authorized');
+
+    // If the authorizer signed with a hand-drawn signature, persist it to their
+    // profile so the on-demand report render (which reads User.signatureUrl)
+    // stamps the drawn image instead of the typed-name fallback.
+    if (signature?.startsWith('data:image/png;base64,')) {
+      await this.prisma.user.update({ where: { id: userId }, data: { signatureUrl: signature } });
+    }
 
     // First authorization vs re-authorization after a prior de-authorization.
     const priorAuthorizations = await this.prisma.resultSheetEvent.count({

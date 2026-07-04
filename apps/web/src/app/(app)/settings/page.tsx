@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { Inbox } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Inbox, Loader2, Save, Trash2 } from 'lucide-react';
 import { SettingsListPane, type PaneField } from '@/components/SettingsListPane';
 import { AiSettingsPane } from '@/components/AiSettingsPane';
+import { DrawPad } from '@/components/DrawPad';
+import { api } from '@/lib/api';
 
 type SectionId =
   | 'labcodes' | 'codesheet' | 'codefindings'
   | 'services' | 'taxes'
-  | 'ai' | 'company' | 'notification' | 'departments';
+  | 'ai' | 'signature' | 'company' | 'notification' | 'departments';
 
 const NAV_GROUPS: { title: string; items: { id: SectionId; label: string }[] }[] = [
   {
@@ -30,6 +32,7 @@ const NAV_GROUPS: { title: string; items: { id: SectionId; label: string }[] }[]
     title: 'General',
     items: [
       { id: 'ai', label: 'AI Assistance' },
+      { id: 'signature', label: 'My Signature' },
       { id: 'company', label: 'Company' },
       { id: 'notification', label: 'Notification' },
       { id: 'departments', label: 'Departments' },
@@ -150,6 +153,8 @@ export default function SettingsPage() {
         );
       case 'ai':
         return <AiSettingsPane />;
+      case 'signature':
+        return <SignatureSettings />;
       default: {
         const label = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.id === active)?.label ?? 'Settings';
         return <ComingSoon label={label} />;
@@ -185,6 +190,80 @@ export default function SettingsPage() {
       {/* key by section so each pane remounts — otherwise the shared
           SettingsListPane instance leaks its draft/edit state across sections. */}
       <div className="glass-card min-w-0 flex-1 rounded-2xl p-6" key={active}>{pane}</div>
+    </div>
+  );
+}
+
+// ── My Signature: draw once, reused when authorizing result sheets and stamped
+//    onto released reports (falls back to typed name when unset). ──
+function SignatureSettings() {
+  const [currentSignature, setCurrentSignature] = useState<string | null>(null);
+  const [newSignature, setNewSignature] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [padKey, setPadKey] = useState(0);
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.get('/users/me/signature')
+      .then((r) => setCurrentSignature(r.data.signatureUrl))
+      .catch(() => {});
+  }, []);
+
+  const saveSignature = async () => {
+    if (!newSignature) return;
+    setSaving(true);
+    try {
+      await api.put('/users/me/signature', { signatureDataUri: newSignature });
+      setCurrentSignature(newSignature);
+      setNewSignature(null);
+      setPadKey((k) => k + 1);
+      setToast('Signature saved');
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const clearSignature = () => {
+    setNewSignature(null);
+    setPadKey((k) => k + 1);
+  };
+
+  return (
+    <div>
+      <h3 className="mb-1 font-headline-sm text-headline-sm text-charcoal-heading">My Signature</h3>
+      <p className="mb-4 font-body-sm text-body-sm text-secondary">
+        Your signature is used when authorizing result sheets and appears on released reports.
+      </p>
+
+      <DrawPad key={padKey} value={newSignature} onChange={setNewSignature} width={500} height={150} />
+
+      <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+        <button onClick={saveSignature} disabled={!newSignature || saving} className="btn-primary flex items-center gap-2">
+          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+          Save Signature
+        </button>
+        {newSignature && (
+          <button onClick={clearSignature} className="btn-secondary flex items-center gap-2">
+            <Trash2 size={14} /> Clear
+          </button>
+        )}
+      </div>
+
+      {currentSignature && (
+        <div style={{ marginTop: 16 }}>
+          <p className="mb-2 font-label-sm text-label-sm uppercase tracking-wider text-secondary">Current signature:</p>
+          <div style={{ border: '1px solid #E2E8F0', borderRadius: 10, padding: 12, background: 'white', display: 'inline-block' }}>
+            <img src={currentSignature} alt="Signature" style={{ height: 60, display: 'block' }} />
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: '#16A34A' }}>
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

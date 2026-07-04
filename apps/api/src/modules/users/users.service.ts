@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -103,6 +104,29 @@ export class UsersService {
       data: { passwordHash: await argon2.hash(dto.newPassword) },
     });
     return { changed: true };
+  }
+
+  // ── Signature (used when authorizing result sheets; rendered on reports) ──
+  async getMySignature(userId: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId },
+      select: { signatureUrl: true },
+    });
+    return { signatureUrl: user?.signatureUrl ?? null };
+  }
+
+  async saveMySignature(userId: string, signatureDataUri: string) {
+    // Validate it's a PNG data URI.
+    if (!signatureDataUri.startsWith('data:image/png;base64,')) {
+      throw new BadRequestException('Invalid signature format');
+    }
+    // Store as a data URI directly (no file upload needed for now).
+    // Phase 6: migrate to a GCS bucket URL.
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { signatureUrl: signatureDataUri },
+    });
+    return { ok: true };
   }
 
   private flatten(u: any) {
