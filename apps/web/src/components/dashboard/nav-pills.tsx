@@ -4,9 +4,11 @@ import { createElement } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Dropdown } from 'antd';
 import { ChevronDown } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { ANALYTICS_ITEM, CENTER_GROUP_KEYS, HOME_ITEM, NAV_GROUPS } from '@/lib/nav';
 import { useAuth } from '@/lib/auth';
 import { useFeatures } from '@/lib/feature-context';
+import { api } from '@/lib/api';
 
 const pill: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: 10, padding: '7px 9px', borderRadius: 999,
@@ -39,6 +41,26 @@ export function NavPills({ justify = 'flex-end' }: { justify?: React.CSSProperti
   const { isEnabled } = useFeatures();
   const visible = (i: any) => can(i.permission) && (!i.feature || isEnabled(i.feature));
 
+  // Live pending-escalation count → red badge on the Escalations nav item.
+  // Shares the ['escalation-summary'] cache with the dashboard/escalations page,
+  // so the queryFn returns the full summary object (consumers read .pending).
+  const { data: escSummary } = useQuery({
+    queryKey: ['escalation-summary'],
+    queryFn: () => api.get('/escalations/summary').then((r) => r.data as { pending: number }),
+    enabled: can('record:view') && isEnabled('ABNORMAL_ESCALATION'),
+    refetchInterval: 60_000,
+  });
+  const escPending = escSummary?.pending ?? 0;
+  const itemLabel = (i: any) =>
+    i.path === '/escalations' && escPending > 0 ? (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        {i.label}
+        <span style={{ minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, background: '#EF4444', color: '#fff', fontSize: 11, fontWeight: 700, display: 'inline-grid', placeItems: 'center' }}>{escPending > 9 ? '9+' : escPending}</span>
+      </span>
+    ) : (
+      i.label
+    );
+
   const centerGroups = CENTER_GROUP_KEYS.map((k) => NAV_GROUPS.find((g) => g.key === k))
     .filter(Boolean)
     .map((g) => ({ ...(g as any), visible: (g as any).items.filter(visible) }))
@@ -59,7 +81,7 @@ export function NavPills({ justify = 'flex-end' }: { justify?: React.CSSProperti
       <style>{`.cyto-hero-pill{transition:transform .18s cubic-bezier(0.4,0,0.2,1),box-shadow .18s}.cyto-hero-pill:hover{transform:translateY(-1px)}`}</style>
       {can(HOME_ITEM.permission) && Pill(pathname === HOME_ITEM.path, createElement(HOME_ITEM.icon!, { size: 16, strokeWidth: 1.9 }), HOME_ITEM.label, true, () => router.push(HOME_ITEM.path))}
       {centerGroups.map((g) => (
-        <Dropdown key={g.key} trigger={['hover', 'click']} menu={{ items: g.visible.map((i: any) => ({ key: i.path, label: i.label })), onClick: ({ key }) => router.push(key) }}>
+        <Dropdown key={g.key} trigger={['hover', 'click']} menu={{ items: g.visible.map((i: any) => ({ key: i.path, label: itemLabel(i) })), onClick: ({ key }) => router.push(key) }}>
           {Pill(groupActive(g.visible), createElement(g.icon as any, { size: 16, strokeWidth: 1.9 }), g.label, true)}
         </Dropdown>
       ))}

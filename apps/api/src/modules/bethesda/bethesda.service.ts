@@ -5,6 +5,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
+import { EscalationService } from '../escalation/escalation.service';
 import { UpsertBethesdaResultDto } from './dto/bethesda.dto';
 
 // Selection subset used by the pure narrative/shortCode helpers.
@@ -117,7 +118,10 @@ export function deriveShortCode(d: BethesdaSelections): string | null {
 
 @Injectable()
 export class BethesdaService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private escalation: EscalationService,
+  ) {}
 
   async getByRecord(recordId: string) {
     const result = await this.prisma.bethesdaResult.findFirst({
@@ -164,6 +168,11 @@ export class BethesdaService {
       update: { specimenAdequacy: dto.specimenAdequacy, reportedById: userId, reportedAt: new Date(), ...data },
       include: { reportedBy: { select: { firstName: true, lastName: true } } },
     });
+
+    // Re-evaluate abnormal-result escalation from the new classification
+    // (best-effort; runs regardless of the ABNORMAL_ESCALATION UI flag).
+    await this.escalation.evaluateRecord(recordId);
+
     return { ...result, shortCode: deriveShortCode(result as BethesdaSelections) };
   }
 

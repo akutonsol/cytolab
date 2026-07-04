@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   AppWindow,
   BarChart2,
   CreditCard,
@@ -54,6 +55,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Code Sheets', path: '/code-sheets', permission: 'codesheet:view' },
       { label: 'Result Templates', path: '/result-templates', permission: 'resultentry:view', feature: 'RESULT_TEMPLATES' },
       { label: 'TAT Alerts', path: '/tat', permission: 'record:view', feature: 'TAT_ALERTS' },
+      { label: 'Escalations', path: '/escalations', permission: 'record:view', feature: 'ABNORMAL_ESCALATION', icon: AlertTriangle },
       { label: 'Lab Codes', path: '/lab-codes', permission: 'labcode:view' },
       { label: 'Cabinets', path: '/cabinets', permission: 'cabinet:view', phase: 3 },
       { label: 'Reports', path: '/reports', permission: 'report:view', phase: 3 },

@@ -21,7 +21,7 @@ describeIf('Results workflow (integration)', () => {
   const labContext = new LabContext();
   const prisma = new PrismaService(labContext);
   const records = new RecordsService(prisma, labContext, { notifyUser: async () => {}, notifyPermission: async () => {} } as any);
-  const resultSheets = new ResultSheetsService(prisma, records);
+  const resultSheets = new ResultSheetsService(prisma, records, { evaluateRecord: async () => {} } as any);
 
   const tag = `rw-${Date.now().toString(36)}`;
   let labId: string;

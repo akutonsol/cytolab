@@ -216,6 +216,8 @@ export default function RecordDetailPage() {
   const { data: sheet } = useQuery<any>({ queryKey: ['result-sheet', sheetId], queryFn: () => api.get(`/resultsheet/${sheetId}`).then((r) => r.data), enabled: !!sheetId });
   const { data: schema } = useQuery<any>({ queryKey: ['form-schema', record?.formType], queryFn: () => api.get(`/form-config/${record.formType}/schema`).then((r) => r.data), enabled: !!record?.formType });
   const { data: patientRecs } = useQuery<Paginated<any>>({ queryKey: ['patient-records', record?.patientId], enabled: !!record?.patientId, queryFn: () => api.get('/specimens/patient', { params: { patientId: record.patientId, pageSize: 100 } }).then((r) => r.data) });
+  const { data: recordEscalations } = useQuery<any[]>({ queryKey: ['escalations', 'record', id], enabled: !!id, queryFn: () => api.get('/escalations', { params: { recordId: id } }).then((r) => r.data) });
+  const openEscalation = (recordEscalations ?? []).find((e) => ['Pending', 'Acknowledged', 'UnderReview'].includes(e.status));
 
   const refetchAll = () => { qc.invalidateQueries({ queryKey: ['record-detail', id] }); qc.invalidateQueries({ queryKey: ['record-sheets', id] }); };
 
@@ -368,6 +370,20 @@ export default function RecordDetailPage() {
             <FeatureGate feature="PRIOR_HISTORY">
               <button onClick={() => setHistoryOpen(true)} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-[10px] border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-[7px] text-[13px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#EEF3FF]">
                 <History size={15} /> Prior History
+              </button>
+            </FeatureGate>
+          )}
+          {openEscalation && (
+            <FeatureGate feature="ABNORMAL_ESCALATION">
+              <button onClick={() => router.push('/escalations')} className="mt-3 flex w-full items-start gap-2.5 rounded-[10px] border px-3.5 py-2.5 text-left transition-colors"
+                style={{ background: openEscalation.severity === 'Abnormal' ? '#FEFCE8' : '#FEF2F2', borderColor: openEscalation.severity === 'Abnormal' ? '#FEF08A' : '#FECACA' }}>
+                <AlertTriangle size={15} className="mt-0.5 shrink-0" style={{ color: openEscalation.severity === 'Malignant' ? '#B91C1C' : openEscalation.severity === 'HighGrade' ? '#EF4444' : '#A16207' }} />
+                <span>
+                  <span className="block text-[13px] font-bold" style={{ color: openEscalation.severity === 'Malignant' ? '#B91C1C' : openEscalation.severity === 'HighGrade' ? '#EF4444' : '#A16207' }}>
+                    Escalation Alert — {openEscalation.severity === 'HighGrade' ? 'High Grade' : openEscalation.severity}
+                  </span>
+                  <span className="block text-[12px] text-[#64748B]">Status: {openEscalation.status} · click to review</span>
+                </span>
               </button>
             </FeatureGate>
           )}

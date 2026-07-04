@@ -4,13 +4,15 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
 import {
-  Activity, ArrowRight, ArrowUpRight, Calendar, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FileCheck, FileText, FlaskConical,
+  Activity, AlertTriangle, ArrowRight, ArrowUpRight, Calendar, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FileCheck, FileText, FlaskConical,
   Folder, Hourglass, Microscope, Monitor, MoreHorizontal, Plus, ShieldCheck, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
   TestTube, TrendingUp, User, Users,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useFeatures } from '@/lib/feature-context';
+import { FeatureGate } from '@/components/FeatureGate';
 import { GlassCard } from '@/components/dashboard/glass-card';
 import { HeroBanner, type HeroChip } from '@/components/dashboard/hero-banner';
 import { NavPills } from '@/components/dashboard/nav-pills';
@@ -176,6 +178,13 @@ export default function DashboardPage() {
     queryKey: ['patients-overview'],
     queryFn: () => api.get('/patients/overview').then((r) => r.data),
   });
+  const { isEnabled } = useFeatures();
+  const { data: escSummary } = useQuery({
+    queryKey: ['escalation-summary'],
+    queryFn: () => api.get('/escalations/summary').then((r) => r.data as { pending: number; malignantCount: number; highGradeCount: number }),
+    enabled: isEnabled('ABNORMAL_ESCALATION'),
+    refetchInterval: 60_000,
+  });
 
   // The queue drives an in-place selection: which record the AI stage + findings
   // reflect. Defaults to the top-priority record once data arrives.
@@ -274,6 +283,24 @@ export default function DashboardPage() {
     <div className="dashboard-theme -m-4 md:-m-8" style={{ minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'relative', zIndex: 1, padding: '36px 40px 40px' }}>
         <HeroBanner firstName={firstName} featured={featured} chips={chips} nav={<NavPills />} />
+
+        <FeatureGate feature="ABNORMAL_ESCALATION">
+          {(escSummary?.pending ?? 0) > 0 && (
+            <button onClick={() => router.push('/escalations')}
+              style={{ marginTop: 24, width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 18, border: '1px solid #FECACA', background: '#FEF2F2', cursor: 'pointer', textAlign: 'left' }}>
+              <span style={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: 12, background: '#FEE2E2', color: '#B91C1C', flexShrink: 0 }}><AlertTriangle size={22} /></span>
+              <span style={{ flex: 1 }}>
+                <span style={{ display: 'block', fontSize: 16, fontWeight: 700, color: '#0F172A' }}>{escSummary!.pending} pending escalation{escSummary!.pending === 1 ? '' : 's'}</span>
+                <span style={{ display: 'block', fontSize: 13, color: '#64748B', marginTop: 2 }}>
+                  {escSummary!.malignantCount > 0 && `${escSummary!.malignantCount} malignant · `}
+                  {escSummary!.highGradeCount > 0 && `${escSummary!.highGradeCount} high-grade · `}
+                  Review abnormal cytology findings
+                </span>
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#B91C1C' }}>Review →</span>
+            </button>
+          )}
+        </FeatureGate>
 
         <div style={{ marginTop: 40 }} className="flex flex-col gap-5">
           {/* ═══ SECTION 1: KPI STRIP ═══ */}

@@ -204,6 +204,7 @@ model Lab {
   tatConfigs             TATConfig[]
   tatAlerts              TATAlert[]
   features               LabFeature[]
+  escalations            EscalationRecord[]
 }
 
 model Account {
@@ -278,6 +279,8 @@ model User {
   bethesdaResults        BethesdaResult[]       @relation("BethesdaReporter")
   acknowledgedTatAlerts  TATAlert[]             @relation("TATAcknowledger")
   toggledFeatures        LabFeature[]           @relation("LabFeatureToggler")
+  escalationsAssigned    EscalationRecord[]     @relation("EscalationAssignee")
+  escalationsReviewed    EscalationRecord[]     @relation("EscalationReviewer")
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -537,6 +540,7 @@ model Record {
   resultSheets      ResultSheet[]
   bethesdaResult    BethesdaResult?
   tatAlerts         TATAlert[]
+  escalations       EscalationRecord[]
   bills             Bill[]
   changeRequests    ChangeRequest[]
   attachments       RecordAttachment[]
@@ -1889,4 +1893,66 @@ model LabFeature {
 
   @@unique([labId, featureKey])
   @@index([labId])
+}
+
+// ─── Abnormal Result Escalation (Tier 2 Clinical) ────────────────────────────
+
+enum EscalationSeverity {
+  Abnormal // LSIL, ASCUS, AGC — notify physician, flag for review
+  HighGrade // HSIL, ASC-H, AIS, AGC-favor-neoplastic — urgent review required
+  Malignant // SCC, Adenocarcinoma, other malignancy — immediate escalation
+}
+
+enum EscalationTrigger {
+  BethesdaClassification // triggered by a Bethesda result
+  NarrativeKeyword // triggered by keyword match on the narrative
+  ManualFlag // manually escalated by staff
+}
+
+enum EscalationStatus {
+  Pending // created, not yet reviewed
+  Acknowledged
+  UnderReview
+  Resolved
+  Dismissed // false positive, dismissed by senior pathologist
+}
+
+// An automatically- or manually-raised escalation for an abnormal/malignant
+// result. Created by EscalationService.evaluateRecord regardless of the
+// ABNORMAL_ESCALATION UI feature flag (clinical safety); only the management UI
+// is gated. At most one OPEN escalation (Pending/Acknowledged/UnderReview) is
+// kept per record — the trigger is idempotent.
+model EscalationRecord {
+  id       String             @id @default(cuid())
+  labId    String
+  lab      Lab                @relation(fields: [labId], references: [id])
+  recordId String
+  record   Record             @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  severity EscalationSeverity
+  trigger  EscalationTrigger
+  status   EscalationStatus   @default(Pending)
+
+  // Who needs to act (senior pathologist).
+  assignedToId String?
+  assignedTo   User?   @relation("EscalationAssignee", fields: [assignedToId], references: [id])
+
+  // Referring physician notification.
+  physicianNotifiedAt  DateTime?
+  physicianNotifiedVia String? // "portal" | "in-app"
+
+  // Review tracking.
+  reviewedById String?
+  reviewedBy   User?     @relation("EscalationReviewer", fields: [reviewedById], references: [id])
+  reviewedAt   DateTime?
+  reviewNotes  String?
+
+  // Auto-resolved when the record is re-authorized NILM or manually closed.
+  resolvedAt     DateTime?
+  resolvedReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([labId, status])
+  @@index([recordId])
 }

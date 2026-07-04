@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../database/prisma.module';
 import { RecordsModule } from '../records/records.module';
+import { EscalationModule } from '../escalation/escalation.module';
 import { ResultSheetsController } from './result-sheets.controller';
 import { ResultSheetsService } from './result-sheets.service';
 
 @Module({
-  imports: [PrismaModule, RecordsModule],
+  imports: [PrismaModule, RecordsModule, EscalationModule],
   controllers: [ResultSheetsController],
   providers: [ResultSheetsService],
   exports: [ResultSheetsService],

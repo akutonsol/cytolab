@@ -4,6 +4,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { RecordsService } from '../records/records.service';
+import { EscalationService } from '../escalation/escalation.service';
 import {
   CreateResultEntryDto,
   CreateResultSheetDto,
@@ -48,6 +49,7 @@ export class ResultSheetsService {
   constructor(
     private prisma: PrismaService,
     private records: RecordsService,
+    private escalation: EscalationService,
   ) {}
 
   // Build the nested entries/lines create payload. The tenancy guard stamps
@@ -248,6 +250,11 @@ export class ResultSheetsService {
         notes: 'Result sheet authorized',
       });
     }
+
+    // Abnormal-result escalation (clinical safety — runs regardless of the
+    // ABNORMAL_ESCALATION UI flag; best-effort, never throws).
+    await this.escalation.evaluateRecord(sheet.recordId);
+
     return authorized;
   }
 }

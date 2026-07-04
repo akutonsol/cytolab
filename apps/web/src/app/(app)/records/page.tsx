@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   AlertCircle, AlertTriangle, CheckCircle, ChevronDown, Filter, FlaskConical, MoreHorizontal, Pencil, Plus,
@@ -10,6 +10,7 @@ import { api, type Paginated } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { RecordFormDrawer } from '@/components/RecordFormDrawer';
 import { FeatureGate } from '@/components/FeatureGate';
+import { useFeatures } from '@/lib/feature-context';
 import type { FormType } from '@/lib/specimen-types';
 
 interface Rec {
@@ -176,6 +177,19 @@ export default function SamplesPage() {
     queryFn: () => api.get<Paginated<Rec>>('/specimens', { params: { page: 1, pageSize: 500 } }).then((r) => r.data),
   });
   const all = data?.data ?? [];
+
+  // Records with an open abnormal-result escalation → red flag on the row.
+  const { isEnabled } = useFeatures();
+  const { data: openEscalations } = useQuery({
+    queryKey: ['escalations', 'open'],
+    queryFn: () => api.get<Array<{ record: { id: string }; severity: string }>>('/escalations', { params: { open: true } }).then((r) => r.data),
+    enabled: can('record:view') && isEnabled('ABNORMAL_ESCALATION'),
+  });
+  const escalatedRecordIds = useMemo(() => {
+    const m = new Map<string, string>();
+    (openEscalations ?? []).forEach((e) => m.set(e.record.id, e.severity));
+    return m;
+  }, [openEscalations]);
 
   const del = useMutation({
     mutationFn: (id: string) => api.delete(`/specimen/delete/${id}`),
@@ -388,7 +402,14 @@ export default function SamplesPage() {
                         <FormTypeIcon gyn={r.formType === 'Gynecology'} />
                         <div style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0, background: av.bg, color: av.fg, display: 'grid', placeItems: 'center', fontFamily: GEIST, fontSize: 15, fontWeight: 700 }}>{initials(r)}</div>
                         <div>
-                          <div style={{ fontSize: 17, fontWeight: 600, color: HEAD }}>{patientName(r)}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 17, fontWeight: 600, color: HEAD }}>
+                            {patientName(r)}
+                            {escalatedRecordIds.has(r.id) && (
+                              <span title={`${escalatedRecordIds.get(r.id)} escalation — open`} style={{ display: 'inline-grid', placeItems: 'center', width: 20, height: 20, borderRadius: 6, background: '#FEE2E2', color: '#B91C1C' }}>
+                                <AlertTriangle size={13} />
+                              </span>
+                            )}
+                          </div>
                           {r.patient?.registrationNo && <div style={{ fontSize: 13, color: SECONDARY, marginTop: 2 }}>Reg No: {r.patient.registrationNo}</div>}
                         </div>
                       </div>
