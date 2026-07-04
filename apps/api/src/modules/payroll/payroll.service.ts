@@ -305,4 +305,91 @@ export class PayrollService {
       latest: latest ?? null,
     };
   }
+
+  // ── Analytics dashboard (payroll landing) ───────────────────────
+  async getAnalytics(year: number) {
+    const y = String(year);
+    const prevY = String(year - 1);
+    const sum4 = (s: { nis: number | null; nht: number | null; edTax: number | null; paye: number | null } | undefined) =>
+      (s?.nis ?? 0) + (s?.nht ?? 0) + (s?.edTax ?? 0) + (s?.paye ?? 0);
+
+    const [runs, adviceByPeriod, yearTax, prevTax, activeEmployeeCount, recentRunsRaw, mostRecent] = await Promise.all([
+      this.prisma.payrollRun.findMany({
+        where: { period: { startsWith: `${y}-` } },
+        select: { period: true, totalGross: true, totalNet: true, employeeCount: true, status: true },
+      }),
+      this.prisma.payAdvice.groupBy({
+        by: ['period'],
+        where: { period: { startsWith: `${y}-` } },
+        _sum: { nis: true, nht: true, edTax: true, paye: true },
+      }),
+      this.prisma.payAdvice.aggregate({ where: { period: { startsWith: `${y}-` } }, _sum: { nis: true, nht: true, edTax: true, paye: true } }),
+      this.prisma.payAdvice.aggregate({ where: { period: { startsWith: `${prevY}-` } }, _sum: { nis: true, nht: true, edTax: true, paye: true } }),
+      this.prisma.employee.count({ where: { isActive: true } }),
+      this.prisma.payrollRun.findMany({
+        orderBy: { period: 'desc' },
+        take: 6,
+        select: {
+          id: true, period: true, runNumber: true, employeeCount: true, totalGross: true, totalNet: true, status: true,
+          payAdvices: { select: { nis: true, nht: true, edTax: true, paye: true } },
+        },
+      }),
+      this.prisma.payrollRun.findFirst({
+        orderBy: { period: 'desc' },
+        select: {
+          id: true, period: true, payrollDate: true, totalGross: true, totalNet: true, employeeCount: true,
+          payAdvices: {
+            orderBy: { netPay: 'desc' }, take: 5,
+            select: { netPay: true, employee: { select: { user: { select: { firstName: true, lastName: true } }, department: { select: { name: true } } } } },
+          },
+        },
+      }),
+    ]);
+
+    const runByPeriod = new Map(runs.map((r) => [r.period, r]));
+    const taxByPeriod = new Map(adviceByPeriod.map((a) => [a.period, a._sum]));
+
+    const byPeriod = Array.from({ length: 12 }, (_, i) => {
+      const period = `${y}-${String(i + 1).padStart(2, '0')}`;
+      const run = runByPeriod.get(period);
+      return {
+        period,
+        totalGross: run?.totalGross ?? 0,
+        totalNet: run?.totalNet ?? 0,
+        totalTaxes: sum4(taxByPeriod.get(period) ?? undefined),
+        employeeCount: run?.employeeCount ?? 0,
+        status: run?.status ?? null,
+      };
+    });
+
+    const taxBreakdown = { nis: yearTax._sum.nis ?? 0, nht: yearTax._sum.nht ?? 0, edTax: yearTax._sum.edTax ?? 0, paye: yearTax._sum.paye ?? 0 };
+    const taxBreakdownPrev = { nis: prevTax._sum.nis ?? 0, nht: prevTax._sum.nht ?? 0, edTax: prevTax._sum.edTax ?? 0, paye: prevTax._sum.paye ?? 0 };
+
+    return {
+      year,
+      yearlyTotals: {
+        totalGross: runs.reduce((s, r) => s + r.totalGross, 0),
+        totalNet: runs.reduce((s, r) => s + r.totalNet, 0),
+        totalTaxes: sum4(yearTax._sum),
+        activeEmployeeCount,
+      },
+      byPeriod,
+      taxBreakdown,
+      taxBreakdownPrev,
+      recentRuns: recentRunsRaw.map((r) => ({
+        id: r.id, period: r.period, runNumber: r.runNumber, employeeCount: r.employeeCount,
+        totalGross: r.totalGross, totalNet: r.totalNet,
+        totalTaxes: r.payAdvices.reduce((s, a) => s + a.nis + a.nht + a.edTax + a.paye, 0),
+        status: r.status,
+      })),
+      mostRecent: mostRecent
+        ? { id: mostRecent.id, period: mostRecent.period, payrollDate: mostRecent.payrollDate, totalGross: mostRecent.totalGross, totalNet: mostRecent.totalNet, employeeCount: mostRecent.employeeCount }
+        : null,
+      topEarners: (mostRecent?.payAdvices ?? []).map((a) => ({
+        employeeName: `${a.employee.user.firstName} ${a.employee.user.lastName}`,
+        department: a.employee.department?.name ?? null,
+        netPay: a.netPay,
+      })),
+    };
+  }
 }

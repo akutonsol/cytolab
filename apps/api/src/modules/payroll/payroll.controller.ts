@@ -17,6 +17,12 @@ export class PayrollController {
     return this.payroll.getStats();
   }
 
+  @Get('analytics')
+  @RequirePermissions('payroll:view')
+  getAnalytics(@Query('year') year?: string) {
+    return this.payroll.getAnalytics(year ? Number(year) : new Date().getFullYear());
+  }
+
   // ── Runs ──
   @Get('runs')
   @RequirePermissions('payroll:view')
