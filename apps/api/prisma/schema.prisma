@@ -211,6 +211,7 @@ model Lab {
   qcFailureAlerts        QCFailureAlert[]
   requisitionTrackings   RequisitionTracking[]
   trackingEvents         TrackingEvent[]
+  correlationCases       CorrelationCase[]
 }
 
 model Account {
@@ -295,6 +296,8 @@ model User {
   formsVerified          RequisitionTracking[]  @relation("FormVerifier")
   formsFiled             RequisitionTracking[]  @relation("FormFiler")
   trackingEvents         TrackingEvent[]        @relation("TrackingEventActor")
+  correlationsReviewed   CorrelationCase[]      @relation("CorrelationReviewer")
+  correlationsCreated    CorrelationCase[]      @relation("CorrelationCreator")
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -394,6 +397,7 @@ model Patient {
   addresses        PatientAddress[]
   records          Record[]
   appointments     Appointment[]
+  correlationCases CorrelationCase[]
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
@@ -558,6 +562,7 @@ model Record {
   tatAlerts         TATAlert[]
   escalations       EscalationRecord[]
   qcChecks          QCCheck[]
+  cytologyCorrelations CorrelationCase[]    @relation("CytologyRecord")
   // Case assignment (Tier 2 — workload balancing). Fields are unconditional in
   // the schema; only the UI is feature-gated.
   assignedToId      String?
@@ -2169,4 +2174,64 @@ model TrackingEvent {
 
   @@index([requisitionId])
   @@index([labId, performedAt])
+}
+
+// ─── Cyto-Histo Correlation Tracking (Tier 4 Compliance) ─────────────────────
+
+enum HistologySource {
+  Internal // histology also done at this lab
+  External // done at another lab
+  Unknown
+}
+
+enum CorrelationResult {
+  Concordant // cytology and histology agree
+  MinorDiscordant // slight difference, clinically acceptable
+  MajorDiscordant // significant difference, requires review
+  Unresolved // histology not yet received
+}
+
+// Links a cytology case to its histology follow-up and tracks concordance —
+// a CAP/ISO accreditation requirement.
+model CorrelationCase {
+  id        String  @id @default(cuid())
+  labId     String
+  lab       Lab     @relation(fields: [labId], references: [id])
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id])
+
+  // Cytology side.
+  cytologyRecordId   String
+  cytologyRecord     Record  @relation("CytologyRecord", fields: [cytologyRecordId], references: [id])
+  cytologyDate       DateTime
+  cytologyDiagnosis  String
+  cytologyBethesdaId String?
+
+  // Histology side.
+  histologyRecordId  String?
+  histologyDate      DateTime?
+  histologyDiagnosis String?
+  histologySource    HistologySource @default(Internal)
+  externalLabName    String?
+
+  // Correlation result.
+  correlationResult CorrelationResult?
+  discordanceReason String?
+  reviewRequired    Boolean            @default(false)
+  reviewedById      String?
+  reviewedBy        User?              @relation("CorrelationReviewer", fields: [reviewedById], references: [id])
+  reviewedAt        DateTime?
+  reviewNotes       String?
+
+  // Clinical outcome.
+  clinicalOutcome  String?
+  followUpRequired Boolean @default(false)
+
+  createdById String?
+  createdBy   User?    @relation("CorrelationCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([labId, cytologyDate])
+  @@index([patientId])
 }

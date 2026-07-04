@@ -247,7 +247,35 @@ export class RecordsService {
       }
     }
 
+    // Correlation-tracking auto-suggest: a new NON-GYN (biopsy/histology) record
+    // for a patient with a recent cytology case → nudge the lab manager to link
+    // them. Gated on the feature being enabled; best-effort, never throws.
+    if (record.formType === RequisitionFormType.NonGynecology && record.patientId) {
+      this.suggestCorrelation(record.id, record.patientId, record.patient).catch(() => undefined);
+    }
+
     return this.findOne(record.id);
+  }
+
+  private async suggestCorrelation(recordId: string, patientId: string, patient: { firstName: string; lastName: string } | null) {
+    const enabled = await this.prisma.labFeature.findFirst({ where: { featureKey: 'CORRELATION_TRACKING', isEnabled: true }, select: { id: true } });
+    if (!enabled) return;
+    const since = new Date(); since.setMonth(since.getMonth() - 12);
+    const priorCytology = await this.prisma.record.findFirst({
+      where: { patientId, id: { not: recordId }, createdAt: { gte: since } },
+      orderBy: { createdAt: 'desc' },
+      select: { labNumber: true, identifier: true },
+    });
+    if (!priorCytology) return;
+    const name = patient ? `${patient.firstName} ${patient.lastName}`.trim() : 'this patient';
+    await this.notifs.notifyPermission('system:health', {
+      type: NotificationType.SYSTEM_ALERT,
+      title: 'Correlation suggestion',
+      body: `Patient ${name} has a new biopsy — consider linking to prior cytology ${priorCytology.labNumber ?? priorCytology.identifier} for correlation tracking.`,
+      link: '/correlation',
+      entityId: recordId,
+      entityType: 'record',
+    });
   }
 
   async update(id: string, userId: string, dto: UpdateRecordDto) {

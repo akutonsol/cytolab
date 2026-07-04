@@ -144,7 +144,7 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     key: 'CORRELATION_TRACKING',
     name: 'Cyto-Histo Correlation',
     description: 'Correlate cytology results against histology follow-up for discrepancy review.',
-    tier: 4, tierName: 'Compliance', icon: 'GitCompare', docsUrl: null, navPath: null, dependsOn: [], comingSoon: true,
+    tier: 4, tierName: 'Compliance', icon: 'GitCompare', docsUrl: null, navPath: '/correlation', dependsOn: [],
   },
   PROFICIENCY_TESTING: {
     key: 'PROFICIENCY_TESTING',

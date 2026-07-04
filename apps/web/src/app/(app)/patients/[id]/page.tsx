@@ -9,6 +9,10 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { deriveAge } from '@/lib/age';
+import { useFeatures } from '@/lib/feature-context';
+import { FeatureGate } from '@/components/FeatureGate';
+import { AddCorrelationModal } from '@/components/AddCorrelationModal';
+import { RESULT_META as CORR_META, shortDate as corrDate, type CorrelationCase } from '@/lib/correlation';
 
 const STAGE: Record<string, { label: string; pct: number }> = {
   Pending: { label: 'Intake', pct: 10 }, Submitted: { label: 'Intake', pct: 25 },
@@ -129,10 +133,17 @@ export default function PatientProfilePage() {
   const [starred, setStarred] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
+  const [addCorr, setAddCorr] = useState(false);
+  const { isEnabled } = useFeatures();
   useEffect(() => {
     const t = setInterval(() => setCurrentIdx((i) => (i + 1) % AVATARS.length), 4000);
     return () => clearInterval(t);
   }, []);
+
+  const { data: correlations = [] } = useQuery<CorrelationCase[]>({
+    queryKey: ['correlations-patient', id], enabled: !!id && isEnabled('CORRELATION_TRACKING'),
+    queryFn: () => api.get(`/correlation/patient/${id}`).then((r) => r.data),
+  });
 
   // — fetches (unchanged) —
   const { data: patient, isLoading: pl } = useQuery<any>({
@@ -332,6 +343,32 @@ export default function PatientProfilePage() {
           </div>
         </section>
 
+        {/* ══ CORRELATIONS (cyto-histo) ══ */}
+        <FeatureGate feature="CORRELATION_TRACKING">
+          <section className={`flex flex-col p-5 ${CARD}`}>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-[18px] font-bold text-[#111827]">Correlations</h2>
+              <button onClick={() => setAddCorr(true)} className="flex items-center gap-1.5 rounded-lg bg-[#4F46E5] px-3 py-1.5 text-[13px] font-semibold text-white"><Plus size={14} /> Add</button>
+            </div>
+            {correlations.length === 0 ? (
+              <div className="py-4 text-[13px] text-[#9CA3AF]">No cyto-histo correlations for this patient.</div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {correlations.map((c) => (
+                  <button key={c.id} onClick={() => router.push(`/correlation/${c.id}`)} className="flex items-center justify-between rounded-xl border border-[#EEF2F7] px-3.5 py-2.5 text-left transition-colors hover:bg-[#F8FAFC]"
+                    style={{ background: c.correlationResult === 'MajorDiscordant' ? CORR_META.MajorDiscordant.rowBg : undefined }}>
+                    <div>
+                      <div className="text-[13px] font-semibold text-[#0F172A]">{c.cytologyDiagnosis} → {c.histologyDiagnosis ?? 'pending histology'}</div>
+                      <div className="text-[12px] text-[#94A3B8]">Cyto {corrDate(c.cytologyDate)}{c.histologyDate ? ` · Histo ${corrDate(c.histologyDate)}` : ''}</div>
+                    </div>
+                    <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: CORR_META[c.correlationResult ?? 'Unresolved'].bg, color: CORR_META[c.correlationResult ?? 'Unresolved'].fg }}>{CORR_META[c.correlationResult ?? 'Unresolved'].label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+        </FeatureGate>
+
         {/* ══ CURRENT EXAMINATIONS ══ */}
         <section className={`flex flex-col p-5 ${CARD}`} style={{ background: '#F0F0FF' }}>
           <div className="flex items-center justify-between">
@@ -381,6 +418,7 @@ export default function PatientProfilePage() {
           </div>
         </section>
       </div>
+      {addCorr && <AddCorrelationModal defaultPatientId={id} onClose={() => setAddCorr(false)} />}
     </div>
   );
 }

@@ -18,6 +18,7 @@ import { PrintLabelsModal } from '@/components/PrintLabelsModal';
 import { useFeatures } from '@/lib/feature-context';
 import { useAuth } from '@/lib/auth';
 import { avatarColor, type WorkloadUser } from '@/lib/workload';
+import { RESULT_META as CORR_META, type CorrelationCase } from '@/lib/correlation';
 import { SPECIMEN_LABELS, type FormType } from '@/lib/specimen-types';
 
 // ─── Status + step maps (zero-orange) ────────────────────────────────────────
@@ -229,6 +230,8 @@ export default function RecordDetailPage() {
   const canAssign = can('record:change') && isEnabled('CASE_ASSIGNMENT');
   const { data: recordQC } = useQuery<any[]>({ queryKey: ['qc', 'record', id], enabled: !!id && isEnabled('QC_MODULE'), queryFn: () => api.get('/qc', { params: { recordId: id, pageSize: 100 } }).then((r) => r.data.data) });
   const qcFailures = (recordQC ?? []).filter((c) => c.result === 'Fail');
+  const { data: patientCorrelations } = useQuery<CorrelationCase[]>({ queryKey: ['correlations-patient', record?.patientId], enabled: !!record?.patientId && isEnabled('CORRELATION_TRACKING'), queryFn: () => api.get(`/correlation/patient/${record.patientId}`).then((r) => r.data) });
+  const recordCorrelation = (patientCorrelations ?? []).find((c) => c.cytologyRecordId === id);
   const { data: team = [] } = useQuery<WorkloadUser[]>({ queryKey: ['workload-summary'], enabled: canAssign, queryFn: () => api.get('/workload/summary').then((r) => r.data) });
   const assignMut = useMutation({
     mutationFn: (userId: string | null) => api.patch(`/records/${id}/assign`, { assignedToId: userId }).then((r) => r.data),
@@ -445,6 +448,19 @@ export default function RecordDetailPage() {
                   ))}
                 </div>
               </div>
+            </FeatureGate>
+          )}
+          {recordCorrelation && (
+            <FeatureGate feature="CORRELATION_TRACKING">
+              <button onClick={() => router.push(`/correlation/${recordCorrelation.id}`)} className="mt-3 flex w-full items-center justify-between gap-2 rounded-[10px] border border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-2.5 text-left transition-colors hover:bg-[#EEF3FF]">
+                <span>
+                  <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">Correlation</span>
+                  <span className="block text-[13px] font-semibold text-[#0F172A]">Cyto-histo linked</span>
+                </span>
+                <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: CORR_META[recordCorrelation.correlationResult ?? 'Unresolved'].bg, color: CORR_META[recordCorrelation.correlationResult ?? 'Unresolved'].fg }}>
+                  {CORR_META[recordCorrelation.correlationResult ?? 'Unresolved'].label}
+                </span>
+              </button>
             </FeatureGate>
           )}
         </div>
