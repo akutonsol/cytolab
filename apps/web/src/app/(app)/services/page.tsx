@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Modal } from 'antd';
 import {
   ArrowRight, CheckCircle2, Package, Pencil, Plus, Search, SlidersHorizontal,
   ToggleLeft, ToggleRight, Trash2, XCircle,
@@ -236,12 +235,9 @@ function ServiceModal({ open, service, isEdit, onClose, onSaved, onError }: {
   const canSave = !!name.trim() && !!code.trim() && !save.isPending;
 
   return (
-    <Modal open={open} onCancel={onClose} width={520} centered destroyOnHidden footer={null} closable={false}
-      styles={{
-        content: { background: '#EEF2F8', borderRadius: 20, padding: 0 },
-        mask: { backdropFilter: 'blur(8px)', background: 'rgba(15,23,42,0.4)' },
-        header: { display: 'none' }, body: { padding: 0 },
-      }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: open ? 'flex' : 'none', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.4)', backdropFilter: 'blur(8px)' }} onClick={onClose} />
+      <div style={{ position: 'relative', background: '#EEF2F8', borderRadius: 20, padding: 0, width: 520, maxWidth: '90vw', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 60px rgba(0,0,0,0.18)' }}>
       <div style={{ padding: 28 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
           <h2 style={{ fontFamily: 'Geist, sans-serif', fontSize: 20, fontWeight: 700, color: '#0F172A' }}>{isEdit ? 'Edit Service' : 'Add Service'}</h2>
@@ -281,6 +277,7 @@ function ServiceModal({ open, service, isEdit, onClose, onSaved, onError }: {
         <button type="button" style={DS.btnSecondary} onClick={onClose}>Cancel</button>
         <button type="button" style={{ ...DS.btnPrimary, opacity: canSave ? 1 : 0.5 }} disabled={!canSave} onClick={() => save.mutate()}>{save.isPending ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Service'}</button>
       </div>
-    </Modal>
+      </div>
+    </div>
   );
 }

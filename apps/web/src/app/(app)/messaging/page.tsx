@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
-import { App } from 'antd';
 import {
   ChevronDown, Filter, MoreHorizontal, Paperclip, Plus, Search, Send, Star, Video, X,
 } from 'lucide-react';
@@ -57,10 +56,11 @@ function Avatar({ name, size = 40 }: { name: string; size?: number }) {
 }
 
 export default function MessagingPage() {
-  const { message } = App.useApp();
   const { claims } = useAuth();
   const myId = claims?.userId;
   const qc = useQueryClient();
+  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
+  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3200); };
   const [filter, setFilter] = useState<string>('');
   const [activeId, setActiveId] = useState<string>();
   const [text, setText] = useState('');
@@ -105,7 +105,7 @@ export default function MessagingPage() {
   const send = useMutation({
     mutationFn: (body: string) => api.post(`/messaging/threads/${activeId}/messages`, { body }).then((r) => r.data),
     onSuccess: () => { setText(''); qc.invalidateQueries({ queryKey: ['msg-thread', activeId] }); qc.invalidateQueries({ queryKey: ['msg-threads'] }); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not send message'),
+    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Could not send message'),
   });
   const submit = () => { const b = text.trim(); if (b && activeId) send.mutate(b); };
 
@@ -301,13 +301,19 @@ export default function MessagingPage() {
         </aside>
       )}
 
-      {modalOpen && <NewThreadModal onClose={() => setModalOpen(false)} onCreated={(id) => { setModalOpen(false); qc.invalidateQueries({ queryKey: ['msg-threads'] }); setActiveId(id); }} />}
+      {modalOpen && <NewThreadModal onClose={() => setModalOpen(false)} onCreated={(id) => { setModalOpen(false); qc.invalidateQueries({ queryKey: ['msg-threads'] }); setActiveId(id); }} notify={notify} />}
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg"
+          style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }
 
-function NewThreadModal({ onClose, onCreated }: { onClose: () => void; onCreated: (id: string) => void }) {
-  const { message } = App.useApp();
+function NewThreadModal({ onClose, onCreated, notify }: { onClose: () => void; onCreated: (id: string) => void; notify: (type: 'ok' | 'err', msg: string) => void }) {
   const [subject, setSubject] = useState('');
   const [type, setType] = useState<'INTERNAL' | 'CLIENT'>('INTERNAL');
   const [q, setQ] = useState('');
@@ -326,7 +332,7 @@ function NewThreadModal({ onClose, onCreated }: { onClose: () => void; onCreated
       clientId: type === 'CLIENT' ? clientId : undefined,
     }).then((r) => r.data),
     onSuccess: (t: any) => onCreated(t.id),
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not create thread'),
+    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Could not create thread'),
   });
   const canCreate = type === 'INTERNAL' ? picked.length > 0 : !!clientId;
   const inputCls = 'h-11 w-full rounded-[10px] border border-[#e2e8f0] bg-white px-3.5 text-small text-text outline-none transition-colors focus:border-primary';
