@@ -613,3 +613,12 @@ body {
   line-height: 22px;
   font-weight: 400;
 }
+
+/* ── Print: show only the .printable region (used by payslips). ───────────── */
+@media print {
+  body * { visibility: hidden !important; }
+  .printable, .printable * { visibility: visible !important; }
+  .printable { position: absolute !important; left: 0; top: 0; width: 100%; }
+  .no-print { display: none !important; }
+  .print-break { page-break-after: always; }
+}

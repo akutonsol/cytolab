@@ -14,6 +14,7 @@ const listSelect = {
   endDate: true,
   salary: true,
   isActive: true,
+  isFixedSalary: true,
   user: { select: { id: true, firstName: true, lastName: true, email: true } },
   department: { select: { id: true, name: true } },
   createdAt: true,
@@ -100,6 +101,7 @@ export class EmployeesService {
           emergencyContactPhone: dto.emergencyContactPhone?.trim() || null,
           address: dto.address?.trim() || null,
           isActive: dto.isActive ?? true,
+          isFixedSalary: dto.isFixedSalary ?? true,
         }),
         select: detailSelect,
       });
@@ -131,6 +133,7 @@ export class EmployeesService {
           ...(dto.emergencyContactPhone !== undefined && { emergencyContactPhone: dto.emergencyContactPhone?.trim() || null }),
           ...(dto.address !== undefined && { address: dto.address?.trim() || null }),
           ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+          ...(dto.isFixedSalary !== undefined && { isFixedSalary: dto.isFixedSalary }),
         },
         select: detailSelect,
       });

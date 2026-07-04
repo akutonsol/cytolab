@@ -268,6 +268,7 @@ model User {
   employeeProfile        Employee?              @relation("EmployeeUser")
   managedDepartments     Department[]           @relation("DepartmentManager")
   processedPayrollRuns   PayrollRun[]           @relation("PayrollProcessor")
+  approvedPayrollRuns    PayrollRun[]           @relation("PayrollApprover")
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -1548,6 +1549,7 @@ model Employee {
   emergencyContactPhone String?
   address               String?
   isActive              Boolean        @default(true)
+  isFixedSalary         Boolean        @default(true) // false = hourly (hours entered per run)
   payAdvices            PayAdvice[]
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
@@ -1569,9 +1571,16 @@ model PayrollRun {
   totalDeductions Int              @default(0)
   totalNet        Int              @default(0)
   employeeCount   Int              @default(0)
+  payrollDate     DateTime?
+  runNumber       Int              @default(0) // sequential per lab, assigned at process time
+  integrityHash   String? // SHA-256 over the run's canonical content (tamper-evidence)
   processedAt     DateTime?
   processedById   String?
   processedBy     User?            @relation("PayrollProcessor", fields: [processedById], references: [id])
+  approvedAt      DateTime?
+  approvedById    String?
+  approvedBy      User?            @relation("PayrollApprover", fields: [approvedById], references: [id])
+  approvalNotes   String?
   payAdvices      PayAdvice[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
@@ -1591,15 +1600,28 @@ model PayAdvice {
   payrollRun      PayrollRun?     @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
   period          String // YYYY-MM
   basicPay        Int             @default(0)
+  hoursWorked     Int             @default(0)
   overtime        Int             @default(0)
   allowances      Int             @default(0)
+  commission      Int             @default(0)
+  bonus           Int             @default(0)
   grossPay        Int             @default(0)
   nis             Int             @default(0)
   nht             Int             @default(0)
   edTax           Int             @default(0)
   paye            Int             @default(0)
+  pension         Int             @default(0)
+  reimbursement   Int             @default(0)
   otherDeductions Int             @default(0)
   netPay          Int             @default(0)
+  // Year-to-date running totals (through this advice's period).
+  ytdGross        Int             @default(0)
+  ytdNis          Int             @default(0)
+  ytdNht          Int             @default(0)
+  ytdEdTax        Int             @default(0)
+  ytdPaye         Int             @default(0)
+  ytdPension      Int             @default(0)
+  ytdLoanBalance  Int             @default(0)
   status          PayAdviceStatus @default(Draft)
   issuedAt        DateTime?
   createdAt       DateTime        @default(now())

@@ -23,6 +23,7 @@ export class CreateEmployeeDto {
   @IsString() @IsOptional() @MaxLength(40) emergencyContactPhone?: string;
   @IsString() @IsOptional() @MaxLength(400) address?: string;
   @IsBoolean() @IsOptional() isActive?: boolean;
+  @IsBoolean() @IsOptional() isFixedSalary?: boolean;
 }
 
 export class UpdateEmployeeDto {
@@ -43,6 +44,7 @@ export class UpdateEmployeeDto {
   @IsString() @IsOptional() @MaxLength(40) emergencyContactPhone?: string;
   @IsString() @IsOptional() @MaxLength(400) address?: string;
   @IsBoolean() @IsOptional() isActive?: boolean;
+  @IsBoolean() @IsOptional() isFixedSalary?: boolean;
 }
 
 export class EmployeeQueryDto extends PaginationDto {

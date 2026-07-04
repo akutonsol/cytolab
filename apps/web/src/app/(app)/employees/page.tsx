@@ -15,6 +15,7 @@ interface Employee {
   endDate: string | null;
   salary: number;
   isActive: boolean;
+  isFixedSalary: boolean;
   user: { id: string; firstName: string; lastName: string; email: string };
   department: { id: string; name: string } | null;
   departmentId?: string | null;
@@ -227,6 +228,7 @@ function EmployeeModal({ employee, departments, onClose, onSaved, onError }: {
     trn: employee?.trn ?? '', nis: employee?.nis ?? '', nht: employee?.nht ?? '',
     emergencyContactName: employee?.emergencyContactName ?? '', emergencyContactPhone: employee?.emergencyContactPhone ?? '',
     address: employee?.address ?? '', isActive: employee?.isActive ?? true,
+    isFixedSalary: employee?.isFixedSalary ?? true,
   });
   const set = (k: keyof typeof f, v: any) => setF((p) => ({ ...p, [k]: v }));
 
@@ -249,7 +251,7 @@ function EmployeeModal({ employee, departments, onClose, onSaved, onError }: {
         bankName: f.bankName || undefined, bankAccount: f.bankAccount || undefined, bankBranch: f.bankBranch || undefined,
         trn: f.trn || undefined, nis: f.nis || undefined, nht: f.nht || undefined,
         emergencyContactName: f.emergencyContactName || undefined, emergencyContactPhone: f.emergencyContactPhone || undefined,
-        address: f.address || undefined, isActive: f.isActive,
+        address: f.address || undefined, isActive: f.isActive, isFixedSalary: f.isFixedSalary,
       };
       return isEdit
         ? api.put(`/employees/update/${employee!.id}`, common)
@@ -320,10 +322,16 @@ function EmployeeModal({ employee, departments, onClose, onSaved, onError }: {
             <div className="col-span-2"><Field label="Address"><input value={f.address} onChange={(e) => set('address', e.target.value)} className={inputCls} /></Field></div>
           </div>
 
-          <label className="mt-4 flex items-center gap-2.5">
-            <input type="checkbox" checked={f.isActive} onChange={(e) => set('isActive', e.target.checked)} style={{ accentColor: '#4F46E5', width: 16, height: 16 }} />
-            <span className="font-body-sm text-body-sm text-on-surface">Active employee</span>
-          </label>
+          <div className="mt-4 flex flex-wrap items-center gap-6">
+            <label className="flex items-center gap-2.5">
+              <input type="checkbox" checked={f.isActive} onChange={(e) => set('isActive', e.target.checked)} style={{ accentColor: '#4F46E5', width: 16, height: 16 }} />
+              <span className="font-body-sm text-body-sm text-on-surface">Active employee</span>
+            </label>
+            <label className="flex items-center gap-2.5">
+              <input type="checkbox" checked={f.isFixedSalary} onChange={(e) => set('isFixedSalary', e.target.checked)} style={{ accentColor: '#4F46E5', width: 16, height: 16 }} />
+              <span className="font-body-sm text-body-sm text-on-surface">Fixed salary <span className="text-secondary">(uncheck for hourly)</span></span>
+            </label>
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 border-t border-outline-variant/30 p-6 pt-4">
