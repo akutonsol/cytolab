@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   AppWindow,
   BarChart2,
+  CheckSquare,
   CreditCard,
   FileSearch,
   FlaskConical,
@@ -10,6 +11,7 @@ import {
   ToggleRight,
   Users,
   Users2,
+  Wrench,
   type LucideIcon,
 } from 'lucide-react';
 import type { FeatureKey } from './features';
@@ -45,6 +47,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Requisitions', path: '/requisitions', permission: 'requisition:view' },
       { label: 'Samples', path: '/records', permission: 'record:view' },
       { label: 'Workload', path: '/workload', permission: 'record:view', feature: 'CASE_ASSIGNMENT', icon: Users2 },
+      { label: 'Quality Control', path: '/qc', permission: 'record:view', feature: 'QC_MODULE', icon: CheckSquare },
+      { label: 'Equipment', path: '/qc/equipment', permission: 'record:view', feature: 'QC_MODULE', icon: Wrench },
     ],
   },
   {

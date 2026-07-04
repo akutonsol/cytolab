@@ -97,8 +97,8 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
   QC_MODULE: {
     key: 'QC_MODULE',
     name: 'Quality Control',
-    description: 'Rescreening ratios, QC sampling, and internal quality assurance tracking.',
-    tier: 2, tierName: 'Clinical', icon: 'ShieldCheck', docsUrl: null, navPath: null, dependsOn: [], comingSoon: true,
+    description: 'Track slide prep, staining, and fixation quality; log QC failures and trends.',
+    tier: 2, tierName: 'Clinical', icon: 'ShieldCheck', docsUrl: null, navPath: '/qc', dependsOn: [],
   },
 
   // ── Tier 3 — Operational ───────────────────────────────────────────

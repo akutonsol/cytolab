@@ -206,6 +206,9 @@ model Lab {
   features               LabFeature[]
   escalations            EscalationRecord[]
   workloadTargets        WorkloadTarget[]
+  qcChecks               QCCheck[]
+  equipment              Equipment[]
+  qcFailureAlerts        QCFailureAlert[]
 }
 
 model Account {
@@ -284,6 +287,7 @@ model User {
   escalationsReviewed    EscalationRecord[]     @relation("EscalationReviewer")
   assignedRecords        Record[]               @relation("RecordAssignee")
   workloadTarget         WorkloadTarget?
+  qcChecks               QCCheck[]
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -544,6 +548,7 @@ model Record {
   bethesdaResult    BethesdaResult?
   tatAlerts         TATAlert[]
   escalations       EscalationRecord[]
+  qcChecks          QCCheck[]
   // Case assignment (Tier 2 — workload balancing). Fields are unconditional in
   // the schema; only the UI is feature-gated.
   assignedToId      String?
@@ -1981,4 +1986,96 @@ model WorkloadTarget {
 
   @@unique([labId, userId])
   @@index([labId])
+}
+
+// ─── Quality Control (Tier 2 Clinical) ───────────────────────────────────────
+
+enum QCCheckType {
+  SlidePreparation // slide quality check
+  StainingQuality // stain consistency check
+  FixationAdequacy // fixation quality
+  CellularityCheck // adequate cell count
+  EquipmentCalibration // equipment performance
+  ReagentCheck // reagent lot quality
+  ExternalQC // external quality control slide
+}
+
+enum QCResult {
+  Pass
+  Fail
+  Marginal // borderline — flag for review but don't fail
+}
+
+enum EquipmentType {
+  Stainer
+  Centrifuge
+  Microscope
+  Processor
+  Scanner
+  Other
+}
+
+enum AlertStatus {
+  Open
+  Acknowledged
+  Resolved
+}
+
+// A single quality-control check — standalone or linked to a record.
+model QCCheck {
+  id               String      @id @default(cuid())
+  labId            String
+  lab              Lab         @relation(fields: [labId], references: [id])
+  recordId         String?
+  record           Record?     @relation(fields: [recordId], references: [id])
+  checkType        QCCheckType
+  result           QCResult
+  performedById    String
+  performedBy      User        @relation(fields: [performedById], references: [id])
+  equipmentId      String?
+  equipment        Equipment?  @relation(fields: [equipmentId], references: [id])
+  batchId          String? // staining batch reference
+  notes            String?
+  failureReason    String? // required when result = Fail
+  correctiveAction String? // what was done to fix it
+  performedAt      DateTime    @default(now())
+  createdAt        DateTime    @default(now())
+
+  failureAlert QCFailureAlert?
+
+  @@index([labId, performedAt])
+  @@index([recordId])
+}
+
+// Lab instruments that QC checks are performed against.
+model Equipment {
+  id              String        @id @default(cuid())
+  labId           String
+  lab             Lab           @relation(fields: [labId], references: [id])
+  name            String // e.g. "Stainer Unit 1", "Centrifuge A"
+  type            EquipmentType
+  serialNumber    String?
+  lastServiceDate DateTime?
+  isActive        Boolean       @default(true)
+  qcChecks        QCCheck[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([labId, name])
+}
+
+// Raised automatically when a QC check fails; tracked to resolution.
+model QCFailureAlert {
+  id           String      @id @default(cuid())
+  labId        String
+  lab          Lab         @relation(fields: [labId], references: [id])
+  qcCheckId    String      @unique
+  qcCheck      QCCheck     @relation(fields: [qcCheckId], references: [id], onDelete: Cascade)
+  status       AlertStatus @default(Open)
+  assignedToId String?
+  resolvedAt   DateTime?
+  resolvedById String?
+  createdAt    DateTime    @default(now())
+
+  @@index([labId, status])
 }

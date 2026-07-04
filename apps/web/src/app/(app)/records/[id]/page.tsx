@@ -225,6 +225,8 @@ export default function RecordDetailPage() {
   const { can } = useAuth();
   const { isEnabled } = useFeatures();
   const canAssign = can('record:change') && isEnabled('CASE_ASSIGNMENT');
+  const { data: recordQC } = useQuery<any[]>({ queryKey: ['qc', 'record', id], enabled: !!id && isEnabled('QC_MODULE'), queryFn: () => api.get('/qc', { params: { recordId: id, pageSize: 100 } }).then((r) => r.data.data) });
+  const qcFailures = (recordQC ?? []).filter((c) => c.result === 'Fail');
   const { data: team = [] } = useQuery<WorkloadUser[]>({ queryKey: ['workload-summary'], enabled: canAssign, queryFn: () => api.get('/workload/summary').then((r) => r.data) });
   const assignMut = useMutation({
     mutationFn: (userId: string | null) => api.patch(`/records/${id}/assign`, { assignedToId: userId }).then((r) => r.data),
@@ -425,6 +427,24 @@ export default function RecordDetailPage() {
               )}
             </div>
           </FeatureGate>
+          {qcFailures.length > 0 && (
+            <FeatureGate feature="QC_MODULE">
+              <div className="mt-3 rounded-[10px] border px-3.5 py-3" style={{ background: '#FEFCE8', borderColor: '#FEF08A' }}>
+                <div className="flex items-center gap-1.5 text-[13px] font-bold" style={{ color: '#A16207' }}>
+                  <AlertTriangle size={14} /> QC Issues ({qcFailures.length})
+                </div>
+                <div className="mt-2 flex flex-col gap-1.5">
+                  {qcFailures.slice(0, 4).map((c) => (
+                    <div key={c.id} className="text-[12px] text-[#334155]">
+                      <span className="font-semibold">{c.checkType.replace(/([A-Z])/g, ' $1').trim()}</span>
+                      {c.failureReason ? ` — ${c.failureReason}` : ''}
+                      <span className="block text-[11px] text-[#94A3B8]">{new Date(c.performedAt).toLocaleDateString()} · {c.performedBy ? `${c.performedBy.firstName} ${c.performedBy.lastName}` : '—'}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </FeatureGate>
+          )}
         </div>
         <div className={`${LABEL} mb-5`}>Patient Stats</div>
         <Stat icon={Activity} label="Total Records" value={String(totalRecords)} unit="cases" />

@@ -194,6 +194,14 @@ export default function SamplesPage() {
     return m;
   }, [openEscalations]);
 
+  // Records with a linked QC failure → yellow warning icon on the row.
+  const { data: qcFailures } = useQuery({
+    queryKey: ['qc-failures-records'],
+    queryFn: () => api.get<Paginated<{ recordId: string | null }>>('/qc', { params: { result: 'Fail', pageSize: 500 } }).then((r) => r.data),
+    enabled: can('record:view') && isEnabled('QC_MODULE'),
+  });
+  const qcFailedRecordIds = useMemo(() => new Set((qcFailures?.data ?? []).map((c) => c.recordId).filter(Boolean) as string[]), [qcFailures]);
+
   const del = useMutation({
     mutationFn: (id: string) => api.delete(`/specimen/delete/${id}`),
     onSuccess: () => { message.success('Sample deleted'); qc.invalidateQueries({ queryKey: ['records-all'] }); },
@@ -418,6 +426,11 @@ export default function SamplesPage() {
                             {patientName(r)}
                             {escalatedRecordIds.has(r.id) && (
                               <span title={`${escalatedRecordIds.get(r.id)} escalation — open`} style={{ display: 'inline-grid', placeItems: 'center', width: 20, height: 20, borderRadius: 6, background: '#FEE2E2', color: '#B91C1C' }}>
+                                <AlertTriangle size={13} />
+                              </span>
+                            )}
+                            {qcFailedRecordIds.has(r.id) && (
+                              <span title="QC failure logged for this record" style={{ display: 'inline-grid', placeItems: 'center', width: 20, height: 20, borderRadius: 6, background: '#FEFCE8', color: '#A16207' }}>
                                 <AlertTriangle size={13} />
                               </span>
                             )}
