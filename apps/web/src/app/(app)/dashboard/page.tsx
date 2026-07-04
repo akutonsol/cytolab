@@ -405,20 +405,21 @@ export default function DashboardPage() {
                         {/* dotted connectors marker → label */}
                         <svg width="760" height="520" viewBox="0 0 760 520" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
                           {markers.map((m, i) => (
-                            <line key={i} x1={m.x} y1={m.y} x2={LX} y2={findings[i].y} stroke="#A5B4FC" strokeWidth={2} strokeDasharray="3 4" />
+                            <line key={i} x1={m.x} y1={m.y} x2={LX} y2={findings[i].y} stroke="#818CF8" strokeWidth={1.8} strokeDasharray="4 5" />
                           ))}
                         </svg>
                         {/* aura */}
-                        <div style={{ position: 'absolute', left: -90, top: -30, width: 680, height: 660, background: 'radial-gradient(50% 50% at 47% 44%, rgba(255,255,255,0.88) 0%, rgba(139,92,246,0.28) 42%, rgba(99,102,241,0.14) 62%, transparent 75%)', filter: 'blur(6px)', zIndex: 0 }} />
+                        <div style={{ position: 'absolute', left: -130, top: -60, width: 780, height: 760, background: 'radial-gradient(55% 55% at 47% 44%, rgba(255,255,255,0.85) 0%, rgba(167,139,250,0.35) 38%, rgba(139,92,246,0.20) 55%, rgba(99,102,241,0.08) 68%, transparent 78%)', filter: 'blur(8px)', zIndex: 0 }} />
                         {/* floating cytology particles */}
                         {[
-                          { size: 10, top: '15%', left: '12%', delay: '0s', dur: '7s', color: 'rgba(139,92,246,0.65)' },
-                          { size: 7, top: '35%', left: '8%', delay: '1.5s', dur: '9s', color: 'rgba(99,102,241,0.55)' },
-                          { size: 8, top: '65%', left: '15%', delay: '3s', dur: '8s', color: 'rgba(167,139,250,0.6)' },
-                          { size: 6, top: '80%', left: '72%', delay: '2s', dur: '10s', color: 'rgba(139,92,246,0.5)' },
-                          { size: 9, top: '20%', left: '75%', delay: '4s', dur: '7.5s', color: 'rgba(99,102,241,0.5)' },
+                          { size: 10, top: '15%', left: '12%', delay: '0s', dur: '7s', color: 'rgba(139,92,246,0.5)' },
+                          { size: 7, top: '35%', left: '8%', delay: '1.5s', dur: '9s', color: 'rgba(99,102,241,0.4)' },
+                          { size: 8, top: '65%', left: '15%', delay: '3s', dur: '8s', color: 'rgba(167,139,250,0.5)' },
+                          { size: 6, top: '80%', left: '72%', delay: '2s', dur: '10s', color: 'rgba(139,92,246,0.4)' },
+                          { size: 9, top: '20%', left: '75%', delay: '4s', dur: '7.5s', color: 'rgba(99,102,241,0.45)' },
+                          { size: 5, top: '55%', left: '5%', delay: '5s', dur: '8.5s', color: 'rgba(167,139,250,0.35)' },
                         ].map((p, i) => (
-                          <div key={i} style={{ position: 'absolute', top: p.top, left: p.left, width: p.size, height: p.size, borderRadius: '50%', background: p.color, pointerEvents: 'none', zIndex: 1, animation: `particleFloat ${p.dur} ease-in-out infinite`, animationDelay: p.delay }} />
+                          <div key={i} style={{ position: 'absolute', top: p.top, left: p.left, width: p.size, height: p.size, borderRadius: '50%', background: p.color, boxShadow: `0 0 ${p.size * 1.5}px ${p.color}`, pointerEvents: 'none', zIndex: 1, animation: `particleFloat ${p.dur} ease-in-out infinite`, animationDelay: p.delay }} />
                         ))}
                         {/* rotating halo beneath the bust */}
                         <div style={{ position: 'absolute', left: 70, top: 450, width: 370, height: 80, borderRadius: '50%', background: 'radial-gradient(50% 50% at 50% 50%, rgba(167,139,250,0.3) 0%, rgba(99,102,241,0.15) 45%, transparent 70%)', filter: 'blur(8px)', zIndex: 1, animation: 'haloRotate 6s ease-in-out infinite' }} />
@@ -440,9 +441,9 @@ export default function DashboardPage() {
                           <div key={i} style={{ position: 'absolute', left: LX, top: f.y, transform: 'translateY(-50%)', width: 210, zIndex: 3 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                               <div style={{ width: 10, height: 10, borderRadius: '50%', background: f.color, flexShrink: 0 }} />
-                              <span style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>{f.label}</span>
+                              <span style={{ fontSize: 16, fontWeight: 800, color: '#1E1B4B' }}>{f.label}</span>
                             </div>
-                            <div style={{ fontSize: 12, color: '#94A3B8', marginLeft: 19, marginTop: 2 }}>Confidence {f.conf}%</div>
+                            <div style={{ fontSize: 13, color: '#6B7280', marginLeft: 19, marginTop: 2 }}>Confidence {f.conf}%</div>
                             {f.attention && (
                               <div style={{ marginLeft: 19, marginTop: 5 }}>
                                 <span style={{ fontSize: 11, fontWeight: 700, color: '#EF4444', background: '#FEF2F2', borderRadius: 6, padding: '2px 8px' }}>+ Attention</span>
@@ -457,11 +458,11 @@ export default function DashboardPage() {
               </div>
 
               {/* Processing Specimen overlay */}
-              <div style={{ position: 'absolute', left: 20, bottom: 90, zIndex: 4, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(12px)', borderRadius: 16, padding: '14px 18px', border: '1px solid rgba(79,70,229,0.12)', boxShadow: '0 8px 24px rgba(79,70,229,0.12)', width: 220 }}>
+              <div style={{ position: 'absolute', left: 20, top: 80, zIndex: 4, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(12px)', borderRadius: 16, padding: '14px 18px', border: '1px solid rgba(79,70,229,0.12)', boxShadow: '0 8px 24px rgba(79,70,229,0.12)', width: 220 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Processing Specimen</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: '#EEF2FF', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                    <FlaskConical size={18} color="#4F46E5" />
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'transparent', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                    <SpecimenIcon type={d.priorityRecords?.[0]?.specimen} size={36} />
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{d.priorityRecords?.[0]?.labNumber ?? '—'}</div>
