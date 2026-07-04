@@ -1,4 +1,4 @@
-import type { TDocumentDefinitions, Content } from 'pdfmake/interfaces';
+import type { TDocumentDefinitions, Content, TableCell } from 'pdfmake/interfaces';
 
 /**
  * Structured input for a rendered report. Assembled from live data
@@ -61,24 +61,96 @@ export interface ReportDocumentData {
   };
 }
 
+// ─── Design system ────────────────────────────────────────────────────────────
+const INDIGO = '#4F46E5';
+const INDIGO_DARK = '#3730A3';
+const INDIGO_LIGHT = '#EEF2FF';
+const INDIGO_ON = '#E0E7FF'; // legible-on-indigo tint for band sub-text
+const SLATE = '#0F172A';
+const SLATE_MID = '#374151';
+const SLATE_LIGHT = '#64748B';
+const SLATE_MUTED = '#94A3B8';
+const BORDER = '#E2E8F0';
+const WHITE = '#FFFFFF';
+const GREEN = '#16A34A';
+const GREEN_LIGHT = '#F0FDF4';
+const RED = '#DC2626';
+const RED_LIGHT = '#FEF2F2';
+const GOLD = '#D97706';
+const GOLD_LIGHT = '#FFFBEB';
+const SUBTLE_BG = '#F8FAFC';
+
+// Content width for A4 with 40pt side margins (595.28 - 80).
+const CW = 515;
+
 const fmtDate = (d?: Date | null): string =>
   d ? new Date(d).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: '2-digit' }) : '—';
 
-const fmtDateTime = (d: Date): string =>
-  new Date(d).toLocaleString('en-GB', {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+const fmtDateTime = (d?: Date | null): string =>
+  d
+    ? new Date(d).toLocaleString('en-GB', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : '—';
 
-const labelValue = (label: string, value: string): Content => ({
-  columns: [
-    { text: label, width: 110, style: 'fieldLabel' },
-    { text: value || '—', width: '*', style: 'fieldValue' },
-  ],
-  margin: [0, 1, 0, 1],
+// ─── Small builders ───────────────────────────────────────────────────────────
+const sectionLabel = (text: string, topMargin = 16): Content => ({
+  text,
+  fontSize: 9,
+  bold: true,
+  color: INDIGO,
+  characterSpacing: 1.5,
+  margin: [0, topMargin, 0, 6],
+});
+
+const divider = (topMargin = 0): Content => ({
+  canvas: [{ type: 'line', x1: 0, y1: 0, x2: CW, y2: 0, lineWidth: 0.5, lineColor: BORDER }],
+  margin: [0, topMargin, 0, 0],
+});
+
+// A two-cell "label : value" line for the info tables.
+const infoRow = (label: string, value?: string | null, opts: { bold?: boolean; color?: string } = {}): TableCell[] => {
+  const has = value != null && value !== '';
+  return [
+    { text: label, fontSize: 9, color: SLATE_LIGHT },
+    {
+      text: has ? (value as string) : '—',
+      fontSize: 10,
+      bold: !!opts.bold && has,
+      color: has ? opts.color ?? SLATE : SLATE_MUTED,
+    },
+  ];
+};
+
+const infoTable = (rows: TableCell[][]): Content => ({
+  table: { widths: [92, '*'], body: rows },
+  layout: {
+    hLineWidth: () => 0,
+    vLineWidth: () => 0,
+    paddingLeft: () => 0,
+    paddingRight: () => 6,
+    paddingTop: () => 2.5,
+    paddingBottom: () => 2.5,
+  },
+});
+
+// A filled block with an optional 3pt left accent border, auto-sizing to content.
+const accentBox = (fill: string, accent: string | null, body: Content[], margin: [number, number, number, number] = [0, 4, 0, 0]): Content => ({
+  table: { widths: ['*'], body: [[{ stack: body, fillColor: fill }]] },
+  layout: {
+    hLineWidth: () => 0,
+    vLineWidth: (i: number) => (accent && i === 0 ? 3 : 0),
+    vLineColor: () => accent ?? fill,
+    paddingLeft: () => 12,
+    paddingRight: () => 12,
+    paddingTop: () => 10,
+    paddingBottom: () => 10,
+  },
+  margin,
 });
 
 /**
@@ -88,195 +160,325 @@ const labelValue = (label: string, value: string): Content => ({
 export function buildReportDefinition(data: ReportDocumentData): TDocumentDefinitions {
   const { lab, record, patient, client, specimens, entries, narrative, authorizer } = data;
 
-  const patientName = [patient.firstName, patient.middleName, patient.lastName]
-    .filter(Boolean)
-    .join(' ');
+  const patientName = [patient.firstName, patient.middleName, patient.lastName].filter(Boolean).join(' ');
+  const reportRef = record.labNumber || record.identifier;
+  const reportDate = authorizer?.signedAt ?? null;
+  const authorized = !!authorizer?.signedAt;
+  // Not in the data model today, but honoured if ever supplied — never breaks.
+  const urgent = (record as unknown as { urgent?: boolean }).urgent === true;
+  const labContact = [lab.address, lab.phone, lab.email].filter(Boolean).join('   •   ');
+  const referring = client
+    ? client.officeName || `${client.firstName} ${client.lastName}`.trim()
+    : null;
+  const firstSpecimenDate = specimens.find((s) => s.dateReceived)?.dateReceived ?? null;
 
-  // ---- Lab header (logo only when a safe data: URI is supplied) ----
-  const headerText: Content = {
+  // ── 1. Header band ──────────────────────────────────────────────────────────
+  const headerBand: Content = {
     stack: [
-      { text: lab.name, style: 'labName' },
-      ...(lab.address ? [{ text: lab.address, style: 'labMeta' } as Content] : []),
-      {
-        text: [lab.phone, lab.email].filter(Boolean).join('  •  '),
-        style: 'labMeta',
-      },
-    ],
-  };
-  const header: Content = lab.logoDataUri
-    ? { columns: [{ image: lab.logoDataUri, width: 90, fit: [90, 60] }, headerText] }
-    : headerText;
-
-  // ---- Specimen table ----
-  const specimenTable: Content =
-    specimens.length > 0
-      ? {
-          table: {
-            headerRows: 1,
-            widths: ['*', '*', '*', '*'],
-            body: [
-              [
-                { text: 'Specimen', style: 'th' },
-                { text: 'Label', style: 'th' },
-                { text: 'Blood Group', style: 'th' },
-                { text: 'Received', style: 'th' },
-              ],
-              ...specimens.map((s) => [
-                s.type ?? '—',
-                s.label ?? '—',
-                s.bloodGroup ?? '—',
-                fmtDate(s.dateReceived),
-              ]),
-            ],
-          },
-          layout: 'lightHorizontalLines',
-          margin: [0, 4, 0, 0],
-        }
-      : { text: 'No specimens recorded.', style: 'fieldValue', margin: [0, 4, 0, 0] };
-
-  // ---- Results: one table of lines per entry ----
-  const resultsContent: Content[] = entries.length
-    ? entries.flatMap((entry, i): Content[] => [
-        ...(entry.specimenLabel
-          ? [{ text: entry.specimenLabel, style: 'entryHeading', margin: [0, i === 0 ? 4 : 8, 0, 2] } as Content]
-          : []),
-        {
-          table: {
-            headerRows: 1,
-            widths: ['auto', '*', '*', 'auto'],
-            body: [
-              [
-                { text: 'Code', style: 'th' },
-                { text: 'Result', style: 'th' },
-                { text: 'Findings', style: 'th' },
-                { text: 'Flag', style: 'th' },
-              ],
-              ...(entry.lines.length
-                ? entry.lines.map((l) => [
-                    l.abbreviation ?? '—',
-                    l.result ?? '—',
-                    l.findings ?? '—',
-                    {
-                      text: l.abnormalFinding ? 'ABNORMAL' : 'Normal',
-                      style: l.abnormalFinding ? 'abnormal' : 'normal',
-                    },
-                  ])
-                : [[{ text: 'No results entered.', colSpan: 4, style: 'fieldValue' }, {}, {}, {}]]),
-            ],
-          },
-          layout: 'lightHorizontalLines',
-        },
-      ])
-    : [{ text: 'No results recorded.', style: 'fieldValue', margin: [0, 4, 0, 0] }];
-
-  // ---- Diagnosis / narrative ----
-  const narrativeBlocks: Content[] = [];
-  if (record.clinicalDiagnosis) {
-    narrativeBlocks.push(labelValue('Clinical Dx:', record.clinicalDiagnosis));
-  }
-  if (narrative?.content) {
-    narrativeBlocks.push({ text: narrative.content, style: 'narrative', margin: [0, 2, 0, 0] });
-  }
-  if (narrative?.medicalEntry) {
-    narrativeBlocks.push({ text: narrative.medicalEntry, style: 'narrative', margin: [0, 2, 0, 0] });
-  }
-  if (narrativeBlocks.length === 0) {
-    narrativeBlocks.push({ text: 'No diagnosis narrative.', style: 'fieldValue' });
-  }
-
-  // ---- Signature block: image when a data: URI, else typed-name fallback ----
-  const signatureMark: Content = authorizer.signatureDataUri
-    ? { image: authorizer.signatureDataUri, fit: [160, 50] }
-    : { text: authorizer.name, style: 'signatureTyped', margin: [0, 12, 0, 0] };
-
-  return {
-    pageSize: 'A4',
-    pageMargins: [40, 40, 40, 50],
-    defaultStyle: { font: 'Helvetica', fontSize: 9, lineHeight: 1.15 },
-    footer: (current, total): Content => ({
-      columns: [
-        { text: `Record ${record.identifier}`, style: 'footer' },
-        { text: `Page ${current} of ${total}`, alignment: 'right', style: 'footer' },
-      ],
-      margin: [40, 10, 40, 0],
-    }),
-    content: [
-      header,
-      { canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1 }] },
-      { text: 'LABORATORY REPORT', style: 'docTitle', margin: [0, 8, 0, 8] },
-
+      { canvas: [{ type: 'rect', x: 0, y: 0, w: CW, h: 80, color: INDIGO }] },
       {
         columns: [
           {
             width: '*',
             stack: [
-              { text: 'Patient', style: 'sectionHeading' },
-              labelValue('Name:', patientName),
-              labelValue('Reg. No:', patient.registrationNo),
-              labelValue('Age / DOB:', `${patient.age ?? '—'}  /  ${fmtDate(patient.dateOfBirth)}`),
-              labelValue('Gender:', patient.gender ?? '—'),
-              labelValue('Blood Group:', patient.bloodGroup ?? '—'),
-              labelValue('Phone:', patient.phoneNumber ?? '—'),
+              { text: lab.name, color: WHITE, fontSize: 18, bold: true },
+              ...(labContact ? [{ text: labContact, color: INDIGO_ON, fontSize: 9, margin: [0, 3, 0, 0] } as Content] : []),
+              { text: 'Cytology & Pathology Laboratory', color: '#C7D2FE', fontSize: 10, margin: [0, 3, 0, 0] },
             ],
           },
           {
-            width: '*',
+            width: 'auto',
             stack: [
-              { text: 'Record / Referral', style: 'sectionHeading' },
-              labelValue('Record:', record.identifier),
-              labelValue('Lab No:', record.labNumber ?? '—'),
-              labelValue(
-                'Referring:',
-                client ? `${client.firstName} ${client.lastName}${client.officeName ? ` (${client.officeName})` : ''}` : '—',
-              ),
+              { text: 'CYTOLOGY REPORT', color: WHITE, fontSize: 19, bold: true, characterSpacing: 1, alignment: 'right' },
+              { text: `Ref  ${reportRef}`, color: INDIGO_ON, fontSize: 10, alignment: 'right', margin: [0, 4, 0, 0] },
+              { text: fmtDate(reportDate), color: '#C7D2FE', fontSize: 9, alignment: 'right', margin: [0, 2, 0, 0] },
             ],
           },
         ],
-        columnGap: 20,
-        margin: [0, 0, 0, 6],
+        margin: [16, -64, 16, 0],
       },
+    ],
+  };
 
-      { text: 'Specimens', style: 'sectionHeading' },
-      specimenTable,
+  // ── Urgency banner (only if flagged) ────────────────────────────────────────
+  const urgencyBanner: Content[] = urgent
+    ? [
+        {
+          stack: [
+            { canvas: [{ type: 'rect', x: 0, y: 0, w: CW, h: 22, color: RED_LIGHT }] },
+            { text: 'URGENT  —  PRIORITY PROCESSING REQUIRED', color: RED, bold: true, characterSpacing: 1, fontSize: 10, alignment: 'center', margin: [0, -16, 0, 0] },
+          ],
+          margin: [0, 6, 0, 0],
+        },
+      ]
+    : [];
 
-      { text: 'Results', style: 'sectionHeading', margin: [0, 10, 0, 0] },
-      ...resultsContent,
-
-      { text: 'Diagnosis', style: 'sectionHeading', margin: [0, 10, 0, 2] },
-      ...narrativeBlocks,
-
+  // ── 2. Patient + specimen information ───────────────────────────────────────
+  const infoColumns: Content = {
+    columns: [
       {
-        margin: [0, 28, 0, 0],
-        unbreakable: true,
+        width: '*',
         stack: [
-          signatureMark,
-          { canvas: [{ type: 'line', x1: 0, y1: 2, x2: 200, y2: 2, lineWidth: 0.5 }] },
-          { text: authorizer.name, style: 'signatureName', margin: [0, 2, 0, 0] },
-          {
-            text: authorizer.designation
-              ? `${authorizer.designation.toUpperCase()} · Authorized Signatory`
-              : 'Authorized Signatory',
-            style: 'fieldLabel',
-          },
-          { text: `Signed off: ${fmtDateTime(authorizer.signedAt)}`, style: 'fieldLabel' },
+          sectionLabel('PATIENT INFORMATION', 14),
+          infoTable([
+            infoRow('Patient Name', patientName, { bold: true }),
+            infoRow('Date of Birth', `${fmtDate(patient.dateOfBirth)}${patient.age != null ? `   (Age ${patient.age})` : ''}`),
+            infoRow('Gender', patient.gender),
+            infoRow('Registration No.', patient.registrationNo),
+            infoRow('Contact', patient.phoneNumber),
+          ]),
+        ],
+      },
+      {
+        width: '*',
+        stack: [
+          sectionLabel('SPECIMEN INFORMATION', 14),
+          infoTable([
+            infoRow('Lab Number', record.labNumber, { bold: true, color: INDIGO }),
+            infoRow('Specimen Type', specimens[0]?.type),
+            infoRow('Specimen Date', fmtDate(firstSpecimenDate)),
+            infoRow('Report Date', fmtDate(reportDate)),
+            infoRow('Referring Client', referring),
+          ]),
         ],
       },
     ],
-    styles: {
-      labName: { fontSize: 16, bold: true },
-      labMeta: { fontSize: 8, color: '#555555' },
-      docTitle: { fontSize: 13, bold: true, alignment: 'center', characterSpacing: 1 },
-      sectionHeading: { fontSize: 10, bold: true, color: '#1f3a5f', margin: [0, 6, 0, 2] },
-      entryHeading: { fontSize: 9, bold: true, color: '#333333' },
-      fieldLabel: { fontSize: 8, color: '#666666' },
-      fieldValue: { fontSize: 9 },
-      th: { fontSize: 8, bold: true, fillColor: '#f0f3f7', color: '#1f3a5f' },
-      abnormal: { fontSize: 8, bold: true, color: '#b00020' },
-      normal: { fontSize: 8, color: '#2e7d32' },
-      narrative: { fontSize: 9 },
-      signatureTyped: { fontSize: 14, italics: true },
-      signatureName: { fontSize: 9, bold: true },
-      footer: { fontSize: 7, color: '#999999' },
-    },
+    columnGap: 28,
   };
+
+  // ── 3. Specimens received (indigo-tinted box) ───────────────────────────────
+  const specimenGrid: Content =
+    specimens.length > 0
+      ? {
+          columns: chunk(specimens, Math.ceil(specimens.length / Math.min(specimens.length, 3))).map((group) => ({
+            width: '*',
+            stack: group.map((s) => ({
+              margin: [0, 0, 0, 6],
+              stack: [
+                { text: s.type || '—', fontSize: 10, bold: true, color: SLATE },
+                {
+                  text: [s.label, s.bloodGroup ? `Blood ${s.bloodGroup}` : null, s.dateReceived ? fmtDate(s.dateReceived) : null]
+                    .filter(Boolean)
+                    .join('  ·  ') || '—',
+                  fontSize: 9,
+                  color: SLATE_LIGHT,
+                  margin: [0, 1, 0, 0],
+                },
+              ],
+            })),
+          })),
+          columnGap: 16,
+        }
+      : { text: 'No specimens recorded.', fontSize: 10, color: SLATE_MUTED, italics: true };
+
+  // ── 4. Cytological findings ─────────────────────────────────────────────────
+  const findingsBlocks: Content[] = entries.length
+    ? entries.flatMap((entry, i): Content[] => [
+        {
+          columns: [
+            { width: 8, canvas: [{ type: 'rect', x: 0, y: 1, w: 3, h: 12, color: INDIGO }] },
+            { width: '*', text: entry.specimenLabel || `Specimen ${i + 1}`, fontSize: 11, bold: true, color: SLATE },
+          ],
+          margin: [0, i === 0 ? 4 : 12, 0, 5],
+        },
+        entry.lines.length
+          ? {
+              table: {
+                headerRows: 1,
+                widths: ['auto', '*', '*', 'auto'],
+                body: [
+                  [
+                    findingTh('CODE'),
+                    findingTh('FINDING'),
+                    findingTh('RESULT'),
+                    findingTh('FLAG'),
+                  ],
+                  ...entry.lines.map((l): TableCell[] => {
+                    const abn = l.abnormalFinding;
+                    return [
+                      { text: l.abbreviation || '—', fontSize: 10, bold: true, color: SLATE },
+                      {
+                        // '•' is WinAnsi-safe (the standard Helvetica encoding);
+                        // '●' is not and would render blank.
+                        text: [
+                          { text: '•  ', color: abn ? RED : GREEN, bold: true },
+                          { text: l.findings || '—', color: SLATE },
+                        ],
+                        fontSize: 10,
+                      },
+                      { text: l.result || '—', fontSize: 10, color: SLATE_MID },
+                      { text: abn ? 'Abnormal' : 'Normal', fontSize: 9, bold: true, color: abn ? RED : GREEN },
+                    ];
+                  }),
+                ],
+              },
+              layout: {
+                hLineWidth: (i: number, node: any) => (i === 0 || i === node.table.body.length ? 0 : 0.5),
+                vLineWidth: () => 0,
+                hLineColor: () => BORDER,
+                paddingLeft: (i: number) => (i === 0 ? 0 : 8),
+                paddingRight: () => 8,
+                paddingTop: () => 5,
+                paddingBottom: () => 5,
+                fillColor: (rowIndex: number) => (rowIndex === 0 ? SUBTLE_BG : null),
+              },
+            }
+          : { text: 'No findings recorded', italics: true, fontSize: 10, color: SLATE_MUTED, margin: [0, 0, 0, 2] },
+      ])
+    : [{ text: 'No findings recorded.', italics: true, fontSize: 10, color: SLATE_MUTED }];
+
+  // ── 5. Pathologist's narrative ──────────────────────────────────────────────
+  const narrativeText = [narrative?.content, narrative?.medicalEntry].filter(Boolean).join('\n\n');
+  const narrativeSection: Content[] = narrativeText
+    ? [
+        sectionLabel("PATHOLOGIST'S NARRATIVE"),
+        accentBox(SUBTLE_BG, INDIGO, [
+          { text: narrativeText, fontSize: 11, color: SLATE, lineHeight: 1.6, italics: true },
+        ]),
+      ]
+    : [];
+
+  // ── 6. Clinical diagnosis ───────────────────────────────────────────────────
+  const diagnosisSection: Content[] = record.clinicalDiagnosis
+    ? [
+        sectionLabel('CLINICAL DIAGNOSIS'),
+        accentBox(INDIGO_LIGHT, INDIGO, [
+          { text: record.clinicalDiagnosis, fontSize: 13, bold: true, color: SLATE, lineHeight: 1.35 },
+        ]),
+      ]
+    : [];
+
+  // ── 7. Authorization ────────────────────────────────────────────────────────
+  const authLeft: any = authorized
+    ? {
+        width: '*',
+        stack: [
+          {
+            // Checkmark drawn on canvas — the '✓' glyph is not in Helvetica's
+            // WinAnsi encoding and would render blank.
+            columns: [
+              {
+                width: 18,
+                canvas: [
+                  { type: 'line', x1: 0, y1: 8, x2: 5, y2: 14, lineWidth: 2.4, lineColor: GREEN },
+                  { type: 'line', x1: 5, y1: 14, x2: 15, y2: 1, lineWidth: 2.4, lineColor: GREEN },
+                ],
+              },
+              { width: 'auto', text: 'AUTHORIZED', color: GREEN, bold: true, fontSize: 14, characterSpacing: 1, margin: [6, 1, 0, 0] },
+            ],
+          },
+          { text: 'This report has been reviewed and authorized for release by:', fontSize: 9, color: SLATE_LIGHT, margin: [0, 8, 0, 4] },
+          { text: authorizer.name, fontSize: 12, bold: true, color: SLATE },
+          ...(authorizer.designation ? [{ text: authorizer.designation, fontSize: 10, color: INDIGO_DARK } as Content] : []),
+          { text: `Authorized ${fmtDateTime(authorizer.signedAt)}`, fontSize: 10, color: SLATE_LIGHT, margin: [0, 2, 0, 0] },
+        ],
+      }
+    : {
+        width: '*',
+        stack: [
+          { text: 'PENDING AUTHORIZATION', color: RED, bold: true, fontSize: 12, characterSpacing: 1 },
+          { text: 'This report is not yet authorized for release.', fontSize: 9, color: SLATE_LIGHT, margin: [0, 4, 0, 0] },
+        ],
+      };
+
+  const signatureInner: Content = authorizer.signatureDataUri
+    ? { image: authorizer.signatureDataUri, fit: [180, 46], alignment: 'center', margin: [0, 4, 0, 4] }
+    : {
+        stack: [
+          { text: '________________________', alignment: 'center', color: SLATE_MUTED, fontSize: 12, margin: [0, 16, 0, 2] },
+          { text: authorizer.name, alignment: 'center', fontSize: 9, color: SLATE_MID, italics: true },
+        ],
+      };
+
+  const authRight: any = {
+    width: 200,
+    stack: [
+      { text: 'DIGITAL SIGNATURE', fontSize: 8, bold: true, color: SLATE_MUTED, characterSpacing: 1, alignment: 'center', margin: [0, 0, 0, 4] },
+      {
+        table: { widths: ['*'], heights: [58], body: [[{ stack: [signatureInner], border: [true, true, true, true] }]] },
+        layout: {
+          hLineWidth: () => 1,
+          vLineWidth: () => 1,
+          hLineColor: () => BORDER,
+          vLineColor: () => BORDER,
+          hLineStyle: () => ({ dash: { length: 3, space: 2 } }),
+          vLineStyle: () => ({ dash: { length: 3, space: 2 } }),
+          paddingLeft: () => 8,
+          paddingRight: () => 8,
+          paddingTop: () => 6,
+          paddingBottom: () => 6,
+        },
+      },
+    ],
+  };
+
+  const authorizationSection: Content = {
+    margin: [0, 22, 0, 0],
+    unbreakable: true,
+    stack: [
+      divider(),
+      sectionLabel('AUTHORIZATION', 12),
+      { columns: [authLeft, authRight], columnGap: 24 },
+    ],
+  };
+
+  // ── Assemble ────────────────────────────────────────────────────────────────
+  return {
+    pageSize: 'A4',
+    pageMargins: [40, 40, 40, 60],
+    defaultStyle: { font: 'Helvetica', fontSize: 10, color: SLATE, lineHeight: 1.2 },
+    // Faint draft mark on any not-yet-authorized render (pdfmake can't rotate
+    // text, so it's centred rather than diagonal).
+    background: (_page: number, size: { width: number; height: number }): Content | null =>
+      authorized
+        ? null
+        : {
+            text: 'DRAFT — NOT AUTHORIZED',
+            color: '#EEF1F6',
+            bold: true,
+            fontSize: 46,
+            alignment: 'center',
+            margin: [0, size.height / 2 - 40, 0, 0],
+          },
+    footer: (current: number, total: number): Content => ({
+      margin: [40, 0, 40, 0],
+      stack: [
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: CW, y2: 0, lineWidth: 0.5, lineColor: BORDER }] },
+        {
+          columns: [
+            { width: '*', text: `${lab.name}  ·  Confidential — for medical use only`, fontSize: 8, color: SLATE_MUTED },
+            { width: 'auto', text: `Page ${current} of ${total}`, fontSize: 8, color: SLATE_MUTED, alignment: 'center' },
+            { width: '*', text: `Generated ${fmtDate(new Date())}`, fontSize: 8, color: SLATE_MUTED, alignment: 'right' },
+          ],
+          columnGap: 12,
+          margin: [0, 5, 0, 0],
+        },
+      ],
+    }),
+    content: [
+      headerBand,
+      ...urgencyBanner,
+      infoColumns,
+      divider(14),
+      sectionLabel('SPECIMENS RECEIVED'),
+      accentBox(INDIGO_LIGHT, null, [specimenGrid]),
+      sectionLabel('CYTOLOGICAL FINDINGS'),
+      ...findingsBlocks,
+      ...narrativeSection,
+      ...diagnosisSection,
+      authorizationSection,
+    ],
+  };
+}
+
+// ─── helpers ──────────────────────────────────────────────────────────────────
+function findingTh(text: string): TableCell {
+  return { text, fontSize: 9, bold: true, color: SLATE_MUTED, characterSpacing: 0.5, fillColor: SUBTLE_BG };
+}
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  if (size <= 0) return [arr];
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
 }
