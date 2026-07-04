@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
 import {
-  Activity, AlertTriangle, ArrowRight, ArrowUpRight, Calendar, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FileCheck, FileText, FlaskConical,
+  Activity, AlertTriangle, ArrowRight, ArrowUpRight, Calendar, CalendarClock, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FileCheck, FileText, FlaskConical,
   Folder, GraduationCap, Hourglass, Microscope, Monitor, MoreHorizontal, Plus, ShieldCheck, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
   TestTube, TrendingUp, User, Users,
 } from 'lucide-react';
@@ -191,6 +191,12 @@ export default function DashboardPage() {
     enabled: isEnabled('PROFICIENCY_TESTING'),
   });
   const activeProfTests = (profTests ?? []).filter((t) => t.status === 'Active').length;
+  const { data: recallSummary } = useQuery({
+    queryKey: ['recall-summary'],
+    queryFn: () => api.get('/recalls/summary').then((r) => r.data as { due: number; overdue: number }),
+    enabled: isEnabled('PATIENT_RECALL'),
+  });
+  const recallsDue = (recallSummary?.due ?? 0) + (recallSummary?.overdue ?? 0);
 
   // The queue drives an in-place selection: which record the AI stage + findings
   // reflect. Defaults to the top-priority record once data arrives.
@@ -320,6 +326,30 @@ export default function DashboardPage() {
               <span style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5' }}>Open →</span>
             </button>
           )}
+        </FeatureGate>
+
+        <FeatureGate feature="PATIENT_RECALL">
+          {recallsDue > 0 && (() => {
+            const hasOverdue = (recallSummary?.overdue ?? 0) > 0;
+            const border = hasOverdue ? '#FECACA' : '#FDE68A';
+            const bg = hasOverdue ? '#FEF2F2' : '#FFFBEB';
+            const chipBg = hasOverdue ? '#FEE2E2' : '#FEF3C7';
+            const accent = hasOverdue ? '#B91C1C' : '#B45309';
+            return (
+              <button onClick={() => router.push('/recalls')}
+                style={{ marginTop: 16, width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 18, border: `1px solid ${border}`, background: bg, cursor: 'pointer', textAlign: 'left' }}>
+                <span style={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: 12, background: chipBg, color: accent, flexShrink: 0 }}><CalendarClock size={22} /></span>
+                <span style={{ flex: 1 }}>
+                  <span style={{ display: 'block', fontSize: 16, fontWeight: 700, color: '#0F172A' }}>{recallsDue} recall{recallsDue === 1 ? '' : 's'} due</span>
+                  <span style={{ display: 'block', fontSize: 13, color: '#64748B', marginTop: 2 }}>
+                    {(recallSummary?.overdue ?? 0) > 0 && `${recallSummary!.overdue} overdue · `}
+                    Patients due for repeat cytology follow-up
+                  </span>
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: accent }}>Open →</span>
+              </button>
+            );
+          })()}
         </FeatureGate>
 
         <div style={{ marginTop: 40, background: '#F9FAFC', marginLeft: -16, marginRight: -16, marginBottom: -40, paddingLeft: 16, paddingRight: 16, paddingTop: 24, paddingBottom: 40 }} className="flex flex-col gap-5">

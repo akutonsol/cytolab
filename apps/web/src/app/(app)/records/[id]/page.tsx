@@ -19,6 +19,7 @@ import { useFeatures } from '@/lib/feature-context';
 import { useAuth } from '@/lib/auth';
 import { avatarColor, type WorkloadUser } from '@/lib/workload';
 import { RESULT_META as CORR_META, type CorrelationCase } from '@/lib/correlation';
+import { STATUS_META as RECALL_META, dueColor, dueLabel, shortDate as recallDate, type Recall } from '@/lib/recall';
 import { SPECIMEN_LABELS, type FormType } from '@/lib/specimen-types';
 
 // ─── Status + step maps (zero-orange) ────────────────────────────────────────
@@ -232,6 +233,8 @@ export default function RecordDetailPage() {
   const qcFailures = (recordQC ?? []).filter((c) => c.result === 'Fail');
   const { data: patientCorrelations } = useQuery<CorrelationCase[]>({ queryKey: ['correlations-patient', record?.patientId], enabled: !!record?.patientId && isEnabled('CORRELATION_TRACKING'), queryFn: () => api.get(`/correlation/patient/${record.patientId}`).then((r) => r.data) });
   const recordCorrelation = (patientCorrelations ?? []).find((c) => c.cytologyRecordId === id);
+  const { data: patientRecalls } = useQuery<Recall[]>({ queryKey: ['patient-recalls', record?.patientId], enabled: !!record?.patientId && isEnabled('PATIENT_RECALL'), queryFn: () => api.get(`/recalls/patient/${record.patientId}`).then((r) => r.data) });
+  const recordRecall = (patientRecalls ?? []).find((r) => r.triggerRecord?.id === id);
   const { data: recordReagents } = useQuery<any[]>({ queryKey: ['reagents', 'record', id], enabled: !!id && isEnabled('REAGENT_TRACKING'), queryFn: () => api.get(`/reagents/record/${id}`).then((r) => r.data) });
   const { data: team = [] } = useQuery<WorkloadUser[]>({ queryKey: ['workload-summary'], enabled: canAssign, queryFn: () => api.get('/workload/summary').then((r) => r.data) });
   const assignMut = useMutation({
@@ -461,6 +464,18 @@ export default function RecordDetailPage() {
                 <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: CORR_META[recordCorrelation.correlationResult ?? 'Unresolved'].bg, color: CORR_META[recordCorrelation.correlationResult ?? 'Unresolved'].fg }}>
                   {CORR_META[recordCorrelation.correlationResult ?? 'Unresolved'].label}
                 </span>
+              </button>
+            </FeatureGate>
+          )}
+          {recordRecall && (
+            <FeatureGate feature="PATIENT_RECALL">
+              <button onClick={() => router.push('/recalls')} className="mt-3 flex w-full items-center justify-between gap-2 rounded-[10px] border border-[#E2E8F0] px-3.5 py-2.5 text-left transition-colors hover:bg-[#EEF3FF]" style={{ background: RECALL_META[recordRecall.status].rowBg ?? '#F8FAFC' }}>
+                <span>
+                  <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">Recall Scheduled</span>
+                  <span className="block text-[13px] font-semibold text-[#0F172A]">{recordRecall.triggerDiagnosis} · due {recallDate(recordRecall.dueDate)}</span>
+                  {['Pending', 'Due', 'Overdue'].includes(recordRecall.status) && <span className="block text-[12px] font-semibold" style={{ color: dueColor(recordRecall.daysUntilDue) }}>{dueLabel(recordRecall.daysUntilDue)}</span>}
+                </span>
+                <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: RECALL_META[recordRecall.status].bg, color: RECALL_META[recordRecall.status].fg }}>{RECALL_META[recordRecall.status].label}</span>
               </button>
             </FeatureGate>
           )}

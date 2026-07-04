@@ -13,6 +13,7 @@ import { useFeatures } from '@/lib/feature-context';
 import { FeatureGate } from '@/components/FeatureGate';
 import { AddCorrelationModal } from '@/components/AddCorrelationModal';
 import { RESULT_META as CORR_META, shortDate as corrDate, type CorrelationCase } from '@/lib/correlation';
+import { STATUS_META as RECALL_META, dueColor, dueLabel, shortDate as recallDate, type Recall } from '@/lib/recall';
 
 const STAGE: Record<string, { label: string; pct: number }> = {
   Pending: { label: 'Intake', pct: 10 }, Submitted: { label: 'Intake', pct: 25 },
@@ -140,6 +141,11 @@ export default function PatientProfilePage() {
     return () => clearInterval(t);
   }, []);
 
+  const { data: recalls = [] } = useQuery<Recall[]>({
+    queryKey: ['patient-recalls', id],
+    queryFn: () => api.get(`/recalls/patient/${id}`).then((r) => r.data),
+    enabled: isEnabled('PATIENT_RECALL'),
+  });
   const { data: correlations = [] } = useQuery<CorrelationCase[]>({
     queryKey: ['correlations-patient', id], enabled: !!id && isEnabled('CORRELATION_TRACKING'),
     queryFn: () => api.get(`/correlation/patient/${id}`).then((r) => r.data),
@@ -362,6 +368,31 @@ export default function PatientProfilePage() {
                       <div className="text-[12px] text-[#94A3B8]">Cyto {corrDate(c.cytologyDate)}{c.histologyDate ? ` · Histo ${corrDate(c.histologyDate)}` : ''}</div>
                     </div>
                     <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: CORR_META[c.correlationResult ?? 'Unresolved'].bg, color: CORR_META[c.correlationResult ?? 'Unresolved'].fg }}>{CORR_META[c.correlationResult ?? 'Unresolved'].label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+        </FeatureGate>
+
+        {/* ══ RECALLS (scheduled follow-up) ══ */}
+        <FeatureGate feature="PATIENT_RECALL">
+          <section className={`flex flex-col p-5 ${CARD}`}>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-[18px] font-bold text-[#111827]">Recalls</h2>
+              <button onClick={() => router.push('/recalls')} className="text-[13px] font-semibold text-[#4F46E5] hover:underline">View all →</button>
+            </div>
+            {recalls.length === 0 ? (
+              <div className="py-4 text-[13px] text-[#9CA3AF]">No recalls scheduled for this patient.</div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {recalls.map((r) => (
+                  <button key={r.id} onClick={() => router.push('/recalls')} className="flex items-center justify-between rounded-xl border border-[#EEF2F7] px-3.5 py-2.5 text-left transition-colors hover:bg-[#F8FAFC]" style={{ background: RECALL_META[r.status].rowBg }}>
+                    <div>
+                      <div className="text-[13px] font-semibold text-[#0F172A]">{r.triggerDiagnosis} · {r.recallIntervalMonths}mo</div>
+                      <div className="text-[12px]" style={{ color: dueColor(r.daysUntilDue) }}>Due {recallDate(r.dueDate)}{['Pending', 'Due', 'Overdue'].includes(r.status) ? ` · ${dueLabel(r.daysUntilDue)}` : ''}</div>
+                    </div>
+                    <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: RECALL_META[r.status].bg, color: RECALL_META[r.status].fg }}>{RECALL_META[r.status].label}</span>
                   </button>
                 ))}
               </div>

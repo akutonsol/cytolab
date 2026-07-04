@@ -217,6 +217,7 @@ model Lab {
   proficiencyResponses   ProficiencyResponse[]
   reagentLots            ReagentLot[]
   reagentUsages          ReagentUsage[]
+  recalls                RecallRecord[]
 }
 
 model Account {
@@ -407,6 +408,7 @@ model Patient {
   records          Record[]
   appointments     Appointment[]
   correlationCases CorrelationCase[]
+  recalls          RecallRecord[]
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
@@ -573,6 +575,7 @@ model Record {
   qcChecks          QCCheck[]
   cytologyCorrelations CorrelationCase[]    @relation("CytologyRecord")
   reagentUsages     ReagentUsage[]
+  recalls           RecallRecord[]
   // Case assignment (Tier 2 — workload balancing). Fields are unconditional in
   // the schema; only the UI is feature-gated.
   assignedToId      String?
@@ -2399,4 +2402,55 @@ model ReagentUsage {
 
   @@index([reagentLotId])
   @@index([recordId])
+}
+
+// ─── Patient Recall Management (Tier 4 Compliance) ───────────────────────────
+
+enum RecallStatus {
+  Pending // not yet due
+  Due // past dueDate, not yet completed
+  Overdue // significantly past dueDate (> 3 months)
+  Completed // patient returned for follow-up
+  Cancelled // cancelled by clinician
+  Declined // patient declined recall
+}
+
+// A scheduled follow-up for a patient, derived from a triggering cytology result.
+model RecallRecord {
+  id        String  @id @default(cuid())
+  labId     String
+  lab       Lab     @relation(fields: [labId], references: [id])
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id])
+
+  // Triggering result.
+  triggerRecordId  String
+  triggerRecord    Record   @relation(fields: [triggerRecordId], references: [id], onDelete: Cascade)
+  triggerDiagnosis String
+  triggerDate      DateTime
+
+  // Recall schedule.
+  recallIntervalMonths Int
+  dueDate              DateTime
+
+  // Status tracking.
+  status           RecallStatus @default(Pending)
+  reminderSentAt   DateTime?
+  reminderSentById String?
+
+  // Completion.
+  completedAt       DateTime?
+  completedRecordId String?
+
+  // Client notification.
+  clientNotifiedAt DateTime?
+  clientId         String?
+
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([labId, triggerRecordId])
+  @@index([labId, dueDate])
+  @@index([patientId])
 }

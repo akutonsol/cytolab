@@ -162,7 +162,7 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     key: 'PATIENT_RECALL',
     name: 'Patient Recall',
     description: 'Schedule and track recall reminders for patients due for repeat screening.',
-    tier: 4, tierName: 'Compliance', icon: 'BellRing', docsUrl: null, navPath: null, dependsOn: [], comingSoon: true,
+    tier: 4, tierName: 'Compliance', icon: 'BellRing', docsUrl: null, navPath: '/recalls', dependsOn: [],
   },
 
   // ── Tier 5 — Enterprise ────────────────────────────────────────────

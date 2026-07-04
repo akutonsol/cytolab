@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../../database/prisma.service';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { EscalationService } from '../escalation/escalation.service';
+import { RecallService } from '../recall/recall.service';
 import { UpsertBethesdaResultDto } from './dto/bethesda.dto';
 
 // Selection subset used by the pure narrative/shortCode helpers.
@@ -121,6 +122,7 @@ export class BethesdaService {
   constructor(
     private prisma: PrismaService,
     private escalation: EscalationService,
+    private recall: RecallService,
   ) {}
 
   async getByRecord(recordId: string) {
@@ -172,6 +174,10 @@ export class BethesdaService {
     // Re-evaluate abnormal-result escalation from the new classification
     // (best-effort; runs regardless of the ABNORMAL_ESCALATION UI flag).
     await this.escalation.evaluateRecord(recordId);
+
+    // Schedule a follow-up recall from the classification (idempotent; skips
+    // high-grade results, which escalation handles instead).
+    await this.recall.autoCreateFromBethesda(recordId);
 
     return { ...result, shortCode: deriveShortCode(result as BethesdaSelections) };
   }

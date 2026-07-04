@@ -50,6 +50,7 @@ import { ReqTrackingModule } from './modules/req-tracking/req-tracking.module';
 import { CorrelationModule } from './modules/correlation/correlation.module';
 import { ProficiencyModule } from './modules/proficiency/proficiency.module';
 import { ReagentModule } from './modules/reagent/reagent.module';
+import { RecallModule } from './modules/recall/recall.module';
 
 /**
  * Cytolab modular monolith.
@@ -112,6 +113,7 @@ import { ReagentModule } from './modules/reagent/reagent.module';
     CorrelationModule,
     ProficiencyModule,
     ReagentModule,
+    RecallModule,
   ],
   controllers: [HealthController],
   providers: [

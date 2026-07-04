@@ -54,6 +54,7 @@ export const BUILT_FEATURES: ReadonlySet<FeatureKey> = new Set<FeatureKey>([
   'CORRELATION_TRACKING',
   'PROFICIENCY_TESTING',
   'REAGENT_TRACKING',
+  'PATIENT_RECALL',
   'VOICE_TO_TEXT',
   'RESULT_TEMPLATES',
 ]);
