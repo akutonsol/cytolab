@@ -215,6 +215,8 @@ model Lab {
   proficiencyTests       ProficiencyTest[]
   proficiencyCases       ProficiencyCase[]
   proficiencyResponses   ProficiencyResponse[]
+  reagentLots            ReagentLot[]
+  reagentUsages          ReagentUsage[]
 }
 
 model Account {
@@ -303,6 +305,8 @@ model User {
   correlationsCreated    CorrelationCase[]      @relation("CorrelationCreator")
   proficiencyTests       ProficiencyTest[]      @relation("ProfTestCreator")
   proficiencyResponses   ProficiencyResponse[]  @relation("ProfResponder")
+  reagentLotsCreated     ReagentLot[]           @relation("ReagentCreator")
+  reagentUsages          ReagentUsage[]         @relation("ReagentUser")
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -568,6 +572,7 @@ model Record {
   escalations       EscalationRecord[]
   qcChecks          QCCheck[]
   cytologyCorrelations CorrelationCase[]    @relation("CytologyRecord")
+  reagentUsages     ReagentUsage[]
   // Case assignment (Tier 2 — workload balancing). Fields are unconditional in
   // the schema; only the UI is feature-gated.
   assignedToId      String?
@@ -2338,4 +2343,60 @@ model ProficiencyResponse {
   updatedAt   DateTime @updatedAt
 
   @@unique([caseId, responderId])
+}
+
+// ─── Reagent / Stain Lot Tracking (Tier 4 Compliance) ────────────────────────
+
+enum ReagentStatus {
+  Active // in use
+  Quarantined // suspected problem — do not use
+  Depleted // used up
+  Expired // past expiry date
+  Recalled // manufacturer recall
+}
+
+model ReagentLot {
+  id            String        @id @default(cuid())
+  labId         String
+  lab           Lab           @relation(fields: [labId], references: [id])
+  name          String // e.g. "Papanicolaou Stain"
+  manufacturer  String?
+  catalogNumber String?
+  lotNumber     String // the actual lot/batch number
+  expiryDate    DateTime?
+  receivedDate  DateTime      @default(now())
+  openedDate    DateTime?
+  status        ReagentStatus @default(Active)
+  quantity      Float?
+  unit          String?
+  storageTemp   String?
+  notes         String?
+
+  usages      ReagentUsage[]
+  createdById String?
+  createdBy   User?          @relation("ReagentCreator", fields: [createdById], references: [id])
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([labId, lotNumber])
+  @@index([labId, status])
+}
+
+model ReagentUsage {
+  id           String     @id @default(cuid())
+  labId        String
+  lab          Lab        @relation(fields: [labId], references: [id])
+  reagentLotId String
+  reagentLot   ReagentLot @relation(fields: [reagentLotId], references: [id], onDelete: Cascade)
+  recordId     String?
+  record       Record?    @relation(fields: [recordId], references: [id])
+  batchId      String?
+  usedById     String
+  usedBy       User       @relation("ReagentUser", fields: [usedById], references: [id])
+  quantityUsed Float?
+  usedAt       DateTime   @default(now())
+  notes        String?
+
+  @@index([reagentLotId])
+  @@index([recordId])
 }

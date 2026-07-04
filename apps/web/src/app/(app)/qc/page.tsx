@@ -40,6 +40,7 @@ function LogQCModal({ equipment, onClose }: { equipment: Equipment[]; onClose: (
   const [notes, setNotes] = useState('');
   const [failureReason, setFailureReason] = useState('');
   const [correctiveAction, setCorrectiveAction] = useState('');
+  const [reagentLotId, setReagentLotId] = useState('');
   const [performedAt, setPerformedAt] = useState(() => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16));
 
   // Resolve the optional linked record by lab number (active records only).
@@ -47,17 +48,28 @@ function LogQCModal({ equipment, onClose }: { equipment: Equipment[]; onClose: (
   const recOptions = recPage?.data ?? [];
   const recordId = useMemo(() => recOptions.find((r) => (r.labNumber ?? r.identifier) === labNumber)?.id ?? null, [recOptions, labNumber]);
 
+  // Reagent-lot traceability: link the QC check to the reagent lot in use by
+  // logging a ReagentUsage (feature-gated).
+  const reagentEnabled = useFeatures().isEnabled('REAGENT_TRACKING');
+  const { data: reagentLots = [] } = useQuery<{ id: string; name: string; lotNumber: string; status: string }[]>({ queryKey: ['reagents-active-qc'], queryFn: () => api.get('/reagents', { params: { status: 'Active' } }).then((r) => r.data), enabled: reagentEnabled });
+
   const save = useMutation({
-    mutationFn: () => api.post('/qc', {
-      checkType, result, equipmentId: equipmentId || undefined, recordId: recordId || undefined,
-      batchId: batchId || undefined, notes: notes || undefined,
-      failureReason: result === 'Fail' ? failureReason || undefined : undefined,
-      correctiveAction: correctiveAction || undefined,
-      performedAt: new Date(performedAt).toISOString(),
-    }),
+    mutationFn: async () => {
+      await api.post('/qc', {
+        checkType, result, equipmentId: equipmentId || undefined, recordId: recordId || undefined,
+        batchId: batchId || undefined, notes: notes || undefined,
+        failureReason: result === 'Fail' ? failureReason || undefined : undefined,
+        correctiveAction: correctiveAction || undefined,
+        performedAt: new Date(performedAt).toISOString(),
+      });
+      // Trace the reagent lot in use for this check.
+      if (reagentLotId) {
+        await api.post(`/reagents/${reagentLotId}/use`, { recordId: recordId || undefined, batchId: batchId || undefined, notes: `QC ${checkType} — ${result}` }).catch(() => undefined);
+      }
+    },
     onSuccess: () => {
       message.success('QC check logged');
-      ['qc-list', 'qc-stats', 'qc-alerts', 'record-detail'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+      ['qc-list', 'qc-stats', 'qc-alerts', 'record-detail', 'reagent-stats'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
       onClose();
     },
     onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not log check'),
@@ -101,6 +113,14 @@ function LogQCModal({ equipment, onClose }: { equipment: Equipment[]; onClose: (
             {labNumber && !recordId && <div className="mt-1 text-[11px] text-[#B91C1C]">No matching active record.</div>}
           </Field>
           <Field label="Batch ID (optional)"><input value={batchId} onChange={(e) => setBatchId(e.target.value)} className={inp} /></Field>
+          {reagentEnabled && (
+            <Field label="Reagent Lot Used (optional)">
+              <select value={reagentLotId} onChange={(e) => setReagentLotId(e.target.value)} className={inp}>
+                <option value="">— None —</option>
+                {reagentLots.map((r) => <option key={r.id} value={r.id}>{r.name} · {r.lotNumber}</option>)}
+              </select>
+            </Field>
+          )}
           <Field label="Notes (optional)"><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inp} /></Field>
           {result === 'Fail' && (
             <Field label="Failure Reason (required)">

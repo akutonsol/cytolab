@@ -54,6 +54,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Quality Control', path: '/qc', permission: 'record:view', feature: 'QC_MODULE', icon: CheckSquare },
       { label: 'Equipment', path: '/qc/equipment', permission: 'record:view', feature: 'QC_MODULE', icon: Wrench },
       { label: 'Req Tracking', path: '/req-tracking', permission: 'requisition:view', feature: 'REQUISITION_TRACKING', icon: ScanLine },
+      { label: 'Reagents', path: '/reagents', permission: 'record:view', feature: 'REAGENT_TRACKING', icon: FlaskConical },
     ],
   },
   {

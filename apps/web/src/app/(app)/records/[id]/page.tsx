@@ -232,6 +232,7 @@ export default function RecordDetailPage() {
   const qcFailures = (recordQC ?? []).filter((c) => c.result === 'Fail');
   const { data: patientCorrelations } = useQuery<CorrelationCase[]>({ queryKey: ['correlations-patient', record?.patientId], enabled: !!record?.patientId && isEnabled('CORRELATION_TRACKING'), queryFn: () => api.get(`/correlation/patient/${record.patientId}`).then((r) => r.data) });
   const recordCorrelation = (patientCorrelations ?? []).find((c) => c.cytologyRecordId === id);
+  const { data: recordReagents } = useQuery<any[]>({ queryKey: ['reagents', 'record', id], enabled: !!id && isEnabled('REAGENT_TRACKING'), queryFn: () => api.get(`/reagents/record/${id}`).then((r) => r.data) });
   const { data: team = [] } = useQuery<WorkloadUser[]>({ queryKey: ['workload-summary'], enabled: canAssign, queryFn: () => api.get('/workload/summary').then((r) => r.data) });
   const assignMut = useMutation({
     mutationFn: (userId: string | null) => api.patch(`/records/${id}/assign`, { assignedToId: userId }).then((r) => r.data),
@@ -461,6 +462,21 @@ export default function RecordDetailPage() {
                   {CORR_META[recordCorrelation.correlationResult ?? 'Unresolved'].label}
                 </span>
               </button>
+            </FeatureGate>
+          )}
+          {(recordReagents ?? []).length > 0 && (
+            <FeatureGate feature="REAGENT_TRACKING">
+              <div className="mt-3 rounded-[10px] border border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">Reagents Used ({(recordReagents ?? []).length})</div>
+                <div className="mt-1.5 flex flex-col gap-1.5">
+                  {(recordReagents ?? []).slice(0, 5).map((u: any) => (
+                    <div key={u.usageId} className="flex items-center justify-between gap-2 text-[12px]">
+                      <span className="text-[#334155]">{u.lot?.name} <span className="font-mono text-[#4F46E5]">{u.lot?.lotNumber}</span></span>
+                      {(u.lot?.status === 'Quarantined' || u.lot?.status === 'Recalled') && <span className="rounded px-1.5 py-0.5 text-[10px] font-bold" style={{ background: '#FEE2E2', color: '#B91C1C' }}>{u.lot.status}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </FeatureGate>
           )}
         </div>

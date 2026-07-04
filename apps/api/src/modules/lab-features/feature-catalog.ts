@@ -53,6 +53,7 @@ export const BUILT_FEATURES: ReadonlySet<FeatureKey> = new Set<FeatureKey>([
   'BETHESDA_ANALYTICS',
   'CORRELATION_TRACKING',
   'PROFICIENCY_TESTING',
+  'REAGENT_TRACKING',
   'VOICE_TO_TEXT',
   'RESULT_TEMPLATES',
 ]);

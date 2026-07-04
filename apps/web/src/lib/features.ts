@@ -156,7 +156,7 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     key: 'REAGENT_TRACKING',
     name: 'Reagent & Lot Tracking',
     description: 'Track reagent lots, expiry, and QC per batch for regulatory compliance.',
-    tier: 4, tierName: 'Compliance', icon: 'FlaskConical', docsUrl: null, navPath: null, dependsOn: [], comingSoon: true,
+    tier: 4, tierName: 'Compliance', icon: 'FlaskConical', docsUrl: null, navPath: '/reagents', dependsOn: [],
   },
   PATIENT_RECALL: {
     key: 'PATIENT_RECALL',
