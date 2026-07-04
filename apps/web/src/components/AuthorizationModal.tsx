@@ -8,6 +8,8 @@ import { api } from '@/lib/api';
 import { DS } from '@/lib/drawer-styles';
 import { DrawerHeader, PremiumFormStyles } from '@/components/DrawerChrome';
 import { DrawPad } from './DrawPad';
+import { ResultTemplateSelector } from './ResultTemplateSelector';
+import { composeNarrative, type ResultTemplate } from '@/lib/result-templates';
 
 interface RecordLite {
   id: string;
@@ -60,6 +62,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
   const qc = useQueryClient();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [narrative, setNarrative] = useState('');
+  const [templateOpen, setTemplateOpen] = useState(false);
   const [aiDraftId, setAiDraftId] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<CodeSuggestion[] | null>(null);
   const [flags, setFlags] = useState<ConsistencyFlag[] | null>(null);
@@ -221,7 +224,23 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
 
   const aiBusy = genNarrative.isPending || suggest.isPending || consistency.isPending;
 
+  // Apply a result template into the narrative. Never silently overwrite existing
+  // content — confirm first when the narrative already has text.
+  const applyTemplate = (t: ResultTemplate) => {
+    const text = composeNarrative(t);
+    const done = () => { setNarrative(text); message.success(`Template “${t.name}” applied — review and adjust as needed.`); };
+    if (narrative.trim()) {
+      modal.confirm({
+        title: 'Replace the current narrative?',
+        content: `Applying “${t.name}” will overwrite the report narrative you have. This can’t be undone.`,
+        okText: 'Replace', cancelText: 'Keep mine',
+        onOk: done,
+      });
+    } else done();
+  };
+
   return (
+    <>
     <Modal
       open={open}
       onCancel={onClose}
@@ -316,7 +335,10 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
 
           {/* ---- Report narrative (human-owned; AI can draft into it) ---- */}
           <div style={DS.divider} />
-          <div style={DS.sectionLabel}>Report narrative</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <div style={DS.sectionLabel}>Report narrative</div>
+            <button type="button" style={{ ...DS.btnOutline, padding: '6px 14px', fontSize: 13 }} onClick={() => setTemplateOpen(true)}>Use Template</button>
+          </div>
           {aiDraftId && (
             <Alert type="info" showIcon style={{ marginBottom: 8 }}
               message="AI-drafted — review & edit before accepting"
@@ -414,5 +436,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
       )}
       </div>
     </Modal>
+    <ResultTemplateSelector open={templateOpen} onClose={() => setTemplateOpen(false)} onSelect={applyTemplate} />
+    </>
   );
 }

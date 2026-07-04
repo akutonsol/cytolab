@@ -199,6 +199,7 @@ model Lab {
   employees              Employee[]
   payrollRuns            PayrollRun[]
   payAdvices             PayAdvice[]
+  resultTemplates        ResultTemplate[]
 }
 
 model Account {
@@ -269,6 +270,7 @@ model User {
   managedDepartments     Department[]           @relation("DepartmentManager")
   processedPayrollRuns   PayrollRun[]           @relation("PayrollProcessor")
   approvedPayrollRuns    PayrollRun[]           @relation("PayrollApprover")
+  resultTemplates        ResultTemplate[]       @relation("ResultTemplateCreator")
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -1630,4 +1632,45 @@ model PayAdvice {
   @@index([labId])
   @@index([employeeId])
   @@index([payrollRunId])
+}
+
+// ─── Result Templates ────────────────────────────────────────────────────────
+// Reusable cytology report templates (Bethesda categories) that pre-populate
+// result-sheet narrative/findings during entry.
+
+enum TemplateCategory {
+  Cervical
+  Endometrial
+  Respiratory
+  Urinary
+  Breast
+  Thyroid
+  Other
+}
+
+model ResultTemplate {
+  id               String           @id @default(cuid())
+  labId            String
+  lab              Lab              @relation(fields: [labId], references: [id])
+  name             String
+  category         TemplateCategory @default(Cervical)
+  shortCode        String?
+  description      String?
+  isActive         Boolean          @default(true)
+  usageCount       Int              @default(0)
+  specimenAdequacy String?
+  generalCategory  String?
+  interpretation   String?
+  recommendation   String?
+  additionalNotes  String?
+  findings         Json? // [{ key, value }]
+  createdById      String?
+  createdBy        User?            @relation("ResultTemplateCreator", fields: [createdById], references: [id])
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([labId, name])
+  @@unique([labId, shortCode])
+  @@index([labId])
+  @@index([category])
 }
