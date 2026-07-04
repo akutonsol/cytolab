@@ -98,17 +98,23 @@ async function main() {
     {
       name: 'Pathologist',
       description: 'Authorizer (Pathologist/Cytologist) who signs off and authorizes reports',
-      perms: byPrefix(
-        ['patient', 'client', 'record', 'recordstatus', 'requisition', 'resultsheet', 'resultentry', 'codesheet', 'labcode', 'report', 'cabinet', 'aidraft'],
-      ),
+      perms: [
+        ...byPrefix(
+          ['patient', 'client', 'record', 'recordstatus', 'requisition', 'resultsheet', 'resultentry', 'codesheet', 'labcode', 'report', 'cabinet', 'aidraft'],
+        ),
+        ...byPrefix(['workspace'], ['view', 'create', 'change']),
+      ],
     },
     {
       name: 'Lab Technician',
       description: 'Intake, specimens and results entry (no authorization)',
-      perms: byPrefix(
-        ['patient', 'client', 'record', 'recordstatus', 'requisition', 'resultentry', 'cabinet', 'message', 'notification', 'appointment'],
-        ['view', 'create', 'change', 'submit'],
-      ),
+      perms: [
+        ...byPrefix(
+          ['patient', 'client', 'record', 'recordstatus', 'requisition', 'resultentry', 'cabinet', 'message', 'notification', 'appointment'],
+          ['view', 'create', 'change', 'submit'],
+        ),
+        ...byPrefix(['workspace'], ['view', 'create', 'change']),
+      ],
     },
     {
       name: 'Receptionist',

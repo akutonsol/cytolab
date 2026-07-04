@@ -81,7 +81,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Users', path: '/users', permission: 'user:view' },
       { label: 'Roles', path: '/roles', permission: 'role:view' },
-      { label: 'Workspaces', path: '/workspaces', phase: 8 },
+      { label: 'Workspaces', path: '/workspaces', permission: 'workspace:view' },
       { label: 'Messaging', path: '/messaging', permission: 'message:view', phase: 8 },
       { label: 'Client Requests', path: '/change-requests', permission: 'changerequest:view', icon: MessageSquare },
       { label: 'Notifications', path: '/notifications', permission: 'notification:view' },
