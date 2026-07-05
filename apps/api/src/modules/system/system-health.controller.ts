@@ -31,4 +31,18 @@ export class SystemHealthController {
   runBackup(@CurrentUser() _user: AuthUser) {
     return this.backup.runBackup('manual');
   }
+
+  @Post('system/health/deep-check')
+  @RequirePermissions('system:health')
+  async runDeepDiagnostics() {
+    const start = Date.now();
+    const results = await this.health.runDeepDiagnostics();
+    return {
+      ranAt: new Date().toISOString(),
+      durationMs: Date.now() - start,
+      overall: results.some((r) => r.status === 'error') ? 'error'
+        : results.some((r) => r.status === 'warn') ? 'warn' : 'ok',
+      checks: results,
+    };
+  }
 }

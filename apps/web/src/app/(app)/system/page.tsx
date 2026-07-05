@@ -34,6 +34,42 @@ interface BackupResult {
   durationMs?: number;
 }
 
+type DiagCategory = 'api' | 'email' | 'storage' | 'pdf' | 'fhir' | 'scheduler' | 'database' | 'features';
+interface DiagnosticCheck {
+  name: string;
+  category: DiagCategory;
+  status: Status;
+  responseTimeMs?: number;
+  message: string;
+  detail?: string;
+}
+interface DeepCheckResult {
+  ranAt: string;
+  durationMs: number;
+  overall: Status;
+  checks: DiagnosticCheck[];
+}
+
+// Grouped display order + human labels for the diagnostic categories.
+const DIAG_GROUPS: { category: DiagCategory; label: string }[] = [
+  { category: 'api', label: 'API Routes' },
+  { category: 'email', label: 'Email' },
+  { category: 'storage', label: 'Storage' },
+  { category: 'pdf', label: 'PDF Generation' },
+  { category: 'fhir', label: 'FHIR' },
+  { category: 'scheduler', label: 'Scheduler' },
+  { category: 'database', label: 'Database' },
+  { category: 'features', label: 'Feature Gates' },
+];
+// Deep-diagnostics warn colour — dark amber #A16207 (detector-safe, never orange).
+const DEEP_WARN = '#A16207';
+const DEEP_DOT: Record<Status, string> = { ok: '#22C55E', warn: DEEP_WARN, error: '#EF4444' };
+const DEEP_BANNER: Record<Status, { bg: string; border: string; color: string; Icon: any; text: string }> = {
+  ok: { bg: '#F0FDF4', border: '#BBF7D0', color: '#16A34A', Icon: CheckCircle, text: 'All systems functional' },
+  warn: { bg: '#FEFCE8', border: '#FDE68A', color: DEEP_WARN, Icon: AlertTriangle, text: 'Some checks need attention' },
+  error: { bg: '#FEF2F2', border: '#FECACA', color: '#EF4444', Icon: XCircle, text: 'Critical issues detected' },
+};
+
 // ─── Style tokens ────────────────────────────────────────────────────────────
 const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)]';
 // Status semantics: ok green, error red. Warn uses dark amber #B45309 (reads as
@@ -86,6 +122,14 @@ export default function SystemHealthPage() {
     onError: (e: any) => message.error(e?.response?.data?.message ?? 'Maintenance failed'),
   });
 
+  // Deep Diagnostics — expensive; runs only on explicit click, result persists in state.
+  const [deepResult, setDeepResult] = useState<DeepCheckResult | null>(null);
+  const deepCheck = useMutation({
+    mutationFn: () => api.post('/system/health/deep-check', undefined, { timeout: 60_000 }).then((r) => r.data as DeepCheckResult),
+    onSuccess: (d) => setDeepResult(d),
+    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Deep check failed'),
+  });
+
   const [lastBackup, setLastBackup] = useState<BackupResult | null>(null);
   const backupMutation = useMutation({
     mutationFn: () => api.post('/system/backup').then((r) => r.data as BackupResult),
@@ -98,7 +142,7 @@ export default function SystemHealthPage() {
 
   if (!allowed) {
     return (
-      <div className="min-h-full px-6 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}>
+      <div className="min-h-full pt-4" style={{ background: '#F8FAFC' }}>
         <div className={`${CARD} mx-auto mt-16 max-w-md p-8 text-center`}>
           <Shield size={28} className="mx-auto text-[#9CA3AF]" />
           <div className="mt-3 text-[18px] font-bold text-[#0F172A]">Access restricted</div>
@@ -109,7 +153,7 @@ export default function SystemHealthPage() {
   }
 
   return (
-    <div className="min-h-full px-6 pb-8 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}>
+    <div className="min-h-full pb-8 pt-4" style={{ background: '#F8FAFC' }}>
       {/* ── Header ── */}
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -312,6 +356,40 @@ export default function SystemHealthPage() {
               </div>
             )}
           </div>
+
+          {/* ── Deep Diagnostics ── */}
+          <div className={`${CARD} mt-6 p-6`}>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Cpu size={18} className="text-[#4F46E5]" />
+                <h2 className="text-[18px] font-bold text-[#0F172A]">Deep Diagnostics</h2>
+                <span className="text-[13px] text-[#9CA3AF]">Active subsystem probes — runs on demand</span>
+              </div>
+              <div className="flex items-center gap-3">
+                {deepResult && <span className="text-[13px] text-[#9CA3AF]">Last run: {relTime(deepResult.ranAt)}</span>}
+                <button
+                  onClick={() => deepCheck.mutate()}
+                  disabled={deepCheck.isPending}
+                  className="flex h-10 items-center gap-2 rounded-lg border border-[#4F46E5] px-4 text-[14px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#EEF3FF] disabled:opacity-60">
+                  {deepCheck.isPending ? <Loader2 size={15} className="animate-spin" /> : <Activity size={15} />}
+                  {deepCheck.isPending ? 'Running…' : 'Run Deep Check'}
+                </button>
+              </div>
+            </div>
+
+            {deepCheck.isPending ? (
+              <div className="flex flex-col items-center gap-3 py-10 text-center">
+                <Loader2 size={26} className="animate-spin text-[#4F46E5]" />
+                <div className="text-[14px] font-medium text-[#6B7280]">Probing subsystems… this can take 5–15 seconds</div>
+              </div>
+            ) : !deepResult ? (
+              <div className="py-10 text-center text-[13px] text-[#9CA3AF]">
+                No deep check has been run yet — click Run Deep Check to probe every subsystem.
+              </div>
+            ) : (
+              <DeepResults result={deepResult} />
+            )}
+          </div>
         </>
       )}
 
@@ -381,6 +459,63 @@ function BusinessTile({ check, label, unit }: { check: Check; label: string; uni
       <div className="flex items-center gap-2"><Dot status={check.status} /><span className="text-[13px] text-[#6B7280]">{label}</span></div>
       <div className="mt-1 text-[32px] font-bold leading-none text-[#0F172A]">{check.value}</div>
       <div className="mt-1.5 text-[12px] text-[#9CA3AF]">{unit}</div>
+    </div>
+  );
+}
+
+function DeepResults({ result }: { result: DeepCheckResult }) {
+  const b = DEEP_BANNER[result.overall];
+  const groups = DIAG_GROUPS
+    .map((g) => ({ ...g, checks: result.checks.filter((c) => c.category === g.category) }))
+    .filter((g) => g.checks.length > 0);
+  return (
+    <div>
+      {/* Overall banner */}
+      <div className="mb-5 flex items-center gap-3 rounded-xl border p-4" style={{ background: b.bg, borderColor: b.border }}>
+        <b.Icon size={20} style={{ color: b.color }} />
+        <span className="text-[15px] font-semibold" style={{ color: b.color }}>{b.text}</span>
+        <span className="ml-auto text-[12px] text-[#9CA3AF]">Completed in {result.durationMs} ms</span>
+      </div>
+
+      {groups.map((g) => (
+        <div key={g.category} className="mb-5 last:mb-0">
+          <div className="mb-2.5 text-[12px] font-semibold uppercase tracking-wide text-[#9CA3AF]">{g.label}</div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {g.checks.map((c, i) => <DeepCheckCard key={`${c.name}-${i}`} check={c} />)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DeepCheckCard({ check }: { check: DiagnosticCheck }) {
+  const [open, setOpen] = useState(false);
+  const longDetail = !!check.detail && check.detail.length > 48;
+  return (
+    <div className="rounded-xl border border-[#F3F4F6] p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: DEEP_DOT[check.status] }} />
+          <span className="text-[14px] font-semibold text-[#0F172A]">{check.name}</span>
+        </div>
+        {typeof check.responseTimeMs === 'number' && (
+          <span className="shrink-0 rounded-md bg-[#F3F4F6] px-1.5 py-0.5 text-[11px] font-medium text-[#6B7280]">{check.responseTimeMs} ms</span>
+        )}
+      </div>
+      <div className="mt-1.5 text-[13px] text-[#6B7280]">{check.message}</div>
+      {check.detail && (
+        longDetail ? (
+          <div className="mt-1.5">
+            <button onClick={() => setOpen((v) => !v)} className="text-[12px] font-semibold text-[#4F46E5] hover:underline">
+              {open ? 'Hide detail' : 'Show detail'}
+            </button>
+            {open && <div className="mt-1 break-words text-[12px] text-[#9CA3AF]">{check.detail}</div>}
+          </div>
+        ) : (
+          <div className="mt-1 break-words text-[12px] text-[#9CA3AF]">{check.detail}</div>
+        )
+      )}
     </div>
   );
 }
