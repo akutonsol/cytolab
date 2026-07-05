@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Severity = 'info' | 'success' | 'warning' | 'error';
-type LogType = 'RECORD_STATUS' | 'AUTH' | 'AUTHORIZATION' | 'CHANGE_REQUEST' | 'PAYMENT' | 'MAINTENANCE';
+type LogType = 'RECORD_STATUS' | 'AUTH' | 'AUTHORIZATION' | 'CHANGE_REQUEST' | 'PAYMENT' | 'MAINTENANCE' | 'FEATURE' | 'ASSIGNMENT';
 interface LogEntry {
   id: string;
   type: LogType;
@@ -32,6 +32,8 @@ const TYPE_OPTIONS: { value: '' | LogType; label: string }[] = [
   { value: 'CHANGE_REQUEST', label: 'Change Request' },
   { value: 'PAYMENT', label: 'Payment' },
   { value: 'MAINTENANCE', label: 'Maintenance' },
+  { value: 'FEATURE', label: 'Feature' },
+  { value: 'ASSIGNMENT', label: 'Assignment' },
 ];
 
 // Type badge palette (zero orange — all cool/brand hues).
@@ -42,7 +44,11 @@ const TYPE_BADGE: Record<LogType, { bg: string; color: string; label: string }> 
   CHANGE_REQUEST: { bg: '#F0F9FF', color: '#0284C7', label: 'Change Request' },
   PAYMENT: { bg: '#F0FDF4', color: '#16A34A', label: 'Payment' },
   MAINTENANCE: { bg: '#F5F3FF', color: '#7C3AED', label: 'Maintenance' },
+  FEATURE: { bg: '#ECFEFF', color: '#0891B2', label: 'Feature' },
+  ASSIGNMENT: { bg: '#FDF2F8', color: '#DB2777', label: 'Assignment' },
 };
+// Fallback so an unmapped/new log type never crashes the row (returns undefined).
+const BADGE_FALLBACK = { bg: '#F1F5F9', color: '#64748B', label: 'Event' };
 
 // Severity → left-border accent. Warning is dark amber #B45309 (detector-safe;
 // #D97706 would trip the zero-orange rule).
@@ -217,7 +223,7 @@ export default function SystemLogPage() {
                   </tr>
                 ) : (
                   pageRows.map((e) => {
-                    const badge = TYPE_BADGE[e.type];
+                    const badge = TYPE_BADGE[e.type] ?? { ...BADGE_FALLBACK, label: e.type };
                     const av = tintFor(e.userName);
                     const isSystem = e.userName === 'System' || e.userName === '—';
                     return (
