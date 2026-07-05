@@ -99,12 +99,12 @@ function Grid() {
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-slate-100">
-              <th className="sticky left-0 z-10 bg-white px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">Employee</th>
-              {days.map((d, i) => <th key={d} className="px-2 py-3 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-400">{DOW[i]}<div className="text-[10px] font-normal text-slate-300">{parseLocal(d).getDate()}</div></th>)}
+              <th className="sticky left-0 z-10 bg-white px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">Employee</th>
+              {days.map((d, i) => <th key={d} className="px-2 py-3 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500">{DOW[i]}<div className="text-[10px] font-normal text-slate-300">{parseLocal(d).getDate()}</div></th>)}
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-400">No employees.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-500">No employees.</td></tr>}
             {rows.map((e) => (
               <tr key={e.id} className="border-b border-slate-100">
                 <td className="sticky left-0 z-10 bg-white px-4 py-3 text-sm font-medium text-charcoal-heading">{empName(e)}</td>
@@ -135,7 +135,7 @@ function Grid() {
 
       {/* Legend */}
       <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-        <span className="font-semibold uppercase tracking-wide text-slate-400">Shifts:</span>
+        <span className="font-semibold uppercase tracking-wide text-slate-500">Shifts:</span>
         {shifts.map((s: any) => <span key={s.id} className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${SHIFT_CHIP[s.type] ?? 'bg-slate-100 text-slate-700'}`}>{s.name} · {s.startTime}–{s.endTime}</span>)}
       </div>
 
@@ -143,7 +143,7 @@ function Grid() {
       {picker && (
         <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={closePicker}>
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">{picker.current ? 'Change Shift' : 'Assign Shift'}</h3><button onClick={closePicker} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button></div>
+            <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">{picker.current ? 'Change Shift' : 'Assign Shift'}</h3><button onClick={closePicker} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>
             <div className="mb-3 text-sm text-slate-500">{empName(rows.find((r) => r.id === picker.employeeId))} · {parseLocal(picker.date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</div>
             <div className="flex flex-col gap-2">
               {shifts.map((s: any) => {
@@ -161,11 +161,11 @@ function Grid() {
                     </span>
                     {savingShiftId === s.id
                       ? <Loader2 size={15} className="animate-spin text-primary" />
-                      : <span className="text-xs text-slate-400">{s.startTime}–{s.endTime}</span>}
+                      : <span className="text-xs text-slate-500">{s.startTime}–{s.endTime}</span>}
                   </button>
                 );
               })}
-              {shifts.length === 0 && <div className="rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-400">No shifts defined yet.</div>}
+              {shifts.length === 0 && <div className="rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-500">No shifts defined yet.</div>}
             </div>
             {picker.current && (
               <button

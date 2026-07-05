@@ -123,7 +123,7 @@ function KpiCard({ icon, iconClass, label, value, sub, subColor, spark, sparkDat
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${iconClass}`}>{icon}</span>
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{label}</span>
           </div>
           <div className="mt-2 text-3xl font-bold leading-none text-charcoal-heading">{value}</div>
           <div className="mt-1.5 text-[11px] font-semibold" style={{ color: subColor }}>{sub}</div>
@@ -285,7 +285,7 @@ export default function SamplesPage() {
     useInfiniteScroll<Rec>({ fetchFn, pageSize: 20 });
 
   const openChoose = () => { if (can('record:create')) setChooseOpen(true); };
-  const TH = 'px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
+  const TH = 'px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
   const CELL = 'px-5 py-4 align-middle';
   const TABS: [Tab, string][] = [['all', 'All'], ['urgent', 'Urgent'], ['processing', 'Processing'], ['submitted', 'Submitted'], ['completed', 'Completed']];
 
@@ -308,7 +308,7 @@ export default function SamplesPage() {
           {/* KPI strip */}
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
             <KpiCard icon={<FlaskConical size={18} />} iconClass="bg-indigo-50 text-indigo-600" label="New Samples" value={newSamples} sub={`+${newToday} today`} subColor={GREEN} spark={INDIGO} sparkData={newSeries} />
-            <KpiCard icon={<CheckCircle2 size={18} />} iconClass="bg-green-50 text-green-600" label="Completed" value={completedCount} sub={`${accuracy}% authorized`} subColor={GREEN} spark={GREEN} sparkData={completedSeries} />
+            <KpiCard icon={<CheckCircle2 size={18} />} iconClass="bg-green-50 text-green-700" label="Completed" value={completedCount} sub={`${accuracy}% authorized`} subColor={GREEN} spark={GREEN} sparkData={completedSeries} />
             <KpiCard icon={<AlertTriangle size={18} />} iconClass="bg-red-50 text-red-600" label="Urgent" value={urgentAll.length} sub="Needs attention" subColor={RED} spark={RED} sparkData={urgentSeries} />
             <KpiCard icon={<Settings size={18} />} iconClass="bg-blue-50 text-blue-600" label="Processing" value={processingCount} sub="Active in lab" subColor={BLUE} spark={BLUE} sparkData={processingSeries} />
             <KpiCard icon={<Activity size={18} />} iconClass="bg-teal-50 text-teal-600" label="Avg TAT" value={avgTat != null ? `${avgTat} hrs` : '—'} sub={avgTat != null ? 'avg turnaround' : 'no data yet'} subColor={SLATE} spark={TEAL} sparkData={completedSeries} />
@@ -322,7 +322,7 @@ export default function SamplesPage() {
                 <button onClick={() => setTab('urgent')} className="text-xs font-semibold text-primary hover:underline">View all urgent →</button>
               </div>
               <div className="flex flex-col gap-2">
-                {urgentAll.length === 0 && <div className="py-6 text-center text-sm font-semibold text-green-600">✓ No urgent cases</div>}
+                {urgentAll.length === 0 && <div className="py-6 text-center text-sm font-semibold text-green-700">✓ No urgent cases</div>}
                 {urgentAll.slice(0, 4).map((r) => (
                   <div key={r.id} onClick={() => router.push(`/records/${r.id}`)} className="flex cursor-pointer items-center gap-3 rounded-lg border-l-4 bg-red-50/60 px-3 py-2.5 hover:bg-red-50" style={{ borderColor: RED }}>
                     {(() => { const { Icon } = specUI(r.specimens?.[0]?.type); return (
@@ -338,7 +338,7 @@ export default function SamplesPage() {
                     </div>
                     <div className="shrink-0 text-right">
                       <div className="text-sm font-semibold" style={{ color: RED }}>{elapsedLabel(r.createdAt)}</div>
-                      <div className="text-xs text-slate-400">Since {clock(r.createdAt)}</div>
+                      <div className="text-xs text-slate-500">Since {clock(r.createdAt)}</div>
                     </div>
                   </div>
                 ))}
@@ -352,14 +352,14 @@ export default function SamplesPage() {
               <div className="mt-3 flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 py-6 text-center">
                 <Settings size={22} className="text-slate-300" />
                 <div className="text-sm font-semibold text-slate-500">Analyzer performance — coming soon</div>
-                <div className="text-xs text-slate-400">Live instrument metrics aren&apos;t available yet.</div>
+                <div className="text-xs text-slate-500">Live instrument metrics aren&apos;t available yet.</div>
               </div>
-              <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Average Turnaround (real)</div>
+              <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Average Turnaround (real)</div>
               <div className="mt-2 flex items-center gap-3">
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full" style={{ width: `${tatPct}%`, background: GREEN }} /></div>
                 <span className="text-sm font-bold text-charcoal-heading">{avgTat != null ? `${avgTat} hrs` : '—'}</span>
               </div>
-              <div className="mt-2 text-xs text-slate-400">{tatHours.length > 0 ? `${tatPct}% of ${tatHours.length} authorized within 72h` : 'No completed turnaround data yet'}</div>
+              <div className="mt-2 text-xs text-slate-500">{tatHours.length > 0 ? `${tatPct}% of ${tatHours.length} authorized within 72h` : 'No completed turnaround data yet'}</div>
             </div>
           </div>
 
@@ -368,7 +368,7 @@ export default function SamplesPage() {
             <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5">
               <span className="text-base font-semibold text-charcoal-heading">Active Worklist ({tabCount('all')})</span>
               <div className="flex items-center gap-2">
-                <div className="flex h-9 w-56 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-slate-400"><Search size={15} /><input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search by patient, ID, accession..." className="w-full border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400" /></div>
+                <div className="flex h-9 w-56 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-slate-500"><Search size={15} /><input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search by patient, ID, accession..." className="w-full border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-500" /></div>
                 <div className="relative">
                   <button onClick={() => setFiltersOpen((v) => !v)} className="relative grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50" style={activeFilterCount > 0 ? { borderColor: INDIGO, color: INDIGO } : undefined}>
                     <Filter size={15} />
@@ -378,17 +378,17 @@ export default function SamplesPage() {
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setFiltersOpen(false)} />
                       <div className="absolute right-0 top-11 z-50 w-72 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
-                        <div className="mb-3 flex items-center justify-between"><span className="text-sm font-semibold text-charcoal-heading">Filters</span>{activeFilterCount > 0 && <span className="text-xs text-slate-400">{activeFilterCount} active</span>}</div>
+                        <div className="mb-3 flex items-center justify-between"><span className="text-sm font-semibold text-charcoal-heading">Filters</span>{activeFilterCount > 0 && <span className="text-xs text-slate-500">{activeFilterCount} active</span>}</div>
                         {showAssignee && <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={fMine} onChange={(e) => { setFMine(e.target.checked); }} style={{ accentColor: INDIGO }} /> My Cases only</label>}
-                        <div className="mb-1 mt-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Specimen Type</div>
+                        <div className="mb-1 mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Specimen Type</div>
                         <div className="flex max-h-44 flex-col gap-1.5 overflow-auto pr-1">
                           {SPEC_FILTER_OPTS.map(([v, l]) => <label key={v} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={fSpecTypes.has(v)} onChange={() => toggleSpec(v)} style={{ accentColor: INDIGO }} /> {l}</label>)}
                         </div>
-                        <div className="mb-1 mt-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Priority</div>
+                        <div className="mb-1 mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Priority</div>
                         <div className="flex flex-col gap-1.5">
                           {([['all', 'All'], ['urgent', 'Urgent only'], ['normal', 'Normal only']] as const).map(([v, l]) => <label key={v} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="radio" name="wl-priority" checked={fPriority === v} onChange={() => { setFPriority(v); }} style={{ accentColor: INDIGO }} /> {l}</label>)}
                         </div>
-                        <div className="mb-1 mt-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Date Range</div>
+                        <div className="mb-1 mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Date Range</div>
                         <div className="flex flex-col gap-1.5">
                           {([['today', 'Today'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['all', 'All time']] as const).map(([v, l]) => <label key={v} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="radio" name="wl-date" checked={fDate === v} onChange={() => { setFDate(v); }} style={{ accentColor: INDIGO }} /> {l}</label>)}
                         </div>
@@ -426,7 +426,7 @@ export default function SamplesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {!initialLoading && pageRows.length === 0 && <tr><td colSpan={9} className="px-5 py-14 text-center text-sm text-slate-400">No samples found.</td></tr>}
+                  {!initialLoading && pageRows.length === 0 && <tr><td colSpan={9} className="px-5 py-14 text-center text-sm text-slate-500">No samples found.</td></tr>}
                   {pageRows.map((r) => {
                     const name = patientName(r);
                     const age = ageOf(r.patient?.dateOfBirth);
@@ -443,7 +443,7 @@ export default function SamplesPage() {
                                 {escalatedRecordIds.has(r.id) && <span title={`${escalatedRecordIds.get(r.id)} escalation`} className="grid h-4 w-4 place-items-center rounded bg-red-100 text-red-700"><AlertTriangle size={11} /></span>}
                                 {qcFailedRecordIds.has(r.id) && <span title="QC failure" className="grid h-4 w-4 place-items-center rounded bg-yellow-100 text-yellow-700"><AlertTriangle size={11} /></span>}
                               </div>
-                              <div className="text-[11px] text-slate-400">Reg No: {r.patient?.registrationNo ?? '—'}{r.patient?.gender ? ` • ${r.patient.gender[0]}` : ''}{age != null ? ` / ${age}` : ''}</div>
+                              <div className="text-[11px] text-slate-500">Reg No: {r.patient?.registrationNo ?? '—'}{r.patient?.gender ? ` • ${r.patient.gender[0]}` : ''}{age != null ? ` / ${age}` : ''}</div>
                             </div>
                           </div>
                         </td>
@@ -453,7 +453,7 @@ export default function SamplesPage() {
                             <span className="text-sm text-slate-600">{specLabel(r.specimens?.[0]?.type)}</span>
                           </div>
                         ); })()}</td>
-                        <td className={CELL}><div className="text-sm font-bold text-charcoal-heading">LAB# {r.labNumber ?? '—'}</div><div className="text-[11px] text-slate-400">{clientLabel(r)}</div></td>
+                        <td className={CELL}><div className="text-sm font-bold text-charcoal-heading">LAB# {r.labNumber ?? '—'}</div><div className="text-[11px] text-slate-500">{clientLabel(r)}</div></td>
                         <td className={CELL}><span className="flex items-center gap-1.5 text-sm" style={{ color: r.urgent ? RED : '#64748B' }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: r.urgent ? RED : SLATE }} />{r.urgent ? 'Urgent' : 'Normal'}</span></td>
                         <td className={CELL}>
                           <div className="flex items-center gap-1.5">
@@ -461,11 +461,11 @@ export default function SamplesPage() {
                             {r.urgent && <span className="rounded-full bg-error-container px-2 py-1 text-[10px] font-bold text-error">URGENT</span>}
                           </div>
                         </td>
-                        {showAssignee && <td className={CELL}><span className="text-sm text-slate-600">{r.assignedTo ? `${r.assignedTo.firstName} ${r.assignedTo.lastName?.[0] ?? ''}.` : <span className="text-slate-400">Unassigned</span>}</span></td>}
-                        <td className={CELL}><div className="text-sm text-charcoal-heading">{dateFmt(r.specimenDate ?? r.createdAt)}</div><div className="text-[11px] text-slate-400">{clock(r.specimenDate ?? r.createdAt)}</div></td>
+                        {showAssignee && <td className={CELL}><span className="text-sm text-slate-600">{r.assignedTo ? `${r.assignedTo.firstName} ${r.assignedTo.lastName?.[0] ?? ''}.` : <span className="text-slate-500">Unassigned</span>}</span></td>}
+                        <td className={CELL}><div className="text-sm text-charcoal-heading">{dateFmt(r.specimenDate ?? r.createdAt)}</div><div className="text-[11px] text-slate-500">{clock(r.specimenDate ?? r.createdAt)}</div></td>
                         <td className={CELL}>
                           <div className="relative flex justify-end">
-                            <button aria-label="Details" onClick={() => setMenuId(menuId === r.id ? null : r.id)} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreHorizontal size={16} /></button>
+                            <button aria-label="Details" onClick={() => setMenuId(menuId === r.id ? null : r.id)} className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreHorizontal size={16} /></button>
                             {menuId === r.id && (
                               <>
                                 <div className="fixed inset-0 z-10" onClick={() => setMenuId(null)} />
@@ -500,18 +500,18 @@ export default function SamplesPage() {
         <div className="flex w-full shrink-0 flex-col gap-6 xl:w-[300px]">
           {/* Sample Summary */}
           <div className={`${CARD} p-5`}>
-            <div className="mb-2 flex items-center justify-between"><span className="text-sm font-semibold text-charcoal-heading">Sample Summary</span><span className="rounded-full border border-slate-200 px-2 py-0.5 text-xs text-slate-400">Last 7 days</span></div>
+            <div className="mb-2 flex items-center justify-between"><span className="text-sm font-semibold text-charcoal-heading">Sample Summary</span><span className="rounded-full border border-slate-200 px-2 py-0.5 text-xs text-slate-500">Last 7 days</span></div>
             <div className="text-4xl font-bold text-charcoal-heading">{all.length.toLocaleString()}</div>
-            <div className="text-xs text-slate-400">Total samples</div>
+            <div className="text-xs text-slate-500">Total samples</div>
             <div className="mt-4 grid grid-cols-4 gap-2 text-center">
               {([['Completed', completedCount, GREEN], ['Urgent', urgentAll.length, RED], ['Processing', processingCount, '#0284C7'], ['On Hold', onHoldCount, SLATE]] as const).map(([l, v, c]) => (
-                <div key={l}><div className="text-lg font-bold" style={{ color: c }}>{v}</div><div className="text-[10px] text-slate-400">{l}</div></div>
+                <div key={l}><div className="text-lg font-bold" style={{ color: c }}>{v}</div><div className="text-[10px] text-slate-500">{l}</div></div>
               ))}
             </div>
             <div className="mt-4 flex items-end gap-1.5" style={{ height: 90 }}>
               {bars.map((b, i) => (
                 <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                  <span className="text-[9px] font-semibold text-slate-400">{b.v}</span>
+                  <span className="text-[9px] font-semibold text-slate-500">{b.v}</span>
                   <div className="w-full rounded-t" style={{ height: `${(b.v / barPeak) * 60}px`, minHeight: 3, background: b.cur ? INDIGO : '#C7D2FE' }} />
                   <span className="text-[9px]" style={{ color: b.cur ? INDIGO : '#94A3B8', fontWeight: b.cur ? 700 : 500 }}>{b.l}</span>
                 </div>
@@ -525,7 +525,7 @@ export default function SamplesPage() {
             <div className="flex items-center gap-4">
               <div className="relative shrink-0">
                 <PieChart width={110} height={110}><Pie data={completionSegs} dataKey="value" cx="50%" cy="50%" innerRadius={38} outerRadius={52} paddingAngle={2} stroke="none">{completionSegs.map((s, i) => <Cell key={i} fill={s.color} />)}</Pie></PieChart>
-                <div className="absolute inset-0 flex flex-col items-center justify-center"><span className="text-lg font-bold text-charcoal-heading">{completionRate}%</span><span className="text-[9px] text-slate-400">completed</span></div>
+                <div className="absolute inset-0 flex flex-col items-center justify-center"><span className="text-lg font-bold text-charcoal-heading">{completionRate}%</span><span className="text-[9px] text-slate-500">completed</span></div>
               </div>
               <div className="flex flex-1 flex-col gap-1.5">
                 {completionSegs.map((s) => <div key={s.label} className="flex items-center justify-between text-xs"><span className="flex items-center gap-1.5 text-slate-600"><span className="h-2 w-2 rounded-full" style={{ background: s.color }} /> {s.label}</span><span className="font-semibold text-charcoal-heading">{s.value}</span></div>)}
@@ -548,7 +548,7 @@ export default function SamplesPage() {
           <div className={`${CARD} p-5`}>
             <div className="mb-3 flex items-center justify-between"><span className="text-sm font-semibold text-charcoal-heading">Recent Activity</span><button onClick={() => router.push('/records')} className="text-xs font-semibold text-primary hover:underline">View all</button></div>
             <div className="flex flex-col gap-3">
-              {recent.length === 0 && <div className="text-sm text-slate-400">No recent activity.</div>}
+              {recent.length === 0 && <div className="text-sm text-slate-500">No recent activity.</div>}
               {recent.map((r) => {
                 const name = patientName(r);
                 return (
@@ -556,7 +556,7 @@ export default function SamplesPage() {
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[11px] font-semibold text-white" style={{ background: avatarBg(name) }}>{initialsOf(name)}</span>
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[13px] text-charcoal-heading">Sample <span className="font-bold text-primary">{r.labNumber ?? '—'}</span> {statusAction(r.status)}</div>
-                      <div className="text-[11px] text-slate-400">{relTime(r.updatedAt ?? r.createdAt)}</div>
+                      <div className="text-[11px] text-slate-500">{relTime(r.updatedAt ?? r.createdAt)}</div>
                     </div>
                   </div>
                 );
@@ -586,7 +586,7 @@ export default function SamplesPage() {
       {confirmDel && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setConfirmDel(null)}>
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-1 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Delete this sample?</h3><button onClick={() => setConfirmDel(null)} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={16} /></button></div>
+            <div className="mb-1 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Delete this sample?</h3><button onClick={() => setConfirmDel(null)} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={16} /></button></div>
             <p className="mt-1 text-sm text-secondary">{confirmDel.labNumber ?? 'This sample'} will be permanently deleted.</p>
             <div className="mt-5 flex justify-end gap-2"><button className="btn-secondary" onClick={() => setConfirmDel(null)}>Cancel</button><button className="btn-primary" style={{ background: '#DC2626' }} disabled={del.isPending} onClick={() => del.mutate(confirmDel.id)}>{del.isPending ? 'Deleting…' : 'Delete'}</button></div>
           </div>

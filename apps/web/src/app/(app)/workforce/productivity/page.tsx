@@ -13,7 +13,7 @@ import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
-const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
+const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
 const CELL = 'px-4 py-3 align-middle text-sm';
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const initials = (s: string) => (s || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
@@ -33,9 +33,9 @@ function Ring({ value }: { value: number }) {
 }
 
 function Trend({ t }: { t: { direction: string; changePct: number } }) {
-  if (t.direction === 'up') return <span className="inline-flex items-center gap-1 text-sm font-semibold text-green-600"><TrendingUp size={15} /> {Math.abs(t.changePct)}%</span>;
+  if (t.direction === 'up') return <span className="inline-flex items-center gap-1 text-sm font-semibold text-green-700"><TrendingUp size={15} /> {Math.abs(t.changePct)}%</span>;
   if (t.direction === 'down') return <span className="inline-flex items-center gap-1 text-sm font-semibold text-red-600"><TrendingDown size={15} /> {Math.abs(t.changePct)}%</span>;
-  return <span className="inline-flex items-center gap-1 text-sm text-slate-400"><Minus size={15} /> 0%</span>;
+  return <span className="inline-flex items-center gap-1 text-sm text-slate-500"><Minus size={15} /> 0%</span>;
 }
 
 // ── Log Metric (manager, collapsible) ──────────────────────────────────────────
@@ -72,8 +72,8 @@ function LogMetric() {
   return (
     <div className={`${CARD} overflow-hidden`}>
       <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between px-5 py-4 text-left hover:bg-slate-50">
-        <span className="flex items-center gap-2 text-base font-semibold text-charcoal-heading"><Plus size={17} className="text-slate-400" /> Log Daily Metric</span>
-        {open ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronRight size={18} className="text-slate-400" />}
+        <span className="flex items-center gap-2 text-base font-semibold text-charcoal-heading"><Plus size={17} className="text-slate-500" /> Log Daily Metric</span>
+        {open ? <ChevronDown size={18} className="text-slate-500" /> : <ChevronRight size={18} className="text-slate-500" />}
       </button>
       {open && (
         <div className="border-t border-slate-100 p-5">
@@ -129,15 +129,15 @@ function ProductivityPage() {
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className={`${CARD} flex items-center gap-4 p-5`}>
           <span className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><FlaskConical size={20} /></span>
-          <div><div className="text-3xl font-bold leading-none text-charcoal-heading">{benchmarks?.avgSpecimensPerDay ?? 0}</div><div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Avg Specimens / Day</div></div>
+          <div><div className="text-3xl font-bold leading-none text-charcoal-heading">{benchmarks?.avgSpecimensPerDay ?? 0}</div><div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Avg Specimens / Day</div></div>
         </div>
         <div className={`${CARD} flex items-center gap-4 p-5`}>
           <span className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><Activity size={20} /></span>
-          <div><div className="text-3xl font-bold leading-none text-charcoal-heading">{fmtHours(benchmarks?.avgTATMinutes)}h</div><div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Avg Turnaround</div></div>
+          <div><div className="text-3xl font-bold leading-none text-charcoal-heading">{fmtHours(benchmarks?.avgTATMinutes)}h</div><div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Avg Turnaround</div></div>
         </div>
         <div className={`${CARD} flex items-center gap-4 p-5`}>
           <Ring value={benchmarks?.avgQualityScore ?? 0} />
-          <div><div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Avg Quality Score</div><div className="mt-1 flex items-center gap-1 text-sm text-slate-500"><Gauge size={14} /> out of 100</div></div>
+          <div><div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Avg Quality Score</div><div className="mt-1 flex items-center gap-1 text-sm text-slate-500"><Gauge size={14} /> out of 100</div></div>
         </div>
       </div>
 
@@ -145,8 +145,8 @@ function ProductivityPage() {
         {/* Leaderboard */}
         <div className="xl:w-[360px]">
           <div className={`${CARD} p-5`}>
-            <div className="mb-4 text-base font-semibold text-charcoal-heading">Leaderboard <span className="text-xs font-normal text-slate-400">· this month</span></div>
-            {leaders.length === 0 && <div className="py-8 text-center text-sm text-slate-400">No metrics logged this month.</div>}
+            <div className="mb-4 text-base font-semibold text-charcoal-heading">Leaderboard <span className="text-xs font-normal text-slate-500">· this month</span></div>
+            {leaders.length === 0 && <div className="py-8 text-center text-sm text-slate-500">No metrics logged this month.</div>}
             <div className="flex flex-col gap-3">
               {leaders.map((l: any) => (
                 <div key={l.employeeId} className="flex items-center gap-3">
@@ -156,7 +156,7 @@ function ProductivityPage() {
                     <div className="truncate text-sm font-semibold text-charcoal-heading">{l.name}</div>
                     <div className="mt-1 flex items-center gap-2">
                       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${Math.min(100, l.qualityScore)}%` }} /></div>
-                      <span className="text-[10px] text-slate-400">Q{l.qualityScore}</span>
+                      <span className="text-[10px] text-slate-500">Q{l.qualityScore}</span>
                     </div>
                   </div>
                   <span className="shrink-0 text-sm font-bold text-charcoal-heading">{l.specimensProcessed}</span>
@@ -173,7 +173,7 @@ function ProductivityPage() {
               <span className="text-base font-semibold text-charcoal-heading">Summary</span>
               <div className="flex items-center gap-2">
                 <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="h-9 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-600 outline-none focus:border-primary" />
-                <span className="text-sm text-slate-400">to</span>
+                <span className="text-sm text-slate-500">to</span>
                 <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="h-9 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-600 outline-none focus:border-primary" />
               </div>
             </div>
@@ -181,7 +181,7 @@ function ProductivityPage() {
               <table className="w-full border-collapse">
                 <thead><tr className="border-y border-slate-100"><th className={TH}>Employee</th><th className={`${TH} text-right`}>Specimens/Day</th><th className={`${TH} text-right`}>Avg TAT</th><th className={`${TH} text-right`}>Quality</th><th className={`${TH} text-right`}>Reports</th><th className={`${TH} text-right`}>Trend</th></tr></thead>
                 <tbody>
-                  {!initialLoading && summary.length === 0 && <tr><td colSpan={6} className="px-4 py-12 text-center text-sm text-slate-400">No metrics for this range.</td></tr>}
+                  {!initialLoading && summary.length === 0 && <tr><td colSpan={6} className="px-4 py-12 text-center text-sm text-slate-500">No metrics for this range.</td></tr>}
                   {pageRows.map((r: any) => (
                     <tr key={r.employeeId} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className={`${CELL} font-medium text-charcoal-heading`}>{r.name}</td>

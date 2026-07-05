@@ -77,7 +77,7 @@ export function RequisitionReportModal({ open, onClose, clients }: Props) {
   };
 
   const SELECT = 'h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary';
-  const TH = 'px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
+  const TH = 'px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
   const TD = 'px-3 py-2 text-sm text-slate-700 align-middle';
 
   return (
@@ -86,7 +86,7 @@ export function RequisitionReportModal({ open, onClose, clients }: Props) {
         {/* Chrome (hidden when printing) */}
         <div className="no-print flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <h3 className="text-lg font-bold text-charcoal-heading">Requisition Report</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button>
         </div>
 
         {/* Controls */}
@@ -95,7 +95,7 @@ export function RequisitionReportModal({ open, onClose, clients }: Props) {
             <label className="mb-1 block text-xs font-semibold text-slate-500">Report period</label>
             <div className="flex items-center gap-2">
               <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className={SELECT} />
-              <span className="text-slate-400">—</span>
+              <span className="text-slate-500">—</span>
               <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className={SELECT} />
             </div>
           </div>
@@ -128,7 +128,7 @@ export function RequisitionReportModal({ open, onClose, clients }: Props) {
                 <div className="text-lg font-bold text-charcoal-heading">{report.labName}</div>
                 <div className="text-base font-semibold text-slate-600">Requisition Report</div>
                 <div className="mt-1 text-xs text-slate-500">Period: {fmtD(report.period.from)} to {fmtD(report.period.to)}</div>
-                <div className="text-xs text-slate-400">Generated: {fmtDT(report.generatedAt)}</div>
+                <div className="text-xs text-slate-500">Generated: {fmtDT(report.generatedAt)}</div>
               </div>
               <div className="no-print flex items-center gap-1.5">
                 <button onClick={email} aria-label="Email" title="Email" className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-primary"><Mail size={16} /></button>
@@ -136,12 +136,12 @@ export function RequisitionReportModal({ open, onClose, clients }: Props) {
               </div>
             </div>
 
-            {report.groups.length === 0 && <div className="py-10 text-center text-sm text-slate-400">No requisitions in this period.</div>}
+            {report.groups.length === 0 && <div className="py-10 text-center text-sm text-slate-500">No requisitions in this period.</div>}
 
             {report.groups.map((g: any) => (
               <div key={g.label} className="req-report-group mt-5">
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="text-sm font-bold text-charcoal-heading">{g.label} <span className="font-normal text-slate-400">({g.count})</span></span>
+                  <span className="text-sm font-bold text-charcoal-heading">{g.label} <span className="font-normal text-slate-500">({g.count})</span></span>
                   <span className="text-sm font-semibold text-charcoal-heading">{money(g.subtotalAmount)}</span>
                 </div>
                 <table className="w-full border-collapse">
@@ -191,8 +191,8 @@ export function RequisitionReportModal({ open, onClose, clients }: Props) {
           </div>
         )}
 
-        {!report && loading && <div className="px-6 pb-8 pt-2 text-center text-sm text-slate-400">Generating report…</div>}
-        {!report && !loading && !error && <div className="no-print px-6 pb-8 pt-2 text-center text-sm text-slate-400">Choose a period and click “Run Report”.</div>}
+        {!report && loading && <div className="px-6 pb-8 pt-2 text-center text-sm text-slate-500">Generating report…</div>}
+        {!report && !loading && !error && <div className="no-print px-6 pb-8 pt-2 text-center text-sm text-slate-500">Choose a period and click “Run Report”.</div>}
       </div>
     </div>
   );

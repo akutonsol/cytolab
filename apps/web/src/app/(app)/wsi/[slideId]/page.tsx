@@ -64,7 +64,7 @@ export default function SlideViewerPage() {
         </button>
         <div className="ml-1">
           <div className="text-[14px] font-bold text-white">{slide ? slide.patientName : 'Loading…'}</div>
-          <div className="text-[12px] text-slate-400">{slide ? `${slide.labNo}${slide.record?.formType ? ` · ${slide.record.formType}` : ''}` : ''}</div>
+          <div className="text-[12px] text-slate-500">{slide ? `${slide.labNo}${slide.record?.formType ? ` · ${slide.record.formType}` : ''}` : ''}</div>
         </div>
       </div>
 

@@ -9,7 +9,7 @@ import { jmd, fmtDate } from '@/lib/payroll';
 import { fmtHours, empName } from '@/lib/workforce';
 
 const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
-const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
+const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
 const CELL = 'px-4 py-3 align-middle text-sm';
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const periodName = (month: number, year: number) => `${MONTHS[month - 1]} ${year}`;
@@ -49,7 +49,7 @@ function NewPeriodModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={onClose}>
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">New Payroll Period</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">New Payroll Period</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>
         <label className="mb-1 block text-sm font-medium text-slate-600">Month</label>
         <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="mb-4 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary">
           {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
@@ -95,14 +95,14 @@ function PeriodDrawer({ id, onClose }: { id: string; onClose: () => void }) {
               {p?.processedAt && <span>Processed {fmtDate(p.processedAt)}{p.processedBy ? ` · ${p.processedBy.firstName} ${p.processedBy.lastName}` : ''}</span>}
             </div>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-6">
           <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {summary.map(([label, value]) => (
               <div key={label} className={`${CARD} p-4`}>
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</div>
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</div>
                 <div className="mt-1 text-xl font-bold text-charcoal-heading">{value}</div>
               </div>
             ))}
@@ -117,7 +117,7 @@ function PeriodDrawer({ id, onClose }: { id: string; onClose: () => void }) {
               <table className="w-full border-collapse">
                 <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={`${TH} text-right`}>Reg Hrs</th><th className={`${TH} text-right`}>OT Hrs</th><th className={`${TH} text-right`}>Gross</th><th className={`${TH} text-right`}>NIS</th><th className={`${TH} text-right`}>NHT</th><th className={`${TH} text-right`}>Ed Tax</th><th className={`${TH} text-right`}>PAYE</th><th className={`${TH} text-right`}>Net</th></tr></thead>
                 <tbody>
-                  {entries.length === 0 && <tr><td colSpan={9} className="px-4 py-10 text-center text-sm text-slate-400">No entries — process this period to generate payroll.</td></tr>}
+                  {entries.length === 0 && <tr><td colSpan={9} className="px-4 py-10 text-center text-sm text-slate-500">No entries — process this period to generate payroll.</td></tr>}
                   {entries.map((e) => (
                     <tr key={e.id} className="border-b border-slate-100">
                       <td className={`${CELL} font-medium text-charcoal-heading`}>{empName(e.employee)}</td>
@@ -167,7 +167,7 @@ export function PayrollEngine() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><th className={TH}>Period</th><th className={`${TH} text-right`}>Employees</th><th className={`${TH} text-right`}>Gross</th><th className={`${TH} text-right`}>Net</th><th className={`${TH} text-right`}>Taxes</th><th className={TH}>Status</th><th className={`${TH} text-right`}>Actions</th></tr></thead>
             <tbody>
-              {periods.length === 0 && <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-400">No payroll periods yet.</td></tr>}
+              {periods.length === 0 && <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-500">No payroll periods yet.</td></tr>}
               {periods.map((p: any) => (
                 <tr key={p.id} className="cursor-pointer border-b border-slate-100 hover:bg-slate-50" onClick={() => setDetailId(p.id)}>
                   <td className={`${CELL} font-medium text-charcoal-heading`}>{periodName(p.month, p.year)}</td>

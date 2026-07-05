@@ -12,7 +12,7 @@ export const ScrollSentinel = forwardRef<HTMLDivElement, ScrollSentinelProps>(
   ({ loading, hasMore, error, onRetry }, ref) => {
     if (!hasMore && !loading) return (
       <div ref={ref} className="py-6 text-center">
-        <div className="inline-flex items-center gap-2 text-xs text-gray-400 bg-gray-50 px-4 py-2 rounded-full">
+        <div className="inline-flex items-center gap-2 text-xs text-gray-500 bg-gray-50 px-4 py-2 rounded-full">
           <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />
           All records loaded
           <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />

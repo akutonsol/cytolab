@@ -131,7 +131,7 @@ export default function RequisitionsPage() {
   }, [all]);
 
   const SELECT = 'h-12 rounded-xl border border-slate-200 bg-white px-3.5 text-base text-slate-600 outline-none focus:border-primary';
-  const TH = 'px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
+  const TH = 'px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
   const CELL = 'px-5 py-4 align-middle';
 
   return (
@@ -148,15 +148,15 @@ export default function RequisitionsPage() {
 
       {/* Filter bar */}
       <div className={`${CARD} mb-6 flex flex-wrap items-center gap-3 p-4`}>
-        <div className="flex h-12 min-w-[280px] flex-1 items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 text-slate-400">
+        <div className="flex h-12 min-w-[280px] flex-1 items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 text-slate-500">
           <Search size={18} />
-          <input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search by ref #, client, or accession..." className="w-full border-none bg-transparent text-base text-slate-700 outline-none placeholder:text-slate-400" />
+          <input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search by ref #, client, or accession..." className="w-full border-none bg-transparent text-base text-slate-700 outline-none placeholder:text-slate-500" />
         </div>
         <select className={SELECT} value={statusF} onChange={(e) => { setStatusF(e.target.value); }}><option value="all">All Statuses</option>{statusOptions.map((s) => <option key={s} value={s}>{statusUI(s).label}</option>)}</select>
         <select className={SELECT} value={clientF} onChange={(e) => { setClientF(e.target.value); }}><option value="all">All Clients</option>{clientOptions.map((c) => <option key={c} value={c}>{c}</option>)}</select>
         <div className="relative">
           <select className={`${SELECT} pl-9`} value={dateRange} onChange={(e) => { setDateRange(e.target.value); }}><option value="7">Last 7 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option><option value="all">All Time</option></select>
-          <Calendar size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Calendar size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
         </div>
         <button onClick={clearFilters} className="flex h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-base font-medium text-slate-600 hover:bg-slate-50"><Filter size={16} /> Filters</button>
       </div>
@@ -190,7 +190,7 @@ export default function RequisitionsPage() {
                   {isFetching && all.length === 0 && Array.from({ length: 6 }).map((_, i) => (
                     <tr key={i} className="border-b border-slate-100"><td colSpan={8} className="px-5 py-4"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></td></tr>
                   ))}
-                  {!isFetching && !initialLoading && filtered.length === 0 && <tr><td colSpan={8} className="px-5 py-12 text-center text-sm text-slate-400">No requisitions found.</td></tr>}
+                  {!isFetching && !initialLoading && filtered.length === 0 && <tr><td colSpan={8} className="px-5 py-12 text-center text-sm text-slate-500">No requisitions found.</td></tr>}
                   {pageRows.map((r) => {
                     const name = clientName(r);
                     return (
@@ -202,18 +202,18 @@ export default function RequisitionsPage() {
                             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[11px] font-semibold text-white" style={{ background: avatarBg(name) }}>{initialsOf(name)}</span>
                             <div className="min-w-0">
                               <div className="text-sm font-semibold text-charcoal-heading">{name}</div>
-                              {r.client?.accountNo && <div className="text-[11px] text-slate-400">AC# {r.client.accountNo}</div>}
+                              {r.client?.accountNo && <div className="text-[11px] text-slate-500">AC# {r.client.accountNo}</div>}
                             </div>
                           </div>
                         </td>
-                        <td className={CELL}><div className="text-sm text-charcoal-heading">Ordered: {ordered(r)}</div><div className="text-[11px] text-slate-400">Fulfilled: {fulfilled(r)}</div></td>
+                        <td className={CELL}><div className="text-sm text-charcoal-heading">Ordered: {ordered(r)}</div><div className="text-[11px] text-slate-500">Fulfilled: {fulfilled(r)}</div></td>
                         <td className={CELL}><span className="text-sm font-bold text-primary">{money(r.amount)}</span></td>
                         <td className={CELL}><StatusBadge status={r.status} /></td>
-                        <td className={CELL}><div className="text-sm font-semibold text-charcoal-heading">{fmtDate(r.dateReceived ?? r.createdAt)}</div><div className="text-[11px] text-slate-400">{fmtTime(r.dateReceived ?? r.createdAt)}</div></td>
+                        <td className={CELL}><div className="text-sm font-semibold text-charcoal-heading">{fmtDate(r.dateReceived ?? r.createdAt)}</div><div className="text-[11px] text-slate-500">{fmtTime(r.dateReceived ?? r.createdAt)}</div></td>
                         <td className={CELL}>
                           <div className="flex items-center justify-end gap-1.5">
                             <button aria-label="View" className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-primary"><Eye size={16} /></button>
-                            <button aria-label="More" className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreHorizontal size={16} /></button>
+                            <button aria-label="More" className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreHorizontal size={16} /></button>
                           </div>
                         </td>
                       </tr>
@@ -238,7 +238,7 @@ export default function RequisitionsPage() {
               {[
                 { icon: <FileText size={20} className="text-indigo-600" />, label: 'Total Requisitions', value: totalCount },
                 { icon: <CircleDashed size={20} style={{ color: '#B45309' }} />, label: 'Partial', value: partialCount },
-                { icon: <CheckCircle2 size={20} className="text-green-600" />, label: 'Complete', value: completeCount },
+                { icon: <CheckCircle2 size={20} className="text-green-700" />, label: 'Complete', value: completeCount },
                 { icon: <Inbox size={20} className="text-blue-600" />, label: 'Received', value: receivedCount },
               ].map((r) => (
                 <div key={r.label} className="flex items-center justify-between">
@@ -252,10 +252,10 @@ export default function RequisitionsPage() {
           <div className={`${CARD} p-6`}>
             <div className="text-base font-semibold text-charcoal-heading">Total Amount</div>
             <div className="mt-1 text-[40px] font-bold leading-tight text-charcoal-heading">{money(totalAmount)}</div>
-            <div className="text-sm text-slate-400">Across {totalCount} requisitions</div>
+            <div className="text-sm text-slate-500">Across {totalCount} requisitions</div>
             <div className="mt-5 grid grid-cols-2 gap-3">
               <div><div className="text-xs font-semibold" style={{ color: '#B45309' }}>Partial Amount</div><div className="text-base font-bold text-charcoal-heading">{money(partialAmount)}</div></div>
-              <div><div className="text-xs font-semibold text-green-600">Completed Amount</div><div className="text-base font-bold text-charcoal-heading">{money(completedAmount)}</div></div>
+              <div><div className="text-xs font-semibold text-green-700">Completed Amount</div><div className="text-base font-bold text-charcoal-heading">{money(completedAmount)}</div></div>
             </div>
             <div className="mt-5 flex items-center gap-5">
               <PieChart width={128} height={128}><Pie data={donut} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={62} paddingAngle={2} stroke="none">{donut.map((s, i) => <Cell key={i} fill={s.color} />)}</Pie></PieChart>
@@ -269,12 +269,12 @@ export default function RequisitionsPage() {
           <div className={`${CARD} p-6`}>
             <div className="mb-4 flex items-center justify-between"><span className="text-base font-semibold text-charcoal-heading">Recent Requisitions</span><button className="text-sm font-semibold text-primary hover:underline">View all</button></div>
             <div className="flex flex-col gap-4">
-              {recent.length === 0 && <div className="text-base text-slate-400">No requisitions yet.</div>}
+              {recent.length === 0 && <div className="text-base text-slate-500">No requisitions yet.</div>}
               {recent.map((r) => (
                 <div key={r.id} className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <div className="truncate text-sm font-semibold text-charcoal-heading">#{r.referenceNo ?? '—'} <span className="font-normal text-slate-500">{clientName(r)}</span></div>
-                    <div className="text-xs text-slate-400">{fmtDate(r.dateReceived ?? r.createdAt)} · {fmtTime(r.dateReceived ?? r.createdAt)}</div>
+                    <div className="text-xs text-slate-500">{fmtDate(r.dateReceived ?? r.createdAt)} · {fmtTime(r.dateReceived ?? r.createdAt)}</div>
                   </div>
                   <StatusBadge status={r.status} />
                 </div>

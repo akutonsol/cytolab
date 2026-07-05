@@ -13,7 +13,7 @@ import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
-const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
+const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
 const CELL = 'px-4 py-3 align-middle text-sm';
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -30,7 +30,7 @@ function DateRange({ start, end, onStart, onEnd }: { start: string; end: string;
   return (
     <div className="flex flex-wrap items-center gap-3">
       <input type="date" value={start} onChange={(e) => onStart(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary" />
-      <span className="text-sm text-slate-400">to</span>
+      <span className="text-sm text-slate-500">to</span>
       <input type="date" value={end} onChange={(e) => onEnd(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary" />
     </div>
   );
@@ -79,7 +79,7 @@ function AttendanceTab() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Department</th><th className={`${TH} text-right`}>Total Days</th><th className={`${TH} text-right`}>Present</th><th className={`${TH} text-right`}>Absent</th><th className={`${TH} text-right`}>Late</th><th className={`${TH} text-right`}>On Leave</th><th className={`${TH} text-right`}>Attendance Rate</th></tr></thead>
             <tbody>
-              {!initialLoading && rows.length === 0 && <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-400">No data for this range.</td></tr>}
+              {!initialLoading && rows.length === 0 && <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-500">No data for this range.</td></tr>}
               {pageRows.map((r: any) => (
                 <tr key={r.employeeId} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className={`${CELL} font-medium text-charcoal-heading`}>{r.name}</td>
@@ -112,7 +112,7 @@ function LeaveLiabilityTab() {
         <table className="w-full border-collapse">
           <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Leave Type</th><th className={`${TH} text-right`}>Entitlement</th><th className={`${TH} text-right`}>Used</th><th className={`${TH} text-right`}>Pending</th><th className={`${TH} text-right`}>Remaining</th><th className={`${TH} text-right`}>Est. Cost</th></tr></thead>
           <tbody>
-            {rows.length === 0 && <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-400">No leave balances for this year.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-500">No leave balances for this year.</td></tr>}
             {rows.map((r: any, i: number) => (
               <tr key={`${r.employeeId}-${r.leaveType}-${i}`} className="border-b border-slate-100 hover:bg-slate-50">
                 <td className={`${CELL} font-medium text-charcoal-heading`}>{r.name}</td>
@@ -157,15 +157,15 @@ function OvertimeCostTab() {
     <div>
       <div className={`${CARD} mb-6 p-4`}><DateRange start={start} end={end} onStart={setStart} onEnd={setEnd} /></div>
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className={`${CARD} flex items-center gap-3 p-5`}><span className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><Timer size={20} /></span><div><div className="text-3xl font-bold leading-none text-charcoal-heading">{fmtHours(totalMinutes)}</div><div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Total OT Hours</div></div></div>
-        <div className={`${CARD} flex items-center gap-3 p-5`}><span className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><BarChart3 size={20} /></span><div><div className="text-3xl font-bold leading-none text-charcoal-heading">{fmtMoney(totalCost)}</div><div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Total Est. Cost</div></div></div>
+        <div className={`${CARD} flex items-center gap-3 p-5`}><span className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><Timer size={20} /></span><div><div className="text-3xl font-bold leading-none text-charcoal-heading">{fmtHours(totalMinutes)}</div><div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Total OT Hours</div></div></div>
+        <div className={`${CARD} flex items-center gap-3 p-5`}><span className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><BarChart3 size={20} /></span><div><div className="text-3xl font-bold leading-none text-charcoal-heading">{fmtMoney(totalCost)}</div><div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Total Est. Cost</div></div></div>
       </div>
       <div className={`${CARD} overflow-hidden`}>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={`${TH} text-right`}>Total OT Hours</th><th className={`${TH} text-right`}>Rate</th><th className={`${TH} text-right`}>Est. Cost</th></tr></thead>
             <tbody>
-              {rows.length === 0 && <tr><td colSpan={4} className="px-4 py-12 text-center text-sm text-slate-400">No overtime in this range.</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={4} className="px-4 py-12 text-center text-sm text-slate-500">No overtime in this range.</td></tr>}
               {rows.map((r: any) => (
                 <tr key={r.employeeId} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className={`${CELL} font-medium text-charcoal-heading`}>{r.name}</td>
@@ -201,7 +201,7 @@ function TimesheetSummaryTab() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={`${TH} text-right`}>Regular Hrs</th><th className={`${TH} text-right`}>OT Hrs</th><th className={`${TH} text-right`}>Submitted</th><th className={`${TH} text-right`}>Approved</th><th className={`${TH} text-right`}>Pending</th></tr></thead>
             <tbody>
-              {rows.length === 0 && <tr><td colSpan={6} className="px-4 py-12 text-center text-sm text-slate-400">No timesheets in this range.</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={6} className="px-4 py-12 text-center text-sm text-slate-500">No timesheets in this range.</td></tr>}
               {rows.map((r: any) => (
                 <tr key={r.employeeId} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className={`${CELL} font-medium text-charcoal-heading`}>{r.name}</td>

@@ -173,14 +173,14 @@ export function WSIViewer({ slideUrl, format, annotations, readOnly = false, onA
 
       {loading && !error && (
         <div className="absolute inset-0 z-30 grid place-items-center bg-black">
-          <Loader2 size={28} className="animate-spin text-slate-400" />
+          <Loader2 size={28} className="animate-spin text-slate-500" />
         </div>
       )}
       {error && (
         <div className="absolute inset-0 z-30 grid place-items-center bg-black">
           <div className="text-center">
             <div className="text-[15px] font-semibold text-slate-200">Failed to load slide.</div>
-            <div className="mt-1 text-[13px] text-slate-400">Check the URL.</div>
+            <div className="mt-1 text-[13px] text-slate-500">Check the URL.</div>
           </div>
         </div>
       )}

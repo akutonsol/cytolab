@@ -163,7 +163,7 @@ function KpiCard({ icon, iconClass, label, value, sub, subColor, spark }: {
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${iconClass}`}>{icon}</span>
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{label}</span>
           </div>
           <div className="mt-2 text-3xl font-bold leading-none text-charcoal-heading">{value}</div>
           <div className="mt-1.5 text-[11px] font-semibold" style={{ color: subColor }}>{sub}</div>
@@ -295,7 +295,7 @@ export default function ResultSheetsPage() {
   const { items: pageRows, loading, initialLoading, hasMore, sentinelRef } = useInfiniteScroll<Rec>({ fetchFn, pageSize: 20 });
 
   const SELECT = 'h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary';
-  const TH = 'px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
+  const TH = 'px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
   const CELL = 'px-5 py-4 align-middle';
   const TABS: [Tab, string, number][] = [
     ['all', 'All', total], ['pending', 'Pending', tabCount('pending')], ['inreview', 'In Review', tabCount('inreview')],
@@ -319,7 +319,7 @@ export default function ResultSheetsPage() {
             <div className="min-w-0">
               <div className="text-sm font-bold text-primary">{r.labNumber ?? '—'}</div>
               <span className="mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase" style={{ background: `${sm.color}1A`, color: sm.color }}>{sm.label}</span>
-              {r.client?.accountNo && <div className="mt-0.5 text-[11px] text-slate-400">AC# {r.client.accountNo}</div>}
+              {r.client?.accountNo && <div className="mt-0.5 text-[11px] text-slate-500">AC# {r.client.accountNo}</div>}
             </div>
           </div>
         </td>
@@ -329,18 +329,18 @@ export default function ResultSheetsPage() {
             <div className="min-w-0">
               <div className="text-sm font-semibold text-charcoal-heading">{name}</div>
               <div className="text-[11px] text-slate-500">{[r.patient?.gender, age != null ? `${age} Y` : null].filter(Boolean).join(' • ') || '—'}</div>
-              {r.patient?.registrationNo && <div className="text-[11px] text-slate-400">Reg: {r.patient.registrationNo}</div>}
+              {r.patient?.registrationNo && <div className="text-[11px] text-slate-500">Reg: {r.patient.registrationNo}</div>}
             </div>
           </div>
         </td>
         <td className={CELL}>
-          <div className="flex items-center gap-1.5 text-sm text-charcoal-heading"><Building2 size={14} className="text-slate-400" /> {clientOffice(r)}</div>
-          {physician(r) && <div className="text-[11px] text-slate-400">{physician(r)}</div>}
-          <div className="text-[11px] text-slate-400">Submitted {relTime(r.createdAt)}</div>
+          <div className="flex items-center gap-1.5 text-sm text-charcoal-heading"><Building2 size={14} className="text-slate-500" /> {clientOffice(r)}</div>
+          {physician(r) && <div className="text-[11px] text-slate-500">{physician(r)}</div>}
+          <div className="text-[11px] text-slate-500">Submitted {relTime(r.createdAt)}</div>
         </td>
         <td className={CELL}>
-          <div className="flex items-center gap-1.5 text-sm text-charcoal-heading"><Calendar size={14} className="text-slate-400" /> {fmtDate(r.specimenDate ?? r.createdAt)}</div>
-          <div className="ml-5 text-[11px] text-slate-400">{fmtTime(r.specimenDate ?? r.createdAt)}</div>
+          <div className="flex items-center gap-1.5 text-sm text-charcoal-heading"><Calendar size={14} className="text-slate-500" /> {fmtDate(r.specimenDate ?? r.createdAt)}</div>
+          <div className="ml-5 text-[11px] text-slate-500">{fmtTime(r.specimenDate ?? r.createdAt)}</div>
         </td>
         <td className={CELL}>
           <div className="flex items-center gap-2">
@@ -354,7 +354,7 @@ export default function ResultSheetsPage() {
           <div className="flex items-center justify-end gap-1.5">
             <button aria-label="View" onClick={() => setViewRec(r)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-primary"><Eye size={16} /></button>
             <div className="relative">
-              <button aria-label="More" onClick={() => setOpenMenu(openMenu === r.id ? null : r.id)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreHorizontal size={16} /></button>
+              <button aria-label="More" onClick={() => setOpenMenu(openMenu === r.id ? null : r.id)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreHorizontal size={16} /></button>
               {openMenu === r.id && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setOpenMenu(null)} />
@@ -402,7 +402,7 @@ export default function ResultSheetsPage() {
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <KpiCard icon={<FileText size={18} />} iconClass="bg-indigo-50 text-indigo-600" label="Total Reports" value={total.toLocaleString()} sub={`+${addedToday} today`} subColor={GREEN} spark={INDIGO} />
         <KpiCard icon={<Clock size={18} />} iconClass="bg-yellow-50 text-yellow-500" label="Pending Review" value={pendingCount} sub="High priority" subColor={AMBER} spark={YELLOW} />
-        <KpiCard icon={<CheckCircle2 size={18} />} iconClass="bg-green-50 text-green-600" label="Completed" value={completedCount.toLocaleString()} sub={`${completedPct}% of total`} subColor={GREEN} spark={GREEN} />
+        <KpiCard icon={<CheckCircle2 size={18} />} iconClass="bg-green-50 text-green-700" label="Completed" value={completedCount.toLocaleString()} sub={`${completedPct}% of total`} subColor={GREEN} spark={GREEN} />
         <KpiCard icon={<AlertTriangle size={18} />} iconClass="bg-red-50 text-red-600" label="Urgent" value={urgentCount} sub="Needs attention" subColor={RED} spark={RED} />
         <KpiCard icon={<Clock size={18} />} iconClass="bg-indigo-50 text-indigo-600" label="Avg Review Time" value={avgReviewHrs != null ? `${avgReviewHrs.toFixed(1)} hrs` : '—'} sub="Resulted → Approved" subColor={SLATE} spark={INDIGO} />
       </div>
@@ -422,9 +422,9 @@ export default function ResultSheetsPage() {
 
           {/* Filter bar */}
           <div className={`${CARD} mb-4 flex flex-wrap items-center gap-3 p-3`}>
-            <div className="flex h-10 min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-slate-400">
+            <div className="flex h-10 min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-slate-500">
               <Search size={16} />
-              <input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search reports, patient, lab #, accession..." className="w-full border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400" />
+              <input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search reports, patient, lab #, accession..." className="w-full border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-500" />
             </div>
             <select aria-label="Filter by status" className={SELECT} value={status} onChange={(e) => { setStatus(e.target.value); }}><option value="all">All Statuses</option>{statusOptions.map((s) => <option key={s} value={s}>{s}</option>)}</select>
             <select aria-label="Filter by specimen type" className={SELECT} value={specType} onChange={(e) => { setSpecType(e.target.value); }}><option value="all">All Types</option>{specOptions.map((s) => <option key={s} value={s}>{specMeta(s).label}</option>)}</select>
@@ -456,7 +456,7 @@ export default function ResultSheetsPage() {
                 </thead>
                 <tbody>
                   {!initialLoading && filtered.length === 0 && (
-                    <tr><td colSpan={8} className="px-5 py-16 text-center text-sm text-slate-400">{isFetching ? 'Loading…' : 'No result sheets found.'}</td></tr>
+                    <tr><td colSpan={8} className="px-5 py-16 text-center text-sm text-slate-500">{isFetching ? 'Loading…' : 'No result sheets found.'}</td></tr>
                   )}
                   {groupByClient
                     ? groups.map(([name, recs]) => (
@@ -518,7 +518,7 @@ export default function ResultSheetsPage() {
           </div>
 
           <div className={`${CARD} p-5`}>
-            <div className="mb-2 flex items-center justify-between"><div className="text-sm font-semibold text-charcoal-heading">Specimen Distribution</div><span className="text-[11px] text-slate-400">Last 30 days</span></div>
+            <div className="mb-2 flex items-center justify-between"><div className="text-sm font-semibold text-charcoal-heading">Specimen Distribution</div><span className="text-[11px] text-slate-500">Last 30 days</span></div>
             <div className="flex items-center gap-3">
               <PieChart width={120} height={120}>
                 <Pie data={specDist} dataKey="value" nameKey="label" cx="50%" cy="50%" innerRadius={34} outerRadius={54} paddingAngle={2} stroke="none">
@@ -539,14 +539,14 @@ export default function ResultSheetsPage() {
           <div className={`${CARD} p-5`}>
             <div className="mb-3 flex items-center justify-between"><div className="text-sm font-semibold text-charcoal-heading">Recent Authorizations</div><button onClick={() => setTab('authorized')} className="text-xs font-semibold text-primary hover:underline">View all</button></div>
             <div className="flex flex-col gap-3">
-              {recentAuth.length === 0 && <div className="text-sm text-slate-400">No authorizations yet.</div>}
+              {recentAuth.length === 0 && <div className="text-sm text-slate-500">No authorizations yet.</div>}
               {recentAuth.map((r) => (
                 <div key={r.id} className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <div className="truncate font-mono text-xs font-bold text-charcoal-heading">{r.labNumber ?? '—'}</div>
-                    <div className="text-[11px] text-slate-400">{fmtDate(authorizedAtOf(r))} · {fmtTime(authorizedAtOf(r))}</div>
+                    <div className="text-[11px] text-slate-500">{fmtDate(authorizedAtOf(r))} · {fmtTime(authorizedAtOf(r))}</div>
                   </div>
-                  <span className="shrink-0 text-[11px] font-semibold text-green-600">Authorized</span>
+                  <span className="shrink-0 text-[11px] font-semibold text-green-700">Authorized</span>
                 </div>
               ))}
             </div>

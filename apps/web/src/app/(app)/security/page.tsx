@@ -50,7 +50,7 @@ export default function SecurityDashboardPage() {
         <Card title="Logins by country (24h)">
           <div className="p-4">
             {(data?.loginsByCountry ?? []).length === 0 ? (
-              <p className="py-6 text-center text-sm text-slate-400">No successful logins yet.</p>
+              <p className="py-6 text-center text-sm text-slate-500">No successful logins yet.</p>
             ) : (
               <ul className="flex flex-col gap-2.5">
                 {data!.loginsByCountry.slice(0, 10).map((c) => {

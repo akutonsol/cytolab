@@ -74,7 +74,7 @@ export default function ProfileSecurityPage() {
             <div className="mb-3 flex items-center gap-2 text-sm">
               <span className="text-slate-600">Authenticator app (TOTP)</span>
               <BoolPill on={!!mfa?.totpEnabled} onText="Enabled" offText="Off" />
-              {mfa && mfa.backupCodesRemaining > 0 && <span className="text-xs text-slate-400">· {mfa.backupCodesRemaining} backup codes left</span>}
+              {mfa && mfa.backupCodesRemaining > 0 && <span className="text-xs text-slate-500">· {mfa.backupCodesRemaining} backup codes left</span>}
             </div>
 
             {backupCodes ? (
@@ -90,7 +90,7 @@ export default function ProfileSecurityPage() {
               <div className="flex flex-col items-start gap-3">
                 <p className="text-sm text-slate-600">Scan this with your authenticator app, then enter the 6-digit code.</p>
                 <Image src={setup.qrCode} alt="TOTP QR code" width={168} height={168} className="rounded-lg border border-slate-200" unoptimized />
-                <p className="text-xs text-slate-400">Manual key: <span className="font-mono text-slate-600">{setup.manualEntryKey}</span></p>
+                <p className="text-xs text-slate-500">Manual key: <span className="font-mono text-slate-600">{setup.manualEntryKey}</span></p>
                 <input className={inputCls} placeholder="123456" value={code} onChange={(e) => setCode(e.target.value)} />
                 <div className="flex gap-2">
                   <button className={primaryBtn} disabled={!code.trim() || verifySetup.isPending} onClick={() => verifySetup.mutate()}>Verify & enable</button>
@@ -122,7 +122,7 @@ export default function ProfileSecurityPage() {
             <input type="password" autoComplete="new-password" className={inputCls} placeholder="New password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} />
             <input type="password" autoComplete="new-password" className={`${inputCls} ${pwMismatch ? 'border-red-300' : ''}`} placeholder="Confirm new password" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} />
             {pwMismatch && <span className="text-xs text-red-500">Passwords don't match.</span>}
-            <p className="text-xs text-slate-400">At least 12 characters with upper, lower, number, and special character.</p>
+            <p className="text-xs text-slate-500">At least 12 characters with upper, lower, number, and special character.</p>
             <button
               className={`${primaryBtn} justify-center`}
               disabled={!pw.current || !pw.next || pwMismatch || changePw.isPending}

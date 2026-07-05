@@ -99,7 +99,7 @@ export function WorkforceNotificationBell() {
                 <span className="text-base font-bold text-charcoal-heading">Notifications</span>
                 {count > 0 && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{count} new</span>}
               </div>
-              <button onClick={() => setOpen(false)} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button>
+              <button onClick={() => setOpen(false)} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button>
             </div>
 
             <div className="flex items-center justify-end border-b border-slate-100 px-5 py-2">
@@ -114,7 +114,7 @@ export function WorkforceNotificationBell() {
 
             <div className="min-h-0 flex-1 overflow-y-auto">
               {items.length === 0 ? (
-                <div className="grid place-items-center px-6 py-16 text-center text-sm text-slate-400">
+                <div className="grid place-items-center px-6 py-16 text-center text-sm text-slate-500">
                   <Bell size={32} className="mb-3 text-slate-200" />
                   You&apos;re all caught up.
                 </div>
@@ -131,7 +131,7 @@ export function WorkforceNotificationBell() {
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center justify-between gap-2">
                           <span className={`truncate text-sm ${n.isRead ? 'font-medium text-slate-600' : 'font-bold text-charcoal-heading'}`}>{n.title}</span>
-                          <span className="shrink-0 text-[11px] text-slate-400">{timeAgo(n.createdAt)}</span>
+                          <span className="shrink-0 text-[11px] text-slate-500">{timeAgo(n.createdAt)}</span>
                         </span>
                         <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">{n.body}</span>
                       </span>

@@ -14,7 +14,7 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
     <div className="flex items-center justify-between border-b border-slate-50 px-5 py-4 last:border-0">
       <div>
         <div className="text-sm font-medium text-slate-800">{label}</div>
-        {hint && <div className="text-xs text-slate-400">{hint}</div>}
+        {hint && <div className="text-xs text-slate-500">{hint}</div>}
       </div>
       {children}
     </div>
@@ -33,7 +33,7 @@ export default function PasswordPolicyPage() {
     onError: () => message.error('Could not save policy'),
   });
 
-  if (!form) return <SecurityPage title="Password Policy" icon={<KeySquare size={20} />} back="/security"><div className="py-10 text-center text-slate-400">Loading…</div></SecurityPage>;
+  if (!form) return <SecurityPage title="Password Policy" icon={<KeySquare size={20} />} back="/security"><div className="py-10 text-center text-slate-500">Loading…</div></SecurityPage>;
 
   const set = (patch: Partial<PasswordPolicy>) => setForm({ ...form, ...patch });
 

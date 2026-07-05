@@ -65,7 +65,7 @@ export function ClockWidget({ compact = false, nav = false }: { compact?: boolea
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['clock-status', employee?.id] }); qc.invalidateQueries({ queryKey: ['attendance-today'] }); },
   });
 
-  if (isLoading) return nav ? null : <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm text-sm text-slate-400">Loading…</div>;
+  if (isLoading) return nav ? null : <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm text-sm text-slate-500">Loading…</div>;
   if (!employee) {
     if (nav) return null;
     return (
@@ -99,7 +99,7 @@ export function ClockWidget({ compact = false, nav = false }: { compact?: boolea
     }
     const Row = ({ label, value }: { label: string; value: string }) => (
       <div className="flex items-center justify-between py-1.5">
-        <span className="inline-flex items-center gap-2 text-sm text-gray-600"><Clock size={15} className="text-gray-400" /> {label}</span>
+        <span className="inline-flex items-center gap-2 text-sm text-gray-600"><Clock size={15} className="text-gray-500" /> {label}</span>
         <span className="font-mono text-sm font-semibold text-gray-900">{value}</span>
       </div>
     );
@@ -128,7 +128,7 @@ export function ClockWidget({ compact = false, nav = false }: { compact?: boolea
                     <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
                     <span className="text-base font-bold text-gray-900">Clocked In</span>
                   </div>
-                  <div className="mt-0.5 text-sm text-gray-400">Since {fmtTime(status.clockedInAt)}</div>
+                  <div className="mt-0.5 text-sm text-gray-500">Since {fmtTime(status.clockedInAt)}</div>
                 </div>
                 <button onClick={() => { setOpen(false); clock.mutate('ClockOut'); }} disabled={clock.isPending}
                   className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-600 transition-colors hover:bg-indigo-50 disabled:opacity-60">
@@ -145,11 +145,11 @@ export function ClockWidget({ compact = false, nav = false }: { compact?: boolea
               <div className="my-3 h-px bg-gray-100" />
               <button onClick={() => { setOpen(false); clock.mutate('BreakStart'); }} disabled={clock.isPending}
                 className="flex w-full items-center gap-3 rounded-lg border-0 bg-transparent px-1 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-60">
-                <Coffee size={16} className="text-gray-400" /> Take Break
+                <Coffee size={16} className="text-gray-500" /> Take Break
               </button>
               <button onClick={() => go('/workforce/timesheets')}
                 className="flex w-full items-center gap-3 rounded-lg border-0 bg-transparent px-1 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50">
-                <CalendarDays size={16} className="text-gray-400" /> View Timesheet
+                <CalendarDays size={16} className="text-gray-500" /> View Timesheet
               </button>
 
               <div className="my-3 h-px bg-gray-100" />
@@ -171,7 +171,7 @@ export function ClockWidget({ compact = false, nav = false }: { compact?: boolea
       <div className={`flex ${compact ? 'items-center justify-between gap-4' : 'flex-wrap items-center justify-between gap-6'}`}>
         <div className="min-w-0">
           <div className="font-mono text-4xl font-bold tracking-tight text-charcoal-heading">{hhmmss(now)}</div>
-          <div className="mt-0.5 text-sm text-slate-400">{now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+          <div className="mt-0.5 text-sm text-slate-500">{now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</div>
           <div className="mt-1 flex items-center gap-2">
             <span className="text-sm font-semibold text-charcoal-heading">{greeting()}, {empName(employee).split(' ')[0]}</span>
             {shift && <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${SHIFT_CHIP[shift.type] ?? 'bg-slate-100 text-slate-700'}`}>{shift.name}</span>}
@@ -182,7 +182,7 @@ export function ClockWidget({ compact = false, nav = false }: { compact?: boolea
           {isClockedIn ? (
             <>
               <div className="flex items-center gap-3">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-sm font-semibold text-green-600"><span className="h-2 w-2 rounded-full bg-green-500" /> Clocked in at {fmtTime(status.clockedInAt)}</span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-sm font-semibold text-green-700"><span className="h-2 w-2 rounded-full bg-green-500" /> Clocked in at {fmtTime(status.clockedInAt)}</span>
                 <span className="font-mono text-lg font-bold text-charcoal-heading">{liveHours(status.clockedInAt, 0)}h</span>
               </div>
               <div className="flex gap-2">

@@ -131,7 +131,7 @@ function PriorityDonut({ segments, total, size = 150 }: { segments: { value: num
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <div className="text-2xl font-bold text-charcoal-heading">{total}</div>
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Total</div>
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Total</div>
       </div>
     </div>
   );
@@ -243,7 +243,7 @@ export default function AuthorizerPage() {
   ];
 
   const SELECT = 'h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary';
-  const TH = 'px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
+  const TH = 'px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
   const CELL = 'px-5 py-4 align-middle';
 
   return (
@@ -293,7 +293,7 @@ export default function AuthorizerPage() {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-indigo-50 text-indigo-600"><Icon size={18} /></span>
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</span>
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</span>
                 </div>
                 <div className="mt-2 text-4xl font-bold leading-none text-charcoal-heading">{value}</div>
                 <div className="mt-1.5 text-xs font-semibold" style={{ color: subColor }}>{sub}</div>
@@ -306,10 +306,10 @@ export default function AuthorizerPage() {
 
       {/* Filter bar */}
       <div className={`${CARD} mb-6 flex flex-wrap items-center gap-3 p-4`}>
-        <div className="flex h-11 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-slate-400">
+        <div className="flex h-11 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-slate-500">
           <Search size={16} />
           <input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search lab #, patient, client, specimen..."
-            className="w-full border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400" />
+            className="w-full border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-500" />
         </div>
         <select className={SELECT} value={formFilter} onChange={(e) => { setFormFilter(e.target.value); }}>
           <option value="all">All Forms</option>
@@ -343,7 +343,7 @@ export default function AuthorizerPage() {
             {!initialLoading && pageRows.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
                 <ClipboardCheck size={48} className="text-slate-200" />
-                <div className="text-sm font-medium text-slate-400">{tab === 'awaiting' ? 'No records awaiting authorization' : 'No authorized records'}</div>
+                <div className="text-sm font-medium text-slate-500">{tab === 'awaiting' ? 'No records awaiting authorization' : 'No authorized records'}</div>
               </div>
             ) : (
               <div className="mt-4 overflow-x-auto">
@@ -377,22 +377,22 @@ export default function AuthorizerPage() {
                               <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full text-xs font-semibold text-white ${avatarClass(name)}`}>{initialsOf(name)}</span>
                               <div className="min-w-0">
                                 <div className="text-sm font-semibold text-charcoal-heading">{name}</div>
-                                <div className="text-xs text-slate-400">
+                                <div className="text-xs text-slate-500">
                                   {[r.patient?.gender, age != null ? `${age} Y` : null].filter(Boolean).join(' • ') || '—'}
                                 </div>
-                                {r.patient?.registrationNo && <div className="text-xs text-slate-400">{r.patient.registrationNo}</div>}
+                                {r.patient?.registrationNo && <div className="text-xs text-slate-500">{r.patient.registrationNo}</div>}
                               </div>
                             </div>
                           </td>
                           <td className={CELL}>
                             <div className="text-sm text-charcoal-heading">{clientOffice(r)}</div>
-                            {r.client?.accountNo && <div className="text-xs text-slate-400">{r.client.accountNo}</div>}
-                            {doctorName(r) && <div className="text-xs text-slate-400">{doctorName(r)}</div>}
+                            {r.client?.accountNo && <div className="text-xs text-slate-500">{r.client.accountNo}</div>}
+                            {doctorName(r) && <div className="text-xs text-slate-500">{doctorName(r)}</div>}
                           </td>
                           <td className={CELL}>
                             {r.formType
                               ? <span className="rounded-full px-2.5 py-1 text-[11px] font-bold" style={gyn ? { background: '#EEF3FF', color: '#4F46E5' } : { background: '#F1F5F9', color: '#64748B' }}>{gyn ? 'GYN' : 'NON-GYN'}</span>
-                              : <span className="text-sm text-slate-400">—</span>}
+                              : <span className="text-sm text-slate-500">—</span>}
                           </td>
                           <td className={CELL}>
                             <div className="flex items-center gap-2">
@@ -402,7 +402,7 @@ export default function AuthorizerPage() {
                           </td>
                           <td className={CELL}>
                             <div className="text-sm text-charcoal-heading">{fmtDate(r.specimenDate ?? r.createdAt)}</div>
-                            <div className="text-xs text-slate-400">{relTime(r.createdAt)}</div>
+                            <div className="text-xs text-slate-500">{relTime(r.createdAt)}</div>
                           </td>
                           <td className={CELL}>
                             <span className="inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: meta.color }}>
@@ -414,8 +414,8 @@ export default function AuthorizerPage() {
                               {tab === 'awaiting'
                                 ? <button onClick={() => setAuthorizeRec(r)} className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"><CheckCircle2 size={15} /> Authorize</button>
                                 : <button onClick={() => setAuthorizeRec(r)} className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-primary hover:bg-indigo-50"><Eye size={15} /> Review</button>}
-                              <button aria-label="View record" onClick={() => router.push(`/records/${r.id}`)} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-primary"><Eye size={16} /></button>
-                              <button aria-label="More actions" onClick={() => router.push(`/records/${r.id}`)} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreVertical size={16} /></button>
+                              <button aria-label="View record" onClick={() => router.push(`/records/${r.id}`)} className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-primary"><Eye size={16} /></button>
+                              <button aria-label="More actions" onClick={() => router.push(`/records/${r.id}`)} className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreVertical size={16} /></button>
                             </div>
                           </td>
                         </tr>
@@ -460,7 +460,7 @@ export default function AuthorizerPage() {
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><Clock size={20} /></span>
               <div className="min-w-0 flex-1">
                 <div className="text-2xl font-bold text-charcoal-heading">{avgReviewHrs != null ? `${avgReviewHrs.toFixed(1)} hrs` : '—'}</div>
-                <div className="text-xs text-slate-400">Resulted → Approved</div>
+                <div className="text-xs text-slate-500">Resulted → Approved</div>
               </div>
               <Sparkline color="#6366F1" data={[5, 4, 4, 3, 4, 3, 2]} />
             </div>
@@ -473,16 +473,16 @@ export default function AuthorizerPage() {
               <button onClick={() => setTab('approved')} className="text-xs font-semibold text-primary hover:underline">View all</button>
             </div>
             <div className="flex flex-col gap-3">
-              {recentAuth.length === 0 && <div className="text-sm text-slate-400">No authorizations yet.</div>}
+              {recentAuth.length === 0 && <div className="text-sm text-slate-500">No authorizations yet.</div>}
               {recentAuth.map((r) => (
                 <div key={r.id} className="flex items-center gap-3">
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-indigo-50 text-indigo-600"><FlaskConical size={16} /></span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate font-mono text-xs font-bold text-charcoal-heading">{r.labNumber ?? '—'}</span>
-                      <span className="shrink-0 text-[11px] font-semibold text-green-600">Authorized</span>
+                      <span className="shrink-0 text-[11px] font-semibold text-green-700">Authorized</span>
                     </div>
-                    <div className="truncate text-xs text-slate-400">{patientName(r)} · {relTime(authorizedAtOf(r))} {timeOfDay(authorizedAtOf(r))}</div>
+                    <div className="truncate text-xs text-slate-500">{patientName(r)} · {relTime(authorizedAtOf(r))} {timeOfDay(authorizedAtOf(r))}</div>
                   </div>
                 </div>
               ))}
@@ -493,7 +493,7 @@ export default function AuthorizerPage() {
           <div className={`${CARD} p-5`}>
             <div className="mb-3 flex items-center gap-2">
               <div className="text-sm font-semibold text-charcoal-heading">AI Confidence Overview</div>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Sample</span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Sample</span>
             </div>
             <div className="flex flex-col gap-3">
               {[

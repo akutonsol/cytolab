@@ -19,7 +19,7 @@ type PatientListRow = PatientRecord & {
 
 const BADGE = 'inline-flex items-center rounded-full px-3 py-1 text-sm font-medium';
 const PILL = 'inline-flex items-center rounded-full px-3 py-1 text-sm';
-const TH = 'px-8 py-4 text-left text-sm font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
+const TH = 'px-8 py-4 text-left text-sm font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
 const CELL = 'px-8 py-5 text-base text-slate-700 align-middle';
 
 const fullName = (p: PatientListRow) => `${p.firstName} ${p.lastName}`.trim();
@@ -93,9 +93,9 @@ function KpiCard({ icon, iconClass, label, value, sub, barClass, barPct }: {
       <div className="flex items-start gap-4">
         <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${iconClass}`}>{icon}</span>
         <div className="min-w-0">
-          <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</div>
           <div className="mt-1 text-4xl font-bold leading-tight text-charcoal-heading">{value}</div>
-          <div className="mt-1 text-sm text-slate-400">{sub}</div>
+          <div className="mt-1 text-sm text-slate-500">{sub}</div>
         </div>
       </div>
       {barClass && (
@@ -196,13 +196,13 @@ export default function PatientsPage() {
         {/* Gender ring */}
         <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
           <div className="text-center">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Male</div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Male</div>
             <div className="text-3xl font-bold text-charcoal-heading">{maleCount}</div>
             <div className="text-sm font-semibold" style={{ color: '#2563EB' }}>{malePct}%</div>
           </div>
           <GenderDonut male={maleCount} female={femaleCount} />
           <div className="text-center">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Female</div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Female</div>
             <div className="text-3xl font-bold text-charcoal-heading">{femaleCount}</div>
             <div className="text-sm font-semibold" style={{ color: '#DB2777' }}>{femalePct}%</div>
           </div>
@@ -261,7 +261,7 @@ export default function PatientsPage() {
                         <PatientAvatar name={name} />
                         <div className="min-w-0">
                           <div className="text-base font-semibold text-on-surface">{name || '—'}</div>
-                          <div className="text-sm text-slate-400">Reg: {p.registrationNo || p.id.slice(0, 8)}</div>
+                          <div className="text-sm text-slate-500">Reg: {p.registrationNo || p.id.slice(0, 8)}</div>
                         </div>
                       </div>
                     </td>
@@ -285,7 +285,7 @@ export default function PatientsPage() {
                       <td className={CELL}>
                         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                           <button onClick={() => openEdit(p)} className="btn-secondary"><Pencil size={14} /> Edit</button>
-                          <button aria-label="More actions" className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreVertical size={16} /></button>
+                          <button aria-label="More actions" className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreVertical size={16} /></button>
                         </div>
                       </td>
                     )}

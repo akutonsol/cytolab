@@ -14,7 +14,7 @@ import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 const NO_ROWS: any[] = [];
 
 const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
-const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
+const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
 const CELL = 'px-4 py-3 align-middle text-sm';
 
 // Score colour: ≥80 green, 60-79 detector-safe yellow, <60 red (no orange).
@@ -64,7 +64,7 @@ function NewReviewModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={onClose}>
       <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">New Performance Review</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">New Performance Review</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>
         <label className="mb-1 block text-sm font-medium text-slate-600">Employee</label>
         <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} className="mb-4 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary">
           <option value="">Select employee…</option>{employees.map((e) => <option key={e.id} value={e.id}>{empName(e)}</option>)}
@@ -109,7 +109,7 @@ function ReviewDrawer({ id, onClose }: { id: string; onClose: () => void }) {
             <div className="text-lg font-bold text-charcoal-heading">{r ? empName(r.employee) : 'Review'}</div>
             <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">{r && <Badge status={r.status} map={REVIEW_STATUS} />}<span>{r?.period}</span></div>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-6">
@@ -125,8 +125,8 @@ function ReviewDrawer({ id, onClose }: { id: string; onClose: () => void }) {
                 <Bar label="Quality" value={r.qualityScore} />
               </div>
               <div className="mb-6">
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Comments</div>
-                <div className="text-sm text-on-surface">{r.comments || <span className="text-slate-400">No comments.</span>}</div>
+                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Comments</div>
+                <div className="text-sm text-on-surface">{r.comments || <span className="text-slate-500">No comments.</span>}</div>
               </div>
 
               {composite && (
@@ -146,7 +146,7 @@ function ReviewDrawer({ id, onClose }: { id: string; onClose: () => void }) {
               <div className="flex gap-2">
                 {isManager && r.status === 'DRAFT' && <button onClick={() => act.mutate('submit')} disabled={act.isPending} className="btn-primary flex-1 justify-center">Submit to Employee</button>}
                 {isMine && r.status === 'SUBMITTED' && <button onClick={() => act.mutate('acknowledge')} disabled={act.isPending} className="btn-primary flex-1 justify-center"><Check size={16} /> Acknowledge</button>}
-                {r.status === 'ACKNOWLEDGED' && <div className="flex-1 rounded-xl bg-green-50 px-4 py-2.5 text-center text-sm font-semibold text-green-600">Acknowledged</div>}
+                {r.status === 'ACKNOWLEDGED' && <div className="flex-1 rounded-xl bg-green-50 px-4 py-2.5 text-center text-sm font-semibold text-green-700">Acknowledged</div>}
               </div>
             </>
           )}
@@ -192,7 +192,7 @@ function ReviewsTab() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Period</th><th className={`${TH} text-right`}>Overall</th><th className={`${TH} text-right`}>Attend.</th><th className={`${TH} text-right`}>Prod.</th><th className={`${TH} text-right`}>Quality</th><th className={TH}>Status</th><th className={TH}>Reviewer</th></tr></thead>
             <tbody>
-              {!initialLoading && reviews.length === 0 && <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-400">No reviews match these filters.</td></tr>}
+              {!initialLoading && reviews.length === 0 && <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-500">No reviews match these filters.</td></tr>}
               {pageRows.map((r: any) => (
                 <tr key={r.id} className="cursor-pointer border-b border-slate-100 hover:bg-slate-50" onClick={() => setDetailId(r.id)}>
                   <td className={`${CELL} font-medium text-charcoal-heading`}>{empName(r.employee)}</td>
@@ -234,7 +234,7 @@ function NewGoalModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">New Goal</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">New Goal</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>
         <label className="mb-1 block text-sm font-medium text-slate-600">Employee</label>
         <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} className="mb-4 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary">
           <option value="">Select employee…</option>{employees.map((e) => <option key={e.id} value={e.id}>{empName(e)}</option>)}
@@ -263,7 +263,7 @@ function GoalEditor({ goal, onClose }: { goal: any; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">{goal.title}</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">{goal.title}</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>
         <label className="mb-1 flex items-center justify-between text-sm font-medium text-slate-600">Progress <span className="font-bold text-primary">{progress}%</span></label>
         <input type="range" min="0" max="100" value={progress} onChange={(e) => setProgress(Number(e.target.value))} className="mb-4 w-full accent-primary" />
         <label className="mb-1 block text-sm font-medium text-slate-600">Status</label>
@@ -308,7 +308,7 @@ function GoalsTab() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Title</th><th className={TH}>Target Date</th><th className={TH}>Progress</th><th className={TH}>Status</th></tr></thead>
             <tbody>
-              {!initialLoading && goals.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-400">No goals match these filters.</td></tr>}
+              {!initialLoading && goals.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-500">No goals match these filters.</td></tr>}
               {pageRows.map((g: any) => (
                 <tr key={g.id} className="cursor-pointer border-b border-slate-100 hover:bg-slate-50" onClick={() => setEditing(g)}>
                   <td className={`${CELL} text-slate-600`}>{empName(g.employee)}</td>

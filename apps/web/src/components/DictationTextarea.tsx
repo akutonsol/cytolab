@@ -40,7 +40,7 @@ export const DictationTextarea = forwardRef<HTMLTextAreaElement, Props>(function
         value={display}
         onChange={(e) => { if (!interim) onChange?.(e); }}
         readOnly={!!interim}
-        className={`${className} ${showDictation ? 'pr-10' : ''} ${interim ? 'italic text-slate-400 opacity-60' : ''} ${listening ? 'ring-2 ring-indigo-300' : ''}`}
+        className={`${className} ${showDictation ? 'pr-10' : ''} ${interim ? 'italic text-slate-500 opacity-60' : ''} ${listening ? 'ring-2 ring-indigo-300' : ''}`}
         {...rest}
       />
       {showDictation && (

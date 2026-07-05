@@ -13,7 +13,7 @@ import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
-const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
+const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
 const CELL = 'px-4 py-3 align-middle text-sm';
 
 function StatusBadge({ status }: { status: string }) {
@@ -42,7 +42,7 @@ function RequestModal({ employeeId, onClose }: { employeeId: string; onClose: ()
   return (
     <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Request Leave</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Request Leave</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>
         <label className="mb-1 block text-sm font-medium text-slate-600">Leave type</label>
         <select value={leaveTypeId} onChange={(e) => setLeaveTypeId(e.target.value)} className="mb-4 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary">
           <option value="">Select type…</option>
@@ -53,7 +53,7 @@ function RequestModal({ employeeId, onClose }: { employeeId: string; onClose: ()
           <div className="flex-1"><label className="mb-1 block text-sm font-medium text-slate-600">End date</label><input type="date" value={endDate} min={startDate} onChange={(e) => setEnd(e.target.value)} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary" /></div>
         </div>
         {totalDays > 0 && <div className="mb-4 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">Total: <span className="font-semibold text-charcoal-heading">{totalDays} day{totalDays === 1 ? '' : 's'}</span></div>}
-        <label className="mb-1 block text-sm font-medium text-slate-600">Reason <span className="text-slate-400">(optional)</span></label>
+        <label className="mb-1 block text-sm font-medium text-slate-600">Reason <span className="text-slate-500">(optional)</span></label>
         <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} className="mb-4 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-primary" placeholder="Add a note…" />
         {err && <div className="mb-2 text-sm text-error">{err}</div>}
         <div className="flex justify-end gap-2"><button onClick={onClose} className="btn-secondary">Cancel</button><button onClick={() => submit.mutate()} disabled={!valid || submit.isPending} className="btn-primary" style={{ opacity: !valid || submit.isPending ? 0.5 : 1 }}>{submit.isPending ? 'Submitting…' : 'Submit Request'}</button></div>
@@ -80,7 +80,7 @@ function MyLeaveTab() {
   const fetchFn = useCallback((p: number, ps: number) => Promise.resolve(clientPage(requests, p, ps)), [requests]);
   const { items: pageRows, loading, initialLoading, hasMore, sentinelRef } = useInfiniteScroll<any>({ fetchFn, pageSize: 20 });
 
-  if (isLoading) return <div className="p-8 text-sm text-slate-400">Loading…</div>;
+  if (isLoading) return <div className="p-8 text-sm text-slate-500">Loading…</div>;
   if (!employee) return <div className={`${CARD} p-6 text-sm text-slate-500`}>No employee profile is linked to your account.</div>;
 
   return (
@@ -91,7 +91,7 @@ function MyLeaveTab() {
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {balances.length === 0 && <div className={`${CARD} p-5 text-sm text-slate-400`}>No balances initialised for this year.</div>}
+        {balances.length === 0 && <div className={`${CARD} p-5 text-sm text-slate-500`}>No balances initialised for this year.</div>}
         {balances.map((b: any) => {
           const remaining = b.entitlement - b.used - b.pending;
           const usedPct = b.entitlement > 0 ? Math.min(100, Math.round((b.used / b.entitlement) * 100)) : 0;
@@ -99,8 +99,8 @@ function MyLeaveTab() {
           return (
             <div key={b.id} className={`${CARD} p-5`}>
               <div className="mb-3 flex items-center gap-2"><span className="grid h-9 w-9 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><CalendarOff size={17} /></span><span className="text-sm font-semibold text-charcoal-heading">{b.leaveType?.name ?? 'Leave'}</span></div>
-              <div className="mb-1 flex items-end justify-between"><span className="text-3xl font-bold leading-none text-charcoal-heading">{remaining}</span><span className="text-xs text-slate-400">of {b.entitlement} days</span></div>
-              <div className="mb-2 text-[11px] font-medium text-slate-400">remaining</div>
+              <div className="mb-1 flex items-end justify-between"><span className="text-3xl font-bold leading-none text-charcoal-heading">{remaining}</span><span className="text-xs text-slate-500">of {b.entitlement} days</span></div>
+              <div className="mb-2 text-[11px] font-medium text-slate-500">remaining</div>
               <div className="flex h-2 w-full overflow-hidden rounded-full bg-slate-100">
                 <div className="h-full bg-indigo-500" style={{ width: `${usedPct}%` }} />
                 <div className="h-full" style={{ width: `${pendPct}%`, background: '#A16207' }} />
@@ -117,7 +117,7 @@ function MyLeaveTab() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><th className={TH}>Type</th><th className={TH}>Start</th><th className={TH}>End</th><th className={`${TH} text-right`}>Days</th><th className={TH}>Status</th></tr></thead>
             <tbody>
-              {!initialLoading && requests.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-400">No leave requests yet.</td></tr>}
+              {!initialLoading && requests.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-500">No leave requests yet.</td></tr>}
               {pageRows.map((r: any) => (
                 <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className={`${CELL} font-medium text-charcoal-heading`}>{r.leaveType?.name ?? '—'}</td>
@@ -174,7 +174,7 @@ function ManageLeaveTab() {
           {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((s) => <option key={s} value={s}>{s === 'ALL' ? 'All Statuses' : s}</option>)}
         </select>
         <input type="date" value={startDate} onChange={(e) => setStart(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary" />
-        <span className="text-sm text-slate-400">to</span>
+        <span className="text-sm text-slate-500">to</span>
         <input type="date" value={endDate} onChange={(e) => setEnd(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary" />
       </div>
 
@@ -183,7 +183,7 @@ function ManageLeaveTab() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Type</th><th className={TH}>Dates</th><th className={`${TH} text-right`}>Days</th><th className={TH}>Reason</th><th className={TH}>Status</th><th className={`${TH} text-right`}>Actions</th></tr></thead>
             <tbody>
-              {!initialLoading && requests.length === 0 && <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-400">No leave requests match these filters.</td></tr>}
+              {!initialLoading && requests.length === 0 && <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-500">No leave requests match these filters.</td></tr>}
               {pageRows.map((r: any) => (
                 <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className={`${CELL} font-medium text-charcoal-heading`}>{empName(r.employee)}</td>
@@ -202,11 +202,11 @@ function ManageLeaveTab() {
                         </div>
                       ) : (
                         <div className="flex items-center justify-end gap-1.5">
-                          <button onClick={() => approve.mutate(r.id)} disabled={approve.isPending} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-green-600 hover:bg-green-50"><Check size={14} /> Approve</button>
+                          <button onClick={() => approve.mutate(r.id)} disabled={approve.isPending} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-green-700 hover:bg-green-50"><Check size={14} /> Approve</button>
                           <button onClick={() => { setRejecting(r.id); setReason(''); }} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"><X size={14} /> Reject</button>
                         </div>
                       )
-                    ) : <span className="text-xs text-slate-400">—</span>}
+                    ) : <span className="text-xs text-slate-500">—</span>}
                   </td>
                 </tr>
               ))}

@@ -208,7 +208,7 @@ export default function PayrollDashboard() {
           </div>
           <div className="flex flex-col items-center py-4 text-center">
             <div className="text-6xl font-bold leading-none text-gray-900">{jmd(hero.gross)}</div>
-            <div className="mt-3 text-sm uppercase tracking-wider text-gray-400">Total Gross Payroll</div>
+            <div className="mt-3 text-sm uppercase tracking-wider text-gray-500">Total Gross Payroll</div>
             <div className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-gray-500">
               <span>Net <span className="font-semibold text-gray-700">{jmd(hero.net)}</span></span>
               <span className="text-gray-300">·</span>

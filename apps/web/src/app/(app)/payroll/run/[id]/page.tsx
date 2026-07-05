@@ -69,10 +69,10 @@ export default function PayrollReportPage() {
             </div>
             {/* Legal disclaimer */}
             <div className="mt-5 space-y-2 border-t border-[#F1F5F9] pt-4">
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 These amounts may not represent all monies due to you from government tax authorities, and do not include any amounts transmitted outside the CytoLabs platform.
               </p>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 © {year} {run.lab?.name ?? ''} {run.lab?.address ?? ''} {run.lab?.phone ?? ''} CytoLabs Payroll, is not a licensed money transmitter. For more about CytoLabs&apos;s licenses and your state-specific rights to request information, submit complaints, dispute errors, or cancel transactions.
               </p>
             </div>

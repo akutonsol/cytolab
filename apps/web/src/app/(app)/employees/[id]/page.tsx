@@ -12,7 +12,7 @@ const CARD = 'glass-card rounded-2xl';
 const fmtJMD = (cents?: number) => 'J$' + Math.round((cents ?? 0) / 100).toLocaleString('en-US');
 const initials = (s: string) => (s || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 const EVENT_LABEL: Record<string, string> = { ClockIn: 'Clock In', ClockOut: 'Clock Out', BreakStart: 'Break Start', BreakEnd: 'Break End', LunchStart: 'Lunch Start', LunchEnd: 'Lunch End' };
-const EVENT_TINT: Record<string, string> = { ClockIn: 'text-green-600', ClockOut: 'text-red-600', BreakStart: 'text-violet-600', BreakEnd: 'text-violet-600', LunchStart: 'text-slate-500', LunchEnd: 'text-slate-500' };
+const EVENT_TINT: Record<string, string> = { ClockIn: 'text-green-700', ClockOut: 'text-red-600', BreakStart: 'text-violet-600', BreakEnd: 'text-violet-600', LunchStart: 'text-slate-500', LunchEnd: 'text-slate-500' };
 const TS_STATUS: Record<string, { bg: string; fg: string }> = {
   Draft: { bg: '#F1F5F9', fg: '#64748B' }, Submitted: { bg: '#E0F2FE', fg: '#0284C7' }, UnderReview: { bg: '#EEF2FF', fg: '#4F46E5' },
   Approved: { bg: '#DCFCE7', fg: '#16A34A' }, Rejected: { bg: '#FEE2E2', fg: '#DC2626' }, PayrollLocked: { bg: '#F1F5F9', fg: '#334155' },
@@ -28,7 +28,7 @@ function Overview({ e }: { e: any }) {
     ['Employment type', e.employmentType],
     ['Department', e.department?.name ?? '—'],
     ['Start date', fmtDate(e.startDate)],
-    ['Status', e.isActive ? <span className="font-semibold text-green-600">Active</span> : <span className="text-slate-500">Inactive</span>],
+    ['Status', e.isActive ? <span className="font-semibold text-green-700">Active</span> : <span className="text-slate-500">Inactive</span>],
     ['Monthly salary', <span className="font-semibold text-charcoal-heading">{fmtJMD(e.salary)}</span>],
   ];
   return (
@@ -53,7 +53,7 @@ function Overview({ e }: { e: any }) {
 
 function ClockHistoryTab({ id }: { id: string }) {
   const { data: events = [] } = useQuery({ queryKey: ['clock-history', id], queryFn: () => api.get(`/workforce/clock/history/${id}`).then((r) => r.data) });
-  const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400';
+  const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500';
   const CELL = 'px-4 py-3 align-middle text-sm';
   return (
     <div className={`${CARD} overflow-hidden`}>
@@ -61,13 +61,13 @@ function ClockHistoryTab({ id }: { id: string }) {
         <table className="w-full border-collapse">
           <thead><tr className="border-b border-outline-variant/40"><th className={TH}>Date</th><th className={TH}>Time</th><th className={TH}>Event</th><th className={TH}>Method</th><th className={TH}>Notes</th></tr></thead>
           <tbody>
-            {events.length === 0 && <tr><td colSpan={5} className="px-4 py-14 text-center text-sm text-slate-400">No clock events in the last 30 days.</td></tr>}
+            {events.length === 0 && <tr><td colSpan={5} className="px-4 py-14 text-center text-sm text-slate-500">No clock events in the last 30 days.</td></tr>}
             {events.map((ev: any) => (
               <tr key={ev.id} className="border-b border-surface-container-low hover:bg-surface-container-low/50">
                 <td className={`${CELL} text-slate-600`}>{fmtDate(ev.timestamp)}</td>
                 <td className={`${CELL} font-mono text-charcoal-heading`}>{fmtTime(ev.timestamp)}</td>
                 <td className={`${CELL} font-semibold ${EVENT_TINT[ev.type] ?? 'text-slate-600'}`}>{EVENT_LABEL[ev.type] ?? ev.type}</td>
-                <td className={`${CELL} text-slate-500`}>{ev.method ?? '—'}{ev.editedAt && <span className="ml-1.5 text-[10px] text-slate-400">(edited)</span>}</td>
+                <td className={`${CELL} text-slate-500`}>{ev.method ?? '—'}{ev.editedAt && <span className="ml-1.5 text-[10px] text-slate-500">(edited)</span>}</td>
                 <td className={`${CELL} text-slate-500`}>{ev.notes ?? '—'}</td>
               </tr>
             ))}
@@ -80,7 +80,7 @@ function ClockHistoryTab({ id }: { id: string }) {
 
 function TimesheetsTab({ id }: { id: string }) {
   const { data: rows = [] } = useQuery({ queryKey: ['timesheets', id], queryFn: () => api.get('/workforce/timesheets', { params: { employeeId: id } }).then((r) => r.data) });
-  const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400';
+  const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500';
   const CELL = 'px-4 py-3 align-middle text-sm';
   return (
     <div className={`${CARD} overflow-hidden`}>
@@ -88,7 +88,7 @@ function TimesheetsTab({ id }: { id: string }) {
         <table className="w-full border-collapse">
           <thead><tr className="border-b border-outline-variant/40"><th className={TH}>Period</th><th className={`${TH} text-right`}>Regular</th><th className={`${TH} text-right`}>OT</th><th className={`${TH} text-right`}>Total</th><th className={TH}>Status</th></tr></thead>
           <tbody>
-            {rows.length === 0 && <tr><td colSpan={5} className="px-4 py-14 text-center text-sm text-slate-400">No timesheets for this employee yet.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={5} className="px-4 py-14 text-center text-sm text-slate-500">No timesheets for this employee yet.</td></tr>}
             {rows.map((r: any) => {
               const s = TS_STATUS[r.status] ?? TS_STATUS.Draft;
               return (
@@ -134,7 +134,7 @@ function ScheduleTab({ id }: { id: string }) {
           const a = mine.get(d);
           return (
             <div key={d} className="rounded-xl border border-slate-100 p-2 text-center">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{DOW[i]}</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{DOW[i]}</div>
               <div className="mb-2 text-xs text-slate-300">{new Date(d).getDate()}</div>
               {a ? <span className={`inline-block rounded-lg px-2 py-1 text-[11px] font-semibold ${SHIFT_CHIP[a.shift.type] ?? 'bg-slate-100 text-slate-700'}`}>{a.shift.name}</span> : <span className="text-xs text-slate-300">Off</span>}
             </div>
@@ -183,16 +183,16 @@ function PerformanceTab({ id }: { id: string }) {
               <div className="mt-2 text-xs text-slate-500">Attendance {lastReview.attendanceScore} · Productivity {lastReview.productivityScore} · Quality {lastReview.qualityScore}</div>
               {lastReview.comments && <p className="mt-2 text-sm text-on-surface">{lastReview.comments}</p>}
             </div>
-          ) : <p className="text-sm text-slate-400">No reviews yet.</p>}
+          ) : <p className="text-sm text-slate-500">No reviews yet.</p>}
         </div>
 
         <div className={`${CARD} p-6`}>
           <div className="mb-3 font-label-sm text-label-sm uppercase tracking-wider text-secondary">Active Goals</div>
-          {goals.length === 0 ? <p className="text-sm text-slate-400">No active goals.</p> : (
+          {goals.length === 0 ? <p className="text-sm text-slate-500">No active goals.</p> : (
             <div className="flex flex-col gap-3">
               {goals.map((g: any) => (
                 <div key={g.id}>
-                  <div className="mb-1 flex items-center justify-between text-sm"><span className="font-medium text-charcoal-heading">{g.title}</span><span className="text-xs text-slate-400">{g.progress}%</span></div>
+                  <div className="mb-1 flex items-center justify-between text-sm"><span className="font-medium text-charcoal-heading">{g.title}</span><span className="text-xs text-slate-500">{g.progress}%</span></div>
                   <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${g.progress}%` }} /></div>
                 </div>
               ))}

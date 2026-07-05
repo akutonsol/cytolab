@@ -54,10 +54,10 @@ function KpiCard({ icon, iconClass, label, value, sub, spark }: {
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${iconClass}`}>{icon}</span>
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</span>
           </div>
           <div className="mt-2 text-4xl font-bold leading-none text-charcoal-heading">{value}</div>
-          <div className="mt-1.5 text-xs text-slate-400">{sub}</div>
+          <div className="mt-1.5 text-xs text-slate-500">{sub}</div>
         </div>
         <Sparkline color={spark} />
       </div>
@@ -87,7 +87,7 @@ function LabCodeModal({ editing, onClose }: { editing: LabCode | 'new'; onClose:
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-bold text-charcoal-heading">{isNew ? 'New Lab Code' : 'Edit Lab Code'}</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button>
         </div>
         <label className="mb-1 block text-sm font-medium text-slate-600">Code</label>
         <input autoFocus value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="CODE"
@@ -159,7 +159,7 @@ function LabCodesTab() {
   const canEdit = can('labcode:change');
   const canDelete = can('labcode:delete');
   const SELECT = 'h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary';
-  const TH = 'px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
+  const TH = 'px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
   const CELL = 'px-6 py-4 align-middle';
 
   return (
@@ -169,17 +169,17 @@ function LabCodesTab() {
         {/* KPI strip */}
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard icon={<Tag size={20} />} iconClass="bg-violet-50 text-violet-600" label="Total Lab Codes" value={total} sub="All lab region codes" spark="#94A3B8" />
-          <KpiCard icon={<Globe size={20} />} iconClass="bg-green-50 text-green-600" label="Regions" value={regions.length} sub="Covered regions" spark="#16A34A" />
+          <KpiCard icon={<Globe size={20} />} iconClass="bg-green-50 text-green-700" label="Regions" value={regions.length} sub="Covered regions" spark="#16A34A" />
           <KpiCard icon={<ShieldCheck size={20} />} iconClass="bg-blue-50 text-blue-600" label="Active Codes" value={activeCount} sub={`${activePct}% active`} spark="#2563EB" />
           <KpiCard icon={<Database size={20} />} iconClass="bg-yellow-50 text-yellow-400" label="Codes In Use" value={codesInUse} sub="Referenced by clients" spark="#FACC15" />
         </div>
 
         {/* Filter bar */}
         <div className={`${CARD} mb-6 flex flex-wrap items-center gap-3 p-4`}>
-          <div className="flex h-11 min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-slate-400">
+          <div className="flex h-11 min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-slate-500">
             <Search size={16} />
             <input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search lab code..."
-              className="w-full border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400" />
+              className="w-full border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-500" />
           </div>
           <select className={SELECT} value={regionFilter} onChange={(e) => { setRegionFilter(e.target.value); }}>
             <option value="all">All Regions</option>
@@ -210,7 +210,7 @@ function LabCodesTab() {
               </thead>
               <tbody>
                 {!initialLoading && pageRows.length === 0 && (
-                  <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-400">No lab codes found.</td></tr>
+                  <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-500">No lab codes found.</td></tr>
                 )}
                 {pageRows.map((c) => (
                   <tr key={c.id} className="border-b border-slate-100 transition-colors hover:bg-slate-50">
@@ -219,7 +219,7 @@ function LabCodesTab() {
                         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-xs font-semibold text-white" style={{ background: avatarBg(c.code) }}>{initialsOf(c.code)}</span>
                         <div className="min-w-0">
                           <div className="text-sm font-bold text-charcoal-heading">{c.code}</div>
-                          <div className="text-xs text-slate-400">Created {fmtDate(c.createdAt)}</div>
+                          <div className="text-xs text-slate-500">Created {fmtDate(c.createdAt)}</div>
                         </div>
                       </div>
                     </td>
@@ -227,17 +227,17 @@ function LabCodesTab() {
                       <div className="text-sm text-charcoal-heading">{c.region || '—'}</div>
                     </td>
                     <td className={CELL}>
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-600">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
                         <span className="h-1.5 w-1.5 rounded-full bg-green-500" /> Active
                       </span>
                     </td>
                     <td className={CELL}>
                       <div className="text-sm font-semibold text-charcoal-heading">{c.clientsUsing ?? 0}</div>
-                      <div className="text-xs text-slate-400">records</div>
+                      <div className="text-xs text-slate-500">records</div>
                     </td>
                     <td className={CELL}>
                       <div className="text-sm text-charcoal-heading">{fmtDate(c.updatedAt)}</div>
-                      <div className="text-xs text-slate-400">{fmtTime(c.updatedAt)}</div>
+                      <div className="text-xs text-slate-500">{fmtTime(c.updatedAt)}</div>
                     </td>
                     <td className={CELL}>
                       <div className="flex items-center justify-end gap-1.5">
@@ -251,7 +251,7 @@ function LabCodesTab() {
                               <button onClick={() => setConfirmId(null)} className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-500">Cancel</button>
                             </span>
                           ) : (
-                            <button aria-label="Delete" onClick={() => setConfirmId(c.id)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-400 transition-colors hover:bg-error-container hover:text-error"><Trash2 size={15} /></button>
+                            <button aria-label="Delete" onClick={() => setConfirmId(c.id)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-error-container hover:text-error"><Trash2 size={15} /></button>
                           )
                         )}
                       </div>
@@ -277,8 +277,8 @@ function LabCodesTab() {
           <div className="flex flex-col gap-3.5">
             {[
               { icon: <Tag size={16} className="text-violet-600" />, label: 'Total Lab Codes', value: total },
-              { icon: <ShieldCheck size={16} className="text-green-600" />, label: 'Active Codes', value: activeCount },
-              { icon: <Archive size={16} className="text-slate-400" />, label: 'Archived Codes', value: 0 },
+              { icon: <ShieldCheck size={16} className="text-green-700" />, label: 'Active Codes', value: activeCount },
+              { icon: <Archive size={16} className="text-slate-500" />, label: 'Archived Codes', value: 0 },
               { icon: <Globe size={16} className="text-blue-600" />, label: 'Regions Covered', value: regions.length },
               { icon: <Database size={16} className="text-indigo-600" />, label: 'Records Using Codes', value: totalClientsUsing },
             ].map((r) => (
@@ -297,15 +297,15 @@ function LabCodesTab() {
             <button onClick={() => setSort('recent')} className="text-xs font-semibold text-primary hover:underline">View all</button>
           </div>
           <div className="flex flex-col gap-3">
-            {recent.length === 0 && <div className="text-sm text-slate-400">No codes yet.</div>}
+            {recent.length === 0 && <div className="text-sm text-slate-500">No codes yet.</div>}
             {recent.map((c) => (
               <div key={c.id} className="flex items-center gap-3">
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[11px] font-semibold text-white" style={{ background: avatarBg(c.code) }}>{initialsOf(c.code)}</span>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-semibold text-charcoal-heading">{c.code}</div>
-                  <div className="truncate text-xs text-slate-400">{c.region || '—'}</div>
+                  <div className="truncate text-xs text-slate-500">{c.region || '—'}</div>
                 </div>
-                <div className="shrink-0 text-xs text-slate-400">{fmtDate(c.updatedAt)}</div>
+                <div className="shrink-0 text-xs text-slate-500">{fmtDate(c.updatedAt)}</div>
               </div>
             ))}
           </div>
@@ -368,7 +368,7 @@ function CodeSlideOver({ cfg, editing, onClose }: { cfg: typeof CATALOG_CFG[keyo
       <div className="flex h-full w-full max-w-md flex-col bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <h3 className="text-lg font-bold text-charcoal-heading">{isNew ? cfg.addLabel : `Edit ${cfg.codeLabel}`}</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-6">
           <label className="mb-1 block text-sm font-medium text-slate-600">{cfg.codeLabel}</label>
@@ -423,7 +423,7 @@ function CodeCatalogTab({ variant }: { variant: 'sheets' | 'findings' }) {
   const fetchFn = useCallback((p: number, ps: number) => Promise.resolve(clientPage(filtered, p, ps)), [filtered]);
   const { items: pageRows, loading, initialLoading, hasMore, sentinelRef } = useInfiniteScroll<CodeItem>({ fetchFn, pageSize: 20 });
 
-  const TH = 'px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
+  const TH = 'px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
   const CELL = 'px-6 py-4 align-middle';
 
   return (
@@ -431,16 +431,16 @@ function CodeCatalogTab({ variant }: { variant: 'sheets' | 'findings' }) {
       {/* KPI strip */}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <KpiCard icon={<cfg.emptyIcon size={20} />} iconClass="bg-violet-50 text-violet-600" label={cfg.totalLabel} value={total} sub={cfg.totalSub} spark="#94A3B8" />
-        <KpiCard icon={<cfg.midIcon size={20} />} iconClass="bg-green-50 text-green-600" label={cfg.midLabel} value={mid} sub={cfg.midSub} spark="#16A34A" />
+        <KpiCard icon={<cfg.midIcon size={20} />} iconClass="bg-green-50 text-green-700" label={cfg.midLabel} value={mid} sub={cfg.midSub} spark="#16A34A" />
         <KpiCard icon={<Clock size={20} />} iconClass="bg-blue-50 text-blue-600" label="Recently Added" value={recentlyAdded} sub="Last 30 days" spark="#2563EB" />
       </div>
 
       {/* Filter bar */}
       <div className={`${CARD} mb-6 flex flex-wrap items-center gap-3 p-4`}>
-        <div className="flex h-11 min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-slate-400">
+        <div className="flex h-11 min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-slate-500">
           <Search size={16} />
           <input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder={`Search ${cfg.noun}...`}
-            className="w-full border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400" />
+            className="w-full border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-500" />
         </div>
         <button onClick={() => setSlideOver('new')} className="btn-primary ml-auto"><Plus size={16} /> {cfg.addLabel}</button>
       </div>
@@ -459,8 +459,8 @@ function CodeCatalogTab({ variant }: { variant: 'sheets' | 'findings' }) {
               {!initialLoading && pageRows.length === 0 && (
                 <tr><td colSpan={4} className="px-6 py-16 text-center">
                   <div className="flex flex-col items-center gap-3">
-                    <div className="grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-slate-400"><cfg.emptyIcon size={26} /></div>
-                    <div className="text-sm text-slate-400">{search ? 'No matches found.' : cfg.emptyText}</div>
+                    <div className="grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-slate-500"><cfg.emptyIcon size={26} /></div>
+                    <div className="text-sm text-slate-500">{search ? 'No matches found.' : cfg.emptyText}</div>
                   </div>
                 </td></tr>
               )}
@@ -478,7 +478,7 @@ function CodeCatalogTab({ variant }: { variant: 'sheets' | 'findings' }) {
                           <button onClick={() => setConfirmId(null)} className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-500">Cancel</button>
                         </span>
                       ) : (
-                        <button aria-label="Delete" onClick={() => setConfirmId(r.id)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-400 transition-colors hover:bg-error-container hover:text-error"><Trash2 size={15} /></button>
+                        <button aria-label="Delete" onClick={() => setConfirmId(r.id)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-error-container hover:text-error"><Trash2 size={15} /></button>
                       )}
                     </div>
                   </td>

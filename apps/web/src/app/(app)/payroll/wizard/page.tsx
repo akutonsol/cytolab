@@ -352,11 +352,11 @@ function Banner({ label, value, big }: { label: string; value: string; big?: boo
 function MoneyInput({ label, value, onChange, minus }: { label: string; value: number; onChange: (cents: number) => void; minus?: boolean }) {
   return (
     <label className="flex items-center justify-end gap-1.5">
-      <span className="text-[11px] text-slate-400">{minus ? '–' : ''} {label}</span>
+      <span className="text-[11px] text-slate-500">{minus ? '–' : ''} {label}</span>
       <div className="flex items-center rounded-lg border border-outline-variant/40 bg-white pl-1.5">
-        <span className={`text-[11px] ${value ? 'text-secondary' : 'text-slate-400'}`}>$</span>
+        <span className={`text-[11px] ${value ? 'text-secondary' : 'text-slate-500'}`}>$</span>
         <input type="number" min="0" value={fromC(value)} onChange={(e) => onChange(toC(e.target.value))} placeholder="0.00"
-          className="h-7 w-20 bg-transparent px-1 text-right text-[12px] text-on-surface outline-none placeholder:text-slate-400" />
+          className="h-7 w-20 bg-transparent px-1 text-right text-[12px] text-on-surface outline-none placeholder:text-slate-500" />
       </div>
     </label>
   );

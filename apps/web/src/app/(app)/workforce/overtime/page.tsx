@@ -13,7 +13,7 @@ import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
-const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
+const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
 const CELL = 'px-4 py-3 align-middle text-sm';
 
 function StatusBadge({ status }: { status: string }) {
@@ -41,7 +41,7 @@ function CalculateModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Calculate Overtime</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Calculate Overtime</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>
         <label className="mb-1 block text-sm font-medium text-slate-600">Employee</label>
         <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} className="mb-4 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary">
           <option value="">Select employee…</option>
@@ -84,7 +84,7 @@ function RuleModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Add Overtime Rule</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Add Overtime Rule</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>
         <label className="mb-1 block text-sm font-medium text-slate-600">Name</label>
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Standard OT" className="mb-4 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary" />
         <div className="mb-4 flex gap-3">
@@ -158,7 +158,7 @@ function OvertimePage() {
           {employees.map((e) => <option key={e.id} value={e.id}>{empName(e)}</option>)}
         </select>
         <input type="date" value={startDate} onChange={(e) => setStart(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary" />
-        <span className="text-sm text-slate-400">to</span>
+        <span className="text-sm text-slate-500">to</span>
         <input type="date" value={endDate} onChange={(e) => setEnd(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary" />
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary">
           {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((s) => <option key={s} value={s}>{s === 'ALL' ? 'All Statuses' : s}</option>)}
@@ -171,7 +171,7 @@ function OvertimePage() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Date</th><th className={`${TH} text-right`}>Regular Hrs</th><th className={`${TH} text-right`}>Overtime Hrs</th><th className={`${TH} text-right`}>Rate</th><th className={TH}>Status</th>{isManager && <th className={`${TH} text-right`}>Actions</th>}</tr></thead>
             <tbody>
-              {!initialLoading && records.length === 0 && <tr><td colSpan={isManager ? 7 : 6} className="px-4 py-12 text-center text-sm text-slate-400">No overtime records. Use “Calculate Overtime” to generate them.</td></tr>}
+              {!initialLoading && records.length === 0 && <tr><td colSpan={isManager ? 7 : 6} className="px-4 py-12 text-center text-sm text-slate-500">No overtime records. Use “Calculate Overtime” to generate them.</td></tr>}
               {pageRows.map((r: any) => (
                 <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className={`${CELL} font-medium text-charcoal-heading`}>{empName(r.employee)}</td>
@@ -184,10 +184,10 @@ function OvertimePage() {
                     <td className={CELL}>
                       {r.status === 'PENDING' ? (
                         <div className="flex items-center justify-end gap-1.5">
-                          <button onClick={() => approve.mutate(r.id)} disabled={approve.isPending} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-green-600 hover:bg-green-50" title="Approve"><Check size={16} /></button>
+                          <button onClick={() => approve.mutate(r.id)} disabled={approve.isPending} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-green-700 hover:bg-green-50" title="Approve"><Check size={16} /></button>
                           <button onClick={() => reject.mutate(r.id)} disabled={reject.isPending} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-red-600 hover:bg-red-50" title="Reject"><X size={16} /></button>
                         </div>
-                      ) : <div className="text-right text-xs text-slate-400">—</div>}
+                      ) : <div className="text-right text-xs text-slate-500">—</div>}
                     </td>
                   )}
                 </tr>
@@ -202,8 +202,8 @@ function OvertimePage() {
       {isManager && (
         <div className={`${CARD} overflow-hidden`}>
           <button onClick={() => setRulesShown((v) => !v)} className="flex w-full items-center justify-between px-5 py-4 text-left hover:bg-slate-50">
-            <span className="flex items-center gap-2 text-base font-semibold text-charcoal-heading"><Settings2 size={17} className="text-slate-400" /> Overtime Rules</span>
-            {rulesShown ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronRight size={18} className="text-slate-400" />}
+            <span className="flex items-center gap-2 text-base font-semibold text-charcoal-heading"><Settings2 size={17} className="text-slate-500" /> Overtime Rules</span>
+            {rulesShown ? <ChevronDown size={18} className="text-slate-500" /> : <ChevronRight size={18} className="text-slate-500" />}
           </button>
           {rulesShown && (
             <div className="border-t border-slate-100 p-5">
@@ -212,7 +212,7 @@ function OvertimePage() {
                 <table className="w-full border-collapse">
                   <thead><tr className="border-b border-slate-100"><th className={TH}>Name</th><th className={`${TH} text-right`}>Daily</th><th className={`${TH} text-right`}>Weekly</th><th className={`${TH} text-right`}>Rate</th><th className={TH}>Approval</th><th className={TH}>Active</th></tr></thead>
                   <tbody>
-                    {rules.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-400">No rules yet.</td></tr>}
+                    {rules.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">No rules yet.</td></tr>}
                     {rules.map((rule: any) => (
                       <tr key={rule.id} className="border-b border-slate-100">
                         <td className={`${CELL} font-medium text-charcoal-heading`}>{rule.name}</td>
@@ -220,7 +220,7 @@ function OvertimePage() {
                         <td className={`${CELL} text-right text-slate-600`}>{fmtHours(rule.weeklyThresholdMinutes)}h</td>
                         <td className={`${CELL} text-right`}>{fmtMultiplier(rule.rateMultiplierX100)}</td>
                         <td className={`${CELL} text-slate-600`}>{rule.requiresApproval ? 'Required' : 'Auto'}</td>
-                        <td className={CELL}>{rule.isActive ? <span className="text-green-600">Active</span> : <span className="text-slate-400">Inactive</span>}</td>
+                        <td className={CELL}>{rule.isActive ? <span className="text-green-700">Active</span> : <span className="text-slate-500">Inactive</span>}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -10,7 +10,7 @@ import { ClientFormDrawer, type ClientRecord } from '@/components/ClientFormDraw
 
 const BADGE = 'inline-flex items-center rounded-full px-3 py-1 text-sm font-medium';
 const PILL = 'inline-flex items-center rounded-full px-3 py-1 text-sm';
-const TH = 'px-8 py-4 text-left text-sm font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
+const TH = 'px-8 py-4 text-left text-sm font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
 const CELL = 'px-8 py-5 text-base text-slate-700 align-middle';
 
 // Deterministic avatar colour from the client name (sum of char codes % palette).
@@ -64,9 +64,9 @@ function KpiCard({ icon, iconClass, label, value, sub, barClass, barPct }: {
       <div className="flex items-start gap-4">
         <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${iconClass}`}>{icon}</span>
         <div className="min-w-0">
-          <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</div>
           <div className="mt-1 text-4xl font-bold leading-tight text-charcoal-heading">{value}</div>
-          <div className="mt-1 text-sm text-slate-400">{sub}</div>
+          <div className="mt-1 text-sm text-slate-500">{sub}</div>
         </div>
       </div>
       {barClass && (
@@ -146,7 +146,7 @@ export default function ClientsPage() {
           icon={<Users size={24} />} iconClass="bg-indigo-50 text-indigo-600"
           label="Total Clients" value={total} sub="All clients" />
         <KpiCard
-          icon={<CheckCircle2 size={24} />} iconClass="bg-green-50 text-green-600"
+          icon={<CheckCircle2 size={24} />} iconClass="bg-green-50 text-green-700"
           label="Active Clients" value={activeCount} sub={`${pctOfTotal(activeCount)}% of total`}
           barClass="bg-green-500" barPct={pctOfTotal(activeCount)} />
         <KpiCard
@@ -164,13 +164,13 @@ export default function ClientsPage() {
         {/* Labs vs Doctors ring */}
         <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
           <div className="text-center">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Labs</div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Labs</div>
             <div className="text-3xl font-bold text-charcoal-heading">{labsCount}</div>
             <div className="text-sm font-semibold" style={{ color: '#4F46E5' }}>{labsPct}%</div>
           </div>
           <TypeDonut labs={labsCount} doctors={doctorsCount} />
           <div className="text-center">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Doctors</div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Doctors</div>
             <div className="text-3xl font-bold text-charcoal-heading">{doctorsCount}</div>
             <div className="text-sm font-semibold" style={{ color: '#7C3AED' }}>{doctorsPct}%</div>
           </div>
@@ -225,7 +225,7 @@ export default function ClientsPage() {
                       <ClientAvatar name={name} />
                       <div className="min-w-0">
                         <div className="text-base font-semibold text-on-surface">{name || '—'}</div>
-                        <div className="text-sm text-slate-400">Client ID: {r.id.slice(0, 8)}</div>
+                        <div className="text-sm text-slate-500">Client ID: {r.id.slice(0, 8)}</div>
                       </div>
                     </div>
                   </td>
@@ -253,7 +253,7 @@ export default function ClientsPage() {
                     <td className={CELL}>
                       <div className="flex items-center gap-2">
                         <button onClick={() => openEdit(r)} className="btn-secondary"><Pencil size={14} /> Edit</button>
-                        <button aria-label="More actions" className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreVertical size={16} /></button>
+                        <button aria-label="More actions" className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreVertical size={16} /></button>
                       </div>
                     </td>
                   )}

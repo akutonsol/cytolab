@@ -22,10 +22,10 @@ function Detail({ id }: { id: string }) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['timesheet', id] }),
   });
 
-  if (isLoading || !ts) return <div className="p-8 text-sm text-slate-400">Loading…</div>;
+  if (isLoading || !ts) return <div className="p-8 text-sm text-slate-500">Loading…</div>;
   const name = ts.employee?.user ? `${ts.employee.user.firstName} ${ts.employee.user.lastName}` : '—';
   const s = STATUS[ts.status] ?? STATUS.Draft;
-  const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
+  const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
   const CELL = 'px-4 py-3 align-middle text-sm';
 
   return (
@@ -39,7 +39,7 @@ function Detail({ id }: { id: string }) {
           <div className="mt-2"><span className="rounded-full px-2.5 py-1 text-[10px] font-bold" style={{ background: s.bg, color: s.fg }}>{ts.status.toUpperCase()}</span></div>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-right"><div className="text-2xl font-bold text-charcoal-heading">{ts.totalHours}h</div><div className="text-xs text-slate-400">{ts.regularHours} reg · {ts.overtimeHours} OT</div></div>
+          <div className="text-right"><div className="text-2xl font-bold text-charcoal-heading">{ts.totalHours}h</div><div className="text-xs text-slate-500">{ts.regularHours} reg · {ts.overtimeHours} OT</div></div>
           <div className="flex gap-2">
             {ts.status === 'Draft' && <button onClick={() => act.mutate({ action: 'submit' })} className="btn-primary"><Send size={15} /> Submit</button>}
             {['Submitted', 'UnderReview'].includes(ts.status) && <>
@@ -56,7 +56,7 @@ function Detail({ id }: { id: string }) {
           <table className="w-full border-collapse">
             <thead><tr className="border-y border-slate-100"><th className={TH}>Date</th><th className={TH}>Shift</th><th className={TH}>Clock In</th><th className={TH}>Clock Out</th><th className={`${TH} text-right`}>Break</th><th className={`${TH} text-right`}>Regular</th><th className={`${TH} text-right`}>OT</th><th className={TH}>Notes</th></tr></thead>
             <tbody>
-              {(ts.entries ?? []).length === 0 && <tr><td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-400">No clock activity in this period.</td></tr>}
+              {(ts.entries ?? []).length === 0 && <tr><td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-500">No clock activity in this period.</td></tr>}
               {(ts.entries ?? []).map((e: any) => (
                 <tr key={e.id} className="border-b border-slate-100">
                   <td className={`${CELL} font-medium text-charcoal-heading`}>{fmtDate(e.date)}</td>

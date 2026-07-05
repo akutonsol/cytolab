@@ -32,8 +32,8 @@ export function MyTodayCard() {
       </div>
 
       <div className="mt-3 flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-2">
-        <span className="inline-flex items-center gap-2 text-sm text-secondary"><CalendarDays size={15} className="text-slate-400" /> Today&apos;s shift · {fmtDate(new Date())}</span>
-        {myShift ? <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${SHIFT_CHIP[myShift.type] ?? 'bg-slate-100 text-slate-700'}`}>{myShift.name} · {myShift.startTime}–{myShift.endTime}</span> : <span className="text-xs text-slate-400">No shift assigned</span>}
+        <span className="inline-flex items-center gap-2 text-sm text-secondary"><CalendarDays size={15} className="text-slate-500" /> Today&apos;s shift · {fmtDate(new Date())}</span>
+        {myShift ? <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${SHIFT_CHIP[myShift.type] ?? 'bg-slate-100 text-slate-700'}`}>{myShift.name} · {myShift.startTime}–{myShift.endTime}</span> : <span className="text-xs text-slate-500">No shift assigned</span>}
       </div>
     </div>
   );

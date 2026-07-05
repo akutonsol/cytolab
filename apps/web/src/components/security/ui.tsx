@@ -70,7 +70,7 @@ export function KpiCard({
       <div className="mt-2 text-3xl font-bold" style={{ color: toneColor }}>
         {value}
       </div>
-      {hint && <div className="mt-1 text-xs text-slate-400">{hint}</div>}
+      {hint && <div className="mt-1 text-xs text-slate-500">{hint}</div>}
     </div>
   );
 }
@@ -137,13 +137,13 @@ export function Table<T>({
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={columns.length} className="px-5 py-10 text-center text-slate-400">
+              <td colSpan={columns.length} className="px-5 py-10 text-center text-slate-500">
                 Loading…
               </td>
             </tr>
           ) : rows.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="px-5 py-10 text-center text-slate-400">
+              <td colSpan={columns.length} className="px-5 py-10 text-center text-slate-500">
                 {empty}
               </td>
             </tr>

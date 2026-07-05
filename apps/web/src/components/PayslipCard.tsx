@@ -56,8 +56,8 @@ export function PayslipCard({ slip, showActions = false }: { slip: SlipData; sho
         <tbody>
           {/* Section headers */}
           <tr>
-            <td colSpan={4} className="bg-slate-50 px-3 py-2 text-[11px] uppercase tracking-wider text-slate-400">Earnings</td>
-            <td colSpan={3} className="border-l border-slate-200 bg-slate-50 px-3 py-2 text-[11px] uppercase tracking-wider text-slate-400">Deductions</td>
+            <td colSpan={4} className="bg-slate-50 px-3 py-2 text-[11px] uppercase tracking-wider text-slate-500">Earnings</td>
+            <td colSpan={3} className="border-l border-slate-200 bg-slate-50 px-3 py-2 text-[11px] uppercase tracking-wider text-slate-500">Deductions</td>
           </tr>
           {/* Column headers */}
           <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500">
@@ -121,7 +121,7 @@ export function PayslipCard({ slip, showActions = false }: { slip: SlipData; sho
             <Ytd label="Income Tax" value={money(slip.ytdPaye)} />
             <Ytd label="N.H.T" value={money(slip.ytdNht)} colSpan={2} />
             <td rowSpan={2} className="border border-slate-200 bg-slate-50 px-4 text-right align-middle">
-              <div className="text-[10px] uppercase tracking-wider text-slate-400">Net (YTD)</div>
+              <div className="text-[10px] uppercase tracking-wider text-slate-500">Net (YTD)</div>
               <div className="mt-1 text-[18px] font-bold text-slate-900">{money(ytdNet(slip))}</div>
             </td>
           </tr>
@@ -157,7 +157,7 @@ function Amt({ children }: { children: React.ReactNode }) {
 function Ytd({ label, value, colSpan }: { label: string; value: string; colSpan?: number }) {
   return (
     <td colSpan={colSpan} className="border border-slate-200 bg-slate-50 px-3 py-2.5 align-top">
-      <div className="text-[10px] uppercase leading-tight tracking-wider text-slate-400">{label}</div>
+      <div className="text-[10px] uppercase leading-tight tracking-wider text-slate-500">{label}</div>
       <div className="mt-1 text-sm font-semibold text-slate-900">{value}</div>
     </td>
   );
