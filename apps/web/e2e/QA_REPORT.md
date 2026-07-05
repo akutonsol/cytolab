@@ -17,15 +17,20 @@ The findings that exist are **configuration / production-hardening** items (secr
 scope, an uncapped page size) plus two minor issues (a background 404 on `/specimens`, a stray
 `console.log`). None block functional use.
 
-| Severity | Count |
-|----------|-------|
-| CRITICAL | 0 |
-| HIGH | 1 (config: weak `JWT_PORTAL_SECRET`) |
-| MEDIUM | 4 |
-| LOW | 1 |
+| Severity | Count | Status |
+|----------|-------|--------|
+| CRITICAL | 0 | — |
+| HIGH | 1 (weak secrets) | ✅ **RESOLVED** this session |
+| MEDIUM | 4 | 3 **RESOLVED** (pageSize cap, CORS, JWT_SECRET), 1 open (`/specimens` 404) |
+| LOW | 1 | open |
+| A11Y (axe) | 2 groups | filed — TKT-2026-0007 (critical), TKT-2026-0008 (serious) |
 
-**Release recommendation: 🟡 CONDITIONAL GO** — cleared for internal/human QA now; the HIGH + MEDIUM
-config items must be remediated before any production/PHI deployment (see §7).
+**Update (remediation pass):** the HIGH finding and the three config MEDIUMs were **fixed and
+verified live** in this session (see §2 statuses and the fix commit). k6 stress + axe-core
+accessibility were executed and are reported in §3 and §4a.
+
+**Release recommendation: 🟡 CONDITIONAL GO** — cleared for internal/human QA; the remaining open
+items are the `/specimens` 404 (MEDIUM), the a11y tickets, and the un-verified readiness items in §7.
 
 ---
 
@@ -36,7 +41,9 @@ _None found._
 
 ### 🟠 HIGH
 
-**QA-H1 — Weak `JWT_PORTAL_SECRET` (patient-portal token signing secret)**
+**QA-H1 — Weak `JWT_PORTAL_SECRET` (patient-portal token signing secret)** — ✅ **RESOLVED** (TKT-2026-0006)
+- **Fix applied:** `main.ts` `assertStrongSecrets()` fails hard at boot if `JWT_SECRET`/`JWT_PORTAL_SECRET`
+  < 32 chars; both rotated to 64-hex in `.env`; `.env.example` documents the requirement. Verified live.
 - **Area:** API config (`apps/api/.env`) · Security / PHI
 - **Observed:** `JWT_PORTAL_SECRET` is **16 characters**. The portal JWT protects external
   client/consultant access to lab data (PHI). A 16-char secret is below the ≥256-bit (32-byte)
@@ -49,19 +56,20 @@ _None found._
 
 ### 🟡 MEDIUM
 
-**QA-M1 — Unbounded pagination `pageSize` accepted (bulk PHI pull / DoS vector)**
-- **Observed:** `GET /patients?pageSize=999999` → **200** (returns unbounded page). `pageSize=-1`
-  and `page=-1` are correctly rejected (400), but there is **no upper cap**.
-- **Risk:** An authenticated user can pull an entire lab's PHI in one request; also a resource-
-  exhaustion / DoS surface under load.
-- **Fix:** Clamp `pageSize` to a max (e.g. 100–200) in the shared pagination DTO/pipe.
+**QA-M1 — Unbounded pagination `pageSize` accepted** — ✅ **RESOLVED**
+- **Was:** `GET /patients?pageSize=999999` → 200 (no upper cap).
+- **Fix applied:** `PaginationDto.pageSize` now `@Max(MAX_PAGE_SIZE)`. Verified live: `999999`→400,
+  `501`→400, `500`/`200`→200.
+- **Deviation from the requested 200:** ~16 existing "fetch-wide" UI dropdowns request `pageSize=500`
+  (e.g. `useEmployees`); a 200 cap broke `/employees?pageSize=500` (→400) and would break those call
+  sites. The cap was set to **500** — the smallest bound that stops the unbounded pull without a
+  16-file frontend refactor. One caller above 500 (`/system/logs`, `pageSize:1000`) was adjusted to
+  500 to fit the cap. Follow-up: migrate the fetch-wide callers to real pagination, then lower it.
 
-**QA-M2 — CORS reflects any origin with credentials**
-- **Observed:** `apps/api/src/main.ts` → `app.enableCors({ origin: true, credentials: true })`.
-  `origin: true` reflects the caller's Origin for **credentialed** CORS.
-- **Risk:** In production this widens the CSRF / credential-theft surface. **Partially mitigated**
-  today by `SameSite=Strict` auth cookies (cross-site requests won't send them).
-- **Fix:** Restrict `origin` to an explicit allow-list of production web origins before deploy.
+**QA-M2 — CORS reflects any origin with credentials** — ✅ **RESOLVED**
+- **Was:** `app.enableCors({ origin: true, credentials: true })` (reflect-all).
+- **Fix applied:** now an `ALLOWED_ORIGINS` allow-list (default `http://localhost:3000`). Verified
+  live: `Origin: http://localhost:3000`→ reflected; `Origin: http://evil.example`→ no ACAO header.
 
 **QA-M3 — `/specimens` fires a failing background request (404)**
 - **Observed:** Phase-1 smoke — `/specimens` logs one console error: `Failed to load resource: 404`.
@@ -69,9 +77,8 @@ _None found._
 - **Fix:** Identify the 404 call on the specimens page (likely a stats/count endpoint whose route
   name drifted) and correct it or remove the call.
 
-**QA-M4 — `JWT_SECRET` below recommended length**
-- **Observed:** `JWT_SECRET` is 23 chars (< 32 bytes). Acceptable for dev, sub-standard for prod.
-- **Fix:** rotate to ≥32-byte random secret in non-dev environments (bundle with QA-H1).
+**QA-M4 — `JWT_SECRET` below recommended length** — ✅ **RESOLVED** (bundled with QA-H1)
+- Rotated to 64-hex; now enforced by the boot-time `assertStrongSecrets()` check.
 
 ### 🟢 LOW
 
@@ -93,8 +100,48 @@ API response times (superuser, warm) — **all far under target:**
 | `GET /analytics/home` (dashboard) | <2s | **0.021s** |
 | `GET /workforce/payroll/periods` | <1s | **0.004s** |
 
-_All 29 routes rendered to `networkidle` within the 20s smoke budget. Full page-render timing and
-the k6 stress ramp (Phase 11) were not executed — see §6._
+_All 29 routes rendered to `networkidle` within the 20s smoke budget._
+
+### Phase 11 — k6 Stress Test (12-min ramp 10→25→50→100 VUs, single host)
+
+| Metric | Value |
+|--------|-------|
+| Total requests | 100,488 (139.5 req/s) |
+| **Latency (successful / non-throttled responses)** | avg 21.4ms · med 14.1ms · **p90 53.5ms · p95 70.8ms · p99 110.3ms** · max 146.7ms |
+| Latency (all responses incl. 429s) | p95 4.2ms (429s reject fast) |
+| `http_req_failed` | 95.6% |
+| 5xx errors | **0** |
+
+**Interpretation — the 95.6% "failure" is the global rate limiter working, not an app defect.** k6
+floods from a single IP (`localhost`) at ~140 req/s ≈ 8,400/min, far above the **100 req/min/IP**
+`ThrottlerGuard`, so ~96% of requests are correctly rejected with **429** — including `/health`
+(which needs no auth), confirming it's throttling, not errors. The **non-throttled subset shows the
+true API performance: p95 71ms / p99 110ms — well under the 500ms target**, zero 5xx.
+
+**Caveat:** because the rate limiter caps single-source load at 100/min, this run measures the
+throttle, not raw capacity. A true capacity test requires temporarily raising the limit or
+distributing load across IPs. The `http_req_failed<0.01` threshold "failed" **by design** (429s).
+
+### Phase 4a — Accessibility (axe-core, WCAG 2.0/2.1 A + AA)
+
+| Page | critical | serious | moderate | minor |
+|------|----------|---------|----------|-------|
+| /dashboard | 0 | 2 | 0 | 0 |
+| /patients | **1** | 1 | 0 | 0 |
+| /result-sheets | **2** | 1 | 0 | 0 |
+| /workforce | 0 | 1 | 0 | 0 |
+| /knowledge-base | 0 | 1 | 0 | 0 |
+| /system/support | **1** | 1 | 0 | 0 |
+
+- **Critical (WCAG 4.1.2)** — `select-name`: filter/status `<select>`s lack accessible names
+  (/patients ×1, /result-sheets ×6, /system/support ×4); `button-name`: an icon button lacks
+  discernible text (/result-sheets ×1). → **filed TKT-2026-0007 (HIGH)**.
+- **Serious (WCAG 1.4.3)** — `color-contrast` fails on **every** audited page (6–200 nodes each);
+  light slate/gray text on white is below 4.5:1. Plus `scrollable-region-focusable` on /dashboard.
+  → **filed TKT-2026-0008 (MEDIUM)**.
+- No moderate/minor violations surfaced. These are pre-existing markup/design-token issues, not
+  introduced by QA. Fixes: add `aria-label` to unlabeled selects/icon-buttons; darken low-contrast
+  text tokens to ≥4.5:1.
 
 ---
 
@@ -135,8 +182,8 @@ returns 403 after repeated failures) rather than re-run here to avoid locking sh
 ## 6. Coverage — Phases Executed vs Deferred
 
 **Executed (with evidence in this report):** Phase 1 (smoke, 29 routes) · Phase 6 (permissions) ·
-Phase 7 (security, core) · Phase 9 (DB integrity) · Phase 10 (API perf) · Phase 22 (code quality) ·
-Phase 23 (readiness, partial).
+Phase 7 (security, core) · Phase 9 (DB integrity) · Phase 10 (API perf) · **Phase 11 (k6 stress, §3)** ·
+**Phase 12 (axe-core a11y, §4a)** · Phase 22 (code quality) · Phase 23 (readiness, partial).
 
 **Not executed in this automated pass** (require significant time / additional tooling — documented
 here with repro so they can be run next):
@@ -146,8 +193,6 @@ here with repro so they can be run next):
 | 2 UI / 14 Responsive | 6-viewport screenshot sweep across all pages | Playwright `page.setViewportSize` matrix + screenshots |
 | 3 Form fuzzing (full) | Per-field 10k/XSS/SQLi/unicode across 12 forms | Partially covered: `whitelist`+`forbidNonWhitelisted` + Prisma proven in §4 |
 | 4 CRUD / 5 Workflow / 21 E2E cases | Full create→authorize→PDF flows (writes to shared demo DB) | Scripted API sequence per §Phase-21 |
-| 11 Stress (k6) | 12-min ramp to 100 VUs; k6 not installed | `brew install k6 && k6 run apps/api/test/stress-test.js` |
-| 12 Accessibility | axe-core not installed | `npm i -D @axe-core/playwright` + per-page `checkA11y` |
 | 13 Safari/WebKit | webkit project not configured | add `{ name:'webkit', use: devices['Desktop Safari'] }` |
 | 15 Print / 16 Export / 17 Notifications / 18 Recovery / 19 Audit-detail / 20 AI | Feature-flow verification | see phase specs |
 
@@ -168,9 +213,9 @@ are the highest-value next steps for an enterprise release.
 | 5 | No test credentials hardcoded | ✅ | none in src |
 | 6 | No hardcoded secrets | ✅ | secrets in env |
 | 7 | ENCRYPTION_KEY set, not dev default | ✅⚠️ | set (64 hex); **verify it differs from any committed default before prod** |
-| 8 | JWT_SECRET strong | ⚠️ | 23 chars — QA-M4 |
-| 9 | JWT_PORTAL_SECRET strong | ❌ | 16 chars — **QA-H1** |
-| 10 | CORS = production domain only | ❌ | `origin: true` — QA-M2 |
+| 8 | JWT_SECRET strong | ✅ | rotated to 64-hex + boot-time ≥32 check (QA-M4 fixed) |
+| 9 | JWT_PORTAL_SECRET strong | ✅ | rotated to 64-hex + boot-time ≥32 check (QA-H1 fixed) |
+| 10 | CORS = production domain only | ✅⚠️ | now `ALLOWED_ORIGINS` allow-list; **set the prod origin(s) in that env var** |
 | 11 | Rate limiting active | ✅ | global 100/min + auth 5/min (verified) |
 | 12 | Helmet headers active | ✅ | CSP/HSTS/X-Frame-Options/nosniff verified |
 | 13 | All migrations applied | ✅ | up to date, no drift |
@@ -194,12 +239,17 @@ are the highest-value next steps for an enterprise release.
 **Cleared for internal / human QA immediately** — core workflows, auth, tenancy, and security
 controls are functioning; no data-loss, crash, PHI-exposure, or broken-auth defects were found.
 
-**Before any production / PHI deployment, remediate:**
-1. **QA-H1** — strong `JWT_PORTAL_SECRET` (and QA-M4 `JWT_SECRET`) ≥32 bytes, per-env.
-2. **QA-M2** — restrict CORS to explicit production origins.
-3. **QA-M1** — cap `pageSize`.
-4. Confirm readiness ❌ items: CORS, secret rotation plan, backups, SSL/TLS, `next build`, audit-log
-   append-only DB enforcement, and PHI-in-logs verification (Phase 19).
+**Remediated this session (verified live):** QA-H1 + QA-M4 (secret strength + boot check),
+QA-M2 (CORS allow-list), QA-M1 (pageSize cap). Tickets **TKT-2026-0006 → RESOLVED**.
 
-Filed as tickets: **QA-H1 → TKT-2026-0006** (HIGH, OPEN). Remaining MEDIUM/LOW items are documented
-here per the "report, don't file below HIGH" convention.
+**Still required before production / PHI deployment:**
+1. Set real production values for `ALLOWED_ORIGINS`, and strong per-env secrets (the boot check now
+   enforces ≥32 chars).
+2. **Accessibility** — TKT-2026-0007 (critical: label form controls) and TKT-2026-0008 (serious:
+   contrast) should be fixed for an enterprise medical UI.
+3. Resolve `/specimens` background 404 (QA-M3).
+4. Confirm readiness ❌/❓ items: secret rotation plan, backups, SSL/TLS, `next build`, audit-log
+   append-only DB enforcement, PHI-in-logs verification (Phase 19), and Safari/WebKit (Phase 13).
+
+**Tickets filed:** TKT-2026-0006 (HIGH, resolved), TKT-2026-0007 (a11y critical, HIGH, open),
+TKT-2026-0008 (a11y serious, MEDIUM, open).
