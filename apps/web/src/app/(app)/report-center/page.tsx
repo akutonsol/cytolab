@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { FileBarChart, Play, Search, Sliders } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -23,12 +23,23 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'All', label: 'All Reports' },
 ];
 
-export default function ReportCenterPage() {
+function ReportCenterInner() {
   const { isEnabled } = useFeatures();
   const enabled = isEnabled('REPORT_CENTER');
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>('Recommended');
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
+
+  // Active tab is persisted in the URL (?tab=clinical) so the back button and
+  // direct navigation restore it. Stored lowercase; matched case-insensitively.
+  const tabParam = (searchParams.get('tab') || 'recommended').toLowerCase();
+  const tab: Tab = TABS.find((t) => t.key.toLowerCase() === tabParam)?.key ?? 'Recommended';
+  const setTab = (next: Tab) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', next.toLowerCase());
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   const { data: summary } = useQuery({ queryKey: ['rc-summary'], queryFn: () => api.get('/report-center/summary').then((r) => r.data), enabled });
 
@@ -109,5 +120,14 @@ export default function ReportCenterPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// useSearchParams requires a Suspense boundary.
+export default function ReportCenterPage() {
+  return (
+    <Suspense fallback={null}>
+      <ReportCenterInner />
+    </Suspense>
   );
 }

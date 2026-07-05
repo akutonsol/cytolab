@@ -55,7 +55,7 @@ export default function ReportRunnerPage() {
 
   return (
     <div className="report-print min-h-full px-6 pb-10 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}>
-      <button onClick={() => router.push('/report-center')} className="no-print mb-4 flex items-center gap-1.5 text-[13px] font-semibold text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={15} /> Report Center</button>
+      <button onClick={() => router.push(`/report-center?tab=${def.category.toLowerCase()}`)} className="no-print mb-4 flex items-center gap-1.5 text-[13px] font-semibold text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={15} /> Report Center</button>
 
       <div className="mb-5">
         <h1 className="text-[24px] font-bold tracking-tight text-[#0F172A]">{def.name}</h1>
