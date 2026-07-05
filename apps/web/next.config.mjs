@@ -17,6 +17,17 @@ const nextConfig = {
       },
     ];
   },
+  // Legacy/alias paths → the real pages. The Samples list lives at /records and
+  // authorized results at /result-sheets; /specimens and /results are not routes
+  // and previously 404'd (QA-M3).
+  async redirects() {
+    return [
+      { source: '/specimens', destination: '/records', permanent: false },
+      { source: '/specimens/:path*', destination: '/records', permanent: false },
+      { source: '/results', destination: '/result-sheets', permanent: false },
+      { source: '/results/:path*', destination: '/result-sheets', permanent: false },
+    ];
+  },
 };
 
 export default nextConfig;
