@@ -36,8 +36,11 @@ export class SupportController {
 
   // ─── Tickets ──────────────────────────────────────────────────────────────
 
+  // Any authenticated staff member can raise a ticket (the "Report an Issue"
+  // surface) — no system:health needed. The ticket is created in the caller's
+  // own lab scope and superusers are notified. Management of tickets stays
+  // gated on system:health below.
   @Post('tickets')
-  @RequirePermissions('system:health')
   createTicket(@CurrentUser() user: AuthUser, @Body() dto: CreateTicketDto) {
     return this.support.createTicket(user, dto);
   }
