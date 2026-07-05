@@ -268,7 +268,11 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
     : [];
 
   // ── 2. Patient + specimen information ───────────────────────────────────────
+  // The header band's columns use a -64 top margin to overlay the 80pt indigo
+  // rect, which shrinks the band's flow height; this top margin gives the info
+  // section clearance so it never renders under the band.
   const infoColumns: Content = {
+    margin: [0, 20, 0, 0],
     columns: [
       {
         width: '*',
