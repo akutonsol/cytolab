@@ -182,7 +182,7 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     key: 'TELECONSULTATION',
     name: 'Teleconsultation',
     description: 'Share cases with external experts for remote consultation and sign-out.',
-    tier: 5, tierName: 'Enterprise', icon: 'Video', docsUrl: null, navPath: null, dependsOn: [], comingSoon: true,
+    tier: 5, tierName: 'Enterprise', icon: 'Video', docsUrl: null, navPath: '/teleconsult', dependsOn: [],
   },
   LOINC_SNOMED: {
     key: 'LOINC_SNOMED',

@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Activity, AlertTriangle, ArrowLeft, Check, CheckCircle2, ChevronRight, Clock, Download,
-  FileText, FlaskConical, History, Microscope, Pause, Pencil, Play, Printer, Receipt, RotateCcw, ScanEye, Send, ShieldCheck, Users, X, XCircle,
+  FileText, FlaskConical, History, Microscope, Pause, Pencil, Play, Printer, Receipt, RotateCcw, ScanEye, Send, ShieldCheck, Users, Video, X, XCircle,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
@@ -23,6 +23,7 @@ import { STATUS_META as RECALL_META, dueColor, dueLabel, shortDate as recallDate
 import { AddSlideModal } from '@/components/AddSlideModal';
 import { type DigitalSlide } from '@/lib/wsi';
 import { AIScreeningCard } from '@/components/AIScreeningCard';
+import { NewConsultModal } from '@/components/NewConsultModal';
 import { SPECIMEN_LABELS, type FormType } from '@/lib/specimen-types';
 
 // ─── Status + step maps (zero-orange) ────────────────────────────────────────
@@ -240,6 +241,7 @@ export default function RecordDetailPage() {
   const recordRecall = (patientRecalls ?? []).find((r) => r.triggerRecord?.id === id);
   const { data: recordSlide } = useQuery<DigitalSlide | null>({ queryKey: ['wsi-record', id], enabled: !!id && isEnabled('WSI_VIEWER'), queryFn: () => api.get(`/wsi/record/${id}`).then((r) => r.data) });
   const [addSlideOpen, setAddSlideOpen] = useState(false);
+  const [consultOpen, setConsultOpen] = useState(false);
   const { data: recordReagents } = useQuery<any[]>({ queryKey: ['reagents', 'record', id], enabled: !!id && isEnabled('REAGENT_TRACKING'), queryFn: () => api.get(`/reagents/record/${id}`).then((r) => r.data) });
   const { data: team = [] } = useQuery<WorkloadUser[]>({ queryKey: ['workload-summary'], enabled: canAssign, queryFn: () => api.get('/workload/summary').then((r) => r.data) });
   const assignMut = useMutation({
@@ -585,6 +587,9 @@ export default function RecordDetailPage() {
           <FeatureGate feature="SLIDE_LABEL_PRINTING">
             <button onClick={() => setPrintLabels(true)} className={rightBtn}><Printer size={15} /> Print Labels</button>
           </FeatureGate>
+          <FeatureGate feature="TELECONSULTATION">
+            <button onClick={() => setConsultOpen(true)} className={rightBtn}><Video size={15} /> Request Consultation</button>
+          </FeatureGate>
           {status === 'Resulted' && <button onClick={() => router.push('/authorizer')} className={rightBtn}><CheckCircle2 size={15} /> Open Authorizer</button>}
           {status === 'Approved' && <button onClick={() => router.push(`/reports?recordId=${id}`)} className={rightBtn}><FileText size={15} /> Release Report</button>}
           {status === 'Approved' && <button onClick={() => router.push(`/billing?recordId=${id}`)} className={rightBtn}><Receipt size={15} /> Create Invoice</button>}
@@ -600,6 +605,7 @@ export default function RecordDetailPage() {
       <PriorHistoryPanel open={historyOpen} onClose={() => setHistoryOpen(false)} patientId={record.patientId} excludeRecordId={id} />
       {printLabels && <PrintLabelsModal recordIds={[id]} onClose={() => setPrintLabels(false)} />}
       {addSlideOpen && <AddSlideModal recordId={id} onClose={() => setAddSlideOpen(false)} />}
+      {consultOpen && <NewConsultModal recordId={id} onClose={() => setConsultOpen(false)} onCreated={(cid) => router.push(`/teleconsult/${cid}`)} />}
 
       {confirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setConfirm(null)}>

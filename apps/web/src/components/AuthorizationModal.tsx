@@ -13,6 +13,7 @@ import { composeNarrative, type ResultTemplate } from '@/lib/result-templates';
 import { PriorHistoryPanel } from './PriorHistoryPanel';
 import { BethesdaClassificationModal } from './BethesdaClassificationModal';
 import { AIScreeningCard } from './AIScreeningCard';
+import { NewConsultModal } from './NewConsultModal';
 import { DictationTextarea } from './DictationTextarea';
 import type { DictationButtonHandle } from './DictationButton';
 import { FeatureGate } from './FeatureGate';
@@ -72,6 +73,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
   const [templateOpen, setTemplateOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [bethesdaOpen, setBethesdaOpen] = useState(false);
+  const [consultOpen, setConsultOpen] = useState(false);
   const [aiDraftId, setAiDraftId] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<CodeSuggestion[] | null>(null);
   const [flags, setFlags] = useState<ConsistencyFlag[] | null>(null);
@@ -295,6 +297,11 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
                 <button type="button" style={DS.btnSecondary} onClick={() => setHistoryOpen(true)}>Prior History</button>
               </FeatureGate>
             )}
+            {record?.id && (
+              <FeatureGate feature="TELECONSULTATION">
+                <button type="button" style={DS.btnSecondary} onClick={() => setConsultOpen(true)}>Consult</button>
+              </FeatureGate>
+            )}
             <button type="button" style={DS.btnSecondary} onClick={onClose}>Close</button>
           </>
         }
@@ -512,6 +519,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
     <ResultTemplateSelector open={templateOpen} onClose={() => setTemplateOpen(false)} onSelect={applyTemplate} />
     <PriorHistoryPanel open={historyOpen} onClose={() => setHistoryOpen(false)} patientId={record?.patientId} excludeRecordId={record?.id} />
     {record?.id && <BethesdaClassificationModal open={bethesdaOpen} onClose={() => setBethesdaOpen(false)} recordId={record.id} onApply={applyBethesda} />}
+    {record?.id && consultOpen && <NewConsultModal recordId={record.id} onClose={() => setConsultOpen(false)} />}
     </>
   );
 }

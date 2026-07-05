@@ -6,7 +6,7 @@ import { Skeleton } from 'antd';
 import {
   Activity, AlertTriangle, ArrowRight, ArrowUpRight, Brain, Calendar, CalendarClock, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FileCheck, FileText, FlaskConical,
   Folder, GraduationCap, Hourglass, Microscope, Monitor, MoreHorizontal, Plus, ShieldCheck, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
-  TestTube, TrendingUp, User, Users,
+  TestTube, TrendingUp, User, Users, Video,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -202,6 +202,11 @@ export default function DashboardPage() {
     queryFn: () => api.get('/ai-screening/analytics').then((r) => r.data as { pendingReview: number; agreementRate: number; totalScreened: number }),
     enabled: isEnabled('AI_SCREENING'),
   });
+  const { data: consultAnalytics } = useQuery({
+    queryKey: ['consult-analytics'],
+    queryFn: () => api.get('/teleconsult/analytics').then((r) => r.data as { pending: number; responded: number; total: number }),
+    enabled: isEnabled('TELECONSULTATION'),
+  });
 
   // The queue drives an in-place selection: which record the AI stage + findings
   // reflect. Defaults to the top-priority record once data arrives.
@@ -369,6 +374,22 @@ export default function DashboardPage() {
                 </span>
               </span>
               <span style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5' }}>Review →</span>
+            </button>
+          )}
+        </FeatureGate>
+
+        <FeatureGate feature="TELECONSULTATION">
+          {(consultAnalytics?.pending ?? 0) > 0 && (
+            <button onClick={() => router.push('/teleconsult')}
+              style={{ marginTop: 16, width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 18, border: '1px solid #C7D2FE', background: '#EEF2FF', cursor: 'pointer', textAlign: 'left' }}>
+              <span style={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: 12, background: '#E0E7FF', color: '#4F46E5', flexShrink: 0 }}><Video size={22} /></span>
+              <span style={{ flex: 1 }}>
+                <span style={{ display: 'block', fontSize: 16, fontWeight: 700, color: '#0F172A' }}>{consultAnalytics!.pending} active consultation{consultAnalytics!.pending === 1 ? '' : 's'}</span>
+                <span style={{ display: 'block', fontSize: 13, color: '#64748B', marginTop: 2 }}>
+                  {consultAnalytics!.responded} responded · external second opinions
+                </span>
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5' }}>Open →</span>
             </button>
           )}
         </FeatureGate>

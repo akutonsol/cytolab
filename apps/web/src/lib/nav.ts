@@ -18,6 +18,7 @@ import {
   ToggleRight,
   Users,
   Users2,
+  Video,
   Wrench,
   type LucideIcon,
 } from 'lucide-react';
@@ -77,6 +78,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Proficiency', path: '/proficiency', permission: 'record:view', feature: 'PROFICIENCY_TESTING', icon: GraduationCap },
       { label: 'Recalls', path: '/recalls', permission: 'record:view', feature: 'PATIENT_RECALL', icon: CalendarClock },
       { label: 'AI Screening', path: '/ai-screening', permission: 'record:view', feature: 'AI_SCREENING', icon: Brain },
+      { label: 'Teleconsult', path: '/teleconsult', permission: 'record:view', feature: 'TELECONSULTATION', icon: Video },
       { label: 'Code Vault', path: '/lab-codes', permission: 'labcode:view' },
       { label: 'Cabinets', path: '/cabinets', permission: 'cabinet:view', phase: 3 },
       { label: 'Reports', path: '/reports', permission: 'report:view', phase: 3 },

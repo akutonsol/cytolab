@@ -221,6 +221,7 @@ model Lab {
   digitalSlides          DigitalSlide[]
   slideAnnotations       SlideAnnotation[]
   aiScreenings           AIScreeningResult[]
+  consultRequests        ConsultRequest[]
 }
 
 model Account {
@@ -279,6 +280,7 @@ model User {
   aiDraftsCreated        AiDraft[]              @relation("AiDraftCreatedBy")
   aiDraftsAccepted       AiDraft[]              @relation("AiDraftAcceptedBy")
   aiScreeningsReviewed   AIScreeningResult[]    @relation("AIScreeningReviewer")
+  consultRequests        ConsultRequest[]       @relation("ConsultRequester")
   assignedChangeRequests ChangeRequest[]        @relation("ChangeRequestAssignee")
   changeRequestMessages  ChangeRequestMessage[] @relation("ChangeRequestMessageStaffAuthor")
   changeRequestEvents    ChangeRequestEvent[]   @relation("ChangeRequestEventStaffActor")
@@ -582,6 +584,7 @@ model Record {
   recalls           RecallRecord[]
   digitalSlides     DigitalSlide[]
   aiScreening       AIScreeningResult?
+  consultRequests   ConsultRequest[]
   // Case assignment (Tier 2 — workload balancing). Fields are unconditional in
   // the schema; only the UI is feature-gated.
   assignedToId      String?
@@ -2563,4 +2566,75 @@ model AIScreeningResult {
 
   @@index([labId])
   @@index([labId, status])
+}
+
+// ─── Teleconsultation (Tier 5 — Enterprise) ──────────────────────────────────
+// Request a second opinion from an external consultant. The case is shared
+// de-identified via a single-use, unguessable access token; the consultant
+// responds through a public (token-authenticated) endpoint.
+enum ConsultUrgency {
+  Routine // 7 days
+  Priority // 48 hours
+  Urgent // 24 hours
+}
+
+enum ConsultStatus {
+  Pending // sent, awaiting response
+  Viewed // consultant viewed the case
+  InProgress // consultant is working on it
+  Responded // consultant has responded
+  Accepted // lab accepted the opinion
+  Declined // lab declined the opinion
+  Expired // token expired, no response
+}
+
+enum ConsultAgreement {
+  FullAgreement
+  PartialAgreement
+  Disagreement
+}
+
+model ConsultRequest {
+  id       String @id @default(cuid())
+  labId    String
+  lab      Lab    @relation(fields: [labId], references: [id])
+  recordId String
+  record   Record @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  requestedById String
+  requestedBy   User   @relation("ConsultRequester", fields: [requestedById], references: [id])
+
+  // External consultant
+  consultantName        String
+  consultantEmail       String
+  consultantInstitution String?
+
+  // Case details (de-identified)
+  clinicalSummary  String
+  specificQuestion String
+  urgency          ConsultUrgency @default(Routine)
+
+  // Shared materials
+  sharedNarrative Boolean @default(true)
+  sharedBethesda  Boolean @default(true)
+  sharedImages    Boolean @default(false)
+
+  // Response
+  status              ConsultStatus     @default(Pending)
+  consultantResponse  String?
+  consultantDiagnosis String?
+  agreementLevel      ConsultAgreement?
+  respondedAt         DateTime?
+
+  // Access token for the external consultant.
+  accessToken    String   @unique @default(cuid())
+  tokenExpiresAt DateTime
+
+  dueDate   DateTime?
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([labId, status])
+  @@index([recordId])
 }
