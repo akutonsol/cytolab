@@ -12,8 +12,8 @@ interface Props {
 
 const money = (cents?: number) => `$${((Number(cents) || 0) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const iso = (d: Date) => d.toISOString().slice(0, 10);
-// Default period spans the last 90 days so existing seeded data shows on first load.
-const ninetyDaysAgo = () => { const d = new Date(); d.setDate(d.getDate() - 90); d.setHours(0, 0, 0, 0); return d; };
+// Default period spans the last 180 days so existing seeded data shows on first load.
+const defaultDateFrom = () => { const d = new Date(); d.setDate(d.getDate() - 180); d.setHours(0, 0, 0, 0); return d; };
 const fmtD = (d?: string) => (d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—');
 const fmtDT = (d?: string) => (d ? new Date(d).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
 
@@ -23,7 +23,7 @@ const stLabel = (s: string) => STATUS_LABEL[s] ?? s.toUpperCase();
 const stColor = (s: string) => STATUS_COLOR[s] ?? '#475569';
 
 export function RequisitionReportModal({ open, onClose, clients }: Props) {
-  const [dateFrom, setDateFrom] = useState(iso(ninetyDaysAgo()));
+  const [dateFrom, setDateFrom] = useState(iso(defaultDateFrom()));
   const [dateTo, setDateTo] = useState(iso(new Date()));
   const [groupBy, setGroupBy] = useState<'client' | 'status' | 'date'>('client');
   const [clientId, setClientId] = useState('');
@@ -50,7 +50,7 @@ export function RequisitionReportModal({ open, onClose, clients }: Props) {
 
   // Reset the form to defaults and clear the rendered report (empty state).
   const reset = () => {
-    setDateFrom(iso(ninetyDaysAgo()));
+    setDateFrom(iso(defaultDateFrom()));
     setDateTo(iso(new Date()));
     setGroupBy('client');
     setClientId('');
