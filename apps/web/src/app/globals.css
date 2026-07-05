@@ -15,6 +15,15 @@
   --color-primary-hover: #4338ca;
   --color-primary-soft: rgba(79, 70, 229, 0.08);
   --color-primary-on: #ffffff;
+  /* Theme-system aliases (used by the theme switcher + spec-named elements). */
+  --color-primary-light: #eef2ff;
+  --color-primary-text: #ffffff;
+  --color-bg-main: #f9fafc;
+  --color-bg-card: #ffffff;
+  --color-bg-nav: #dce3ee;
+  --color-text-heading: #111827;
+  --color-text-body: #374151;
+  --color-text-muted: #9ca3af;
 
   /* Neutrals */
   --color-bg: #f6f8fc;
@@ -330,9 +339,50 @@ body {
    surfaces. Colour is reserved for semantic meaning only.
    ============================================================ */
 
+/* ═══ Theme system ═══════════════════════════════════════════════════════════
+   [data-theme] on <html> overrides the accent + surfaces. `--color-primary`
+   feeds the Tailwind `primary` token, so every *-primary utility (btn-primary,
+   bg-primary, text-primary, tab underlines, active nav) re-accents together.
+   Semantic status colours (success/warning/danger) are intentionally untouched. */
+[data-theme='indigo'] {
+  --color-primary: #4f46e5; --color-primary-hover: #4338ca;
+  --color-primary-soft: rgba(79, 70, 229, 0.10); --color-primary-light: #eef2ff;
+  --color-bg-main: #f9fafc;
+}
+[data-theme='emerald'] {
+  --color-primary: #059669; --color-primary-hover: #047857;
+  --color-primary-soft: rgba(5, 150, 105, 0.10); --color-primary-light: #ecfdf5;
+  --color-bg-main: #f0fdf9;
+}
+[data-theme='violet'] {
+  --color-primary: #7c3aed; --color-primary-hover: #6d28d9;
+  --color-primary-soft: rgba(124, 58, 237, 0.10); --color-primary-light: #f5f3ff;
+  --color-bg-main: #f9f7ff;
+}
+[data-theme='rose'] {
+  --color-primary: #e11d48; --color-primary-hover: #be123c;
+  --color-primary-soft: rgba(225, 29, 72, 0.10); --color-primary-light: #fff1f2;
+  --color-bg-main: #fff9f9;
+}
+[data-theme='slate'] {
+  --color-primary: #334155; --color-primary-hover: #1e293b;
+  --color-primary-soft: rgba(51, 65, 85, 0.10); --color-primary-light: #f1f5f9;
+  --color-bg-main: #f8fafc;
+}
+[data-theme='dark'] {
+  --color-primary: #6366f1; --color-primary-hover: #818cf8;
+  --color-primary-soft: rgba(99, 102, 241, 0.20); --color-primary-light: #1e1b4b;
+  --color-bg-main: #0f172a; --color-bg-card: #1e293b; --color-bg-nav: #0f172a;
+  --color-text-heading: #f1f5f9; --color-text-body: #cbd5e1; --color-text-muted: #64748b;
+  --color-border: #334155;
+  /* Flip var-backed Tailwind tokens for dark-mode text and surface utilities */
+  --color-text: #f1f5f9; --color-text-secondary: #cbd5e1; --color-text-tertiary: #94a3b8;
+  --color-surface: #1e293b; --color-surface-alt: #16233b; --color-bg: #0f172a;
+}
+
 /* ── Buttons ─────────────────────────────────────────────── */
 .btn-primary {
-  background: #4f46e5;
+  background: var(--color-primary);
   color: #ffffff;
   border: none;
   border-radius: 0.75rem; /* rounded-xl */
@@ -345,7 +395,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   transition: filter 0.15s, transform 0.1s;
 }
 .btn-primary:hover { filter: brightness(1.1); }
@@ -624,4 +674,7 @@ body {
   /* Requisition report: keep each group together; drop editable-field chrome. */
   .req-report-group { break-inside: avoid; page-break-inside: avoid; }
   .req-report-field { border: none !important; padding: 0 !important; resize: none !important; }
+  /* Report output prints full-width, keeps colour fills, drops on-screen shadows. */
+  .printable { box-shadow: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .printable * { box-shadow: none !important; }
 }

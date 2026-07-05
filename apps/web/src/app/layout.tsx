@@ -18,7 +18,15 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={inter.variable} data-theme="indigo" suppressHydrationWarning>
+      <head>
+        {/* Apply the saved theme before paint to avoid a flash of the default. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('cytolab-theme');if(t&&['indigo','emerald','violet','rose','slate','dark'].indexOf(t)>-1)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body>
         <Providers>{children}</Providers>
       </body>

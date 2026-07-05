@@ -17,15 +17,15 @@ const pill: React.CSSProperties = {
 };
 const pillActive: React.CSSProperties = {
   ...pill, border: '1px solid transparent', color: '#ffffff',
-  background: '#4F46E5', boxShadow: '0 8px 18px rgba(79,70,229,0.3)',
+  background: 'var(--color-primary)', boxShadow: '0 8px 18px rgba(16,24,40,0.18)',
 };
 const iconBox = (active: boolean): React.CSSProperties => ({
   display: 'grid', placeItems: 'center', width: 38, height: 38, borderRadius: active ? 999 : 11, flexShrink: 0,
-  background: active ? '#fff' : '#f1f0ea', color: active ? '#4F46E5' : '#4b5563',
+  background: active ? '#fff' : '#f1f0ea', color: active ? 'var(--color-primary)' : '#4b5563',
 });
 const chevBox = (active: boolean): React.CSSProperties => ({
   display: 'grid', placeItems: 'center', width: 30, height: 30, borderRadius: 999, flexShrink: 0,
-  background: active ? '#fff' : '#e5e3dc', color: active ? '#4F46E5' : '#4b5563',
+  background: active ? '#fff' : '#e5e3dc', color: active ? 'var(--color-primary)' : '#4b5563',
 });
 
 /**

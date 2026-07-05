@@ -6,6 +6,7 @@ import { App as AntdApp, ConfigProvider, theme } from 'antd';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DictationProvider } from '@/lib/dictation-context';
 import { FeatureProvider } from '@/lib/feature-context';
+import { ThemeProvider } from '@/lib/theme-context';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -62,7 +63,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <AntdApp>
           <QueryClientProvider client={queryClient}>
             <FeatureProvider>
-              <DictationProvider>{children}</DictationProvider>
+              <ThemeProvider>
+                <DictationProvider>{children}</DictationProvider>
+              </ThemeProvider>
             </FeatureProvider>
           </QueryClientProvider>
         </AntdApp>

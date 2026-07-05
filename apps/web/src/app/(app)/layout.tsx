@@ -14,6 +14,7 @@ import { useDictationContext } from '@/lib/dictation-context';
 import { ACCOUNT_GROUP_KEY, ANALYTICS_ITEM, HOME_ITEM, NAV_GROUPS } from '@/lib/nav';
 import { useFeatures } from '@/lib/feature-context';
 import { NavPills } from '@/components/dashboard/nav-pills';
+import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { useAuth, useAuthStore } from '@/lib/auth';
 import { api, refreshSession } from '@/lib/api';
 
@@ -196,6 +197,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   </span>
                 )}
               </button>
+              <ThemeSwitcher triggerStyle={iconBtnHero} />
               <button aria-label="Settings" onClick={() => router.push('/settings')} style={iconBtnHero}><SettingOutlined /></button>
             </div>
           </div>
@@ -210,7 +212,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="premium-scroll" style={{ position: 'relative', zIndex: 1, flex: 1, overflow: 'auto', padding: screens.md ? 32 : 16, background: 'transparent' }}>{children}</main>
+      <main className="premium-scroll" style={{ position: 'relative', zIndex: 1, flex: 1, overflow: 'auto', padding: 16, background: 'var(--color-bg-main)' }}>{children}</main>
 
       <Drawer title={<Logo />} placement="left" width={300} open={drawerOpen} onClose={() => setDrawerOpen(false)} styles={{ body: { padding: 0 } }}>
         <Menu mode="inline" selectedKeys={[pathname]} defaultOpenKeys={NAV_GROUPS.map((g) => g.key)} items={drawerMenu} onClick={({ key }) => navigate(key)} style={{ borderInlineEnd: 'none' }} />
@@ -227,7 +229,7 @@ const CANVAS = '#dce3ee';
 const heroZone: React.CSSProperties = { position: 'sticky', top: 0, zIndex: 20 };
 const heroBg = (tall: boolean): React.CSSProperties => ({
   position: 'relative', background: 'transparent',
-  padding: tall ? '14px 32px 12px' : '10px 16px', minHeight: tall ? 108 : 64,
+  padding: tall ? '14px 16px 12px' : '10px 16px', minHeight: tall ? 108 : 64,
 });
 const iconBtnHero: React.CSSProperties = { width: 50, height: 50, borderRadius: 999, border: '1px solid #bcc6d9', background: 'linear-gradient(145deg, #e4e9f3 0%, #cbd3e2 100%)', color: '#4b5563', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 18, boxShadow: '0 2px 6px rgba(16,24,40,0.06)' };
 const avatarBtn: React.CSSProperties = { width: 42, height: 42, borderRadius: 999, border: 'none', background: '#4F46E5', color: '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 14, fontWeight: 600 };
