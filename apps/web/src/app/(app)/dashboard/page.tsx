@@ -14,6 +14,7 @@ import { useAuth } from '@/lib/auth';
 import { useFeatures } from '@/lib/feature-context';
 import { FeatureGate } from '@/components/FeatureGate';
 import { GlassCard } from '@/components/dashboard/glass-card';
+import { MyTodayCard } from '@/components/workforce/MyTodayCard';
 import { HeroBanner, type HeroChip } from '@/components/dashboard/hero-banner';
 import { NavPills } from '@/components/dashboard/nav-pills';
 import { PerformanceArea, SubscriptionBars } from './charts';
@@ -411,6 +412,12 @@ export default function DashboardPage() {
               <span style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5' }}>Open →</span>
             </button>
           )}
+        </FeatureGate>
+
+        <FeatureGate feature="WORKFORCE_MANAGEMENT">
+          <div style={{ marginTop: 24 }}>
+            <MyTodayCard />
+          </div>
         </FeatureGate>
 
         <div style={{ marginTop: 40, background: '#F9FAFC', marginLeft: -16, marginRight: -16, marginBottom: -40, paddingLeft: 16, paddingRight: 16, paddingTop: 24, paddingBottom: 40 }} className="flex flex-col gap-5">

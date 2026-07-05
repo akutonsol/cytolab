@@ -276,6 +276,30 @@ export class WorkforceService {
     };
   }
 
+  async attendanceRoster() {
+    const now = new Date();
+    const start = dayStart(now); const end = new Date(+start + DAY);
+    const employees = await this.prisma.employee.findMany({ where: { isActive: true }, include: { user: { select: { firstName: true, lastName: true } }, department: { select: { name: true } } }, orderBy: { employeeNo: 'asc' } });
+    const events = await this.prisma.clockEvent.findMany({ where: { timestamp: { gte: start, lt: end } }, orderBy: { timestamp: 'asc' } });
+    const byEmp = new Map<string, typeof events>();
+    for (const e of events) byEmp.set(e.employeeId, [...(byEmp.get(e.employeeId) ?? []), e]);
+    const shift = await this.shiftForTime(now);
+    const lateGrace = 8 * 60 + 15;
+    return employees.map((emp) => {
+      const evs = byEmp.get(emp.id) ?? [];
+      const t = this.tally(evs, now);
+      const clockIn = evs.find((e) => e.type === ClockEventType.ClockIn)?.timestamp ?? null;
+      const clockOut = [...evs].reverse().find((e) => e.type === ClockEventType.ClockOut)?.timestamp ?? null;
+      let status = 'NotStarted';
+      if (clockIn) status = (clockIn.getHours() * 60 + clockIn.getMinutes()) > lateGrace ? 'Late' : 'Present';
+      return {
+        employeeId: emp.id, name: `${emp.user.firstName} ${emp.user.lastName}`.trim(), department: emp.department?.name ?? null,
+        shift: shift ? { name: shift.name, type: shift.type } : null,
+        status, clockIn, clockOut, hours: round2(t.workedMs / HOUR), isClockedIn: t.isClockedIn,
+      };
+    });
+  }
+
   async attendanceSummary(q: AttendanceSummaryQuery) {
     const from = q.dateFrom ? dayStart(new Date(q.dateFrom)) : dayStart(new Date(Date.now() - 30 * DAY));
     const to = q.dateTo ? dayStart(new Date(q.dateTo)) : dayStart(new Date());

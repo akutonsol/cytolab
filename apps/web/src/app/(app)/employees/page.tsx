@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Banknote, Pencil, Plus, Search, Trash2, UserPlus, Users, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
@@ -146,7 +147,7 @@ export default function EmployeesPage() {
                         <div className="flex items-center gap-2.5">
                           <span style={{ background: av.bg, color: av.fg }} className="grid h-9 w-9 shrink-0 place-items-center rounded-full font-label-sm text-label-sm font-bold">{initials(`${e.user.firstName} ${e.user.lastName}`)}</span>
                           <div className="min-w-0">
-                            <div className="truncate font-body-sm text-body-sm font-semibold text-charcoal-heading">{e.user.firstName} {e.user.lastName}</div>
+                            <Link href={`/employees/${e.id}`} className="truncate font-body-sm text-body-sm font-semibold text-charcoal-heading hover:text-primary hover:underline">{e.user.firstName} {e.user.lastName}</Link>
                             <div className="font-mono text-[12px] text-secondary">{e.employeeNo}</div>
                           </div>
                         </div>

@@ -120,6 +120,12 @@ export class WorkforceController {
     return this.workforce.attendanceToday();
   }
 
+  @Get('workforce/attendance/roster')
+  @RequirePermissions('record:view')
+  attendanceRoster() {
+    return this.workforce.attendanceRoster();
+  }
+
   @Get('workforce/attendance/summary')
   @RequirePermissions('record:view')
   attendanceSummary(@Query() q: AttendanceSummaryQuery) {
