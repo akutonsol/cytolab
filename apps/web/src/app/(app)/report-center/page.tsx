@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Activity, ArrowUpRight, DollarSign, FileBarChart, FlaskConical, LayoutGrid, List as ListIcon,
-  MoreVertical, Play, Search, Share2, ShieldCheck, Sliders, Star, TrendingDown, TrendingUp,
+  Lock, MoreVertical, Play, Search, Share2, ShieldCheck, Sliders, Star, TrendingDown, TrendingUp,
   Users, UserCog, type LucideIcon,
 } from 'lucide-react';
 import { Area, AreaChart } from 'recharts';
@@ -100,6 +100,17 @@ export default function ReportCenterPage() {
   const favSet = useMemo(() => new Set(favorites), [favorites]);
   const runCount = useCallback((r: ReportDef) => (r.runCount ?? 0) + (runs[r.id] ?? 0), [runs]);
 
+  // Module gating: a report only shows when its required feature is enabled for
+  // the lab (undefined requiredFeature = core, always visible). Everything below
+  // filters from this set, so featured/sections/search/counts all stay consistent.
+  const visibleReports = useMemo(() => REPORTS.filter((r) => !r.requiredFeature || isEnabled(r.requiredFeature)), [isEnabled]);
+  // True when a category still has visible reports but others are hidden by a
+  // disabled module — drives the small lock indicator on the section header.
+  const hiddenInCat = useCallback(
+    (c: ReportCategory) => REPORTS.some((r) => r.category === c && r.requiredFeature && !isEnabled(r.requiredFeature)),
+    [isEnabled],
+  );
+
   const { data: summary } = useQuery({ queryKey: ['rc-summary'], queryFn: () => api.get('/report-center/summary').then((r) => r.data), enabled });
 
   const toggleFav = (id: string) => setFavorites((prev) => {
@@ -120,16 +131,16 @@ export default function ReportCenterPage() {
     navigator.clipboard?.writeText(url).catch(() => {});
   };
 
-  // Base set for the active top tab.
+  // Base set for the active top tab — always drawn from the module-visible set.
   const baseSet = useMemo<ReportDef[]>(() => {
     switch (topTab) {
-      case 'favorites': return REPORTS.filter((r) => favSet.has(r.id));
-      case 'recent': return recent.map((id) => REPORTS.find((r) => r.id === id)).filter((r): r is ReportDef => !!r);
-      case 'dashboards': return REPORTS.filter((r) => r.recommended);
-      case 'saved': return REPORTS.filter((r) => (runs[r.id] ?? 0) > 0);
-      default: return REPORTS;
+      case 'favorites': return visibleReports.filter((r) => favSet.has(r.id));
+      case 'recent': return recent.map((id) => visibleReports.find((r) => r.id === id)).filter((r): r is ReportDef => !!r);
+      case 'dashboards': return visibleReports.filter((r) => r.recommended);
+      case 'saved': return visibleReports.filter((r) => (runs[r.id] ?? 0) > 0);
+      default: return visibleReports;
     }
-  }, [topTab, favSet, recent, runs]);
+  }, [topTab, favSet, recent, runs, visibleReports]);
 
   const sortFn = useCallback((a: ReportDef, b: ReportDef) => {
     if (sort === 'alpha') return a.name.localeCompare(b.name);
@@ -178,7 +189,7 @@ export default function ReportCenterPage() {
             { label: 'Non-GYN', value: fmtValue(summary?.specimens?.nonGyn ?? 0, 'number'), fg: '#7C3AED' },
           ].map((s) => (
             <div key={s.label} className={`${CARD} px-4 py-2.5`}>
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">{s.label}</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-[#475569]">{s.label}</div>
               <div className="text-[18px] font-bold" style={{ color: s.fg }}>{s.value}</div>
             </div>
           ))}
@@ -212,21 +223,21 @@ export default function ReportCenterPage() {
         </div>
         <div className="ml-auto flex items-center gap-2">
           <div className="relative">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#475569]" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Find a report…" className="h-9 w-60 rounded-lg border border-[#E2E8F0] bg-white pl-9 pr-3 text-[14px] outline-none focus:border-[#4F46E5]" />
           </div>
           <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="h-9 rounded-lg border border-[#E2E8F0] bg-white px-3 text-[13px] font-medium text-[#475569] outline-none focus:border-[#4F46E5]">
             {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
           <div className="flex items-center gap-0.5 rounded-lg border border-[#E2E8F0] bg-white p-0.5">
-            <button aria-label="Grid view" onClick={() => setView('grid')} className="grid h-8 w-8 place-items-center rounded-md" style={view === 'grid' ? { background: '#EEF2FF', color: '#4F46E5' } : { color: '#94A3B8' }}><LayoutGrid size={16} /></button>
-            <button aria-label="List view" onClick={() => setView('list')} className="grid h-8 w-8 place-items-center rounded-md" style={view === 'list' ? { background: '#EEF2FF', color: '#4F46E5' } : { color: '#94A3B8' }}><ListIcon size={16} /></button>
+            <button aria-label="Grid view" onClick={() => setView('grid')} className="grid h-8 w-8 place-items-center rounded-md" style={view === 'grid' ? { background: '#EEF2FF', color: '#4F46E5' } : { color: '#475569' }}><LayoutGrid size={16} /></button>
+            <button aria-label="List view" onClick={() => setView('list')} className="grid h-8 w-8 place-items-center rounded-md" style={view === 'list' ? { background: '#EEF2FF', color: '#4F46E5' } : { color: '#475569' }}><ListIcon size={16} /></button>
           </div>
         </div>
       </div>
 
       {searched.length === 0 ? (
-        <div className={`${CARD} p-12 text-center text-[#94A3B8]`}>
+        <div className={`${CARD} p-12 text-center text-[#475569]`}>
           {topTab === 'favorites' ? 'No favorite reports yet — tap the star on any report to add it here.'
             : topTab === 'recent' ? 'No reports run yet — reports you run will appear here.'
             : topTab === 'saved' ? 'Nothing saved yet — reports you run are kept here.'
@@ -248,7 +259,7 @@ export default function ReportCenterPage() {
             if (!items.length) return null;
             return (
               <div key={c} className="mb-8">
-                <SectionHeader title={CAT[c].label} color={CAT[c].color} onViewAll={() => setCat(c)} />
+                <SectionHeader title={CAT[c].label} color={CAT[c].color} onViewAll={() => setCat(c)} locked={hiddenInCat(c)} />
                 {view === 'list'
                   ? <ReportTable items={[...items].sort(sortFn)} favSet={favSet} runCount={runCount} onRun={runReport} onCustomize={customize} onToggleFav={toggleFav} />
                   : (
@@ -283,18 +294,23 @@ export default function ReportCenterPage() {
 function FilterPill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick} className="rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors"
-      style={active ? { background: '#EEF2FF', color: '#4F46E5', border: '1px solid #C7D2FE' } : { background: '#F1F5F9', color: '#64748B', border: '1px solid transparent' }}>
+      style={active ? { background: '#EEF2FF', color: '#4F46E5', border: '1px solid #C7D2FE' } : { background: '#F1F5F9', color: '#475569', border: '1px solid transparent' }}>
       {label}
     </button>
   );
 }
 
-function SectionHeader({ title, color, onViewAll, viewAllLabel = 'View all' }: { title: string; color?: string; onViewAll: () => void; viewAllLabel?: string }) {
+function SectionHeader({ title, color, onViewAll, viewAllLabel = 'View all', locked }: { title: string; color?: string; onViewAll: () => void; viewAllLabel?: string; locked?: boolean }) {
   return (
     <div className="mb-3 flex items-center justify-between">
       <div className="flex items-center gap-2">
         {color && <span className="h-4 w-1.5 rounded-full" style={{ background: color }} />}
         <h2 className="text-[16px] font-bold text-[#0F172A]">{title}</h2>
+        {locked && (
+          <span className="text-[#94A3B8]" title="Some reports in this category require additional modules. Enable them in Settings → Modules.">
+            <Lock size={13} />
+          </span>
+        )}
       </div>
       <button onClick={onViewAll} className="text-[13px] font-semibold text-[#4F46E5] hover:underline">{viewAllLabel} →</button>
     </div>
@@ -346,12 +362,12 @@ function FeaturedCard({ r, runs, onRun }: { r: ReportDef; runs: number; onRun: (
         <TrendBadge id={r.id} />
       </div>
       <div className="mt-3 text-[15px] font-bold text-[#0F172A]">{r.name}</div>
-      <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-[#64748B]">{r.description}</p>
+      <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-[#475569]">{r.description}</p>
       <div className="mt-2"><Spark id={r.id} color={color} /></div>
       <div className="mt-2 flex items-end justify-between">
         <div>
           <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color }}>Most Used · {numFmt(runs)}</div>
-          <div className="text-[11px] text-[#94A3B8]">Updated {relTime(updatedFor(r.id))}</div>
+          <div className="text-[11px] text-[#475569]">Updated {relTime(updatedFor(r.id))}</div>
         </div>
         <button aria-label={`Run ${r.name}`} onClick={onRun} className="grid h-9 w-9 place-items-center rounded-full text-white transition-transform hover:scale-105" style={{ background: color }}>
           <ArrowUpRight size={16} />
@@ -371,16 +387,16 @@ function ReportCard({ r, runs, fav, menuOpen, onRun, onCustomize, onShare, onTog
         <CatIcon category={r.category} size={36} />
         <div className="min-w-0 flex-1">
           <button onClick={onRun} className="text-left text-[14px] font-semibold text-[#4F46E5] hover:underline">{r.name}</button>
-          <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-[#64748B]">{r.description}</p>
+          <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-[#475569]">{r.description}</p>
         </div>
         <button aria-label={fav ? 'Remove from favorites' : 'Add to favorites'} onClick={onToggleFav} className="shrink-0 text-[#CBD5E1] hover:text-[#FACC15]">
           <Star size={16} fill={fav ? '#FACC15' : 'none'} stroke={fav ? '#FACC15' : 'currentColor'} />
         </button>
       </div>
       <div className="mt-3 flex items-center justify-between">
-        <span className="text-[12px] font-medium text-[#64748B]">{numFmt(runs)} runs</span>
+        <span className="text-[12px] font-medium text-[#475569]">{numFmt(runs)} runs</span>
         <div className="relative">
-          <button aria-label="More actions" onClick={onMenu} className="grid h-7 w-7 place-items-center rounded-lg text-[#94A3B8] hover:bg-slate-100 hover:text-[#475569]"><MoreVertical size={15} /></button>
+          <button aria-label="More actions" onClick={onMenu} className="grid h-7 w-7 place-items-center rounded-lg text-[#475569] hover:bg-slate-100 hover:text-[#475569]"><MoreVertical size={15} /></button>
           {menuOpen && (
             <div className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-xl border border-[#EEF2F7] bg-white py-1 shadow-lg" onClick={(e) => e.stopPropagation()}>
               <MenuItem icon={<Play size={13} />} label="Run" onClick={onRun} />
@@ -398,7 +414,7 @@ function ReportCard({ r, runs, fav, menuOpen, onRun, onCustomize, onShare, onTog
 function MenuItem({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
   return (
     <button onClick={onClick} className="flex w-full items-center gap-2 px-3.5 py-2 text-left text-[13px] text-[#334155] hover:bg-[#F5F7FF]">
-      <span className="text-[#94A3B8]">{icon}</span>{label}
+      <span className="text-[#475569]">{icon}</span>{label}
     </button>
   );
 }
@@ -407,7 +423,7 @@ function ReportTable({ items, favSet, runCount, onRun, onCustomize, onToggleFav 
   items: ReportDef[]; favSet: Set<string>; runCount: (r: ReportDef) => number;
   onRun: (id: string) => void; onCustomize: (id: string) => void; onToggleFav: (id: string) => void;
 }) {
-  const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8] whitespace-nowrap';
+  const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#475569] whitespace-nowrap';
   return (
     <div className={`${CARD} overflow-hidden p-0`}>
       <div className="overflow-x-auto">
@@ -433,10 +449,10 @@ function ReportTable({ items, favSet, runCount, onRun, onCustomize, onToggleFav 
                     {r.name}
                   </button>
                 </td>
-                <td className="max-w-[320px] truncate px-4 py-3 text-[#64748B]" title={r.description}>{r.description}</td>
+                <td className="max-w-[320px] truncate px-4 py-3 text-[#475569]" title={r.description}>{r.description}</td>
                 <td className="px-4 py-3"><span className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold" style={{ background: tint(CAT[r.category].color), color: CAT[r.category].color }}>{CAT[r.category].label}</span></td>
                 <td className="px-4 py-3 text-right font-semibold text-[#0F172A]">{numFmt(runCount(r))}</td>
-                <td className="px-4 py-3 text-[#64748B]">{relTime(updatedFor(r.id))}</td>
+                <td className="px-4 py-3 text-[#475569]">{relTime(updatedFor(r.id))}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-1.5">
                     <button onClick={() => onRun(r.id)} className="inline-flex items-center gap-1 rounded-lg bg-[#4F46E5] px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-[#4338CA]"><Play size={12} /> Run</button>

@@ -1,6 +1,8 @@
 // Report Center registry — config-driven so one generic runner renders all 14
 // reports. Zero orange; chart palette uses indigo/blue/violet/teal/green/red.
 
+import type { FeatureKey } from './features';
+
 export type ReportCategory = 'Specimen' | 'Clinical' | 'Financial' | 'Patient' | 'Staff' | 'Quality';
 export type ValueFormat = 'number' | 'money' | 'percent' | 'days' | 'ratio' | 'date' | 'text';
 
@@ -28,9 +30,11 @@ export interface ReportDef {
   table?: TableConfig;
   /** Seed lifetime run count (see RUN_COUNT_SEED); the UI adds local increments. */
   runCount?: number;
+  /** Module this report needs; hidden when the feature is off. Undefined = core. */
+  requiredFeature?: FeatureKey;
 }
 
-export const CHART = { indigo: '#4F46E5', blue: '#3B82F6', violet: '#7C3AED', teal: '#0D9488', green: '#16A34A', red: '#DC2626', amber: '#B45309', slate: '#64748B' };
+export const CHART = { indigo: '#4F46E5', blue: '#3B82F6', violet: '#7C3AED', teal: '#0D9488', green: '#16A34A', red: '#DC2626', amber: '#B45309', slate: '#475569' };
 const DONUT_COLORS = [CHART.indigo, CHART.blue, CHART.violet, CHART.teal, CHART.green, CHART.amber, CHART.slate, '#DB2777'];
 export const donutColor = (i: number) => DONUT_COLORS[i % DONUT_COLORS.length];
 
@@ -203,6 +207,17 @@ const RUN_COUNT_SEED: Record<string, number> = {
   'pay-advice-history': 296,
 };
 for (const r of REPORTS) r.runCount = RUN_COUNT_SEED[r.id] ?? 300;
+
+// Module gating: a report is hidden when its required feature is disabled for the
+// lab. Only reports whose module is optional are listed; everything else is core
+// (always visible). Ids not present here have no required feature.
+const REQUIRED_FEATURE: Partial<Record<string, FeatureKey>> = {
+  'cytotechnologist-performance': 'WORKFORCE_MANAGEMENT',
+  'pay-advice-history': 'WORKFORCE_MANAGEMENT',
+  'qc-failures': 'QC_MODULE',
+  'cap-benchmarks': 'QC_MODULE',
+};
+for (const r of REPORTS) r.requiredFeature = REQUIRED_FEATURE[r.id];
 
 export const reportById = (id: string) => REPORTS.find((r) => r.id === id);
 
