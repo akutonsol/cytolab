@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Copy, Mail, Printer, RefreshCw, X } from 'lucide-react';
+import { Mail, Printer, RefreshCw, X } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface Props {
@@ -12,6 +12,8 @@ interface Props {
 
 const money = (cents?: number) => `$${((Number(cents) || 0) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const iso = (d: Date) => d.toISOString().slice(0, 10);
+// Default period spans the last 90 days so existing seeded data shows on first load.
+const ninetyDaysAgo = () => { const d = new Date(); d.setDate(d.getDate() - 90); d.setHours(0, 0, 0, 0); return d; };
 const fmtD = (d?: string) => (d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—');
 const fmtDT = (d?: string) => (d ? new Date(d).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
 
@@ -21,7 +23,7 @@ const stLabel = (s: string) => STATUS_LABEL[s] ?? s.toUpperCase();
 const stColor = (s: string) => STATUS_COLOR[s] ?? '#475569';
 
 export function RequisitionReportModal({ open, onClose, clients }: Props) {
-  const [dateFrom, setDateFrom] = useState(iso(new Date(Date.now() - 30 * 86_400_000)));
+  const [dateFrom, setDateFrom] = useState(iso(ninetyDaysAgo()));
   const [dateTo, setDateTo] = useState(iso(new Date()));
   const [groupBy, setGroupBy] = useState<'client' | 'status' | 'date'>('client');
   const [clientId, setClientId] = useState('');
@@ -46,24 +48,32 @@ export function RequisitionReportModal({ open, onClose, clients }: Props) {
 
   if (!open) return null;
 
-  const buildText = () => {
-    if (!report) return '';
-    const L: string[] = [`${report.labName} — Requisition Report`, `Period: ${fmtD(report.period.from)} to ${fmtD(report.period.to)}`, `Generated: ${fmtDT(report.generatedAt)}`, ''];
-    for (const g of report.groups) {
-      L.push(`${g.label}  (${g.count})  ${money(g.subtotalAmount)}`);
-      for (const r of g.requisitions) L.push(`  #${r.refNo}  ${r.clientName}  ${r.accessionNo ?? ''}  ordered ${r.orderedItems} / fulfilled ${r.fulfilledItems}  ${money(r.amount)}  ${stLabel(r.status)}`);
-      L.push(`  Subtotal — ordered ${g.subtotalOrdered}, fulfilled ${g.subtotalFulfilled}, ${money(g.subtotalAmount)}`, '');
-    }
-    L.push(`GRAND TOTAL — ${report.totalRequisitions} requisitions · ordered ${report.totalOrdered} · fulfilled ${report.totalFulfilled} · ${money(report.totalAmount)}`);
-    if (notes.trim()) L.push('', 'Notes:', notes.trim());
-    if (footer.trim()) L.push('', footer.trim());
-    return L.join('\n');
+  // Reset the form to defaults and clear the rendered report (empty state).
+  const reset = () => {
+    setDateFrom(iso(ninetyDaysAgo()));
+    setDateTo(iso(new Date()));
+    setGroupBy('client');
+    setClientId('');
+    setReport(null);
+    setError('');
   };
 
-  const copy = async () => { try { await navigator.clipboard.writeText(buildText()); } catch { /* clipboard blocked */ } };
   const email = () => {
-    const subject = `Requisition Report — ${report ? fmtD(report.period.from) + ' to ' + fmtD(report.period.to) : ''}`;
-    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(buildText())}`;
+    if (!report) return;
+    const subject = `Requisition Report — ${report.labName} — ${fmtD(report.period.from)} to ${fmtD(report.period.to)}`;
+    const body = [
+      'Requisition Report',
+      `Period: ${fmtD(report.period.from)} to ${fmtD(report.period.to)}`,
+      `Generated: ${fmtDT(report.generatedAt)}`,
+      '',
+      `Total Requisitions: ${report.totalRequisitions}`,
+      `Total Amount: ${money(report.totalAmount)}`,
+      '',
+      ...report.groups.map((g: any) => `${g.label}: ${g.count} requisitions — ${money(g.subtotalAmount)}`),
+      '',
+      `Grand Total: ${money(report.totalAmount)}`,
+    ].join('\n');
+    window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
   };
 
   const SELECT = 'h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary';
@@ -71,8 +81,8 @@ export function RequisitionReportModal({ open, onClose, clients }: Props) {
   const TD = 'px-3 py-2 text-sm text-slate-700 align-middle';
 
   return (
-    <div className="req-report-overlay fixed inset-0 z-[120] flex items-start justify-center overflow-auto bg-black/40 p-4">
-      <div className="my-4 w-full max-w-4xl rounded-2xl bg-white shadow-xl">
+    <div className="req-report-overlay fixed inset-x-0 bottom-0 top-[128px] z-[120] flex items-start justify-center overflow-y-auto bg-black/40 p-4">
+      <div className="w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-xl" style={{ maxHeight: '85vh' }}>
         {/* Chrome (hidden when printing) */}
         <div className="no-print flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <h3 className="text-lg font-bold text-charcoal-heading">Requisition Report</h3>
@@ -105,7 +115,7 @@ export function RequisitionReportModal({ open, onClose, clients }: Props) {
             </select>
           </div>
           <button onClick={run} disabled={loading} className="btn-primary" style={{ opacity: loading ? 0.6 : 1 }}>Run Report</button>
-          <button onClick={run} disabled={loading} aria-label="Refresh" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button>
+          <button onClick={reset} aria-label="Reset" title="Reset to defaults" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button>
         </div>
 
         {error && <div className="no-print mx-6 mb-4 rounded-xl border border-error/20 bg-error-container p-3 text-sm text-error">{error}</div>}
@@ -123,7 +133,6 @@ export function RequisitionReportModal({ open, onClose, clients }: Props) {
               <div className="no-print flex items-center gap-1.5">
                 <button onClick={email} aria-label="Email" title="Email" className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-primary"><Mail size={16} /></button>
                 <button onClick={() => window.print()} aria-label="Print" title="Print" className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-primary"><Printer size={16} /></button>
-                <button onClick={copy} aria-label="Copy" title="Copy" className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-primary"><Copy size={16} /></button>
               </div>
             </div>
 
@@ -183,6 +192,7 @@ export function RequisitionReportModal({ open, onClose, clients }: Props) {
         )}
 
         {!report && loading && <div className="px-6 pb-8 pt-2 text-center text-sm text-slate-400">Generating report…</div>}
+        {!report && !loading && !error && <div className="no-print px-6 pb-8 pt-2 text-center text-sm text-slate-400">Choose a period and click “Run Report”.</div>}
       </div>
     </div>
   );
