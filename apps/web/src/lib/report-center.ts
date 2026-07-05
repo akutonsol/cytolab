@@ -26,6 +26,8 @@ export interface ReportDef {
   kpis?: KpiConfig[];
   chart?: ChartConfig;
   table?: TableConfig;
+  /** Seed lifetime run count (see RUN_COUNT_SEED); the UI adds local increments. */
+  runCount?: number;
 }
 
 export const CHART = { indigo: '#4F46E5', blue: '#3B82F6', violet: '#7C3AED', teal: '#0D9488', green: '#16A34A', red: '#DC2626', amber: '#B45309', slate: '#64748B' };
@@ -181,6 +183,26 @@ export const REPORTS: ReportDef[] = [
     // Rendered with a dedicated benchmark card layout in the runner.
   },
 ];
+
+// Seed lifetime run counts (top/recommended reports run most). Real increments
+// are tracked client-side (localStorage) and added on top — see the page.
+const RUN_COUNT_SEED: Record<string, number> = {
+  'specimen-volume': 1180,
+  'revenue-by-client': 1120,
+  'bethesda-trends': 1042,
+  'tat-analysis': 964,
+  'patient-registration': 876,
+  'cap-benchmarks': 812,
+  'services-revenue': 690,
+  'specimen-distribution': 640,
+  'abnormal-rate': 588,
+  'outstanding-payments': 534,
+  'cytotechnologist-performance': 472,
+  'qc-failures': 447,
+  'recall-compliance': 388,
+  'pay-advice-history': 296,
+};
+for (const r of REPORTS) r.runCount = RUN_COUNT_SEED[r.id] ?? 300;
 
 export const reportById = (id: string) => REPORTS.find((r) => r.id === id);
 
