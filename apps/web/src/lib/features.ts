@@ -170,7 +170,7 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     key: 'WSI_VIEWER',
     name: 'Whole Slide Imaging',
     description: 'Digital whole-slide image viewer for remote review and annotation.',
-    tier: 5, tierName: 'Enterprise', icon: 'ScanEye', docsUrl: null, navPath: null, dependsOn: [], comingSoon: true,
+    tier: 5, tierName: 'Enterprise', icon: 'ScanEye', docsUrl: null, navPath: '/wsi', dependsOn: [],
   },
   AI_SCREENING: {
     key: 'AI_SCREENING',

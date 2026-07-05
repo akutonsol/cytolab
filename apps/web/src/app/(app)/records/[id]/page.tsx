@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Activity, AlertTriangle, ArrowLeft, Check, CheckCircle2, ChevronRight, Clock, Download,
-  FileText, FlaskConical, History, Microscope, Pause, Pencil, Play, Printer, Receipt, RotateCcw, Send, ShieldCheck, Users, X, XCircle,
+  FileText, FlaskConical, History, Microscope, Pause, Pencil, Play, Printer, Receipt, RotateCcw, ScanEye, Send, ShieldCheck, Users, X, XCircle,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
@@ -20,6 +20,8 @@ import { useAuth } from '@/lib/auth';
 import { avatarColor, type WorkloadUser } from '@/lib/workload';
 import { RESULT_META as CORR_META, type CorrelationCase } from '@/lib/correlation';
 import { STATUS_META as RECALL_META, dueColor, dueLabel, shortDate as recallDate, type Recall } from '@/lib/recall';
+import { AddSlideModal } from '@/components/AddSlideModal';
+import { type DigitalSlide } from '@/lib/wsi';
 import { SPECIMEN_LABELS, type FormType } from '@/lib/specimen-types';
 
 // ─── Status + step maps (zero-orange) ────────────────────────────────────────
@@ -235,6 +237,8 @@ export default function RecordDetailPage() {
   const recordCorrelation = (patientCorrelations ?? []).find((c) => c.cytologyRecordId === id);
   const { data: patientRecalls } = useQuery<Recall[]>({ queryKey: ['patient-recalls', record?.patientId], enabled: !!record?.patientId && isEnabled('PATIENT_RECALL'), queryFn: () => api.get(`/recalls/patient/${record.patientId}`).then((r) => r.data) });
   const recordRecall = (patientRecalls ?? []).find((r) => r.triggerRecord?.id === id);
+  const { data: recordSlide } = useQuery<DigitalSlide | null>({ queryKey: ['wsi-record', id], enabled: !!id && isEnabled('WSI_VIEWER'), queryFn: () => api.get(`/wsi/record/${id}`).then((r) => r.data) });
+  const [addSlideOpen, setAddSlideOpen] = useState(false);
   const { data: recordReagents } = useQuery<any[]>({ queryKey: ['reagents', 'record', id], enabled: !!id && isEnabled('REAGENT_TRACKING'), queryFn: () => api.get(`/reagents/record/${id}`).then((r) => r.data) });
   const { data: team = [] } = useQuery<WorkloadUser[]>({ queryKey: ['workload-summary'], enabled: canAssign, queryFn: () => api.get('/workload/summary').then((r) => r.data) });
   const assignMut = useMutation({
@@ -479,6 +483,26 @@ export default function RecordDetailPage() {
               </button>
             </FeatureGate>
           )}
+          <FeatureGate feature="WSI_VIEWER">
+            {recordSlide ? (
+              <button onClick={() => router.push(`/wsi/${recordSlide.id}`)} className="mt-3 flex w-full items-center gap-3 rounded-[10px] border border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-3 text-left transition-colors hover:bg-[#EEF3FF]">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-black text-white"><ScanEye size={20} /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">Digital Slide</span>
+                  <span className="block truncate text-[13px] font-semibold text-[#0F172A]">{recordSlide.stain ?? 'Slide'}{recordSlide.magnification ? ` · ${recordSlide.magnification}` : ''}</span>
+                  <span className="block text-[12px] text-[#64748B]">{recordSlide.annotationCount} annotation{recordSlide.annotationCount === 1 ? '' : 's'}</span>
+                </span>
+                <span className="shrink-0 text-[13px] font-semibold text-[#4F46E5]">View →</span>
+              </button>
+            ) : (
+              <div className="mt-3 rounded-[10px] border border-dashed border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-3">
+                <div className="flex items-center gap-2 text-[13px] font-semibold text-[#64748B]"><ScanEye size={15} className="text-[#94A3B8]" /> No digital slide</div>
+                {can('record:change') && (
+                  <button onClick={() => setAddSlideOpen(true)} className="mt-2 text-[12px] font-semibold text-[#4F46E5] hover:underline">+ Add Slide URL</button>
+                )}
+              </div>
+            )}
+          </FeatureGate>
           {(recordReagents ?? []).length > 0 && (
             <FeatureGate feature="REAGENT_TRACKING">
               <div className="mt-3 rounded-[10px] border border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-3">
@@ -571,6 +595,7 @@ export default function RecordDetailPage() {
       <AuthorizationModal open={authModal} onClose={() => { setAuthModal(false); refetchAll(); }} record={record} />
       <PriorHistoryPanel open={historyOpen} onClose={() => setHistoryOpen(false)} patientId={record.patientId} excludeRecordId={id} />
       {printLabels && <PrintLabelsModal recordIds={[id]} onClose={() => setPrintLabels(false)} />}
+      {addSlideOpen && <AddSlideModal recordId={id} onClose={() => setAddSlideOpen(false)} />}
 
       {confirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setConfirm(null)}>

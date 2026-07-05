@@ -51,6 +51,7 @@ import { CorrelationModule } from './modules/correlation/correlation.module';
 import { ProficiencyModule } from './modules/proficiency/proficiency.module';
 import { ReagentModule } from './modules/reagent/reagent.module';
 import { RecallModule } from './modules/recall/recall.module';
+import { WsiModule } from './modules/wsi/wsi.module';
 
 /**
  * Cytolab modular monolith.
@@ -114,6 +115,7 @@ import { RecallModule } from './modules/recall/recall.module';
     ProficiencyModule,
     ReagentModule,
     RecallModule,
+    WsiModule,
   ],
   controllers: [HealthController],
   providers: [

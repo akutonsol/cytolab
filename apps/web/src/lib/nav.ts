@@ -12,6 +12,7 @@ import {
   GraduationCap,
   LayoutDashboard,
   MessageSquare,
+  ScanEye,
   ScanLine,
   ToggleRight,
   Users,
@@ -56,6 +57,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Equipment', path: '/qc/equipment', permission: 'record:view', feature: 'QC_MODULE', icon: Wrench },
       { label: 'Req Tracking', path: '/req-tracking', permission: 'requisition:view', feature: 'REQUISITION_TRACKING', icon: ScanLine },
       { label: 'Reagents', path: '/reagents', permission: 'record:view', feature: 'REAGENT_TRACKING', icon: FlaskConical },
+      { label: 'Digital Slides', path: '/wsi', permission: 'record:view', feature: 'WSI_VIEWER', icon: ScanEye },
     ],
   },
   {

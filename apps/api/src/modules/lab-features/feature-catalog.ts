@@ -57,6 +57,7 @@ export const BUILT_FEATURES: ReadonlySet<FeatureKey> = new Set<FeatureKey>([
   'PATIENT_RECALL',
   'VOICE_TO_TEXT',
   'RESULT_TEMPLATES',
+  'WSI_VIEWER',
 ]);
 
 export const ALL_FEATURE_KEYS = Object.keys(FEATURE_TIERS) as FeatureKey[];

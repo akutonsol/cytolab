@@ -218,6 +218,8 @@ model Lab {
   reagentLots            ReagentLot[]
   reagentUsages          ReagentUsage[]
   recalls                RecallRecord[]
+  digitalSlides          DigitalSlide[]
+  slideAnnotations       SlideAnnotation[]
 }
 
 model Account {
@@ -576,6 +578,7 @@ model Record {
   cytologyCorrelations CorrelationCase[]    @relation("CytologyRecord")
   reagentUsages     ReagentUsage[]
   recalls           RecallRecord[]
+  digitalSlides     DigitalSlide[]
   // Case assignment (Tier 2 — workload balancing). Fields are unconditional in
   // the schema; only the UI is feature-gated.
   assignedToId      String?
@@ -2453,4 +2456,58 @@ model RecallRecord {
   @@unique([labId, triggerRecordId])
   @@index([labId, dueDate])
   @@index([patientId])
+}
+
+// ─── Whole Slide Imaging (Tier 5 — Enterprise) ───────────────────────────────
+// A digital whole-slide image attached to a record for remote review. The image
+// is referenced by URL (external tile server / object store); OpenSeadragon
+// renders it. A record may carry more than one slide (e.g. different stains);
+// the viewer/record-detail use the most recent.
+model DigitalSlide {
+  id       String @id @default(cuid())
+  labId    String
+  lab      Lab    @relation(fields: [labId], references: [id])
+  recordId String
+  record   Record @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  // Source image. `format` is the container/protocol (image, dzi, svs, …).
+  slideUrl      String
+  format        String  @default("image")
+  magnification String?
+  stain         String?
+  scanner       String?
+  fileSizeBytes Int?
+
+  uploadedById String?
+  uploadedAt   DateTime @default(now())
+
+  annotations SlideAnnotation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([labId])
+  @@index([recordId])
+}
+
+// A point annotation on a slide, positioned in normalized image coordinates
+// (0..1) so overlays track the image across pan/zoom.
+model SlideAnnotation {
+  id      String       @id @default(cuid())
+  labId   String
+  lab     Lab          @relation(fields: [labId], references: [id])
+  slideId String
+  slide   DigitalSlide @relation(fields: [slideId], references: [id], onDelete: Cascade)
+
+  x     Float
+  y     Float
+  label String
+  color String @default("#4F46E5")
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([labId])
+  @@index([slideId])
 }
