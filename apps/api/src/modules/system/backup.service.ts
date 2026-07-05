@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 import { PrismaService } from '../../database/prisma.service';
 import { LabContext } from '../../common/tenancy/lab-context';
 import { google } from 'googleapis';
@@ -13,6 +14,10 @@ export class BackupService {
   // configured. The service gracefully skips if not configured.
   private readonly SHEET_ID = process.env.BACKUP_SHEET_ID;
   private readonly enabled = !!process.env.BACKUP_SHEET_ID;
+
+  // Encrypted snapshots are written under this object-name prefix in the GCS
+  // bucket (STORAGE_BUCKET). Timestamped, so lexical sort == chronological.
+  private readonly BACKUP_PREFIX = 'backups/cytolab-backup-';
 
   constructor(
     private prisma: PrismaService,
@@ -33,19 +38,18 @@ export class BackupService {
 
   // ── Main backup method ───────────────────────────────────────────
   async runBackup(triggeredBy: 'cron' | 'manual' = 'cron') {
-    if (!this.enabled) {
+    const gcsConfigured = !!process.env.STORAGE_BUCKET;
+    if (!this.enabled && !gcsConfigured) {
       this.logger.warn(
-        'Backup skipped — BACKUP_SHEET_ID not configured. ' +
-          'Set this env var to enable Google Sheets backup.',
+        'Backup skipped — neither BACKUP_SHEET_ID nor STORAGE_BUCKET configured.',
       );
-      return { skipped: true, reason: 'BACKUP_SHEET_ID not set' };
+      return { skipped: true, reason: 'Neither BACKUP_SHEET_ID nor STORAGE_BUCKET configured' };
     }
 
     const startedAt = new Date();
     this.logger.log(`Starting backup (${triggeredBy})...`);
 
     try {
-      const sheets = await this.getSheets();
       const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
 
       // The scheduled run has no request context, so the tenancy guard would
@@ -60,31 +64,44 @@ export class BackupService {
         ]),
       );
 
-      // Append to each tab
-      await Promise.all([
-        this.appendToTab(sheets, 'Records', records, timestamp),
-        this.appendToTab(sheets, 'Patients', patients, timestamp),
-        this.appendToTab(sheets, 'Clients', clients, timestamp),
-        this.appendToTab(sheets, 'Bills', bills, timestamp),
-        this.appendToTab(sheets, 'Payments', payments, timestamp),
-        this.appendToTab(
-          sheets,
-          'BackupLog',
-          [
+      // Google Sheets append (only when a sheet is configured).
+      if (this.enabled) {
+        const sheets = await this.getSheets();
+        await Promise.all([
+          this.appendToTab(sheets, 'Records', records, timestamp),
+          this.appendToTab(sheets, 'Patients', patients, timestamp),
+          this.appendToTab(sheets, 'Clients', clients, timestamp),
+          this.appendToTab(sheets, 'Bills', bills, timestamp),
+          this.appendToTab(sheets, 'Payments', payments, timestamp),
+          this.appendToTab(
+            sheets,
+            'BackupLog',
             [
-              timestamp,
-              triggeredBy,
-              records.length,
-              patients.length,
-              clients.length,
-              bills.length,
-              payments.length,
+              [
+                timestamp,
+                triggeredBy,
+                records.length,
+                patients.length,
+                clients.length,
+                bills.length,
+                payments.length,
+              ],
             ],
-          ],
+            timestamp,
+            false,
+          ), // no header for log tab
+        ]);
+      }
+
+      // Encrypted snapshot to GCS (only when a bucket is configured). Every
+      // object written here is AES-256-CBC encrypted before upload.
+      let encryptedBackup: { object: string; size: number } | undefined;
+      if (gcsConfigured) {
+        encryptedBackup = await this.writeEncryptedSnapshot(
+          { Records: records, Patients: patients, Clients: clients, Bills: bills, Payments: payments },
           timestamp,
-          false,
-        ), // no header for log tab
-      ]);
+        );
+      }
 
       const duration = Date.now() - startedAt.getTime();
       this.logger.log(`Backup complete in ${duration}ms`);
@@ -100,11 +117,99 @@ export class BackupService {
           payments: payments.length,
         },
         durationMs: duration,
+        encryptedBackup,
       };
     } catch (err: any) {
       this.logger.error('Backup failed:', err.message);
       throw err;
     }
+  }
+
+  // ── Backup encryption (AES-256-CBC, IV-prefixed) ──────────────────
+  /** Resolve and validate the 32-byte encryption key shared with PHI encryption. */
+  private backupKey(): Buffer {
+    const key = Buffer.from(process.env.ENCRYPTION_KEY ?? '', 'hex');
+    if (key.length !== 32) {
+      throw new Error('ENCRYPTION_KEY must be a 32-byte value (64 hex chars) to encrypt backups');
+    }
+    return key;
+  }
+
+  private encryptBackup(data: Buffer): Buffer {
+    const key = this.backupKey();
+    const iv = randomBytes(16);
+    const cipher = createCipheriv('aes-256-cbc', key, iv);
+    const encrypted = Buffer.concat([cipher.update(data), cipher.final()]);
+    // Prepend IV so we can decrypt later: [16 bytes IV][encrypted data]
+    return Buffer.concat([iv, encrypted]);
+  }
+
+  private decryptBackup(data: Buffer): Buffer {
+    const key = this.backupKey();
+    const iv = data.subarray(0, 16);
+    const encrypted = data.subarray(16);
+    const decipher = createDecipheriv('aes-256-cbc', key, iv);
+    return Buffer.concat([decipher.update(encrypted), decipher.final()]);
+  }
+
+  /** Serialize a snapshot, encrypt it, and upload it to GCS with a .encrypted suffix. */
+  private async writeEncryptedSnapshot(
+    tables: Record<string, unknown[][]>,
+    timestamp: string,
+  ): Promise<{ object: string; size: number }> {
+    const bucketName = process.env.STORAGE_BUCKET!;
+    const snapshot = Buffer.from(
+      JSON.stringify({ generatedAt: new Date().toISOString(), timestamp, tables }),
+      'utf8',
+    );
+    const encrypted = this.encryptBackup(snapshot);
+    const safeTs = timestamp.replace(/[: ]/g, '-');
+    const object = `${this.BACKUP_PREFIX}${safeTs}.json.encrypted`;
+
+    const { Storage } = await import('@google-cloud/storage');
+    const storage = new Storage();
+    await storage.bucket(bucketName).file(object).save(encrypted, {
+      contentType: 'application/octet-stream',
+      resumable: false,
+    });
+
+    this.logger.log(`Encrypted backup written to gcs://${bucketName}/${object} (${encrypted.length} bytes)`);
+    return { object, size: encrypted.length };
+  }
+
+  /**
+   * Download the most recent encrypted backup from GCS, decrypt it, and confirm
+   * it is non-empty and structurally valid. Proves the restore path end-to-end.
+   */
+  async verifyLatestBackup(): Promise<{ verified: boolean; object?: string; size?: number; decryptedAt?: string; reason?: string }> {
+    const bucketName = process.env.STORAGE_BUCKET;
+    if (!bucketName) return { verified: false, reason: 'STORAGE_BUCKET not configured' };
+
+    const { Storage } = await import('@google-cloud/storage');
+    const storage = new Storage();
+    const [files] = await storage.bucket(bucketName).getFiles({ prefix: this.BACKUP_PREFIX });
+    const encrypted = files.filter((f) => f.name.endsWith('.json.encrypted'));
+    if (!encrypted.length) throw new NotFoundException('No encrypted backups found in GCS');
+
+    // Names are ISO-timestamped, so a descending lexical sort yields the latest.
+    encrypted.sort((a, b) => (a.name < b.name ? 1 : -1));
+    const latest = encrypted[0];
+
+    const [buf] = await latest.download();
+    const decrypted = this.decryptBackup(buf);
+    if (decrypted.length === 0) throw new Error('Decrypted backup is empty');
+    // Structural check — must be JSON carrying the snapshot's `tables` object.
+    const parsed = JSON.parse(decrypted.toString('utf8'));
+    if (!parsed || typeof parsed !== 'object' || typeof parsed.tables !== 'object') {
+      throw new Error('Decrypted backup did not contain a valid snapshot structure');
+    }
+
+    return {
+      verified: true,
+      object: latest.name,
+      size: decrypted.length,
+      decryptedAt: new Date().toISOString(),
+    };
   }
 
   // ── Cron: runs daily at 2:30am ───────────────────────────────────

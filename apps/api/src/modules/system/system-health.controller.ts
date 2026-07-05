@@ -32,6 +32,14 @@ export class SystemHealthController {
     return this.backup.runBackup('manual');
   }
 
+  // Downloads the latest encrypted GCS backup, decrypts it, and confirms it is
+  // restorable — a tested restoration path. Superuser-only (system:health).
+  @Post('system/backup/verify-latest')
+  @RequirePermissions('system:health')
+  verifyLatestBackup(@CurrentUser() _user: AuthUser) {
+    return this.backup.verifyLatestBackup();
+  }
+
   @Post('system/health/deep-check')
   @RequirePermissions('system:health')
   async runDeepDiagnostics() {

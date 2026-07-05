@@ -7,8 +7,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // Runtime connection — restricted `cytolab_api` user (SELECT/INSERT/UPDATE/DELETE).
+  url       = env("DATABASE_URL")
+  // Migrations / introspection — privileged `cytolab_migrate` user. Prisma CLI
+  // (migrate deploy, db pull) uses this; the running client always uses `url`.
+  directUrl = env("DATABASE_MIGRATION_URL")
 }
 
 // ---- Enums ----

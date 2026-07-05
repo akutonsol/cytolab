@@ -21,8 +21,33 @@ function assertStrongSecrets() {
   }
 }
 
+// Fail hard in production if the DB connection is not TLS-encrypted, and warn
+// loudly anywhere SSL is explicitly disabled. PHI in transit must be encrypted.
+function assertDatabaseSecurity(): void {
+  const dbUrl = process.env.DATABASE_URL ?? '';
+
+  // In production, require SSL
+  if (process.env.NODE_ENV === 'production') {
+    if (!dbUrl.includes('sslmode=require') && !dbUrl.includes('sslmode=verify-full')) {
+      throw new Error(
+        'SECURITY: DATABASE_URL must include sslmode=require in production. ' +
+          'Add ?sslmode=require to your DATABASE_URL.',
+      );
+    }
+  }
+
+  // Warn in development if SSL is explicitly disabled
+  if (dbUrl.includes('sslmode=disable')) {
+    console.warn(
+      'WARNING: DATABASE_URL has sslmode=disable. ' +
+        'Never use this in production — database traffic is unencrypted.',
+    );
+  }
+}
+
 async function bootstrap() {
   assertStrongSecrets();
+  assertDatabaseSecurity();
   const app = await NestFactory.create(AppModule);
 
   const prefix = process.env.API_PREFIX ?? 'api/v1';
