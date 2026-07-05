@@ -96,7 +96,7 @@ const GOLD_LIGHT = '#FFFBEB';
 const SUBTLE_BG = '#F8FAFC';
 
 // Content width for A4 with 40pt side margins (595.28 - 80).
-const CW = 515;
+const CW = 523;
 
 const fmtDate = (d?: Date | null): string =>
   d ? new Date(d).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: '2-digit' }) : '—';
@@ -143,13 +143,13 @@ const SPECIMEN_DISPLAY: Record<string, string> = {
 const displaySpecimen = (code?: string | null): string => (code ? SPECIMEN_DISPLAY[code] ?? code : '—');
 
 // ─── Small builders ───────────────────────────────────────────────────────────
-const sectionLabel = (text: string, topMargin = 16): Content => ({
+const sectionLabel = (text: string, topMargin = 6): Content => ({
   text,
-  fontSize: 9,
+  fontSize: 7,
   bold: true,
   color: INDIGO,
   characterSpacing: 0,
-  margin: [0, topMargin, 0, 6],
+  margin: [0, topMargin, 0, 4],
 });
 
 const divider = (topMargin = 0): Content => ({
@@ -161,10 +161,10 @@ const divider = (topMargin = 0): Content => ({
 const infoRow = (label: string, value?: string | null, opts: { bold?: boolean; color?: string } = {}): TableCell[] => {
   const has = value != null && value !== '';
   return [
-    { text: label, fontSize: 9, color: SLATE_LIGHT },
+    { text: label, fontSize: 7, color: SLATE_LIGHT },
     {
       text: has ? (value as string) : '—',
-      fontSize: 10,
+      fontSize: 8,
       bold: !!opts.bold && has,
       color: has ? opts.color ?? SLATE : SLATE_MUTED,
     },
@@ -178,8 +178,8 @@ const infoTable = (rows: TableCell[][]): Content => ({
     vLineWidth: () => 0,
     paddingLeft: () => 0,
     paddingRight: () => 6,
-    paddingTop: () => 2.5,
-    paddingBottom: () => 2.5,
+    paddingTop: () => 1,
+    paddingBottom: () => 1,
   },
 });
 
@@ -190,10 +190,10 @@ const accentBox = (fill: string, accent: string | null, body: Content[], margin:
     hLineWidth: () => 0,
     vLineWidth: (i: number) => (accent && i === 0 ? 3 : 0),
     vLineColor: () => accent ?? fill,
-    paddingLeft: () => 12,
-    paddingRight: () => 12,
-    paddingTop: () => 10,
-    paddingBottom: () => 10,
+    paddingLeft: () => 8,
+    paddingRight: () => 8,
+    paddingTop: () => 5,
+    paddingBottom: () => 5,
   },
   margin,
 });
@@ -222,28 +222,28 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
   // is), so the fill never leaves an empty strip that overlaps the info section.
   const headerBand: Content = {
     table: {
-      widths: [169, 193, 121],
+      widths: [172, 196, 123],
       body: [[
         // LEFT — lab name + subtitle
         {
           stack: [
-            { text: lab.name, color: WHITE, fontSize: 14, bold: true, noWrap: true },
-            { text: 'Cytology & Pathology Laboratory', color: WHITE, fontSize: 8, noWrap: true, margin: [0, 3, 0, 0] },
+            { text: lab.name, color: WHITE, fontSize: 12, bold: true, noWrap: true },
+            { text: 'Cytology & Pathology Laboratory', color: WHITE, fontSize: 7, noWrap: true, margin: [0, 2, 0, 0] },
           ],
         },
         // CENTER — report title
         {
           stack: [
-            { text: 'CYTOLOGY REPORT', color: WHITE, fontSize: 18, bold: true, characterSpacing: 0, alignment: 'center', noWrap: true },
+            { text: 'CYTOLOGY REPORT', color: WHITE, fontSize: 16, bold: true, characterSpacing: 0, alignment: 'center', noWrap: true },
           ],
-          margin: [0, 2, 0, 0],
+          margin: [0, 1, 0, 0],
         },
         // RIGHT — ref, date, lab contact
         {
           stack: [
-            { text: `Ref  ${reportRef}`, color: INDIGO_ON, fontSize: 10, alignment: 'right' },
-            { text: fmtDate(reportDate), color: '#C7D2FE', fontSize: 9, alignment: 'right', margin: [0, 2, 0, 0] },
-            ...(lab.address ? [{ text: lab.address, color: WHITE, fontSize: 7, alignment: 'right', margin: [0, 3, 0, 0] } as Content] : []),
+            { text: `Ref  ${reportRef}`, color: INDIGO_ON, fontSize: 8, alignment: 'right' },
+            { text: fmtDate(reportDate), color: '#C7D2FE', fontSize: 8, alignment: 'right', margin: [0, 1, 0, 0] },
+            ...(lab.address ? [{ text: lab.address, color: WHITE, fontSize: 7, alignment: 'right', margin: [0, 2, 0, 0] } as Content] : []),
             ...(lab.phone ? [{ text: lab.phone, color: WHITE, fontSize: 7, alignment: 'right', margin: [0, 1, 0, 0] } as Content] : []),
             ...(lab.email ? [{ text: lab.email, color: WHITE, fontSize: 7, alignment: 'right', margin: [0, 1, 0, 0] } as Content] : []),
           ],
@@ -254,12 +254,12 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
       fillColor: () => INDIGO,
       hLineWidth: () => 0,
       vLineWidth: () => 0,
-      // Pad only the outer edges: columns (169+193+121=483) + 16 + 16 = 515 (CW).
+      // Pad only the outer edges: columns (172+196+123=491) + 16 + 16 = 523 (CW).
       // Padding every cell would add 96pt and overflow the right margin.
       paddingLeft: (i: number) => (i === 0 ? 16 : 0),
       paddingRight: (i: number, node: any) => (i === node.table.widths.length - 1 ? 16 : 0),
-      paddingTop: () => 12,
-      paddingBottom: () => 12,
+      paddingTop: () => 8,
+      paddingBottom: () => 8,
     },
   };
 
@@ -285,7 +285,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
       {
         width: '*',
         stack: [
-          sectionLabel('PATIENT INFORMATION', 14),
+          sectionLabel('PATIENT INFORMATION', 6),
           infoTable([
             infoRow('Patient Name', patientName, { bold: true }),
             infoRow('Date of Birth', `${fmtDate(patient.dateOfBirth)}${patient.age != null ? `   (Age ${patient.age})` : ''}`),
@@ -300,7 +300,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
       {
         width: '*',
         stack: [
-          sectionLabel('SPECIMEN INFORMATION', 14),
+          sectionLabel('SPECIMEN INFORMATION', 6),
           infoTable([
             infoRow('Lab Number', record.labNumber, { bold: true, color: INDIGO }),
             infoRow('Specimen Type', specimens[0] ? displaySpecimen(specimens[0].type) : null),
@@ -317,7 +317,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
   // Footnote shown only when a collection time was not captured.
   const collectionFootnote: Content[] =
     record.collectionDate && timeNotStated(record.collectionDate)
-      ? [{ text: '(*) = Collection time not stated', fontSize: 8, italics: true, color: SLATE_MUTED, margin: [0, 5, 0, 0] }]
+      ? [{ text: '(*) = Collection time not stated', fontSize: 7, italics: true, color: SLATE_MUTED, margin: [0, 3, 0, 0] }]
       : [];
 
   // ── Gynaecological details (GYN records only) ───────────────────────────────
@@ -367,14 +367,14 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
           columns: chunk(uniqueSpecimens, Math.ceil(uniqueSpecimens.length / Math.min(uniqueSpecimens.length, 3))).map((group) => ({
             width: '*',
             stack: group.map((s) => ({
-              margin: [0, 0, 0, 6],
+              margin: [0, 0, 0, 4],
               stack: [
-                { text: displaySpecimen(s.type), fontSize: 10, bold: true, color: SLATE },
+                { text: displaySpecimen(s.type), fontSize: 8, bold: true, color: SLATE },
                 {
                   text: [s.label, s.bloodGroup ? `Blood ${s.bloodGroup}` : null, s.dateReceived ? fmtDate(s.dateReceived) : null]
                     .filter(Boolean)
                     .join('  ·  ') || '—',
-                  fontSize: 9,
+                  fontSize: 7,
                   color: SLATE_LIGHT,
                   margin: [0, 1, 0, 0],
                 },
@@ -383,17 +383,17 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
           })),
           columnGap: 16,
         }
-      : { text: 'No specimens recorded.', fontSize: 10, color: SLATE_MUTED, italics: true };
+      : { text: 'No specimens recorded.', fontSize: 8, color: SLATE_MUTED, italics: true };
 
   // ── 4. Cytological findings ─────────────────────────────────────────────────
   const findingsBlocks: Content[] = entries.length
     ? entries.flatMap((entry, i): Content[] => [
         {
           columns: [
-            { width: 8, canvas: [{ type: 'rect', x: 0, y: 1, w: 3, h: 12, color: INDIGO }] },
-            { width: '*', text: entry.specimenLabel ? displaySpecimen(entry.specimenLabel) : `Specimen ${i + 1}`, fontSize: 11, bold: true, color: SLATE },
+            { width: 8, canvas: [{ type: 'rect', x: 0, y: 1, w: 3, h: 10, color: INDIGO }] },
+            { width: '*', text: entry.specimenLabel ? displaySpecimen(entry.specimenLabel) : `Specimen ${i + 1}`, fontSize: 8, bold: true, color: SLATE },
           ],
-          margin: [0, i === 0 ? 4 : 12, 0, 5],
+          margin: [0, i === 0 ? 2 : 6, 0, 3],
         },
         entry.lines.length
           ? {
@@ -410,7 +410,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
                   ...entry.lines.map((l): TableCell[] => {
                     const abn = l.abnormalFinding;
                     return [
-                      { text: l.abbreviation || '—', fontSize: 10, bold: true, color: SLATE },
+                      { text: l.abbreviation || '—', fontSize: 8, bold: true, color: SLATE },
                       {
                         // '•' is WinAnsi-safe (the standard Helvetica encoding);
                         // '●' is not and would render blank.
@@ -418,10 +418,10 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
                           { text: '•  ', color: abn ? RED : GREEN, bold: true },
                           { text: l.findings || '—', color: SLATE },
                         ],
-                        fontSize: 10,
+                        fontSize: 8,
                       },
-                      { text: l.result || '—', fontSize: 10, color: SLATE_MID },
-                      { text: abn ? 'Abnormal' : 'Normal', fontSize: 9, bold: true, color: abn ? RED : GREEN },
+                      { text: l.result || '—', fontSize: 8, color: SLATE_MID },
+                      { text: abn ? 'Abnormal' : 'Normal', fontSize: 7, bold: true, color: abn ? RED : GREEN },
                     ];
                   }),
                 ],
@@ -430,16 +430,16 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
                 hLineWidth: (i: number, node: any) => (i === 0 || i === node.table.body.length ? 0 : 0.5),
                 vLineWidth: () => 0,
                 hLineColor: () => BORDER,
-                paddingLeft: (i: number) => (i === 0 ? 0 : 8),
-                paddingRight: () => 8,
-                paddingTop: () => 5,
-                paddingBottom: () => 5,
+                paddingLeft: (i: number) => (i === 0 ? 0 : 6),
+                paddingRight: () => 6,
+                paddingTop: () => 2,
+                paddingBottom: () => 2,
                 fillColor: (rowIndex: number) => (rowIndex === 0 ? SUBTLE_BG : null),
               },
             }
-          : { text: 'No findings recorded', italics: true, fontSize: 10, color: SLATE_MUTED, margin: [0, 0, 0, 2] },
+          : { text: 'No findings recorded', italics: true, fontSize: 8, color: SLATE_MUTED, margin: [0, 0, 0, 2] },
       ])
-    : [{ text: 'No findings recorded.', italics: true, fontSize: 10, color: SLATE_MUTED }];
+    : [{ text: 'No findings recorded.', italics: true, fontSize: 8, color: SLATE_MUTED }];
 
   // ── 5. Pathologist's narrative ──────────────────────────────────────────────
   const narrativeText = [narrative?.content, narrative?.medicalEntry].filter(Boolean).join('\n\n');
@@ -447,7 +447,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
     ? [
         sectionLabel("PATHOLOGIST'S NARRATIVE"),
         accentBox(SUBTLE_BG, INDIGO, [
-          { text: narrativeText, fontSize: 11, color: SLATE, lineHeight: 1.6, italics: true },
+          { text: narrativeText, fontSize: 8, color: SLATE, lineHeight: 1.35, italics: true },
         ]),
       ]
     : [];
@@ -457,7 +457,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
     ? [
         sectionLabel('CLINICAL DIAGNOSIS'),
         accentBox(INDIGO_LIGHT, INDIGO, [
-          { text: record.clinicalDiagnosis, fontSize: 13, bold: true, color: SLATE, lineHeight: 1.35 },
+          { text: record.clinicalDiagnosis, fontSize: 9, bold: true, color: SLATE, lineHeight: 1.3 },
         ]),
       ]
     : [];
@@ -478,38 +478,38 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
                   { type: 'line', x1: 5, y1: 14, x2: 15, y2: 1, lineWidth: 2.4, lineColor: GREEN },
                 ],
               },
-              { width: 'auto', text: 'AUTHORIZED', color: GREEN, bold: true, fontSize: 14, characterSpacing: 0, margin: [6, 1, 0, 0] },
+              { width: 'auto', text: 'AUTHORIZED', color: GREEN, bold: true, fontSize: 12, characterSpacing: 0, margin: [6, 1, 0, 0] },
             ],
           },
-          { text: 'This report has been reviewed and authorized for release by:', fontSize: 9, color: SLATE_LIGHT, margin: [0, 8, 0, 4] },
-          { text: authorizer.name, fontSize: 12, bold: true, color: SLATE },
-          ...(authorizer.designation ? [{ text: authorizer.designation, fontSize: 10, color: INDIGO_DARK } as Content] : []),
-          { text: `Authorized ${fmtDateTime(authorizer.signedAt)}`, fontSize: 10, color: SLATE_LIGHT, margin: [0, 2, 0, 0] },
+          { text: 'This report has been reviewed and authorized for release by:', fontSize: 8, color: SLATE_LIGHT, margin: [0, 5, 0, 3] },
+          { text: authorizer.name, fontSize: 10, bold: true, color: SLATE },
+          ...(authorizer.designation ? [{ text: authorizer.designation, fontSize: 8, color: INDIGO_DARK } as Content] : []),
+          { text: `Authorized ${fmtDateTime(authorizer.signedAt)}`, fontSize: 8, color: SLATE_LIGHT, margin: [0, 2, 0, 0] },
         ],
       }
     : {
         width: '*',
         stack: [
-          { text: 'PENDING AUTHORIZATION', color: RED, bold: true, fontSize: 12, characterSpacing: 0 },
-          { text: 'This report is not yet authorized for release.', fontSize: 9, color: SLATE_LIGHT, margin: [0, 4, 0, 0] },
+          { text: 'PENDING AUTHORIZATION', color: RED, bold: true, fontSize: 11, characterSpacing: 0 },
+          { text: 'This report is not yet authorized for release.', fontSize: 8, color: SLATE_LIGHT, margin: [0, 3, 0, 0] },
         ],
       };
 
   const signatureInner: Content = authorizer.signatureDataUri
-    ? { image: authorizer.signatureDataUri, fit: [180, 46], alignment: 'center', margin: [0, 4, 0, 4] }
+    ? { image: authorizer.signatureDataUri, fit: [170, 36], alignment: 'center', margin: [0, 2, 0, 2] }
     : {
         stack: [
-          { text: '________________________', alignment: 'center', color: SLATE_MUTED, fontSize: 12, margin: [0, 16, 0, 2] },
-          { text: authorizer.name, alignment: 'center', fontSize: 9, color: SLATE_MID, italics: true },
+          { text: '________________________', alignment: 'center', color: SLATE_MUTED, fontSize: 11, margin: [0, 10, 0, 2] },
+          { text: authorizer.name, alignment: 'center', fontSize: 8, color: SLATE_MID, italics: true },
         ],
       };
 
   const authRight: any = {
-    width: 200,
+    width: 190,
     stack: [
-      { text: 'DIGITAL SIGNATURE', fontSize: 8, bold: true, color: SLATE_MUTED, characterSpacing: 0, alignment: 'center', margin: [0, 0, 0, 4] },
+      { text: 'DIGITAL SIGNATURE', fontSize: 7, bold: true, color: SLATE_MUTED, characterSpacing: 0, alignment: 'center', margin: [0, 0, 0, 3] },
       {
-        table: { widths: ['*'], heights: [58], body: [[{ stack: [signatureInner], border: [true, true, true, true] }]] },
+        table: { widths: ['*'], heights: [44], body: [[{ stack: [signatureInner], border: [true, true, true, true] }]] },
         layout: {
           hLineWidth: () => 1,
           vLineWidth: () => 1,
@@ -519,8 +519,8 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
           vLineStyle: () => ({ dash: { length: 3, space: 2 } }),
           paddingLeft: () => 8,
           paddingRight: () => 8,
-          paddingTop: () => 6,
-          paddingBottom: () => 6,
+          paddingTop: () => 4,
+          paddingBottom: () => 4,
         },
       },
     ],
@@ -530,20 +530,20 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
   const cytotechSection: Content[] = authorized
     ? [
         {
-          margin: [0, 18, 0, 0],
+          margin: [0, 8, 0, 0],
           columns: [
             {
               width: '*',
               stack: [
-                { text: 'CYTOTECHNOLOGIST', fontSize: 8, bold: true, color: SLATE_MUTED, characterSpacing: 0 },
-                { text: cytotechnologist || '—', fontSize: 11, bold: true, color: SLATE, margin: [0, 3, 0, 0] },
+                { text: 'CYTOTECHNOLOGIST', fontSize: 6, bold: true, color: SLATE_MUTED, characterSpacing: 0 },
+                { text: cytotechnologist || '—', fontSize: 8, bold: true, color: SLATE, margin: [0, 2, 0, 0] },
               ],
             },
             {
               width: '*',
               stack: [
-                { text: 'COMMENTS', fontSize: 8, bold: true, color: SLATE_MUTED, characterSpacing: 0 },
-                { text: 'APPROVED', fontSize: 11, bold: true, color: GREEN, margin: [0, 3, 0, 0] },
+                { text: 'COMMENTS', fontSize: 6, bold: true, color: SLATE_MUTED, characterSpacing: 0 },
+                { text: 'APPROVED', fontSize: 8, bold: true, color: GREEN, margin: [0, 2, 0, 0] },
               ],
             },
           ],
@@ -553,11 +553,11 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
     : [];
 
   const authorizationSection: Content = {
-    margin: [0, 22, 0, 0],
+    margin: [0, 10, 0, 0],
     unbreakable: true,
     stack: [
       divider(),
-      sectionLabel('AUTHORIZATION', 12),
+      sectionLabel('AUTHORIZATION', 6),
       { columns: [authLeft, authRight], columnGap: 24 },
     ],
   };
@@ -566,18 +566,18 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
   const endMarker: Content = {
     text: '--- End of Laboratory Report ---',
     alignment: 'center',
-    fontSize: 9,
+    fontSize: 8,
     italics: true,
     color: SLATE_MUTED,
     characterSpacing: 0,
-    margin: [0, 20, 0, 0],
+    margin: [0, 10, 0, 0],
   };
 
   // ── Assemble ────────────────────────────────────────────────────────────────
   return {
     pageSize: 'A4',
-    pageMargins: [40, 40, 40, 60],
-    defaultStyle: { font: 'Helvetica', fontSize: 10, color: SLATE, lineHeight: 1.2 },
+    pageMargins: [36, 30, 36, 30],
+    defaultStyle: { font: 'Helvetica', fontSize: 9, color: SLATE, lineHeight: 1.15 },
     // Faint draft mark on any not-yet-authorized render (pdfmake can't rotate
     // text, so it's centred rather than diagonal).
     background: (_page: number, size: { width: number; height: number }): Content | null =>
@@ -592,7 +592,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
             margin: [0, size.height / 2 - 40, 0, 0],
           },
     footer: (current: number, total: number): Content => ({
-      margin: [40, 0, 40, 0],
+      margin: [36, 0, 36, 0],
       stack: [
         { canvas: [{ type: 'line', x1: 0, y1: 0, x2: CW, y2: 0, lineWidth: 0.5, lineColor: BORDER }] },
         {
@@ -612,7 +612,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
       infoColumns,
       ...collectionFootnote,
       ...gynSection,
-      divider(14),
+      divider(8),
       sectionLabel('SPECIMENS RECEIVED'),
       accentBox(INDIGO_LIGHT, null, [specimenGrid]),
       sectionLabel('CYTOLOGICAL FINDINGS'),
@@ -628,7 +628,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function findingTh(text: string): TableCell {
-  return { text, fontSize: 9, bold: true, color: SLATE_MUTED, characterSpacing: 0, fillColor: SUBTLE_BG };
+  return { text, fontSize: 6, bold: true, color: SLATE_MUTED, characterSpacing: 0, fillColor: SUBTLE_BG };
 }
 
 function chunk<T>(arr: T[], size: number): T[][] {
