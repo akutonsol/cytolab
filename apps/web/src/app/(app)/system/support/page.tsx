@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   AlertTriangle, CalendarClock, CheckCircle2, Clock, Headset, Megaphone, Plus, Search, Send, X,
 } from 'lucide-react';
@@ -8,6 +9,7 @@ import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api, type Paginated } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'PENDING_RESPONSE' | 'RESOLVED' | 'CLOSED';
@@ -75,6 +77,20 @@ const btnPrimary = 'inline-flex items-center gap-2 rounded-xl bg-[#4F46E5] px-4 
 const btnGhost = 'inline-flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-white px-4 py-2.5 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC]';
 
 export default function SupportPage() {
+  // Route guard (TKT-2026-0004): the management view is superuser-only. The nav
+  // hides it, but direct URL navigation must be blocked client-side too (APIs
+  // already return 403 — this is defense-in-depth).
+  const router = useRouter();
+  const { message } = AntdApp.useApp();
+  const { claims, hydrated, can } = useAuth();
+  const allowed = can('system:health');
+  useEffect(() => {
+    if (hydrated && claims && !allowed) {
+      message.error('Access denied');
+      router.replace('/dashboard');
+    }
+  }, [hydrated, claims, allowed, message, router]);
+
   const [tab, setTab] = useState<'tickets' | 'maintenance' | 'announcements' | 'analytics'>('tickets');
   const TABS = [
     { key: 'tickets', label: 'Tickets', icon: Headset },
@@ -82,6 +98,10 @@ export default function SupportPage() {
     { key: 'announcements', label: 'Announcements', icon: Megaphone },
     { key: 'analytics', label: 'Analytics', icon: CheckCircle2 },
   ] as const;
+
+  // Until claims hydrate, or while an unauthorized user is redirected, render
+  // nothing. The (app) layout handles the unauthenticated → /login case.
+  if (!hydrated || !claims || !allowed) return null;
 
   return (
     <div className="min-h-full pb-10 pt-4" style={{ background: '#F8FAFC' }}>
