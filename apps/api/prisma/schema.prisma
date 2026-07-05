@@ -291,7 +291,8 @@ model User {
   changeRequestEvents    ChangeRequestEvent[]   @relation("ChangeRequestEventStaffActor")
   threadParticipants     ThreadParticipant[]
   authoredMessages       Message[]
-  assignedAppointments   Appointment[]
+  assignedAppointments   Appointment[]          @relation("AppointmentAssignee")
+  createdAppointments    Appointment[]          @relation("AppointmentCreator")
   notifications          Notification[]
   typingIndicators       TypingIndicator[]
   // HR / Payroll (Phase 7)
@@ -1416,16 +1417,34 @@ model Appointment {
   patient        Patient?          @relation(fields: [patientId], references: [id])
   clientId       String?
   client         Client?           @relation(fields: [clientId], references: [id])
-  title          String
+  title          String            @default("")
   type           AppointmentType   @default(COLLECTION)
   status         AppointmentStatus @default(SCHEDULED)
   scheduledAt    DateTime
   duration       Int               @default(30)
+  location       String?
+  doctorName     String?
   notes          String?
+
   assignedUserId String?
-  assignedUser   User?             @relation(fields: [assignedUserId], references: [id])
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  assignedUser   User?             @relation("AppointmentAssignee", fields: [assignedUserId], references: [id])
+
+  // Link back to the recall that triggered this appointment.
+  recallRecordId String?
+  recallRecord   RecallRecord?     @relation(fields: [recallRecordId], references: [id])
+
+  // Lifecycle outcomes.
+  checkedInAt        DateTime?
+  completedAt        DateTime?
+  resultRecordId     String?
+  noShowAt           DateTime?
+  cancellationReason String?
+  reminderSentAt     DateTime?
+
+  createdById String?
+  createdBy   User?    @relation("AppointmentCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([labId])
   @@index([labId, scheduledAt])
@@ -1438,6 +1457,13 @@ enum AppointmentType {
   CALLBACK
   CONSULTATION
   FOLLOWUP
+  // Spec values (the module standardized on these; legacy values kept for
+  // pre-existing rows).
+  SpecimenCollection
+  FollowUp
+  RecallVisit
+  Consultation
+  Other
 }
 
 enum AppointmentStatus {
@@ -1447,6 +1473,14 @@ enum AppointmentStatus {
   COMPLETED
   MISSED
   CANCELLED
+  // Spec values.
+  Scheduled
+  Confirmed
+  CheckedIn
+  Completed
+  NoShow
+  Cancelled
+  Rescheduled
 }
 
 // ─── System Health (internal) ────────────────────────────────────────────────
@@ -1925,6 +1959,7 @@ enum FeatureKey {
   REAGENT_TRACKING
   PATIENT_RECALL
   REPORT_CENTER
+  APPOINTMENTS
 
   // Tier 5 — Enterprise
   WSI_VIEWER
@@ -2466,6 +2501,8 @@ model RecallRecord {
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  appointments Appointment[]
 
   @@unique([labId, triggerRecordId])
   @@index([labId, dueDate])

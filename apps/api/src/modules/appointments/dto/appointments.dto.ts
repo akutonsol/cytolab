@@ -1,39 +1,55 @@
-import { IsDateString, IsEnum, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
-import { Type } from 'class-transformer';
 import { AppointmentStatus, AppointmentType } from '@prisma/client';
-import { PaginationDto } from '../../../common/dto/pagination.dto';
+import { IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 
-export class AppointmentQueryDto extends PaginationDto {
-  /** Filter to a single day (any ISO date/time; the whole calendar day is matched). */
-  @IsDateString() @IsOptional() date?: string;
-  @IsEnum(AppointmentType) @IsOptional() type?: AppointmentType;
-  @IsEnum(AppointmentStatus) @IsOptional() status?: AppointmentStatus;
+export class AppointmentQueryDto {
+  @IsOptional() @IsEnum(AppointmentStatus) status?: AppointmentStatus;
+  @IsOptional() @IsEnum(AppointmentType) type?: AppointmentType;
+  @IsOptional() @IsString() date?: string; // single-day filter (YYYY-MM-DD)
+  @IsOptional() @IsString() dateFrom?: string;
+  @IsOptional() @IsString() dateTo?: string;
+  @IsOptional() @IsString() assignedToId?: string;
+  @IsOptional() @IsString() clientId?: string;
 }
 
 export class CreateAppointmentDto {
-  @IsString() @IsNotEmpty() title!: string;
-  @IsEnum(AppointmentType) @IsOptional() type?: AppointmentType;
-  @IsEnum(AppointmentStatus) @IsOptional() status?: AppointmentStatus;
-  @IsDateString() scheduledAt!: string;
-  @IsInt() @Min(5) @IsOptional() @Type(() => Number) duration?: number;
-  @IsString() @IsOptional() patientId?: string;
-  @IsString() @IsOptional() clientId?: string;
-  @IsString() @IsOptional() assignedUserId?: string;
-  @IsString() @IsOptional() notes?: string;
+  @IsString() patientId!: string;
+  @IsEnum(AppointmentType) appointmentType!: AppointmentType;
+  @IsString() scheduledAt!: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(5) @Max(480) duration?: number;
+  @IsOptional() @IsString() @MaxLength(200) location?: string;
+  @IsOptional() @IsString() clientId?: string;
+  @IsOptional() @IsString() @MaxLength(200) doctorName?: string;
+  @IsOptional() @IsString() assignedToId?: string;
+  @IsOptional() @IsString() recallRecordId?: string;
+  @IsOptional() @IsString() @MaxLength(2000) notes?: string;
 }
 
 export class UpdateAppointmentDto {
-  @IsString() @IsNotEmpty() @IsOptional() title?: string;
-  @IsEnum(AppointmentType) @IsOptional() type?: AppointmentType;
-  @IsEnum(AppointmentStatus) @IsOptional() status?: AppointmentStatus;
-  @IsDateString() @IsOptional() scheduledAt?: string;
-  @IsInt() @Min(5) @IsOptional() @Type(() => Number) duration?: number;
-  @IsString() @IsOptional() patientId?: string;
-  @IsString() @IsOptional() clientId?: string;
-  @IsString() @IsOptional() assignedUserId?: string;
-  @IsString() @IsOptional() notes?: string;
+  @IsOptional() @IsEnum(AppointmentType) appointmentType?: AppointmentType;
+  @IsOptional() @IsString() scheduledAt?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(5) @Max(480) duration?: number;
+  @IsOptional() @IsString() @MaxLength(200) location?: string;
+  @IsOptional() @IsString() clientId?: string;
+  @IsOptional() @IsString() @MaxLength(200) doctorName?: string;
+  @IsOptional() @IsString() assignedToId?: string;
+  @IsOptional() @IsString() @MaxLength(2000) notes?: string;
 }
 
-export class UpdateStatusDto {
-  @IsEnum(AppointmentStatus) status!: AppointmentStatus;
+export class CancelAppointmentDto {
+  @IsOptional() @IsString() @MaxLength(500) cancellationReason?: string;
+}
+
+export class CompleteAppointmentDto {
+  @IsOptional() @IsString() resultRecordId?: string;
+}
+
+export class RescheduleAppointmentDto {
+  @IsString() newScheduledAt!: string;
+  @IsOptional() @IsString() @MaxLength(500) reason?: string;
+}
+
+export class CalendarQueryDto {
+  @Type(() => Number) @IsInt() year!: number;
+  @Type(() => Number) @IsInt() @Min(1) @Max(12) month!: number;
 }

@@ -11,6 +11,7 @@ export type FeatureKey =
   | 'ABNORMAL_ESCALATION'
   | 'CASE_ASSIGNMENT'
   | 'QC_MODULE'
+  | 'APPOINTMENTS'
   // Tier 3 — Operational
   | 'VOICE_TO_TEXT'
   | 'RESULT_TEMPLATES'
@@ -100,6 +101,12 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     name: 'Quality Control',
     description: 'Track slide prep, staining, and fixation quality; log QC failures and trends.',
     tier: 2, tierName: 'Clinical', icon: 'ShieldCheck', docsUrl: null, navPath: '/qc', dependsOn: [],
+  },
+  APPOINTMENTS: {
+    key: 'APPOINTMENTS',
+    name: 'Appointments',
+    description: 'Schedule and manage patient appointments for collection, follow-up, and recall visits.',
+    tier: 2, tierName: 'Clinical', icon: 'CalendarDays', docsUrl: null, navPath: '/appointments', dependsOn: [],
   },
 
   // ── Tier 3 — Operational ───────────────────────────────────────────

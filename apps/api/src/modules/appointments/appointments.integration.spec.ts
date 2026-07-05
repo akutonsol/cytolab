@@ -4,9 +4,9 @@ import { LabContext } from '../../common/tenancy/lab-context';
 import { AppointmentsService } from './appointments.service';
 
 /**
- * Appointments aggregation from real data: create a scheduled-today appointment
- * and confirm the overview KPIs, today's schedule and callbacks reflect it.
- * Lab-scoped throughout. Gated on DATABASE_URL.
+ * Appointments from real data: create an appointment, run it through the
+ * lifecycle, and confirm list/stats/calendar reflect it. Lab-scoped; the
+ * notifications helper is stubbed. Gated on DATABASE_URL.
  */
 const describeIf = process.env.DATABASE_URL ? describe : describe.skip;
 
@@ -14,21 +14,19 @@ describeIf('AppointmentsService (integration)', () => {
   const raw = new PrismaClient();
   const labContext = new LabContext();
   const prisma = new PrismaService(labContext);
-  const service = new AppointmentsService(prisma);
+  const notifs = { notifyUser: async () => undefined } as any;
+  const service = new AppointmentsService(prisma, notifs);
 
   const tag = `appt-${Date.now().toString(36)}`;
   let labId: string;
   let patientId: string;
   const run = <T>(fn: () => Promise<T>) => labContext.run({ labId }, fn);
-
   const at = (h: number, m = 0) => { const d = new Date(); d.setHours(h, m, 0, 0); return d.toISOString(); };
 
   beforeAll(async () => {
     const lab = await raw.lab.create({ data: { name: `Appt ${tag}`, slug: `appt-${tag}` } });
     labId = lab.id;
-    const patient = await raw.patient.create({
-      data: { labId, registrationNo: `${tag}-P1`, firstName: 'Ahsan', lastName: 'Habib' },
-    });
+    const patient = await raw.patient.create({ data: { labId, registrationNo: `${tag}-P1`, firstName: 'Ahsan', lastName: 'Habib' } });
     patientId = patient.id;
   });
 
@@ -40,45 +38,45 @@ describeIf('AppointmentsService (integration)', () => {
     await raw.$disconnect();
   });
 
-  it('creates appointments and aggregates them into the overview', () =>
+  it('creates an appointment and lists it for today', () =>
     run(async () => {
-      // A scheduled collection today, a pending callback, and a missed visit.
-      const created = await service.create({ title: 'Specimen collection', type: 'COLLECTION', scheduledAt: at(9), patientId });
-      expect(created.status).toBe('SCHEDULED');
-      expect(created.patient?.firstName).toBe('Ahsan');
+      const created = await service.create({ patientId, appointmentType: 'SpecimenCollection', scheduledAt: at(9) }, 'system');
+      expect(created.status).toBe('Scheduled');
+      expect(created.patientName).toBe('Ahsan Habib');
 
-      await service.create({ title: 'Result callback', type: 'CALLBACK', scheduledAt: at(11), patientId });
-      const missedAppt = await service.create({ title: 'Missed follow-up', type: 'FOLLOWUP', scheduledAt: at(8), patientId });
-      await service.updateStatus(missedAppt.id, 'MISSED');
-
-      const overview = await service.overview();
-      expect(overview.kpis.scheduledToday).toBeGreaterThanOrEqual(1);
-      expect(overview.kpis.pendingCallbacks).toBeGreaterThanOrEqual(1);
-      expect(overview.kpis.missed).toBeGreaterThanOrEqual(1);
-
-      // Today's schedule includes the collection, ordered by time.
-      const titles = overview.todaySchedule.map((a) => a.title);
-      expect(titles).toContain('Specimen collection');
-      // The callback surfaces in the callbacks panel.
-      expect(overview.callbacks.some((c) => c.title === 'Result callback')).toBe(true);
-      // A missed appointment yields an overdue alert.
-      expect(overview.alerts.some((a) => a.type === 'overdue')).toBe(true);
+      const today = await service.today();
+      expect(today.some((a) => a.id === created.id)).toBe(true);
     }));
 
-  it('filters findAll by type and updates status', () =>
+  it('runs the lifecycle: confirm → check-in → complete', () =>
     run(async () => {
-      const list = await service.findAll({ type: 'CALLBACK', page: 1, pageSize: 20 });
-      expect(list.data.every((a) => a.type === 'CALLBACK')).toBe(true);
-      expect(list.total).toBeGreaterThanOrEqual(1);
+      const a = await service.create({ patientId, appointmentType: 'FollowUp', scheduledAt: at(11) }, 'system');
+      expect((await service.confirm(a.id)).status).toBe('Confirmed');
+      const checked = await service.checkIn(a.id);
+      expect(checked.status).toBe('CheckedIn');
+      expect(checked.checkedInAt).toBeTruthy();
+      const done = await service.complete(a.id, {});
+      expect(done.status).toBe('Completed');
+      expect(done.completedAt).toBeTruthy();
     }));
 
-  it('filters findAll by a local-day date string (no UTC off-by-one)', () =>
+  it('reschedules into a fresh Scheduled appointment', () =>
     run(async () => {
+      const a = await service.create({ patientId, appointmentType: 'Consultation', scheduledAt: at(13) }, 'system');
+      const next = await service.reschedule(a.id, { newScheduledAt: at(15) }, 'system');
+      expect(next.status).toBe('Scheduled');
+      expect(next.id).not.toBe(a.id);
+      expect((await service.findOne(a.id)).status).toBe('Rescheduled');
+    }));
+
+  it('aggregates stats and calendar', () =>
+    run(async () => {
+      const stats = await service.stats();
+      expect(stats.todayCount).toBeGreaterThanOrEqual(1);
+      expect(Array.isArray(stats.byType)).toBe(true);
       const now = new Date();
-      const localDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      const list = await service.findAll({ date: localDay, page: 1, pageSize: 100 });
-      // The two collections created today must be present; the yesterday-missed one must not.
-      expect(list.data.some((a) => a.title === 'Specimen collection')).toBe(true);
-      expect(list.data.every((a) => new Date(a.scheduledAt).toDateString() === now.toDateString())).toBe(true);
+      const cal = await service.calendar({ year: now.getFullYear(), month: now.getMonth() + 1 });
+      const key = now.toISOString().slice(0, 10);
+      expect(cal.dates[key]?.length ?? 0).toBeGreaterThanOrEqual(1);
     }));
 });

@@ -8,6 +8,8 @@ import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
+import { FeatureGate } from '@/components/FeatureGate';
+import { NewAppointmentModal } from '@/components/NewAppointmentModal';
 import {
   FILTER_TABS, STATUS_META, dueColor, dueLabel, shortDate,
   type Recall, type RecallListRow, type RecallStatus, type RecallSummary,
@@ -30,6 +32,7 @@ function RecallDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const qc = useQueryClient();
   const { message } = AntdApp.useApp();
   const [notes, setNotes] = useState('');
+  const [bookOpen, setBookOpen] = useState(false);
   const { data: r } = useQuery<Recall>({ queryKey: ['recall', id], queryFn: () => api.get(`/recalls/${id}`).then((res) => res.data) });
   const invalidate = () => ['recall', 'recalls', 'recall-summary'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   const act = useMutation({
@@ -79,6 +82,11 @@ function RecallDetail({ id, onClose }: { id: string; onClose: () => void }) {
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Notes (optional)…" className={`${inp} mb-3`} />
                 <div className="flex flex-wrap gap-2">
                   <button onClick={() => act.mutate({ ep: 'complete' })} className="rounded-lg bg-[#16A34A] px-3.5 py-2 text-[13px] font-semibold text-white">Complete</button>
+                  {r.patient && (
+                    <FeatureGate feature="APPOINTMENTS">
+                      <button onClick={() => setBookOpen(true)} className="rounded-lg border border-[#C7D2FE] bg-[#EEF2FF] px-3.5 py-2 text-[13px] font-semibold text-[#4F46E5]">Book Appointment</button>
+                    </FeatureGate>
+                  )}
                   <button onClick={() => act.mutate({ ep: 'notify-client' })} className="rounded-lg bg-[#4F46E5] px-3.5 py-2 text-[13px] font-semibold text-white">Notify Client</button>
                   <button onClick={() => act.mutate({ ep: 'cancel', body: { notes } })} className="rounded-lg border border-[#E2E8F0] px-3.5 py-2 text-[13px] font-semibold text-[#64748B]">Cancel</button>
                   <button onClick={() => act.mutate({ ep: 'decline', body: { notes } })} className="rounded-lg border border-[#E2E8F0] px-3.5 py-2 text-[13px] font-semibold text-[#64748B]">Decline</button>
@@ -90,6 +98,12 @@ function RecallDetail({ id, onClose }: { id: string; onClose: () => void }) {
           </div>
         )}
       </div>
+      {bookOpen && r?.patient && (
+        <NewAppointmentModal
+          defaults={{ patientId: r.patient.id, appointmentType: 'RecallVisit', recallRecordId: r.id }}
+          onClose={() => setBookOpen(false)}
+        />
+      )}
     </div>,
     document.body,
   );
