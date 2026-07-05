@@ -126,6 +126,22 @@ const fmtCollection = (d?: Date | null): string => {
   return `${fmtDate(d)}  ${new Date(d).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
 };
 
+// Specimen enum → human-readable display name (falls back to the raw code).
+const SPECIMEN_DISPLAY: Record<string, string> = {
+  CERV_SCRAP: 'Cervical Scrape',
+  CERV_BRUSH: 'Cervical Brush',
+  VAG_POOL: 'Vaginal Pool',
+  URINE: 'Urine',
+  SPUTUM: 'Sputum',
+  PLEURAL_FLD: 'Pleural Fluid',
+  BREAST_ASP: 'Breast Aspirate',
+  ENDOCERV_ASP: 'Endocervical Aspirate',
+  BODY_FLUID: 'Body Fluid',
+  CSF: 'CSF',
+  OTHER: 'Other',
+};
+const displaySpecimen = (code?: string | null): string => (code ? SPECIMEN_DISPLAY[code] ?? code : '—');
+
 // ─── Small builders ───────────────────────────────────────────────────────────
 const sectionLabel = (text: string, topMargin = 16): Content => ({
   text,
@@ -206,24 +222,24 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
       { canvas: [{ type: 'rect', x: 0, y: 0, w: CW, h: 80, color: INDIGO }] },
       {
         columns: [
-          // LEFT — lab name + subtitle
+          // LEFT — lab name + subtitle (~28% of 483pt content width)
           {
-            width: 150,
+            width: 135,
             stack: [
               { text: lab.name, color: WHITE, fontSize: 18, bold: true },
               { text: 'Cytology & Pathology Laboratory', color: '#C7D2FE', fontSize: 10, margin: [0, 3, 0, 0] },
             ],
           },
-          // CENTER — report title (fixed width + noWrap so it never breaks lines)
+          // CENTER — report title (~44% width + noWrap so it never breaks lines)
           {
-            width: 200,
+            width: 213,
             stack: [
-              { text: 'CYTOLOGY REPORT', color: WHITE, fontSize: 18, bold: true, characterSpacing: 1, alignment: 'center', noWrap: true },
+              { text: 'CYTOLOGY REPORT', color: WHITE, fontSize: 18, bold: true, characterSpacing: 0.5, alignment: 'center', noWrap: true },
             ],
           },
-          // RIGHT — ref, date, lab contact
+          // RIGHT — ref, date, lab contact (~28%)
           {
-            width: '*',
+            width: 135,
             stack: [
               { text: `Ref  ${reportRef}`, color: INDIGO_ON, fontSize: 10, alignment: 'right' },
               { text: fmtDate(reportDate), color: '#C7D2FE', fontSize: 9, alignment: 'right', margin: [0, 2, 0, 0] },
@@ -275,7 +291,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
           sectionLabel('SPECIMEN INFORMATION', 14),
           infoTable([
             infoRow('Lab Number', record.labNumber, { bold: true, color: INDIGO }),
-            infoRow('Specimen Type', specimens[0]?.type),
+            infoRow('Specimen Type', specimens[0] ? displaySpecimen(specimens[0].type) : null),
             infoRow('Coll/Sent', fmtCollection(record.collectionDate)),
             infoRow("Rec'd/Reg'd", `${fmtDate(firstSpecimenDate)} / ${fmtDate(record.registeredAt)}`),
             infoRow('Report Date', fmtDate(reportDate)),
@@ -341,7 +357,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
             stack: group.map((s) => ({
               margin: [0, 0, 0, 6],
               stack: [
-                { text: s.type || '—', fontSize: 10, bold: true, color: SLATE },
+                { text: displaySpecimen(s.type), fontSize: 10, bold: true, color: SLATE },
                 {
                   text: [s.label, s.bloodGroup ? `Blood ${s.bloodGroup}` : null, s.dateReceived ? fmtDate(s.dateReceived) : null]
                     .filter(Boolean)
@@ -363,7 +379,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
         {
           columns: [
             { width: 8, canvas: [{ type: 'rect', x: 0, y: 1, w: 3, h: 12, color: INDIGO }] },
-            { width: '*', text: entry.specimenLabel || `Specimen ${i + 1}`, fontSize: 11, bold: true, color: SLATE },
+            { width: '*', text: entry.specimenLabel ? displaySpecimen(entry.specimenLabel) : `Specimen ${i + 1}`, fontSize: 11, bold: true, color: SLATE },
           ],
           margin: [0, i === 0 ? 4 : 12, 0, 5],
         },
