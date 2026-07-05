@@ -2,7 +2,7 @@
 
 import { use, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Banknote, CalendarDays, Clock, FileClock, LayoutGrid, Mail } from 'lucide-react';
+import { ArrowLeft, Award, Banknote, CalendarDays, Clock, FileClock, LayoutGrid, Mail } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
@@ -145,6 +145,65 @@ function ScheduleTab({ id }: { id: string }) {
   );
 }
 
+const scoreColor = (v: number) => (v >= 80 ? '#16A34A' : v >= 60 ? '#A16207' : '#DC2626');
+
+function PerformanceTab({ id }: { id: string }) {
+  const { data: composite } = useQuery({ queryKey: ['perf-score', id], queryFn: () => api.get(`/workforce/performance/score/${id}`).then((r) => r.data) });
+  const { data: reviews = [] } = useQuery({ queryKey: ['perf-reviews', id], queryFn: () => api.get('/workforce/performance/reviews', { params: { employeeId: id } }).then((r) => r.data) });
+  const { data: goals = [] } = useQuery({ queryKey: ['perf-goals', id, 'active'], queryFn: () => api.get('/workforce/performance/goals', { params: { employeeId: id, status: 'ACTIVE' } }).then((r) => r.data) });
+  const lastReview = reviews[0];
+  const B = composite?.breakdown;
+
+  return (
+    <div className="grid gap-6 md:grid-cols-2">
+      <div className={`${CARD} p-6`}>
+        <div className="mb-4 flex items-center justify-between">
+          <span className="font-label-sm text-label-sm uppercase tracking-wider text-secondary">Composite Score</span>
+          <span className="text-4xl font-bold" style={{ color: scoreColor(composite?.score ?? 0) }}>{composite?.score ?? 0}</span>
+        </div>
+        <div className="flex flex-col gap-3">
+          {B && ([['Attendance', B.attendance, '25%'], ['Productivity', B.productivity, '35%'], ['Quality', B.quality, '25%'], ['Review', B.review, '15%']] as const).map(([label, b, w]) => (
+            <div key={label}>
+              <div className="mb-1 flex items-center justify-between text-xs"><span className="text-slate-500">{label} <span className="text-slate-300">· {w}</span></span><span className="font-semibold" style={{ color: scoreColor(b.score) }}>{b.score}</span></div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full" style={{ width: `${Math.min(100, b.score)}%`, background: scoreColor(b.score) }} /></div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-6">
+        <div className={`${CARD} p-6`}>
+          <div className="mb-3 font-label-sm text-label-sm uppercase tracking-wider text-secondary">Last Review</div>
+          {lastReview ? (
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-charcoal-heading">{lastReview.period}</span>
+                <span className="text-2xl font-bold" style={{ color: scoreColor(lastReview.overallScore) }}>{lastReview.overallScore}</span>
+              </div>
+              <div className="mt-2 text-xs text-slate-500">Attendance {lastReview.attendanceScore} · Productivity {lastReview.productivityScore} · Quality {lastReview.qualityScore}</div>
+              {lastReview.comments && <p className="mt-2 text-sm text-on-surface">{lastReview.comments}</p>}
+            </div>
+          ) : <p className="text-sm text-slate-400">No reviews yet.</p>}
+        </div>
+
+        <div className={`${CARD} p-6`}>
+          <div className="mb-3 font-label-sm text-label-sm uppercase tracking-wider text-secondary">Active Goals</div>
+          {goals.length === 0 ? <p className="text-sm text-slate-400">No active goals.</p> : (
+            <div className="flex flex-col gap-3">
+              {goals.map((g: any) => (
+                <div key={g.id}>
+                  <div className="mb-1 flex items-center justify-between text-sm"><span className="font-medium text-charcoal-heading">{g.title}</span><span className="text-xs text-slate-400">{g.progress}%</span></div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${g.progress}%` }} /></div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EmployeeDetail({ id }: { id: string }) {
   const { isEnabled } = useFeatures();
   const wf = isEnabled('WORKFORCE_MANAGEMENT');
@@ -156,6 +215,7 @@ function EmployeeDetail({ id }: { id: string }) {
     { key: 'clock', label: 'Clock History', icon: Clock, show: wf },
     { key: 'timesheets', label: 'Timesheets', icon: FileClock, show: wf },
     { key: 'schedule', label: 'Schedule', icon: CalendarDays, show: wf },
+    { key: 'performance', label: 'Performance', icon: Award, show: wf },
   ].filter((t) => t.show);
 
   if (isLoading || !e) return <div className="p-8 text-sm text-secondary">Loading…</div>;
@@ -163,7 +223,7 @@ function EmployeeDetail({ id }: { id: string }) {
 
   return (
     <div className="min-h-full" style={{ background: '#F8FAFC' }}>
-      <div className="px-6 py-8 lg:px-8">
+      <div className="py-8">
         <Link href="/employees" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"><ArrowLeft size={15} /> Employees</Link>
 
         <div className={`${CARD} mb-6 flex flex-wrap items-center gap-4 p-6`}>
@@ -189,6 +249,7 @@ function EmployeeDetail({ id }: { id: string }) {
         {tab === 'clock' && wf && <ClockHistoryTab id={id} />}
         {tab === 'timesheets' && wf && <TimesheetsTab id={id} />}
         {tab === 'schedule' && wf && <ScheduleTab id={id} />}
+        {tab === 'performance' && wf && <PerformanceTab id={id} />}
       </div>
     </div>
   );
