@@ -50,7 +50,7 @@ function Dashboard() {
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
         <Kpi icon={<UserCheck size={20} />} iconClass="bg-green-50 text-green-600" label="Present Today" value={today?.present ?? 0} sub={`${pct(present)}% of team`} subColor="#16A34A" />
         <Kpi icon={<UserX size={20} />} iconClass="bg-red-50 text-red-600" label="Absent" value={today?.absent ?? 0} sub="not clocked in" subColor="#DC2626" />
-        <Kpi icon={<AlertTriangle size={20} />} iconClass="bg-yellow-50 text-yellow-600" label="Late" value={today?.late ?? 0} sub="after grace" subColor="#A16207" />
+        <Kpi icon={<AlertTriangle size={20} />} iconClass="bg-[#FEF9C3] text-[#A16207]" label="Late" value={today?.late ?? 0} sub="after grace" subColor="#A16207" />
         <Kpi icon={<CalendarOff size={20} />} iconClass="bg-slate-100 text-slate-500" label="On Leave" value={today?.onLeave ?? 0} sub="scheduled off" subColor="#64748B" />
         <Kpi icon={<TimerReset size={20} />} iconClass="bg-indigo-50 text-indigo-600" label="Overtime Hours" value={today?.overtime ?? 0} sub="beyond 8h/day" subColor="#4F46E5" />
       </div>
