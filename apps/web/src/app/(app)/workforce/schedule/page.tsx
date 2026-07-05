@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Loader2, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FeatureGate } from '@/components/FeatureGate';
@@ -27,7 +27,8 @@ function Grid() {
   const qc = useQueryClient();
   const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
   const [deptId, setDeptId] = useState('all');
-  const [picker, setPicker] = useState<{ employeeId: string; date: string } | null>(null);
+  // `current` is set when opening the picker on an existing assignment (edit mode).
+  const [picker, setPicker] = useState<{ employeeId: string; date: string; current?: { assignmentId: string; shiftId: string } } | null>(null);
   const [assignError, setAssignError] = useState<string | null>(null);
 
   const wk = ymd(weekStart);
@@ -59,11 +60,20 @@ function Grid() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['schedule'] }); setPicker(null); },
     onError: (e: any) => setAssignError(e?.response?.data?.message ?? 'Could not assign shift. Please try again.'),
   });
+  const remove = useMutation({
+    mutationFn: (assignmentId: string) => api.delete(`/workforce/schedule/assignments/${assignmentId}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['schedule'] }); setPicker(null); },
+    onError: (e: any) => setAssignError(e?.response?.data?.message ?? 'Could not remove shift. Please try again.'),
+  });
+  const busy = assign.isPending || remove.isPending;
   // The shift currently being saved (drives the per-option spinner).
   const savingShiftId = assign.isPending ? assign.variables?.shiftId : null;
-  // Open the picker for a cell, clearing any prior error/in-flight state.
-  const openPicker = (employeeId: string, date: string) => { assign.reset(); setAssignError(null); setPicker({ employeeId, date }); };
-  const closePicker = () => { assign.reset(); setAssignError(null); setPicker(null); };
+  // Open the picker for a cell (optionally in edit mode with the current
+  // assignment), clearing any prior error/in-flight state.
+  const openPicker = (employeeId: string, date: string, current?: { assignmentId: string; shiftId: string }) => {
+    assign.reset(); remove.reset(); setAssignError(null); setPicker({ employeeId, date, current });
+  };
+  const closePicker = () => { assign.reset(); remove.reset(); setAssignError(null); setPicker(null); };
 
   const rangeLabel = `${parseLocal(days[0]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${parseLocal(days[6]).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
@@ -103,7 +113,14 @@ function Grid() {
                   return (
                     <td key={d} className="px-1.5 py-2 text-center">
                       {a ? (
-                        <span className={`inline-block rounded-lg px-2 py-1 text-[11px] font-semibold ${SHIFT_CHIP[a.shift.type] ?? 'bg-slate-100 text-slate-700'}`} title={`${a.shift.startTime}–${a.shift.endTime}`}>{a.shift.name}</span>
+                        <button
+                          onClick={() => openPicker(e.id, d, { assignmentId: a.assignmentId, shiftId: a.shift.id })}
+                          title={`${a.shift.name} · ${a.shift.startTime}–${a.shift.endTime} — click to change or remove`}
+                          className={`group inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition-shadow hover:ring-2 hover:ring-primary/40 ${SHIFT_CHIP[a.shift.type] ?? 'bg-slate-100 text-slate-700'}`}
+                        >
+                          {a.shift.name}
+                          <Pencil size={11} className="opacity-0 transition-opacity group-hover:opacity-70" />
+                        </button>
                       ) : (
                         <button onClick={() => openPicker(e.id, d)} className="grid h-7 w-7 place-items-center rounded-lg border border-dashed border-slate-200 text-slate-300 hover:border-primary hover:text-primary"><Plus size={14} /></button>
                       )}
@@ -126,24 +143,40 @@ function Grid() {
       {picker && (
         <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={closePicker}>
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Assign Shift</h3><button onClick={closePicker} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button></div>
+            <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">{picker.current ? 'Change Shift' : 'Assign Shift'}</h3><button onClick={closePicker} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button></div>
             <div className="mb-3 text-sm text-slate-500">{empName(rows.find((r) => r.id === picker.employeeId))} · {parseLocal(picker.date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</div>
             <div className="flex flex-col gap-2">
-              {shifts.map((s: any) => (
-                <button
-                  key={s.id}
-                  onClick={() => { setAssignError(null); assign.mutate({ employeeId: picker.employeeId, shiftId: s.id, date: apiDate(picker.date) }); }}
-                  disabled={assign.isPending}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left transition-colors hover:border-primary disabled:opacity-60"
-                >
-                  <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${SHIFT_CHIP[s.type] ?? 'bg-slate-100 text-slate-700'}`}>{s.name}</span>
-                  {savingShiftId === s.id
-                    ? <Loader2 size={15} className="animate-spin text-primary" />
-                    : <span className="text-xs text-slate-400">{s.startTime}–{s.endTime}</span>}
-                </button>
-              ))}
+              {shifts.map((s: any) => {
+                const selected = picker.current?.shiftId === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => { setAssignError(null); assign.mutate({ employeeId: picker.employeeId, shiftId: s.id, date: apiDate(picker.date) }); }}
+                    disabled={busy}
+                    className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors disabled:opacity-60 ${selected ? 'border-primary bg-primary/5 ring-1 ring-primary/30' : 'border-slate-200 hover:border-primary'}`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${SHIFT_CHIP[s.type] ?? 'bg-slate-100 text-slate-700'}`}>{s.name}</span>
+                      {selected && <span className="text-[11px] font-medium text-primary">Current</span>}
+                    </span>
+                    {savingShiftId === s.id
+                      ? <Loader2 size={15} className="animate-spin text-primary" />
+                      : <span className="text-xs text-slate-400">{s.startTime}–{s.endTime}</span>}
+                  </button>
+                );
+              })}
               {shifts.length === 0 && <div className="rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-400">No shifts defined yet.</div>}
             </div>
+            {picker.current && (
+              <button
+                onClick={() => { setAssignError(null); remove.mutate(picker.current!.assignmentId); }}
+                disabled={busy}
+                className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
+              >
+                {remove.isPending ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                Remove Shift
+              </button>
+            )}
             {assignError && <div className="mt-3 text-sm text-error">{assignError}</div>}
           </div>
         </div>

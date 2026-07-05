@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { RequireFeature } from '../../common/decorators/require-feature.decorator';
@@ -97,6 +97,12 @@ export class WorkforceController {
   @RequirePermissions('employee:change')
   assign(@Body() dto: AssignShiftDto, @CurrentUser() user: AuthUser) {
     return this.workforce.assignShift(dto, user.userId);
+  }
+
+  @Delete('workforce/schedule/assignments/:id')
+  @RequirePermissions('employee:change')
+  removeAssignment(@Param('id') id: string) {
+    return this.workforce.removeAssignment(id);
   }
 
   @Get('workforce/shifts')

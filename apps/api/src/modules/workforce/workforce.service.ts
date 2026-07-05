@@ -251,10 +251,21 @@ export class WorkforceService {
   }
 
   async assignShift(dto: AssignShiftDto, userId?: string) {
+    const date = dayStart(new Date(dto.date));
+    // Replace any existing assignment for this employee on this day, so
+    // re-assigning a cell changes the shift instead of stacking duplicates.
+    await this.prisma.shiftAssignment.deleteMany({ where: { employeeId: dto.employeeId, date } });
     return this.prisma.shiftAssignment.create({
-      data: { employeeId: dto.employeeId, shiftId: dto.shiftId, date: dayStart(new Date(dto.date)), createdById: userId ?? null } as Prisma.ShiftAssignmentUncheckedCreateInput,
+      data: { employeeId: dto.employeeId, shiftId: dto.shiftId, date, createdById: userId ?? null } as Prisma.ShiftAssignmentUncheckedCreateInput,
       include: { shift: true },
     });
+  }
+
+  async removeAssignment(id: string) {
+    // Lab-scoped by the tenancy extension; deleteMany avoids a throw when the
+    // row isn't in the caller's lab (nothing matches → deleted: false).
+    const res = await this.prisma.shiftAssignment.deleteMany({ where: { id } });
+    return { deleted: res.count > 0 };
   }
 
   async assignBulk(dto: BulkAssignDto, userId?: string) {
