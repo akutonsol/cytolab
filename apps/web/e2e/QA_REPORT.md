@@ -234,6 +234,31 @@ are the highest-value next steps for an enterprise release.
 | 22 | E2E tests passing | ✅ | 57/63 pass, 6 env-skips, 0 fail (post route-guard fix) |
 | 23 | — | | |
 
+## Database Security — Pre-Go-Live Required
+
+### Must complete before any production/PHI deployment:
+
+- [ ] Run `prisma/scripts/db-security-setup.sql` as PostgreSQL superuser on each environment (dev, staging, prod) — creates restricted `cytolab_api` (DML-only) and `cytolab_migrate` (privileged) DB users
+- [ ] Update `DATABASE_URL` to use `cytolab_api` credentials (restricted user) in production
+- [ ] Update `DATABASE_MIGRATION_URL` to use `cytolab_migrate` credentials in production
+- [ ] Add `?sslmode=require` to both DATABASE URLs in production (API will hard-fail on boot without it)
+- [ ] Verify `POST /system/backup/verify-latest` returns `{ verified: true }` with GCS configured (requires `STORAGE_BUCKET` env var set)
+- [ ] Move all secrets to Google Cloud Secret Manager: `DATABASE_URL`, `DATABASE_MIGRATION_URL`, `JWT_SECRET`, `JWT_PORTAL_SECRET`, `ENCRYPTION_KEY`, `STORAGE_BUCKET`
+- [ ] Execute `REVOKE UPDATE, DELETE ON "AuditLog" FROM cytolab_api` on production DB (append-only audit trail — documented in db-security-setup.sql with existence check)
+- [ ] Rotate database passwords from defaults — store in Secret Manager
+- [ ] Schedule password rotation every 90 days
+
+### Post Go-Live (deferred — not blocking):
+
+- [ ] Row-Level Security (RLS) — PostgreSQL RLS policies for defense-in-depth multi-tenancy at DB level (additional layer on top of Prisma client extension)
+- [ ] PgBouncer connection pooling — prevent connection exhaustion under sustained load (k6 stress test showed connection pressure at 100 VUs)
+- [ ] Encrypt `Patient.phoneNumber` and `Patient.email` fields — currently excluded because used in search queries; requires a search strategy (e.g. deterministic encryption or separate search index) before encrypting
+
+### Reference
+- Full runbook: `docs/DATABASE_SECURITY.md`
+- Setup script: `prisma/scripts/db-security-setup.sql`
+- Commit: `646db23`
+
 ---
 
 ## 8. Release Recommendation
