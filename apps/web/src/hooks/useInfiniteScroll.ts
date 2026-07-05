@@ -22,12 +22,13 @@ export function useInfiniteScroll<T>({ fetchFn, pageSize = 20, enabled = true }:
     try {
       setLoading(true);
       setError(null);
-      // Race the fetch against a minimum 600ms so the spinner is always visible
-      // even when the data resolves instantly (e.g. client-windowed lists).
-      const [result] = await Promise.all([
-        fetchFn(pageNum, pageSize),
-        new Promise(resolve => setTimeout(resolve, 600)),
-      ]);
+      // Minimum 600ms spinner time on APPEND loads only, so the spinner is
+      // always visible even when data resolves instantly (client-windowed
+      // lists). The initial load (reset) stays fast — no artificial delay.
+      const fetchPromise = fetchFn(pageNum, pageSize);
+      const result = reset
+        ? await fetchPromise
+        : await Promise.all([fetchPromise, new Promise(resolve => setTimeout(resolve, 600))]).then(([r]) => r);
       setItems(prev => reset ? result.data : [...prev, ...result.data]);
       setTotal(result.total);
       setPage(pageNum);
