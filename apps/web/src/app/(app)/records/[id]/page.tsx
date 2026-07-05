@@ -22,6 +22,7 @@ import { RESULT_META as CORR_META, type CorrelationCase } from '@/lib/correlatio
 import { STATUS_META as RECALL_META, dueColor, dueLabel, shortDate as recallDate, type Recall } from '@/lib/recall';
 import { AddSlideModal } from '@/components/AddSlideModal';
 import { type DigitalSlide } from '@/lib/wsi';
+import { AIScreeningCard } from '@/components/AIScreeningCard';
 import { SPECIMEN_LABELS, type FormType } from '@/lib/specimen-types';
 
 // ─── Status + step maps (zero-orange) ────────────────────────────────────────
@@ -502,6 +503,9 @@ export default function RecordDetailPage() {
                 )}
               </div>
             )}
+          </FeatureGate>
+          <FeatureGate feature="AI_SCREENING">
+            <div className="mt-3"><AIScreeningCard recordId={id} /></div>
           </FeatureGate>
           {(recordReagents ?? []).length > 0 && (
             <FeatureGate feature="REAGENT_TRACKING">

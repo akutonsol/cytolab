@@ -220,6 +220,7 @@ model Lab {
   recalls                RecallRecord[]
   digitalSlides          DigitalSlide[]
   slideAnnotations       SlideAnnotation[]
+  aiScreenings           AIScreeningResult[]
 }
 
 model Account {
@@ -277,6 +278,7 @@ model User {
   resultSheetEvents      ResultSheetEvent[]
   aiDraftsCreated        AiDraft[]              @relation("AiDraftCreatedBy")
   aiDraftsAccepted       AiDraft[]              @relation("AiDraftAcceptedBy")
+  aiScreeningsReviewed   AIScreeningResult[]    @relation("AIScreeningReviewer")
   assignedChangeRequests ChangeRequest[]        @relation("ChangeRequestAssignee")
   changeRequestMessages  ChangeRequestMessage[] @relation("ChangeRequestMessageStaffAuthor")
   changeRequestEvents    ChangeRequestEvent[]   @relation("ChangeRequestEventStaffActor")
@@ -579,6 +581,7 @@ model Record {
   reagentUsages     ReagentUsage[]
   recalls           RecallRecord[]
   digitalSlides     DigitalSlide[]
+  aiScreening       AIScreeningResult?
   // Case assignment (Tier 2 — workload balancing). Fields are unconditional in
   // the schema; only the UI is feature-gated.
   assignedToId      String?
@@ -2510,4 +2513,54 @@ model SlideAnnotation {
 
   @@index([labId])
   @@index([slideId])
+}
+
+// ─── AI Screening (Tier 5 — Enterprise) ──────────────────────────────────────
+// Pre-screening results that flag abnormal cells before pathologist review.
+// One result per record; findings/confidence are surfaced in the result-entry
+// and authorization workflow, and tracked for AI-vs-pathologist agreement.
+enum AIScreenStatus {
+  Pending // not yet screened
+  Processing // AI analysis in progress
+  Completed // results available
+  Failed // screening failed
+  Skipped // manually skipped
+}
+
+enum AIConfidence {
+  High // >= 90%
+  Medium // 70-89%
+  Low // < 70%
+}
+
+model AIScreeningResult {
+  id       String @id @default(cuid())
+  labId    String
+  lab      Lab    @relation(fields: [labId], references: [id])
+  recordId String @unique
+  record   Record @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  status          AIScreenStatus @default(Pending)
+  confidence      Float? // 0-100
+  confidenceLevel AIConfidence?
+
+  // Findings
+  findings       Json? // array of { region, finding, confidence }
+  primaryFinding String? // main AI diagnosis
+  flaggedAreas   Int     @default(0)
+
+  // Performance tracking
+  agreedWithAI    Boolean?
+  pathologistNote String?
+
+  processedAt  DateTime?
+  reviewedAt   DateTime?
+  reviewedById String?
+  reviewedBy   User?     @relation("AIScreeningReviewer", fields: [reviewedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([labId])
+  @@index([labId, status])
 }

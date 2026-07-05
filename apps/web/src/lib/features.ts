@@ -176,7 +176,7 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     key: 'AI_SCREENING',
     name: 'AI Pre-Screening',
     description: 'AI-assisted cytology pre-screening to prioritize and flag abnormal cases.',
-    tier: 5, tierName: 'Enterprise', icon: 'Sparkles', docsUrl: null, navPath: null, dependsOn: ['WSI_VIEWER'], comingSoon: true,
+    tier: 5, tierName: 'Enterprise', icon: 'Sparkles', docsUrl: null, navPath: '/ai-screening', dependsOn: ['WSI_VIEWER'],
   },
   TELECONSULTATION: {
     key: 'TELECONSULTATION',

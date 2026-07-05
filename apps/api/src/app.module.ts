@@ -52,6 +52,7 @@ import { ProficiencyModule } from './modules/proficiency/proficiency.module';
 import { ReagentModule } from './modules/reagent/reagent.module';
 import { RecallModule } from './modules/recall/recall.module';
 import { WsiModule } from './modules/wsi/wsi.module';
+import { AIScreeningModule } from './modules/ai-screening/ai-screening.module';
 
 /**
  * Cytolab modular monolith.
@@ -116,6 +117,7 @@ import { WsiModule } from './modules/wsi/wsi.module';
     ReagentModule,
     RecallModule,
     WsiModule,
+    AIScreeningModule,
   ],
   controllers: [HealthController],
   providers: [

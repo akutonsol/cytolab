@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
 import {
-  Activity, AlertTriangle, ArrowRight, ArrowUpRight, Calendar, CalendarClock, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FileCheck, FileText, FlaskConical,
+  Activity, AlertTriangle, ArrowRight, ArrowUpRight, Brain, Calendar, CalendarClock, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FileCheck, FileText, FlaskConical,
   Folder, GraduationCap, Hourglass, Microscope, Monitor, MoreHorizontal, Plus, ShieldCheck, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
   TestTube, TrendingUp, User, Users,
 } from 'lucide-react';
@@ -197,6 +197,11 @@ export default function DashboardPage() {
     enabled: isEnabled('PATIENT_RECALL'),
   });
   const recallsDue = (recallSummary?.due ?? 0) + (recallSummary?.overdue ?? 0);
+  const { data: aiAnalytics } = useQuery({
+    queryKey: ['ai-analytics'],
+    queryFn: () => api.get('/ai-screening/analytics').then((r) => r.data as { pendingReview: number; agreementRate: number; totalScreened: number }),
+    enabled: isEnabled('AI_SCREENING'),
+  });
 
   // The queue drives an in-place selection: which record the AI stage + findings
   // reflect. Defaults to the top-priority record once data arrives.
@@ -350,6 +355,22 @@ export default function DashboardPage() {
               </button>
             );
           })()}
+        </FeatureGate>
+
+        <FeatureGate feature="AI_SCREENING">
+          {(aiAnalytics?.pendingReview ?? 0) > 0 && (
+            <button onClick={() => router.push('/ai-screening')}
+              style={{ marginTop: 16, width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 18, border: '1px solid #C7D2FE', background: '#EEF2FF', cursor: 'pointer', textAlign: 'left' }}>
+              <span style={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: 12, background: '#E0E7FF', color: '#7C3AED', flexShrink: 0 }}><Brain size={22} /></span>
+              <span style={{ flex: 1 }}>
+                <span style={{ display: 'block', fontSize: 16, fontWeight: 700, color: '#0F172A' }}>{aiAnalytics!.pendingReview} AI screen{aiAnalytics!.pendingReview === 1 ? '' : 's'} awaiting review</span>
+                <span style={{ display: 'block', fontSize: 13, color: '#64748B', marginTop: 2 }}>
+                  {aiAnalytics!.totalScreened} screened · {aiAnalytics!.agreementRate}% agreement — lowest confidence first
+                </span>
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5' }}>Review →</span>
+            </button>
+          )}
         </FeatureGate>
 
         <div style={{ marginTop: 40, background: '#F9FAFC', marginLeft: -16, marginRight: -16, marginBottom: -40, paddingLeft: 16, paddingRight: 16, paddingTop: 24, paddingBottom: 40 }} className="flex flex-col gap-5">

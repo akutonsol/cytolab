@@ -12,6 +12,7 @@ import { ResultTemplateSelector } from './ResultTemplateSelector';
 import { composeNarrative, type ResultTemplate } from '@/lib/result-templates';
 import { PriorHistoryPanel } from './PriorHistoryPanel';
 import { BethesdaClassificationModal } from './BethesdaClassificationModal';
+import { AIScreeningCard } from './AIScreeningCard';
 import { DictationTextarea } from './DictationTextarea';
 import type { DictationButtonHandle } from './DictationButton';
 import { FeatureGate } from './FeatureGate';
@@ -303,6 +304,11 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
         <Empty description="This record has no result sheet yet" image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (
         <>
+          {record.id && (
+            <FeatureGate feature="AI_SCREENING">
+              <div style={{ marginBottom: 16 }}><AIScreeningCard recordId={record.id} /></div>
+            </FeatureGate>
+          )}
           <Descriptions size="small" column={2} bordered>
             <Descriptions.Item label="Lab No.">{record.labNumber ?? '—'}</Descriptions.Item>
             <Descriptions.Item label="Form">{isGyn ? 'Gynecology' : 'Non-Gynecology'}</Descriptions.Item>

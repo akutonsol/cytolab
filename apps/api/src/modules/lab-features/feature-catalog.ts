@@ -58,6 +58,7 @@ export const BUILT_FEATURES: ReadonlySet<FeatureKey> = new Set<FeatureKey>([
   'VOICE_TO_TEXT',
   'RESULT_TEMPLATES',
   'WSI_VIEWER',
+  'AI_SCREENING',
 ]);
 
 export const ALL_FEATURE_KEYS = Object.keys(FEATURE_TIERS) as FeatureKey[];
