@@ -442,21 +442,21 @@ select option {
 
 .btn-secondary {
   background: #ffffff;
-  color: #49607e;
-  border: 1px solid rgba(199, 196, 216, 0.3);
-  border-radius: 0.75rem;
-  padding: 10px 16px;
+  color: #374151; /* gray-700 */
+  border: 1px solid #e5e7eb; /* gray-200 */
+  border-radius: 0.75rem; /* rounded-xl */
+  padding: 10px 16px; /* px-4 py-2.5 */
   font-family: 'Geist', sans-serif;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 500; /* font-medium */
   letter-spacing: 0.02em;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
-.btn-secondary:hover { background: #f1f4f7; }
+.btn-secondary:hover { background: #f9fafb; border-color: #d1d5db; } /* gray-50 / gray-300 */
 
 .btn-outline {
   background: transparent;
@@ -473,16 +473,16 @@ select option {
 
 .btn-ghost {
   background: transparent;
-  color: #64748b;
-  border: none;
-  border-radius: 8px;
+  color: #374151; /* gray-700 */
+  border: 1px solid transparent;
+  border-radius: 0.75rem; /* rounded-xl */
   padding: 8px 12px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
-.btn-ghost:hover { background: #f5f4f0; color: #0f172a; }
+.btn-ghost:hover { background: #f9fafb; border-color: #e5e7eb; } /* gray-50 / gray-200 */
 
 /* ── Cards ───────────────────────────────────────────────── */
 .card {

@@ -176,7 +176,7 @@ export default function SettingsPage() {
                   <button
                     key={item.id}
                     onClick={() => setActive(item.id)}
-                    className={`rounded-lg px-2.5 py-1.5 text-left font-body-sm text-body-sm transition-colors ${isActive ? 'bg-primary-fixed font-semibold text-primary' : 'text-on-surface hover:bg-surface-container-low'}`}
+                    className={`rounded-lg border-l-4 px-3 py-2 text-left font-body-sm text-body-sm transition-colors ${isActive ? 'border-indigo-500 bg-indigo-50 font-medium text-indigo-700' : 'border-transparent bg-white text-gray-600 hover:bg-gray-50'}`}
                   >
                     {item.label}
                   </button>
