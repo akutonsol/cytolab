@@ -16,6 +16,7 @@ import { useFeatures } from '@/lib/feature-context';
 import { NavPills } from '@/components/dashboard/nav-pills';
 import { ClockWidget } from '@/components/workforce/ClockWidget';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
+import { ReportIssueButton } from '@/components/ReportIssueButton';
 import { useAuth, useAuthStore } from '@/lib/auth';
 import { api, refreshSession } from '@/lib/api';
 
@@ -247,6 +248,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {quickAdd.items && quickAdd.items.length > 0 && (
                 <Dropdown trigger={['click']} menu={quickAdd}><button aria-label="Quick add" className={iconBtnCls}><ReadOutlined /></button></Dropdown>
               )}
+              <ReportIssueButton className={iconBtnCls} />
               <button aria-label="Messages" onClick={() => navigate('/messaging')} className={iconBtnCls}><MessageOutlined /></button>
               <button aria-label="Notifications" onClick={() => router.push('/notifications')} className={`${iconBtnCls} relative`}>
                 <BellOutlined />
