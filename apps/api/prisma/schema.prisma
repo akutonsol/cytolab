@@ -327,6 +327,20 @@ model User {
   workforceNotifications  WorkforceNotification[] @relation("WorkforceNotificationRecipient")
   payrollPeriodsProcessed PayrollPeriod[]         @relation("PayrollPeriodProcessor")
   performanceReviewsGiven PerformanceReview[]     @relation("PerformanceReviewer")
+  // Enterprise security (Phase 1) — password lifecycle, MFA, login protection.
+  passwordChangedAt       DateTime?
+  passwordExpiresAt       DateTime?
+  mfaRequired             Boolean                 @default(false)
+  lastLoginAt             DateTime?
+  lastLoginIp             String?
+  failedLoginCount        Int                     @default(0)
+  failedLoginAt           DateTime?
+  refreshTokens           RefreshToken[]
+  userSessions            UserSession[]
+  accountLock             AccountLock?
+  trustedDevices          TrustedDevice[]
+  mfaConfig               MfaConfig?
+  passwordHistory         PasswordHistory[]
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
 
@@ -3232,4 +3246,131 @@ enum PerformanceGoalStatus {
   ACTIVE
   COMPLETED
   MISSED
+}
+
+// ─── Maintenance & Support module ─────────────────────────────────────────────
+// Support tickets (staff + public client/consultant submissions), threaded
+// comments, attachments, scheduled maintenance windows and system-wide
+// announcements. SupportTicket / MaintenanceWindow / SystemAnnouncement carry a
+// labId, so the tenancy extension auto-scopes them; comments/attachments are
+// reached through their (lab-scoped) parent ticket.
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  PENDING_RESPONSE
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum TicketCategory {
+  BUG
+  FEATURE_REQUEST
+  DATA_ISSUE
+  ACCESS
+  BILLING
+  TRAINING
+  MAINTENANCE
+  OTHER
+}
+
+enum SubmitterType {
+  STAFF
+  CLIENT
+  CONSULTANT
+}
+
+model SupportTicket {
+  id              String          @id @default(cuid())
+  labId           String
+  ticketNumber    String          @unique // auto-generated e.g. TKT-2026-0001
+  title           String
+  description     String
+  category        TicketCategory
+  priority        TicketPriority  @default(MEDIUM)
+  status          TicketStatus    @default(OPEN)
+  submitterType   SubmitterType
+  submittedById   String? // userId if staff
+  submitterName   String // always stored for consultants/clients
+  submitterEmail  String
+  assignedToId    String? // User
+  resolvedAt      DateTime?
+  closedAt        DateTime?
+  resolutionNotes String?
+  slaDeadline     DateTime? // calculated on create based on priority
+  comments        SupportComment[]
+  attachments     SupportAttachment[]
+  maintenanceWindows MaintenanceWindow[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([labId, status])
+  @@index([labId, createdAt])
+}
+
+model SupportComment {
+  id         String        @id @default(cuid())
+  ticketId   String
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id])
+  authorId   String? // userId if internal
+  authorName String
+  authorType SubmitterType
+  body       String
+  isInternal Boolean       @default(false) // internal notes not visible to client/consultant
+  createdAt  DateTime      @default(now())
+
+  @@index([ticketId])
+}
+
+model SupportAttachment {
+  id        String        @id @default(cuid())
+  ticketId  String
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id])
+  fileName  String
+  fileUrl   String
+  fileSize  Int
+  createdAt DateTime      @default(now())
+
+  @@index([ticketId])
+}
+
+model MaintenanceWindow {
+  id              String         @id @default(cuid())
+  labId           String
+  title           String
+  description     String?
+  scheduledAt     DateTime
+  durationMinutes Int
+  affectedSystems String[] // e.g. ["API", "Database", "Portal"]
+  status          String         @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+  notifyUsers     Boolean        @default(true)
+  ticketId        String?
+  ticket          SupportTicket? @relation(fields: [ticketId], references: [id])
+  createdById     String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([labId, scheduledAt])
+}
+
+model SystemAnnouncement {
+  id          String    @id @default(cuid())
+  labId       String
+  title       String
+  body        String
+  type        String    @default("INFO") // INFO, WARNING, CRITICAL
+  isActive    Boolean   @default(true)
+  showFrom    DateTime  @default(now())
+  showUntil   DateTime?
+  createdById String
+  createdAt   DateTime  @default(now())
+
+  @@index([labId, isActive])
 }
