@@ -3,6 +3,7 @@ import {
   IsBoolean,
   IsDate,
   IsEnum,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -46,5 +47,13 @@ export class UpdateRequisitionLineDto {
 }
 
 export class RequisitionQueryDto extends PaginationDto {
+  @IsEnum(RequisitionStatus) @IsOptional() status?: RequisitionStatus;
+}
+
+export class RequisitionReportDto {
+  @IsString() @IsOptional() dateFrom?: string;
+  @IsString() @IsOptional() dateTo?: string;
+  @IsIn(['client', 'status', 'date']) @IsOptional() groupBy?: 'client' | 'status' | 'date';
+  @IsString() @IsOptional() clientId?: string;
   @IsEnum(RequisitionStatus) @IsOptional() status?: RequisitionStatus;
 }

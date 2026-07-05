@@ -621,4 +621,7 @@ body {
   .printable { position: absolute !important; left: 0; top: 0; width: 100%; }
   .no-print { display: none !important; }
   .print-break { page-break-after: always; }
+  /* Requisition report: keep each group together; drop editable-field chrome. */
+  .req-report-group { break-inside: avoid; page-break-inside: avoid; }
+  .req-report-field { border: none !important; padding: 0 !important; resize: none !important; }
 }

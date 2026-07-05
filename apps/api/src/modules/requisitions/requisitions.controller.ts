@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { CreateRequisitionDto, RequisitionQueryDto } from './dto/requisition.dto';
+import { CreateRequisitionDto, RequisitionQueryDto, RequisitionReportDto } from './dto/requisition.dto';
 import { RequisitionsService } from './requisitions.service';
 
 @ApiTags('requisitions')
@@ -18,6 +18,12 @@ export class RequisitionsController {
   }
 
   // Static sub-routes before /:id
+  @Get('requisitions/report')
+  @RequirePermissions('requisition:view')
+  report(@Query() query: RequisitionReportDto) {
+    return this.requisitions.report(query);
+  }
+
   @Get('requisitions/client/:clientId')
   @RequirePermissions('requisition:view')
   findByClient(@Param('clientId') clientId: string, @Query() query: RequisitionQueryDto) {

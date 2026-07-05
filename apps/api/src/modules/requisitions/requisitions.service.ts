@@ -5,7 +5,7 @@ import { LabContext } from '../../common/tenancy/lab-context';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { allocateSequence, isUniqueConflict } from '../../common/util/lab-sequence';
-import { CreateRequisitionDto, RequisitionQueryDto } from './dto/requisition.dto';
+import { CreateRequisitionDto, RequisitionQueryDto, RequisitionReportDto } from './dto/requisition.dto';
 
 // Human-facing requisition number (legacy Ref#, e.g. 1460). Plain numeric, no
 // prefix. Fresh lab starts at REF_BASE+1; migration seeds to max(numeric
@@ -97,6 +97,77 @@ export class RequisitionsService {
     });
     if (!req) throw new NotFoundException('Requisition not found');
     return req;
+  }
+
+  /**
+   * Completed-Requisition report: filter by period (+ optional client/status),
+   * group by client / status / date, with per-group subtotals and grand totals.
+   * Lab-scoped automatically by the tenancy extension.
+   */
+  async report(query: RequisitionReportDto) {
+    const groupBy = query.groupBy ?? 'client';
+    const from = query.dateFrom ? new Date(query.dateFrom) : new Date('2000-01-01');
+    const to = query.dateTo ? new Date(query.dateTo) : new Date();
+    to.setHours(23, 59, 59, 999); // inclusive end-of-day
+
+    const where: any = { createdAt: { gte: from, lte: to } };
+    if (query.clientId) where.clientId = query.clientId;
+    if (query.status) where.status = query.status;
+
+    const [reqs, lab] = await Promise.all([
+      this.prisma.requisition.findMany({ where, select: requisitionSelect, orderBy: { createdAt: 'desc' } }),
+      (async () => {
+        const labId = this.labContext.getLabId();
+        return labId ? this.prisma.lab.findFirst({ where: { id: labId }, select: { name: true } }) : null;
+      })(),
+    ]);
+
+    const clientName = (c: any) => c ? (c.officeName || `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim() || '—') : 'Unassigned';
+    const items = reqs.map((r) => {
+      const orderedItems = r._count?.lines ?? r.lines.length;
+      const fulfilledItems = r.lines.filter((l) => l.isCompleted).length;
+      return {
+        refNo: r.referenceNo ?? '—',
+        clientName: clientName(r.client),
+        accessionNo: r.client?.accountNo ?? null,
+        orderedItems,
+        fulfilledItems,
+        amount: r.amount,
+        status: r.status,
+        receivedAt: r.dateReceived ?? r.createdAt,
+        _groupKey: groupBy === 'client' ? clientName(r.client)
+          : groupBy === 'status' ? r.status
+            : new Date(r.dateReceived ?? r.createdAt).toISOString().slice(0, 10),
+      };
+    });
+
+    const groupMap = new Map<string, typeof items>();
+    for (const it of items) {
+      const k = it._groupKey;
+      groupMap.set(k, [...(groupMap.get(k) ?? []), it]);
+    }
+    const groups = Array.from(groupMap.entries())
+      .sort((a, b) => (groupBy === 'date' ? b[0].localeCompare(a[0]) : a[0].localeCompare(b[0])))
+      .map(([label, list]) => ({
+        label,
+        requisitions: list.map(({ _groupKey, ...rest }) => rest),
+        subtotalAmount: list.reduce((s, x) => s + x.amount, 0),
+        subtotalOrdered: list.reduce((s, x) => s + x.orderedItems, 0),
+        subtotalFulfilled: list.reduce((s, x) => s + x.fulfilledItems, 0),
+        count: list.length,
+      }));
+
+    return {
+      period: { from: from.toISOString(), to: to.toISOString() },
+      groupBy,
+      generatedAt: new Date().toISOString(),
+      labName: lab?.name ?? 'Laboratory',
+      totalRequisitions: items.length,
+      totalAmount: items.reduce((s, x) => s + x.amount, 0),
+      totalOrdered: items.reduce((s, x) => s + x.orderedItems, 0),
+      totalFulfilled: items.reduce((s, x) => s + x.fulfilledItems, 0),
+      groups,
+    };
   }
 
   async create(dto: CreateRequisitionDto) {
