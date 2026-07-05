@@ -60,6 +60,7 @@ export const BUILT_FEATURES: ReadonlySet<FeatureKey> = new Set<FeatureKey>([
   'WSI_VIEWER',
   'AI_SCREENING',
   'TELECONSULTATION',
+  'LOINC_SNOMED',
 ]);
 
 export const ALL_FEATURE_KEYS = Object.keys(FEATURE_TIERS) as FeatureKey[];

@@ -54,6 +54,7 @@ import { RecallModule } from './modules/recall/recall.module';
 import { WsiModule } from './modules/wsi/wsi.module';
 import { AIScreeningModule } from './modules/ai-screening/ai-screening.module';
 import { TeleconsultModule } from './modules/teleconsult/teleconsult.module';
+import { CodingModule } from './modules/coding/coding.module';
 
 /**
  * Cytolab modular monolith.
@@ -120,6 +121,7 @@ import { TeleconsultModule } from './modules/teleconsult/teleconsult.module';
     WsiModule,
     AIScreeningModule,
     TeleconsultModule,
+    CodingModule,
   ],
   controllers: [HealthController],
   providers: [

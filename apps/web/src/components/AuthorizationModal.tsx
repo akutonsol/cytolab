@@ -14,6 +14,22 @@ import { PriorHistoryPanel } from './PriorHistoryPanel';
 import { BethesdaClassificationModal } from './BethesdaClassificationModal';
 import { AIScreeningCard } from './AIScreeningCard';
 import { NewConsultModal } from './NewConsultModal';
+import { STATUS_META as CODING_STATUS_META, type RecordCoding } from '@/lib/coding';
+
+function CodingStatusBadge({ recordId }: { recordId: string }) {
+  const { data: codings } = useQuery<RecordCoding[]>({ queryKey: ['coding-record', recordId], queryFn: () => api.get(`/coding/record/${recordId}`).then((r) => r.data) });
+  const list = codings ?? [];
+  const types = new Set(list.map((c) => c.codeType));
+  const status = list.length === 0 ? 'Uncoded' : (types.has('Procedure') && types.has('Diagnosis')) ? 'Coded' : 'Partial';
+  const m = CODING_STATUS_META[status];
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span style={{ fontSize: 12, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Coding</span>
+      <span style={{ background: m.bg, color: m.fg, boxShadow: m.outline ? `inset 0 0 0 1px ${m.fg}` : undefined, borderRadius: 999, padding: '2px 10px', fontSize: 12, fontWeight: 700 }}>{m.label}</span>
+      {list.length > 0 && <span style={{ fontSize: 12, color: '#64748B' }}>{list.length} code{list.length === 1 ? '' : 's'}</span>}
+    </div>
+  );
+}
 import { DictationTextarea } from './DictationTextarea';
 import type { DictationButtonHandle } from './DictationButton';
 import { FeatureGate } from './FeatureGate';
@@ -314,6 +330,11 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
           {record.id && (
             <FeatureGate feature="AI_SCREENING">
               <div style={{ marginBottom: 16 }}><AIScreeningCard recordId={record.id} /></div>
+            </FeatureGate>
+          )}
+          {record.id && (
+            <FeatureGate feature="LOINC_SNOMED">
+              <div style={{ marginBottom: 16 }}><CodingStatusBadge recordId={record.id} /></div>
             </FeatureGate>
           )}
           <Descriptions size="small" column={2} bordered>

@@ -24,6 +24,8 @@ import { AddSlideModal } from '@/components/AddSlideModal';
 import { type DigitalSlide } from '@/lib/wsi';
 import { AIScreeningCard } from '@/components/AIScreeningCard';
 import { NewConsultModal } from '@/components/NewConsultModal';
+import { CodingPanel } from '@/components/CodingPanel';
+import { SYSTEM_META, type RecordCoding } from '@/lib/coding';
 import { SPECIMEN_LABELS, type FormType } from '@/lib/specimen-types';
 
 // ─── Status + step maps (zero-orange) ────────────────────────────────────────
@@ -242,6 +244,8 @@ export default function RecordDetailPage() {
   const { data: recordSlide } = useQuery<DigitalSlide | null>({ queryKey: ['wsi-record', id], enabled: !!id && isEnabled('WSI_VIEWER'), queryFn: () => api.get(`/wsi/record/${id}`).then((r) => r.data) });
   const [addSlideOpen, setAddSlideOpen] = useState(false);
   const [consultOpen, setConsultOpen] = useState(false);
+  const [codingOpen, setCodingOpen] = useState(false);
+  const { data: recordCodings } = useQuery<RecordCoding[]>({ queryKey: ['coding-record', id], enabled: !!id && isEnabled('LOINC_SNOMED'), queryFn: () => api.get(`/coding/record/${id}`).then((r) => r.data) });
   const { data: recordReagents } = useQuery<any[]>({ queryKey: ['reagents', 'record', id], enabled: !!id && isEnabled('REAGENT_TRACKING'), queryFn: () => api.get(`/reagents/record/${id}`).then((r) => r.data) });
   const { data: team = [] } = useQuery<WorkloadUser[]>({ queryKey: ['workload-summary'], enabled: canAssign, queryFn: () => api.get('/workload/summary').then((r) => r.data) });
   const assignMut = useMutation({
@@ -509,6 +513,25 @@ export default function RecordDetailPage() {
           <FeatureGate feature="AI_SCREENING">
             <div className="mt-3"><AIScreeningCard recordId={id} /></div>
           </FeatureGate>
+          <FeatureGate feature="LOINC_SNOMED">
+            <div className="mt-3 rounded-[10px] border border-[#E2E8F0] bg-white p-3.5">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">Coding</span>
+                <button onClick={() => setCodingOpen(true)} className="text-[12px] font-semibold text-[#4F46E5] hover:underline">Add Codes</button>
+              </div>
+              {(recordCodings ?? []).length === 0 ? (
+                <div className="text-[13px] text-[#94A3B8]">No codes assigned.</div>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {(recordCodings ?? []).map((c) => (
+                    <span key={c.id} className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-semibold" style={{ background: SYSTEM_META[c.code.system].bg, color: SYSTEM_META[c.code.system].fg }} title={c.code.display}>
+                      {SYSTEM_META[c.code.system].label} {c.code.code}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </FeatureGate>
           {(recordReagents ?? []).length > 0 && (
             <FeatureGate feature="REAGENT_TRACKING">
               <div className="mt-3 rounded-[10px] border border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-3">
@@ -606,6 +629,7 @@ export default function RecordDetailPage() {
       {printLabels && <PrintLabelsModal recordIds={[id]} onClose={() => setPrintLabels(false)} />}
       {addSlideOpen && <AddSlideModal recordId={id} onClose={() => setAddSlideOpen(false)} />}
       {consultOpen && <NewConsultModal recordId={id} onClose={() => setConsultOpen(false)} onCreated={(cid) => router.push(`/teleconsult/${cid}`)} />}
+      {codingOpen && <CodingPanel recordId={id} meta={{ labNo: record.labNumber ?? undefined, specimenType: record.formType ?? undefined }} onClose={() => setCodingOpen(false)} />}
 
       {confirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setConfirm(null)}>

@@ -188,7 +188,7 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     key: 'LOINC_SNOMED',
     name: 'LOINC / SNOMED Coding',
     description: 'Map results to LOINC and SNOMED CT terminologies for interoperability.',
-    tier: 5, tierName: 'Enterprise', icon: 'Tags', docsUrl: null, navPath: null, dependsOn: [], comingSoon: true,
+    tier: 5, tierName: 'Enterprise', icon: 'Tags', docsUrl: null, navPath: '/coding', dependsOn: [],
   },
   HL7_FHIR: {
     key: 'HL7_FHIR',

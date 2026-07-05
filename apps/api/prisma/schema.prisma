@@ -222,6 +222,8 @@ model Lab {
   slideAnnotations       SlideAnnotation[]
   aiScreenings           AIScreeningResult[]
   consultRequests        ConsultRequest[]
+  medicalCodes           MedicalCode[]
+  recordCodings          RecordCoding[]
 }
 
 model Account {
@@ -281,6 +283,7 @@ model User {
   aiDraftsAccepted       AiDraft[]              @relation("AiDraftAcceptedBy")
   aiScreeningsReviewed   AIScreeningResult[]    @relation("AIScreeningReviewer")
   consultRequests        ConsultRequest[]       @relation("ConsultRequester")
+  recordCodings          RecordCoding[]
   assignedChangeRequests ChangeRequest[]        @relation("ChangeRequestAssignee")
   changeRequestMessages  ChangeRequestMessage[] @relation("ChangeRequestMessageStaffAuthor")
   changeRequestEvents    ChangeRequestEvent[]   @relation("ChangeRequestEventStaffActor")
@@ -585,6 +588,7 @@ model Record {
   digitalSlides     DigitalSlide[]
   aiScreening       AIScreeningResult?
   consultRequests   ConsultRequest[]
+  codings           RecordCoding[]
   // Case assignment (Tier 2 — workload balancing). Fields are unconditional in
   // the schema; only the UI is feature-gated.
   assignedToId      String?
@@ -2637,4 +2641,60 @@ model ConsultRequest {
 
   @@index([labId, status])
   @@index([recordId])
+}
+
+// ─── LOINC / SNOMED Coding (Tier 5 — Enterprise) ─────────────────────────────
+// Standardized medical coding on results for billing + EMR interoperability.
+enum CodeSystem {
+  LOINC
+  SNOMED_CT
+  ICD10
+  CPT
+}
+
+enum CodingType {
+  Procedure // what test was done
+  Diagnosis // what was found
+  Specimen // specimen type
+  Finding // specific finding
+}
+
+// A lab's coding dictionary entry (LOINC/SNOMED/ICD10/CPT).
+model MedicalCode {
+  id       String     @id @default(cuid())
+  labId    String
+  lab      Lab        @relation(fields: [labId], references: [id])
+  system   CodeSystem
+  code     String
+  display  String
+  category String?
+  isActive Boolean    @default(true)
+  usageCount Int      @default(0)
+
+  recordCodings RecordCoding[]
+  createdAt     DateTime       @default(now())
+
+  @@unique([labId, system, code])
+  @@index([labId, system])
+}
+
+// A code assigned to a specific record.
+model RecordCoding {
+  id       String      @id @default(cuid())
+  labId    String
+  lab      Lab         @relation(fields: [labId], references: [id])
+  recordId String
+  record   Record      @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  codeId   String
+  code     MedicalCode @relation(fields: [codeId], references: [id])
+  codeType CodingType
+
+  assignedById String?
+  assignedBy   User?    @relation(fields: [assignedById], references: [id])
+  assignedAt   DateTime @default(now())
+  notes        String?
+
+  @@unique([recordId, codeId])
+  @@index([recordId])
+  @@index([labId])
 }
