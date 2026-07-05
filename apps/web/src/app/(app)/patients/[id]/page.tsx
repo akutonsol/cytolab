@@ -187,7 +187,7 @@ export default function PatientProfilePage() {
 
   if (pl || hl || !patient) {
     return (
-      <div className="-m-4 min-h-full p-6 md:-m-8 md:p-8" style={{ background: '#F8FAFC' }}>
+      <div className="-mx-4 min-h-full px-4 py-6 md:py-8" style={{ background: '#F8FAFC' }}>
         <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[1fr_300px]">
           <SkelCard h={240} /><SkelCard h={240} /><SkelCard h={420} /><SkelCard h={420} />
         </div>
@@ -201,7 +201,7 @@ export default function PatientProfilePage() {
   const iconBtn = 'grid h-9 w-9 place-items-center rounded-full transition-colors';
 
   return (
-    <div className="-m-4 min-h-full p-6 md:-m-8 md:p-8" style={{ background: '#F8FAFC' }}>
+    <div className="-mx-4 min-h-full px-4 py-6 md:py-8" style={{ background: '#F8FAFC' }}>
       {/* Back bar */}
       <div className="mb-6 flex items-center gap-3">
         <button onClick={() => router.back()} aria-label="Back" className={`${iconBtn} border border-[#EEF2F7] bg-white text-[#6b7280] hover:text-[#111827]`}><ArrowLeft size={18} /></button>

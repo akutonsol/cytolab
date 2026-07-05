@@ -53,7 +53,7 @@ export default function DepartmentsPage() {
 
   return (
     <div className="min-h-full" style={{ background: '#F8FAFC' }}>
-      <div className="px-6 py-8 lg:px-9">
+      <div className="py-8">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="font-headline-lg text-headline-lg text-charcoal-heading">Departments</h1>

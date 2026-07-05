@@ -82,7 +82,7 @@ export default function EditFormPage() {
   };
 
   return (
-    <div className="min-h-full px-6 pb-8 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}>
+    <div className="min-h-full pb-8 pt-4" style={{ background: '#F8FAFC' }}>
       {/* Top bar */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-[24px] font-bold tracking-tight text-[#0F172A]">Edit Form</h1>

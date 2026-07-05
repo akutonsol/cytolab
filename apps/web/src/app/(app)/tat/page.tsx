@@ -56,7 +56,7 @@ export default function TatPage() {
 
   return (
     <div className="min-h-full" style={{ background: '#F8FAFC' }}>
-      <div className="px-6 py-8 lg:px-8">
+      <div className="py-8">
         {/* Header */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>

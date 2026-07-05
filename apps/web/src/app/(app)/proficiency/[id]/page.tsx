@@ -72,13 +72,13 @@ export default function ProficiencyDetailPage() {
     onError: () => message.error('Could not remove case'),
   });
 
-  if (!isEnabled('PROFICIENCY_TESTING')) return <div className="min-h-full px-6 pt-6 text-[14px] text-[#94A3B8]" style={{ background: '#F8FAFC' }}>Feature not enabled.</div>;
-  if (!test) return <div className="min-h-full px-6 pt-6 text-[14px] text-[#94A3B8]" style={{ background: '#F8FAFC' }}>Loading…</div>;
+  if (!isEnabled('PROFICIENCY_TESTING')) return <div className="min-h-full pt-6 text-[14px] text-[#94A3B8]" style={{ background: '#F8FAFC' }}>Feature not enabled.</div>;
+  if (!test) return <div className="min-h-full pt-6 text-[14px] text-[#94A3B8]" style={{ background: '#F8FAFC' }}>Loading…</div>;
   const st = STATUS_META[test.status];
   const tabs: ('cases' | 'responses' | 'results')[] = test.status === 'Completed' ? ['cases', 'responses', 'results'] : ['cases', 'responses'];
 
   return (
-    <div className="min-h-full px-6 pb-10 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}>
+    <div className="min-h-full pb-10 pt-4" style={{ background: '#F8FAFC' }}>
       <button onClick={() => router.push('/proficiency')} className="mb-3 flex items-center gap-1.5 text-[13px] font-medium text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={15} /> Proficiency Testing</button>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>

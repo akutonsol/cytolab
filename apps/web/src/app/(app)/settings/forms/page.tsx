@@ -19,7 +19,7 @@ export default function FormSetupPage() {
   const count = (t: string) => (t === 'Gynecology' ? gyn.data?.fields.length : nongyn.data?.fields.length) ?? 0;
 
   return (
-    <div className="min-h-full px-6 pb-8 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}>
+    <div className="min-h-full pb-8 pt-4" style={{ background: '#F8FAFC' }}>
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>

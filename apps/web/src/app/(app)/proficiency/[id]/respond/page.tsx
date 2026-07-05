@@ -45,12 +45,12 @@ export default function RespondPage() {
     onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not save'),
   });
 
-  if (!isEnabled('PROFICIENCY_TESTING')) return <div className="min-h-full px-6 pt-6 text-[14px] text-[#94A3B8]" style={{ background: '#F8FAFC' }}>Feature not enabled.</div>;
-  if (!data) return <div className="min-h-full px-6 pt-6 text-[14px] text-[#94A3B8]" style={{ background: '#F8FAFC' }}>Loading…</div>;
+  if (!isEnabled('PROFICIENCY_TESTING')) return <div className="min-h-full pt-6 text-[14px] text-[#94A3B8]" style={{ background: '#F8FAFC' }}>Feature not enabled.</div>;
+  if (!data) return <div className="min-h-full pt-6 text-[14px] text-[#94A3B8]" style={{ background: '#F8FAFC' }}>Loading…</div>;
   if (data.test.status !== 'Active') {
-    return <div className="min-h-full px-6 pt-10" style={{ background: '#F8FAFC' }}><div className="mx-auto max-w-md rounded-2xl border border-[#EEF2F7] bg-white p-8 text-center shadow-sm"><CheckCircle2 size={28} className="mx-auto text-[#16A34A]" /><div className="mt-3 text-[18px] font-bold text-[#0F172A]">Test not open for responses</div><button onClick={() => router.push(`/proficiency/${id}`)} className="mt-4 rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white">View test</button></div></div>;
+    return <div className="min-h-full pt-10" style={{ background: '#F8FAFC' }}><div className="mx-auto max-w-md rounded-2xl border border-[#EEF2F7] bg-white p-8 text-center shadow-sm"><CheckCircle2 size={28} className="mx-auto text-[#16A34A]" /><div className="mt-3 text-[18px] font-bold text-[#0F172A]">Test not open for responses</div><button onClick={() => router.push(`/proficiency/${id}`)} className="mt-4 rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white">View test</button></div></div>;
   }
-  if (!current) return <div className="min-h-full px-6 pt-6 text-[14px] text-[#94A3B8]" style={{ background: '#F8FAFC' }}>No cases in this test.</div>;
+  if (!current) return <div className="min-h-full pt-6 text-[14px] text-[#94A3B8]" style={{ background: '#F8FAFC' }}>No cases in this test.</div>;
 
   const done = cases.filter((c) => respondedIds.has(c.id)).length;
   const dm = DIFFICULTY_META[current.difficulty];
@@ -61,7 +61,7 @@ export default function RespondPage() {
   };
 
   return (
-    <div className="min-h-full px-6 pb-12 pt-4" style={{ background: '#F8FAFC' }}>
+    <div className="min-h-full pb-12 pt-4" style={{ background: '#F8FAFC' }}>
       <div className="mx-auto max-w-2xl">
         {/* Progress */}
         <div className="mb-4">

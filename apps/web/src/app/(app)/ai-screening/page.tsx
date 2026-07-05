@@ -56,7 +56,7 @@ export default function AIScreeningPage() {
 
   if (!enabled) {
     return (
-      <div className="min-h-full px-6 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}>
+      <div className="min-h-full pt-4" style={{ background: '#F8FAFC' }}>
         <div className="mx-auto mt-16 max-w-md rounded-2xl border border-[#EEF2F7] bg-white p-8 text-center shadow-sm">
           <Brain size={28} className="mx-auto text-[#9CA3AF]" />
           <div className="mt-3 text-[18px] font-bold text-[#0F172A]">Feature not enabled</div>
@@ -71,7 +71,7 @@ export default function AIScreeningPage() {
   const highPct = totalLevels ? Math.round(((a?.highConfidence ?? 0) / totalLevels) * 100) : 0;
 
   return (
-    <div className="min-h-full px-6 pb-10 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}>
+    <div className="min-h-full pb-10 pt-4" style={{ background: '#F8FAFC' }}>
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-[26px] font-bold leading-tight tracking-tight text-[#0F172A]">AI Screening</h1>

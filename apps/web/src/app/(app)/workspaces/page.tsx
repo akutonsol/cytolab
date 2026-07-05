@@ -57,7 +57,7 @@ export default function WorkspacesPage() {
 
   return (
     <div className="min-h-full" style={{ background: '#F8FAFC' }}>
-      <div className="px-6 py-8 lg:px-9">
+      <div className="py-8">
         {/* Header */}
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>

@@ -36,7 +36,7 @@ export default function ConsultDetailPage() {
   const shared = [c.sharedNarrative && 'Narrative report', c.sharedBethesda && 'Bethesda classification', c.sharedImages && 'Digital slide images'].filter(Boolean) as string[];
 
   return (
-    <div className="min-h-full px-6 pb-10 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}>
+    <div className="min-h-full pb-10 pt-4" style={{ background: '#F8FAFC' }}>
       <button onClick={() => router.push('/teleconsult')} className="mb-4 flex items-center gap-1.5 text-[13px] font-semibold text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={15} /> Teleconsultations</button>
 
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">

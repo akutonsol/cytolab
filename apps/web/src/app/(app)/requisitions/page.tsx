@@ -123,17 +123,17 @@ export default function RequisitionsPage() {
     return Array.from(m, ([id, name]) => ({ id, name }));
   }, [all]);
 
-  const SELECT = 'h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary';
+  const SELECT = 'h-12 rounded-xl border border-slate-200 bg-white px-3.5 text-base text-slate-600 outline-none focus:border-primary';
   const TH = 'px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
   const CELL = 'px-5 py-4 align-middle';
 
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="mb-5">
-        <h1 className="text-[30px] font-bold leading-tight tracking-tight text-charcoal-heading">Requisitions</h1>
-        <p className="mt-1 text-sm text-secondary">Manage and track all lab requisitions and their status.</p>
-        <div className="mt-4 flex flex-wrap items-center gap-3">
+      <div className="mb-6">
+        <h1 className="text-[38px] font-bold leading-tight tracking-tight text-charcoal-heading">Requisitions</h1>
+        <p className="mt-1.5 text-base text-secondary">Manage and track all lab requisitions and their status.</p>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
           {can('requisition:create') && <button className="btn-primary" onClick={() => setDrawerOpen(true)}><Plus size={16} /> New Requisition</button>}
           <button className="btn-outline" onClick={() => setReportOpen(true)}><Upload size={15} /> Export Report</button>
         </div>
@@ -141,9 +141,9 @@ export default function RequisitionsPage() {
 
       {/* Filter bar */}
       <div className={`${CARD} mb-6 flex flex-wrap items-center gap-3 p-4`}>
-        <div className="flex h-11 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-slate-400">
-          <Search size={16} />
-          <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Search by ref #, client, or accession..." className="w-full border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400" />
+        <div className="flex h-12 min-w-[280px] flex-1 items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 text-slate-400">
+          <Search size={18} />
+          <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Search by ref #, client, or accession..." className="w-full border-none bg-transparent text-base text-slate-700 outline-none placeholder:text-slate-400" />
         </div>
         <select className={SELECT} value={statusF} onChange={(e) => { setStatusF(e.target.value); setPage(1); }}><option value="all">All Statuses</option>{statusOptions.map((s) => <option key={s} value={s}>{statusUI(s).label}</option>)}</select>
         <select className={SELECT} value={clientF} onChange={(e) => { setClientF(e.target.value); setPage(1); }}><option value="all">All Clients</option>{clientOptions.map((c) => <option key={c} value={c}>{c}</option>)}</select>
@@ -151,7 +151,7 @@ export default function RequisitionsPage() {
           <select className={`${SELECT} pl-9`} value={dateRange} onChange={(e) => { setDateRange(e.target.value); setPage(1); }}><option value="7">Last 7 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option><option value="all">All Time</option></select>
           <Calendar size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         </div>
-        <button onClick={clearFilters} className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 hover:bg-slate-50"><Filter size={15} /> Filters</button>
+        <button onClick={clearFilters} className="flex h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-base font-medium text-slate-600 hover:bg-slate-50"><Filter size={16} /> Filters</button>
       </div>
 
       {isError && (
@@ -216,14 +216,14 @@ export default function RequisitionsPage() {
               </table>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-4">
-              <div className="text-sm text-secondary">Showing {rangeStart} to {rangeEnd} of {filtered.length} requisitions</div>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-6 py-5">
+              <div className="text-base text-secondary">Showing {rangeStart} to {rangeEnd} of {filtered.length} requisitions</div>
               <div className="flex items-center gap-3">
-                <select className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none focus:border-primary" value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}>{[10, 20, 50].map((s) => <option key={s} value={s}>{s} / page</option>)}</select>
+                <select className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-600 outline-none focus:border-primary" value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}>{[10, 20, 50].map((s) => <option key={s} value={s}>{s} / page</option>)}</select>
                 <div className="flex items-center gap-1">
-                  <button className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 disabled:opacity-40" disabled={safePage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>‹</button>
-                  {Array.from({ length: totalPages }).slice(0, 5).map((_, i) => <button key={i} onClick={() => setPage(i + 1)} className="grid h-8 min-w-8 place-items-center rounded-lg px-2 text-sm font-medium" style={safePage === i + 1 ? { background: '#4F46E5', color: '#fff' } : { color: '#64748B' }}>{i + 1}</button>)}
-                  <button className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 disabled:opacity-40" disabled={safePage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>›</button>
+                  <button className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-lg text-slate-500 disabled:opacity-40" disabled={safePage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>‹</button>
+                  {Array.from({ length: totalPages }).slice(0, 5).map((_, i) => <button key={i} onClick={() => setPage(i + 1)} className="grid h-10 min-w-10 place-items-center rounded-lg px-2.5 text-base font-medium" style={safePage === i + 1 ? { background: '#4F46E5', color: '#fff' } : { color: '#64748B' }}>{i + 1}</button>)}
+                  <button className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-lg text-slate-500 disabled:opacity-40" disabled={safePage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>›</button>
                 </div>
               </div>
             </div>
@@ -231,50 +231,50 @@ export default function RequisitionsPage() {
         </div>
 
         {/* Sidebar */}
-        <div className="flex w-full shrink-0 flex-col gap-6 xl:w-[300px]">
-          <div className={`${CARD} p-5`}>
-            <div className="mb-4 text-sm font-semibold text-charcoal-heading">Requisitions Overview</div>
-            <div className="flex flex-col gap-3.5">
+        <div className="flex w-full shrink-0 flex-col gap-6 xl:w-[380px]">
+          <div className={`${CARD} p-6`}>
+            <div className="mb-5 text-base font-semibold text-charcoal-heading">Requisitions Overview</div>
+            <div className="flex flex-col gap-4">
               {[
-                { icon: <FileText size={16} className="text-indigo-600" />, label: 'Total Requisitions', value: totalCount },
-                { icon: <CircleDashed size={16} style={{ color: '#B45309' }} />, label: 'Partial', value: partialCount },
-                { icon: <CheckCircle2 size={16} className="text-green-600" />, label: 'Complete', value: completeCount },
-                { icon: <Inbox size={16} className="text-blue-600" />, label: 'Received', value: receivedCount },
+                { icon: <FileText size={20} className="text-indigo-600" />, label: 'Total Requisitions', value: totalCount },
+                { icon: <CircleDashed size={20} style={{ color: '#B45309' }} />, label: 'Partial', value: partialCount },
+                { icon: <CheckCircle2 size={20} className="text-green-600" />, label: 'Complete', value: completeCount },
+                { icon: <Inbox size={20} className="text-blue-600" />, label: 'Received', value: receivedCount },
               ].map((r) => (
                 <div key={r.label} className="flex items-center justify-between">
-                  <span className="flex items-center gap-2.5 text-sm text-slate-600">{r.icon} {r.label}</span>
-                  <span className="text-sm font-bold text-charcoal-heading">{r.value}</span>
+                  <span className="flex items-center gap-3 text-base text-slate-600">{r.icon} {r.label}</span>
+                  <span className="text-lg font-bold text-charcoal-heading">{r.value}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className={`${CARD} p-5`}>
-            <div className="text-sm font-semibold text-charcoal-heading">Total Amount</div>
-            <div className="mt-1 text-3xl font-bold text-charcoal-heading">{money(totalAmount)}</div>
-            <div className="text-xs text-slate-400">Across {totalCount} requisitions</div>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <div><div className="text-[11px] font-semibold" style={{ color: '#B45309' }}>Partial Amount</div><div className="text-sm font-bold text-charcoal-heading">{money(partialAmount)}</div></div>
-              <div><div className="text-[11px] font-semibold text-green-600">Completed Amount</div><div className="text-sm font-bold text-charcoal-heading">{money(completedAmount)}</div></div>
+          <div className={`${CARD} p-6`}>
+            <div className="text-base font-semibold text-charcoal-heading">Total Amount</div>
+            <div className="mt-1 text-[40px] font-bold leading-tight text-charcoal-heading">{money(totalAmount)}</div>
+            <div className="text-sm text-slate-400">Across {totalCount} requisitions</div>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <div><div className="text-xs font-semibold" style={{ color: '#B45309' }}>Partial Amount</div><div className="text-base font-bold text-charcoal-heading">{money(partialAmount)}</div></div>
+              <div><div className="text-xs font-semibold text-green-600">Completed Amount</div><div className="text-base font-bold text-charcoal-heading">{money(completedAmount)}</div></div>
             </div>
-            <div className="mt-4 flex items-center gap-4">
-              <PieChart width={96} height={96}><Pie data={donut} dataKey="value" cx="50%" cy="50%" innerRadius={30} outerRadius={46} paddingAngle={2} stroke="none">{donut.map((s, i) => <Cell key={i} fill={s.color} />)}</Pie></PieChart>
-              <div className="flex flex-1 flex-col gap-2">
-                <div className="flex items-center justify-between text-xs"><span className="flex items-center gap-1.5 text-slate-600"><span className="h-2 w-2 rounded-full" style={{ background: AMBER }} /> Partial</span><span className="font-semibold text-charcoal-heading">{partialPct}%</span></div>
-                <div className="flex items-center justify-between text-xs"><span className="flex items-center gap-1.5 text-slate-600"><span className="h-2 w-2 rounded-full" style={{ background: GREEN }} /> Complete</span><span className="font-semibold text-charcoal-heading">{completePct}%</span></div>
+            <div className="mt-5 flex items-center gap-5">
+              <PieChart width={128} height={128}><Pie data={donut} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={62} paddingAngle={2} stroke="none">{donut.map((s, i) => <Cell key={i} fill={s.color} />)}</Pie></PieChart>
+              <div className="flex flex-1 flex-col gap-3">
+                <div className="flex items-center justify-between text-sm"><span className="flex items-center gap-2 text-slate-600"><span className="h-2.5 w-2.5 rounded-full" style={{ background: AMBER }} /> Partial</span><span className="font-semibold text-charcoal-heading">{partialPct}%</span></div>
+                <div className="flex items-center justify-between text-sm"><span className="flex items-center gap-2 text-slate-600"><span className="h-2.5 w-2.5 rounded-full" style={{ background: GREEN }} /> Complete</span><span className="font-semibold text-charcoal-heading">{completePct}%</span></div>
               </div>
             </div>
           </div>
 
-          <div className={`${CARD} p-5`}>
-            <div className="mb-3 flex items-center justify-between"><span className="text-sm font-semibold text-charcoal-heading">Recent Requisitions</span><button className="text-xs font-semibold text-primary hover:underline">View all</button></div>
-            <div className="flex flex-col gap-3">
-              {recent.length === 0 && <div className="text-sm text-slate-400">No requisitions yet.</div>}
+          <div className={`${CARD} p-6`}>
+            <div className="mb-4 flex items-center justify-between"><span className="text-base font-semibold text-charcoal-heading">Recent Requisitions</span><button className="text-sm font-semibold text-primary hover:underline">View all</button></div>
+            <div className="flex flex-col gap-4">
+              {recent.length === 0 && <div className="text-base text-slate-400">No requisitions yet.</div>}
               {recent.map((r) => (
                 <div key={r.id} className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="truncate text-[13px] font-semibold text-charcoal-heading">#{r.referenceNo ?? '—'} <span className="font-normal text-slate-500">{clientName(r)}</span></div>
-                    <div className="text-[11px] text-slate-400">{fmtDate(r.dateReceived ?? r.createdAt)} · {fmtTime(r.dateReceived ?? r.createdAt)}</div>
+                    <div className="truncate text-sm font-semibold text-charcoal-heading">#{r.referenceNo ?? '—'} <span className="font-normal text-slate-500">{clientName(r)}</span></div>
+                    <div className="text-xs text-slate-400">{fmtDate(r.dateReceived ?? r.createdAt)} · {fmtTime(r.dateReceived ?? r.createdAt)}</div>
                   </div>
                   <StatusBadge status={r.status} />
                 </div>

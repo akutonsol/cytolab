@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
 import {
-  Activity, AlertTriangle, ArrowRight, ArrowUpRight, Brain, Calendar, CalendarClock, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FileCheck, FileText, FlaskConical,
+  Activity, ArrowRight, ArrowUpRight, Calendar, CalendarClock, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FileCheck, FileText, FlaskConical,
   Folder, GraduationCap, Hourglass, Microscope, Monitor, MoreHorizontal, Plus, ShieldCheck, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
-  Share2, TestTube, TrendingUp, User, Users, Video,
+  TestTube, TrendingUp, User, Users, Video,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -14,9 +14,7 @@ import { useAuth } from '@/lib/auth';
 import { useFeatures } from '@/lib/feature-context';
 import { FeatureGate } from '@/components/FeatureGate';
 import { GlassCard } from '@/components/dashboard/glass-card';
-import { MyTodayCard } from '@/components/workforce/MyTodayCard';
-import { HeroBanner, type HeroChip } from '@/components/dashboard/hero-banner';
-import { NavPills } from '@/components/dashboard/nav-pills';
+import { ActivityTray } from '@/components/dashboard/ActivityTray';
 import { PerformanceArea, SubscriptionBars } from './charts';
 
 const GREEN = '#22c55e', BLUE = '#4F46E5';
@@ -179,13 +177,13 @@ export default function DashboardPage() {
     queryKey: ['patients-overview'],
     queryFn: () => api.get('/patients/overview').then((r) => r.data),
   });
-  const { isEnabled } = useFeatures();
-  const { data: escSummary } = useQuery({
-    queryKey: ['escalation-summary'],
-    queryFn: () => api.get('/escalations/summary').then((r) => r.data as { pending: number; malignantCount: number; highGradeCount: number }),
-    enabled: isEnabled('ABNORMAL_ESCALATION'),
-    refetchInterval: 60_000,
+  // Real first name for the welcome line (JWT claims carry none).
+  const { data: me } = useQuery({
+    queryKey: ['auth-me'],
+    queryFn: () => api.get('/auth/me').then((r) => r.data as { firstName?: string }),
+    staleTime: 5 * 60_000,
   });
+  const { isEnabled } = useFeatures();
   const { data: profTests } = useQuery({
     queryKey: ['proficiency'],
     queryFn: () => api.get('/proficiency').then((r) => r.data as { status: string }[]),
@@ -198,20 +196,10 @@ export default function DashboardPage() {
     enabled: isEnabled('PATIENT_RECALL'),
   });
   const recallsDue = (recallSummary?.due ?? 0) + (recallSummary?.overdue ?? 0);
-  const { data: aiAnalytics } = useQuery({
-    queryKey: ['ai-analytics'],
-    queryFn: () => api.get('/ai-screening/analytics').then((r) => r.data as { pendingReview: number; agreementRate: number; totalScreened: number }),
-    enabled: isEnabled('AI_SCREENING'),
-  });
   const { data: consultAnalytics } = useQuery({
     queryKey: ['consult-analytics'],
     queryFn: () => api.get('/teleconsult/analytics').then((r) => r.data as { pending: number; responded: number; total: number }),
     enabled: isEnabled('TELECONSULTATION'),
-  });
-  const { data: fhirStats } = useQuery({
-    queryKey: ['fhir-stats'],
-    queryFn: () => api.get('/fhir/stats').then((r) => r.data as { todayCount: number; successRate: number; totalTransmissions: number }),
-    enabled: isEnabled('HL7_FHIR'),
   });
 
   // The queue drives an in-place selection: which record the AI stage + findings
@@ -294,42 +282,11 @@ export default function DashboardPage() {
     : specimenTypes;
 
   const emailName = (claims?.email ?? '').split('@')[0].split(/[._-]/)[0].replace(/[^a-z]/gi, '');
-  const firstName = ov?.greeting?.firstName || (emailName ? emailName[0].toUpperCase() + emailName.slice(1) : 'there');
-
-  const featured = ov?.featured
-    ? { labNumber: ov.featured.labNumber, patient: ov.featured.patient, status: ov.featured.status }
-    : null;
-
-  const chips: HeroChip[] = [
-    { label: 'Cases Today', value: ov?.today?.requisitionsToday ?? 0 },
-    { label: 'Turnaround', value: `${ov?.kpis?.avgTat ?? 0}d` },
-    { label: 'Pending Review', value: ov?.kpis?.pendingRequisitions ?? 0 },
-    { label: 'On-time', value: `${eff.onTime ?? 0}%`, delta: `${up ? '+' : ''}${d.throughput.deltaPct}%` },
-  ];
+  const firstName = me?.firstName?.trim() || ov?.greeting?.firstName || (emailName ? emailName[0].toUpperCase() + emailName.slice(1) : 'there');
 
   return (
     <div className="dashboard-theme -m-4" style={{ minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'relative', zIndex: 1, padding: '36px 16px 40px', background: '#dce3ee' }}>
-        <HeroBanner firstName={firstName} featured={featured} chips={chips} nav={<NavPills />} />
-
-        <FeatureGate feature="ABNORMAL_ESCALATION">
-          {(escSummary?.pending ?? 0) > 0 && (
-            <button onClick={() => router.push('/escalations')}
-              style={{ marginTop: 24, width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 18, border: '1px solid #FECACA', background: '#FEF2F2', cursor: 'pointer', textAlign: 'left' }}>
-              <span style={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: 12, background: '#FEE2E2', color: '#B91C1C', flexShrink: 0 }}><AlertTriangle size={22} /></span>
-              <span style={{ flex: 1 }}>
-                <span style={{ display: 'block', fontSize: 16, fontWeight: 700, color: '#0F172A' }}>{escSummary!.pending} pending escalation{escSummary!.pending === 1 ? '' : 's'}</span>
-                <span style={{ display: 'block', fontSize: 13, color: '#64748B', marginTop: 2 }}>
-                  {escSummary!.malignantCount > 0 && `${escSummary!.malignantCount} malignant · `}
-                  {escSummary!.highGradeCount > 0 && `${escSummary!.highGradeCount} high-grade · `}
-                  Review abnormal cytology findings
-                </span>
-              </span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#B91C1C' }}>Review →</span>
-            </button>
-          )}
-        </FeatureGate>
-
+      <div style={{ position: 'relative', zIndex: 1, padding: '4px 16px 40px', background: '#f3f4f8' }}>
         <FeatureGate feature="PROFICIENCY_TESTING">
           {activeProfTests > 0 && (
             <button onClick={() => router.push('/proficiency')}
@@ -368,22 +325,6 @@ export default function DashboardPage() {
           })()}
         </FeatureGate>
 
-        <FeatureGate feature="AI_SCREENING">
-          {(aiAnalytics?.pendingReview ?? 0) > 0 && (
-            <button onClick={() => router.push('/ai-screening')}
-              style={{ marginTop: 16, width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 18, border: '1px solid #C7D2FE', background: '#EEF2FF', cursor: 'pointer', textAlign: 'left' }}>
-              <span style={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: 12, background: '#E0E7FF', color: '#7C3AED', flexShrink: 0 }}><Brain size={22} /></span>
-              <span style={{ flex: 1 }}>
-                <span style={{ display: 'block', fontSize: 16, fontWeight: 700, color: '#0F172A' }}>{aiAnalytics!.pendingReview} AI screen{aiAnalytics!.pendingReview === 1 ? '' : 's'} awaiting review</span>
-                <span style={{ display: 'block', fontSize: 13, color: '#64748B', marginTop: 2 }}>
-                  {aiAnalytics!.totalScreened} screened · {aiAnalytics!.agreementRate}% agreement — lowest confidence first
-                </span>
-              </span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5' }}>Review →</span>
-            </button>
-          )}
-        </FeatureGate>
-
         <FeatureGate feature="TELECONSULTATION">
           {(consultAnalytics?.pending ?? 0) > 0 && (
             <button onClick={() => router.push('/teleconsult')}
@@ -400,27 +341,10 @@ export default function DashboardPage() {
           )}
         </FeatureGate>
 
-        <FeatureGate feature="HL7_FHIR">
-          {(fhirStats?.totalTransmissions ?? 0) > 0 && (
-            <button onClick={() => router.push('/fhir')}
-              style={{ marginTop: 16, width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 18, border: '1px solid #C7D2FE', background: '#EEF2FF', cursor: 'pointer', textAlign: 'left' }}>
-              <span style={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: 12, background: '#E0E7FF', color: '#4F46E5', flexShrink: 0 }}><Share2 size={22} /></span>
-              <span style={{ flex: 1 }}>
-                <span style={{ display: 'block', fontSize: 16, fontWeight: 700, color: '#0F172A' }}>{fhirStats!.todayCount} FHIR transmission{fhirStats!.todayCount === 1 ? '' : 's'} today</span>
-                <span style={{ display: 'block', fontSize: 13, color: '#64748B', marginTop: 2 }}>{fhirStats!.successRate}% success rate · {fhirStats!.totalTransmissions} total to EMRs</span>
-              </span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5' }}>Open →</span>
-            </button>
-          )}
-        </FeatureGate>
+        <div style={{ marginTop: 12, background: '#F9FAFC', marginLeft: -16, marginRight: -16, marginBottom: -40, paddingLeft: 16, paddingRight: 16, paddingTop: 20, paddingBottom: 40 }} className="flex flex-col gap-5">
+          {/* ═══ ACTIVITY TRAY (consolidates escalation / AI review / FHIR alerts) ═══ */}
+          <ActivityTray />
 
-        <FeatureGate feature="WORKFORCE_MANAGEMENT">
-          <div style={{ marginTop: 24 }}>
-            <MyTodayCard />
-          </div>
-        </FeatureGate>
-
-        <div style={{ marginTop: 40, background: '#F9FAFC', marginLeft: -16, marginRight: -16, marginBottom: -40, paddingLeft: 16, paddingRight: 16, paddingTop: 24, paddingBottom: 40 }} className="flex flex-col gap-5">
           {/* ═══ SECTION 1: KPI STRIP ═══ */}
           <div style={{
             display: 'grid',

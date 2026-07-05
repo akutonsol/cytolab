@@ -63,7 +63,7 @@ export default function ResultTemplateEditPage() {
 
   return (
     <div className="min-h-full" style={{ background: '#F8FAFC' }}>
-      <div className="px-6 py-8 lg:px-8">
+      <div className="py-8">
         {/* Breadcrumb */}
         <div className="mb-4 flex items-center gap-1.5 font-body-sm text-body-sm text-secondary">
           <Link href="/result-templates" className="hover:text-primary">Result Templates</Link>

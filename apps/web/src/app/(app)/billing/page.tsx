@@ -153,7 +153,7 @@ function BillingWorkspace() {
   const targetPct = target ? Number(target) : null;
 
   return (
-    <div className="min-h-full p-8" style={{ background: '#F7FAFD' }}>
+    <div className="min-h-full py-6" style={{ background: '#F7FAFD' }}>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.75fr_1fr]">
         {/* ══ LEFT COLUMN ══ */}
         <div className="flex min-w-0 flex-col gap-6">

@@ -82,7 +82,7 @@ export default function ServicesPage() {
   const th = 'px-6 py-4 text-left text-[13px] font-semibold uppercase tracking-wide text-[#9CA3AF]';
 
   return (
-    <div className="min-h-full p-8" style={{ background: '#FFFFFF' }}>
+    <div className="min-h-full py-8" style={{ background: '#FFFFFF' }}>
       {/* Catalog cards */}
       <div className="mb-12">
         <div className="mb-1 flex flex-wrap items-center justify-between gap-3">

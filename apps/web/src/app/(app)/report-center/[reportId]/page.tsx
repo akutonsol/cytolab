@@ -54,7 +54,7 @@ export default function ReportRunnerPage() {
   const chartData: any[] = def.chart ? (getPath(data, def.chart.dataPath) ?? []) : [];
 
   return (
-    <div className="report-print min-h-full px-6 pb-10 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}>
+    <div className="report-print min-h-full pb-10 pt-4" style={{ background: '#F8FAFC' }}>
       <button onClick={() => router.push(`/report-center?tab=${def.category.toLowerCase()}`)} className="no-print mb-4 flex items-center gap-1.5 text-[13px] font-semibold text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={15} /> Report Center</button>
 
       <div className="mb-5">

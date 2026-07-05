@@ -80,7 +80,7 @@ export default function PayrollWizardPage() {
 
   return (
     <div className="min-h-full" style={{ background: '#F8FAFC' }}>
-      <div className="px-6 py-8 lg:px-8">
+      <div className="py-8">
         {/* Header + progress */}
         <div className="mb-6">
           <button onClick={() => router.push('/payroll')} className="mb-3 flex items-center gap-1.5 text-[13px] font-medium text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={15} /> Payroll</button>

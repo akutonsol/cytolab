@@ -314,7 +314,7 @@ function FilterSelect({ value, onChange, placeholder, options }: { value?: strin
       <select
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value || undefined)}
-        className="h-10 appearance-none rounded-pill border border-card bg-surface pl-3.5 pr-9 text-small font-medium text-text outline-none focus:border-primary"
+        className="select-bare h-10 appearance-none rounded-pill border border-card bg-surface pl-3.5 pr-9 text-small font-medium text-text outline-none focus:border-primary"
       >
         <option value="">{placeholder}</option>
         {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}

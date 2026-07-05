@@ -97,7 +97,7 @@ export default function BatchAuthorizePage() {
 
   if (!enabled) {
     return (
-      <div className="min-h-full px-6 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}>
+      <div className="min-h-full pt-4" style={{ background: '#F8FAFC' }}>
         <div className="mx-auto mt-16 max-w-md rounded-2xl border border-[#EEF2F7] bg-white p-8 text-center shadow-sm">
           <ListChecks size={28} className="mx-auto text-[#9CA3AF]" />
           <div className="mt-3 text-[18px] font-bold text-[#0F172A]">Feature not enabled</div>
@@ -110,7 +110,7 @@ export default function BatchAuthorizePage() {
   // ── Results screen ──
   if (result) {
     return (
-      <div className="min-h-full px-6 pb-10 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}>
+      <div className="min-h-full pb-10 pt-4" style={{ background: '#F8FAFC' }}>
         <div className="mx-auto mt-8 max-w-2xl">
           <div className="rounded-2xl border p-8 text-center" style={{ background: '#F0FDF4', borderColor: '#BBF7D0' }}>
             <CheckCircle2 size={56} className="mx-auto text-[#16A34A]" />
@@ -142,7 +142,7 @@ export default function BatchAuthorizePage() {
   }
 
   return (
-    <div className="min-h-full px-6 pb-28 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}>
+    <div className="min-h-full pb-28 pt-4" style={{ background: '#F8FAFC' }}>
       <div className="mb-5">
         <h1 className="text-[26px] font-bold leading-tight tracking-tight text-[#0F172A]">Batch Authorization</h1>
         <p className="mt-1.5 text-[15px] text-[#6B7280]">Review and authorize multiple cases simultaneously. Only cases with complete result sheets are eligible.</p>
@@ -235,7 +235,7 @@ export default function BatchAuthorizePage() {
 
       {/* Sticky action bar */}
       {cases.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#E2E8F0] bg-white px-6 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] lg:px-9">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#E2E8F0] bg-white px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
           {escalatedSelected > 0 && (
             <div className="mb-2 flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold" style={{ background: '#FEFCE8', border: '1px solid #FEF08A', color: '#854D0E' }}>
               <AlertTriangle size={15} /> {escalatedSelected} selected record{escalatedSelected === 1 ? ' has' : 's have'} abnormal findings. Review carefully before batch authorizing.

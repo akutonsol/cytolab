@@ -26,7 +26,7 @@ export default function PayrollReportPage() {
   });
 
   if (isLoading || !run) {
-    return <div className="min-h-full p-8" style={{ background: '#F8FAFC' }}><div className="rounded-2xl border border-[#E2E8F0] bg-white p-12 text-center text-[14px] text-[#64748B]">Loading payroll report…</div></div>;
+    return <div className="min-h-full py-8" style={{ background: '#F8FAFC' }}><div className="rounded-2xl border border-[#E2E8F0] bg-white p-12 text-center text-[14px] text-[#64748B]">Loading payroll report…</div></div>;
   }
 
   const taxes = run.payAdvices.reduce((s, a) => s + a.nis + a.nht + a.edTax + a.paye, 0);
@@ -42,7 +42,7 @@ export default function PayrollReportPage() {
 
   return (
     <div className="min-h-full" style={{ background: '#F8FAFC' }}>
-      <div className="px-6 py-8 lg:px-8">
+      <div className="py-8">
         <button onClick={() => router.push('/payroll')} className="no-print mb-4 flex items-center gap-1.5 text-[13px] font-medium text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={15} /> Payroll</button>
 
         <div className="no-print grid grid-cols-1 gap-5 lg:grid-cols-3">

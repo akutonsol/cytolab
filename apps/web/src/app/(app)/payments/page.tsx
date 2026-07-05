@@ -145,7 +145,7 @@ export default function PaymentsPage() {
   const th = 'px-4 py-3 text-left text-[13px] font-medium text-[#94A3B8]';
 
   return (
-    <div className="min-h-full p-8" style={{ background: '#F8FAFC' }}>
+    <div className="min-h-full py-8" style={{ background: '#F8FAFC' }}>
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-[32px] font-extrabold leading-none tracking-tight text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Payments</h1>

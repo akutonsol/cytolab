@@ -81,7 +81,7 @@ export default function EmployeesPage() {
 
   return (
     <div className="min-h-full" style={{ background: '#F8FAFC' }}>
-      <div className="px-6 py-8 lg:px-8">
+      <div className="py-8">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="font-headline-lg text-headline-lg text-charcoal-heading">Employees</h1>

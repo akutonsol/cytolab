@@ -175,7 +175,7 @@ export default function MessagingPage() {
         <div className="flex items-center justify-between px-4 py-4">
           <div className="relative">
             <select value={filter} onChange={(e) => setFilter(e.target.value)}
-              className="cursor-pointer appearance-none bg-transparent pr-6 text-[17px] font-extrabold tracking-tight text-text outline-none">
+              className="select-bare cursor-pointer appearance-none bg-transparent pr-6 text-[17px] font-extrabold tracking-tight text-text outline-none">
               <option value="">All Messages</option>
               <option value="INTERNAL">Internal</option>
               <option value="CLIENT">Client</option>

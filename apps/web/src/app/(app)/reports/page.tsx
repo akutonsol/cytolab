@@ -122,13 +122,13 @@ function ReportsWorkspace() {
   const clearParam = () => router.replace('/reports');
 
   return (
-    <div className="min-h-full px-6 pb-10 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}>
+    <div className="min-h-full pb-10 pt-4" style={{ background: '#F8FAFC' }}>
       <style>{`@keyframes rowflash{0%{background:#EEF3FF}100%{background:transparent}}`}</style>
 
       {/* Header */}
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-headline-lg text-headline-lg text-charcoal-heading">Reports</h1>
+          <h1 className="font-headline-lg text-headline-lg text-charcoal-heading">Specimen Reports</h1>
           <p className="mt-1 font-body-sm text-body-sm text-secondary">Released laboratory reports and PDF downloads.</p>
         </div>
         <div className="flex items-center gap-3">

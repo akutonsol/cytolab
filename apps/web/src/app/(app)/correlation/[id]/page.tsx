@@ -38,14 +38,14 @@ export default function CorrelationDetailPage() {
   });
 
   if (!isEnabled('CORRELATION_TRACKING')) {
-    return <div className="min-h-full px-6 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}><div className="mx-auto mt-16 max-w-md rounded-2xl border border-[#EEF2F7] bg-white p-8 text-center shadow-sm"><GitCompareIcon /><div className="mt-3 text-[18px] font-bold text-[#0F172A]">Feature not enabled</div></div></div>;
+    return <div className="min-h-full pt-4" style={{ background: '#F8FAFC' }}><div className="mx-auto mt-16 max-w-md rounded-2xl border border-[#EEF2F7] bg-white p-8 text-center shadow-sm"><GitCompareIcon /><div className="mt-3 text-[18px] font-bold text-[#0F172A]">Feature not enabled</div></div></div>;
   }
-  if (!c) return <div className="min-h-full px-6 pt-6 text-[14px] text-[#94A3B8]" style={{ background: '#F8FAFC' }}>Loading…</div>;
+  if (!c) return <div className="min-h-full pt-6 text-[14px] text-[#94A3B8]" style={{ background: '#F8FAFC' }}>Loading…</div>;
 
   const m = RESULT_META[c.correlationResult ?? 'Unresolved'];
 
   return (
-    <div className="min-h-full px-6 pb-10 pt-4 lg:px-9" style={{ background: '#F8FAFC' }}>
+    <div className="min-h-full pb-10 pt-4" style={{ background: '#F8FAFC' }}>
       <button onClick={() => router.push('/correlation')} className="mb-3 flex items-center gap-1.5 text-[13px] font-medium text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={15} /> Correlation Tracking</button>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
