@@ -8,7 +8,18 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, empName, SHIFT_CHIP } from '@/lib/workforce';
 
 const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
-const iso = (d: Date) => d.toISOString().slice(0, 10);
+const pad2 = (n: number) => String(n).padStart(2, '0');
+// Plain LOCAL calendar date (YYYY-MM-DD) — built from local components, never
+// via toISOString(), which would UTC-shift the day in non-zero-offset zones.
+const ymd = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+// Parse a YYYY-MM-DD as a LOCAL date (a bare string parses as UTC midnight,
+// which renders as the previous day in negative-offset zones like Jamaica).
+const parseLocal = (s: string) => new Date(`${s}T00:00:00`);
+// Serialize a calendar date for the API at LOCAL NOON. The backend snaps dates
+// to a local day boundary, so a bare YYYY-MM-DD (UTC midnight) would shift back
+// a day in UTC-5; noon keeps new Date() on the intended calendar day regardless
+// of a ±12h offset between client and server.
+const apiDate = (s: string) => `${s}T12:00:00`;
 const mondayOf = (d: Date) => { const x = new Date(d); const day = (x.getDay() + 6) % 7; x.setDate(x.getDate() - day); x.setHours(0, 0, 0, 0); return x; };
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -19,12 +30,16 @@ function Grid() {
   const [picker, setPicker] = useState<{ employeeId: string; date: string } | null>(null);
   const [assignError, setAssignError] = useState<string | null>(null);
 
-  const wk = iso(weekStart);
-  const { data: schedule } = useQuery({ queryKey: ['schedule', wk, deptId], queryFn: () => api.get('/workforce/schedule', { params: { weekStart: wk, departmentId: deptId === 'all' ? undefined : deptId } }).then((r) => r.data) });
+  const wk = ymd(weekStart);
+  const { data: schedule } = useQuery({ queryKey: ['schedule', wk, deptId], queryFn: () => api.get('/workforce/schedule', { params: { weekStart: apiDate(wk), departmentId: deptId === 'all' ? undefined : deptId } }).then((r) => r.data) });
   const { data: employees = [] } = useEmployees();
   const { data: shifts = [] } = useQuery({ queryKey: ['shifts'], queryFn: () => api.get('/workforce/shifts').then((r) => r.data) });
 
-  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => iso(new Date(+weekStart + i * 86_400_000))), [weekStart]);
+  // Local calendar dates Mon…Sun of the week (day-by-day so DST can't shift them).
+  const days = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => ymd(new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i))),
+    [weekStart],
+  );
   const departments = useMemo(() => Array.from(new Map(employees.filter((e) => e.department).map((e) => [e.department!.id, e.department!.name])).entries()), [employees]);
   const rows = deptId === 'all' ? employees : employees.filter((e) => e.department?.id === deptId);
 
@@ -50,7 +65,7 @@ function Grid() {
   const openPicker = (employeeId: string, date: string) => { assign.reset(); setAssignError(null); setPicker({ employeeId, date }); };
   const closePicker = () => { assign.reset(); setAssignError(null); setPicker(null); };
 
-  const rangeLabel = `${new Date(days[0]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${new Date(days[6]).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  const rangeLabel = `${parseLocal(days[0]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${parseLocal(days[6]).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
   return (
     <div className="w-full">
@@ -75,7 +90,7 @@ function Grid() {
           <thead>
             <tr className="border-b border-slate-100">
               <th className="sticky left-0 z-10 bg-white px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">Employee</th>
-              {days.map((d, i) => <th key={d} className="px-2 py-3 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-400">{DOW[i]}<div className="text-[10px] font-normal text-slate-300">{new Date(d).getDate()}</div></th>)}
+              {days.map((d, i) => <th key={d} className="px-2 py-3 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-400">{DOW[i]}<div className="text-[10px] font-normal text-slate-300">{parseLocal(d).getDate()}</div></th>)}
             </tr>
           </thead>
           <tbody>
@@ -112,12 +127,12 @@ function Grid() {
         <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={closePicker}>
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Assign Shift</h3><button onClick={closePicker} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button></div>
-            <div className="mb-3 text-sm text-slate-500">{empName(rows.find((r) => r.id === picker.employeeId))} · {new Date(picker.date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+            <div className="mb-3 text-sm text-slate-500">{empName(rows.find((r) => r.id === picker.employeeId))} · {parseLocal(picker.date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</div>
             <div className="flex flex-col gap-2">
               {shifts.map((s: any) => (
                 <button
                   key={s.id}
-                  onClick={() => { setAssignError(null); assign.mutate({ employeeId: picker.employeeId, shiftId: s.id, date: picker.date }); }}
+                  onClick={() => { setAssignError(null); assign.mutate({ employeeId: picker.employeeId, shiftId: s.id, date: apiDate(picker.date) }); }}
                   disabled={assign.isPending}
                   className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left transition-colors hover:border-primary disabled:opacity-60"
                 >
