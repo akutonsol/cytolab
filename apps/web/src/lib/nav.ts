@@ -15,6 +15,7 @@ import {
   MessageSquare,
   ScanEye,
   ScanLine,
+  Share2,
   Tag,
   ToggleRight,
   Users,
@@ -61,6 +62,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Req Tracking', path: '/req-tracking', permission: 'requisition:view', feature: 'REQUISITION_TRACKING', icon: ScanLine },
       { label: 'Reagents', path: '/reagents', permission: 'record:view', feature: 'REAGENT_TRACKING', icon: FlaskConical },
       { label: 'Digital Slides', path: '/wsi', permission: 'record:view', feature: 'WSI_VIEWER', icon: ScanEye },
+      { label: 'FHIR', path: '/fhir', permission: 'record:view', feature: 'HL7_FHIR', icon: Share2 },
     ],
   },
   {

@@ -26,6 +26,8 @@ import { AIScreeningCard } from '@/components/AIScreeningCard';
 import { NewConsultModal } from '@/components/NewConsultModal';
 import { CodingPanel } from '@/components/CodingPanel';
 import { SYSTEM_META, type RecordCoding } from '@/lib/coding';
+import { FhirTransmitModal } from '@/components/FhirTransmitModal';
+import { STATUS_META as FHIR_STATUS_META, type FhirTransmission } from '@/lib/fhir';
 import { SPECIMEN_LABELS, type FormType } from '@/lib/specimen-types';
 
 // ─── Status + step maps (zero-orange) ────────────────────────────────────────
@@ -245,7 +247,9 @@ export default function RecordDetailPage() {
   const [addSlideOpen, setAddSlideOpen] = useState(false);
   const [consultOpen, setConsultOpen] = useState(false);
   const [codingOpen, setCodingOpen] = useState(false);
+  const [fhirOpen, setFhirOpen] = useState(false);
   const { data: recordCodings } = useQuery<RecordCoding[]>({ queryKey: ['coding-record', id], enabled: !!id && isEnabled('LOINC_SNOMED'), queryFn: () => api.get(`/coding/record/${id}`).then((r) => r.data) });
+  const { data: fhirHistory } = useQuery<FhirTransmission[]>({ queryKey: ['fhir-record', id], enabled: !!id && isEnabled('HL7_FHIR'), queryFn: () => api.get(`/fhir/record/${id}`).then((r) => r.data) });
   const { data: recordReagents } = useQuery<any[]>({ queryKey: ['reagents', 'record', id], enabled: !!id && isEnabled('REAGENT_TRACKING'), queryFn: () => api.get(`/reagents/record/${id}`).then((r) => r.data) });
   const { data: team = [] } = useQuery<WorkloadUser[]>({ queryKey: ['workload-summary'], enabled: canAssign, queryFn: () => api.get('/workload/summary').then((r) => r.data) });
   const assignMut = useMutation({
@@ -513,6 +517,29 @@ export default function RecordDetailPage() {
           <FeatureGate feature="AI_SCREENING">
             <div className="mt-3"><AIScreeningCard recordId={id} /></div>
           </FeatureGate>
+          <FeatureGate feature="HL7_FHIR">
+            <div className="mt-3 rounded-[10px] border border-[#E2E8F0] bg-white p-3.5">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">FHIR / EMR</span>
+                <button onClick={() => setFhirOpen(true)} className="text-[12px] font-semibold text-[#4F46E5] hover:underline">Transmit</button>
+              </div>
+              {(fhirHistory ?? []).length === 0 ? (
+                <div className="text-[13px] text-[#94A3B8]">Not transmitted to any EMR.</div>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  {(fhirHistory ?? []).slice(0, 3).map((t) => {
+                    const s = FHIR_STATUS_META[t.status];
+                    return (
+                      <div key={t.id} className="flex items-center justify-between gap-2 text-[12px]">
+                        <span className="truncate text-[#334155]">{t.endpoint.name}</span>
+                        <span className="shrink-0 rounded-full px-2 py-0.5 font-bold" style={{ background: s.bg, color: s.fg }}>{s.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </FeatureGate>
           <FeatureGate feature="LOINC_SNOMED">
             <div className="mt-3 rounded-[10px] border border-[#E2E8F0] bg-white p-3.5">
               <div className="mb-2 flex items-center justify-between">
@@ -630,6 +657,7 @@ export default function RecordDetailPage() {
       {addSlideOpen && <AddSlideModal recordId={id} onClose={() => setAddSlideOpen(false)} />}
       {consultOpen && <NewConsultModal recordId={id} onClose={() => setConsultOpen(false)} onCreated={(cid) => router.push(`/teleconsult/${cid}`)} />}
       {codingOpen && <CodingPanel recordId={id} meta={{ labNo: record.labNumber ?? undefined, specimenType: record.formType ?? undefined }} onClose={() => setCodingOpen(false)} />}
+      {fhirOpen && <FhirTransmitModal recordId={id} onClose={() => setFhirOpen(false)} />}
 
       {confirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setConfirm(null)}>

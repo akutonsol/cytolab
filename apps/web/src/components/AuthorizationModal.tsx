@@ -14,6 +14,7 @@ import { PriorHistoryPanel } from './PriorHistoryPanel';
 import { BethesdaClassificationModal } from './BethesdaClassificationModal';
 import { AIScreeningCard } from './AIScreeningCard';
 import { NewConsultModal } from './NewConsultModal';
+import { FhirTransmitModal } from './FhirTransmitModal';
 import { STATUS_META as CODING_STATUS_META, type RecordCoding } from '@/lib/coding';
 
 function CodingStatusBadge({ recordId }: { recordId: string }) {
@@ -90,6 +91,9 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [bethesdaOpen, setBethesdaOpen] = useState(false);
   const [consultOpen, setConsultOpen] = useState(false);
+  const [fhirOpen, setFhirOpen] = useState(false);
+  const { data: fhirEndpoints } = useQuery<{ id: string; isActive: boolean }[]>({ queryKey: ['fhir-endpoints'], queryFn: () => api.get('/fhir/endpoints').then((r) => r.data), enabled: !!record?.id });
+  const fhirEndpointCount = (fhirEndpoints ?? []).filter((e) => e.isActive).length;
   const [aiDraftId, setAiDraftId] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<CodeSuggestion[] | null>(null);
   const [flags, setFlags] = useState<ConsistencyFlag[] | null>(null);
@@ -318,6 +322,11 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
                 <button type="button" style={DS.btnSecondary} onClick={() => setConsultOpen(true)}>Consult</button>
               </FeatureGate>
             )}
+            {record?.id && authorized && fhirEndpointCount > 0 && (
+              <FeatureGate feature="HL7_FHIR">
+                <button type="button" style={{ ...DS.btnSecondary, color: '#4F46E5' }} onClick={() => setFhirOpen(true)}>Transmit to EMR</button>
+              </FeatureGate>
+            )}
             <button type="button" style={DS.btnSecondary} onClick={onClose}>Close</button>
           </>
         }
@@ -541,6 +550,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
     <PriorHistoryPanel open={historyOpen} onClose={() => setHistoryOpen(false)} patientId={record?.patientId} excludeRecordId={record?.id} />
     {record?.id && <BethesdaClassificationModal open={bethesdaOpen} onClose={() => setBethesdaOpen(false)} recordId={record.id} onApply={applyBethesda} />}
     {record?.id && consultOpen && <NewConsultModal recordId={record.id} onClose={() => setConsultOpen(false)} />}
+    {record?.id && fhirOpen && <FhirTransmitModal recordId={record.id} onClose={() => setFhirOpen(false)} />}
     </>
   );
 }

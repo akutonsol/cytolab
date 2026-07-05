@@ -61,6 +61,7 @@ export const BUILT_FEATURES: ReadonlySet<FeatureKey> = new Set<FeatureKey>([
   'AI_SCREENING',
   'TELECONSULTATION',
   'LOINC_SNOMED',
+  'HL7_FHIR',
 ]);
 
 export const ALL_FEATURE_KEYS = Object.keys(FEATURE_TIERS) as FeatureKey[];

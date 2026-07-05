@@ -194,7 +194,7 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     key: 'HL7_FHIR',
     name: 'HL7 / FHIR Interface',
     description: 'Exchange orders and results with EHRs over HL7 v2 and FHIR interfaces.',
-    tier: 5, tierName: 'Enterprise', icon: 'Network', docsUrl: null, navPath: null, dependsOn: [], comingSoon: true,
+    tier: 5, tierName: 'Enterprise', icon: 'Network', docsUrl: null, navPath: '/fhir', dependsOn: [],
   },
 };
 

@@ -224,6 +224,8 @@ model Lab {
   consultRequests        ConsultRequest[]
   medicalCodes           MedicalCode[]
   recordCodings          RecordCoding[]
+  fhirEndpoints          FHIREndpoint[]
+  fhirTransmissions      FHIRTransmission[]
 }
 
 model Account {
@@ -589,6 +591,7 @@ model Record {
   aiScreening       AIScreeningResult?
   consultRequests   ConsultRequest[]
   codings           RecordCoding[]
+  fhirTransmissions FHIRTransmission[]
   // Case assignment (Tier 2 — workload balancing). Fields are unconditional in
   // the schema; only the UI is feature-gated.
   assignedToId      String?
@@ -2697,4 +2700,78 @@ model RecordCoding {
   @@unique([recordId, codeId])
   @@index([recordId])
   @@index([labId])
+}
+
+// ─── HL7 / FHIR Integration (Tier 5 — Enterprise) ────────────────────────────
+// Send authorized results to hospital EMRs as FHIR R4 DiagnosticReport
+// resources. Sandbox endpoints build + store the payload without POSTing.
+enum EMRSystem {
+  Epic
+  Cerner
+  Meditech
+  Allscripts
+  Generic
+}
+
+enum FHIRAuthType {
+  Bearer
+  OAuth2
+  APIKey
+  None
+}
+
+enum TransmissionStatus {
+  Pending
+  Sending
+  Success
+  Failed
+  Retrying
+}
+
+model FHIREndpoint {
+  id           String       @id @default(cuid())
+  labId        String
+  lab          Lab          @relation(fields: [labId], references: [id])
+  name         String
+  baseUrl      String
+  system       EMRSystem    @default(Epic)
+  authType     FHIRAuthType @default(Bearer)
+  authToken    String? // encrypt in production
+  clientId     String?
+  clientSecret String?
+  isActive     Boolean      @default(true)
+  isSandbox    Boolean      @default(true)
+
+  lastTestedAt   DateTime?
+  lastTestStatus String?
+
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  transmissions FHIRTransmission[]
+
+  @@unique([labId, name])
+  @@index([labId])
+}
+
+model FHIRTransmission {
+  id         String       @id @default(cuid())
+  labId      String
+  lab        Lab          @relation(fields: [labId], references: [id])
+  endpointId String
+  endpoint   FHIREndpoint @relation(fields: [endpointId], references: [id])
+  recordId   String
+  record     Record       @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  status         TransmissionStatus @default(Pending)
+  fhirResourceId String?
+  fhirPayload    Json
+  responseCode   Int?
+  responseBody   String?
+  errorMessage   String?
+  retryCount     Int                @default(0)
+  transmittedAt  DateTime?
+  createdAt      DateTime           @default(now())
+
+  @@index([labId, status])
+  @@index([recordId])
 }
