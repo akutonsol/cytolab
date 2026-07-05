@@ -208,22 +208,22 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
         columns: [
           // LEFT — lab name + subtitle
           {
-            width: '*',
+            width: 150,
             stack: [
               { text: lab.name, color: WHITE, fontSize: 18, bold: true },
               { text: 'Cytology & Pathology Laboratory', color: '#C7D2FE', fontSize: 10, margin: [0, 3, 0, 0] },
             ],
           },
-          // CENTER — report title
+          // CENTER — report title (fixed width + noWrap so it never breaks lines)
           {
-            width: '*',
+            width: 200,
             stack: [
-              { text: 'CYTOLOGY REPORT', color: WHITE, fontSize: 19, bold: true, characterSpacing: 1, alignment: 'center' },
+              { text: 'CYTOLOGY REPORT', color: WHITE, fontSize: 18, bold: true, characterSpacing: 1, alignment: 'center', noWrap: true },
             ],
           },
           // RIGHT — ref, date, lab contact
           {
-            width: 'auto',
+            width: '*',
             stack: [
               { text: `Ref  ${reportRef}`, color: INDIGO_ON, fontSize: 10, alignment: 'right' },
               { text: fmtDate(reportDate), color: '#C7D2FE', fontSize: 9, alignment: 'right', margin: [0, 2, 0, 0] },
@@ -293,7 +293,8 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
       : [];
 
   // ── Gynaecological details (GYN records only) ───────────────────────────────
-  const gynSection: Content[] = gyn
+  // Gate strictly on the record being GYN-typed — never render for non-GYN.
+  const gynSection: Content[] = record.isGyn && gyn
     ? [
         sectionLabel('GYNAECOLOGICAL DETAILS'),
         accentBox(INDIGO_LIGHT, null, [
@@ -327,10 +328,15 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
     : [];
 
   // ── 3. Specimens received (indigo-tinted box) ───────────────────────────────
+  // De-duplicate identical specimens (same type/label/blood group/received date)
+  // so a record with e.g. two identical URINE rows doesn't render "URINE / URINE".
+  const specKey = (s: (typeof specimens)[number]) =>
+    `${s.type}|${s.label ?? ''}|${s.bloodGroup ?? ''}|${s.dateReceived ? +new Date(s.dateReceived) : ''}`;
+  const uniqueSpecimens = specimens.filter((s, i, arr) => arr.findIndex((x) => specKey(x) === specKey(s)) === i);
   const specimenGrid: Content =
-    specimens.length > 0
+    uniqueSpecimens.length > 0
       ? {
-          columns: chunk(specimens, Math.ceil(specimens.length / Math.min(specimens.length, 3))).map((group) => ({
+          columns: chunk(uniqueSpecimens, Math.ceil(uniqueSpecimens.length / Math.min(uniqueSpecimens.length, 3))).map((group) => ({
             width: '*',
             stack: group.map((s) => ({
               margin: [0, 0, 0, 6],
