@@ -1,5 +1,7 @@
-import { Controller, Get, Param, Patch } from '@nestjs/common';
+import { Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { RequireFeature } from '../../common/decorators/require-feature.decorator';
+import { FeatureGuard } from '../../common/guards/feature.guard';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { WorkforceNotificationService } from './workforce-notification.service';
 
@@ -8,6 +10,8 @@ import { WorkforceNotificationService } from './workforce-notification.service';
 // JwtAuthGuard.
 @ApiTags('workforce-notifications')
 @ApiBearerAuth()
+@RequireFeature('WORKFORCE_MANAGEMENT')
+@UseGuards(FeatureGuard)
 @Controller()
 export class WorkforceNotificationController {
   constructor(private notifications: WorkforceNotificationService) {}

@@ -1,6 +1,8 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { RequireFeature } from '../../common/decorators/require-feature.decorator';
+import { FeatureGuard } from '../../common/guards/feature.guard';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { WorkforceService } from './workforce.service';
 import {
@@ -10,6 +12,8 @@ import {
 
 @ApiTags('workforce')
 @ApiBearerAuth()
+@RequireFeature('WORKFORCE_MANAGEMENT')
+@UseGuards(FeatureGuard)
 @Controller()
 export class WorkforceController {
   constructor(private workforce: WorkforceService) {}

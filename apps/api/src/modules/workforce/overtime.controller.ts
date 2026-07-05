@@ -1,12 +1,16 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { RequireFeature } from '../../common/decorators/require-feature.decorator';
+import { FeatureGuard } from '../../common/guards/feature.guard';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { OvertimeService } from './overtime.service';
 import { CalculateOvertimeDto, CreateOvertimeRuleDto, OvertimeRecordQuery } from './dto/workforce-phase2.dto';
 
 @ApiTags('workforce-overtime')
 @ApiBearerAuth()
+@RequireFeature('WORKFORCE_MANAGEMENT')
+@UseGuards(FeatureGuard)
 @Controller()
 export class OvertimeController {
   constructor(private overtime: OvertimeService) {}

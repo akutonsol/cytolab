@@ -16,6 +16,7 @@ import { ProductivityService } from './productivity.service';
 import { ProductivityController } from './productivity.controller';
 import { PerformanceService } from './performance.service';
 import { PerformanceController } from './performance.controller';
+import { FeatureGuard } from '../../common/guards/feature.guard';
 
 @Module({
   imports: [PrismaModule],
@@ -38,6 +39,7 @@ import { PerformanceController } from './performance.controller';
     PayrollEngineService,
     ProductivityService,
     PerformanceService,
+    FeatureGuard,
   ],
   exports: [WorkforceService, WorkforceNotificationService],
 })

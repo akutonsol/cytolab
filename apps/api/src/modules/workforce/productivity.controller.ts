@@ -1,11 +1,15 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { RequireFeature } from '../../common/decorators/require-feature.decorator';
+import { FeatureGuard } from '../../common/guards/feature.guard';
 import { ProductivityService } from './productivity.service';
 import { BenchmarksQuery, ProductivityMetricQuery, ProductivitySummaryQuery, UpsertProductivityMetricDto } from './dto/workforce-phase3.dto';
 
 @ApiTags('workforce-productivity')
 @ApiBearerAuth()
+@RequireFeature('WORKFORCE_MANAGEMENT')
+@UseGuards(FeatureGuard)
 @Controller()
 export class ProductivityController {
   constructor(private productivity: ProductivityService) {}
