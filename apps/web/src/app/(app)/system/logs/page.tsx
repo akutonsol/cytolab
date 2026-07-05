@@ -93,7 +93,7 @@ export default function SystemLogPage() {
     queryKey: ['system-logs', type, userId, from, to],
     queryFn: () =>
       api
-        .get<LogPage>('/system/logs', { params: { pageSize: 1000, ...(type && { type }), ...(userId && { userId }), ...(from && { from }), ...(to && { to: `${to}T23:59:59` }) } })
+        .get<LogPage>('/system/logs', { params: { pageSize: 500, ...(type && { type }), ...(userId && { userId }), ...(from && { from }), ...(to && { to: `${to}T23:59:59` }) } })
         .then((r) => r.data),
   });
 

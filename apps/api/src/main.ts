@@ -5,7 +5,24 @@ import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
+// Fail hard at startup if token-signing secrets are weak (QA-H1 / QA-M4).
+// Mirrors the ENCRYPTION_KEY fail-hard check — a short/absent secret is a
+// security defect, not a warning. Minimum 32 chars (≥256-bit when random).
+const MIN_SECRET_LENGTH = 32;
+function assertStrongSecrets() {
+  for (const name of ['JWT_SECRET', 'JWT_PORTAL_SECRET']) {
+    const value = process.env[name];
+    if (!value || value.length < MIN_SECRET_LENGTH) {
+      throw new Error(
+        `${name} must be set and at least ${MIN_SECRET_LENGTH} characters ` +
+          `(got ${value ? value.length : 0}). Generate one with: openssl rand -hex 32`,
+      );
+    }
+  }
+}
+
 async function bootstrap() {
+  assertStrongSecrets();
   const app = await NestFactory.create(AppModule);
 
   const prefix = process.env.API_PREFIX ?? 'api/v1';
@@ -39,9 +56,14 @@ async function bootstrap() {
     }),
   );
 
-  // Cookie auth requires credentialed CORS. `origin: true` reflects the request
-  // origin (valid with credentials, unlike a literal wildcard).
-  app.enableCors({ origin: true, credentials: true });
+  // Cookie auth requires credentialed CORS, restricted to an explicit allow-list
+  // (QA-M2). Never reflect arbitrary origins with credentials in production.
+  // ALLOWED_ORIGINS is a comma-separated list; defaults to the local web app.
+  const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:3000')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  app.enableCors({ origin: allowedOrigins, credentials: true });
 
   app.useGlobalPipes(
     new ValidationPipe({
