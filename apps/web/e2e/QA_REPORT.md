@@ -225,11 +225,11 @@ are the highest-value next steps for an enterprise release.
 | 13 | All migrations applied | ✅ | up to date, no drift |
 | 14 | Seed run for role config | ✅ | 5 roles present (Superuser + 4) |
 | 15 | package-lock reconciled | ⚠️ | multiple parallel-window dep changes uncommitted at time of test |
-| 16 | Append-only audit log at DB level | ❓ | AuditLog has `detail` field; DB-level UPDATE/DELETE revocation not verified |
-| 17 | ENCRYPTION_KEY rotation plan | ❌ | not documented |
-| 18 | Backup strategy | ❌ | not verified |
+| 16 | Append-only audit log at DB level | 🟡 | script ready in db-security-setup.sql — run on production DB, see Database Security checklist |
+| 17 | ENCRYPTION_KEY rotation plan | ✅ | documented in docs/DATABASE_SECURITY.md — rotate every 90 days via Secret Manager |
+| 18 | Backup strategy | 🟡 | AES-256-CBC encrypted GCS backups built in commit 646db23 — verify with POST /system/backup/verify-latest when STORAGE_BUCKET configured |
 | 19 | No PHI in logs | ❓ | not exhaustively verified (Phase 19 deferred) |
-| 20 | SSL/TLS for prod | ❌ | dev HTTP only (expected) |
+| 20 | SSL/TLS for prod | 🟡 | assertDatabaseSecurity() enforces sslmode=require at boot in production — add to DATABASE_URL before go-live |
 | 21 | `next build` clean (88 pages) | ❓ | not run (expensive); dev server compiles clean, `tsc --noEmit` clean |
 | 22 | E2E tests passing | ✅ | 57/63 pass, 6 env-skips, 0 fail (post route-guard fix) |
 | 23 | — | | |
