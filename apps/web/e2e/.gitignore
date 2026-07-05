@@ -1,0 +1,4 @@
+# Saved auth storage state contains real HttpOnly session cookies — never commit.
+.auth/
+# Playwright artifacts (screenshots, video, traces).
+.output/
