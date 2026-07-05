@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Bell, CalendarOff, Check, CheckCircle2, ChevronRight, Clock, DollarSign, ExternalLink,
@@ -64,6 +64,7 @@ const priorityOf = (n: UItem): keyof typeof PRIORITY => {
 const humanType = (t: string) => t.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 const sourceLabel = (n: UItem) => (n.source === 'wf' ? 'Workforce' : 'System');
 const ticketNo = (n: UItem) => n.title.match(/TKT-[\d-]+/)?.[0] ?? null;
+const typeLabel = (n: UItem) => (/new support ticket/i.test(n.title) || n.entityType === 'SupportTicket' ? 'Support Ticket Created' : humanType(n.type));
 
 // Related-entity → label + route.
 const relatedFor = (n: UItem): { label: string; sub: string; route: string | null } | null => {
@@ -91,7 +92,10 @@ const relTime = (iso: string) => {
   if (s < 604_800) return `${Math.floor(s / 86_400)}d ago`;
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 };
-const fmtFull = (iso: string) => new Date(iso).toLocaleString(undefined, { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+const fmtFull = (iso: string) => {
+  const d = new Date(iso);
+  return `${d.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })} at ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+};
 
 // Time bucket for the "Today / Yesterday / This Week / Earlier" section headers.
 const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
@@ -164,7 +168,11 @@ export default function NotificationsPage() {
   }, [shown]);
 
   const selected = merged.find((n) => n.id === selectedId) ?? null;
-  const openDetail = (n: UItem) => { setSelectedId(n.id); if (!n.read) markRead.mutate(n); };
+  // Default-select the most recent notification so the detail panel is populated
+  // on load (matches the reference). Selecting does NOT mark read — that's the
+  // explicit "Mark as read" action.
+  useEffect(() => { if (!selectedId && merged.length > 0) setSelectedId(merged[0].id); }, [merged, selectedId]);
+  const openDetail = (n: UItem) => setSelectedId(n.id);
 
   return (
     <div className="flex h-full min-h-0 gap-6">
@@ -214,8 +222,8 @@ export default function NotificationsPage() {
                   const isSel = n.id === selectedId;
                   return (
                     <button key={`${n.source}-${n.id}`} onClick={() => openDetail(n)}
-                      className={`flex w-full items-start gap-3.5 border-b border-slate-50 px-5 py-4 text-left transition-colors hover:bg-slate-50 ${isSel ? 'bg-slate-50' : ''}`}
-                      style={isSel ? { borderLeft: '3px solid #4F46E5', paddingLeft: 'calc(1.25rem - 3px)' } : undefined}>
+                      className={`flex w-full items-start gap-3.5 border-b border-slate-100 px-5 py-4 text-left transition-colors ${isSel ? '' : 'bg-white hover:bg-slate-50'}`}
+                      style={isSel ? { background: '#F5F6FF', borderLeft: '3px solid #4F46E5', paddingLeft: 'calc(1.25rem - 3px)' } : undefined}>
                       <span style={{ background: ic.bg, color: ic.fg }} className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl"><ic.Icon size={18} /></span>
                       <span className="min-w-0 flex-1">
                         <span className={`block truncate text-sm ${n.read ? 'font-medium text-slate-600' : 'font-bold text-charcoal-heading'}`}>{n.title}</span>
@@ -265,7 +273,7 @@ function Detail({ n, onClose, onView, onMarkRead }: { n: UItem; onClose: () => v
 
       <div className="mb-3 flex items-center gap-2">
         <span className="rounded-md px-2 py-0.5 text-[11px] font-bold" style={{ background: prc.bg, color: prc.fg }}>{pr}</span>
-        <span className="text-sm text-slate-500">{humanType(n.type)}</span>
+        <span className="text-sm text-slate-500">{typeLabel(n)}</span>
       </div>
 
       <h2 className="text-xl font-bold leading-snug text-charcoal-heading">{n.title}</h2>
