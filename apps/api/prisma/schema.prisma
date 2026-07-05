@@ -325,6 +325,8 @@ model User {
   leaveRequestsApproved   LeaveRequest[]          @relation("LeaveApprover")
   overtimeRecordsApproved OvertimeRecord[]        @relation("OvertimeApprover")
   workforceNotifications  WorkforceNotification[] @relation("WorkforceNotificationRecipient")
+  payrollPeriodsProcessed PayrollPeriod[]         @relation("PayrollPeriodProcessor")
+  performanceReviewsGiven PerformanceReview[]     @relation("PerformanceReviewer")
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
 
@@ -1637,19 +1639,19 @@ model Department {
 // HR record for a staff member. One Employee per User (1:1). salary is the
 // MONTHLY basic in minor units (cents).
 model Employee {
-  id                    String            @id @default(uuid())
+  id                    String               @id @default(uuid())
   labId                 String
-  lab                   Lab               @relation(fields: [labId], references: [id])
-  userId                String            @unique
-  user                  User              @relation("EmployeeUser", fields: [userId], references: [id])
+  lab                   Lab                  @relation(fields: [labId], references: [id])
+  userId                String               @unique
+  user                  User                 @relation("EmployeeUser", fields: [userId], references: [id])
   departmentId          String?
-  department            Department?       @relation(fields: [departmentId], references: [id])
+  department            Department?          @relation(fields: [departmentId], references: [id])
   employeeNo            String
   jobTitle              String
-  employmentType        EmploymentType    @default(FullTime)
+  employmentType        EmploymentType       @default(FullTime)
   startDate             DateTime
   endDate               DateTime?
-  salary                Int               @default(0) // monthly basic, minor units (cents)
+  salary                Int                  @default(0) // monthly basic, minor units (cents)
   bankName              String?
   bankAccount           String?
   bankBranch            String?
@@ -1659,8 +1661,8 @@ model Employee {
   emergencyContactName  String?
   emergencyContactPhone String?
   address               String?
-  isActive              Boolean           @default(true)
-  isFixedSalary         Boolean           @default(true) // false = hourly (hours entered per run)
+  isActive              Boolean              @default(true)
+  isFixedSalary         Boolean              @default(true) // false = hourly (hours entered per run)
   payAdvices            PayAdvice[]
   clockEvents           ClockEvent[]
   timesheets            Timesheet[]
@@ -1668,8 +1670,12 @@ model Employee {
   leaveBalances         LeaveBalance[]
   leaveRequests         LeaveRequest[]
   overtimeRecords       OvertimeRecord[]
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
+  payrollEntries        PayrollEntry[]
+  productivityMetrics   ProductivityMetric[]
+  performanceReviews    PerformanceReview[]
+  performanceGoals      PerformanceGoal[]
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
 
   @@unique([labId, employeeNo])
   @@index([labId])
@@ -3101,4 +3107,129 @@ enum WorkforceNotificationType {
   TIMESHEET_APPROVED
   TIMESHEET_REJECTED
   MISSING_PUNCH_ALERT
+  PERFORMANCE_REVIEW_SUBMITTED
+}
+
+// ─── Tier 6: Workforce Management — Phase 3 ──────────────────────────────────
+// Payroll engine, productivity analytics, performance management. All money in
+// integer cents; tenancy stamped automatically for models carrying labId.
+
+model PayrollPeriod {
+  id              String              @id @default(cuid())
+  labId           String
+  month           Int // 1-12
+  year            Int
+  status          PayrollPeriodStatus @default(DRAFT)
+  totalGrossCents Int                 @default(0)
+  totalNetCents   Int                 @default(0)
+  totalTaxCents   Int                 @default(0)
+  employeeCount   Int                 @default(0)
+  processedAt     DateTime?
+  processedById   String?
+  processedBy     User?               @relation("PayrollPeriodProcessor", fields: [processedById], references: [id])
+  entries         PayrollEntry[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@unique([labId, year, month])
+  @@index([labId, status])
+}
+
+model PayrollEntry {
+  id                   String        @id @default(cuid())
+  labId                String
+  payrollPeriodId      String
+  payrollPeriod        PayrollPeriod @relation(fields: [payrollPeriodId], references: [id], onDelete: Cascade)
+  employeeId           String
+  employee             Employee      @relation(fields: [employeeId], references: [id])
+  regularMinutes       Int           @default(0)
+  overtimeMinutes      Int           @default(0)
+  grossCents           Int           @default(0)
+  nisCents             Int           @default(0)
+  nhtCents             Int           @default(0)
+  educationTaxCents    Int           @default(0)
+  payeCents            Int           @default(0)
+  totalDeductionsCents Int           @default(0)
+  netCents             Int           @default(0)
+  leaveDaysTaken       Int           @default(0)
+  createdAt            DateTime      @default(now())
+
+  @@unique([payrollPeriodId, employeeId])
+  @@index([labId])
+  @@index([employeeId])
+}
+
+model ProductivityMetric {
+  id                 String   @id @default(cuid())
+  labId              String
+  employeeId         String
+  employee           Employee @relation(fields: [employeeId], references: [id])
+  date               DateTime
+  specimensProcessed Int      @default(0)
+  reportsCompleted   Int      @default(0)
+  averageTATMinutes  Int      @default(0)
+  qualityScore       Int      @default(0) // 0-100
+  createdAt          DateTime @default(now())
+
+  @@unique([labId, employeeId, date])
+  @@index([labId, date])
+  @@index([employeeId, date])
+}
+
+model PerformanceReview {
+  id                String                  @id @default(cuid())
+  labId             String
+  employeeId        String
+  employee          Employee                @relation(fields: [employeeId], references: [id])
+  reviewerId        String
+  reviewer          User                    @relation("PerformanceReviewer", fields: [reviewerId], references: [id])
+  period            String // e.g. "Q2 2026"
+  overallScore      Int                     @default(0) // 1-100
+  attendanceScore   Int                     @default(0)
+  productivityScore Int                     @default(0)
+  qualityScore      Int                     @default(0)
+  comments          String?
+  goals             Json?
+  status            PerformanceReviewStatus @default(DRAFT)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  @@index([labId, status])
+  @@index([employeeId])
+}
+
+model PerformanceGoal {
+  id          String                @id @default(cuid())
+  labId       String
+  employeeId  String
+  employee    Employee              @relation(fields: [employeeId], references: [id])
+  title       String
+  description String?
+  targetDate  DateTime
+  status      PerformanceGoalStatus @default(ACTIVE)
+  progress    Int                   @default(0) // 0-100
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@index([labId, status])
+  @@index([employeeId])
+}
+
+enum PayrollPeriodStatus {
+  DRAFT
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+enum PerformanceReviewStatus {
+  DRAFT
+  SUBMITTED
+  ACKNOWLEDGED
+}
+
+enum PerformanceGoalStatus {
+  ACTIVE
+  COMPLETED
+  MISSED
 }

@@ -10,6 +10,12 @@ import { OvertimeService } from './overtime.service';
 import { OvertimeController } from './overtime.controller';
 import { WorkforceReportsService } from './workforce-reports.service';
 import { WorkforceReportsController } from './workforce-reports.controller';
+import { PayrollEngineService } from './payroll-engine.service';
+import { PayrollEngineController } from './payroll-engine.controller';
+import { ProductivityService } from './productivity.service';
+import { ProductivityController } from './productivity.controller';
+import { PerformanceService } from './performance.service';
+import { PerformanceController } from './performance.controller';
 
 @Module({
   imports: [PrismaModule],
@@ -19,6 +25,9 @@ import { WorkforceReportsController } from './workforce-reports.controller';
     OvertimeController,
     WorkforceNotificationController,
     WorkforceReportsController,
+    PayrollEngineController,
+    ProductivityController,
+    PerformanceController,
   ],
   providers: [
     WorkforceService,
@@ -26,6 +35,9 @@ import { WorkforceReportsController } from './workforce-reports.controller';
     LeaveService,
     OvertimeService,
     WorkforceReportsService,
+    PayrollEngineService,
+    ProductivityService,
+    PerformanceService,
   ],
   exports: [WorkforceService, WorkforceNotificationService],
 })
