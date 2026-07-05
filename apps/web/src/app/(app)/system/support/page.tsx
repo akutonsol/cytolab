@@ -177,10 +177,10 @@ function TicketsTab() {
           <Search size={16} />
           <input value={f.search} onChange={(e) => setF({ ...f, search: e.target.value })} placeholder="Search title or ticket #..." className="w-full border-none bg-transparent text-sm text-[#0F172A] outline-none placeholder:text-[#9CA3AF]" />
         </div>
-        <select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} className="h-11 rounded-xl border border-[#E2E8F0] px-3 text-sm"><option value="">All Statuses</option>{STATUSES.map((s) => <option key={s} value={s}>{STATUS[s].label}</option>)}</select>
-        <select value={f.priority} onChange={(e) => setF({ ...f, priority: e.target.value })} className="h-11 rounded-xl border border-[#E2E8F0] px-3 text-sm"><option value="">All Priorities</option>{PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}</select>
-        <select value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} className="h-11 rounded-xl border border-[#E2E8F0] px-3 text-sm"><option value="">All Categories</option>{CATEGORIES.map((c) => <option key={c} value={c}>{cat(c)}</option>)}</select>
-        <select value={f.submitterType} onChange={(e) => setF({ ...f, submitterType: e.target.value })} className="h-11 rounded-xl border border-[#E2E8F0] px-3 text-sm"><option value="">All Submitters</option><option value="STAFF">Staff</option><option value="CLIENT">Client</option><option value="CONSULTANT">Consultant</option></select>
+        <select aria-label="Filter by status" value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} className="h-11 rounded-xl border border-[#E2E8F0] px-3 text-sm"><option value="">All Statuses</option>{STATUSES.map((s) => <option key={s} value={s}>{STATUS[s].label}</option>)}</select>
+        <select aria-label="Filter by priority" value={f.priority} onChange={(e) => setF({ ...f, priority: e.target.value })} className="h-11 rounded-xl border border-[#E2E8F0] px-3 text-sm"><option value="">All Priorities</option>{PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}</select>
+        <select aria-label="Filter by category" value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} className="h-11 rounded-xl border border-[#E2E8F0] px-3 text-sm"><option value="">All Categories</option>{CATEGORIES.map((c) => <option key={c} value={c}>{cat(c)}</option>)}</select>
+        <select aria-label="Filter by submitter type" value={f.submitterType} onChange={(e) => setF({ ...f, submitterType: e.target.value })} className="h-11 rounded-xl border border-[#E2E8F0] px-3 text-sm"><option value="">All Submitters</option><option value="STAFF">Staff</option><option value="CLIENT">Client</option><option value="CONSULTANT">Consultant</option></select>
         <button onClick={() => setNewOpen(true)} className={`${btnPrimary} ml-auto`}><Plus size={16} /> New Ticket</button>
       </div>
 
@@ -286,15 +286,15 @@ function TicketDetail({ id, users, onClose }: { id: string; users: UserLite[]; o
             <div className="mt-5 grid grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Status</label>
-                <select className={inputCls} value={t.status} onChange={(e) => patch.mutate({ status: e.target.value })}>{STATUSES.map((s) => <option key={s} value={s}>{STATUS[s].label}</option>)}</select>
+                <select aria-label="Ticket status" className={inputCls} value={t.status} onChange={(e) => patch.mutate({ status: e.target.value })}>{STATUSES.map((s) => <option key={s} value={s}>{STATUS[s].label}</option>)}</select>
               </div>
               <div>
                 <label className={labelCls}>Priority</label>
-                <select className={inputCls} value={t.priority} onChange={(e) => patch.mutate({ priority: e.target.value })}>{PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}</select>
+                <select aria-label="Ticket priority" className={inputCls} value={t.priority} onChange={(e) => patch.mutate({ priority: e.target.value })}>{PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}</select>
               </div>
               <div className="col-span-2">
                 <label className={labelCls}>Assigned to</label>
-                <select className={inputCls} value={t.assignedToId ?? ''} onChange={(e) => patch.mutate({ assignedToId: e.target.value })}><option value="">Unassigned</option>{users.map((u) => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}</select>
+                <select aria-label="Assign ticket to" className={inputCls} value={t.assignedToId ?? ''} onChange={(e) => patch.mutate({ assignedToId: e.target.value })}><option value="">Unassigned</option>{users.map((u) => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}</select>
               </div>
             </div>
 
