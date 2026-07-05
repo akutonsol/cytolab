@@ -31,6 +31,7 @@ export const FEATURE_TIERS: Record<FeatureKey, number> = {
   PROFICIENCY_TESTING: 4,
   REAGENT_TRACKING: 4,
   PATIENT_RECALL: 4,
+  REPORT_CENTER: 4,
   // Tier 5 — Enterprise
   WSI_VIEWER: 5,
   AI_SCREENING: 5,
@@ -55,6 +56,7 @@ export const BUILT_FEATURES: ReadonlySet<FeatureKey> = new Set<FeatureKey>([
   'PROFICIENCY_TESTING',
   'REAGENT_TRACKING',
   'PATIENT_RECALL',
+  'REPORT_CENTER',
   'VOICE_TO_TEXT',
   'RESULT_TEMPLATES',
   'WSI_VIEWER',

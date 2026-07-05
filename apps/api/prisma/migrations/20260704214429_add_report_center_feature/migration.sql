@@ -1,0 +1,3 @@
+-- AlterEnum
+ALTER TYPE "FeatureKey" ADD VALUE 'REPORT_CENTER';
+

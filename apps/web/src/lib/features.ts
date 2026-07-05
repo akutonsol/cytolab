@@ -23,6 +23,7 @@ export type FeatureKey =
   | 'PROFICIENCY_TESTING'
   | 'REAGENT_TRACKING'
   | 'PATIENT_RECALL'
+  | 'REPORT_CENTER'
   // Tier 5 — Enterprise
   | 'WSI_VIEWER'
   | 'AI_SCREENING'
@@ -163,6 +164,12 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     name: 'Patient Recall',
     description: 'Schedule and track recall reminders for patients due for repeat screening.',
     tier: 4, tierName: 'Compliance', icon: 'BellRing', docsUrl: null, navPath: '/recalls', dependsOn: [],
+  },
+  REPORT_CENTER: {
+    key: 'REPORT_CENTER',
+    name: 'Report Center',
+    description: 'Run, customize, and export analytics reports across specimens, clinical, financial, patient, staff, and quality data.',
+    tier: 4, tierName: 'Compliance', icon: 'FileBarChart', docsUrl: null, navPath: '/report-center', dependsOn: [],
   },
 
   // ── Tier 5 — Enterprise ────────────────────────────────────────────
