@@ -132,7 +132,7 @@ const sectionLabel = (text: string, topMargin = 16): Content => ({
   fontSize: 9,
   bold: true,
   color: INDIGO,
-  characterSpacing: 1.5,
+  characterSpacing: 0,
   margin: [0, topMargin, 0, 6],
 });
 
@@ -195,7 +195,6 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
   const authorized = !!authorizer?.signedAt;
   // Not in the data model today, but honoured if ever supplied — never breaks.
   const urgent = (record as unknown as { urgent?: boolean }).urgent === true;
-  const labContact = [lab.address, lab.phone, lab.email].filter(Boolean).join('   •   ');
   const referring = client
     ? client.officeName || `${client.firstName} ${client.lastName}`.trim()
     : null;
@@ -207,20 +206,30 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
       { canvas: [{ type: 'rect', x: 0, y: 0, w: CW, h: 80, color: INDIGO }] },
       {
         columns: [
+          // LEFT — lab name + subtitle
           {
             width: '*',
             stack: [
               { text: lab.name, color: WHITE, fontSize: 18, bold: true },
-              ...(labContact ? [{ text: labContact, color: INDIGO_ON, fontSize: 9, margin: [0, 3, 0, 0] } as Content] : []),
               { text: 'Cytology & Pathology Laboratory', color: '#C7D2FE', fontSize: 10, margin: [0, 3, 0, 0] },
             ],
           },
+          // CENTER — report title
+          {
+            width: '*',
+            stack: [
+              { text: 'CYTOLOGY REPORT', color: WHITE, fontSize: 19, bold: true, characterSpacing: 1, alignment: 'center' },
+            ],
+          },
+          // RIGHT — ref, date, lab contact
           {
             width: 'auto',
             stack: [
-              { text: 'CYTOLOGY REPORT', color: WHITE, fontSize: 19, bold: true, characterSpacing: 1, alignment: 'right' },
-              { text: `Ref  ${reportRef}`, color: INDIGO_ON, fontSize: 10, alignment: 'right', margin: [0, 4, 0, 0] },
+              { text: `Ref  ${reportRef}`, color: INDIGO_ON, fontSize: 10, alignment: 'right' },
               { text: fmtDate(reportDate), color: '#C7D2FE', fontSize: 9, alignment: 'right', margin: [0, 2, 0, 0] },
+              ...(lab.address ? [{ text: lab.address, color: WHITE, fontSize: 7, alignment: 'right', margin: [0, 3, 0, 0] } as Content] : []),
+              ...(lab.phone ? [{ text: lab.phone, color: WHITE, fontSize: 7, alignment: 'right', margin: [0, 1, 0, 0] } as Content] : []),
+              ...(lab.email ? [{ text: lab.email, color: WHITE, fontSize: 7, alignment: 'right', margin: [0, 1, 0, 0] } as Content] : []),
             ],
           },
         ],
@@ -268,8 +277,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
             infoRow('Lab Number', record.labNumber, { bold: true, color: INDIGO }),
             infoRow('Specimen Type', specimens[0]?.type),
             infoRow('Coll/Sent', fmtCollection(record.collectionDate)),
-            infoRow("Rec'd", fmtDate(firstSpecimenDate)),
-            infoRow("Reg'd", fmtDate(record.registeredAt)),
+            infoRow("Rec'd/Reg'd", `${fmtDate(firstSpecimenDate)} / ${fmtDate(record.registeredAt)}`),
             infoRow('Report Date', fmtDate(reportDate)),
           ]),
         ],
