@@ -18,6 +18,23 @@ export async function loadClaims(): Promise<boolean> {
   }
 }
 
+/**
+ * Validate persisted claims against the live cookie session on app load. `/auth/me`
+ * is an `/auth/*` call, so the 401 interceptor below does NOT auto-refresh it —
+ * a 401 propagates cleanly here. Returns false ONLY on 401 (the cookie is
+ * missing/expired/rotated — a dead session masked by stale localStorage claims);
+ * transient/network errors return true so a blip never signs the user out. The
+ * caller clears local state + cookies and redirects to /login on false.
+ */
+export async function validatePersistedSession(): Promise<boolean> {
+  try {
+    await api.get('/auth/me');
+    return true;
+  } catch (e) {
+    return (e as AxiosError)?.response?.status !== 401;
+  }
+}
+
 // Single-flight refresh: many concurrent 401s share one refresh round-trip.
 let refreshing: Promise<boolean> | null = null;
 

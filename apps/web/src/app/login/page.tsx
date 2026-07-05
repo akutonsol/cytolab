@@ -27,6 +27,12 @@ export default function LoginPage() {
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3500); };
 
+  // Persistent banner when the app bounced us here from an expired/invalid session.
+  const [sessionExpired, setSessionExpired] = useState(false);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('reason') === 'session_expired') setSessionExpired(true);
+  }, []);
+
   // Already logged in → leave the login page.
   useEffect(() => {
     if (hydrated && isAuthed) router.replace('/dashboard');
@@ -97,6 +103,12 @@ export default function LoginPage() {
             {mfa ? 'Two-factor verification' : 'Sign in to your lab'}
           </div>
         </div>
+
+        {sessionExpired && (
+          <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-[13px] font-medium text-amber-800">
+            Your session has expired, please log in again.
+          </div>
+        )}
 
         {!mfa ? (
           <div className="flex flex-col gap-4">

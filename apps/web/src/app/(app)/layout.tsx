@@ -1,6 +1,6 @@
 'use client';
 
-import { createElement, useEffect, useMemo, useState } from 'react';
+import { createElement, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Drawer, Dropdown, Grid, Menu, Spin, Typography } from 'antd';
 import {
@@ -18,7 +18,7 @@ import { ClockWidget } from '@/components/workforce/ClockWidget';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { ReportIssueButton } from '@/components/ReportIssueButton';
 import { useAuth, useAuthStore } from '@/lib/auth';
-import { api, refreshSession } from '@/lib/api';
+import { api, refreshSession, validatePersistedSession } from '@/lib/api';
 
 interface Announcement { id: string; title: string; body: string; type: string }
 // Announcement banner palette (zero-orange: WARNING uses amber #A16207).
@@ -90,13 +90,34 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const mfaSetupNeeded = !!profile?.mfaRequired && !profile?.mfaEnabled;
   const screens = Grid.useBreakpoint();
 
-  useEffect(() => { if (hydrated && !isAuthed) router.replace('/login'); }, [hydrated, isAuthed, router]);
+  // Session-expired redirects carry ?reason so the login page can explain why.
+  const sessionExpiredRef = useRef(false);
+  const sessionCheckedRef = useRef(false);
+  useEffect(() => {
+    if (hydrated && !isAuthed) router.replace(sessionExpiredRef.current ? '/login?reason=session_expired' : '/login');
+  }, [hydrated, isAuthed, router]);
   useEffect(() => {
     if (hydrated && isAuthed && stale && !refreshing) {
       setRefreshing(true);
       refreshSession().then((ok) => { if (!ok) { clear(); router.replace('/login'); } }).finally(() => setRefreshing(false));
     }
   }, [hydrated, isAuthed, stale, refreshing, clear, router]);
+
+  // On boot, validate persisted claims against the live cookie session. Stale
+  // localStorage claims must not mask a dead/rotated cookie (authed UI rendering
+  // while every API call 401s). On a hard 401, clear local state + cookies and
+  // send the user to /login?reason=session_expired.
+  useEffect(() => {
+    if (!hydrated || !isAuthed || sessionCheckedRef.current) return;
+    sessionCheckedRef.current = true;
+    validatePersistedSession().then((ok) => {
+      if (ok) return;
+      sessionExpiredRef.current = true; // set before clear() so the redirect carries the reason
+      try { localStorage.removeItem('cytolab-auth'); } catch { /* ignore */ }
+      api.post('/auth/logout').catch(() => {}); // best-effort clear of the invalid HttpOnly cookies
+      clear(); // → isAuthed false → the redirect effect above fires with the reason
+    });
+  }, [hydrated, isAuthed, clear]);
 
   const navigate = (key: string) => { setDrawerOpen(false); router.push(key); };
 
