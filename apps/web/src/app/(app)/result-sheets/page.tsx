@@ -487,7 +487,7 @@ export default function ResultSheetsPage() {
         {/* Sidebar */}
         <div className="flex w-full shrink-0 flex-col gap-6 xl:w-[300px]">
           <div className={`${CARD} p-5`}>
-            <div className="mb-3 flex items-center justify-between"><div className="text-sm font-semibold text-charcoal-heading">Today&apos;s Activity</div><button className="text-xs font-semibold text-primary hover:underline">View all</button></div>
+            <div className="mb-3 flex items-center justify-between"><div className="text-sm font-semibold text-charcoal-heading">Today&apos;s Activity</div></div>
             <div className="flex flex-col gap-3">
               {([['Submitted', '#4F46E5'], ['Processing', '#075985'], ['In Review', '#6B21A8'], ['Authorized', GREEN]] as const).map(([k, c]) => (
                 <div key={k} className="flex items-center justify-between">
@@ -514,7 +514,7 @@ export default function ResultSheetsPage() {
                 <li>Avg AI confidence: <span className="font-semibold text-white">{aiAvg}%</span></li>
               </ul>
             )}
-            <button className="mt-4 bg-transparent text-[13px] font-semibold text-white hover:underline">View AI Recommendations →</button>
+            <button onClick={() => { setConfF('Low'); setTab('all'); }} className="mt-4 bg-transparent text-[13px] font-semibold text-white hover:underline">View AI Recommendations →</button>
           </div>
 
           <div className={`${CARD} p-5`}>
