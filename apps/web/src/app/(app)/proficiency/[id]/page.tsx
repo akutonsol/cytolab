@@ -34,7 +34,7 @@ function AddCaseModal({ testId, onClose }: { testId: string; onClose: () => void
   return createPortal(
     <div className="fixed inset-0 flex justify-end" style={{ zIndex: 2100, background: 'rgba(15,23,42,0.55)' }} onClick={onClose}>
       <div className="flex h-full w-full max-w-[480px] flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-slate-200 p-5"><h3 className="text-[18px] font-bold text-[#0F172A]">Add Case</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button></div>
+        <div className="flex items-center justify-between border-b border-slate-200 p-5"><h3 className="text-[18px] font-bold text-[#0F172A]">Add Case</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button></div>
         <div className="flex-1 overflow-y-auto p-5">
           <L label="Specimen Type"><input value={specimenType} onChange={(e) => setSpecimen(e.target.value)} placeholder="e.g. Cervical, Urine…" className={inp} /></L>
           <L label="Difficulty"><select value={difficulty} onChange={(e) => setDifficulty(e.target.value as CaseDifficulty)} className={inp}>{DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}</select></L>
@@ -44,13 +44,13 @@ function AddCaseModal({ testId, onClose }: { testId: string; onClose: () => void
           <L label="Expected Diagnosis"><input value={expectedDiagnosis} onChange={(e) => setExpected(e.target.value)} placeholder="The correct answer" className={inp} /></L>
           <L label="Expected Bethesda (optional)"><input value={expectedBethesda} onChange={(e) => setBethesda(e.target.value)} className={inp} /></L>
         </div>
-        <div className="flex justify-end gap-2 border-t border-slate-200 p-4"><button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#64748B]">Cancel</button><button disabled={!specimenType.trim() || !expectedDiagnosis.trim() || save.isPending} onClick={() => save.mutate()} className="rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-40">Add Case</button></div>
+        <div className="flex justify-end gap-2 border-t border-slate-200 p-4"><button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#475569]">Cancel</button><button disabled={!specimenType.trim() || !expectedDiagnosis.trim() || save.isPending} onClick={() => save.mutate()} className="rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-40">Add Case</button></div>
       </div>
     </div>,
     document.body,
   );
 }
-const L = ({ label, children }: { label: string; children: React.ReactNode }) => (<div className="mb-3.5"><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">{label}</label>{children}</div>);
+const L = ({ label, children }: { label: string; children: React.ReactNode }) => (<div className="mb-3.5"><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">{label}</label>{children}</div>);
 
 export default function ProficiencyDetailPage() {
   const router = useRouter();
@@ -72,14 +72,14 @@ export default function ProficiencyDetailPage() {
     onError: () => message.error('Could not remove case'),
   });
 
-  if (!isEnabled('PROFICIENCY_TESTING')) return <div className="min-h-full pt-6 text-[14px] text-[#94A3B8]" style={{ background: '#F8FAFC' }}>Feature not enabled.</div>;
-  if (!test) return <div className="min-h-full pt-6 text-[14px] text-[#94A3B8]" style={{ background: '#F8FAFC' }}>Loading…</div>;
+  if (!isEnabled('PROFICIENCY_TESTING')) return <div className="min-h-full pt-6 text-[14px] text-[#475569]" style={{ background: '#F8FAFC' }}>Feature not enabled.</div>;
+  if (!test) return <div className="min-h-full pt-6 text-[14px] text-[#475569]" style={{ background: '#F8FAFC' }}>Loading…</div>;
   const st = STATUS_META[test.status];
   const tabs: ('cases' | 'responses' | 'results')[] = test.status === 'Completed' ? ['cases', 'responses', 'results'] : ['cases', 'responses'];
 
   return (
     <div className="min-h-full pb-10 pt-4" style={{ background: '#F8FAFC' }}>
-      <button onClick={() => router.push('/proficiency')} className="mb-3 flex items-center gap-1.5 text-[13px] font-medium text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={15} /> Proficiency Testing</button>
+      <button onClick={() => router.push('/proficiency')} className="mb-3 flex items-center gap-1.5 text-[13px] font-medium text-[#475569] hover:text-[#0F172A]"><ArrowLeft size={15} /> Proficiency Testing</button>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-[24px] font-bold text-[#0F172A]">{test.name}</h1>
@@ -90,7 +90,7 @@ export default function ProficiencyDetailPage() {
 
       <div className="mb-4 flex gap-1 rounded-full bg-[#F1F5F9] p-1" style={{ width: 'fit-content' }}>
         {tabs.map((t) => (
-          <button key={t} onClick={() => setTab(t)} className="rounded-full px-4 py-1.5 text-[13px] font-semibold capitalize transition-colors" style={tab === t ? { background: '#fff', color: '#0F172A', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' } : { color: '#64748B' }}>{t}</button>
+          <button key={t} onClick={() => setTab(t)} className="rounded-full px-4 py-1.5 text-[13px] font-semibold capitalize transition-colors" style={tab === t ? { background: '#fff', color: '#0F172A', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' } : { color: '#475569' }}>{t}</button>
         ))}
       </div>
 
@@ -103,9 +103,9 @@ export default function ProficiencyDetailPage() {
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13px]">
-              <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#94A3B8]"><th className="px-4 py-2.5 font-semibold">#</th><th className="px-4 py-2.5 font-semibold">Specimen</th><th className="px-4 py-2.5 font-semibold">Difficulty</th><th className="px-4 py-2.5 font-semibold">Expected Dx</th><th className="px-4 py-2.5 font-semibold">Responses</th>{isManager && test.status === 'Draft' && <th className="px-4 py-2.5" />}</tr></thead>
+              <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]"><th className="px-4 py-2.5 font-semibold">#</th><th className="px-4 py-2.5 font-semibold">Specimen</th><th className="px-4 py-2.5 font-semibold">Difficulty</th><th className="px-4 py-2.5 font-semibold">Expected Dx</th><th className="px-4 py-2.5 font-semibold">Responses</th>{isManager && test.status === 'Draft' && <th className="px-4 py-2.5" />}</tr></thead>
               <tbody>
-                {test.cases.length === 0 ? <tr><td colSpan={6} className="px-4 py-10 text-center text-[#94A3B8]">No cases yet.</td></tr> : test.cases.map((c) => {
+                {test.cases.length === 0 ? <tr><td colSpan={6} className="px-4 py-10 text-center text-[#475569]">No cases yet.</td></tr> : test.cases.map((c) => {
                   const dm = DIFFICULTY_META[c.difficulty];
                   return (
                     <tr key={c.id} className="border-b border-[#F1F5F9]">
@@ -113,7 +113,7 @@ export default function ProficiencyDetailPage() {
                       <td className="px-4 py-2.5 text-[#334155]">{c.specimenType}</td>
                       <td className="px-4 py-2.5"><span className="rounded-full px-2 py-0.5 text-[11px] font-bold" style={{ background: dm.bg, color: dm.fg }}>{c.difficulty}</span></td>
                       <td className="px-4 py-2.5 font-mono text-[#334155]">{c.expectedDiagnosis}</td>
-                      <td className="px-4 py-2.5 text-[#64748B]">{c.responseCount}</td>
+                      <td className="px-4 py-2.5 text-[#475569]">{c.responseCount}</td>
                       {isManager && test.status === 'Draft' && <td className="px-4 py-2.5"><button onClick={() => delCase.mutate(c.id)} className="grid h-8 w-8 place-items-center rounded-lg text-[#DC2626] hover:bg-[#FEF2F2]"><Trash2 size={15} /></button></td>}
                     </tr>
                   );
@@ -130,14 +130,14 @@ export default function ProficiencyDetailPage() {
           <div className="border-b border-[#EEF2F7] p-4 text-[15px] font-bold text-[#0F172A]">Responses</div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13px]">
-              <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#94A3B8]"><th className="px-4 py-2.5 font-semibold">Pathologist</th><th className="px-4 py-2.5 font-semibold">Cases Completed</th><th className="px-4 py-2.5 font-semibold">Score</th><th className="px-4 py-2.5 font-semibold">Status</th></tr></thead>
+              <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]"><th className="px-4 py-2.5 font-semibold">Pathologist</th><th className="px-4 py-2.5 font-semibold">Cases Completed</th><th className="px-4 py-2.5 font-semibold">Score</th><th className="px-4 py-2.5 font-semibold">Status</th></tr></thead>
               <tbody>
-                {test.responseSummary.length === 0 ? <tr><td colSpan={4} className="px-4 py-10 text-center text-[#94A3B8]">No responses yet.</td></tr> : test.responseSummary.map((r) => (
+                {test.responseSummary.length === 0 ? <tr><td colSpan={4} className="px-4 py-10 text-center text-[#475569]">No responses yet.</td></tr> : test.responseSummary.map((r) => (
                   <tr key={r.userId} className="border-b border-[#F1F5F9]">
                     <td className="px-4 py-2.5 font-semibold text-[#0F172A]">{r.name}</td>
                     <td className="px-4 py-2.5 text-[#334155]">{r.casesCompleted} / {test.totalCases}</td>
-                    <td className="px-4 py-2.5 font-semibold" style={{ color: r.percentage !== null ? scoreColor(r.percentage, test.passingScore) : '#94A3B8' }}>{r.percentage !== null ? `${r.percentage.toFixed(1)}%` : '—'}</td>
-                    <td className="px-4 py-2.5">{r.passed === null ? <span className="text-[12px] text-[#94A3B8]">{r.graded ? 'Graded' : 'Submitted'}</span> : (() => { const b = passBadge(r.passed); return <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: b.bg, color: b.fg }}>{b.label}</span>; })()}</td>
+                    <td className="px-4 py-2.5 font-semibold" style={{ color: r.percentage !== null ? scoreColor(r.percentage, test.passingScore) : '#475569' }}>{r.percentage !== null ? `${r.percentage.toFixed(1)}%` : '—'}</td>
+                    <td className="px-4 py-2.5">{r.passed === null ? <span className="text-[12px] text-[#475569]">{r.graded ? 'Graded' : 'Submitted'}</span> : (() => { const b = passBadge(r.passed); return <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: b.bg, color: b.fg }}>{b.label}</span>; })()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -152,11 +152,11 @@ export default function ProficiencyDetailPage() {
           <div className={`${CARD} p-4`}>
             <div className="mb-3 flex flex-wrap items-center gap-4">
               <span className="text-[15px] font-bold text-[#0F172A]">Scorecard</span>
-              <span className="text-[13px] text-[#64748B]">Lab average <span className="font-bold" style={{ color: scoreColor(results.labAverage, results.passingScore) }}>{results.labAverage.toFixed(1)}%</span> · pass rate {results.passRate.toFixed(1)}%</span>
+              <span className="text-[13px] text-[#475569]">Lab average <span className="font-bold" style={{ color: scoreColor(results.labAverage, results.passingScore) }}>{results.labAverage.toFixed(1)}%</span> · pass rate {results.passRate.toFixed(1)}%</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-[13px]">
-                <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#94A3B8]"><th className="px-4 py-2.5 font-semibold">Pathologist</th><th className="px-4 py-2.5 font-semibold">Correct</th><th className="px-4 py-2.5 font-semibold">Score</th><th className="px-4 py-2.5 font-semibold">Result</th></tr></thead>
+                <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]"><th className="px-4 py-2.5 font-semibold">Pathologist</th><th className="px-4 py-2.5 font-semibold">Correct</th><th className="px-4 py-2.5 font-semibold">Score</th><th className="px-4 py-2.5 font-semibold">Result</th></tr></thead>
                 <tbody>
                   {results.scores.map((s) => { const b = passBadge(s.passed); return (
                     <tr key={s.userId} className="border-b border-[#F1F5F9]">
@@ -175,7 +175,7 @@ export default function ProficiencyDetailPage() {
             <div className="flex flex-col gap-3">
               {results.cases.map((c) => (
                 <div key={c.caseId} className="rounded-xl border border-[#EEF2F7] p-3">
-                  <div className="text-[13px] font-bold text-[#0F172A]">Case {c.caseNumber} · {c.specimenType} <span className="ml-2 font-normal text-[#64748B]">Expected: <span className="font-mono">{c.expected}</span></span></div>
+                  <div className="text-[13px] font-bold text-[#0F172A]">Case {c.caseNumber} · {c.specimenType} <span className="ml-2 font-normal text-[#475569]">Expected: <span className="font-mono">{c.expected}</span></span></div>
                   <div className="mt-2 flex flex-col gap-1">
                     {c.responses.map((r, i) => (
                       <div key={i} className="flex items-center gap-2 text-[12px]">
@@ -183,7 +183,7 @@ export default function ProficiencyDetailPage() {
                         <span className="text-[#334155]">{r.responder}:</span> <span className="font-mono" style={{ color: r.isCorrect ? '#16A34A' : '#B91C1C' }}>{r.answer}</span>
                       </div>
                     ))}
-                    {c.responses.length === 0 && <span className="text-[12px] text-[#94A3B8]">No responses.</span>}
+                    {c.responses.length === 0 && <span className="text-[12px] text-[#475569]">No responses.</span>}
                   </div>
                 </div>
               ))}

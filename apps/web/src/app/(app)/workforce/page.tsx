@@ -17,7 +17,7 @@ function Kpi({ icon, iconClass, label, value, sub, subColor }: { icon: React.Rea
         <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</span>
       </div>
       <div className="mt-2 text-4xl font-bold leading-none text-charcoal-heading">{value}</div>
-      {sub && <div className="mt-1 text-xs font-semibold" style={{ color: subColor ?? '#94A3B8' }}>{sub}</div>}
+      {sub && <div className="mt-1 text-xs font-semibold" style={{ color: subColor ?? '#475569' }}>{sub}</div>}
     </div>
   );
 }
@@ -48,10 +48,10 @@ function Dashboard() {
 
       {/* KPI strip */}
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
-        <Kpi icon={<UserCheck size={20} />} iconClass="bg-green-50 text-green-700" label="Present Today" value={today?.present ?? 0} sub={`${pct(present)}% of team`} subColor="#16A34A" />
-        <Kpi icon={<UserX size={20} />} iconClass="bg-red-50 text-red-600" label="Absent" value={today?.absent ?? 0} sub="not clocked in" subColor="#DC2626" />
+        <Kpi icon={<UserCheck size={20} />} iconClass="bg-green-50 text-green-700" label="Present Today" value={today?.present ?? 0} sub={`${pct(present)}% of team`} subColor="#166534" />
+        <Kpi icon={<UserX size={20} />} iconClass="bg-red-50 text-red-600" label="Absent" value={today?.absent ?? 0} sub="not clocked in" subColor="#991B1B" />
         <Kpi icon={<AlertTriangle size={20} />} iconClass="bg-[#FEF9C3] text-[#A16207]" label="Late" value={today?.late ?? 0} sub="after grace" subColor="#A16207" />
-        <Kpi icon={<CalendarOff size={20} />} iconClass="bg-slate-100 text-slate-500" label="On Leave" value={today?.onLeave ?? 0} sub="scheduled off" subColor="#64748B" />
+        <Kpi icon={<CalendarOff size={20} />} iconClass="bg-slate-100 text-slate-500" label="On Leave" value={today?.onLeave ?? 0} sub="scheduled off" subColor="#475569" />
         <Kpi icon={<TimerReset size={20} />} iconClass="bg-indigo-50 text-indigo-600" label="Overtime Hours" value={today?.overtime ?? 0} sub="beyond 8h/day" subColor="#4F46E5" />
       </div>
 
@@ -94,7 +94,7 @@ function Dashboard() {
         <div className="flex w-full shrink-0 flex-col gap-6 xl:w-[320px]">
           <div className={`${CARD} p-5`}>
             <div className="mb-4 text-sm font-semibold text-charcoal-heading">Attendance</div>
-            {([['Present', today?.present ?? 0, '#16A34A'], ['Absent', today?.absent ?? 0, '#DC2626'], ['Late', today?.late ?? 0, '#A16207']] as const).map(([label, n, c]) => (
+            {([['Present', today?.present ?? 0, '#166534'], ['Absent', today?.absent ?? 0, '#991B1B'], ['Late', today?.late ?? 0, '#A16207']] as const).map(([label, n, c]) => (
               <div key={label} className="mb-3">
                 <div className="mb-1 flex items-center justify-between text-xs"><span className="text-slate-600">{label}</span><span className="font-semibold text-charcoal-heading">{n} ({pct(n)}%)</span></div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full" style={{ width: `${pct(n)}%`, background: c }} /></div>

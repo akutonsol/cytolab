@@ -40,7 +40,7 @@ export const CAT_COLOR = {
   HSIL: '#F87171', // red-400
   SCC: '#B91C1C', // red-700
   AGC: '#A78BFA', // violet-400
-  Unsatisfactory: '#94A3B8', // slate
+  Unsatisfactory: '#475569', // slate
 } as const;
 
 export const STATUS_COLOR: Record<BenchmarkStatus, { fg: string; bg: string; border: string; label: string }> = {

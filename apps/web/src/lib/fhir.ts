@@ -65,7 +65,7 @@ export const EMR_META: Record<EMRSystem, { label: string; bg: string; fg: string
 export const STATUS_META: Record<TransmissionStatus, { label: string; bg: string; fg: string; spin?: boolean }> = {
   Success: { label: 'Success', bg: '#DCFCE7', fg: '#16A34A' },
   Failed: { label: 'Failed', bg: '#FEE2E2', fg: '#B91C1C' },
-  Pending: { label: 'Pending', bg: '#F1F5F9', fg: '#64748B', spin: true },
+  Pending: { label: 'Pending', bg: '#F1F5F9', fg: '#475569', spin: true },
   Sending: { label: 'Sending', bg: '#EEF2FF', fg: '#4F46E5', spin: true },
   Retrying: { label: 'Retrying', bg: '#FFFBEB', fg: '#B45309', spin: true }, // amber, not orange
 };

@@ -13,7 +13,7 @@ import { formatBytes, shortDate, type DigitalSlide, type WsiSummary } from '@/li
 const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 
 function Kpi({ label, value }: { label: string; value: number }) {
-  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none text-[#0F172A]">{value}</div><div className="mt-1.5 text-[13px] text-[#64748B]">{label}</div></div>;
+  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none text-[#0F172A]">{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></div>;
 }
 
 export default function WsiPage() {
@@ -65,7 +65,7 @@ export default function WsiPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[13px]">
             <thead>
-              <tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#94A3B8]">
+              <tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]">
                 <th className="px-3 py-2.5 font-semibold">Record</th>
                 <th className="px-3 py-2.5 font-semibold">Patient</th>
                 <th className="px-3 py-2.5 font-semibold">Stain</th>
@@ -79,16 +79,16 @@ export default function WsiPage() {
             </thead>
             <tbody>
               {slides.length === 0 ? (
-                <tr><td colSpan={9} className="px-3 py-12 text-center text-[#94A3B8]">No digital slides yet.</td></tr>
+                <tr><td colSpan={9} className="px-3 py-12 text-center text-[#475569]">No digital slides yet.</td></tr>
               ) : slides.map((s) => (
                 <tr key={s.id} className="border-b border-[#F1F5F9] transition-colors hover:bg-[#F8FAFC]">
                   <td className="px-3 py-2.5 font-mono font-semibold text-[#4F46E5]">{s.labNo}</td>
                   <td className="px-3 py-2.5 font-semibold text-[#0F172A]">{s.patientName}</td>
                   <td className="px-3 py-2.5 text-[#334155]">{s.stain ?? '—'}</td>
                   <td className="px-3 py-2.5 text-[#334155]">{s.magnification ?? '—'}</td>
-                  <td className="px-3 py-2.5 uppercase text-[#64748B]">{s.format}</td>
-                  <td className="px-3 py-2.5 text-[#64748B]">{formatBytes(s.fileSizeBytes)}</td>
-                  <td className="px-3 py-2.5 text-[#64748B]">{shortDate(s.uploadedAt)}</td>
+                  <td className="px-3 py-2.5 uppercase text-[#475569]">{s.format}</td>
+                  <td className="px-3 py-2.5 text-[#475569]">{formatBytes(s.fileSizeBytes)}</td>
+                  <td className="px-3 py-2.5 text-[#475569]">{shortDate(s.uploadedAt)}</td>
                   <td className="px-3 py-2.5 text-[#334155]">{s.annotationCount}</td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">

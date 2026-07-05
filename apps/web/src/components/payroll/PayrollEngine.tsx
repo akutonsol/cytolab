@@ -15,7 +15,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 const periodName = (month: number, year: number) => `${MONTHS[month - 1]} ${year}`;
 
 const STATUS: Record<string, { bg: string; fg: string }> = {
-  DRAFT: { bg: '#F1F5F9', fg: '#64748B' },
+  DRAFT: { bg: '#F1F5F9', fg: '#475569' },
   PROCESSING: { bg: '#EEF2FF', fg: '#4F46E5' },
   COMPLETED: { bg: '#DCFCE7', fg: '#16A34A' },
   CANCELLED: { bg: '#FEE2E2', fg: '#DC2626' },

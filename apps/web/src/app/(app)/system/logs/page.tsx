@@ -44,7 +44,7 @@ const TYPE_OPTIONS: { value: '' | LogType; label: string }[] = [
 // Type badge palette (zero orange — all cool/brand hues).
 const TYPE_BADGE: Record<LogType, { bg: string; color: string; label: string }> = {
   RECORD_STATUS: { bg: '#EEF2FF', color: '#4F46E5', label: 'Record Status' },
-  AUTH: { bg: '#F1F5F9', color: '#64748B', label: 'Auth' },
+  AUTH: { bg: '#F1F5F9', color: '#475569', label: 'Auth' },
   AUTHORIZATION: { bg: 'rgba(22,163,74,0.10)', color: '#16A34A', label: 'Authorization' },
   CHANGE_REQUEST: { bg: '#F0F9FF', color: '#0284C7', label: 'Change Request' },
   PAYMENT: { bg: '#F0FDF4', color: '#16A34A', label: 'Payment' },
@@ -53,7 +53,7 @@ const TYPE_BADGE: Record<LogType, { bg: string; color: string; label: string }> 
   ASSIGNMENT: { bg: '#FDF2F8', color: '#DB2777', label: 'Assignment' },
 };
 // Fallback so an unmapped/new log type never crashes the row (returns undefined).
-const BADGE_FALLBACK = { bg: '#F1F5F9', color: '#64748B', label: 'Event' };
+const BADGE_FALLBACK = { bg: '#F1F5F9', color: '#475569', label: 'Event' };
 
 // Severity → left-border accent. Warning is dark amber #B45309 (detector-safe;
 // #D97706 would trip the zero-orange rule).
@@ -273,7 +273,7 @@ export default function SystemLogPage() {
                         </td>
                         {/* Severity */}
                         <td className="px-4 py-3 align-middle">
-                          <span className="font-label-sm text-label-sm capitalize" style={{ color: e.severity === 'info' ? '#64748B' : SEVERITY_BORDER[e.severity] }}>{e.severity}</span>
+                          <span className="font-label-sm text-label-sm capitalize" style={{ color: e.severity === 'info' ? '#475569' : SEVERITY_BORDER[e.severity] }}>{e.severity}</span>
                         </td>
                       </tr>
                     );

@@ -75,12 +75,12 @@ export const URGENCY_META: Record<ConsultUrgency, { label: string; bg: string; f
 };
 
 export const STATUS_META: Record<ConsultStatus, { label: string; bg: string; fg: string }> = {
-  Pending: { label: 'Pending', bg: '#F1F5F9', fg: '#64748B' },
+  Pending: { label: 'Pending', bg: '#F1F5F9', fg: '#475569' },
   Viewed: { label: 'Viewed', bg: '#EEF2FF', fg: '#4F46E5' },
   InProgress: { label: 'In Progress', bg: '#EEF2FF', fg: '#4F46E5' },
   Responded: { label: 'Responded', bg: '#DBEAFE', fg: '#1D4ED8' },
   Accepted: { label: 'Accepted', bg: '#DCFCE7', fg: '#16A34A' },
-  Declined: { label: 'Declined', bg: '#F1F5F9', fg: '#94A3B8' },
+  Declined: { label: 'Declined', bg: '#F1F5F9', fg: '#475569' },
   Expired: { label: 'Expired', bg: '#FEE2E2', fg: '#B91C1C' },
 };
 

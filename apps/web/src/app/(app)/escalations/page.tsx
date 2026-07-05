@@ -75,10 +75,10 @@ function EscalationDetailPanel({ id, onClose }: { id: string; onClose: () => voi
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl" style={{ background: m?.bg ?? '#F1F5F9', color: m?.fg ?? '#475569' }}><ShieldAlert size={20} /></span>
             <div>
               <h3 className="text-[18px] font-bold text-[#0F172A]">Escalation detail</h3>
-              <p className="mt-0.5 text-[13px] text-[#64748B]">{data ? `Lab# ${data.record.labNumber ?? data.record.identifier} · ${patientName(data)}` : 'Loading…'}</p>
+              <p className="mt-0.5 text-[13px] text-[#475569]">{data ? `Lab# ${data.record.labNumber ?? data.record.identifier} · ${patientName(data)}` : 'Loading…'}</p>
             </div>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
         </div>
 
         {data && (
@@ -86,7 +86,7 @@ function EscalationDetailPanel({ id, onClose }: { id: string; onClose: () => voi
             <div className="flex flex-wrap items-center gap-2">
               <SeverityBadge severity={data.severity} />
               <StatusBadge status={data.status} />
-              <span className="text-[12px] text-[#94A3B8]">Triggered by {data.trigger === 'BethesdaClassification' ? 'Bethesda classification' : data.trigger === 'NarrativeKeyword' ? 'narrative keyword' : 'manual flag'}</span>
+              <span className="text-[12px] text-[#475569]">Triggered by {data.trigger === 'BethesdaClassification' ? 'Bethesda classification' : data.trigger === 'NarrativeKeyword' ? 'narrative keyword' : 'manual flag'}</span>
             </div>
 
             {/* Severity explanation */}
@@ -107,7 +107,7 @@ function EscalationDetailPanel({ id, onClose }: { id: string; onClose: () => voi
             {/* Bethesda summary */}
             {b && (
               <div className="mt-4 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3">
-                <div className="text-[12px] font-bold uppercase tracking-wide text-[#94A3B8]">Bethesda</div>
+                <div className="text-[12px] font-bold uppercase tracking-wide text-[#475569]">Bethesda</div>
                 <div className="mt-1 text-[13px] text-[#334155]">{[b.generalCategory, b.squamousCategory, b.ascSubtype, b.glandularCategory, b.otherMalignancy].filter(Boolean).join(' · ') || '—'}</div>
               </div>
             )}
@@ -115,14 +115,14 @@ function EscalationDetailPanel({ id, onClose }: { id: string; onClose: () => voi
             {/* Narrative excerpt */}
             {narrative && (
               <div className="mt-4">
-                <div className="text-[12px] font-bold uppercase tracking-wide text-[#94A3B8]">Narrative excerpt</div>
+                <div className="text-[12px] font-bold uppercase tracking-wide text-[#475569]">Narrative excerpt</div>
                 <p className="mt-1 text-[13px] leading-relaxed text-[#475569]">{narrative.slice(0, 200)}{narrative.length > 200 ? '…' : ''}</p>
               </div>
             )}
 
             {/* Physician notification */}
             <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#E2E8F0] px-4 py-3">
-              <Bell size={15} className="text-[#64748B]" />
+              <Bell size={15} className="text-[#475569]" />
               <span className="text-[13px] text-[#475569]">
                 {data.physicianNotifiedAt
                   ? `Referring physician notified via ${data.physicianNotifiedVia} on ${new Date(data.physicianNotifiedAt).toLocaleString()}`
@@ -132,7 +132,7 @@ function EscalationDetailPanel({ id, onClose }: { id: string; onClose: () => voi
 
             {/* Timeline */}
             <div className="mt-5">
-              <div className="text-[12px] font-bold uppercase tracking-wide text-[#94A3B8]">Timeline</div>
+              <div className="text-[12px] font-bold uppercase tracking-wide text-[#475569]">Timeline</div>
               <div className="mt-2 flex flex-col gap-2.5">
                 {steps.map((s) => (
                   <div key={s.key} className="flex items-center gap-3">
@@ -140,7 +140,7 @@ function EscalationDetailPanel({ id, onClose }: { id: string; onClose: () => voi
                       <CheckCircle2 size={14} />
                     </span>
                     <span className="text-[13px] text-[#334155]">{s.label}</span>
-                    <span className="ml-auto text-[12px] text-[#94A3B8]">{s.at ? new Date(s.at).toLocaleString() : '—'}</span>
+                    <span className="ml-auto text-[12px] text-[#475569]">{s.at ? new Date(s.at).toLocaleString() : '—'}</span>
                   </div>
                 ))}
               </div>
@@ -148,7 +148,7 @@ function EscalationDetailPanel({ id, onClose }: { id: string; onClose: () => voi
 
             {data.reviewNotes && (
               <div className="mt-4 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3">
-                <div className="text-[12px] font-bold uppercase tracking-wide text-[#94A3B8]">Review notes</div>
+                <div className="text-[12px] font-bold uppercase tracking-wide text-[#475569]">Review notes</div>
                 <div className="mt-1 text-[13px] text-[#334155]">{data.reviewNotes}</div>
               </div>
             )}
@@ -186,12 +186,12 @@ function EscalationDetailPanel({ id, onClose }: { id: string; onClose: () => voi
 }
 
 const Info = ({ label, value }: { label: string; value: string }) => (
-  <div><div className="text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">{label}</div><div className="mt-0.5 text-[#0F172A]">{value}</div></div>
+  <div><div className="text-[11px] font-semibold uppercase tracking-wide text-[#475569]">{label}</div><div className="mt-0.5 text-[#0F172A]">{value}</div></div>
 );
 const Btn = ({ children, onClick, primary, ghost }: { children: React.ReactNode; onClick: () => void; primary?: boolean; ghost?: boolean }) => (
   <button onClick={onClick}
     className="rounded-lg px-3.5 py-2 text-[13px] font-semibold transition-colors"
-    style={primary ? { background: '#4F46E5', color: '#fff' } : ghost ? { background: '#fff', color: '#64748B', border: '1px solid #E2E8F0' } : { background: '#EEF2FF', color: '#4F46E5' }}>
+    style={primary ? { background: '#4F46E5', color: '#fff' } : ghost ? { background: '#fff', color: '#475569', border: '1px solid #E2E8F0' } : { background: '#EEF2FF', color: '#4F46E5' }}>
     {children}
   </button>
 );
@@ -203,7 +203,7 @@ function Kpi({ icon, label, value, fg, bg }: { icon: React.ReactNode; label: str
       <span className="grid h-11 w-11 place-items-center rounded-xl" style={{ background: bg, color: fg }}>{icon}</span>
       <div>
         <div className="text-[24px] font-bold leading-none text-[#0F172A]">{value}</div>
-        <div className="mt-1 text-[13px] text-[#64748B]">{label}</div>
+        <div className="mt-1 text-[13px] text-[#475569]">{label}</div>
       </div>
     </div>
   );
@@ -285,7 +285,7 @@ export default function EscalationsPage() {
       <div className="overflow-hidden rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
         <table className="w-full text-left text-[14px]">
           <thead>
-            <tr className="border-b border-[#EEF2F7] text-[12px] uppercase tracking-wide text-[#94A3B8]">
+            <tr className="border-b border-[#EEF2F7] text-[12px] uppercase tracking-wide text-[#475569]">
               <th className="px-4 py-3 font-semibold">Severity</th>
               <th className="px-4 py-3 font-semibold">Record #</th>
               <th className="px-4 py-3 font-semibold">Patient</th>
@@ -298,9 +298,9 @@ export default function EscalationsPage() {
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={8} className="px-4 py-12 text-center text-[#94A3B8]">Loading…</td></tr>
+              <tr><td colSpan={8} className="px-4 py-12 text-center text-[#475569]">Loading…</td></tr>
             ) : sorted.length === 0 ? (
-              <tr><td colSpan={8} className="px-4 py-12 text-center text-[#94A3B8]">No escalations match these filters.</td></tr>
+              <tr><td colSpan={8} className="px-4 py-12 text-center text-[#475569]">No escalations match these filters.</td></tr>
             ) : (
               sorted.map((row) => {
                 const sev = SEVERITY_META[row.severity];
@@ -313,8 +313,8 @@ export default function EscalationsPage() {
                     <td className="px-4 py-3 font-semibold text-[#0F172A]">{row.record.labNumber ?? row.record.identifier}</td>
                     <td className="px-4 py-3 text-[#334155]">{patientName(row)}</td>
                     <td className="px-4 py-3 text-[#334155]">{findingLabel(row)}</td>
-                    <td className="px-4 py-3 text-[#64748B]">{row.assignedTo ? `${row.assignedTo.firstName} ${row.assignedTo.lastName}` : '—'}</td>
-                    <td className="px-4 py-3 text-[#64748B]">{new Date(row.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-[#475569]">{row.assignedTo ? `${row.assignedTo.firstName} ${row.assignedTo.lastName}` : '—'}</td>
+                    <td className="px-4 py-3 text-[#475569]">{new Date(row.createdAt).toLocaleDateString()}</td>
                     <td className="px-4 py-3"><StatusBadge status={row.status} /></td>
                     <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex flex-wrap gap-1.5">
@@ -345,7 +345,7 @@ const Chip = ({ children, active, onClick, subtle }: { children: React.ReactNode
 );
 const MiniBtn = ({ children, onClick, ghost }: { children: React.ReactNode; onClick: () => void; ghost?: boolean }) => (
   <button onClick={onClick} className="grid place-items-center rounded-md px-2 py-1 text-[12px] font-semibold transition-colors"
-    style={ghost ? { background: '#F1F5F9', color: '#64748B' } : { background: '#EEF2FF', color: '#4F46E5' }}>
+    style={ghost ? { background: '#F1F5F9', color: '#475569' } : { background: '#EEF2FF', color: '#4F46E5' }}>
     {children}
   </button>
 );

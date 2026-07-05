@@ -46,28 +46,28 @@ interface UserLite { id: string; firstName: string; lastName: string; email: str
 // ─── Style tokens (zero-orange: #A16207 pending, #B45309 high amber) ──────────
 const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)]';
 const PRIORITY: Record<TicketPriority, { bg: string; fg: string }> = {
-  CRITICAL: { bg: '#FEE2E2', fg: '#DC2626' },
+  CRITICAL: { bg: '#FEE2E2', fg: '#991B1B' },
   HIGH: { bg: '#FEF3C7', fg: '#B45309' },
   MEDIUM: { bg: '#EEF2FF', fg: '#4F46E5' },
-  LOW: { bg: '#F1F5F9', fg: '#64748B' },
+  LOW: { bg: '#F1F5F9', fg: '#475569' },
 };
 const STATUS: Record<TicketStatus, { bg: string; fg: string; label: string }> = {
-  OPEN: { bg: '#DBEAFE', fg: '#2563EB', label: 'OPEN' },
+  OPEN: { bg: '#DBEAFE', fg: '#1D4ED8', label: 'OPEN' },
   IN_PROGRESS: { bg: '#EEF2FF', fg: '#4F46E5', label: 'IN PROGRESS' },
   PENDING_RESPONSE: { bg: '#FEF9C3', fg: '#A16207', label: 'PENDING' },
-  RESOLVED: { bg: '#DCFCE7', fg: '#16A34A', label: 'RESOLVED' },
-  CLOSED: { bg: '#F1F5F9', fg: '#64748B', label: 'CLOSED' },
+  RESOLVED: { bg: '#DCFCE7', fg: '#166534', label: 'RESOLVED' },
+  CLOSED: { bg: '#F1F5F9', fg: '#475569', label: 'CLOSED' },
 };
 const ANN_TYPE: Record<string, { bg: string; fg: string }> = {
-  INFO: { bg: '#DBEAFE', fg: '#2563EB' },
+  INFO: { bg: '#DBEAFE', fg: '#1D4ED8' },
   WARNING: { bg: '#FEF3C7', fg: '#A16207' },
-  CRITICAL: { bg: '#FEE2E2', fg: '#DC2626' },
+  CRITICAL: { bg: '#FEE2E2', fg: '#991B1B' },
 };
 const CATEGORIES: TicketCategory[] = ['BUG', 'FEATURE_REQUEST', 'DATA_ISSUE', 'ACCESS', 'BILLING', 'TRAINING', 'MAINTENANCE', 'OTHER'];
 const PRIORITIES: TicketPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 const STATUSES: TicketStatus[] = ['OPEN', 'IN_PROGRESS', 'PENDING_RESPONSE', 'RESOLVED', 'CLOSED'];
 const SYSTEMS = ['API', 'Database', 'Portal', 'Email', 'Storage', 'All Systems'];
-const CAT_COLORS = ['#4F46E5', '#7C3AED', '#2563EB', '#0D9488', '#16A34A', '#A16207', '#B45309', '#64748B'];
+const CAT_COLORS = ['#4F46E5', '#6B21A8', '#1D4ED8', '#115E59', '#166534', '#A16207', '#B45309', '#475569'];
 
 const cat = (c: string) => c.replace('_', ' ');
 const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—');
@@ -122,7 +122,7 @@ export default function SupportPage() {
           return (
             <button key={t.key} onClick={() => setTab(t.key)}
               className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors"
-              style={active ? { background: '#4F46E5', color: '#fff' } : { color: '#64748B' }}>
+              style={active ? { background: '#4F46E5', color: '#fff' } : { color: '#475569' }}>
               <t.icon size={16} /> {t.label}
             </button>
           );
@@ -167,11 +167,11 @@ function TicketsTab() {
     useInfiniteScroll<Ticket>({ fetchFn, pageSize: 20 });
 
   const KPIS = [
-    { label: 'Open', value: stats?.open ?? 0, color: '#2563EB' },
+    { label: 'Open', value: stats?.open ?? 0, color: '#1D4ED8' },
     { label: 'In Progress', value: stats?.inProgress ?? 0, color: '#4F46E5' },
     { label: 'Pending Response', value: stats?.pendingResponse ?? 0, color: '#A16207' },
-    { label: 'Breached SLA', value: stats?.breachedSla ?? 0, color: '#DC2626' },
-    { label: 'Avg Resolution', value: `${stats?.avgResolutionHours ?? 0}h`, color: '#16A34A' },
+    { label: 'Breached SLA', value: stats?.breachedSla ?? 0, color: '#991B1B' },
+    { label: 'Avg Resolution', value: `${stats?.avgResolutionHours ?? 0}h`, color: '#166534' },
   ];
 
   return (
@@ -181,7 +181,7 @@ function TicketsTab() {
         {KPIS.map((k) => (
           <div key={k.label} className={`${CARD} p-4`}>
             <div className="text-[26px] font-bold leading-none" style={{ color: k.color }}>{k.value}</div>
-            <div className="mt-1.5 text-[12px] font-medium text-[#64748B]">{k.label}</div>
+            <div className="mt-1.5 text-[12px] font-medium text-[#475569]">{k.label}</div>
           </div>
         ))}
       </div>
@@ -204,24 +204,24 @@ function TicketsTab() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#94A3B8]">
+              <tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]">
                 {['Ticket #', 'Title', 'Category', 'Priority', 'Submitter', 'Assigned', 'Status', 'SLA', 'Created'].map((h) => <th key={h} className="px-4 py-3 font-semibold">{h}</th>)}
               </tr>
             </thead>
             <tbody>
-              {(isFetching || initialLoading) && rows.length === 0 && <tr><td colSpan={9} className="px-4 py-10 text-center text-[#94A3B8]">Loading…</td></tr>}
-              {!isFetching && !initialLoading && rows.length === 0 && <tr><td colSpan={9} className="px-4 py-12 text-center text-[#94A3B8]">No tickets found.</td></tr>}
+              {(isFetching || initialLoading) && rows.length === 0 && <tr><td colSpan={9} className="px-4 py-10 text-center text-[#475569]">Loading…</td></tr>}
+              {!isFetching && !initialLoading && rows.length === 0 && <tr><td colSpan={9} className="px-4 py-12 text-center text-[#475569]">No tickets found.</td></tr>}
               {ticketRows.map((t) => (
                 <tr key={t.id} onClick={() => setOpenId(t.id)} className="cursor-pointer border-b border-[#F1F5F9] transition-colors hover:bg-[#F8FAFC]">
                   <td className="px-4 py-3.5 font-mono text-[13px] font-bold text-[#0F172A]">{t.ticketNumber}</td>
                   <td className="px-4 py-3.5 max-w-[280px] truncate text-[#334155]">{t.title}</td>
                   <td className="px-4 py-3.5"><Badge bg="#F1F5F9" fg="#475569">{cat(t.category)}</Badge></td>
                   <td className="px-4 py-3.5"><Badge bg={PRIORITY[t.priority].bg} fg={PRIORITY[t.priority].fg}>{t.priority}</Badge></td>
-                  <td className="px-4 py-3.5 text-[13px] text-[#64748B]">{t.submitterName}<div className="text-[11px] text-[#94A3B8]">{t.submitterType}</div></td>
-                  <td className="px-4 py-3.5 text-[13px] text-[#64748B]">{userName(t.assignedToId)}</td>
+                  <td className="px-4 py-3.5 text-[13px] text-[#475569]">{t.submitterName}<div className="text-[11px] text-[#475569]">{t.submitterType}</div></td>
+                  <td className="px-4 py-3.5 text-[13px] text-[#475569]">{userName(t.assignedToId)}</td>
                   <td className="px-4 py-3.5"><Badge bg={STATUS[t.status].bg} fg={STATUS[t.status].fg}>{STATUS[t.status].label}</Badge></td>
-                  <td className="px-4 py-3.5 text-[13px]" style={{ color: isBreached(t) ? '#DC2626' : '#64748B', fontWeight: isBreached(t) ? 700 : 400 }}>{fmtDateTime(t.slaDeadline)}</td>
-                  <td className="px-4 py-3.5 text-[13px] text-[#64748B]">{fmtDate(t.createdAt)}</td>
+                  <td className="px-4 py-3.5 text-[13px]" style={{ color: isBreached(t) ? '#991B1B' : '#475569', fontWeight: isBreached(t) ? 700 : 400 }}>{fmtDateTime(t.slaDeadline)}</td>
+                  <td className="px-4 py-3.5 text-[13px] text-[#475569]">{fmtDate(t.createdAt)}</td>
                 </tr>
               ))}
             </tbody>
@@ -293,9 +293,9 @@ function TicketDetail({ id, users, onClose }: { id: string; users: UserLite[]; o
           <div>
             <div className="font-mono text-[13px] font-bold text-[#4F46E5]">{t?.ticketNumber}</div>
             <h2 className="mt-1 text-[18px] font-bold text-[#0F172A]">{t?.title ?? 'Loading…'}</h2>
-            {t && <div className="mt-1 text-[13px] text-[#64748B]">{t.submitterName} · {t.submitterType} · {fmtDate(t.createdAt)}</div>}
+            {t && <div className="mt-1 text-[13px] text-[#475569]">{t.submitterName} · {t.submitterType} · {fmtDate(t.createdAt)}</div>}
           </div>
-          <button onClick={onClose} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-[#64748B] hover:bg-[#F1F5F9]"><X size={18} /></button>
+          <button onClick={onClose} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-[#475569] hover:bg-[#F1F5F9]"><X size={18} /></button>
         </div>
 
         {t && (
@@ -318,19 +318,19 @@ function TicketDetail({ id, users, onClose }: { id: string; users: UserLite[]; o
             </div>
 
             {isBreached(t) && (
-              <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-[13px] font-semibold text-[#DC2626]"><AlertTriangle size={15} /> SLA breached — due {fmtDateTime(t.slaDeadline)}</div>
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-[13px] font-semibold text-[#991B1B]"><AlertTriangle size={15} /> SLA breached — due {fmtDateTime(t.slaDeadline)}</div>
             )}
 
             {/* Comment thread */}
             <div className="mt-6">
-              <div className="mb-3 text-[13px] font-bold uppercase tracking-wide text-[#94A3B8]">Activity ({t.comments.length})</div>
+              <div className="mb-3 text-[13px] font-bold uppercase tracking-wide text-[#475569]">Activity ({t.comments.length})</div>
               <div className="flex flex-col gap-3">
-                {t.comments.length === 0 && <div className="text-[13px] text-[#94A3B8]">No comments yet.</div>}
+                {t.comments.length === 0 && <div className="text-[13px] text-[#475569]">No comments yet.</div>}
                 {t.comments.map((c) => (
                   <div key={c.id} className="rounded-xl border p-3" style={{ borderColor: c.isInternal ? '#FDE68A' : '#EEF2F7', background: c.isInternal ? '#FFFBEB' : '#fff' }}>
                     <div className="flex items-center justify-between">
                       <span className="text-[13px] font-semibold text-[#0F172A]">{c.authorName}</span>
-                      <span className="text-[11px] text-[#94A3B8]">{fmtDateTime(c.createdAt)}</span>
+                      <span className="text-[11px] text-[#475569]">{fmtDateTime(c.createdAt)}</span>
                     </div>
                     {c.isInternal && <span className="mt-1 inline-block text-[10px] font-bold uppercase text-[#A16207]">Internal note</span>}
                     <p className="mt-1 whitespace-pre-wrap text-[13px] text-[#334155]">{c.body}</p>
@@ -341,7 +341,7 @@ function TicketDetail({ id, users, onClose }: { id: string; users: UserLite[]; o
               <div className="mt-3">
                 <textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add a comment…" className={`${inputCls} h-20 py-2`} />
                 <div className="mt-2 flex items-center justify-between">
-                  <label className="flex cursor-pointer items-center gap-2 text-[13px] text-[#64748B]">
+                  <label className="flex cursor-pointer items-center gap-2 text-[13px] text-[#475569]">
                     <input type="checkbox" checked={internal} onChange={(e) => setInternal(e.target.checked)} style={{ accentColor: '#A16207' }} /> Internal note (hidden from client)
                   </label>
                   <button disabled={!comment.trim() || addComment.isPending} onClick={() => addComment.mutate()} className={btnPrimary}><Send size={15} /> Send</button>
@@ -352,7 +352,7 @@ function TicketDetail({ id, users, onClose }: { id: string; users: UserLite[]; o
         )}
 
         <div className="flex items-center gap-2 border-t border-[#EEF2F7] p-4">
-          <button disabled={resolve.isPending || t?.status === 'RESOLVED'} onClick={() => resolve.mutate()} className={`${btnGhost} flex-1 justify-center`} style={{ color: '#16A34A', borderColor: '#BBF7D0' }}><CheckCircle2 size={16} /> Resolve</button>
+          <button disabled={resolve.isPending || t?.status === 'RESOLVED'} onClick={() => resolve.mutate()} className={`${btnGhost} flex-1 justify-center`} style={{ color: '#166534', borderColor: '#BBF7D0' }}><CheckCircle2 size={16} /> Resolve</button>
           <button disabled={close.isPending || t?.status === 'CLOSED'} onClick={() => close.mutate()} className={`${btnGhost} flex-1 justify-center`}>Close</button>
         </div>
       </div>
@@ -370,7 +370,7 @@ function MaintenanceTab() {
   const upcoming = wins.filter((w) => new Date(w.scheduledAt).getTime() >= now && w.status !== 'CANCELLED' && w.status !== 'COMPLETED');
   const past = wins.filter((w) => !upcoming.includes(w));
   const cancel = useMutation({ mutationFn: (id: string) => api.delete(`/system/support/maintenance-windows/${id}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ['support-windows'] }); message.success('Cancelled'); } });
-  const winStatus: Record<string, { bg: string; fg: string }> = { SCHEDULED: { bg: '#DBEAFE', fg: '#2563EB' }, IN_PROGRESS: { bg: '#EEF2FF', fg: '#4F46E5' }, COMPLETED: { bg: '#DCFCE7', fg: '#16A34A' }, CANCELLED: { bg: '#F1F5F9', fg: '#64748B' } };
+  const winStatus: Record<string, { bg: string; fg: string }> = { SCHEDULED: { bg: '#DBEAFE', fg: '#1D4ED8' }, IN_PROGRESS: { bg: '#EEF2FF', fg: '#4F46E5' }, COMPLETED: { bg: '#DCFCE7', fg: '#166534' }, CANCELLED: { bg: '#F1F5F9', fg: '#475569' } };
 
   return (
     <div className="flex flex-col gap-5">
@@ -378,18 +378,18 @@ function MaintenanceTab() {
         <h2 className="text-[16px] font-bold text-[#0F172A]">Upcoming Windows</h2>
         <button onClick={() => setOpen(true)} className={btnPrimary}><Plus size={16} /> Schedule Maintenance</button>
       </div>
-      {upcoming.length === 0 && <div className={`${CARD} p-8 text-center text-[14px] text-[#94A3B8]`}>No upcoming maintenance scheduled.</div>}
+      {upcoming.length === 0 && <div className={`${CARD} p-8 text-center text-[14px] text-[#475569]`}>No upcoming maintenance scheduled.</div>}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {upcoming.map((w) => (
           <div key={w.id} className={`${CARD} p-5`}>
             <div className="flex items-start justify-between">
               <div className="text-[15px] font-bold text-[#0F172A]">{w.title}</div>
-              <Badge bg={winStatus[w.status]?.bg ?? '#F1F5F9'} fg={winStatus[w.status]?.fg ?? '#64748B'}>{w.status}</Badge>
+              <Badge bg={winStatus[w.status]?.bg ?? '#F1F5F9'} fg={winStatus[w.status]?.fg ?? '#475569'}>{w.status}</Badge>
             </div>
-            {w.description && <p className="mt-1 text-[13px] text-[#64748B]">{w.description}</p>}
-            <div className="mt-3 flex items-center gap-2 text-[13px] text-[#334155]"><Clock size={15} className="text-[#94A3B8]" /> {fmtDateTime(w.scheduledAt)} · {w.durationMinutes} min</div>
+            {w.description && <p className="mt-1 text-[13px] text-[#475569]">{w.description}</p>}
+            <div className="mt-3 flex items-center gap-2 text-[13px] text-[#334155]"><Clock size={15} className="text-[#475569]" /> {fmtDateTime(w.scheduledAt)} · {w.durationMinutes} min</div>
             <div className="mt-3 flex flex-wrap gap-1.5">{w.affectedSystems.map((s) => <span key={s} className="rounded-full bg-[#F1F5F9] px-2.5 py-1 text-[11px] font-semibold text-[#475569]">{s}</span>)}</div>
-            <button onClick={() => cancel.mutate(w.id)} className="mt-4 text-[12px] font-semibold text-[#DC2626] hover:underline">Cancel window</button>
+            <button onClick={() => cancel.mutate(w.id)} className="mt-4 text-[12px] font-semibold text-[#991B1B] hover:underline">Cancel window</button>
           </div>
         ))}
       </div>
@@ -398,15 +398,15 @@ function MaintenanceTab() {
         <div className={`${CARD} overflow-hidden p-0`}>
           <div className="border-b border-[#EEF2F7] p-4 text-[14px] font-bold text-[#0F172A]">Past &amp; Cancelled</div>
           <table className="w-full text-left text-sm">
-            <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#94A3B8]">{['Title', 'Scheduled', 'Duration', 'Systems', 'Status'].map((h) => <th key={h} className="px-4 py-3 font-semibold">{h}</th>)}</tr></thead>
+            <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]">{['Title', 'Scheduled', 'Duration', 'Systems', 'Status'].map((h) => <th key={h} className="px-4 py-3 font-semibold">{h}</th>)}</tr></thead>
             <tbody>
               {past.map((w) => (
                 <tr key={w.id} className="border-b border-[#F1F5F9]">
                   <td className="px-4 py-3 font-semibold text-[#0F172A]">{w.title}</td>
-                  <td className="px-4 py-3 text-[#64748B]">{fmtDateTime(w.scheduledAt)}</td>
-                  <td className="px-4 py-3 text-[#64748B]">{w.durationMinutes} min</td>
-                  <td className="px-4 py-3 text-[#64748B]">{w.affectedSystems.join(', ')}</td>
-                  <td className="px-4 py-3"><Badge bg={winStatus[w.status]?.bg ?? '#F1F5F9'} fg={winStatus[w.status]?.fg ?? '#64748B'}>{w.status}</Badge></td>
+                  <td className="px-4 py-3 text-[#475569]">{fmtDateTime(w.scheduledAt)}</td>
+                  <td className="px-4 py-3 text-[#475569]">{w.durationMinutes} min</td>
+                  <td className="px-4 py-3 text-[#475569]">{w.affectedSystems.join(', ')}</td>
+                  <td className="px-4 py-3"><Badge bg={winStatus[w.status]?.bg ?? '#F1F5F9'} fg={winStatus[w.status]?.fg ?? '#475569'}>{w.status}</Badge></td>
                 </tr>
               ))}
             </tbody>
@@ -471,7 +471,7 @@ function AnnouncementsTab() {
         <h2 className="text-[16px] font-bold text-[#0F172A]">Announcements</h2>
         <button onClick={() => setOpen(true)} className={btnPrimary}><Plus size={16} /> New Announcement</button>
       </div>
-      {list.length === 0 && <div className={`${CARD} p-8 text-center text-[14px] text-[#94A3B8]`}>No announcements yet.</div>}
+      {list.length === 0 && <div className={`${CARD} p-8 text-center text-[14px] text-[#475569]`}>No announcements yet.</div>}
       <div className="flex flex-col gap-3">
         {list.map((a) => {
           const c = ANN_TYPE[a.type] ?? ANN_TYPE.INFO;
@@ -481,9 +481,9 @@ function AnnouncementsTab() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2"><Badge bg={c.bg} fg={c.fg}>{a.type}</Badge><span className="text-[15px] font-bold text-[#0F172A]">{a.title}</span></div>
                   <p className="mt-1.5 text-[13px] text-[#475569]">{a.body}</p>
-                  <div className="mt-2 text-[11px] text-[#94A3B8]">Shows {fmtDate(a.showFrom)}{a.showUntil ? ` → ${fmtDate(a.showUntil)}` : ' onwards'}</div>
+                  <div className="mt-2 text-[11px] text-[#475569]">Shows {fmtDate(a.showFrom)}{a.showUntil ? ` → ${fmtDate(a.showUntil)}` : ' onwards'}</div>
                 </div>
-                <label className="flex shrink-0 cursor-pointer items-center gap-2 text-[13px] font-semibold" style={{ color: a.isActive ? '#16A34A' : '#94A3B8' }}>
+                <label className="flex shrink-0 cursor-pointer items-center gap-2 text-[13px] font-semibold" style={{ color: a.isActive ? '#166534' : '#475569' }}>
                   <input type="checkbox" checked={a.isActive} onChange={() => toggle.mutate(a)} style={{ accentColor: '#4F46E5' }} /> {a.isActive ? 'Active' : 'Inactive'}
                 </label>
               </div>
@@ -544,11 +544,11 @@ function AnalyticsTab() {
 
   const byCategory = Object.entries(stats?.byCategory ?? {}).map(([name, value]) => ({ name: cat(name), value }));
   const byStatus = [
-    { name: 'Open', value: stats?.open ?? 0, color: '#2563EB' },
+    { name: 'Open', value: stats?.open ?? 0, color: '#1D4ED8' },
     { name: 'In Progress', value: stats?.inProgress ?? 0, color: '#4F46E5' },
     { name: 'Pending', value: stats?.pendingResponse ?? 0, color: '#A16207' },
-    { name: 'Resolved', value: stats?.resolved ?? 0, color: '#16A34A' },
-    { name: 'Closed', value: stats?.closed ?? 0, color: '#64748B' },
+    { name: 'Resolved', value: stats?.resolved ?? 0, color: '#166534' },
+    { name: 'Closed', value: stats?.closed ?? 0, color: '#475569' },
   ].filter((s) => s.value > 0);
 
   // 30-day volume series from all tickets.
@@ -561,9 +561,9 @@ function AnalyticsTab() {
   }
 
   const KPIS = [
-    { label: 'Total Open', value: totalOpen, color: '#2563EB' },
-    { label: 'Breached SLA', value: stats?.breachedSla ?? 0, color: '#DC2626' },
-    { label: 'Avg Resolution (h)', value: stats?.avgResolutionHours ?? 0, color: '#16A34A' },
+    { label: 'Total Open', value: totalOpen, color: '#1D4ED8' },
+    { label: 'Breached SLA', value: stats?.breachedSla ?? 0, color: '#991B1B' },
+    { label: 'Avg Resolution (h)', value: stats?.avgResolutionHours ?? 0, color: '#166534' },
     { label: 'Total This Month', value: thisMonth, color: '#4F46E5' },
   ];
 
@@ -573,7 +573,7 @@ function AnalyticsTab() {
         {KPIS.map((k) => (
           <div key={k.label} className={`${CARD} p-5`}>
             <div className="text-[30px] font-bold leading-none" style={{ color: k.color }}>{k.value}</div>
-            <div className="mt-2 text-[13px] font-medium text-[#64748B]">{k.label}</div>
+            <div className="mt-2 text-[13px] font-medium text-[#475569]">{k.label}</div>
           </div>
         ))}
       </div>
@@ -584,8 +584,8 @@ function AnalyticsTab() {
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={byCategory}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94A3B8' }} interval={0} angle={-20} textAnchor="end" height={50} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#94A3B8' }} />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#475569' }} interval={0} angle={-20} textAnchor="end" height={50} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#475569' }} />
               <Tooltip />
               <Bar dataKey="value" radius={[6, 6, 0, 0]}>{byCategory.map((_, i) => <Cell key={i} fill={CAT_COLORS[i % CAT_COLORS.length]} />)}</Bar>
             </BarChart>
@@ -600,9 +600,9 @@ function AnalyticsTab() {
             </PieChart>
             <div className="flex flex-1 flex-col gap-2">
               {byStatus.map((s) => (
-                <div key={s.name} className="flex items-center justify-between text-[13px]"><span className="flex items-center gap-2 text-[#64748B]"><span className="h-2.5 w-2.5 rounded-full" style={{ background: s.color }} /> {s.name}</span><span className="font-semibold text-[#0F172A]">{s.value}</span></div>
+                <div key={s.name} className="flex items-center justify-between text-[13px]"><span className="flex items-center gap-2 text-[#475569]"><span className="h-2.5 w-2.5 rounded-full" style={{ background: s.color }} /> {s.name}</span><span className="font-semibold text-[#0F172A]">{s.value}</span></div>
               ))}
-              {byStatus.length === 0 && <div className="text-[13px] text-[#94A3B8]">No data</div>}
+              {byStatus.length === 0 && <div className="text-[13px] text-[#475569]">No data</div>}
             </div>
           </div>
         </div>
@@ -613,8 +613,8 @@ function AnalyticsTab() {
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={days}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-            <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#94A3B8' }} interval={4} />
-            <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#94A3B8' }} />
+            <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#475569' }} interval={4} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#475569' }} />
             <Tooltip />
             <Line type="monotone" dataKey="count" stroke="#4F46E5" strokeWidth={2.5} dot={false} />
           </LineChart>
@@ -632,7 +632,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
       <div className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-full max-w-[560px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-[18px] font-bold text-[#0F172A]">{title}</h2>
-          <button onClick={onClose} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-[#64748B] hover:bg-[#F1F5F9]"><X size={18} /></button>
+          <button onClick={onClose} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-[#475569] hover:bg-[#F1F5F9]"><X size={18} /></button>
         </div>
         {children}
       </div>

@@ -17,7 +17,7 @@ const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rg
 const TABS: (ConsultStatus | 'all')[] = ['all', 'Pending', 'Responded', 'Accepted'];
 
 function Kpi({ label, value, fg = '#0F172A' }: { label: string; value: string; fg?: string }) {
-  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#64748B]">{label}</div></div>;
+  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></div>;
 }
 
 function Timeline({ status }: { status: ConsultStatus }) {
@@ -85,12 +85,12 @@ export default function TeleconsultPage() {
 
       <div className="mb-4 flex flex-wrap gap-1 rounded-full bg-[#F1F5F9] p-1" style={{ width: 'fit-content' }}>
         {TABS.map((t) => (
-          <button key={t} onClick={() => setTab(t)} className="rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors" style={tab === t ? { background: '#fff', color: '#0F172A', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' } : { color: '#64748B' }}>{t === 'all' ? 'All' : t}</button>
+          <button key={t} onClick={() => setTab(t)} className="rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors" style={tab === t ? { background: '#fff', color: '#0F172A', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' } : { color: '#475569' }}>{t === 'all' ? 'All' : t}</button>
         ))}
       </div>
 
       {list.length === 0 ? (
-        <div className={`${CARD} p-12 text-center text-[#94A3B8]`}>No consultations.</div>
+        <div className={`${CARD} p-12 text-center text-[#475569]`}>No consultations.</div>
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {list.map((c) => {
@@ -103,14 +103,14 @@ export default function TeleconsultPage() {
                     <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: u.bg, color: u.fg }}>{u.label}</span>
                     <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: s.bg, color: s.fg }}>{s.label}</span>
                   </div>
-                  <span className="font-mono text-[12px] text-[#94A3B8]">{c.caseReference}</span>
+                  <span className="font-mono text-[12px] text-[#475569]">{c.caseReference}</span>
                 </div>
 
                 <div className="text-[15px] font-bold text-[#0F172A]"><span className="font-mono text-[#4F46E5]">{c.labNo}</span> · {c.specimenType}</div>
-                <div className="mt-0.5 text-[13px] text-[#64748B]">{c.consultantName}{c.consultantInstitution ? ` · ${c.consultantInstitution}` : ''}</div>
+                <div className="mt-0.5 text-[13px] text-[#475569]">{c.consultantName}{c.consultantInstitution ? ` · ${c.consultantInstitution}` : ''}</div>
                 <p className="mt-2 line-clamp-2 text-[13px] text-[#334155]">{c.specificQuestion}</p>
 
-                <div className="mt-2 text-[12px]" style={{ color: c.isOverdue ? '#B91C1C' : '#94A3B8' }}>
+                <div className="mt-2 text-[12px]" style={{ color: c.isOverdue ? '#B91C1C' : '#475569' }}>
                   {c.dueDate ? `Due ${shortDate(c.dueDate)}${c.isOverdue ? ' · overdue' : ''}` : 'No due date'}
                 </div>
 
@@ -124,11 +124,11 @@ export default function TeleconsultPage() {
 
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button onClick={() => router.push(`/teleconsult/${c.id}`)} className="rounded-lg bg-[#EEF2FF] px-3 py-1.5 text-[12px] font-semibold text-[#4F46E5]">View</button>
-                  <button onClick={() => act.mutate({ id: c.id, ep: 'resend' })} className="rounded-lg border border-[#E2E8F0] px-3 py-1.5 text-[12px] font-semibold text-[#64748B]">Resend</button>
+                  <button onClick={() => act.mutate({ id: c.id, ep: 'resend' })} className="rounded-lg border border-[#E2E8F0] px-3 py-1.5 text-[12px] font-semibold text-[#475569]">Resend</button>
                   {c.status === 'Responded' && (
                     <>
                       <button onClick={() => act.mutate({ id: c.id, ep: 'accept' })} className="rounded-lg bg-[#16A34A] px-3 py-1.5 text-[12px] font-semibold text-white">Accept</button>
-                      <button onClick={() => act.mutate({ id: c.id, ep: 'decline' })} className="rounded-lg border border-[#E2E8F0] px-3 py-1.5 text-[12px] font-semibold text-[#64748B]">Decline</button>
+                      <button onClick={() => act.mutate({ id: c.id, ep: 'decline' })} className="rounded-lg border border-[#E2E8F0] px-3 py-1.5 text-[12px] font-semibold text-[#475569]">Decline</button>
                     </>
                   )}
                 </div>

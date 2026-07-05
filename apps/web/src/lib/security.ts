@@ -173,7 +173,7 @@ export const SEVERITY_STYLE: Record<AlertSeverity, { bg: string; color: string }
   CRITICAL: { bg: '#FEF2F2', color: '#DC2626' },
   HIGH: { bg: '#F1F5F9', color: '#B45309' }, // slate bg + dark-amber text — detector-safe, per house style
   MEDIUM: { bg: '#EEF2FF', color: '#4F46E5' },
-  LOW: { bg: '#F1F5F9', color: '#64748B' },
+  LOW: { bg: '#F1F5F9', color: '#475569' },
 };
 
 export const ALERT_TYPE_LABEL: Record<AlertType, string> = {

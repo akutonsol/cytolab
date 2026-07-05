@@ -49,7 +49,7 @@ const getMessageStatus = (m: any): 'sent' | 'delivered' | 'read' =>
   m.readAt ? 'read' : m.deliveredAt ? 'delivered' : 'sent';
 
 function ReadReceipt({ status }: { status: 'sent' | 'delivered' | 'read' }) {
-  const color = status === 'read' ? '#4F46E5' : '#94A3B8';
+  const color = status === 'read' ? '#4F46E5' : '#475569';
   if (status === 'sent') {
     return (
       <svg width="16" height="10" viewBox="0 0 16 10" aria-label="sent">
@@ -284,10 +284,10 @@ export default function MessagingPage() {
               <div className="flex items-center gap-2 px-5 pb-2 pt-0">
                 <div className="flex gap-[3px]">
                   {[0, 1, 2].map((i) => (
-                    <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#94A3B8', display: 'inline-block', animation: 'typingDot 1.4s ease-in-out infinite', animationDelay: `${i * 0.2}s` }} />
+                    <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#475569', display: 'inline-block', animation: 'typingDot 1.4s ease-in-out infinite', animationDelay: `${i * 0.2}s` }} />
                   ))}
                 </div>
-                <span className="text-[12px] italic text-[#94A3B8]">
+                <span className="text-[12px] italic text-[#475569]">
                   {typingUsers.length === 1 ? `${typingUsers[0].name} is typing…` : `${typingUsers.length} people are typing…`}
                 </span>
               </div>

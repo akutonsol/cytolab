@@ -33,7 +33,7 @@ export function ThroughputComb({ data, height = 280 }: { data: any[]; height?: n
             if (!active || !payload?.length) return null;
             return (
               <div style={{ background: 'white', border: '1px solid #E2E8F0', borderRadius: 10, padding: '8px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
-                <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 2 }}>{data[label]?.label || ''}</div>
+                <div style={{ fontSize: 11, color: '#475569', marginBottom: 2 }}>{data[label]?.label || ''}</div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#4F46E5' }}>{payload[1]?.value ?? payload[0]?.value} specimens</div>
               </div>
             );
@@ -110,7 +110,7 @@ export function OeeDonut({ value, inner, size = 216 }: { value: number; inner: n
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         <span style={{ fontSize: 36, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', fontFamily: 'Geist,sans-serif' }}>{value}%</span>
-        <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>OEE</span>
+        <span style={{ fontSize: 11, color: '#475569', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>OEE</span>
       </div>
     </div>
   );
@@ -202,14 +202,14 @@ export function RevenueArea({ height = 300 }: { height?: number }) {
           </linearGradient>
         </defs>
         <CartesianGrid vertical={false} stroke="#EEF2F7" strokeDasharray="4 6" />
-        <XAxis dataKey="m" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94A3B8' }} dy={6} />
-        <YAxis axisLine={false} tickLine={false} width={46} tick={{ fontSize: 11, fill: '#94A3B8' }} ticks={[0, 25, 50, 75, 100]} domain={[0, 100]} tickFormatter={(v) => `$${v}k`} />
+        <XAxis dataKey="m" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#475569' }} dy={6} />
+        <YAxis axisLine={false} tickLine={false} width={46} tick={{ fontSize: 11, fill: '#475569' }} ticks={[0, 25, 50, 75, 100]} domain={[0, 100]} tickFormatter={(v) => `$${v}k`} />
         <Tooltip cursor={{ stroke: '#4F46E5', strokeWidth: 1 }}
           content={({ active, payload, label }: any) => {
             if (!active || !payload?.length) return null;
             return (
               <div style={{ background: 'white', border: '1px solid #E2E8F0', borderRadius: 10, padding: '8px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
-                <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 2 }}>{label}</div>
+                <div style={{ fontSize: 11, color: '#475569', marginBottom: 2 }}>{label}</div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5' }}>Revenue: ${(payload[0].value * 1000).toLocaleString()}</div>
               </div>
             );

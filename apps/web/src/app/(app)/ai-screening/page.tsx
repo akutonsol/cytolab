@@ -15,7 +15,7 @@ import { LEVEL_META, SPECIMEN_LABEL, type AIAnalytics, type AIScreening } from '
 const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 
 function Kpi({ label, value, fg = '#0F172A' }: { label: string; value: string; fg?: string }) {
-  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#64748B]">{label}</div></div>;
+  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></div>;
 }
 
 function DistBar({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
@@ -24,7 +24,7 @@ function DistBar({ label, count, total, color }: { label: string; count: number;
     <div>
       <div className="mb-1 flex items-center justify-between text-[13px]">
         <span className="font-semibold text-[#334155]">{label}</span>
-        <span className="text-[#64748B]">{count} · {pct}%</span>
+        <span className="text-[#475569]">{count} · {pct}%</span>
       </div>
       <div className="h-2.5 w-full rounded-full bg-[#F1F5F9]">
         <div className="h-2.5 rounded-full" style={{ width: `${pct}%`, background: color }} />
@@ -95,12 +95,12 @@ export default function AIScreeningPage() {
         <div className={`${CARD} overflow-hidden lg:col-span-3`}>
           <div className="flex items-center justify-between border-b border-[#EEF2F7] px-4 py-3">
             <h2 className="text-[15px] font-bold text-[#0F172A]">Review Queue</h2>
-            <span className="text-[12px] text-[#94A3B8]">Lowest confidence first · {queue.length}</span>
+            <span className="text-[12px] text-[#475569]">Lowest confidence first · {queue.length}</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13px]">
               <thead>
-                <tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#94A3B8]">
+                <tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]">
                   <th className="px-3 py-2.5 font-semibold">Record</th>
                   <th className="px-3 py-2.5 font-semibold">Patient</th>
                   <th className="px-3 py-2.5 font-semibold">Conf.</th>
@@ -111,7 +111,7 @@ export default function AIScreeningPage() {
               </thead>
               <tbody>
                 {queue.length === 0 ? (
-                  <tr><td colSpan={6} className="px-3 py-12 text-center text-[#94A3B8]">Nothing awaiting review.</td></tr>
+                  <tr><td colSpan={6} className="px-3 py-12 text-center text-[#475569]">Nothing awaiting review.</td></tr>
                 ) : queue.map((r) => (
                   <tr key={r.id} className="border-b border-[#F1F5F9] transition-colors hover:bg-[#F8FAFC]">
                     <td className="px-3 py-2.5 font-mono font-semibold text-[#4F46E5]">{r.labNo}</td>
@@ -141,21 +141,21 @@ export default function AIScreeningPage() {
           <div className={`${CARD} p-4`}>
             <h2 className="text-[15px] font-bold text-[#0F172A]">Agreement Rate</h2>
             <div className="mt-1 text-[32px] font-bold leading-none text-[#4F46E5]">{a?.agreementRate ?? 0}%</div>
-            <div className="mt-1 text-[13px] text-[#64748B]">Avg confidence {a?.avgConfidence ?? 0}%</div>
+            <div className="mt-1 text-[13px] text-[#475569]">Avg confidence {a?.avgConfidence ?? 0}%</div>
           </div>
 
           <div className={`${CARD} p-4`}>
             <h2 className="mb-2 text-[15px] font-bold text-[#0F172A]">By Specimen Type</h2>
             <table className="w-full text-left text-[13px]">
-              <thead><tr className="text-[11px] uppercase tracking-wide text-[#94A3B8]"><th className="py-1 font-semibold">Type</th><th className="py-1 text-right font-semibold">Screened</th><th className="py-1 text-right font-semibold">Avg Conf.</th></tr></thead>
+              <thead><tr className="text-[11px] uppercase tracking-wide text-[#475569]"><th className="py-1 font-semibold">Type</th><th className="py-1 text-right font-semibold">Screened</th><th className="py-1 text-right font-semibold">Avg Conf.</th></tr></thead>
               <tbody>
                 {(a?.bySpecimenType ?? []).length === 0 ? (
-                  <tr><td colSpan={3} className="py-3 text-center text-[#94A3B8]">No data.</td></tr>
+                  <tr><td colSpan={3} className="py-3 text-center text-[#475569]">No data.</td></tr>
                 ) : (a?.bySpecimenType ?? []).map((s) => (
                   <tr key={s.type} className="border-t border-[#F1F5F9]">
                     <td className="py-1.5 font-semibold text-[#334155]">{SPECIMEN_LABEL[s.type] ?? s.type}</td>
-                    <td className="py-1.5 text-right text-[#64748B]">{s.count}</td>
-                    <td className="py-1.5 text-right text-[#64748B]">{s.avgConfidence}%</td>
+                    <td className="py-1.5 text-right text-[#475569]">{s.count}</td>
+                    <td className="py-1.5 text-right text-[#475569]">{s.avgConfidence}%</td>
                   </tr>
                 ))}
               </tbody>
@@ -170,8 +170,8 @@ export default function AIScreeningPage() {
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={a?.trendByMonth ?? []} margin={{ top: 8, right: 16, bottom: 0, left: -12 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#EEF2F7" />
-            <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-            <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+            <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#475569' }} axisLine={false} tickLine={false} />
+            <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: '#475569' }} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #EEF2F7', fontSize: 13 }} formatter={(v: any) => [`${v}%`, 'Avg confidence']} />
             <Line type="monotone" dataKey="avgConfidence" stroke="#4F46E5" strokeWidth={2.5} dot={{ r: 3, fill: '#4F46E5' }} activeDot={{ r: 5 }} />
           </LineChart>

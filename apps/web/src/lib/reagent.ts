@@ -28,8 +28,8 @@ export interface AffectedRecords { count: number; records: { recordId: string; l
 export const STATUS_META: Record<ReagentStatus, { label: string; bg: string; fg: string; rowBg?: string }> = {
   Active: { label: 'Active', bg: '#DCFCE7', fg: '#16A34A' },
   Quarantined: { label: 'Quarantined', bg: '#FEE2E2', fg: '#B91C1C', rowBg: '#FEF2F2' },
-  Depleted: { label: 'Depleted', bg: '#F1F5F9', fg: '#94A3B8' },
-  Expired: { label: 'Expired', bg: '#F1F5F9', fg: '#64748B' },
+  Depleted: { label: 'Depleted', bg: '#F1F5F9', fg: '#475569' },
+  Expired: { label: 'Expired', bg: '#F1F5F9', fg: '#475569' },
   Recalled: { label: 'Recalled', bg: '#FEE2E2', fg: '#B91C1C', rowBg: '#FEF2F2' },
 };
 
@@ -44,10 +44,10 @@ export const isExpiringSoon = (iso: string | null): boolean => { const d = daysU
 /** Expiry text color: red if expired/≤7d, amber if ≤30d, slate otherwise. */
 export function expiryColor(iso: string | null): string {
   const d = daysUntil(iso);
-  if (d === null) return '#64748B';
+  if (d === null) return '#475569';
   if (d < 7) return '#B91C1C';
   if (d <= 30) return '#B45309'; // amber-700 (detector-safe)
-  return '#64748B';
+  return '#475569';
 }
 
 export const shortDate = (iso: string | null): string => (iso ? new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—');

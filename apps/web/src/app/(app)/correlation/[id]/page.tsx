@@ -15,7 +15,7 @@ import {
 const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 const Info = ({ label, value }: { label: string; value: React.ReactNode }) => (
-  <div className="mb-2.5"><div className="text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">{label}</div><div className="mt-0.5 text-[14px] text-[#0F172A]">{value}</div></div>
+  <div className="mb-2.5"><div className="text-[11px] font-semibold uppercase tracking-wide text-[#475569]">{label}</div><div className="mt-0.5 text-[14px] text-[#0F172A]">{value}</div></div>
 );
 
 export default function CorrelationDetailPage() {
@@ -40,13 +40,13 @@ export default function CorrelationDetailPage() {
   if (!isEnabled('CORRELATION_TRACKING')) {
     return <div className="min-h-full pt-4" style={{ background: '#F8FAFC' }}><div className="mx-auto mt-16 max-w-md rounded-2xl border border-[#EEF2F7] bg-white p-8 text-center shadow-sm"><GitCompareIcon /><div className="mt-3 text-[18px] font-bold text-[#0F172A]">Feature not enabled</div></div></div>;
   }
-  if (!c) return <div className="min-h-full pt-6 text-[14px] text-[#94A3B8]" style={{ background: '#F8FAFC' }}>Loading…</div>;
+  if (!c) return <div className="min-h-full pt-6 text-[14px] text-[#475569]" style={{ background: '#F8FAFC' }}>Loading…</div>;
 
   const m = RESULT_META[c.correlationResult ?? 'Unresolved'];
 
   return (
     <div className="min-h-full pb-10 pt-4" style={{ background: '#F8FAFC' }}>
-      <button onClick={() => router.push('/correlation')} className="mb-3 flex items-center gap-1.5 text-[13px] font-medium text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={15} /> Correlation Tracking</button>
+      <button onClick={() => router.push('/correlation')} className="mb-3 flex items-center gap-1.5 text-[13px] font-medium text-[#475569] hover:text-[#0F172A]"><ArrowLeft size={15} /> Correlation Tracking</button>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-[24px] font-bold text-[#0F172A]">{patientName(c)}</h1>
@@ -62,7 +62,7 @@ export default function CorrelationDetailPage() {
           <Info label="Record" value={c.cytologyRecord ? (c.cytologyRecord.labNumber ?? c.cytologyRecord.identifier) : '—'} />
           <Info label="Date" value={shortDate(c.cytologyDate)} />
           <Info label="Diagnosis" value={c.cytologyDiagnosis} />
-          {bethesda && <Info label="Bethesda" value={<span>{bethesda.shortCode || '—'}{bethesda.generatedNarrative ? <span className="mt-1 block text-[12px] text-[#64748B]">{bethesda.generatedNarrative.slice(0, 200)}</span> : null}</span>} />}
+          {bethesda && <Info label="Bethesda" value={<span>{bethesda.shortCode || '—'}{bethesda.generatedNarrative ? <span className="mt-1 block text-[12px] text-[#475569]">{bethesda.generatedNarrative.slice(0, 200)}</span> : null}</span>} />}
         </div>
         <div className={`${CARD} p-5`}>
           <div className="mb-3 flex items-center gap-2 text-[15px] font-bold text-[#0F172A]"><Microscope size={18} className="text-[#7C3AED]" /> Histology</div>
@@ -73,7 +73,7 @@ export default function CorrelationDetailPage() {
               <Info label="Source" value={c.histologySource + (c.externalLabName ? ` · ${c.externalLabName}` : '')} />
             </>
           ) : (
-            <div className="text-[14px] text-[#94A3B8]">No histology recorded yet.</div>
+            <div className="text-[14px] text-[#475569]">No histology recorded yet.</div>
           )}
         </div>
       </div>
@@ -128,7 +128,7 @@ function UpdateForm({ caseId, current, onDone }: { caseId: string; current: Corr
       <textarea value={histologyDiagnosis} onChange={(e) => setHistologyDiagnosis(e.target.value)} rows={2} placeholder="Histology diagnosis…" className={inp} />
       <div className="flex flex-wrap gap-2">
         {CORRELATION_RESULTS.map((r) => (
-          <button key={r} type="button" onClick={() => setCorrelationResult(r)} className="rounded-lg px-3 py-1.5 text-[12px] font-semibold" style={correlationResult === r ? { background: RESULT_META[r].bg, color: RESULT_META[r].fg, boxShadow: `inset 0 0 0 1.5px ${RESULT_META[r].fg}` } : { background: '#F8FAFC', color: '#64748B', border: '1px solid #E2E8F0' }}>{RESULT_META[r].label}</button>
+          <button key={r} type="button" onClick={() => setCorrelationResult(r)} className="rounded-lg px-3 py-1.5 text-[12px] font-semibold" style={correlationResult === r ? { background: RESULT_META[r].bg, color: RESULT_META[r].fg, boxShadow: `inset 0 0 0 1.5px ${RESULT_META[r].fg}` } : { background: '#F8FAFC', color: '#475569', border: '1px solid #E2E8F0' }}>{RESULT_META[r].label}</button>
         ))}
       </div>
       {isDiscordant && <textarea value={discordanceReason} onChange={(e) => setDiscordanceReason(e.target.value)} rows={2} placeholder="Discordance reason…" className={inp} />}

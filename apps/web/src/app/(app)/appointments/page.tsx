@@ -39,12 +39,12 @@ function RescheduleModal({ appt, onClose }: { appt: Appointment; onClose: () => 
   return createPortal(
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2400, background: 'rgba(15,23,42,0.55)' }} onClick={onClose}>
       <div className="w-full max-w-[380px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-[17px] font-bold text-[#0F172A]">Reschedule</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-[17px] font-bold text-[#0F172A]">Reschedule</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button></div>
         <div className="flex gap-2">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-10 flex-1 rounded-lg border border-[#E2E8F0] px-3 text-[14px]" />
           <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="h-10 rounded-lg border border-[#E2E8F0] px-3 text-[14px]" />
         </div>
-        <div className="mt-5 flex justify-end gap-2"><button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#64748B]">Cancel</button><button disabled={save.isPending} onClick={() => save.mutate()} className="rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white">Reschedule</button></div>
+        <div className="mt-5 flex justify-end gap-2"><button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#475569]">Cancel</button><button disabled={save.isPending} onClick={() => save.mutate()} className="rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white">Reschedule</button></div>
       </div>
     </div>,
     document.body,
@@ -67,7 +67,7 @@ function RowActions({ appt, onReschedule }: { appt: Appointment; onReschedule: (
   const s = normStatus(appt.status);
   const btn = 'rounded-lg border border-[#E2E8F0] px-2.5 py-1 text-[12px] font-semibold';
   const done = ['Completed', 'Cancelled', 'NoShow', 'Rescheduled'].includes(s);
-  if (done) return <span className="text-[12px] text-[#94A3B8]">—</span>;
+  if (done) return <span className="text-[12px] text-[#475569]">—</span>;
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {s === 'Scheduled' && <button onClick={() => act.mutate({ id: appt.id, action: 'confirm' })} className={`${btn} text-[#4F46E5]`}>Confirm</button>}
@@ -75,7 +75,7 @@ function RowActions({ appt, onReschedule }: { appt: Appointment; onReschedule: (
       {s === 'CheckedIn' && <button onClick={() => act.mutate({ id: appt.id, action: 'complete' })} className="rounded-lg bg-[#16A34A] px-2.5 py-1 text-[12px] font-semibold text-white">Complete</button>}
       <button onClick={onReschedule} className={`${btn} text-[#B45309]`}>Reschedule</button>
       {['Scheduled', 'Confirmed'].includes(s) && <button onClick={() => act.mutate({ id: appt.id, action: 'no-show' })} className={`${btn} text-[#B91C1C]`}>No-Show</button>}
-      <button onClick={() => act.mutate({ id: appt.id, action: 'cancel' })} className={`${btn} text-[#64748B]`}>Cancel</button>
+      <button onClick={() => act.mutate({ id: appt.id, action: 'cancel' })} className={`${btn} text-[#475569]`}>Cancel</button>
     </div>
   );
 }
@@ -137,7 +137,7 @@ export default function AppointmentsPage() {
         <div className="flex items-center gap-2">
           <div className="flex gap-1 rounded-full bg-[#F1F5F9] p-1">
             {(['calendar', 'list'] as const).map((v) => (
-              <button key={v} onClick={() => setView(v)} className="rounded-full px-3.5 py-1.5 text-[13px] font-semibold capitalize transition-colors" style={view === v ? { background: '#fff', color: '#0F172A', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' } : { color: '#64748B' }}>{v}</button>
+              <button key={v} onClick={() => setView(v)} className="rounded-full px-3.5 py-1.5 text-[13px] font-semibold capitalize transition-colors" style={view === v ? { background: '#fff', color: '#0F172A', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' } : { color: '#475569' }}>{v}</button>
             ))}
           </div>
           <button onClick={() => setNewOpen(true)} className="rounded-lg bg-[#4F46E5] px-4 py-2.5 text-[14px] font-semibold text-white">New Appointment</button>
@@ -151,7 +151,7 @@ export default function AppointmentsPage() {
           { label: 'Completion Rate', value: `${stats?.completionRate ?? 0}%`, fg: '#16A34A' },
           { label: 'No-Show Rate', value: `${stats?.noShowRate ?? 0}%`, fg: (stats?.noShowRate ?? 0) > 0 ? '#B91C1C' : '#0F172A' },
         ].map((k) => (
-          <div key={k.label} className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: k.fg }}>{k.value}</div><div className="mt-1.5 text-[13px] text-[#64748B]">{k.label}</div></div>
+          <div key={k.label} className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: k.fg }}>{k.value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{k.label}</div></div>
         ))}
       </div>
 
@@ -160,14 +160,14 @@ export default function AppointmentsPage() {
         <div className={`${CARD} p-4`}>
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <button onClick={() => setCursor(new Date(year, month - 2, 1))} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E2E8F0] text-[#64748B] hover:bg-slate-50"><ChevronLeft size={16} /></button>
+              <button onClick={() => setCursor(new Date(year, month - 2, 1))} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E2E8F0] text-[#475569] hover:bg-slate-50"><ChevronLeft size={16} /></button>
               <span className="min-w-[180px] text-center text-[16px] font-bold text-[#0F172A]">{cursor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
-              <button onClick={() => setCursor(new Date(year, month, 1))} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E2E8F0] text-[#64748B] hover:bg-slate-50"><ChevronRight size={16} /></button>
+              <button onClick={() => setCursor(new Date(year, month, 1))} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E2E8F0] text-[#475569] hover:bg-slate-50"><ChevronRight size={16} /></button>
             </div>
-            <button onClick={() => { const d = new Date(); d.setDate(1); setCursor(d); }} className="rounded-lg border border-[#E2E8F0] px-3 py-1.5 text-[13px] font-semibold text-[#64748B]">Today</button>
+            <button onClick={() => { const d = new Date(); d.setDate(1); setCursor(d); }} className="rounded-lg border border-[#E2E8F0] px-3 py-1.5 text-[13px] font-semibold text-[#475569]">Today</button>
           </div>
           <div className="grid grid-cols-7 gap-1">
-            {WEEKDAYS.map((w) => <div key={w} className="px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-[#94A3B8]">{w}</div>)}
+            {WEEKDAYS.map((w) => <div key={w} className="px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-[#475569]">{w}</div>)}
             {cells.map((d, i) => {
               if (!d) return <div key={i} className="min-h-[104px] rounded-lg bg-[#FAFBFC]" />;
               const key = dateKey(d);
@@ -184,7 +184,7 @@ export default function AppointmentsPage() {
                       const m = TYPE_META[normType(a.type)];
                       return <div key={a.id} className="truncate rounded px-1 py-0.5 text-[10px] font-semibold" style={{ background: m.bg, color: m.color }}>{timeOf(a.scheduledAt)} {a.patientName}</div>;
                     })}
-                    {appts.length > 3 && <div className="px-1 text-[10px] font-semibold text-[#94A3B8]">+{appts.length - 3} more</div>}
+                    {appts.length > 3 && <div className="px-1 text-[10px] font-semibold text-[#475569]">+{appts.length - 3} more</div>}
                   </div>
                 </button>
               );
@@ -202,18 +202,18 @@ export default function AppointmentsPage() {
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13px]">
-              <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#94A3B8]">
+              <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]">
                 <th className="px-3 py-2.5 font-semibold">Date/Time</th><th className="px-3 py-2.5 font-semibold">Patient</th><th className="px-3 py-2.5 font-semibold">Type</th>
                 <th className="px-3 py-2.5 font-semibold">Assigned To</th><th className="px-3 py-2.5 font-semibold">Client</th><th className="px-3 py-2.5 font-semibold">Status</th><th className="px-3 py-2.5 font-semibold">Actions</th>
               </tr></thead>
               <tbody>
-                {listData.length === 0 ? <tr><td colSpan={7} className="px-3 py-12 text-center text-[#94A3B8]">No appointments.</td></tr> : listData.map((a) => (
+                {listData.length === 0 ? <tr><td colSpan={7} className="px-3 py-12 text-center text-[#475569]">No appointments.</td></tr> : listData.map((a) => (
                   <tr key={a.id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC]">
-                    <td className="px-3 py-2.5 text-[#0F172A]"><div className="font-semibold">{new Date(a.scheduledAt).toLocaleDateString()}</div><div className="text-[12px] text-[#94A3B8]">{timeOf(a.scheduledAt)}</div></td>
+                    <td className="px-3 py-2.5 text-[#0F172A]"><div className="font-semibold">{new Date(a.scheduledAt).toLocaleDateString()}</div><div className="text-[12px] text-[#475569]">{timeOf(a.scheduledAt)}</div></td>
                     <td className="px-3 py-2.5 font-semibold text-[#0F172A]">{a.patientName}</td>
                     <td className="px-3 py-2.5"><TypeChip type={a.type} /></td>
                     <td className="px-3 py-2.5 text-[#334155]">{a.assignedToName ?? '—'}</td>
-                    <td className="px-3 py-2.5 text-[#64748B]">{a.clientName ?? '—'}</td>
+                    <td className="px-3 py-2.5 text-[#475569]">{a.clientName ?? '—'}</td>
                     <td className="px-3 py-2.5"><StatusBadge status={a.status} /></td>
                     <td className="px-3 py-2.5"><RowActions appt={a} onReschedule={() => setReschedule(a)} /></td>
                   </tr>
@@ -230,21 +230,21 @@ export default function AppointmentsPage() {
           <div className="flex h-full w-full max-w-[500px] flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-slate-200 p-5">
               <h3 className="text-[17px] font-bold text-[#0F172A]">{longDate(new Date(`${daySel}T00:00`))}</h3>
-              <button onClick={() => setDaySel(null)} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button>
+              <button onClick={() => setDaySel(null)} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-5">
               {daySelAppts.length === 0 ? (
-                <div className="py-8 text-center text-[13px] text-[#94A3B8]">No appointments this day.</div>
+                <div className="py-8 text-center text-[13px] text-[#475569]">No appointments this day.</div>
               ) : (
                 <div className="flex flex-col gap-3">
                   {daySelAppts.map((a) => (
                     <div key={a.id} className="rounded-xl border border-[#EEF2F7] p-3.5">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-[14px] font-bold text-[#0F172A]"><Clock size={14} className="text-[#94A3B8]" /> {timeOf(a.scheduledAt)}</div>
+                        <div className="flex items-center gap-2 text-[14px] font-bold text-[#0F172A]"><Clock size={14} className="text-[#475569]" /> {timeOf(a.scheduledAt)}</div>
                         <StatusBadge status={a.status} />
                       </div>
                       <div className="mt-1.5 text-[15px] font-semibold text-[#0F172A]">{a.patientName}</div>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-[#64748B]">
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-[#475569]">
                         <TypeChip type={a.type} />
                         {a.location && <span>· {a.location}</span>}
                         {a.assignedToName && <span>· {a.assignedToName}</span>}

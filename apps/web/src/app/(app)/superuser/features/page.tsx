@@ -30,7 +30,7 @@ const ICONS: Record<string, LucideIcon> = {
   PackageSearch, Printer, BarChart3, GitCompare, GraduationCap, FlaskConical, BellRing,
   ScanEye, Sparkles, Video, Tags, Network,
 };
-const TIER_COLOR: Record<number, string> = { 1: '#64748B', 2: '#4F46E5', 3: '#3B82F6', 4: '#8B5CF6', 5: '#9333EA', 6: '#6366F1' };
+const TIER_COLOR: Record<number, string> = { 1: '#475569', 2: '#4F46E5', 3: '#3B82F6', 4: '#8B5CF6', 5: '#9333EA', 6: '#6366F1' };
 const TIER_TINT: Record<number, string> = { 1: '#F1F5F9', 2: '#EEF2FF', 3: '#EFF6FF', 4: '#F5F3FF', 5: '#FAF5FF', 6: '#EEF2FF' };
 const TIERS = [2, 3, 4, 5, 6];
 
@@ -208,7 +208,7 @@ export default function FeaturesPage() {
         })}
       </div>
 
-      {isLoading && <div className="py-16 text-center text-[14px] text-[#94A3B8]">Loading features…</div>}
+      {isLoading && <div className="py-16 text-center text-[14px] text-[#475569]">Loading features…</div>}
 
       {/* ── Tier sections ── */}
       {!isLoading && visibleTiers.map((t) => {
@@ -219,7 +219,7 @@ export default function FeaturesPage() {
             <div className="mb-3 flex items-center gap-2.5">
               <span className="rounded-md px-2.5 py-1 text-[12px] font-bold text-white" style={{ background: TIER_COLOR[t] }}>Tier {t}</span>
               <span className="text-[16px] font-bold text-[#0F172A]">{meta.name}</span>
-              <span className="text-[13px] text-[#94A3B8]">— {meta.description}</span>
+              <span className="text-[13px] text-[#475569]">— {meta.description}</span>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               {tierRows.map((r) => {
@@ -242,11 +242,11 @@ export default function FeaturesPage() {
                         </div>
                       </div>
                     </div>
-                    <p className="mt-2.5 line-clamp-2 min-h-[40px] text-[13px] leading-[1.45] text-[#64748B]">{def.description}</p>
+                    <p className="mt-2.5 line-clamp-2 min-h-[40px] text-[13px] leading-[1.45] text-[#475569]">{def.description}</p>
                     <div className="mt-3 flex items-center justify-between border-t border-[#EEF2F7] pt-3">
                       {built ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold" style={on ? { background: '#DCFCE7', color: '#16A34A' } : { background: '#F1F5F9', color: '#64748B' }}>
-                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: on ? '#16A34A' : '#94A3B8' }} />
+                        <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold" style={on ? { background: '#DCFCE7', color: '#16A34A' } : { background: '#F1F5F9', color: '#475569' }}>
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: on ? '#16A34A' : '#475569' }} />
                           {on ? 'Active' : 'Inactive'}
                         </span>
                       ) : (
@@ -259,7 +259,7 @@ export default function FeaturesPage() {
                       )}
                     </div>
                     {built && on && r.enabledByName && (
-                      <div className="mt-2 text-[11px] text-[#94A3B8]">Enabled by {r.enabledByName}{r.enabledAt ? ` · ${new Date(r.enabledAt).toLocaleDateString()}` : ''}</div>
+                      <div className="mt-2 text-[11px] text-[#475569]">Enabled by {r.enabledByName}{r.enabledAt ? ` · ${new Date(r.enabledAt).toLocaleDateString()}` : ''}</div>
                     )}
                   </div>
                 );

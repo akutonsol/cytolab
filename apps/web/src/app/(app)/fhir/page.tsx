@@ -15,7 +15,7 @@ import {
 const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 
 function Kpi({ label, value, fg = '#0F172A' }: { label: string; value: string; fg?: string }) {
-  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#64748B]">{label}</div></div>;
+  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></div>;
 }
 
 export default function FhirPage() {
@@ -87,12 +87,12 @@ export default function FhirPage() {
           <div className="border-b border-[#EEF2F7] px-4 py-3"><h2 className="text-[15px] font-bold text-[#0F172A]">Transmission Log</h2></div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13px]">
-              <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#94A3B8]">
+              <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]">
                 <th className="px-3 py-2.5 font-semibold">Record</th><th className="px-3 py-2.5 font-semibold">Patient</th><th className="px-3 py-2.5 font-semibold">Endpoint</th>
                 <th className="px-3 py-2.5 font-semibold">Status</th><th className="px-3 py-2.5 font-semibold">Sent</th><th className="px-3 py-2.5 font-semibold"></th>
               </tr></thead>
               <tbody>
-                {log.length === 0 ? <tr><td colSpan={6} className="px-3 py-12 text-center text-[#94A3B8]">No transmissions yet.</td></tr> : log.map((t) => {
+                {log.length === 0 ? <tr><td colSpan={6} className="px-3 py-12 text-center text-[#475569]">No transmissions yet.</td></tr> : log.map((t) => {
                   const s = STATUS_META[t.status];
                   return (
                     <tr key={t.id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC]">
@@ -100,7 +100,7 @@ export default function FhirPage() {
                       <td className="px-3 py-2.5 text-[#0F172A]">{t.record.patient ? `${t.record.patient.firstName} ${t.record.patient.lastName}` : '—'}</td>
                       <td className="px-3 py-2.5 text-[#334155]">{t.endpoint.name}</td>
                       <td className="px-3 py-2.5"><span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: s.bg, color: s.fg }}>{s.spin && <Loader2 size={11} className="animate-spin" />}{s.label}</span></td>
-                      <td className="px-3 py-2.5 text-[#64748B]">{dateTime(t.transmittedAt ?? t.createdAt)}</td>
+                      <td className="px-3 py-2.5 text-[#475569]">{dateTime(t.transmittedAt ?? t.createdAt)}</td>
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-1.5">
                           <button onClick={() => setPreviewRecordId(t.recordId)} className="rounded-lg bg-[#EEF2FF] px-2.5 py-1 text-[12px] font-semibold text-[#4F46E5]">Preview</button>
@@ -119,7 +119,7 @@ export default function FhirPage() {
         <div className={`${CARD} flex flex-col lg:col-span-2`}>
           <div className="border-b border-[#EEF2F7] px-4 py-3"><h2 className="text-[15px] font-bold text-[#0F172A]">EMR Endpoints</h2></div>
           <div className="flex flex-col gap-2 p-3">
-            {endpoints.length === 0 ? <div className="py-8 text-center text-[13px] text-[#94A3B8]">No endpoints configured.</div> : endpoints.map((e) => {
+            {endpoints.length === 0 ? <div className="py-8 text-center text-[13px] text-[#475569]">No endpoints configured.</div> : endpoints.map((e) => {
               const m = EMR_META[e.system];
               const tested = e.lastTestStatus;
               const testOk = tested ? !/^Failed/i.test(tested) : null;
@@ -132,14 +132,14 @@ export default function FhirPage() {
                         <span className="rounded px-1.5 py-0.5 text-[11px] font-bold" style={{ background: m.bg, color: m.fg }}>{m.label}</span>
                         {e.isSandbox && <span className="rounded px-1.5 py-0.5 text-[11px] font-bold" style={{ background: '#FFFBEB', color: '#B45309' }}>SANDBOX</span>}
                       </div>
-                      <div className="mt-0.5 truncate font-mono text-[11px] text-[#94A3B8]">{e.baseUrl}</div>
+                      <div className="mt-0.5 truncate font-mono text-[11px] text-[#475569]">{e.baseUrl}</div>
                       {tested && <div className="mt-1 flex items-center gap-1 text-[12px] font-semibold" style={{ color: testOk ? '#16A34A' : '#B91C1C' }}>{testOk ? '✓' : '✗'} {tested}</div>}
                     </div>
                   </div>
                   <div className="mt-2 flex gap-1.5">
                     <button onClick={() => test.mutate(e.id)} disabled={test.isPending} className="rounded-lg border border-[#E2E8F0] px-2.5 py-1 text-[12px] font-semibold text-[#4F46E5] disabled:opacity-40">Test</button>
-                    <button onClick={() => setEditEndpoint(e)} className="rounded-lg border border-[#E2E8F0] px-2.5 py-1 text-[12px] font-semibold text-[#64748B]">Edit</button>
-                    <span className="ml-auto self-center text-[11px] text-[#94A3B8]">{e._count?.transmissions ?? 0} sent</span>
+                    <button onClick={() => setEditEndpoint(e)} className="rounded-lg border border-[#E2E8F0] px-2.5 py-1 text-[12px] font-semibold text-[#475569]">Edit</button>
+                    <span className="ml-auto self-center text-[11px] text-[#475569]">{e._count?.transmissions ?? 0} sent</span>
                   </div>
                 </div>
               );
@@ -160,8 +160,8 @@ export default function FhirPage() {
                 {endpoints.filter((e) => e.isActive).map((e) => <option key={e.id} value={e.id}>{e.name}{e.isSandbox ? ' (sandbox)' : ''}</option>)}
               </select>
               <button disabled={!transmitEndpoint || transmit.isPending} onClick={() => transmit.mutate({ recordId: previewRecordId, endpointId: transmitEndpoint })} className="flex items-center gap-1.5 rounded-lg bg-[#4F46E5] px-3 py-2 text-[13px] font-semibold text-white disabled:opacity-40"><Send size={14} /> Transmit</button>
-              <button onClick={copyJson} className="flex items-center gap-1.5 rounded-lg border border-[#E2E8F0] px-3 py-2 text-[13px] font-semibold text-[#64748B]"><Copy size={14} /> Copy JSON</button>
-              <button onClick={() => setPreviewRecordId(null)} className="rounded-lg border border-[#E2E8F0] px-3 py-2 text-[13px] font-semibold text-[#64748B]">Close</button>
+              <button onClick={copyJson} className="flex items-center gap-1.5 rounded-lg border border-[#E2E8F0] px-3 py-2 text-[13px] font-semibold text-[#475569]"><Copy size={14} /> Copy JSON</button>
+              <button onClick={() => setPreviewRecordId(null)} className="rounded-lg border border-[#E2E8F0] px-3 py-2 text-[13px] font-semibold text-[#475569]">Close</button>
             </div>
           </div>
           <pre className="max-h-[520px] overflow-auto p-4 font-mono text-[12px] leading-relaxed" style={{ background: '#0F172A', color: '#4ADE80' }}>{preview ? JSON.stringify(preview.diagnosticReport, null, 2) : 'Loading…'}</pre>

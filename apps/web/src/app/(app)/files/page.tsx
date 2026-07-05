@@ -38,7 +38,7 @@ const typeBadge = (k?: string | null) => {
   if (isImage(k)) return { label: 'Image', bg: '#EEF2FF', color: '#4F46E5' };
   if (isPdf(k)) return { label: 'PDF', bg: '#FEF2F2', color: '#DC2626' };
   if (isDoc(k)) return { label: 'Document', bg: '#F0F9FF', color: '#0284C7' };
-  return { label: 'File', bg: '#F1F5F9', color: '#64748B' };
+  return { label: 'File', bg: '#F1F5F9', color: '#475569' };
 };
 const FileTypeIcon = ({ kind, size = 18 }: { kind?: string | null; size?: number }) => {
   const b = typeBadge(kind);
@@ -385,7 +385,7 @@ function UploadModal({ onClose, onUploaded, onError }: { onClose: () => void; on
               borderRadius: 16, padding: '40px 24px', textAlign: 'center', cursor: 'pointer',
               background: dragOver ? '#EEF2FF' : '#F8FAFC', transition: 'all 0.15s',
             }}>
-            <Upload size={32} color={dragOver ? '#4F46E5' : '#94A3B8'} style={{ margin: '0 auto' }} />
+            <Upload size={32} color={dragOver ? '#4F46E5' : '#475569'} style={{ margin: '0 auto' }} />
             <p className="mt-3 font-headline-sm text-headline-sm text-charcoal-heading">Drop files here or click to browse</p>
             <p className="mt-1 font-body-sm text-body-sm text-secondary">Images, PDFs, Word docs up to 10MB</p>
           </div>

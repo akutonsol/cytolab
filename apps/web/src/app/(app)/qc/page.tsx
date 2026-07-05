@@ -25,7 +25,7 @@ function Kpi({ label, value, fg, bg, icon }: { label: string; value: string | nu
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-[#EEF2F7] bg-white p-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
       <span className="grid h-11 w-11 place-items-center rounded-xl" style={{ background: bg, color: fg }}>{icon}</span>
-      <div><div className="text-[24px] font-bold leading-none text-[#0F172A]">{value}</div><div className="mt-1 text-[13px] text-[#64748B]">{label}</div></div>
+      <div><div className="text-[24px] font-bold leading-none text-[#0F172A]">{value}</div><div className="mt-1 text-[13px] text-[#475569]">{label}</div></div>
     </div>
   );
 }
@@ -84,7 +84,7 @@ function LogQCModal({ equipment, onClose }: { equipment: Equipment[]; onClose: (
       <div className="flex h-full w-full max-w-[520px] flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-200 p-5">
           <h3 className="text-[18px] font-bold text-[#0F172A]">Log QC Check</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-5">
           <Field label="Check Type">
@@ -97,7 +97,7 @@ function LogQCModal({ equipment, onClose }: { equipment: Equipment[]; onClose: (
               {(['Pass', 'Marginal', 'Fail'] as QCResult[]).map((r) => (
                 <button key={r} type="button" onClick={() => setResult(r)}
                   className="flex-1 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors"
-                  style={result === r ? { background: RESULT_META[r].bg, color: RESULT_META[r].fg, boxShadow: `inset 0 0 0 1.5px ${RESULT_META[r].fg}` } : { background: '#F8FAFC', color: '#64748B', border: '1px solid #E2E8F0' }}>
+                  style={result === r ? { background: RESULT_META[r].bg, color: RESULT_META[r].fg, boxShadow: `inset 0 0 0 1.5px ${RESULT_META[r].fg}` } : { background: '#F8FAFC', color: '#475569', border: '1px solid #E2E8F0' }}>
                   {RESULT_META[r].label}
                 </button>
               ))}
@@ -133,7 +133,7 @@ function LogQCModal({ equipment, onClose }: { equipment: Equipment[]; onClose: (
           <Field label="Performed At"><input type="datetime-local" value={performedAt} onChange={(e) => setPerformedAt(e.target.value)} className={inp} /></Field>
         </div>
         <div className="flex justify-end gap-2 border-t border-slate-200 p-4">
-          <button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#64748B]">Cancel</button>
+          <button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#475569]">Cancel</button>
           <button disabled={!canSave || save.isPending} onClick={() => save.mutate()} className="rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-40">Log Check</button>
         </div>
       </div>
@@ -158,21 +158,21 @@ function ResolveModal({ alert, onClose }: { alert: QCAlert; onClose: () => void 
       <div className="flex h-full w-full max-w-[480px] flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-200 p-5">
           <h3 className="text-[18px] font-bold text-[#0F172A]">Resolve QC Failure</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-5">
           <div className="rounded-xl border px-4 py-3" style={{ background: '#FEF2F2', borderColor: '#FECACA' }}>
             <div className="text-[13px] font-bold text-[#B91C1C]">{checkTypeLabel(c.checkType)} — Fail</div>
             <div className="mt-1 text-[13px] text-[#334155]">{c.failureReason ?? 'No reason recorded'}</div>
-            <div className="mt-1 text-[12px] text-[#94A3B8]">{c.equipment?.name ?? 'No equipment'} · {c.performedBy ? `${c.performedBy.firstName} ${c.performedBy.lastName}` : '—'} · {new Date(c.performedAt).toLocaleString()}</div>
+            <div className="mt-1 text-[12px] text-[#475569]">{c.equipment?.name ?? 'No equipment'} · {c.performedBy ? `${c.performedBy.firstName} ${c.performedBy.lastName}` : '—'} · {new Date(c.performedAt).toLocaleString()}</div>
           </div>
           <div className="mt-4">
-            <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">Corrective Action</label>
+            <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">Corrective Action</label>
             <textarea value={action} onChange={(e) => setAction(e.target.value)} rows={4} placeholder="Describe what was done to correct the failure…" className={inp} />
           </div>
         </div>
         <div className="flex justify-end gap-2 border-t border-slate-200 p-4">
-          <button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#64748B]">Cancel</button>
+          <button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#475569]">Cancel</button>
           <button disabled={resolve.isPending} onClick={() => resolve.mutate()} className="rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-40">Mark Resolved</button>
         </div>
       </div>
@@ -183,7 +183,7 @@ function ResolveModal({ alert, onClose }: { alert: QCAlert; onClose: () => void 
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] text-[#0F172A] outline-none focus:border-[#4F46E5]';
 const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="mb-3.5"><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">{label}</label>{children}</div>
+  <div className="mb-3.5"><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">{label}</label>{children}</div>
 );
 
 export default function QCPage() {
@@ -262,7 +262,7 @@ export default function QCPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13px]">
               <thead>
-                <tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#94A3B8]">
+                <tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]">
                   <th className="px-3 py-2.5 font-semibold">Date</th><th className="px-3 py-2.5 font-semibold">Type</th>
                   <th className="px-3 py-2.5 font-semibold">Equipment</th><th className="px-3 py-2.5 font-semibold">By</th>
                   <th className="px-3 py-2.5 font-semibold">Result</th><th className="px-3 py-2.5 font-semibold">Record</th>
@@ -270,13 +270,13 @@ export default function QCPage() {
               </thead>
               <tbody>
                 {!initialLoading && checks.length === 0 ? (
-                  <tr><td colSpan={6} className="px-3 py-10 text-center text-[#94A3B8]">No QC checks logged yet.</td></tr>
+                  <tr><td colSpan={6} className="px-3 py-10 text-center text-[#475569]">No QC checks logged yet.</td></tr>
                 ) : checks.map((c) => (
                   <tr key={c.id} className="border-b border-[#F1F5F9]">
-                    <td className="px-3 py-2.5 text-[#64748B]">{new Date(c.performedAt).toLocaleDateString()} {new Date(c.performedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td className="px-3 py-2.5 text-[#475569]">{new Date(c.performedAt).toLocaleDateString()} {new Date(c.performedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                     <td className="px-3 py-2.5 text-[#334155]">{checkTypeLabel(c.checkType)}</td>
-                    <td className="px-3 py-2.5 text-[#64748B]">{c.equipment?.name ?? '—'}</td>
-                    <td className="px-3 py-2.5 text-[#64748B]">{c.performedBy ? `${c.performedBy.firstName} ${c.performedBy.lastName}` : '—'}</td>
+                    <td className="px-3 py-2.5 text-[#475569]">{c.equipment?.name ?? '—'}</td>
+                    <td className="px-3 py-2.5 text-[#475569]">{c.performedBy ? `${c.performedBy.firstName} ${c.performedBy.lastName}` : '—'}</td>
                     <td className="px-3 py-2.5"><ResultBadge r={c.result} /></td>
                     <td className="px-3 py-2.5 font-semibold text-[#0F172A]">{c.record ? (c.record.labNumber ?? c.record.identifier) : '—'}</td>
                   </tr>
@@ -303,7 +303,7 @@ export default function QCPage() {
                   <ResultBadge r="Fail" />
                 </div>
                 <div className="mt-1 text-[12px] text-[#334155]">{a.qcCheck.equipment?.name ?? 'No equipment'}{a.qcCheck.record ? ` · Lab# ${a.qcCheck.record.labNumber ?? a.qcCheck.record.identifier}` : ''}</div>
-                <div className="mt-0.5 text-[11px] text-[#94A3B8]">{a.qcCheck.performedBy ? `${a.qcCheck.performedBy.firstName} ${a.qcCheck.performedBy.lastName}` : '—'} · {new Date(a.qcCheck.performedAt).toLocaleDateString()}</div>
+                <div className="mt-0.5 text-[11px] text-[#475569]">{a.qcCheck.performedBy ? `${a.qcCheck.performedBy.firstName} ${a.qcCheck.performedBy.lastName}` : '—'} · {new Date(a.qcCheck.performedAt).toLocaleDateString()}</div>
                 {canLog && <button onClick={() => setResolveAlert(a)} className="mt-2 rounded-lg bg-white px-3 py-1.5 text-[12px] font-semibold text-[#B91C1C]" style={{ border: '1px solid #FECACA' }}>Resolve</button>}
               </div>
             ))}
@@ -314,12 +314,12 @@ export default function QCPage() {
       {/* Analytics */}
       <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
         <div className="rounded-2xl border border-[#EEF2F7] bg-white p-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-          <div className="mb-3 text-[15px] font-bold text-[#0F172A]">Pass Rate Trend <span className="text-[12px] font-normal text-[#94A3B8]">· last 30 days</span></div>
+          <div className="mb-3 text-[15px] font-bold text-[#0F172A]">Pass Rate Trend <span className="text-[12px] font-normal text-[#475569]">· last 30 days</span></div>
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={trend} margin={{ top: 6, right: 8, left: -18, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94A3B8' }} tickFormatter={(d) => d.slice(5)} interval={5} />
-              <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} allowDecimals={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#475569' }} tickFormatter={(d) => d.slice(5)} interval={5} />
+              <YAxis tick={{ fontSize: 10, fill: '#475569' }} allowDecimals={false} />
               <Tooltip />
               <Line type="monotone" dataKey="pass" stroke="#16A34A" strokeWidth={2} dot={false} name="Pass" />
               <Line type="monotone" dataKey="fail" stroke="#EF4444" strokeWidth={2} dot={false} name="Fail" />
@@ -332,8 +332,8 @@ export default function QCPage() {
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={byCat} margin={{ top: 6, right: 8, left: -18, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-              <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94A3B8' }} interval={0} />
-              <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} allowDecimals={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#475569' }} interval={0} />
+              <YAxis tick={{ fontSize: 10, fill: '#475569' }} allowDecimals={false} />
               <Tooltip />
               <Bar dataKey="count" fill="#4F46E5" radius={[4, 4, 0, 0]} name="Failures" />
             </BarChart>

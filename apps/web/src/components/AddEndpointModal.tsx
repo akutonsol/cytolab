@@ -9,7 +9,7 @@ import { api } from '@/lib/api';
 import { AUTH_TYPES, EMR_SYSTEMS, EMR_META, type EMRSystem, type FHIRAuthType, type FhirEndpoint } from '@/lib/fhir';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
-const lbl = 'mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]';
+const lbl = 'mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]';
 
 export function AddEndpointModal({ endpoint, onClose }: { endpoint?: FhirEndpoint; onClose: () => void }) {
   const qc = useQueryClient();
@@ -50,7 +50,7 @@ export function AddEndpointModal({ endpoint, onClose }: { endpoint?: FhirEndpoin
       <div className="flex h-full w-full max-w-[560px] flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-200 p-5">
           <h3 className="text-[18px] font-bold text-[#0F172A]">{editing ? 'Edit Endpoint' : 'Add Endpoint'}</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
@@ -79,7 +79,7 @@ export function AddEndpointModal({ endpoint, onClose }: { endpoint?: FhirEndpoin
 
           <label className="mb-4 flex items-center gap-2 text-[14px] text-[#334155]">
             <input type="checkbox" checked={isSandbox} onChange={(e) => setIsSandbox(e.target.checked)} className="h-4 w-4 accent-[#4F46E5]" />
-            Sandbox mode <span className="text-[12px] text-[#94A3B8]">(builds + stores payload without transmitting)</span>
+            Sandbox mode <span className="text-[12px] text-[#475569]">(builds + stores payload without transmitting)</span>
           </label>
 
           {/* Test connection (only meaningful for a saved endpoint) */}
@@ -88,7 +88,7 @@ export function AddEndpointModal({ endpoint, onClose }: { endpoint?: FhirEndpoin
               <span className="text-[13px] font-semibold text-[#334155]">Test Connection</span>
               <button disabled={!editing || test.isPending} onClick={() => test.mutate()} className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#4F46E5] disabled:opacity-40">{test.isPending ? 'Testing…' : 'Test'}</button>
             </div>
-            {!editing && <div className="mt-1 text-[12px] text-[#94A3B8]">Save the endpoint first to test connectivity.</div>}
+            {!editing && <div className="mt-1 text-[12px] text-[#475569]">Save the endpoint first to test connectivity.</div>}
             {testResult && (
               <div className="mt-2 flex items-center gap-1.5 text-[13px] font-semibold" style={{ color: testResult.ok ? '#16A34A' : '#B91C1C' }}>
                 {testResult.ok ? <CheckCircle2 size={14} /> : <XCircle size={14} />} {testResult.status}
@@ -98,7 +98,7 @@ export function AddEndpointModal({ endpoint, onClose }: { endpoint?: FhirEndpoin
         </div>
 
         <div className="flex justify-end gap-2 border-t border-slate-200 p-4">
-          <button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#64748B]">Cancel</button>
+          <button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#475569]">Cancel</button>
           <button disabled={!name || !baseUrl || save.isPending} onClick={() => save.mutate()} className="rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-40">{editing ? 'Save Changes' : 'Add Endpoint'}</button>
         </div>
       </div>

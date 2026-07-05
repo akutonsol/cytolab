@@ -35,9 +35,9 @@ export function ReviewScreeningModal({ result, onClose, readOnly = false }: { re
         <div className="flex items-start justify-between border-b border-slate-200 p-5">
           <div>
             <h3 className="text-[18px] font-bold text-[#0F172A]">Review AI Findings</h3>
-            <p className="mt-0.5 text-[13px] text-[#64748B]">{result.patientName} · <span className="font-mono">{result.labNo}</span></p>
+            <p className="mt-0.5 text-[13px] text-[#475569]">{result.patientName} · <span className="font-mono">{result.labNo}</span></p>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
@@ -47,20 +47,20 @@ export function ReviewScreeningModal({ result, onClose, readOnly = false }: { re
             <div className="min-w-0 flex-1">
               {meta && <span className="inline-flex rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: meta.bg, color: meta.fg }}>{meta.label} Confidence</span>}
               <div className="mt-1.5 text-[15px] font-bold text-[#0F172A]">{result.primaryFinding ?? '—'}</div>
-              <div className="mt-0.5 text-[13px] text-[#64748B]">{result.flaggedAreas} flagged area{result.flaggedAreas === 1 ? '' : 's'}</div>
+              <div className="mt-0.5 text-[13px] text-[#475569]">{result.flaggedAreas} flagged area{result.flaggedAreas === 1 ? '' : 's'}</div>
             </div>
           </div>
 
           {/* Flagged areas list */}
           {(result.findings ?? []).length > 0 && (
             <div className="mt-4">
-              <div className="mb-2 text-[12px] font-bold uppercase tracking-wide text-[#94A3B8]">Flagged Areas</div>
+              <div className="mb-2 text-[12px] font-bold uppercase tracking-wide text-[#475569]">Flagged Areas</div>
               <div className="flex flex-col gap-1.5">
                 {(result.findings ?? []).map((f, i) => (
                   <div key={i} className="flex items-center gap-2.5 rounded-xl border border-[#EEF2F7] px-3 py-2">
-                    <MapPin size={14} className="shrink-0 text-[#94A3B8]" />
+                    <MapPin size={14} className="shrink-0 text-[#475569]" />
                     <span className="flex-1 text-[13px] text-[#334155]"><span className="font-semibold">{f.region}</span> — {f.finding}</span>
-                    <span className="text-[12px] font-semibold tabular-nums text-[#64748B]">{Math.round(f.confidence)}%</span>
+                    <span className="text-[12px] font-semibold tabular-nums text-[#475569]">{Math.round(f.confidence)}%</span>
                   </div>
                 ))}
               </div>
@@ -101,7 +101,7 @@ export function ReviewScreeningModal({ result, onClose, readOnly = false }: { re
 
         {editable && (
           <div className="flex justify-end gap-2 border-t border-slate-200 p-4">
-            <button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#64748B]">Cancel</button>
+            <button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#475569]">Cancel</button>
             <button disabled={agree === null || submit.isPending} onClick={() => submit.mutate()}
               className="rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-40">Submit Review</button>
           </div>

@@ -32,7 +32,7 @@ export function AIScreeningCard({ recordId }: { recordId: string }) {
 
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <div className="rounded-[10px] border border-[#E2E8F0] bg-white p-3.5">
-      <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">
+      <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#475569]">
         <Brain size={13} className="text-[#7C3AED]" /> AI Screening
       </div>
       {children}
@@ -40,13 +40,13 @@ export function AIScreeningCard({ recordId }: { recordId: string }) {
   );
 
   if (isLoading) {
-    return <Shell><div className="flex items-center gap-2 py-1 text-[13px] text-[#94A3B8]"><Loader2 size={14} className="animate-spin" /> Loading…</div></Shell>;
+    return <Shell><div className="flex items-center gap-2 py-1 text-[13px] text-[#475569]"><Loader2 size={14} className="animate-spin" /> Loading…</div></Shell>;
   }
 
   if (!result || result.status === 'Skipped' || result.status === 'Failed') {
     return (
       <Shell>
-        <div className="text-[13px] text-[#64748B]">{result?.status === 'Failed' ? 'Screening failed.' : 'Not yet screened.'}</div>
+        <div className="text-[13px] text-[#475569]">{result?.status === 'Failed' ? 'Screening failed.' : 'Not yet screened.'}</div>
         {canRun && (
           <button onClick={() => run.mutate()} disabled={run.isPending}
             className="mt-2 rounded-lg bg-[#4F46E5] px-3 py-1.5 text-[12px] font-semibold text-white disabled:opacity-50">
@@ -77,14 +77,14 @@ export function AIScreeningCard({ recordId }: { recordId: string }) {
         <div className="min-w-0 flex-1">
           {meta && <span className="inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold" style={{ background: meta.bg, color: meta.fg }}>{meta.label}</span>}
           <div className="mt-1 truncate text-[13px] font-semibold text-[#0F172A]">{result.primaryFinding ?? '—'}</div>
-          <div className="text-[12px] text-[#64748B]">{result.flaggedAreas} flagged area{result.flaggedAreas === 1 ? '' : 's'}</div>
+          <div className="text-[12px] text-[#475569]">{result.flaggedAreas} flagged area{result.flaggedAreas === 1 ? '' : 's'}</div>
         </div>
       </div>
 
       {reviewed ? (
         <div className="mt-2.5 flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: result.agreedWithAI ? '#16A34A' : '#B91C1C' }}>
           {result.agreedWithAI ? <><Check size={14} /> Pathologist agreed</> : <><X size={14} /> Pathologist disagreed</>}
-          <span className="font-normal text-[#94A3B8]">· {result.reviewerName ?? '—'}, {shortDate(result.reviewedAt)}</span>
+          <span className="font-normal text-[#475569]">· {result.reviewerName ?? '—'}, {shortDate(result.reviewedAt)}</span>
         </div>
       ) : (
         <button onClick={() => setReviewOpen(true)} className="mt-2.5 w-full rounded-lg border border-[#E2E8F0] px-3 py-1.5 text-[12px] font-semibold text-[#4F46E5] hover:bg-[#EEF2FF]">

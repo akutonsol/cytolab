@@ -365,7 +365,7 @@ export default function PatientProfilePage() {
                     style={{ background: c.correlationResult === 'MajorDiscordant' ? CORR_META.MajorDiscordant.rowBg : undefined }}>
                     <div>
                       <div className="text-[13px] font-semibold text-[#0F172A]">{c.cytologyDiagnosis} → {c.histologyDiagnosis ?? 'pending histology'}</div>
-                      <div className="text-[12px] text-[#94A3B8]">Cyto {corrDate(c.cytologyDate)}{c.histologyDate ? ` · Histo ${corrDate(c.histologyDate)}` : ''}</div>
+                      <div className="text-[12px] text-[#475569]">Cyto {corrDate(c.cytologyDate)}{c.histologyDate ? ` · Histo ${corrDate(c.histologyDate)}` : ''}</div>
                     </div>
                     <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: CORR_META[c.correlationResult ?? 'Unresolved'].bg, color: CORR_META[c.correlationResult ?? 'Unresolved'].fg }}>{CORR_META[c.correlationResult ?? 'Unresolved'].label}</span>
                   </button>

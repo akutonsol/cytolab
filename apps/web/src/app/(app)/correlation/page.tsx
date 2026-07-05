@@ -21,7 +21,7 @@ function ResultBadge({ r }: { r: CorrelationResult | null }) {
 }
 
 function Kpi({ label, value, fg = '#0F172A' }: { label: string; value: string | number; fg?: string }) {
-  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#64748B]">{label}</div></div>;
+  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></div>;
 }
 
 export default function CorrelationPage() {
@@ -86,7 +86,7 @@ export default function CorrelationPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13px]">
               <thead>
-                <tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#94A3B8]">
+                <tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]">
                   <th className="px-3 py-2.5 font-semibold">Patient</th><th className="px-3 py-2.5 font-semibold">Cyto Date</th>
                   <th className="px-3 py-2.5 font-semibold">Cyto Dx</th><th className="px-3 py-2.5 font-semibold">Histo Date</th>
                   <th className="px-3 py-2.5 font-semibold">Histo Dx</th><th className="px-3 py-2.5 font-semibold">Result</th>
@@ -95,17 +95,17 @@ export default function CorrelationPage() {
               </thead>
               <tbody>
                 {cases.length === 0 ? (
-                  <tr><td colSpan={7} className="px-3 py-12 text-center text-[#94A3B8]">No correlation cases.</td></tr>
+                  <tr><td colSpan={7} className="px-3 py-12 text-center text-[#475569]">No correlation cases.</td></tr>
                 ) : cases.map((c) => (
                   <tr key={c.id} onClick={() => router.push(`/correlation/${c.id}`)} className="cursor-pointer border-b border-[#F1F5F9] transition-colors hover:bg-[#F8FAFC]"
                     style={{ background: c.correlationResult === 'MajorDiscordant' ? RESULT_META.MajorDiscordant.rowBg : undefined }}>
                     <td className="px-3 py-2.5 font-semibold text-[#0F172A]">{patientName(c)}</td>
-                    <td className="px-3 py-2.5 text-[#64748B]">{shortDate(c.cytologyDate)}</td>
+                    <td className="px-3 py-2.5 text-[#475569]">{shortDate(c.cytologyDate)}</td>
                     <td className="px-3 py-2.5 text-[#334155]">{c.cytologyDiagnosis}</td>
-                    <td className="px-3 py-2.5 text-[#64748B]">{shortDate(c.histologyDate)}</td>
+                    <td className="px-3 py-2.5 text-[#475569]">{shortDate(c.histologyDate)}</td>
                     <td className="px-3 py-2.5 text-[#334155]">{c.histologyDiagnosis ?? '—'}</td>
                     <td className="px-3 py-2.5"><ResultBadge r={c.correlationResult} /></td>
-                    <td className="px-3 py-2.5">{c.reviewRequired && !c.reviewedAt ? <span className="text-[12px] font-semibold text-[#B91C1C]">Required</span> : c.reviewedAt ? <span className="text-[12px] text-[#16A34A]">Reviewed</span> : <span className="text-[12px] text-[#94A3B8]">—</span>}</td>
+                    <td className="px-3 py-2.5">{c.reviewRequired && !c.reviewedAt ? <span className="text-[12px] font-semibold text-[#B91C1C]">Required</span> : c.reviewedAt ? <span className="text-[12px] text-[#16A34A]">Reviewed</span> : <span className="text-[12px] text-[#475569]">—</span>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -117,7 +117,7 @@ export default function CorrelationPage() {
         <div className="flex flex-col gap-5">
           <div className={`${CARD} p-4`}>
             <div className="mb-2 text-[15px] font-bold text-[#0F172A]">Concordance Distribution</div>
-            {donut.length === 0 ? <div className="py-8 text-center text-[13px] text-[#94A3B8]">No data yet.</div> : (
+            {donut.length === 0 ? <div className="py-8 text-center text-[13px] text-[#475569]">No data yet.</div> : (
               <ResponsiveContainer width="100%" height={190}>
                 <PieChart>
                   <Pie data={donut} dataKey="value" nameKey="name" innerRadius={50} outerRadius={78} paddingAngle={2}>{donut.map((d) => <Cell key={d.name} fill={d.color} />)}</Pie>
@@ -127,10 +127,10 @@ export default function CorrelationPage() {
             )}
           </div>
           <div className={`${CARD} p-4`}>
-            <div className="mb-2 text-[15px] font-bold text-[#0F172A]">Monthly Trend <span className="text-[12px] font-normal text-[#94A3B8]">· 6 months</span></div>
+            <div className="mb-2 text-[15px] font-bold text-[#0F172A]">Monthly Trend <span className="text-[12px] font-normal text-[#475569]">· 6 months</span></div>
             <ResponsiveContainer width="100%" height={140}>
               <BarChart data={analytics?.byMonth ?? []} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
-                <XAxis dataKey="month" tick={{ fontSize: 9, fill: '#94A3B8' }} tickFormatter={(m) => m.slice(5)} />
+                <XAxis dataKey="month" tick={{ fontSize: 9, fill: '#475569' }} tickFormatter={(m) => m.slice(5)} />
                 <Tooltip />
                 <Bar dataKey="concordant" stackId="a" fill={DONUT_COLOR.Concordant} />
                 <Bar dataKey="minorDiscordant" stackId="a" fill={DONUT_COLOR.MinorDiscordant} />
@@ -140,7 +140,7 @@ export default function CorrelationPage() {
           </div>
           <div className={`${CARD} p-4`}>
             <div className="mb-2 text-[15px] font-bold text-[#0F172A]">Pending Review ({pending.length})</div>
-            {pending.length === 0 ? <div className="text-[13px] text-[#94A3B8]">Nothing awaiting review.</div> : (
+            {pending.length === 0 ? <div className="text-[13px] text-[#475569]">Nothing awaiting review.</div> : (
               <div className="flex flex-col gap-2">
                 {pending.slice(0, 6).map((c) => (
                   <button key={c.id} onClick={() => router.push(`/correlation/${c.id}`)} className="flex items-center justify-between rounded-lg border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-left text-[13px]">

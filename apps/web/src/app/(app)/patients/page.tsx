@@ -43,7 +43,7 @@ const relDate = (d?: string | null): string => {
 };
 
 // Deterministic avatar colour from the patient name (sum of char codes % palette).
-const AVATAR_COLORS = ['bg-indigo-500', 'bg-violet-500', 'bg-blue-500', 'bg-teal-500', 'bg-green-500', 'bg-purple-500'];
+const AVATAR_COLORS = ['bg-indigo-600', 'bg-violet-700', 'bg-blue-700', 'bg-teal-700', 'bg-green-800', 'bg-purple-700'];
 function PatientAvatar({ name }: { name: string }) {
   const initials = name.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?';
   let sum = 0;
@@ -71,10 +71,10 @@ function GenderDonut({ male, female, size = 76 }: { male: number; female: number
       <circle cx={c} cy={c} r={r} fill="none" stroke="#EEF2F7" strokeWidth={sw} />
       {total > 0 && (
         <>
-          <circle cx={c} cy={c} r={r} fill="none" stroke="#2563EB" strokeWidth={sw}
+          <circle cx={c} cy={c} r={r} fill="none" stroke="#1D4ED8" strokeWidth={sw}
             strokeDasharray={`${Math.max(0, maleDash - gap)} ${circ - Math.max(0, maleDash - gap)}`}
             transform={`rotate(-90 ${c} ${c})`} />
-          <circle cx={c} cy={c} r={r} fill="none" stroke="#DB2777" strokeWidth={sw}
+          <circle cx={c} cy={c} r={r} fill="none" stroke="#9D174D" strokeWidth={sw}
             strokeDasharray={`${Math.max(0, femaleDash - gap)} ${circ - Math.max(0, femaleDash - gap)}`}
             strokeDashoffset={-maleDash} transform={`rotate(-90 ${c} ${c})`} />
         </>
@@ -198,13 +198,13 @@ export default function PatientsPage() {
           <div className="text-center">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Male</div>
             <div className="text-3xl font-bold text-charcoal-heading">{maleCount}</div>
-            <div className="text-sm font-semibold" style={{ color: '#2563EB' }}>{malePct}%</div>
+            <div className="text-sm font-semibold" style={{ color: '#1D4ED8' }}>{malePct}%</div>
           </div>
           <GenderDonut male={maleCount} female={femaleCount} />
           <div className="text-center">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Female</div>
             <div className="text-3xl font-bold text-charcoal-heading">{femaleCount}</div>
-            <div className="text-sm font-semibold" style={{ color: '#DB2777' }}>{femalePct}%</div>
+            <div className="text-sm font-semibold" style={{ color: '#9D174D' }}>{femalePct}%</div>
           </div>
         </div>
       </div>
@@ -267,10 +267,10 @@ export default function PatientsPage() {
                     </td>
                     <td className={CELL}>
                       {isMale
-                        ? <span className={`${PILL} border border-blue-200 bg-blue-50 text-blue-600`}>Male</span>
+                        ? <span className={`${PILL} border border-blue-200 bg-blue-50 text-blue-800`}>Male</span>
                         : isFemale
-                          ? <span className={`${PILL} border border-pink-200 bg-pink-50 text-pink-600`}>Female</span>
-                          : <span className={`${PILL} border border-slate-200 bg-slate-100 text-slate-500`}>—</span>}
+                          ? <span className={`${PILL} border border-pink-200 bg-pink-50 text-pink-800`}>Female</span>
+                          : <span className={`${PILL} border border-slate-200 bg-slate-100 text-slate-600`}>—</span>}
                     </td>
                     <td className={CELL}>{age != null ? `${age} yrs` : '—'}</td>
                     <td className={CELL}>{p.phoneNumber || '—'}</td>
@@ -278,7 +278,7 @@ export default function PatientsPage() {
                     <td className={CELL}>
                       {cases > 0
                         ? <span className={`${PILL} bg-indigo-100 text-indigo-700`}>{cases} active</span>
-                        : <span className={`${PILL} bg-slate-100 text-slate-500`}>None</span>}
+                        : <span className={`${PILL} bg-slate-100 text-slate-600`}>None</span>}
                     </td>
                     <td className={CELL}><span className="text-slate-500">{relDate(p.lastActivityAt)}</span></td>
                     {hasEdit && (

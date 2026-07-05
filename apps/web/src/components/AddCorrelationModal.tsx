@@ -10,7 +10,7 @@ import { CORRELATION_RESULTS, HISTOLOGY_SOURCES, RESULT_META, type CorrelationRe
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] text-[#0F172A] outline-none focus:border-[#4F46E5]';
 const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="mb-3.5"><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">{label}</label>{children}</div>
+  <div className="mb-3.5"><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">{label}</label>{children}</div>
 );
 
 export function AddCorrelationModal({ onClose, defaultPatientId }: { onClose: () => void; defaultPatientId?: string }) {
@@ -68,7 +68,7 @@ export function AddCorrelationModal({ onClose, defaultPatientId }: { onClose: ()
       <div className="flex h-full w-full max-w-[600px] flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-200 p-5">
           <h3 className="text-[18px] font-bold text-[#0F172A]">Add Correlation</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-5">
           {!defaultPatientId && (
@@ -100,7 +100,7 @@ export function AddCorrelationModal({ onClose, defaultPatientId }: { onClose: ()
             <div className="grid grid-cols-2 gap-2">
               {CORRELATION_RESULTS.map((r) => (
                 <button key={r} type="button" onClick={() => setCorrelationResult(r)} className="rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors"
-                  style={correlationResult === r ? { background: RESULT_META[r].bg, color: RESULT_META[r].fg, boxShadow: `inset 0 0 0 1.5px ${RESULT_META[r].fg}` } : { background: '#F8FAFC', color: '#64748B', border: '1px solid #E2E8F0' }}>
+                  style={correlationResult === r ? { background: RESULT_META[r].bg, color: RESULT_META[r].fg, boxShadow: `inset 0 0 0 1.5px ${RESULT_META[r].fg}` } : { background: '#F8FAFC', color: '#475569', border: '1px solid #E2E8F0' }}>
                   {RESULT_META[r].label}
                 </button>
               ))}
@@ -111,7 +111,7 @@ export function AddCorrelationModal({ onClose, defaultPatientId }: { onClose: ()
           )}
         </div>
         <div className="flex justify-end gap-2 border-t border-slate-200 p-4">
-          <button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#64748B]">Cancel</button>
+          <button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#475569]">Cancel</button>
           <button disabled={!canSave || save.isPending} onClick={() => save.mutate()} className="rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-40">Create Case</button>
         </div>
       </div>

@@ -32,7 +32,7 @@ const TYPE_BADGE: Record<string, { bg: string; fg: string }> = {
   CreditCard: { bg: '#F5F3FF', fg: '#7C3AED' },
   DebitCard: { bg: '#F0F9FF', fg: '#0284C7' },
   BankTransfer: { bg: '#FFFBEB', fg: '#B45309' },
-  Other: { bg: '#F1F5F9', fg: '#64748B' },
+  Other: { bg: '#F1F5F9', fg: '#475569' },
 };
 const badgeFor = (t: string) => TYPE_BADGE[t] ?? TYPE_BADGE.Other;
 const TYPE_LABEL: Record<string, string> = { CreditCard: 'Credit Card', DebitCard: 'Debit Card', BankTransfer: 'Bank Transfer' };
@@ -142,7 +142,7 @@ export default function PaymentsPage() {
   const { items: pageRows, loading, initialLoading, hasMore, sentinelRef } = useInfiniteScroll<Payment & { bill?: any }>({ fetchFn, pageSize: PAGE_SIZE });
 
   const selectCls = 'h-9 rounded-lg border border-[#E2E8F0] bg-white px-3 text-[13px] text-[#374151] outline-none focus:border-[#4F46E5] cursor-pointer';
-  const th = 'px-4 py-3 text-left text-[13px] font-medium text-[#94A3B8]';
+  const th = 'px-4 py-3 text-left text-[13px] font-medium text-[#475569]';
 
   return (
     <div className="min-h-full py-8" style={{ background: '#F8FAFC' }}>
@@ -159,12 +159,12 @@ export default function PaymentsPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Icon size={20} color={color} />
-                <span className="text-[13px] font-medium text-[#64748B]">{label}</span>
+                <span className="text-[13px] font-medium text-[#475569]">{label}</span>
               </div>
               <DeltaPill n={delta} pct={pct} />
             </div>
             <div className="mt-2 text-[48px] font-extrabold leading-none text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif', letterSpacing: '-0.03em' }}>{value}</div>
-            <div className="mt-1.5 text-[13px] text-[#94A3B8]">{sub}</div>
+            <div className="mt-1.5 text-[13px] text-[#475569]">{sub}</div>
           </div>
         ))}
       </div>
@@ -184,14 +184,14 @@ export default function PaymentsPage() {
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} stroke="#F1F5F9" />
-            <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94A3B8' }} dy={6} />
+            <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#475569' }} dy={6} />
             <YAxis hide />
             {peakMonth && peakMonth.count > 0 && <ReferenceLine x={peakMonth.month} stroke="#4F46E5" strokeDasharray="4 4" />}
             <Tooltip cursor={{ stroke: '#E2E8F0' }} content={({ active, payload }: any) => {
               if (!active || !payload?.length) return null;
               return (
                 <div style={{ background: 'white', border: '1px solid #E2E8F0', borderRadius: 10, padding: '10px 14px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
-                  <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>Total Payments</div>
+                  <div style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>Total Payments</div>
                   <div style={{ fontSize: 18, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>{payload[0]?.value}</div>
                   <div style={{ fontSize: 12, color: '#4F46E5', fontWeight: 600 }}>{fmt(payload[0]?.payload?.amount)}</div>
                 </div>
@@ -205,13 +205,13 @@ export default function PaymentsPage() {
       {/* Payments table section */}
       <div>
         <div className="mb-1 text-[24px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Payments</div>
-        <p className="mb-4 text-[14px] text-[#64748B]">Manage payment records and verify transactions.</p>
+        <p className="mb-4 text-[14px] text-[#475569]">Manage payment records and verify transactions.</p>
 
         {/* Tabs */}
         <div className="mb-4 flex flex-wrap gap-2">
           {([['all', 'All', payments.length], ['unverified', 'Unverified', unverifiedCount], ['verified', 'Verified', verifiedCount]] as const).map(([v, l, n]) => (
             <button key={v} onClick={() => { setTab(v); }} className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold transition-colors"
-              style={tab === v ? { background: '#EEF2FF', color: '#4F46E5', border: '1px solid #C7D2FE' } : { background: 'transparent', color: '#64748B', border: '1px solid transparent' }}>
+              style={tab === v ? { background: '#EEF2FF', color: '#4F46E5', border: '1px solid #C7D2FE' } : { background: 'transparent', color: '#475569', border: '1px solid transparent' }}>
               <Settings size={14} /> {l} ({n})
             </button>
           ))}
@@ -242,7 +242,7 @@ export default function PaymentsPage() {
           {!initialLoading && pageRows.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
               <DollarSign size={48} className="text-[#E2E8F0]" />
-              <div className="text-[14px] font-medium text-[#94A3B8]">No payments found</div>
+              <div className="text-[14px] font-medium text-[#475569]">No payments found</div>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -260,7 +260,7 @@ export default function PaymentsPage() {
                     return (
                       <tr key={p.id} className="border-b border-[#F8FAFC] transition-colors hover:bg-[#F9FAFB]">
                         <td className="whitespace-nowrap px-4 py-3.5"><span className="font-mono text-[13px] font-bold text-[#0F172A]">{p.bill?.referenceNo ?? p.billId.slice(-8)}</span></td>
-                        <td className="whitespace-nowrap px-4 py-3.5 text-[13px] text-[#64748B]">{clientName(p.bill?.client)}</td>
+                        <td className="whitespace-nowrap px-4 py-3.5 text-[13px] text-[#475569]">{clientName(p.bill?.client)}</td>
                         <td className="px-4 py-3.5 text-right text-[14px] font-bold text-[#0F172A]">{fmt(p.amount)}</td>
                         <td className="px-4 py-3.5"><span className="rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: b.bg, color: b.fg }}>{typeLabel(p.type)}</span></td>
                         <td className="px-4 py-3.5">
@@ -268,15 +268,15 @@ export default function PaymentsPage() {
                             ? <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12px] font-semibold" style={{ background: '#F0FDF4', color: '#16A34A' }}><CheckCircle2 size={13} /> Verified</span>
                             : <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12px] font-semibold" style={{ background: '#FFF9F0', color: '#92400E' }}><Clock size={13} /> Pending</span>}
                         </td>
-                        <td className="whitespace-nowrap px-4 py-3.5 text-[13px] text-[#64748B]">{relTime(p.datePaid)}</td>
-                        <td className="px-4 py-3.5 text-[13px] text-[#64748B]">Recorded</td>
+                        <td className="whitespace-nowrap px-4 py-3.5 text-[13px] text-[#475569]">{relTime(p.datePaid)}</td>
+                        <td className="px-4 py-3.5 text-[13px] text-[#475569]">Recorded</td>
                         <td className="px-4 py-3.5">
                           <div className="flex items-center justify-end gap-1.5">
-                            <button title="Download receipt" className="grid h-8 w-8 place-items-center rounded-full border border-[#E2E8F0] text-[#64748B] transition-colors hover:bg-[#F5F7FF]"><Download size={14} /></button>
-                            <button title="Open bill" onClick={() => router.push('/billing')} className="grid h-8 w-8 place-items-center rounded-full border border-[#E2E8F0] text-[#64748B] transition-colors hover:bg-[#F5F7FF] hover:text-[#4F46E5]"><ExternalLink size={14} /></button>
+                            <button title="Download receipt" className="grid h-8 w-8 place-items-center rounded-full border border-[#E2E8F0] text-[#475569] transition-colors hover:bg-[#F5F7FF]"><Download size={14} /></button>
+                            <button title="Open bill" onClick={() => router.push('/billing')} className="grid h-8 w-8 place-items-center rounded-full border border-[#E2E8F0] text-[#475569] transition-colors hover:bg-[#F5F7FF] hover:text-[#4F46E5]"><ExternalLink size={14} /></button>
                             <button title={p.verified ? 'Verified' : 'Verify payment'} disabled={p.verified || verify.isPending} onClick={() => verify.mutate(p.id)} className="grid h-8 w-8 place-items-center rounded-full border border-[#E2E8F0] transition-colors hover:bg-[#F5F7FF]" style={{ color: p.verified ? '#CBD5E1' : '#4F46E5', cursor: p.verified ? 'default' : 'pointer' }}><CheckCircle2 size={14} /></button>
                             <div className="relative">
-                              <button title="More" onClick={() => setMenuId(menuId === p.id ? null : p.id)} className="grid h-8 w-8 place-items-center rounded-full border border-[#E2E8F0] text-[#64748B] transition-colors hover:bg-[#F5F7FF]"><MoreHorizontal size={14} /></button>
+                              <button title="More" onClick={() => setMenuId(menuId === p.id ? null : p.id)} className="grid h-8 w-8 place-items-center rounded-full border border-[#E2E8F0] text-[#475569] transition-colors hover:bg-[#F5F7FF]"><MoreHorizontal size={14} /></button>
                               {menuId === p.id && (
                                 <>
                                   <div className="fixed inset-0 z-10" onClick={() => setMenuId(null)} />

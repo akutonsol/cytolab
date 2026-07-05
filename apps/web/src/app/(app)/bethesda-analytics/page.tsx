@@ -19,8 +19,8 @@ function Kpi({ label, value, fg = '#0F172A', sub }: { label: string; value: stri
   return (
     <div className={`${CARD} p-4`}>
       <div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div>
-      <div className="mt-1.5 text-[12px] font-medium text-[#64748B]">{label}</div>
-      {sub && <div className="mt-0.5 text-[11px] text-[#94A3B8]">{sub}</div>}
+      <div className="mt-1.5 text-[12px] font-medium text-[#475569]">{label}</div>
+      {sub && <div className="mt-0.5 text-[11px] text-[#475569]">{sub}</div>}
     </div>
   );
 }
@@ -63,7 +63,7 @@ export default function BethesdaAnalyticsPage() {
   const hpvData = s ? [
     { name: 'Positive', value: s.hpv.positive, color: '#DC2626' },
     { name: 'Negative', value: s.hpv.negative, color: '#16A34A' },
-    { name: 'Not Done', value: s.hpv.notDone, color: '#94A3B8' },
+    { name: 'Not Done', value: s.hpv.notDone, color: '#475569' },
   ].filter((d) => d.value > 0) : [];
 
   const labAvgUnsat = techs.length ? (techs.reduce((a, t) => a + t.unsatisfactoryCount, 0) / Math.max(1, techs.reduce((a, t) => a + t.total, 0))) * 100 : 0;
@@ -78,7 +78,7 @@ export default function BethesdaAnalyticsPage() {
         <div className="flex gap-1 rounded-full bg-[#F1F5F9] p-1">
           {(['month', 'quarter', 'year', 'all'] as AnalyticsPeriod[]).map((p) => (
             <button key={p} onClick={() => setPeriod(p)} className="rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-colors"
-              style={period === p ? { background: '#fff', color: '#0F172A', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' } : { color: '#64748B' }}>
+              style={period === p ? { background: '#fff', color: '#0F172A', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' } : { color: '#475569' }}>
               {PERIOD_LABELS[p]}
             </button>
           ))}
@@ -98,13 +98,13 @@ export default function BethesdaAnalyticsPage() {
       {/* Row 2 — Trend (60) + Distribution (40) */}
       <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-[60fr_40fr]">
         <div className={`${CARD} p-4`}>
-          <div className="mb-3 text-[15px] font-bold text-[#0F172A]">Classification Trend <span className="text-[12px] font-normal text-[#94A3B8]">· last 12 months</span></div>
+          <div className="mb-3 text-[15px] font-bold text-[#0F172A]">Classification Trend <span className="text-[12px] font-normal text-[#475569]">· last 12 months</span></div>
           <ResponsiveContainer width="100%" height={300}>
             <ComposedChart data={trend} margin={{ top: 6, right: 6, left: -16, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-              <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#94A3B8' }} tickFormatter={(m) => m.slice(2)} />
-              <YAxis yAxisId="left" tick={{ fontSize: 10, fill: '#94A3B8' }} allowDecimals={false} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: '#94A3B8' }} unit="%" />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#475569' }} tickFormatter={(m) => m.slice(2)} />
+              <YAxis yAxisId="left" tick={{ fontSize: 10, fill: '#475569' }} allowDecimals={false} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: '#475569' }} unit="%" />
               <Tooltip />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar yAxisId="left" dataKey="nilm" stackId="a" fill={CAT_COLOR.NILM} name="NILM" />
@@ -128,7 +128,7 @@ export default function BethesdaAnalyticsPage() {
                 <div key={d.label}>
                   <div className="flex items-center justify-between text-[12px]">
                     <span className="font-medium text-[#334155]">{d.label}</span>
-                    <span className="text-[#64748B]">{d.count} ({p.toFixed(1)}%)</span>
+                    <span className="text-[#475569]">{d.count} ({p.toFixed(1)}%)</span>
                   </div>
                   <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-[#F1F5F9]">
                     <div className="h-full rounded-full" style={{ width: `${Math.min(100, p)}%`, background: d.color }} />
@@ -149,9 +149,9 @@ export default function BethesdaAnalyticsPage() {
               <>
                 <BenchmarkCard title="ASC:SIL Ratio" value={benchmarks.ascSilRatio.value.toFixed(2)} standard="< 3.0" status={benchmarks.ascSilRatio.status} progress={Math.min(100, (benchmarks.ascSilRatio.value / 3.0) * 100)} />
                 <BenchmarkCard title="Unsatisfactory Rate" value={`${benchmarks.unsatisfactoryRate.value.toFixed(1)}%`} standard="< 1%" status={benchmarks.unsatisfactoryRate.status} progress={Math.min(100, (benchmarks.unsatisfactoryRate.value / 1.0) * 100)} />
-                <div className={`${CARD} p-4`} style={{ borderLeft: '4px solid #94A3B8' }}>
+                <div className={`${CARD} p-4`} style={{ borderLeft: '4px solid #475569' }}>
                   <div className="text-[14px] font-bold text-[#0F172A]">HSIL:ASC-US Ratio</div>
-                  <div className="mt-1 text-[13px] text-[#64748B]">Your value: <span className="font-semibold text-[#0F172A]">{benchmarks.hsil_ascus_ratio.value.toFixed(2)}</span> · {benchmarks.hsil_ascus_ratio.note}</div>
+                  <div className="mt-1 text-[13px] text-[#475569]">Your value: <span className="font-semibold text-[#0F172A]">{benchmarks.hsil_ascus_ratio.value.toFixed(2)}</span> · {benchmarks.hsil_ascus_ratio.note}</div>
                 </div>
               </>
             )}
@@ -172,7 +172,7 @@ export default function BethesdaAnalyticsPage() {
             </ResponsiveContainer>
             <div className="mt-1 text-center">
               <div className="text-[28px] font-bold text-[#4F46E5]">{pct1(s?.hpv.positivityRate ?? 0)}</div>
-              <div className="text-[12px] text-[#64748B]">HPV positivity rate (of tested)</div>
+              <div className="text-[12px] text-[#475569]">HPV positivity rate (of tested)</div>
             </div>
           </div>
         </div>
@@ -184,7 +184,7 @@ export default function BethesdaAnalyticsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[13px]">
             <thead>
-              <tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#94A3B8]">
+              <tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]">
                 <th className="px-4 py-2.5 font-semibold">Technician</th><th className="px-4 py-2.5 font-semibold">Total</th>
                 <th className="px-4 py-2.5 font-semibold">NILM</th><th className="px-4 py-2.5 font-semibold">Abnormal</th>
                 <th className="px-4 py-2.5 font-semibold">Unsat</th><th className="px-4 py-2.5 font-semibold">Unsat Rate</th>
@@ -193,7 +193,7 @@ export default function BethesdaAnalyticsPage() {
             </thead>
             <tbody>
               {techs.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-10 text-center text-[#94A3B8]">No technician data.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-10 text-center text-[#475569]">No technician data.</td></tr>
               ) : techs.map((t) => {
                 const diff = t.unsatisfactoryRate - labAvgUnsat;
                 const worse = diff > 0.05;
@@ -225,7 +225,7 @@ function BenchmarkCard({ title, value, standard, status, progress }: { title: st
         <div className="text-[14px] font-bold text-[#0F172A]">{title}</div>
         <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: m.bg, color: m.fg }}>{m.label}</span>
       </div>
-      <div className="mt-1 text-[13px] text-[#64748B]">Your value: <span className="font-semibold text-[#0F172A]">{value}</span> · CAP benchmark: {standard}</div>
+      <div className="mt-1 text-[13px] text-[#475569]">Your value: <span className="font-semibold text-[#0F172A]">{value}</span> · CAP benchmark: {standard}</div>
       <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[#F1F5F9]">
         <div className="h-full rounded-full" style={{ width: `${progress}%`, background: m.border }} />
       </div>

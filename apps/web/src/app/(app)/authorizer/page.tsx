@@ -42,7 +42,7 @@ const PRIORITY_META: Record<Priority, { color: string; label: string }> = {
   High: { color: '#EF4444', label: 'High Priority' },
   Medium: { color: '#FACC15', label: 'Medium Priority' },
   Low: { color: '#84CC16', label: 'Low Priority' },
-  Normal: { color: '#94A3B8', label: 'Normal' },
+  Normal: { color: '#475569', label: 'Normal' },
 };
 const PRIORITY_ORDER: Priority[] = ['High', 'Medium', 'Low', 'Normal'];
 
@@ -236,9 +236,9 @@ export default function AuthorizerPage() {
     useInfiniteScroll<Rec>({ fetchFn, pageSize: 20 });
 
   const kpis = [
-    { label: 'Awaiting Authorization', value: String(awaiting.length), sub: `${awaitingUrgent} urgent`, subColor: awaitingUrgent > 0 ? '#EF4444' : '#94A3B8', icon: ClipboardCheck, spark: '#94A3B8', data: [3, 5, 4, 6, 5, 7, 6] },
-    { label: 'Approved Today', value: String(approvedToday), sub: 'authorized today', subColor: '#94A3B8', icon: CheckCircle2, spark: '#16A34A', data: [2, 3, 3, 4, 5, 5, 6] },
-    { label: 'Oldest Pending', value: oldestDays != null ? `${oldestDays}d` : '—', sub: oldestDays != null ? `${oldestDays} days waiting` : 'none pending', subColor: (oldestDays ?? 0) > 3 ? '#EF4444' : '#94A3B8', icon: Clock, spark: '#EF4444', data: [4, 3, 5, 4, 6, 5, 7] },
+    { label: 'Awaiting Authorization', value: String(awaiting.length), sub: `${awaitingUrgent} urgent`, subColor: awaitingUrgent > 0 ? '#EF4444' : '#475569', icon: ClipboardCheck, spark: '#475569', data: [3, 5, 4, 6, 5, 7, 6] },
+    { label: 'Approved Today', value: String(approvedToday), sub: 'authorized today', subColor: '#475569', icon: CheckCircle2, spark: '#16A34A', data: [2, 3, 3, 4, 5, 5, 6] },
+    { label: 'Oldest Pending', value: oldestDays != null ? `${oldestDays}d` : '—', sub: oldestDays != null ? `${oldestDays} days waiting` : 'none pending', subColor: (oldestDays ?? 0) > 3 ? '#EF4444' : '#475569', icon: Clock, spark: '#EF4444', data: [4, 3, 5, 4, 6, 5, 7] },
     { label: 'Authorized This Week', value: String(thisWeek), sub: `${weekTrend >= 0 ? '↑' : '↓'} ${Math.abs(weekTrend)}% vs last week`, subColor: weekTrend >= 0 ? '#16A34A' : '#EF4444', icon: TrendingUp, spark: '#6366F1', data: [3, 4, 4, 5, 4, 6, 7] },
   ];
 
@@ -267,7 +267,7 @@ export default function AuthorizerPage() {
             {tab === 'awaiting' && (
               <button onClick={() => { setBatchMode((v) => !v); setBatchSelected(new Set()); }}
                 className="rounded-full border px-4 py-2 text-sm font-semibold transition-colors"
-                style={batchMode ? { background: '#EEF2FF', color: '#4F46E5', borderColor: '#C7D2FE' } : { background: '#fff', color: '#64748B', borderColor: '#E5E7EB' }}>
+                style={batchMode ? { background: '#EEF2FF', color: '#4F46E5', borderColor: '#C7D2FE' } : { background: '#fff', color: '#475569', borderColor: '#E5E7EB' }}>
                 Batch {batchMode ? 'On' : 'Off'}
               </button>
             )}
@@ -279,7 +279,7 @@ export default function AuthorizerPage() {
           <div className="inline-flex gap-1 rounded-full bg-slate-100 p-1">
             {([['awaiting', 'Awaiting'], ['approved', 'Approved']] as const).map(([v, l]) => (
               <button key={v} onClick={() => { setTab(v); }} className="rounded-full px-5 py-2 text-sm transition-colors"
-                style={{ background: tab === v ? '#fff' : 'transparent', color: tab === v ? '#0F172A' : '#64748B', fontWeight: tab === v ? 700 : 600, boxShadow: tab === v ? '0 1px 4px rgba(0,0,0,0.08)' : 'none' }}>{l}</button>
+                style={{ background: tab === v ? '#fff' : 'transparent', color: tab === v ? '#0F172A' : '#475569', fontWeight: tab === v ? 700 : 600, boxShadow: tab === v ? '0 1px 4px rgba(0,0,0,0.08)' : 'none' }}>{l}</button>
             ))}
           </div>
         </div>
@@ -391,7 +391,7 @@ export default function AuthorizerPage() {
                           </td>
                           <td className={CELL}>
                             {r.formType
-                              ? <span className="rounded-full px-2.5 py-1 text-[11px] font-bold" style={gyn ? { background: '#EEF3FF', color: '#4F46E5' } : { background: '#F1F5F9', color: '#64748B' }}>{gyn ? 'GYN' : 'NON-GYN'}</span>
+                              ? <span className="rounded-full px-2.5 py-1 text-[11px] font-bold" style={gyn ? { background: '#EEF3FF', color: '#4F46E5' } : { background: '#F1F5F9', color: '#475569' }}>{gyn ? 'GYN' : 'NON-GYN'}</span>
                               : <span className="text-sm text-slate-500">—</span>}
                           </td>
                           <td className={CELL}>

@@ -86,7 +86,7 @@ export function ArticleEditor({ article }: { article?: KbArticle }) {
         <div className="flex items-center gap-2.5">
           {editing && (
             <button onClick={() => archive.mutate()} disabled={busy}
-              className="flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] px-4 text-[14px] font-semibold text-[#64748B] hover:bg-[#F1F5F9] disabled:opacity-60">
+              className="flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] px-4 text-[14px] font-semibold text-[#475569] hover:bg-[#F1F5F9] disabled:opacity-60">
               <Archive size={15} /> Archive
             </button>
           )}
@@ -120,21 +120,21 @@ export function ArticleEditor({ article }: { article?: KbArticle }) {
             </select>
           </div>
           <div>
-            <label className={LABEL}>Tags <span className="font-normal text-[#94A3B8]">(comma separated)</span></label>
+            <label className={LABEL}>Tags <span className="font-normal text-[#475569]">(comma separated)</span></label>
             <input className={INPUT} value={tags} onChange={(e) => setTags(e.target.value)} placeholder="onboarding, billing, faq" />
           </div>
           <div className="flex items-end justify-between gap-4">
             <div className="flex-1">
               <label className={LABEL}>Pinned</label>
               <button onClick={() => setIsPinned((v) => !v)} type="button"
-                className={`flex h-10 w-full items-center justify-between rounded-lg border px-3 text-[14px] font-medium ${isPinned ? 'border-[#4F46E5] bg-[#EEF3FF] text-[#4F46E5]' : 'border-[#E2E8F0] text-[#64748B]'}`}>
+                className={`flex h-10 w-full items-center justify-between rounded-lg border px-3 text-[14px] font-medium ${isPinned ? 'border-[#4F46E5] bg-[#EEF3FF] text-[#4F46E5]' : 'border-[#E2E8F0] text-[#475569]'}`}>
                 {isPinned ? 'Pinned to top' : 'Not pinned'}
                 <span className={`inline-block h-2.5 w-2.5 rounded-full ${isPinned ? 'bg-[#4F46E5]' : 'bg-[#CBD5E1]'}`} />
               </button>
             </div>
           </div>
           <div className="md:col-span-2">
-            <label className={LABEL}>Excerpt <span className="font-normal text-[#94A3B8]">(optional summary)</span></label>
+            <label className={LABEL}>Excerpt <span className="font-normal text-[#475569]">(optional summary)</span></label>
             <textarea className={`${INPUT} resize-none`} rows={2} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Short summary shown in listings and search results" />
           </div>
         </div>
@@ -149,7 +149,7 @@ export function ArticleEditor({ article }: { article?: KbArticle }) {
         </div>
         <div className={`${CARD} p-5`}>
           <div className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-[#334155]"><Eye size={15} className="text-[#4F46E5]" /> Live preview</div>
-          {content.trim() ? <Markdown content={content} /> : <div className="py-16 text-center text-[13px] text-[#94A3B8]">Preview appears here as you type.</div>}
+          {content.trim() ? <Markdown content={content} /> : <div className="py-16 text-center text-[13px] text-[#475569]">Preview appears here as you type.</div>}
         </div>
       </div>
     </div>

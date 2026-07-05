@@ -126,7 +126,7 @@ export default function BatchAuthorizePage() {
               <div className="flex flex-col gap-2">
                 {result.skippedRecords.map((s) => (
                   <div key={s.recordId} className="rounded-lg px-3 py-2 text-[13px]" style={{ background: '#F8FAFC' }}>
-                    <span className="font-semibold text-[#334155]">{s.labNo}</span> <span className="text-[#94A3B8]">— {s.reason}</span>
+                    <span className="font-semibold text-[#334155]">{s.labNo}</span> <span className="text-[#475569]">— {s.reason}</span>
                   </div>
                 ))}
               </div>
@@ -134,7 +134,7 @@ export default function BatchAuthorizePage() {
           )}
           <div className="mt-5 flex justify-center gap-3">
             <button onClick={() => router.push('/authorizer?tab=approved')} className="rounded-lg bg-[#4F46E5] px-4 py-2.5 text-[14px] font-semibold text-white">View Authorized Records</button>
-            <button onClick={() => { setResult(null); setSelected(new Set()); setBatchNote(''); refetch(); }} className="rounded-lg border border-[#E2E8F0] px-4 py-2.5 text-[14px] font-semibold text-[#64748B]">Run Another Batch</button>
+            <button onClick={() => { setResult(null); setSelected(new Set()); setBatchNote(''); refetch(); }} className="rounded-lg border border-[#E2E8F0] px-4 py-2.5 text-[14px] font-semibold text-[#475569]">Run Another Batch</button>
           </div>
         </div>
       </div>
@@ -174,7 +174,7 @@ export default function BatchAuthorizePage() {
           {preview && (
             <div className="mt-4 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 text-[13px]">
               <div className="font-bold text-[#0F172A]">{preview.total} eligible case{preview.total === 1 ? '' : 's'} found</div>
-              <div className="mt-1 text-[#64748B]">{preview.gyn} GYN · {preview.nonGyn} NON-GYN</div>
+              <div className="mt-1 text-[#475569]">{preview.gyn} GYN · {preview.nonGyn} NON-GYN</div>
               {preview.total > 50 && <div className="mt-2 rounded-lg px-2 py-1.5 text-[12px] font-semibold" style={{ background: '#FEFCE8', color: '#854D0E' }}>Only first 50 will be authorized per batch.</div>}
             </div>
           )}
@@ -185,7 +185,7 @@ export default function BatchAuthorizePage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13px]">
               <thead>
-                <tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#94A3B8]">
+                <tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]">
                   <th className="px-3 py-2.5"><input type="checkbox" checked={allSelected} onChange={toggleAll} style={{ accentColor: '#4F46E5' }} /></th>
                   <th className="px-3 py-2.5 font-semibold">Lab#</th><th className="px-3 py-2.5 font-semibold">Patient</th>
                   <th className="px-3 py-2.5 font-semibold">Form</th><th className="px-3 py-2.5 font-semibold">Specimen</th>
@@ -194,9 +194,9 @@ export default function BatchAuthorizePage() {
               </thead>
               <tbody>
                 {isFetching ? (
-                  <tr><td colSpan={8} className="px-3 py-12 text-center text-[#94A3B8]">Loading…</td></tr>
+                  <tr><td colSpan={8} className="px-3 py-12 text-center text-[#475569]">Loading…</td></tr>
                 ) : cases.length === 0 ? (
-                  <tr><td colSpan={8} className="px-3 py-12 text-center text-[#94A3B8]">No eligible cases. Adjust filters and preview.</td></tr>
+                  <tr><td colSpan={8} className="px-3 py-12 text-center text-[#475569]">No eligible cases. Adjust filters and preview.</td></tr>
                 ) : cases.map((c) => (
                   <Fragment key={c.id}>
                     <tr className="border-b border-[#F1F5F9]" style={selected.has(c.id) ? { background: '#EEF2FF' } : undefined}>
@@ -209,10 +209,10 @@ export default function BatchAuthorizePage() {
                       </td>
                       <td className="px-3 py-2.5 text-[#334155]">{c.patientName}</td>
                       <td className="px-3 py-2.5"><span className="rounded px-1.5 py-0.5 text-[11px] font-bold" style={c.formType === 'Gynecology' ? { background: '#EEF3FF', color: '#4F46E5' } : { background: '#F0FDF4', color: '#16A34A' }}>{c.formType === 'Gynecology' ? 'GYN' : 'NON-GYN'}</span></td>
-                      <td className="px-3 py-2.5 text-[#64748B]">{c.specimenType ? SPECIMEN_LABELS[c.specimenType] ?? c.specimenType : '—'}</td>
+                      <td className="px-3 py-2.5 text-[#475569]">{c.specimenType ? SPECIMEN_LABELS[c.specimenType] ?? c.specimenType : '—'}</td>
                       <td className="px-3 py-2.5"><PriorityBadge p={c.tatPriority} /></td>
-                      <td className="px-3 py-2.5 text-[#64748B]">{c.narrativePreview.slice(0, 80)}{c.narrative.length > 80 ? '…' : ''}</td>
-                      <td className="px-3 py-2.5"><button onClick={() => setExpanded(expanded === c.id ? null : c.id)} className="text-[#94A3B8]">{expanded === c.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</button></td>
+                      <td className="px-3 py-2.5 text-[#475569]">{c.narrativePreview.slice(0, 80)}{c.narrative.length > 80 ? '…' : ''}</td>
+                      <td className="px-3 py-2.5"><button onClick={() => setExpanded(expanded === c.id ? null : c.id)} className="text-[#475569]">{expanded === c.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</button></td>
                     </tr>
                     {expanded === c.id && (
                       <tr style={{ background: '#F8FAFC' }}>
@@ -226,7 +226,7 @@ export default function BatchAuthorizePage() {
           </div>
           {cases.length > 0 && (
             <div className="border-t border-[#EEF2F7] p-4">
-              <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">Batch Note</label>
+              <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">Batch Note</label>
               <textarea value={batchNote} onChange={(e) => setBatchNote(e.target.value)} rows={2} placeholder="Add a note to all authorized records (optional)" className={inp} />
             </div>
           )}
@@ -256,17 +256,17 @@ export default function BatchAuthorizePage() {
           <div className="w-full max-w-[460px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-[18px] font-bold text-[#0F172A]">Authorize {selected.size} cases?</h3>
-              <button onClick={() => setConfirmOpen(false)} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button>
+              <button onClick={() => setConfirmOpen(false)} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
             </div>
-            <p className="text-[14px] text-[#64748B]">You are about to authorize {selected.size} case{selected.size === 1 ? '' : 's'}.</p>
+            <p className="text-[14px] text-[#475569]">You are about to authorize {selected.size} case{selected.size === 1 ? '' : 's'}.</p>
             <div className="mt-3 rounded-lg bg-[#F8FAFC] p-3 text-[13px] text-[#334155]">
               {selectedCases.slice(0, 5).map((c) => <div key={c.id}>{c.labNo}</div>)}
-              {selected.size > 5 && <div className="text-[#94A3B8]">and {selected.size - 5} more</div>}
+              {selected.size > 5 && <div className="text-[#475569]">and {selected.size - 5} more</div>}
             </div>
-            {batchNote && <div className="mt-3 text-[13px]"><span className="font-semibold text-[#334155]">Batch note:</span> <span className="text-[#64748B]">{batchNote}</span></div>}
+            {batchNote && <div className="mt-3 text-[13px]"><span className="font-semibold text-[#334155]">Batch note:</span> <span className="text-[#475569]">{batchNote}</span></div>}
             <div className="mt-3 text-[13px] font-semibold text-[#B91C1C]">This action cannot be undone.</div>
             <div className="mt-5 flex justify-end gap-2">
-              <button onClick={() => setConfirmOpen(false)} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#64748B]">Cancel</button>
+              <button onClick={() => setConfirmOpen(false)} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#475569]">Cancel</button>
               <button disabled={authorize.isPending} onClick={() => authorize.mutate()} className="rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-40">Authorize All</button>
             </div>
           </div>
@@ -279,5 +279,5 @@ export default function BatchAuthorizePage() {
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] text-[#0F172A] outline-none focus:border-[#4F46E5]';
 const L = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="mb-3"><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">{label}</label>{children}</div>
+  <div className="mb-3"><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">{label}</label>{children}</div>
 );

@@ -35,7 +35,7 @@ function EquipmentModal({ item, onClose }: { item: Equipment | null; onClose: ()
       <div className="flex h-full w-full max-w-[460px] flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-200 p-5">
           <h3 className="text-[18px] font-bold text-[#0F172A]">{item ? 'Edit Equipment' : 'Add Equipment'}</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-5">
           <F label="Name"><input value={name} onChange={(e) => setName(e.target.value)} className={inp} placeholder="e.g. Stainer Unit 2" /></F>
@@ -45,7 +45,7 @@ function EquipmentModal({ item, onClose }: { item: Equipment | null; onClose: ()
           <label className="mt-2 flex items-center gap-2 text-[14px] text-[#334155]"><input type="checkbox" checked={isActive} onChange={(e) => setActive(e.target.checked)} style={{ accentColor: '#4F46E5' }} /> Active</label>
         </div>
         <div className="flex justify-end gap-2 border-t border-slate-200 p-4">
-          <button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#64748B]">Cancel</button>
+          <button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#475569]">Cancel</button>
           <button disabled={!name.trim() || save.isPending} onClick={() => save.mutate()} className="rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-40">Save</button>
         </div>
       </div>
@@ -54,7 +54,7 @@ function EquipmentModal({ item, onClose }: { item: Equipment | null; onClose: ()
   );
 }
 const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="mb-3.5"><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">{label}</label>{children}</div>
+  <div className="mb-3.5"><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">{label}</label>{children}</div>
 );
 
 export default function EquipmentPage() {
@@ -98,7 +98,7 @@ export default function EquipmentPage() {
       <div className="overflow-hidden rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
         <table className="w-full text-left text-[14px]">
           <thead>
-            <tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#94A3B8]">
+            <tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]">
               <th className="px-4 py-3 font-semibold">Name</th><th className="px-4 py-3 font-semibold">Type</th>
               <th className="px-4 py-3 font-semibold">Serial</th><th className="px-4 py-3 font-semibold">Last Service</th>
               <th className="px-4 py-3 font-semibold">Checks</th><th className="px-4 py-3 font-semibold">Status</th>
@@ -107,16 +107,16 @@ export default function EquipmentPage() {
           </thead>
           <tbody>
             {list.length === 0 ? (
-              <tr><td colSpan={7} className="px-4 py-12 text-center text-[#94A3B8]">No equipment yet.</td></tr>
+              <tr><td colSpan={7} className="px-4 py-12 text-center text-[#475569]">No equipment yet.</td></tr>
             ) : list.map((e) => (
               <tr key={e.id} className="border-b border-[#F1F5F9]" style={e.isActive ? undefined : { opacity: 0.55 }}>
                 <td className="px-4 py-3 font-semibold text-[#0F172A]">{e.name}</td>
                 <td className="px-4 py-3 text-[#334155]">{e.type}</td>
-                <td className="px-4 py-3 text-[#64748B]">{e.serialNumber ?? '—'}</td>
-                <td className="px-4 py-3 text-[#64748B]">{e.lastServiceDate ? new Date(e.lastServiceDate).toLocaleDateString() : '—'}</td>
-                <td className="px-4 py-3 text-[#64748B]">{e._count?.qcChecks ?? 0}</td>
+                <td className="px-4 py-3 text-[#475569]">{e.serialNumber ?? '—'}</td>
+                <td className="px-4 py-3 text-[#475569]">{e.lastServiceDate ? new Date(e.lastServiceDate).toLocaleDateString() : '—'}</td>
+                <td className="px-4 py-3 text-[#475569]">{e._count?.qcChecks ?? 0}</td>
                 <td className="px-4 py-3">
-                  <span className="rounded-full px-2.5 py-1 text-[12px] font-semibold" style={e.isActive ? { background: '#DCFCE7', color: '#16A34A' } : { background: '#F1F5F9', color: '#94A3B8' }}>{e.isActive ? 'Active' : 'Inactive'}</span>
+                  <span className="rounded-full px-2.5 py-1 text-[12px] font-semibold" style={e.isActive ? { background: '#DCFCE7', color: '#16A34A' } : { background: '#F1F5F9', color: '#475569' }}>{e.isActive ? 'Active' : 'Inactive'}</span>
                 </td>
                 {canEdit && (
                   <td className="px-4 py-3">

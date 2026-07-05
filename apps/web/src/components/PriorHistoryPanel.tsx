@@ -45,7 +45,7 @@ const STATUS: Record<string, { bg: string; color: string }> = {
   Resulted: { bg: '#EEF2FF', color: '#4F46E5' }, Completed: { bg: '#EEF2FF', color: '#4F46E5' },
   Failed: { bg: '#FEF2F2', color: '#DC2626' }, Disabled: { bg: '#FEF2F2', color: '#DC2626' },
 };
-const statusStyle = (s: string) => STATUS[s] ?? { bg: '#F1F5F9', color: '#64748B' };
+const statusStyle = (s: string) => STATUS[s] ?? { bg: '#F1F5F9', color: '#475569' };
 const fmtDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—');
 const ageFrom = (dob?: string | null) => {
   if (!dob) return null;

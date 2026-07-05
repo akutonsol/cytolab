@@ -15,7 +15,7 @@ const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 // infinite-scroll fetchFn (which depends on the filtered array identity).
 const NO_ROWS: any[] = [];
 const STATUS: Record<string, { bg: string; fg: string }> = {
-  Draft: { bg: '#F1F5F9', fg: '#64748B' }, Submitted: { bg: '#E0F2FE', fg: '#0284C7' }, UnderReview: { bg: '#EEF2FF', fg: '#4F46E5' },
+  Draft: { bg: '#F1F5F9', fg: '#475569' }, Submitted: { bg: '#E0F2FE', fg: '#0284C7' }, UnderReview: { bg: '#EEF2FF', fg: '#4F46E5' },
   Approved: { bg: '#DCFCE7', fg: '#16A34A' }, Rejected: { bg: '#FEE2E2', fg: '#DC2626' }, PayrollLocked: { bg: '#F1F5F9', fg: '#334155' },
 };
 

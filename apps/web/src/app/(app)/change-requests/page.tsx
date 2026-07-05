@@ -111,7 +111,7 @@ export default function ChangeRequestsPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-[28px] font-bold tracking-tight text-[#0F172A]">Client Requests</h1>
-          <p className="mt-1 text-[14px] text-[#64748B]">Messages from referring clients via the portal</p>
+          <p className="mt-1 text-[14px] text-[#475569]">Messages from referring clients via the portal</p>
         </div>
         <span className="rounded-full px-3.5 py-1.5 text-[13px] font-bold" style={openCount > 0 ? { background: '#FEF2F2', color: '#DC2626' } : { background: '#F0FDF4', color: '#16A34A' }}>
           {openCount} Open
@@ -125,7 +125,7 @@ export default function ChangeRequestsPage() {
             <span style={{ background: `${k.color}1A`, color: k.color }} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl"><k.icon size={20} /></span>
             <div>
               <div className="text-[26px] font-bold leading-none" style={{ color: k.color === '#4F46E5' ? '#0F172A' : k.color }}>{k.value}</div>
-              <div className="mt-1 text-[13px] font-medium text-[#64748B]">{k.label}</div>
+              <div className="mt-1 text-[13px] font-medium text-[#475569]">{k.label}</div>
             </div>
           </div>
         ))}
@@ -140,13 +140,13 @@ export default function ChangeRequestsPage() {
             <div className="inline-flex rounded-lg bg-[#F5F4F0] p-1">
               {FILTERS.map(([v, l]) => (
                 <button key={v} onClick={() => setFilter(v)}
-                  className={`rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors ${filter === v ? 'bg-white text-[#4F46E5] shadow-sm' : 'text-[#64748B] hover:text-[#0F172A]'}`}>{l}</button>
+                  className={`rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors ${filter === v ? 'bg-white text-[#4F46E5] shadow-sm' : 'text-[#475569] hover:text-[#0F172A]'}`}>{l}</button>
               ))}
             </div>
           </div>
           <div className="premium-scroll flex-1 overflow-y-auto">
             {shown.length === 0 ? (
-              <div className="px-5 py-12 text-center text-[13px] text-[#94A3B8]">No requests yet</div>
+              <div className="px-5 py-12 text-center text-[13px] text-[#475569]">No requests yet</div>
             ) : shown.map((r) => {
               const on = r.id === selectedId;
               const last = r.messages?.[r.messages.length - 1];
@@ -158,10 +158,10 @@ export default function ChangeRequestsPage() {
                     <span className="truncate text-[14px] font-semibold text-[#0F172A]">{r.subject}</span>
                     <StatusBadge status={r.status} />
                   </div>
-                  <div className="text-[12px] text-[#64748B]">{clientName(r.client)}</div>
+                  <div className="text-[12px] text-[#475569]">{clientName(r.client)}</div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-[12px] text-[#94A3B8]">{last?.body ?? 'No messages'}</span>
-                    <span className="shrink-0 text-[11px] text-[#94A3B8]">{relTime(r.updatedAt)}</span>
+                    <span className="truncate text-[12px] text-[#475569]">{last?.body ?? 'No messages'}</span>
+                    <span className="shrink-0 text-[11px] text-[#475569]">{relTime(r.updatedAt)}</span>
                   </div>
                 </button>
               );
@@ -175,7 +175,7 @@ export default function ChangeRequestsPage() {
             <div className="grid flex-1 place-items-center">
               <div className="flex flex-col items-center gap-3 text-center">
                 <MessageSquare size={48} className="text-[#E2E8F0]" />
-                <div className="text-[14px] text-[#94A3B8]">Select a request to view</div>
+                <div className="text-[14px] text-[#475569]">Select a request to view</div>
               </div>
             </div>
           ) : (
@@ -202,7 +202,7 @@ export default function ChangeRequestsPage() {
                     {RESOLVED_SET.includes(detail.status) && <StatusBadge status={detail.status} />}
                   </div>
                 </div>
-                <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[12px] text-[#64748B]">
+                <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[12px] text-[#475569]">
                   <span>{clientName(detail.client)}</span>
                   <span className="text-[#CBD5E1]">·</span>
                   <span>{TYPE_LABEL[detail.type] ?? detail.type}</span>
@@ -220,7 +220,7 @@ export default function ChangeRequestsPage() {
                   if (staff) {
                     return (
                       <div key={m.id} className="mb-4 flex flex-col items-end">
-                        <div className="mb-1 text-[12px] text-[#94A3B8]">You · {fmtTime(m.createdAt)}</div>
+                        <div className="mb-1 text-[12px] text-[#475569]">You · {fmtTime(m.createdAt)}</div>
                         <div className="max-w-[75%] rounded-[16px] bg-[#4F46E5] px-4 py-2.5 text-[14px] leading-relaxed text-white">{m.body}</div>
                       </div>
                     );
@@ -230,7 +230,7 @@ export default function ChangeRequestsPage() {
                     <div key={m.id} className="mb-4 flex items-start gap-2.5">
                       <span className="mt-5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#E5E3DC] text-[11px] font-bold text-[#475569]">{initialsOf(name)}</span>
                       <div className="min-w-0">
-                        <div className="mb-1 text-[12px] text-[#94A3B8]">{name} · {fmtTime(m.createdAt)}</div>
+                        <div className="mb-1 text-[12px] text-[#475569]">{name} · {fmtTime(m.createdAt)}</div>
                         <div className="max-w-[75%] rounded-[16px] bg-[#F1F0EA] px-4 py-2.5 text-[14px] leading-relaxed text-[#0F172A]">{m.body}</div>
                       </div>
                     </div>
@@ -249,7 +249,7 @@ export default function ChangeRequestsPage() {
                   </div>
                 </div>
               ) : (
-                <div className="border-t border-[#F1F0EA] px-5 py-4 text-center text-[13px] text-[#94A3B8]">This request is closed.</div>
+                <div className="border-t border-[#F1F0EA] px-5 py-4 text-center text-[13px] text-[#475569]">This request is closed.</div>
               )}
             </>
           )}

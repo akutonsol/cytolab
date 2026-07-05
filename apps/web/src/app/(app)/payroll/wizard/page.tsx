@@ -86,7 +86,7 @@ export default function PayrollWizardPage() {
       <div className="py-8">
         {/* Header + progress */}
         <div className="mb-6">
-          <button onClick={() => router.push('/payroll')} className="mb-3 flex items-center gap-1.5 text-[13px] font-medium text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={15} /> Payroll</button>
+          <button onClick={() => router.push('/payroll')} className="mb-3 flex items-center gap-1.5 text-[13px] font-medium text-[#475569] hover:text-[#0F172A]"><ArrowLeft size={15} /> Payroll</button>
           <h1 className="text-3xl font-bold text-charcoal-heading">Run Salary Payroll</h1>
           <div className="mt-4 flex items-center gap-2">
             {STEPS.map((s, i) => (

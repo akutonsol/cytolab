@@ -104,7 +104,7 @@ export function BoolPill({ on, onText = 'Yes', offText = 'No' }: { on: boolean; 
   return on ? (
     <Badge bg="#F0FDF4" color="#16A34A">{onText}</Badge>
   ) : (
-    <Badge bg="#F1F5F9" color="#64748B">{offText}</Badge>
+    <Badge bg="#F1F5F9" color="#475569">{offText}</Badge>
   );
 }
 

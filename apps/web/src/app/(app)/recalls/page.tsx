@@ -23,7 +23,7 @@ function StatusBadge({ s }: { s: RecallStatus }) {
   return <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: m.bg, color: m.fg }}>{s === 'Overdue' && <AlertTriangle size={11} />}{m.label}</span>;
 }
 function Kpi({ label, value, fg = '#0F172A' }: { label: string; value: number; fg?: string }) {
-  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#64748B]">{label}</div></div>;
+  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></div>;
 }
 
 // ─── Detail slide-over ───────────────────────────────────────────────────────
@@ -47,8 +47,8 @@ function RecallDetail({ id, onClose }: { id: string; onClose: () => void }) {
     <div className="fixed inset-0 flex justify-end" style={{ zIndex: 2100, background: 'rgba(15,23,42,0.55)' }} onClick={onClose}>
       <div className="flex h-full w-full max-w-[600px] flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between border-b border-slate-200 p-5">
-          <div><h3 className="text-[18px] font-bold text-[#0F172A]">{r?.patientName ?? 'Loading…'}</h3>{r && <p className="mt-0.5 text-[13px] text-[#64748B]">{r.patient?.registrationNo ?? ''} · {r.triggerDiagnosis} recall</p>}</div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button>
+          <div><h3 className="text-[18px] font-bold text-[#0F172A]">{r?.patientName ?? 'Loading…'}</h3>{r && <p className="mt-0.5 text-[13px] text-[#475569]">{r.patient?.registrationNo ?? ''} · {r.triggerDiagnosis} recall</p>}</div>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
         </div>
         {r && (
           <div className="flex-1 overflow-y-auto p-5">
@@ -66,7 +66,7 @@ function RecallDetail({ id, onClose }: { id: string; onClose: () => void }) {
 
             {/* Timeline */}
             <div className="mt-5">
-              <div className="mb-2 text-[12px] font-bold uppercase tracking-wide text-[#94A3B8]">Timeline</div>
+              <div className="mb-2 text-[12px] font-bold uppercase tracking-wide text-[#475569]">Timeline</div>
               <div className="flex flex-col gap-2 text-[13px]">
                 <TL label="Created" at={r.createdAt} on />
                 <TL label="Due" at={r.dueDate} on={r.daysUntilDue <= 0} />
@@ -88,8 +88,8 @@ function RecallDetail({ id, onClose }: { id: string; onClose: () => void }) {
                     </FeatureGate>
                   )}
                   <button onClick={() => act.mutate({ ep: 'notify-client' })} className="rounded-lg bg-[#4F46E5] px-3.5 py-2 text-[13px] font-semibold text-white">Notify Client</button>
-                  <button onClick={() => act.mutate({ ep: 'cancel', body: { notes } })} className="rounded-lg border border-[#E2E8F0] px-3.5 py-2 text-[13px] font-semibold text-[#64748B]">Cancel</button>
-                  <button onClick={() => act.mutate({ ep: 'decline', body: { notes } })} className="rounded-lg border border-[#E2E8F0] px-3.5 py-2 text-[13px] font-semibold text-[#64748B]">Decline</button>
+                  <button onClick={() => act.mutate({ ep: 'cancel', body: { notes } })} className="rounded-lg border border-[#E2E8F0] px-3.5 py-2 text-[13px] font-semibold text-[#475569]">Cancel</button>
+                  <button onClick={() => act.mutate({ ep: 'decline', body: { notes } })} className="rounded-lg border border-[#E2E8F0] px-3.5 py-2 text-[13px] font-semibold text-[#475569]">Decline</button>
                 </div>
               </div>
             )}
@@ -108,9 +108,9 @@ function RecallDetail({ id, onClose }: { id: string; onClose: () => void }) {
     document.body,
   );
 }
-const Info = ({ label, value }: { label: string; value: React.ReactNode }) => (<div><div className="text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">{label}</div><div className="mt-0.5 text-[#0F172A]">{value}</div></div>);
+const Info = ({ label, value }: { label: string; value: React.ReactNode }) => (<div><div className="text-[11px] font-semibold uppercase tracking-wide text-[#475569]">{label}</div><div className="mt-0.5 text-[#0F172A]">{value}</div></div>);
 const TL = ({ label, at, on }: { label: string; at: string | null; on: boolean }) => (
-  <div className="flex items-center gap-3"><span className="h-2.5 w-2.5 rounded-full" style={{ background: on ? '#16A34A' : '#CBD5E1' }} /><span className="text-[#334155]">{label}</span><span className="ml-auto text-[12px] text-[#94A3B8]">{at ? shortDate(at) : '—'}</span></div>
+  <div className="flex items-center gap-3"><span className="h-2.5 w-2.5 rounded-full" style={{ background: on ? '#16A34A' : '#CBD5E1' }} /><span className="text-[#334155]">{label}</span><span className="ml-auto text-[12px] text-[#475569]">{at ? shortDate(at) : '—'}</span></div>
 );
 
 // ─── Generate List modal ─────────────────────────────────────────────────────
@@ -124,25 +124,25 @@ function GenerateListModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2200, background: 'rgba(15,23,42,0.55)' }} onClick={onClose}>
       <style dangerouslySetInnerHTML={{ __html: '@media print { body * { visibility: hidden !important; } .recall-print-area, .recall-print-area * { visibility: visible !important; } .recall-print-area { position: absolute !important; left: 0; top: 0; width: 100%; } @page { margin: 16mm; } }' }} />
       <div className="flex max-h-[88vh] w-full max-w-[720px] flex-col rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-slate-200 p-5"><h3 className="text-[18px] font-bold text-[#0F172A]">Generate Recall List</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button></div>
+        <div className="flex items-center justify-between border-b border-slate-200 p-5"><h3 className="text-[18px] font-bold text-[#0F172A]">Generate Recall List</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button></div>
         <div className="flex flex-wrap items-center gap-3 border-b border-[#EEF2F7] p-4">
           <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 rounded-lg border border-[#E2E8F0] px-2 text-[13px]"><option value="">Due + Overdue</option>{['Pending', 'Due', 'Overdue', 'Completed'].map((s) => <option key={s} value={s}>{s}</option>)}</select>
-          <label className="flex items-center gap-2 text-[13px] text-[#64748B]">Due before<input type="date" value={dueBefore} onChange={(e) => setDueBefore(e.target.value)} className="h-9 rounded-lg border border-[#E2E8F0] px-2 text-[13px]" /></label>
+          <label className="flex items-center gap-2 text-[13px] text-[#475569]">Due before<input type="date" value={dueBefore} onChange={(e) => setDueBefore(e.target.value)} className="h-9 rounded-lg border border-[#E2E8F0] px-2 text-[13px]" /></label>
           <span className="ml-auto text-[13px] font-semibold text-[#334155]">{rows.length} patients</span>
         </div>
         <div className="recall-print-area flex-1 overflow-y-auto p-5">
           <div className="mb-3 hidden text-[18px] font-bold text-[#0F172A] print:block">Patient Recall List</div>
           <table className="w-full text-left text-[13px]">
-            <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#94A3B8]"><th className="px-3 py-2 font-semibold">Patient</th><th className="px-3 py-2 font-semibold">DOB</th><th className="px-3 py-2 font-semibold">Last Result</th><th className="px-3 py-2 font-semibold">Due Date</th><th className="px-3 py-2 font-semibold">Client</th><th className="px-3 py-2 font-semibold">Overdue</th></tr></thead>
+            <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]"><th className="px-3 py-2 font-semibold">Patient</th><th className="px-3 py-2 font-semibold">DOB</th><th className="px-3 py-2 font-semibold">Last Result</th><th className="px-3 py-2 font-semibold">Due Date</th><th className="px-3 py-2 font-semibold">Client</th><th className="px-3 py-2 font-semibold">Overdue</th></tr></thead>
             <tbody>
-              {rows.length === 0 ? <tr><td colSpan={6} className="px-3 py-8 text-center text-[#94A3B8]">No patients match.</td></tr> : rows.map((r, i) => (
-                <tr key={i} className="border-b border-[#F1F5F9]"><td className="px-3 py-2 font-semibold text-[#0F172A]">{r.patientName}</td><td className="px-3 py-2 text-[#64748B]">{shortDate(r.dob)}</td><td className="px-3 py-2 text-[#334155]">{r.lastResult}</td><td className="px-3 py-2 text-[#334155]">{shortDate(r.dueDate)}</td><td className="px-3 py-2 text-[#64748B]">{r.clientName}</td><td className="px-3 py-2" style={{ color: r.daysPastDue ? '#B91C1C' : '#94A3B8' }}>{r.daysPastDue ? `${r.daysPastDue}d` : '—'}</td></tr>
+              {rows.length === 0 ? <tr><td colSpan={6} className="px-3 py-8 text-center text-[#475569]">No patients match.</td></tr> : rows.map((r, i) => (
+                <tr key={i} className="border-b border-[#F1F5F9]"><td className="px-3 py-2 font-semibold text-[#0F172A]">{r.patientName}</td><td className="px-3 py-2 text-[#475569]">{shortDate(r.dob)}</td><td className="px-3 py-2 text-[#334155]">{r.lastResult}</td><td className="px-3 py-2 text-[#334155]">{shortDate(r.dueDate)}</td><td className="px-3 py-2 text-[#475569]">{r.clientName}</td><td className="px-3 py-2" style={{ color: r.daysPastDue ? '#B91C1C' : '#475569' }}>{r.daysPastDue ? `${r.daysPastDue}d` : '—'}</td></tr>
               ))}
             </tbody>
           </table>
         </div>
         <div className="flex justify-end gap-2 border-t border-slate-200 p-4">
-          <button onClick={copy} className="flex items-center gap-1.5 rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#64748B]"><ClipboardCopy size={15} /> Copy List</button>
+          <button onClick={copy} className="flex items-center gap-1.5 rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#475569]"><ClipboardCopy size={15} /> Copy List</button>
           <button onClick={() => window.print()} className="flex items-center gap-1.5 rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white"><Download size={15} /> Export as PDF</button>
         </div>
       </div>
@@ -169,14 +169,14 @@ function ManualRecallModal({ onClose }: { onClose: () => void }) {
   return createPortal(
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2200, background: 'rgba(15,23,42,0.55)' }} onClick={onClose}>
       <div className="w-full max-w-[460px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-[18px] font-bold text-[#0F172A]">Manual Recall</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-[18px] font-bold text-[#0F172A]">Manual Recall</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button></div>
         <div className="flex flex-col gap-3">
           <select value={patientId} onChange={(e) => { setPatientId(e.target.value); setRecordId(''); }} className={inp}><option value="">Select patient…</option>{(patientsPage?.data ?? []).map((p: any) => <option key={p.id} value={p.id}>{p.firstName} {p.lastName}{p.registrationNo ? ` (${p.registrationNo})` : ''}</option>)}</select>
           <select value={triggerRecordId} onChange={(e) => setRecordId(e.target.value)} disabled={!patientId} className={inp}><option value="">{patientId ? 'Select triggering record…' : 'Select a patient first'}</option>{(recsPage?.data ?? []).map((r: any) => <option key={r.id} value={r.id}>{r.labNumber ?? r.identifier} · {new Date(r.specimenDate ?? r.createdAt).toLocaleDateString()}</option>)}</select>
-          <label className="flex items-center gap-2 text-[13px] text-[#64748B]">Recall interval<input type="number" min={1} max={120} value={intervalMonths} onChange={(e) => setInterval(Number(e.target.value))} className={inp} />months</label>
+          <label className="flex items-center gap-2 text-[13px] text-[#475569]">Recall interval<input type="number" min={1} max={120} value={intervalMonths} onChange={(e) => setInterval(Number(e.target.value))} className={inp} />months</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Notes (optional)" className={inp} />
         </div>
-        <div className="mt-5 flex justify-end gap-2"><button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#64748B]">Cancel</button><button disabled={!patientId || !triggerRecordId || save.isPending} onClick={() => save.mutate()} className="rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-40">Create Recall</button></div>
+        <div className="mt-5 flex justify-end gap-2"><button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#475569]">Cancel</button><button disabled={!patientId || !triggerRecordId || save.isPending} onClick={() => save.mutate()} className="rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-40">Create Recall</button></div>
       </div>
     </div>,
     document.body,
@@ -228,19 +228,19 @@ export default function RecallsPage() {
 
       <div className="mb-4 flex flex-wrap gap-1 rounded-full bg-[#F1F5F9] p-1" style={{ width: 'fit-content' }}>
         {FILTER_TABS.map((t) => (
-          <button key={t} onClick={() => setTab(t)} className="rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors" style={tab === t ? { background: '#fff', color: '#0F172A', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' } : { color: '#64748B' }}>{t === 'all' ? 'All' : t}</button>
+          <button key={t} onClick={() => setTab(t)} className="rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors" style={tab === t ? { background: '#fff', color: '#0F172A', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' } : { color: '#475569' }}>{t === 'all' ? 'All' : t}</button>
         ))}
       </div>
 
       <div className={`${CARD} overflow-hidden`}>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[13px]">
-            <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#94A3B8]">
+            <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]">
               <th className="px-3 py-2.5 font-semibold">Patient</th><th className="px-3 py-2.5 font-semibold">Last Result</th><th className="px-3 py-2.5 font-semibold">Diagnosis</th>
               <th className="px-3 py-2.5 font-semibold">Due Date</th><th className="px-3 py-2.5 font-semibold">Countdown</th><th className="px-3 py-2.5 font-semibold">Client</th><th className="px-3 py-2.5 font-semibold">Status</th>
             </tr></thead>
             <tbody>
-              {recalls.length === 0 ? <tr><td colSpan={7} className="px-3 py-12 text-center text-[#94A3B8]">No recalls.</td></tr> : recalls.map((r) => {
+              {recalls.length === 0 ? <tr><td colSpan={7} className="px-3 py-12 text-center text-[#475569]">No recalls.</td></tr> : recalls.map((r) => {
                 const strike = r.status === 'Cancelled' || r.status === 'Declined';
                 return (
                   <tr key={r.id} onClick={() => setDetailId(r.id)} className="cursor-pointer border-b border-[#F1F5F9] transition-colors hover:bg-[#F8FAFC]" style={{ background: STATUS_META[r.status].rowBg }}>
@@ -249,7 +249,7 @@ export default function RecallsPage() {
                     <td className="px-3 py-2.5 text-[#334155]">{r.triggerDiagnosis}</td>
                     <td className="px-3 py-2.5" style={{ color: dueColor(r.daysUntilDue), textDecoration: strike ? 'line-through' : undefined }}>{shortDate(r.dueDate)}</td>
                     <td className="px-3 py-2.5 font-semibold" style={{ color: dueColor(r.daysUntilDue) }}>{['Completed', 'Cancelled', 'Declined'].includes(r.status) ? '—' : dueLabel(r.daysUntilDue)}</td>
-                    <td className="px-3 py-2.5 text-[#64748B]">{r.clientName}</td>
+                    <td className="px-3 py-2.5 text-[#475569]">{r.clientName}</td>
                     <td className="px-3 py-2.5"><StatusBadge s={r.status} /></td>
                   </tr>
                 );

@@ -53,13 +53,13 @@ export function PrintLabelsModal({ recordIds, onClose }: Props) {
       <div className="flex max-h-[90vh] w-full max-w-[720px] flex-col rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-200 p-5">
           <h3 className="flex items-center gap-2 text-[18px] font-bold text-[#0F172A]"><Printer size={20} className="text-[#4F46E5]" /> Print Slide Labels</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
           {/* Format selector */}
           <div className="mb-4">
-            <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">Label Format</div>
+            <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-[#475569]">Label Format</div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {LABEL_FORMATS.map((f) => (
                 <label key={f.id} className="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-[13px]"
@@ -73,21 +73,21 @@ export function PrintLabelsModal({ recordIds, onClose }: Props) {
 
           {/* Copies */}
           <div className="mb-4 flex items-center gap-3">
-            <span className="text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">Copies per record</span>
+            <span className="text-[12px] font-semibold uppercase tracking-wide text-[#475569]">Copies per record</span>
             <div className="flex items-center gap-2">
-              <button onClick={() => setCopies((c) => Math.max(1, c - 1))} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E2E8F0] text-[#64748B]"><Minus size={14} /></button>
+              <button onClick={() => setCopies((c) => Math.max(1, c - 1))} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E2E8F0] text-[#475569]"><Minus size={14} /></button>
               <span className="w-6 text-center text-[15px] font-bold text-[#0F172A]">{copies}</span>
-              <button onClick={() => setCopies((c) => Math.min(5, c + 1))} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E2E8F0] text-[#64748B]"><Plus size={14} /></button>
+              <button onClick={() => setCopies((c) => Math.min(5, c + 1))} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E2E8F0] text-[#475569]"><Plus size={14} /></button>
             </div>
           </div>
 
           {/* Preview */}
           <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-            <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">
+            <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-[#475569]">
               {single ? 'Preview (actual size)' : `Printing ${expanded.length} labels (${copies} copies each) — showing first ${previewLabels.length}`}
             </div>
             {isLoading ? (
-              <div className="py-8 text-center text-[13px] text-[#94A3B8]">Loading…</div>
+              <div className="py-8 text-center text-[13px] text-[#475569]">Loading…</div>
             ) : (
               <div className="flex flex-wrap items-start gap-3">
                 {previewLabels.map((l, i) => <LabelPreview key={i} label={l} format={format} />)}
@@ -97,7 +97,7 @@ export function PrintLabelsModal({ recordIds, onClose }: Props) {
         </div>
 
         <div className="flex justify-end gap-2 border-t border-slate-200 p-4">
-          <button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#64748B]">Cancel</button>
+          <button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#475569]">Cancel</button>
           <button disabled={isLoading || expanded.length === 0} onClick={() => window.print()} className="rounded-lg border border-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-[#4F46E5] disabled:opacity-40">Download PDF</button>
           <button disabled={isLoading || expanded.length === 0} onClick={() => window.print()} className="flex items-center gap-2 rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-40"><Printer size={16} /> Print</button>
         </div>

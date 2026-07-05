@@ -38,7 +38,7 @@ const STATUS: Record<string, { bg: string; color: string }> = {
   Processing: { bg: '#EEF2FF', color: '#4F46E5' }, Resulted: { bg: '#EEF2FF', color: '#4F46E5' }, Partial: { bg: '#EEF2FF', color: '#4F46E5' },
   OnHold: { bg: '#FEF3C7', color: '#92400E' }, Failed: { bg: '#FEF2F2', color: '#DC2626' },
 };
-const statusTint = (s?: string) => (s && STATUS[s]) || { bg: '#F5F4F0', color: '#64748B' };
+const statusTint = (s?: string) => (s && STATUS[s]) || { bg: '#F5F4F0', color: '#475569' };
 
 function readRecent(): string[] {
   try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch { return []; }
@@ -118,12 +118,12 @@ function SearchWorkspace() {
         {/* Search bar */}
         <div className="flex h-14 items-center gap-3 rounded-full bg-white px-5 transition-all focus-within:!border-[#4F46E5]"
           style={{ border: '2px solid transparent', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
-          <Search size={20} className="shrink-0 text-[#94A3B8]" />
+          <Search size={20} className="shrink-0 text-[#475569]" />
           <input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Escape') clear(); }}
             placeholder="Search patients, records, clients..."
-            className="w-full border-none bg-transparent text-[16px] text-[#0F172A] outline-none placeholder:text-[#94A3B8]" />
-          {isFetching ? <Loader2 size={18} className="shrink-0 animate-spin text-[#94A3B8]" />
-            : text ? <button onClick={clear} aria-label="Clear"><X size={18} className="shrink-0 text-[#94A3B8] hover:text-[#0F172A]" /></button>
+            className="w-full border-none bg-transparent text-[16px] text-[#0F172A] outline-none placeholder:text-[#475569]" />
+          {isFetching ? <Loader2 size={18} className="shrink-0 animate-spin text-[#475569]" />
+            : text ? <button onClick={clear} aria-label="Clear"><X size={18} className="shrink-0 text-[#475569] hover:text-[#0F172A]" /></button>
             : null}
         </div>
 
@@ -140,9 +140,9 @@ function SearchWorkspace() {
                   {recent.map((r) => (
                     <span key={r} className="inline-flex items-center gap-2 rounded-full border border-outline-variant/30 bg-white px-3 py-1.5">
                       <button onClick={() => setText(r)} className="flex items-center gap-1.5 font-body-sm text-body-sm text-on-surface">
-                        <Clock size={13} className="text-[#94A3B8]" /> {r}
+                        <Clock size={13} className="text-[#475569]" /> {r}
                       </button>
-                      <button onClick={() => removeRecent(r)} aria-label="Remove"><X size={12} className="text-[#94A3B8] hover:text-[#0F172A]" /></button>
+                      <button onClick={() => removeRecent(r)} aria-label="Remove"><X size={12} className="text-[#475569] hover:text-[#0F172A]" /></button>
                     </span>
                   ))}
                 </div>

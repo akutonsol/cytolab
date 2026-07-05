@@ -75,8 +75,8 @@ export const DictationButton = forwardRef<DictationButtonHandle, Props>(function
         ? 'Listening… click to stop'
         : 'Click to dictate';
 
-  let color = '#64748B'; // slate idle
-  if (!isSupported) color = '#94A3B8';
+  let color = '#475569'; // slate idle
+  if (!isSupported) color = '#475569';
   else if (denied) color = '#DC2626';
   else if (isListening) color = '#4F46E5';
 

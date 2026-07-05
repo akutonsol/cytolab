@@ -41,7 +41,7 @@ const STATUS: Record<string, { bg: string; fg: string }> = {
   Approved: { bg: '#DCFCE7', fg: '#16A34A' },
   Billed: { bg: '#F5F3FF', fg: '#7C3AED' },
   Paid: { bg: '#DCFCE7', fg: '#15803D' },
-  OnHold: { bg: '#F1F5F9', fg: '#64748B' },
+  OnHold: { bg: '#F1F5F9', fg: '#475569' },
   Disabled: { bg: '#F3F4F6', fg: '#6B7280' },
   Failed: { bg: '#FEF2F2', fg: '#DC2626' },
   Viewed: { bg: '#F0FDFA', fg: '#0D9488' },
@@ -62,9 +62,9 @@ const PROGRESS_MAP: Record<string, number> = {
 const INDIGO = '#4F46E5';
 // Activity-dot colour per the reference spec.
 const DOT: Record<string, string> = {
-  Pending: '#94A3B8', Submitted: '#94A3B8', Processing: '#4F46E5', Partial: '#4F46E5',
+  Pending: '#475569', Submitted: '#475569', Processing: '#4F46E5', Partial: '#4F46E5',
   Completed: '#22C55E', Resulted: '#4F46E5', Approved: '#22C55E', Billed: '#22C55E',
-  Paid: '#22C55E', Failed: '#EF4444', Disabled: '#EF4444', OnHold: '#94A3B8', Viewed: '#22C55E',
+  Paid: '#22C55E', Failed: '#EF4444', Disabled: '#EF4444', OnHold: '#475569', Viewed: '#22C55E',
 };
 
 const specLabel = (t?: string) => (t ? (SPECIMEN_LABELS as any)[t] ?? t : '—');
@@ -184,7 +184,7 @@ function LifecycleRings({ status }: { status: string }) {
         <text x={CENTER} y={CENTER - 12} textAnchor="middle" fontSize="42" fontWeight="800" fill="#0F172A" fontFamily="Geist, sans-serif">
           {Math.round(rings.reduce((s, r) => s + r.pct, 0) / rings.length)}%
         </text>
-        <text x={CENTER} y={CENTER + 22} textAnchor="middle" fontSize="15" fontWeight="600" fill="#94A3B8" fontFamily="Geist, sans-serif" letterSpacing="0.08em">OVERALL</text>
+        <text x={CENTER} y={CENTER + 22} textAnchor="middle" fontSize="15" fontWeight="600" fill="#475569" fontFamily="Geist, sans-serif" letterSpacing="0.08em">OVERALL</text>
       </svg>
 
       {/* Data points curved around the outer ring (right-side arc) */}
@@ -195,7 +195,7 @@ function LifecycleRings({ status }: { status: string }) {
         return (
           <div key={i} style={{ position: 'absolute', left: x, top: y, transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 10, opacity: ring.pct === 0 ? 0.45 : 1, whiteSpace: 'nowrap' }}>
             <div style={{ width: 16, height: 16, borderRadius: '50%', background: ring.pct > 0 ? ring.color : ring.ghostColor, flexShrink: 0, boxShadow: ring.isCurrent ? `0 0 10px ${ring.color}` : 'none', animation: ring.isCurrent ? 'ringPulse 2s ease-in-out infinite' : undefined }} />
-            <div style={{ fontSize: 18, fontWeight: 600, color: ring.pct > 0 ? '#0F172A' : '#94A3B8' }}>{ring.label}</div>
+            <div style={{ fontSize: 18, fontWeight: 600, color: ring.pct > 0 ? '#0F172A' : '#475569' }}>{ring.label}</div>
             <div style={{ fontSize: 18, fontWeight: 700, color: ring.isComplete ? ring.color : ring.isCurrent ? ring.color : '#CBD5E1' }}>
               {ring.isComplete ? '✓' : ring.isCurrent ? '●' : '—'}
             </div>
@@ -346,7 +346,7 @@ export default function RecordDetailPage() {
               <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#E8EDF7] text-[#4F46E5]"><Microscope size={22} /></span>
               <div>
                 <div className="text-[17px] font-semibold italic text-[#1E293B]">Patient {specLabel(activeSpecimen?.type)} Analysis</div>
-                <div className="mt-1 text-[20px] font-bold text-[#4F46E5]">{progress}%<span className="ml-1.5 text-[14px] font-normal text-[#64748B]">completed</span></div>
+                <div className="mt-1 text-[20px] font-bold text-[#4F46E5]">{progress}%<span className="ml-1.5 text-[14px] font-normal text-[#475569]">completed</span></div>
                 <button onClick={() => setSheetModal(true)} className="mt-1.5 flex items-center gap-1 self-start text-[14px] font-bold text-[#4F46E5] hover:underline">Enter Analysis <ChevronRight size={15} /></button>
               </div>
             </div>
@@ -358,7 +358,7 @@ export default function RecordDetailPage() {
               {sheet ? (
                 <div className="mt-1.5 text-[13px] italic leading-relaxed text-[#475569]">{aiFinding}</div>
               ) : (
-                <div className="mt-1.5 text-[13px] italic text-[#94A3B8]">Awaiting cytological analysis.</div>
+                <div className="mt-1.5 text-[13px] italic text-[#475569]">Awaiting cytological analysis.</div>
               )}
               {sheet && (
                 hasAbnormal ? (
@@ -395,7 +395,7 @@ export default function RecordDetailPage() {
         {/* Record header (moved from left column) */}
         <div className="mb-5 border-b border-[#F1F5F9] pb-5">
           <div className="flex items-center gap-2.5">
-            <button onClick={() => router.back()} className="flex shrink-0 items-center gap-1.5 text-[13px] font-medium text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={15} /> Records</button>
+            <button onClick={() => router.back()} className="flex shrink-0 items-center gap-1.5 text-[13px] font-medium text-[#475569] hover:text-[#0F172A]"><ArrowLeft size={15} /> Records</button>
             <span className="shrink-0 whitespace-nowrap font-mono text-[20px] font-extrabold text-[#0F172A]">{record.labNumber ?? '—'}</span>
             <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1 text-[12px] font-bold" style={{ background: st.bg, color: st.fg }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: st.fg }} />{status}</span>
           </div>
@@ -404,7 +404,7 @@ export default function RecordDetailPage() {
             {record.urgent && <span className="rounded-md bg-[#FEF2F2] px-2 py-0.5 text-[12px] font-bold text-[#DC2626]">URGENT</span>}
           </div>
           <div className="mt-3 text-[17px] font-semibold text-[#1E293B]">{`${record.patient?.firstName ?? ''} ${record.patient?.lastName ?? ''}`.trim() || '—'}</div>
-          <div className="text-[14px] text-[#64748B]">{record.client?.officeName || `${record.client?.firstName ?? ''} ${record.client?.lastName ?? ''}`.trim() || '—'}</div>
+          <div className="text-[14px] text-[#475569]">{record.client?.officeName || `${record.client?.firstName ?? ''} ${record.client?.lastName ?? ''}`.trim() || '—'}</div>
           {record.patientId && (
             <FeatureGate feature="PRIOR_HISTORY">
               <button onClick={() => setHistoryOpen(true)} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-[10px] border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-[7px] text-[13px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#EEF3FF]">
@@ -421,14 +421,14 @@ export default function RecordDetailPage() {
                   <span className="block text-[13px] font-bold" style={{ color: openEscalation.severity === 'Malignant' ? '#B91C1C' : openEscalation.severity === 'HighGrade' ? '#EF4444' : '#A16207' }}>
                     Escalation Alert — {openEscalation.severity === 'HighGrade' ? 'High Grade' : openEscalation.severity}
                   </span>
-                  <span className="block text-[12px] text-[#64748B]">Status: {openEscalation.status} · click to review</span>
+                  <span className="block text-[12px] text-[#475569]">Status: {openEscalation.status} · click to review</span>
                 </span>
               </button>
             </FeatureGate>
           )}
           <FeatureGate feature="CASE_ASSIGNMENT">
             <div className="mt-3 rounded-[10px] border border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-3">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">Assignment</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-[#475569]">Assignment</div>
               <div className="mt-1.5 flex items-center gap-2">
                 {record.assignedTo ? (
                   <>
@@ -438,10 +438,10 @@ export default function RecordDetailPage() {
                     <span className="text-[13px] font-semibold text-[#0F172A]">{record.assignedTo.firstName} {record.assignedTo.lastName}</span>
                   </>
                 ) : (
-                  <span className="text-[13px] text-[#94A3B8]">Unassigned</span>
+                  <span className="text-[13px] text-[#475569]">Unassigned</span>
                 )}
               </div>
-              {record.assignedAt && <div className="mt-1 text-[11px] text-[#94A3B8]">Assigned {new Date(record.assignedAt).toLocaleDateString()}</div>}
+              {record.assignedAt && <div className="mt-1 text-[11px] text-[#475569]">Assigned {new Date(record.assignedAt).toLocaleDateString()}</div>}
               {canAssign && (
                 <select value={record.assignedToId ?? ''} onChange={(e) => assignMut.mutate(e.target.value || null)}
                   className="mt-2 h-8 w-full rounded-lg border border-[#E2E8F0] bg-white px-2 text-[13px] outline-none focus:border-[#4F46E5]">
@@ -462,7 +462,7 @@ export default function RecordDetailPage() {
                     <div key={c.id} className="text-[12px] text-[#334155]">
                       <span className="font-semibold">{c.checkType.replace(/([A-Z])/g, ' $1').trim()}</span>
                       {c.failureReason ? ` — ${c.failureReason}` : ''}
-                      <span className="block text-[11px] text-[#94A3B8]">{new Date(c.performedAt).toLocaleDateString()} · {c.performedBy ? `${c.performedBy.firstName} ${c.performedBy.lastName}` : '—'}</span>
+                      <span className="block text-[11px] text-[#475569]">{new Date(c.performedAt).toLocaleDateString()} · {c.performedBy ? `${c.performedBy.firstName} ${c.performedBy.lastName}` : '—'}</span>
                     </div>
                   ))}
                 </div>
@@ -473,7 +473,7 @@ export default function RecordDetailPage() {
             <FeatureGate feature="CORRELATION_TRACKING">
               <button onClick={() => router.push(`/correlation/${recordCorrelation.id}`)} className="mt-3 flex w-full items-center justify-between gap-2 rounded-[10px] border border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-2.5 text-left transition-colors hover:bg-[#EEF3FF]">
                 <span>
-                  <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">Correlation</span>
+                  <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#475569]">Correlation</span>
                   <span className="block text-[13px] font-semibold text-[#0F172A]">Cyto-histo linked</span>
                 </span>
                 <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: CORR_META[recordCorrelation.correlationResult ?? 'Unresolved'].bg, color: CORR_META[recordCorrelation.correlationResult ?? 'Unresolved'].fg }}>
@@ -486,7 +486,7 @@ export default function RecordDetailPage() {
             <FeatureGate feature="PATIENT_RECALL">
               <button onClick={() => router.push('/recalls')} className="mt-3 flex w-full items-center justify-between gap-2 rounded-[10px] border border-[#E2E8F0] px-3.5 py-2.5 text-left transition-colors hover:bg-[#EEF3FF]" style={{ background: RECALL_META[recordRecall.status].rowBg ?? '#F8FAFC' }}>
                 <span>
-                  <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">Recall Scheduled</span>
+                  <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#475569]">Recall Scheduled</span>
                   <span className="block text-[13px] font-semibold text-[#0F172A]">{recordRecall.triggerDiagnosis} · due {recallDate(recordRecall.dueDate)}</span>
                   {['Pending', 'Due', 'Overdue'].includes(recordRecall.status) && <span className="block text-[12px] font-semibold" style={{ color: dueColor(recordRecall.daysUntilDue) }}>{dueLabel(recordRecall.daysUntilDue)}</span>}
                 </span>
@@ -499,15 +499,15 @@ export default function RecordDetailPage() {
               <button onClick={() => router.push(`/wsi/${recordSlide.id}`)} className="mt-3 flex w-full items-center gap-3 rounded-[10px] border border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-3 text-left transition-colors hover:bg-[#EEF3FF]">
                 <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-black text-white"><ScanEye size={20} /></span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">Digital Slide</span>
+                  <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#475569]">Digital Slide</span>
                   <span className="block truncate text-[13px] font-semibold text-[#0F172A]">{recordSlide.stain ?? 'Slide'}{recordSlide.magnification ? ` · ${recordSlide.magnification}` : ''}</span>
-                  <span className="block text-[12px] text-[#64748B]">{recordSlide.annotationCount} annotation{recordSlide.annotationCount === 1 ? '' : 's'}</span>
+                  <span className="block text-[12px] text-[#475569]">{recordSlide.annotationCount} annotation{recordSlide.annotationCount === 1 ? '' : 's'}</span>
                 </span>
                 <span className="shrink-0 text-[13px] font-semibold text-[#4F46E5]">View →</span>
               </button>
             ) : (
               <div className="mt-3 rounded-[10px] border border-dashed border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-3">
-                <div className="flex items-center gap-2 text-[13px] font-semibold text-[#64748B]"><ScanEye size={15} className="text-[#94A3B8]" /> No digital slide</div>
+                <div className="flex items-center gap-2 text-[13px] font-semibold text-[#475569]"><ScanEye size={15} className="text-[#475569]" /> No digital slide</div>
                 {can('record:change') && (
                   <button onClick={() => setAddSlideOpen(true)} className="mt-2 text-[12px] font-semibold text-[#4F46E5] hover:underline">+ Add Slide URL</button>
                 )}
@@ -520,11 +520,11 @@ export default function RecordDetailPage() {
           <FeatureGate feature="HL7_FHIR">
             <div className="mt-3 rounded-[10px] border border-[#E2E8F0] bg-white p-3.5">
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">FHIR / EMR</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-[#475569]">FHIR / EMR</span>
                 <button onClick={() => setFhirOpen(true)} className="text-[12px] font-semibold text-[#4F46E5] hover:underline">Transmit</button>
               </div>
               {(fhirHistory ?? []).length === 0 ? (
-                <div className="text-[13px] text-[#94A3B8]">Not transmitted to any EMR.</div>
+                <div className="text-[13px] text-[#475569]">Not transmitted to any EMR.</div>
               ) : (
                 <div className="flex flex-col gap-1.5">
                   {(fhirHistory ?? []).slice(0, 3).map((t) => {
@@ -543,11 +543,11 @@ export default function RecordDetailPage() {
           <FeatureGate feature="LOINC_SNOMED">
             <div className="mt-3 rounded-[10px] border border-[#E2E8F0] bg-white p-3.5">
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">Coding</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-[#475569]">Coding</span>
                 <button onClick={() => setCodingOpen(true)} className="text-[12px] font-semibold text-[#4F46E5] hover:underline">Add Codes</button>
               </div>
               {(recordCodings ?? []).length === 0 ? (
-                <div className="text-[13px] text-[#94A3B8]">No codes assigned.</div>
+                <div className="text-[13px] text-[#475569]">No codes assigned.</div>
               ) : (
                 <div className="flex flex-wrap gap-1.5">
                   {(recordCodings ?? []).map((c) => (
@@ -562,7 +562,7 @@ export default function RecordDetailPage() {
           {(recordReagents ?? []).length > 0 && (
             <FeatureGate feature="REAGENT_TRACKING">
               <div className="mt-3 rounded-[10px] border border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-3">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">Reagents Used ({(recordReagents ?? []).length})</div>
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-[#475569]">Reagents Used ({(recordReagents ?? []).length})</div>
                 <div className="mt-1.5 flex flex-col gap-1.5">
                   {(recordReagents ?? []).slice(0, 5).map((u: any) => (
                     <div key={u.usageId} className="flex items-center justify-between gap-2 text-[12px]">
@@ -586,14 +586,14 @@ export default function RecordDetailPage() {
         <div className="flex flex-col">
           {shownActivity.map((ev: any) => (
             <div key={ev.id} className="flex items-start gap-2.5 border-b border-[#F8FAFC] py-2">
-              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: DOT[ev.status] ?? '#94A3B8' }} />
+              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: DOT[ev.status] ?? '#475569' }} />
               <div className="min-w-0">
                 <div className="text-[15px] font-semibold text-[#0F172A]">{ev.status}</div>
-                <div className="truncate text-[13px] text-[#64748B]">{ev.user ? `${ev.user.firstName ?? ''} ${ev.user.lastName ?? ''}`.trim() : 'System'} · {relTime(ev.createdAt)}</div>
+                <div className="truncate text-[13px] text-[#475569]">{ev.user ? `${ev.user.firstName ?? ''} ${ev.user.lastName ?? ''}`.trim() : 'System'} · {relTime(ev.createdAt)}</div>
               </div>
             </div>
           ))}
-          {activity.length === 0 && <div className="text-[13px] text-[#64748B]">No activity yet.</div>}
+          {activity.length === 0 && <div className="text-[13px] text-[#475569]">No activity yet.</div>}
           {activity.length > 5 && <button onClick={() => setShowAllActivity((v) => !v)} className="mt-2 self-start text-[12px] font-semibold text-[#4F46E5] hover:underline">{showAllActivity ? 'Show less' : `Show more (${activity.length})`}</button>}
         </div>
 
@@ -602,7 +602,7 @@ export default function RecordDetailPage() {
         <div className={`${LABEL} mb-3`}>Result Sheet</div>
         {!sheet ? (
           <>
-            <div className="text-[15px] text-[#64748B]">No result sheet.</div>
+            <div className="text-[15px] text-[#475569]">No result sheet.</div>
             <button onClick={() => setSheetModal(true)} className={`${rightBtn} mt-2`}><FlaskConical size={15} /> Add Result Sheet</button>
           </>
         ) : (
@@ -683,8 +683,8 @@ function Stat({ icon: Icon, label, value, unit }: { icon: any; label: string; va
     <div className="mb-5 flex items-center gap-3.5">
       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#EEF2FF] text-[#4F46E5]"><Icon size={20} /></span>
       <div>
-        <div className="text-[14px] font-medium text-[#64748B]">{label}</div>
-        <div className="flex items-baseline gap-1.5"><span className="text-[30px] font-bold leading-none text-[#0F172A]">{value}</span><span className="text-[15px] text-[#64748B]">{unit}</span></div>
+        <div className="text-[14px] font-medium text-[#475569]">{label}</div>
+        <div className="flex items-baseline gap-1.5"><span className="text-[30px] font-bold leading-none text-[#0F172A]">{value}</span><span className="text-[15px] text-[#475569]">{unit}</span></div>
       </div>
     </div>
   );

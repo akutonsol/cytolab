@@ -13,14 +13,14 @@ export const SHIFT_CHIP: Record<string, string> = {
   Holiday: 'bg-teal-100 text-teal-700',
 };
 export const SHIFT_HEX: Record<string, string> = {
-  Morning: '#4F46E5', Evening: '#7C3AED', Night: '#64748B', Weekend: '#2563EB', Holiday: '#0D9488',
+  Morning: '#4F46E5', Evening: '#6B21A8', Night: '#475569', Weekend: '#1D4ED8', Holiday: '#115E59',
 };
 export const ATT_STATUS: Record<string, { bg: string; fg: string }> = {
-  Present: { bg: '#DCFCE7', fg: '#16A34A' },
-  Absent: { bg: '#FEE2E2', fg: '#DC2626' },
+  Present: { bg: '#DCFCE7', fg: '#166534' },
+  Absent: { bg: '#FEE2E2', fg: '#991B1B' },
   Late: { bg: '#FEF9C3', fg: '#A16207' }, // yellow (amber-family, detector-safe intent)
-  Leave: { bg: '#F1F5F9', fg: '#64748B' },
-  NotStarted: { bg: '#F8FAFC', fg: '#94A3B8' },
+  Leave: { bg: '#F1F5F9', fg: '#475569' },
+  NotStarted: { bg: '#F8FAFC', fg: '#475569' },
 };
 
 export interface EmployeeLite {
@@ -51,13 +51,13 @@ export function useMyEmployee() {
 // ── Phase 2 status badges (zero-orange: "amber/PENDING" → detector-safe yellow) ─
 export const WF_STATUS: Record<string, { bg: string; fg: string; label: string }> = {
   PENDING: { bg: '#FEF9C3', fg: '#A16207', label: 'Pending' },
-  APPROVED: { bg: '#DCFCE7', fg: '#16A34A', label: 'Approved' },
-  REJECTED: { bg: '#FEE2E2', fg: '#DC2626', label: 'Rejected' },
-  CANCELLED: { bg: '#F1F5F9', fg: '#64748B', label: 'Cancelled' },
+  APPROVED: { bg: '#DCFCE7', fg: '#166534', label: 'Approved' },
+  REJECTED: { bg: '#FEE2E2', fg: '#991B1B', label: 'Rejected' },
+  CANCELLED: { bg: '#F1F5F9', fg: '#475569', label: 'Cancelled' },
 };
 
 // Attendance rate → colour (green ≥90, detector-safe yellow 75–89, red <75).
-export const rateColor = (pct: number) => (pct >= 90 ? '#16A34A' : pct >= 75 ? '#A16207' : '#DC2626');
+export const rateColor = (pct: number) => (pct >= 90 ? '#166534' : pct >= 75 ? '#A16207' : '#991B1B');
 // Amber emphasis without orange (e.g. pending counts) — detector-safe yellow.
 export const WARN_FG = '#A16207';
 

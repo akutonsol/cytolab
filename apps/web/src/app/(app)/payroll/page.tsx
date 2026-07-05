@@ -27,7 +27,7 @@ interface Analytics {
 }
 
 const INDIGO = '#4F46E5';
-const SLATE = '#94A3B8';
+const SLATE = '#475569';
 const SKY = '#0284C7';
 const GRID = '#F1F5F9';
 
@@ -55,7 +55,7 @@ const nextPeriod = (a: Analytics | undefined) => {
 const RUN_BADGE: Record<string, { bg: string; color: string }> = {
   Completed: { bg: '#F0FDF4', color: '#16A34A' },
   Processing: { bg: '#F0F9FF', color: '#0284C7' },
-  Draft: { bg: '#F1F5F9', color: '#64748B' },
+  Draft: { bg: '#F1F5F9', color: '#475569' },
 };
 
 // Tooltip showing Gross / Net / Tax for the hovered point (reads the full datum).
@@ -298,7 +298,7 @@ export default function PayrollDashboard() {
                   <div key={r.key} className="flex items-center justify-between py-3.5">
                     <div>
                       <div className="font-body-md text-body-md font-semibold text-charcoal-heading">{r.label}</div>
-                      <div className="mt-0.5 inline-flex items-center gap-1 font-label-sm text-label-sm" style={{ color: p >= 0 ? '#16A34A' : '#64748B' }}>
+                      <div className="mt-0.5 inline-flex items-center gap-1 font-label-sm text-label-sm" style={{ color: p >= 0 ? '#16A34A' : '#475569' }}>
                         {p >= 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />} {Math.abs(p)}% vs {year - 1}
                       </div>
                     </div>

@@ -37,8 +37,8 @@ export default function ReportRunnerPage() {
     enabled: !!def && isEnabled('REPORT_CENTER'),
   });
 
-  if (!isEnabled('REPORT_CENTER')) return <div className="grid h-[60vh] place-items-center text-[#64748B]">The Report Center is disabled for this lab.</div>;
-  if (!def) return <div className="grid h-[60vh] place-items-center text-[#94A3B8]">Unknown report.</div>;
+  if (!isEnabled('REPORT_CENTER')) return <div className="grid h-[60vh] place-items-center text-[#475569]">The Report Center is disabled for this lab.</div>;
+  if (!def) return <div className="grid h-[60vh] place-items-center text-[#475569]">Unknown report.</div>;
 
   const runReport = () => setApplied({ dateFrom, dateTo });
   const exportCsv = () => {
@@ -55,7 +55,7 @@ export default function ReportRunnerPage() {
 
   return (
     <div className="report-print min-h-full pb-10 pt-4" style={{ background: '#F8FAFC' }}>
-      <button onClick={() => router.push(`/report-center?tab=${def.category.toLowerCase()}`)} className="no-print mb-4 flex items-center gap-1.5 text-[13px] font-semibold text-[#64748B] hover:text-[#0F172A]"><ArrowLeft size={15} /> Report Center</button>
+      <button onClick={() => router.push(`/report-center?tab=${def.category.toLowerCase()}`)} className="no-print mb-4 flex items-center gap-1.5 text-[13px] font-semibold text-[#475569] hover:text-[#0F172A]"><ArrowLeft size={15} /> Report Center</button>
 
       <div className="mb-5">
         <h1 className="text-[24px] font-bold tracking-tight text-[#0F172A]">{def.name}</h1>
@@ -64,12 +64,12 @@ export default function ReportRunnerPage() {
 
       {/* Controls */}
       <div className={`${CARD} no-print mb-5 flex flex-wrap items-end gap-3 p-4`}>
-        <div><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">From</label><input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-10 rounded-lg border border-[#E2E8F0] px-3 text-[14px]" /></div>
-        <div><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">To</label><input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-10 rounded-lg border border-[#E2E8F0] px-3 text-[14px]" /></div>
+        <div><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">From</label><input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-10 rounded-lg border border-[#E2E8F0] px-3 text-[14px]" /></div>
+        <div><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">To</label><input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-10 rounded-lg border border-[#E2E8F0] px-3 text-[14px]" /></div>
         <button onClick={runReport} className="rounded-lg bg-[#4F46E5] px-4 py-2.5 text-[14px] font-semibold text-white">Run Report</button>
         <button onClick={exportCsv} className="flex items-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-4 py-2.5 text-[14px] font-semibold text-[#334155]"><Download size={15} /> Export CSV</button>
         <button onClick={() => window.print()} className="flex items-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-3 py-2.5 text-[14px] font-semibold text-[#334155]"><Printer size={15} /></button>
-        {isFetching && <span className="text-[13px] text-[#94A3B8]">Running…</span>}
+        {isFetching && <span className="text-[13px] text-[#475569]">Running…</span>}
       </div>
 
       {/* CAP benchmarks — dedicated status layout */}
@@ -80,9 +80,9 @@ export default function ReportRunnerPage() {
               const m = data?.[key]; const sc = STATUS_COLOR[m?.status] ?? STATUS_COLOR.Warning;
               return (
                 <div key={key} className={`${CARD} p-4`}>
-                  <div className="text-[13px] text-[#64748B]">{label}</div>
+                  <div className="text-[13px] text-[#475569]">{label}</div>
                   <div className="mt-1 text-[32px] font-bold text-[#0F172A]">{m ? fmtValue(m.value, fmt as any) : '—'}</div>
-                  <div className="mt-1 text-[12px] text-[#94A3B8]">Benchmark {m ? fmtValue(m.benchmark, fmt as any) : '—'}</div>
+                  <div className="mt-1 text-[12px] text-[#475569]">Benchmark {m ? fmtValue(m.benchmark, fmt as any) : '—'}</div>
                   {m && <span className="mt-2 inline-flex rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: sc.bg, color: sc.fg }}>{m.status}</span>}
                 </div>
               );
@@ -100,7 +100,7 @@ export default function ReportRunnerPage() {
             <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
               {def.kpis.map((k) => (
                 <div key={k.path} className={`${CARD} p-4`}>
-                  <div className="text-[13px] text-[#64748B]">{k.label}</div>
+                  <div className="text-[13px] text-[#475569]">{k.label}</div>
                   <div className="mt-1 text-[32px] font-bold leading-none text-[#0F172A]">{data ? fmtValue(getPath(data, k.path), k.format) : '—'}</div>
                 </div>
               ))}
@@ -121,16 +121,16 @@ export default function ReportRunnerPage() {
                 ) : def.chart.type === 'bar' ? (
                   <BarChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: -8 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#EEF2F7" />
-                    <XAxis dataKey={def.chart.xKey} tick={{ fontSize: 12, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 12, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+                    <XAxis dataKey={def.chart.xKey} tick={{ fontSize: 12, fill: '#475569' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 12, fill: '#475569' }} axisLine={false} tickLine={false} />
                     <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #EEF2F7', fontSize: 13 }} /><Legend />
                     {def.chart.series!.map((s) => <Bar key={s.key} dataKey={s.key} name={s.name} fill={s.color} radius={[4, 4, 0, 0]} />)}
                   </BarChart>
                 ) : (
                   <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: -8 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#EEF2F7" />
-                    <XAxis dataKey={def.chart.xKey} tick={{ fontSize: 12, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 12, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+                    <XAxis dataKey={def.chart.xKey} tick={{ fontSize: 12, fill: '#475569' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 12, fill: '#475569' }} axisLine={false} tickLine={false} />
                     <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #EEF2F7', fontSize: 13 }} /><Legend />
                     {def.chart.series!.map((s) => <Line key={s.key} type="monotone" dataKey={s.key} name={s.name} stroke={s.color} strokeWidth={2.2} dot={false} activeDot={{ r: 5 }} />)}
                   </LineChart>
@@ -144,12 +144,12 @@ export default function ReportRunnerPage() {
             <div className={`${CARD} overflow-hidden`}>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-[13px]">
-                  <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#94A3B8]">
+                  <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]">
                     {def.table.columns.map((c) => <th key={c.key} className="px-3 py-2.5 font-semibold">{c.label}</th>)}
                   </tr></thead>
                   <tbody>
                     {tableRows.length === 0 ? (
-                      <tr><td colSpan={def.table.columns.length} className="px-3 py-12 text-center text-[#94A3B8]">No data for this period.</td></tr>
+                      <tr><td colSpan={def.table.columns.length} className="px-3 py-12 text-center text-[#475569]">No data for this period.</td></tr>
                     ) : tableRows.map((row, i) => (
                       <tr key={i} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC]">
                         {def.table!.columns.map((c, ci) => (

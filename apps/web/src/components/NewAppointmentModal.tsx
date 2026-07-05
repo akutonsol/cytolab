@@ -9,7 +9,7 @@ import { api, type Paginated } from '@/lib/api';
 import { APPT_TYPES, TYPE_META, type AppointmentType } from '@/lib/appointments';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
-const lbl = 'mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]';
+const lbl = 'mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]';
 
 interface Props {
   onClose: () => void;
@@ -51,7 +51,7 @@ export function NewAppointmentModal({ onClose, onCreated, defaults }: Props) {
       <div className="w-full max-w-[520px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-[18px] font-bold text-[#0F172A]">New Appointment</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
         </div>
         <div className="flex flex-col gap-3">
           {!defaults?.patientId ? (
@@ -61,14 +61,14 @@ export function NewAppointmentModal({ onClose, onCreated, defaults }: Props) {
                 {(patients?.data ?? []).map((p: any) => <option key={p.id} value={p.id}>{p.firstName} {p.lastName}{p.registrationNo ? ` (${p.registrationNo})` : ''}</option>)}
               </select>
             </div>
-          ) : <div className="rounded-lg bg-[#F8FAFC] px-3 py-2 text-[13px] text-[#64748B]">Patient pre-selected from recall</div>}
+          ) : <div className="rounded-lg bg-[#F8FAFC] px-3 py-2 text-[13px] text-[#475569]">Patient pre-selected from recall</div>}
 
           <div>
             <label className={lbl}>Type</label>
             <div className="flex flex-wrap gap-1.5">
               {APPT_TYPES.map((t) => (
                 <button key={t} onClick={() => setType(t)} className="rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold transition-colors"
-                  style={appointmentType === t ? { borderColor: TYPE_META[t].color, background: TYPE_META[t].bg, color: TYPE_META[t].color } : { borderColor: '#E2E8F0', color: '#64748B' }}>{TYPE_META[t].label}</button>
+                  style={appointmentType === t ? { borderColor: TYPE_META[t].color, background: TYPE_META[t].bg, color: TYPE_META[t].color } : { borderColor: '#E2E8F0', color: '#475569' }}>{TYPE_META[t].label}</button>
               ))}
             </div>
           </div>
@@ -102,7 +102,7 @@ export function NewAppointmentModal({ onClose, onCreated, defaults }: Props) {
           <div><label className={lbl}>Notes</label><textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className={`${inp} h-auto py-2`} /></div>
         </div>
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#64748B]">Cancel</button>
+          <button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#475569]">Cancel</button>
           <button disabled={!patientId || !date || save.isPending} onClick={() => save.mutate()} className="rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-40">Schedule</button>
         </div>
       </div>

@@ -69,13 +69,13 @@ export function RecordAttachments({ recordId }: { recordId: string }) {
   return (
     <div>
       <div className="flex flex-col gap-2">
-        {attachments.length === 0 && <div className="text-[15px] text-[#64748B]">No attachments.</div>}
+        {attachments.length === 0 && <div className="text-[15px] text-[#475569]">No attachments.</div>}
         {attachments.map((a) => (
           <div key={a.id} className="flex items-center gap-2 rounded-lg border border-[#F1F5F9] px-3 py-2">
-            <Paperclip size={14} className="shrink-0 text-[#64748B]" />
+            <Paperclip size={14} className="shrink-0 text-[#475569]" />
             <span className="min-w-0 flex-1 truncate text-[14px] text-[#0F172A]" title={a.filename ?? ''}>{a.filename ?? 'Untitled'}</span>
-            <button onClick={() => download(a)} title="Download" className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-[#64748B] hover:bg-[#F5F7FF] hover:text-[#4F46E5]"><Download size={14} /></button>
-            <button onClick={() => del.mutate(a.id)} title="Delete" className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-[#64748B] hover:bg-[#FEF2F2] hover:text-[#DC2626]"><Trash2 size={14} /></button>
+            <button onClick={() => download(a)} title="Download" className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-[#475569] hover:bg-[#F5F7FF] hover:text-[#4F46E5]"><Download size={14} /></button>
+            <button onClick={() => del.mutate(a.id)} title="Delete" className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-[#475569] hover:bg-[#FEF2F2] hover:text-[#DC2626]"><Trash2 size={14} /></button>
           </div>
         ))}
       </div>

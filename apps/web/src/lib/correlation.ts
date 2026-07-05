@@ -48,7 +48,7 @@ export const RESULT_META: Record<CorrelationResult, { label: string; bg: string;
   Concordant: { label: 'Concordant', bg: '#DCFCE7', fg: '#15803D' },
   MinorDiscordant: { label: 'Minor Discordant', bg: '#FEFCE8', fg: '#A16207' },
   MajorDiscordant: { label: 'Major Discordant', bg: '#FEE2E2', fg: '#B91C1C', rowBg: '#FEF2F2' },
-  Unresolved: { label: 'Unresolved', bg: '#F1F5F9', fg: '#64748B' },
+  Unresolved: { label: 'Unresolved', bg: '#F1F5F9', fg: '#475569' },
 };
 
 export const CORRELATION_RESULTS: CorrelationResult[] = ['Concordant', 'MinorDiscordant', 'MajorDiscordant', 'Unresolved'];
@@ -59,7 +59,7 @@ export const DONUT_COLOR: Record<CorrelationResult, string> = {
   Concordant: '#22C55E',
   MinorDiscordant: '#FACC15',
   MajorDiscordant: '#EF4444',
-  Unresolved: '#94A3B8',
+  Unresolved: '#475569',
 };
 
 export const shortDate = (iso: string | null): string => (iso ? new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—');

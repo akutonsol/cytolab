@@ -80,7 +80,7 @@ export function PortalLogo({ compact = false }: { compact?: boolean }) {
       </div>
       <div className="leading-tight">
         <div className="font-display text-[16px] font-bold tracking-tight text-charcoal-heading">CYTOLAB</div>
-        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#94A3B8]">Client Portal</div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#475569]">Client Portal</div>
       </div>
     </div>
   );

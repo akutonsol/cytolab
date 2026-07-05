@@ -21,7 +21,7 @@ export const DS = {
   } as CSSProperties,
   drawerSubtitle: {
     fontSize: 13,
-    color: '#64748B',
+    color: '#475569',
     fontWeight: 500,
     marginTop: 4,
   } as CSSProperties,
@@ -30,7 +30,7 @@ export const DS = {
   sectionLabel: {
     fontSize: 11,
     fontWeight: 700,
-    color: '#94A3B8',
+    color: '#475569',
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
     marginBottom: 12,
@@ -61,7 +61,7 @@ export const DS = {
     borderRadius: 12,
     padding: '11px 14px',
     fontSize: 14,
-    color: '#64748B',
+    color: '#475569',
     width: '100%',
   } as CSSProperties,
 
@@ -123,7 +123,7 @@ export const DS = {
   // Footer cancel button (white, bordered — centered-modal pattern)
   btnFooterCancel: {
     background: '#FFFFFF',
-    color: '#64748B',
+    color: '#475569',
     border: '1px solid #E2E8F0',
     borderRadius: 12,
     padding: '10px 24px',
@@ -155,7 +155,7 @@ export const DS = {
     borderRadius: 10,
     border: '1px solid #CBD5E1',
     background: '#FFFFFF',
-    color: '#64748B',
+    color: '#475569',
     cursor: 'pointer',
     display: 'grid',
     placeItems: 'center',

@@ -19,7 +19,7 @@ export function ThemeSwitcher({ triggerStyle }: { triggerStyle?: React.CSSProper
         <>
           <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
           <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', zIndex: 70, width: 244, background: 'var(--color-bg-card, #fff)', border: '1px solid #e6e9f2', borderRadius: 16, boxShadow: '0 20px 40px rgba(0,0,0,0.14)', padding: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: '#94a3b8', marginBottom: 10 }}>Theme</div>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: '#475569', marginBottom: 10 }}>Theme</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {themes.map((t) => {
                 const active = t.id === currentTheme;

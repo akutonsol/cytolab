@@ -54,7 +54,7 @@ export function AddSlideModal({ recordId: fixedRecordId, onClose, onSaved }: Pro
       <div className="w-full max-w-[480px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-[18px] font-bold text-[#0F172A]">Add Digital Slide</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
         </div>
         <div className="flex flex-col gap-3">
           {!fixedRecordId && (
@@ -68,34 +68,34 @@ export function AddSlideModal({ recordId: fixedRecordId, onClose, onSaved }: Pro
             </select>
           )}
           <div>
-            <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">Slide URL</label>
+            <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">Slide URL</label>
             <input value={slideUrl} onChange={(e) => setSlideUrl(e.target.value)} placeholder="https://…/slide.dzi" className={inp} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">Format</label>
+              <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">Format</label>
               <select value={format} onChange={(e) => setFormat(e.target.value)} className={inp}>
                 {SLIDE_FORMATS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">Magnification</label>
+              <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">Magnification</label>
               <input value={magnification} onChange={(e) => setMagnification(e.target.value)} placeholder="40x" className={inp} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">Stain</label>
+              <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">Stain</label>
               <input value={stain} onChange={(e) => setStain(e.target.value)} placeholder="H&E, Pap…" className={inp} />
             </div>
             <div>
-              <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">Scanner</label>
+              <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">Scanner</label>
               <input value={scanner} onChange={(e) => setScanner(e.target.value)} placeholder="Aperio AT2…" className={inp} />
             </div>
           </div>
         </div>
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#64748B]">Cancel</button>
+          <button onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#475569]">Cancel</button>
           <button disabled={!recordId || !slideUrl || save.isPending} onClick={() => save.mutate()}
             className="rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-40">Save</button>
         </div>

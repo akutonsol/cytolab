@@ -21,7 +21,7 @@ const CELL = 'px-4 py-3 align-middle text-sm';
 const scoreColor = (v: number) => (v >= 80 ? '#16A34A' : v >= 60 ? '#A16207' : '#DC2626');
 
 const REVIEW_STATUS: Record<string, { bg: string; fg: string }> = {
-  DRAFT: { bg: '#F1F5F9', fg: '#64748B' }, SUBMITTED: { bg: '#EEF2FF', fg: '#4F46E5' }, ACKNOWLEDGED: { bg: '#DCFCE7', fg: '#16A34A' },
+  DRAFT: { bg: '#F1F5F9', fg: '#475569' }, SUBMITTED: { bg: '#EEF2FF', fg: '#4F46E5' }, ACKNOWLEDGED: { bg: '#DCFCE7', fg: '#16A34A' },
 };
 const GOAL_STATUS: Record<string, { bg: string; fg: string }> = {
   ACTIVE: { bg: '#EEF2FF', fg: '#4F46E5' }, COMPLETED: { bg: '#DCFCE7', fg: '#16A34A' }, MISSED: { bg: '#FEE2E2', fg: '#DC2626' },

@@ -241,7 +241,7 @@ function BillingWorkspace() {
 
         {hasMore ? (
           <div ref={sentinelRef} className="mt-4 flex items-center justify-center py-3">
-            <span className="flex items-center gap-2 text-[13px] font-medium text-[#94A3B8]">
+            <span className="flex items-center gap-2 text-[13px] font-medium text-[#475569]">
               <Loader2 size={16} className="animate-spin text-[#4F46E5]" /> Loading more…
             </span>
           </div>
@@ -258,10 +258,10 @@ function BillingWorkspace() {
           <div className={`${CARD} overflow-hidden`}>
             <div style={{ background: 'linear-gradient(135deg,#EEF2FF 0%,#F0FDF4 100%)', padding: 32 }}>
               <div className="text-[30px] font-bold leading-tight text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Good morning, {firstName}</div>
-              <div className="mt-1.5 text-[16px] text-[#64748B]">Here is your lab financial health</div>
+              <div className="mt-1.5 text-[16px] text-[#475569]">Here is your lab financial health</div>
               <div className="mt-5 inline-flex gap-1 rounded-full bg-white/70 p-1">
                 {([['month', 'This Month'], ['last', 'Last Month'], ['ytd', 'YTD']] as const).map(([v, l]) => (
-                  <button key={v} onClick={() => setPeriod(v)} className="rounded-full px-5 py-2 text-[14px] font-semibold transition-colors" style={{ background: period === v ? '#fff' : 'transparent', color: period === v ? '#0F172A' : '#64748B', boxShadow: period === v ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>{l}</button>
+                  <button key={v} onClick={() => setPeriod(v)} className="rounded-full px-5 py-2 text-[14px] font-semibold transition-colors" style={{ background: period === v ? '#fff' : 'transparent', color: period === v ? '#0F172A' : '#475569', boxShadow: period === v ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>{l}</button>
                 ))}
               </div>
               <div className="mt-5">
@@ -274,7 +274,7 @@ function BillingWorkspace() {
                   <button onClick={() => setTargetOpen(false)} className="h-10 shrink-0 rounded-xl bg-[#4F46E5] px-4 text-[13px] font-semibold text-white">Set</button>
                 </div>
               )}
-              {targetPct != null && !targetOpen && <div className="mt-2 text-[12px] text-[#64748B]">Financial target: <span className="font-semibold text-[#0F172A]">{targetPct}%</span> · {collectionRate >= targetPct ? 'on track ✓' : `${targetPct - collectionRate} pts to go`}</div>}
+              {targetPct != null && !targetOpen && <div className="mt-2 text-[12px] text-[#475569]">Financial target: <span className="font-semibold text-[#0F172A]">{targetPct}%</span> · {collectionRate >= targetPct ? 'on track ✓' : `${targetPct - collectionRate} pts to go`}</div>}
             </div>
           </div>
 
@@ -291,15 +291,15 @@ function BillingWorkspace() {
           {/* Payment History (under the stats cards) */}
           <div className={`${CARD} p-6`}>
             <div className="text-[18px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Payment History</div>
-            <div className="mt-1.5 text-[14px] text-[#64748B]">You have made {onTimePct}% of payments on time.</div>
+            <div className="mt-1.5 text-[14px] text-[#475569]">You have made {onTimePct}% of payments on time.</div>
             <div className="mt-6 overflow-x-auto">
               <div className="inline-block">
                 <div className="mb-3 flex gap-2 pl-11">
-                  {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'].map((m, i) => <span key={i} className="w-6 text-center text-[12px] font-medium text-[#94A3B8]">{m}</span>)}
+                  {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'].map((m, i) => <span key={i} className="w-6 text-center text-[12px] font-medium text-[#475569]">{m}</span>)}
                 </div>
                 {calYears.map((y) => (
                   <div key={y} className="mb-2.5 flex items-center gap-2">
-                    <span className="w-9 text-[13px] font-medium text-[#94A3B8]">{y}</span>
+                    <span className="w-9 text-[13px] font-medium text-[#475569]">{y}</span>
                     {Array.from({ length: 12 }, (_, mo) => {
                       const cell = pymByYM.get(`${y}-${mo}`);
                       const title = `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][mo]} ${y}`;
@@ -338,11 +338,11 @@ function BillTimeline({ step1Done, step2Done, step3Done }: { step1Done: boolean;
         <div className="absolute left-[16%] right-[16%] top-4 border-t-2 border-dashed border-[#CBD5E1]" />
         {steps.map((s, i) => (
           <div key={i} className="relative z-10 flex flex-1 flex-col items-center text-center">
-            <div className="grid h-8 w-8 place-items-center rounded-full" style={{ background: s.done ? '#4F46E5' : '#F1F5F9', color: s.done ? '#fff' : '#94A3B8' }}>
+            <div className="grid h-8 w-8 place-items-center rounded-full" style={{ background: s.done ? '#4F46E5' : '#F1F5F9', color: s.done ? '#fff' : '#475569' }}>
               {s.done ? <Check size={18} strokeWidth={3} /> : <span className="text-[14px] font-bold">{i + 1}</span>}
             </div>
             <div className="mt-3 text-[15px] font-semibold text-[#334155]">{s.label}</div>
-            <div className="mt-0.5 text-[12px] text-[#94A3B8]">{s.sub}</div>
+            <div className="mt-0.5 text-[12px] text-[#475569]">{s.sub}</div>
           </div>
         ))}
       </div>
@@ -373,16 +373,16 @@ function CollectionGauge({ rate, delta }: { rate: number; delta: number }) {
         <path d={arc(START, END)} fill="none" stroke="url(#gaugeGrad)" strokeWidth={18} strokeLinecap="round" strokeDasharray={`${seg * 0.62} ${seg * 0.38}`} />
         <circle cx={mx} cy={my} r={10} fill="#fff" stroke="#0F172A" strokeWidth={3} />
       </svg>
-      <span style={{ position: 'absolute', left: 6, top: H - 28, fontSize: 13, fontWeight: 500, color: '#94A3B8' }}>0%</span>
-      <span style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: -2, fontSize: 13, fontWeight: 500, color: '#94A3B8' }}>50%</span>
-      <span style={{ position: 'absolute', right: 6, top: H - 28, fontSize: 13, fontWeight: 500, color: '#94A3B8' }}>100%</span>
+      <span style={{ position: 'absolute', left: 6, top: H - 28, fontSize: 13, fontWeight: 500, color: '#475569' }}>0%</span>
+      <span style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: -2, fontSize: 13, fontWeight: 500, color: '#475569' }}>50%</span>
+      <span style={{ position: 'absolute', right: 6, top: H - 28, fontSize: 13, fontWeight: 500, color: '#475569' }}>100%</span>
       <div style={{ position: 'absolute', left: 0, right: 0, top: 82, textAlign: 'center' }}>
         {delta !== 0 && (
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: delta > 0 ? '#F0FDF4' : '#FEF2F2', color: delta > 0 ? '#16A34A' : '#DC2626', borderRadius: 999, padding: '3px 12px', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)} pts</div>
         )}
         <div style={{ fontSize: 56, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{rate}%</div>
         {rate === 0 && (
-          <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 4, textAlign: 'center', maxWidth: 120, marginLeft: 'auto', marginRight: 'auto' }}>No payments recorded yet</div>
+          <div style={{ fontSize: 11, color: '#475569', marginTop: 4, textAlign: 'center', maxWidth: 120, marginLeft: 'auto', marginRight: 'auto' }}>No payments recorded yet</div>
         )}
       </div>
     </div>
@@ -399,13 +399,13 @@ function MetricCard({ title, value, tone, badge, sub, onClick }: { title: string
     <div onClick={onClick} className={`${CARD} cursor-pointer p-5 transition-shadow hover:shadow-md`}>
       <div className="flex items-center justify-between">
         <span className="text-[16px] font-semibold text-[#0F172A]">{title}</span>
-        <ArrowUpRight size={17} className="text-[#94A3B8]" />
+        <ArrowUpRight size={17} className="text-[#475569]" />
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-2.5">
         <span className="text-[30px] font-extrabold leading-none text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>{value}</span>
         <ImpactBadge tone={tone} text={badge} />
       </div>
-      <div className="mt-2.5 text-[13px] leading-snug text-[#94A3B8]">{sub}</div>
+      <div className="mt-2.5 text-[13px] leading-snug text-[#475569]">{sub}</div>
     </div>
   );
 }

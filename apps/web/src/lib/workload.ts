@@ -71,5 +71,5 @@ export function avatarColor(name: string): { bg: string; fg: string } {
 export function progressColor(ratio: number): string {
   if (ratio >= 1) return '#16A34A';
   if (ratio >= 0.5) return '#FACC15';
-  return '#94A3B8';
+  return '#475569';
 }

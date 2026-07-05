@@ -61,7 +61,7 @@ export const STATUS_META: Record<EscalationStatus, { label: string; bg: string; 
   Acknowledged: { label: 'Acknowledged', bg: '#DBEAFE', fg: '#1D4ED8' },
   UnderReview: { label: 'Under Review', bg: '#EEF2FF', fg: '#4F46E5' },
   Resolved: { label: 'Resolved', bg: '#DCFCE7', fg: '#16A34A' },
-  Dismissed: { label: 'Dismissed', bg: '#F1F5F9', fg: '#94A3B8' },
+  Dismissed: { label: 'Dismissed', bg: '#F1F5F9', fg: '#475569' },
 };
 
 export const OPEN_STATUSES: EscalationStatus[] = ['Pending', 'Acknowledged', 'UnderReview'];

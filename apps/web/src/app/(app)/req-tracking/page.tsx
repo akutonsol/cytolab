@@ -44,20 +44,20 @@ function DetailDrawer({ requisitionId, onClose }: { requisitionId: string; onClo
         <div className="flex items-start justify-between border-b border-slate-200 p-5">
           <div>
             <h3 className="text-[18px] font-bold text-[#0F172A]">Requisition {data?.referenceNo ?? ''}</h3>
-            <p className="mt-0.5 text-[13px] text-[#64748B]">{data ? `${data.clientName} · ${data.patientName}` : 'Loading…'}</p>
+            <p className="mt-0.5 text-[13px] text-[#475569]">{data ? `${data.clientName} · ${data.patientName}` : 'Loading…'}</p>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
         </div>
 
         {data && (
           <div className="flex-1 overflow-y-auto p-5">
-            <div className="flex items-center gap-2"><StageBadge stage={data.currentStage} /><span className="text-[12px] text-[#94A3B8]">in stage {timeInStage(data.stageEnteredAt).label}</span></div>
+            <div className="flex items-center gap-2"><StageBadge stage={data.currentStage} /><span className="text-[12px] text-[#475569]">in stage {timeInStage(data.stageEnteredAt).label}</span></div>
             {data.detail.fileLocation && <div className="mt-2 text-[13px] text-[#334155]">Filed at: <span className="font-semibold">{data.detail.fileLocation}</span></div>}
 
             {/* Actions */}
             {canEdit && data.currentStage !== 'Filed' && data.currentStage !== 'Rejected' && (
               <div className="mt-4 rounded-xl border border-[#E2E8F0] p-3">
-                <div className="mb-2 text-[12px] font-bold uppercase tracking-wide text-[#94A3B8]">Advance Stage</div>
+                <div className="mb-2 text-[12px] font-bold uppercase tracking-wide text-[#475569]">Advance Stage</div>
                 {data.currentStage === 'Verified' ? (
                   <div className="flex gap-2">
                     <input value={fileLocation} onChange={(e) => setFileLocation(e.target.value)} placeholder="File location, e.g. Cabinet A, Drawer 3" className="h-9 flex-1 rounded-lg border border-[#E2E8F0] px-2.5 text-[13px] outline-none focus:border-[#4F46E5]" />
@@ -77,9 +77,9 @@ function DetailDrawer({ requisitionId, onClose }: { requisitionId: string; onClo
 
             {/* Timeline */}
             <div className="mt-5">
-              <div className="mb-2 text-[12px] font-bold uppercase tracking-wide text-[#94A3B8]">Custody Timeline</div>
+              <div className="mb-2 text-[12px] font-bold uppercase tracking-wide text-[#475569]">Custody Timeline</div>
               {data.events.length === 0 ? (
-                <div className="text-[13px] text-[#94A3B8]">No events yet.</div>
+                <div className="text-[13px] text-[#475569]">No events yet.</div>
               ) : (
                 <div className="flex flex-col gap-3">
                   {data.events.map((e) => (
@@ -88,9 +88,9 @@ function DetailDrawer({ requisitionId, onClose }: { requisitionId: string; onClo
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
                           <StageBadge stage={e.stage} />
-                          <span className="text-[11px] text-[#94A3B8]">{new Date(e.performedAt).toLocaleString()}</span>
+                          <span className="text-[11px] text-[#475569]">{new Date(e.performedAt).toLocaleString()}</span>
                         </div>
-                        <div className="mt-1 text-[12px] text-[#64748B]">{e.performedBy ? `${e.performedBy.firstName} ${e.performedBy.lastName}` : '—'}{e.notes ? ` · ${e.notes}` : ''}{e.scannedBarcode ? ` · 🔖 ${e.scannedBarcode}` : ''}</div>
+                        <div className="mt-1 text-[12px] text-[#475569]">{e.performedBy ? `${e.performedBy.firstName} ${e.performedBy.lastName}` : '—'}{e.notes ? ` · ${e.notes}` : ''}{e.scannedBarcode ? ` · 🔖 ${e.scannedBarcode}` : ''}</div>
                       </div>
                     </div>
                   ))}
@@ -130,24 +130,24 @@ function ScannerModal({ onClose, onOpenDetail }: { onClose: () => void; onOpenDe
       <div className="w-full max-w-[460px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-[18px] font-bold text-[#0F172A]"><ScanLine size={20} className="text-[#4F46E5]" /> Scan Barcode</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#64748B] hover:bg-slate-100"><X size={16} /></button>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
         </div>
         <form onSubmit={(e) => { e.preventDefault(); if (value.trim()) scan.mutate(value.trim()); }}>
           <input ref={inputRef} value={value} onChange={(e) => setValue(e.target.value)} placeholder="Scan or type barcode / req number…"
             className="h-12 w-full rounded-xl border-2 border-[#E2E8F0] px-4 text-[16px] outline-none focus:border-[#4F46E5]" />
-          <p className="mt-2 text-[12px] text-[#94A3B8]">Position the scanner and press Enter, or type the requisition number.</p>
+          <p className="mt-2 text-[12px] text-[#475569]">Position the scanner and press Enter, or type the requisition number.</p>
         </form>
         {result && (result.found ? (
           <div className="mt-4 rounded-xl border border-[#C7D2FE] bg-[#EEF2FF] p-4">
             <div className="flex items-center justify-between"><span className="text-[14px] font-bold text-[#0F172A]">Requisition {result.referenceNo}</span><StageBadge stage={result.currentStage} /></div>
-            <div className="mt-1 text-[13px] text-[#64748B]">{result.clientName} · {result.patientName}</div>
+            <div className="mt-1 text-[13px] text-[#475569]">{result.clientName} · {result.patientName}</div>
             <div className="mt-3 flex gap-2">
               {result.nextAction && result.nextAction.endpoint !== 'file' && (
                 <button onClick={() => advance.mutate({ id: result.requisitionId, endpoint: result.nextAction.endpoint })} className="flex items-center gap-1.5 rounded-lg bg-[#4F46E5] px-3.5 py-2 text-[13px] font-semibold text-white">
                   <ArrowRight size={15} /> {result.nextAction.label}
                 </button>
               )}
-              <button onClick={() => { onOpenDetail(result.requisitionId); onClose(); }} className="rounded-lg border border-[#E2E8F0] px-3.5 py-2 text-[13px] font-semibold text-[#64748B]">Open Details</button>
+              <button onClick={() => { onOpenDetail(result.requisitionId); onClose(); }} className="rounded-lg border border-[#E2E8F0] px-3.5 py-2 text-[13px] font-semibold text-[#475569]">Open Details</button>
             </div>
           </div>
         ) : (
@@ -163,7 +163,7 @@ function Kpi({ label, value, fg, bg }: { label: string; value: number; fg: strin
   return (
     <div className="rounded-2xl border border-[#EEF2F7] bg-white p-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
       <div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div>
-      <div className="mt-1.5 flex items-center gap-1.5 text-[13px] text-[#64748B]"><span className="h-2 w-2 rounded-full" style={{ background: bg }} />{label}</div>
+      <div className="mt-1.5 flex items-center gap-1.5 text-[13px] text-[#475569]"><span className="h-2 w-2 rounded-full" style={{ background: bg }} />{label}</div>
     </div>
   );
 }
@@ -279,10 +279,10 @@ export default function ReqTrackingPage() {
                       className="cursor-pointer rounded-xl border border-[#EEF2F7] bg-white p-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-shadow hover:shadow-md">
                       <div className="flex items-center justify-between">
                         <span className="text-[13px] font-bold text-[#0F172A]">{c.referenceNo}</span>
-                        <span className="text-[11px] font-semibold" style={{ color: tis.over24h ? '#B91C1C' : '#94A3B8' }}>{tis.label}</span>
+                        <span className="text-[11px] font-semibold" style={{ color: tis.over24h ? '#B91C1C' : '#475569' }}>{tis.label}</span>
                       </div>
                       <div className="mt-0.5 truncate text-[12px] text-[#334155]">{c.patientName}</div>
-                      <div className="truncate text-[11px] text-[#94A3B8]">{c.clientName}</div>
+                      <div className="truncate text-[11px] text-[#475569]">{c.clientName}</div>
                       {canEdit && next && next.endpoint !== 'file' && (
                         <button onClick={(e) => { e.stopPropagation(); quickAdvance.mutate({ id: c.requisitionId, endpoint: next.endpoint }); }}
                           className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg bg-[#EEF2FF] px-2 py-1 text-[11px] font-semibold text-[#4F46E5]">
@@ -321,9 +321,9 @@ export default function ReqTrackingPage() {
         <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2200, background: 'rgba(15,23,42,0.55)' }} onClick={() => setBenchPromptReq(null)}>
           <div className="w-full max-w-[380px] rounded-2xl bg-white p-6 text-center shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="text-[17px] font-bold text-[#0F172A]">Specimen received at bench</div>
-            <p className="mt-1.5 text-[14px] text-[#64748B]">Print slide labels now?</p>
+            <p className="mt-1.5 text-[14px] text-[#475569]">Print slide labels now?</p>
             <div className="mt-5 flex justify-center gap-2">
-              <button onClick={() => setBenchPromptReq(null)} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#64748B]">Not now</button>
+              <button onClick={() => setBenchPromptReq(null)} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#475569]">Not now</button>
               <button onClick={() => openLabelsForRequisition(benchPromptReq)} className="rounded-lg bg-[#4F46E5] px-4 py-2 text-[14px] font-semibold text-white">Print Labels</button>
             </div>
           </div>

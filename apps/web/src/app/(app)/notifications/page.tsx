@@ -30,7 +30,7 @@ const ICON: Record<string, { bg: string; color: string; Icon: any }> = {
   APPOINTMENT_REMINDER: { bg: '#EEF2FF', color: '#4F46E5', Icon: Clock },
   SYSTEM_ALERT: { bg: '#F8F9FF', color: '#4F46E5', Icon: Bell },
 };
-const DEFAULT_ICON = { bg: '#F1F0EA', color: '#64748B', Icon: Bell };
+const DEFAULT_ICON = { bg: '#F1F0EA', color: '#475569', Icon: Bell };
 
 const RECORD_TYPES = ['RECORD_SUBMITTED', 'RECORD_RESULTED', 'RECORD_APPROVED', 'RECORD_FAILED', 'AUTHORIZATION_NEEDED'];
 const REQUEST_TYPES = ['CHANGE_REQUEST_RECEIVED', 'CHANGE_REQUEST_REPLIED'];
@@ -94,7 +94,7 @@ export default function NotificationsPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-[28px] font-bold tracking-tight text-[#0F172A]">Notifications</h1>
-          <p className="mt-1 text-[14px] text-[#64748B]">{unread} unread</p>
+          <p className="mt-1 text-[14px] text-[#475569]">{unread} unread</p>
         </div>
         {unread > 0 && (
           <button onClick={() => markAll.mutate()} disabled={markAll.isPending}
@@ -106,7 +106,7 @@ export default function NotificationsPage() {
       <div className="mb-5 inline-flex flex-wrap gap-1 rounded-xl border border-[#E5E3DC] bg-white p-1">
         {TABS.map(([v, l]) => (
           <button key={v} onClick={() => setTab(v)}
-            className={`rounded-lg px-4 py-2 text-[13px] font-semibold transition-colors ${tab === v ? 'bg-[#4F46E5] text-white' : 'text-[#64748B] hover:text-[#0F172A]'}`}>{l}</button>
+            className={`rounded-lg px-4 py-2 text-[13px] font-semibold transition-colors ${tab === v ? 'bg-[#4F46E5] text-white' : 'text-[#475569] hover:text-[#0F172A]'}`}>{l}</button>
         ))}
       </div>
 
@@ -115,8 +115,8 @@ export default function NotificationsPage() {
         {shown.length === 0 && !initialLoading ? (
           <div className="flex flex-col items-center gap-2 py-20 text-center">
             <Bell size={48} className="text-[#E2E8F0]" />
-            <div className="text-[16px] font-semibold text-[#64748B]">No notifications</div>
-            <div className="text-[13px] text-[#94A3B8]">You&apos;re all caught up!</div>
+            <div className="text-[16px] font-semibold text-[#475569]">No notifications</div>
+            <div className="text-[13px] text-[#475569]">You&apos;re all caught up!</div>
           </div>
         ) : (
           shown.map((n) => {
@@ -128,14 +128,14 @@ export default function NotificationsPage() {
                 <span style={{ background: ic.bg, color: ic.color }} className="grid h-10 w-10 shrink-0 place-items-center rounded-full"><ic.Icon size={18} /></span>
                 <div className="min-w-0 flex-1">
                   <div className="text-[14px] font-semibold" style={{ color: n.read ? '#374151' : '#0F172A' }}>{n.title}</div>
-                  <div className="mt-0.5 text-[13px] text-[#64748B]">{n.body}</div>
-                  <div className="mt-1 text-[11px] text-[#94A3B8]">{relTime(n.createdAt)}</div>
+                  <div className="mt-0.5 text-[13px] text-[#475569]">{n.body}</div>
+                  <div className="mt-1 text-[11px] text-[#475569]">{relTime(n.createdAt)}</div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2 pt-1">
                   {!n.read && <span className="h-2 w-2 rounded-full bg-[#4F46E5]" />}
                   {!n.read && (
                     <button title="Mark read" onClick={(e) => { e.stopPropagation(); markRead.mutate(n.id); }}
-                      className="grid h-7 w-7 place-items-center rounded-lg text-[#94A3B8] opacity-0 transition-opacity hover:bg-[#F1F0EA] hover:text-[#0F172A] group-hover:opacity-100"><X size={14} /></button>
+                      className="grid h-7 w-7 place-items-center rounded-lg text-[#475569] opacity-0 transition-opacity hover:bg-[#F1F0EA] hover:text-[#0F172A] group-hover:opacity-100"><X size={14} /></button>
                   )}
                 </div>
               </div>

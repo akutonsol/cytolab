@@ -103,7 +103,7 @@ export default function ModuleManagementPage() {
         <p className="text-[13px] font-medium">Changes take effect immediately for all users. Disabled modules retain all their data.</p>
       </div>
 
-      {isLoading && <div className="rounded-2xl border border-[#EEF2F7] bg-white p-8 text-center text-[14px] text-[#94A3B8]">Loading modules…</div>}
+      {isLoading && <div className="rounded-2xl border border-[#EEF2F7] bg-white p-8 text-center text-[14px] text-[#475569]">Loading modules…</div>}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {modules.map(({ row, def }) => {
@@ -116,9 +116,9 @@ export default function ModuleManagementPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[16px] font-bold text-[#0F172A]">{def.name}</span>
                     <span className="rounded-full bg-[#EEF2FF] px-2.5 py-0.5 text-[11px] font-bold text-[#4F46E5]">Tier {def.tier}</span>
-                    {!isBuilt(row.featureKey) && <span className="rounded-full bg-[#F1F5F9] px-2.5 py-0.5 text-[11px] font-semibold text-[#64748B]">Coming soon</span>}
+                    {!isBuilt(row.featureKey) && <span className="rounded-full bg-[#F1F5F9] px-2.5 py-0.5 text-[11px] font-semibold text-[#475569]">Coming soon</span>}
                   </div>
-                  <p className="mt-1.5 text-[13px] leading-relaxed text-[#64748B]">{def.description}</p>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-[#475569]">{def.description}</p>
                 </div>
                 {/* Toggle switch */}
                 <button
@@ -147,8 +147,8 @@ export default function ModuleManagementPage() {
                 </div>
               )}
 
-              <div className="mt-3 flex items-center justify-between text-[11px] text-[#94A3B8]">
-                <span style={{ color: row.isEnabled ? '#16A34A' : '#94A3B8', fontWeight: 600 }}>{row.isEnabled ? 'Enabled' : 'Disabled'}</span>
+              <div className="mt-3 flex items-center justify-between text-[11px] text-[#475569]">
+                <span style={{ color: row.isEnabled ? '#16A34A' : '#475569', fontWeight: 600 }}>{row.isEnabled ? 'Enabled' : 'Disabled'}</span>
                 {stamp && <span>Last changed {stamp}{row.enabledByName ? ` · ${row.enabledByName}` : ''}</span>}
               </div>
             </div>
@@ -163,7 +163,7 @@ export default function ModuleManagementPage() {
           <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-2xl">
             <div className="mb-1 flex items-center justify-between">
               <h2 className="text-[18px] font-bold text-[#0F172A]">{pending.next ? 'Enable' : 'Disable'} {pendingDef.name}?</h2>
-              <button onClick={() => setPending(null)} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-[#64748B] hover:bg-[#F1F5F9]"><X size={18} /></button>
+              <button onClick={() => setPending(null)} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-[#475569] hover:bg-[#F1F5F9]"><X size={18} /></button>
             </div>
             <p className="mt-2 text-[14px] leading-relaxed text-[#475569]">
               {pending.next

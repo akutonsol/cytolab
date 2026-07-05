@@ -25,9 +25,9 @@ function CodingStatusBadge({ recordId }: { recordId: string }) {
   const m = CODING_STATUS_META[status];
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <span style={{ fontSize: 12, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Coding</span>
+      <span style={{ fontSize: 12, fontWeight: 600, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Coding</span>
       <span style={{ background: m.bg, color: m.fg, boxShadow: m.outline ? `inset 0 0 0 1px ${m.fg}` : undefined, borderRadius: 999, padding: '2px 10px', fontSize: 12, fontWeight: 700 }}>{m.label}</span>
-      {list.length > 0 && <span style={{ fontSize: 12, color: '#64748B' }}>{list.length} code{list.length === 1 ? '' : 's'}</span>}
+      {list.length > 0 && <span style={{ fontSize: 12, color: '#475569' }}>{list.length} code{list.length === 1 ? '' : 's'}</span>}
     </div>
   );
 }
@@ -498,7 +498,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>
                   Authorization Signature
                 </div>
-                <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>
+                <div style={{ fontSize: 12, color: '#475569', marginTop: 2 }}>
                   Your signature will appear on the released report
                 </div>
               </div>
@@ -536,7 +536,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
                   onChange={(e) => setSaveSignature(e.target.checked)}
                   style={{ accentColor: '#4F46E5', width: 15, height: 15 }}
                 />
-                <span style={{ fontSize: 12, color: '#64748B' }}>
+                <span style={{ fontSize: 12, color: '#475569' }}>
                   Save signature to my profile for future authorizations
                 </span>
               </label>

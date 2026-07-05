@@ -17,7 +17,7 @@ import { GlassCard } from '@/components/dashboard/glass-card';
 import { ActivityTray } from '@/components/dashboard/ActivityTray';
 import { PerformanceArea, SubscriptionBars } from './charts';
 
-const GREEN = '#22c55e', BLUE = '#4F46E5';
+const GREEN = '#166534', BLUE = '#4F46E5';
 // The page is transparent so it shows the layout's single shared canvas gradient
 // (top bar + content are one continuous surface, no seam). The DNA PNG has a
 // transparent background, so it overlays the gradient directly.
@@ -33,7 +33,7 @@ const dateShort = (d: string) => new Date(d).toLocaleDateString(undefined, { mon
 const dateTime = (d: string) => new Date(d).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const dotFor = (status: string) =>
   ['Approved', 'Completed', 'Paid', 'Billed'].includes(status) ? GREEN
-    : ['Deauthorized', 'Failed', 'Disabled'].includes(status) ? '#ef4444' : BLUE;
+    : ['Deauthorized', 'Failed', 'Disabled'].includes(status) ? '#991B1B' : BLUE;
 
 // Varied light icon chips (grey / sage / tan / blue-gray / lavender) with
 // patient/cytology-appropriate icons, cycled per row.
@@ -50,10 +50,10 @@ const CHIPS = [
 // data is present (see specimenTypesDynamic).
 const specimenTypes = [
   { label: 'Body Fluid', color: '#4F46E5', pct: 42 },
-  { label: 'Respiratory', color: '#06B6D4', pct: 28 },
-  { label: 'Urine', color: '#8B5CF6', pct: 16 },
-  { label: 'CSF', color: '#3B82F6', pct: 8 },
-  { label: 'Other', color: '#94A3B8', pct: 6 },
+  { label: 'Respiratory', color: '#0E7490', pct: 28 },
+  { label: 'Urine', color: '#6D28D9', pct: 16 },
+  { label: 'CSF', color: '#1D4ED8', pct: 8 },
+  { label: 'Other', color: '#475569', pct: 6 },
 ];
 
 // Human-readable specimen labels (enum → display). Falls back to a de-underscored
@@ -80,12 +80,12 @@ const specBucket = (t?: string | null) => {
 // Reusable, transparent, crisp — no raster assets. Zero-orange (FNA/body-fluid
 // map to teal/violet instead of the reference's amber suggestions).
 const SPECIMEN_PALETTE: Record<string, { bg: string; cells: string[]; nucleus: string }> = {
-  gyn: { bg: '#DCFCE7', cells: ['#86EFAC', '#4ADE80', '#22C55E'], nucleus: '#15803D' },
+  gyn: { bg: '#DCFCE7', cells: ['#86EFAC', '#4ADE80', '#166534'], nucleus: '#15803D' },
   urine: { bg: '#FFE4E6', cells: ['#FDA4AF', '#FB7185', '#F43F5E'], nucleus: '#BE123C' },
   csf: { bg: '#E0F2FE', cells: ['#7DD3FC', '#38BDF8', '#0EA5E9'], nucleus: '#0369A1' },
-  fluid: { bg: '#EDE9FE', cells: ['#C4B5FD', '#A78BFA', '#8B5CF6'], nucleus: '#6D28D9' },
-  fna: { bg: '#CCFBF1', cells: ['#5EEAD4', '#2DD4BF', '#14B8A6'], nucleus: '#0F766E' },
-  resp: { bg: '#DBEAFE', cells: ['#93C5FD', '#60A5FA', '#3B82F6'], nucleus: '#1D4ED8' },
+  fluid: { bg: '#EDE9FE', cells: ['#C4B5FD', '#A78BFA', '#6D28D9'], nucleus: '#6D28D9' },
+  fna: { bg: '#CCFBF1', cells: ['#5EEAD4', '#2DD4BF', '#0F766E'], nucleus: '#0F766E' },
+  resp: { bg: '#DBEAFE', cells: ['#93C5FD', '#60A5FA', '#1D4ED8'], nucleus: '#1D4ED8' },
   indigo: { bg: '#E0E7FF', cells: ['#A5B4FC', '#818CF8', '#6366F1'], nucleus: '#4338CA' },
 };
 const paletteFor = (type?: string | null) => {
@@ -123,7 +123,7 @@ function SeeAll({ label = 'See all', onClick }: { label?: string; onClick?: () =
     <button
       onClick={onClick}
       className="rounded-full px-3 py-1.5 text-[12px] font-semibold text-white transition-opacity hover:opacity-90"
-      style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)' }}
+      style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #6B21A8 100%)' }}
     >
       {label}
     </button>
@@ -140,19 +140,19 @@ function DatePill() {
 }
 
 const MODEL_VIEWS = ['Cervical', 'Fluid', 'FNA', 'Respiratory'];
-const MODEL_DOT = ['#6366F1', '#14B8A6', '#8B5CF6', '#3B82F6']; // indigo / teal / violet / blue
+const MODEL_DOT = ['#6366F1', '#0F766E', '#6D28D9', '#1D4ED8']; // indigo / teal / violet / blue
 // Hotspot marker layouts vary by GYN vs non-GYN specimen for visual variety.
 const MARKER_SETS: Record<string, { x: number; y: number; color: string }[]> = {
   GYN: [
     { x: 352, y: 100, color: '#6366F1' },
-    { x: 262, y: 290, color: '#8B5CF6' },
-    { x: 420, y: 320, color: '#06B6D4' },
-    { x: 310, y: 458, color: '#8B5CF6' },
+    { x: 262, y: 290, color: '#6D28D9' },
+    { x: 420, y: 320, color: '#0E7490' },
+    { x: 310, y: 458, color: '#6D28D9' },
   ],
   NONGYN: [
     { x: 300, y: 120, color: '#6366F1' },
-    { x: 240, y: 310, color: '#8B5CF6' },
-    { x: 440, y: 290, color: '#06B6D4' },
+    { x: 240, y: 310, color: '#6D28D9' },
+    { x: 440, y: 290, color: '#0E7490' },
     { x: 352, y: 440, color: '#6366F1' },
   ],
 };
@@ -294,7 +294,7 @@ export default function DashboardPage() {
               <span style={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: 12, background: '#E0E7FF', color: '#4F46E5', flexShrink: 0 }}><GraduationCap size={22} /></span>
               <span style={{ flex: 1 }}>
                 <span style={{ display: 'block', fontSize: 16, fontWeight: 700, color: '#0F172A' }}>{activeProfTests} active proficiency test{activeProfTests === 1 ? '' : 's'}</span>
-                <span style={{ display: 'block', fontSize: 13, color: '#64748B', marginTop: 2 }}>Complete your blind review before the deadline</span>
+                <span style={{ display: 'block', fontSize: 13, color: '#475569', marginTop: 2 }}>Complete your blind review before the deadline</span>
               </span>
               <span style={{ fontSize: 13, fontWeight: 700, color: '#4F46E5' }}>Open →</span>
             </button>
@@ -314,7 +314,7 @@ export default function DashboardPage() {
                 <span style={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: 12, background: chipBg, color: accent, flexShrink: 0 }}><CalendarClock size={22} /></span>
                 <span style={{ flex: 1 }}>
                   <span style={{ display: 'block', fontSize: 16, fontWeight: 700, color: '#0F172A' }}>{recallsDue} recall{recallsDue === 1 ? '' : 's'} due</span>
-                  <span style={{ display: 'block', fontSize: 13, color: '#64748B', marginTop: 2 }}>
+                  <span style={{ display: 'block', fontSize: 13, color: '#475569', marginTop: 2 }}>
                     {(recallSummary?.overdue ?? 0) > 0 && `${recallSummary!.overdue} overdue · `}
                     Patients due for repeat cytology follow-up
                   </span>
@@ -332,7 +332,7 @@ export default function DashboardPage() {
               <span style={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: 12, background: '#E0E7FF', color: '#4F46E5', flexShrink: 0 }}><Video size={22} /></span>
               <span style={{ flex: 1 }}>
                 <span style={{ display: 'block', fontSize: 16, fontWeight: 700, color: '#0F172A' }}>{consultAnalytics!.pending} active consultation{consultAnalytics!.pending === 1 ? '' : 's'}</span>
-                <span style={{ display: 'block', fontSize: 13, color: '#64748B', marginTop: 2 }}>
+                <span style={{ display: 'block', fontSize: 13, color: '#475569', marginTop: 2 }}>
                   {consultAnalytics!.responded} responded · external second opinions
                 </span>
               </span>
@@ -358,7 +358,7 @@ export default function DashboardPage() {
                 label: 'Active Specimens',
                 value: d.priorityRecords?.length || 0,
                 sub: `${d.priorityRecords?.filter((r: any) => r.urgent).length || 0} urgent`,
-                subColor: '#EF4444',
+                subColor: '#991B1B',
                 isPriority: true,
               },
               {
@@ -366,21 +366,21 @@ export default function DashboardPage() {
                 label: 'Cases Today',
                 value: ov?.today?.requisitionsToday || 0,
                 sub: 'received today',
-                subColor: '#94A3B8',
+                subColor: '#475569',
               },
               {
                 icon: <Clock size={20} color="#4F46E5" />,
                 label: 'Avg Turnaround',
                 value: kpis?.avgTat ? `${kpis.avgTat}d` : '—',
                 sub: kpis?.avgTat <= 3 ? 'Within target' : 'Above target',
-                subColor: kpis?.avgTat <= 3 ? '#16A34A' : '#EF4444',
+                subColor: kpis?.avgTat <= 3 ? '#166534' : '#991B1B',
               },
               {
                 icon: <Activity size={20} color="#4F46E5" />,
                 label: 'Pending Review',
                 value: kpis?.pendingRequisitions || 0,
                 sub: `${d.priorityRecords?.filter((r: any) => r.urgent).length || 0} high priority`,
-                subColor: '#94A3B8',
+                subColor: '#475569',
                 isPriority: true,
               },
               {
@@ -388,7 +388,7 @@ export default function DashboardPage() {
                 label: 'Auth Rate',
                 value: `${eff?.authorization || 0}%`,
                 sub: eff?.authorization >= 80 ? 'On target' : 'Below target',
-                subColor: eff?.authorization >= 80 ? '#16A34A' : '#EF4444',
+                subColor: eff?.authorization >= 80 ? '#166534' : '#991B1B',
               },
             ].map(({ icon, label, value, sub, subColor, isPriority }, i) => (
               <div key={i} style={{
@@ -415,7 +415,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <div style={{
-                    fontSize: 11, fontWeight: 700, color: '#94A3B8',
+                    fontSize: 11, fontWeight: 700, color: '#475569',
                     letterSpacing: '0.06em', textTransform: 'uppercase',
                     marginBottom: 2,
                   }}>{label}</div>
@@ -440,8 +440,8 @@ export default function DashboardPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <span style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Specimen Queue</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 999, padding: '4px 10px', cursor: 'pointer' }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#64748B' }}>All Types</span>
-                  <ChevronDown size={12} color="#94A3B8" />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>All Types</span>
+                  <ChevronDown size={12} color="#475569" />
                 </div>
               </div>
               <div className="premium-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, overflowY: 'auto', minHeight: 0 }}>
@@ -460,10 +460,10 @@ export default function DashboardPage() {
                             <span style={{ fontSize: 10, fontWeight: 600, color: '#4F46E5', background: '#EEF2FF', borderRadius: 999, padding: '2px 8px' }}>High Priority</span>
                           )}
                         </div>
-                        <div style={{ fontSize: 11, color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: 11, color: '#475569', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {specLabel(r.specimen)}{r.patient ? ` · ${r.patient}` : ''}
                         </div>
-                        <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 1 }}>
+                        <div style={{ fontSize: 10, color: '#475569', marginTop: 1 }}>
                           Received {new Date(r.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
@@ -484,8 +484,8 @@ export default function DashboardPage() {
               {/* Header (overlays the stage so the head can fill the panel) */}
               <div style={{ padding: '20px 24px 0', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 4 }}>
                 <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Cytology Model</div>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 600, color: '#16A34A', marginTop: 6 }}>
-                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.6)', animation: 'livePulse 2s ease-in-out infinite' }} />
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 600, color: '#166534', marginTop: 6 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#166534', boxShadow: '0 0 6px rgba(34,197,94,0.6)', animation: 'livePulse 2s ease-in-out infinite' }} />
                   Live Analysis
                 </div>
               </div>
@@ -495,11 +495,11 @@ export default function DashboardPage() {
                 <div style={{ position: 'relative', width: 760, height: 520, maxWidth: '100%', overflow: 'hidden' }}>
                   {(() => {
                     const isGyn = ['CERV_SCRAP', 'ENDOCERV_ASP', 'VAG_POOL'].includes(selectedRecord?.specimen ?? '');
-                    const markers = MARKER_SETS[isGyn ? 'GYN' : 'NONGYN'].map((m) => ({ ...m, color: selectedRecord?.urgent ? '#EF4444' : m.color }));
+                    const markers = MARKER_SETS[isGyn ? 'GYN' : 'NONGYN'].map((m) => ({ ...m, color: selectedRecord?.urgent ? '#991B1B' : m.color }));
                     const findings = [
                       { label: selectedRecord?.specimen ? specLabel(selectedRecord.specimen) : 'Awaiting Analysis', conf: eff?.authorization ?? 0, color: '#6366F1', y: 100, attention: selectedRecord?.urgent ?? false },
-                      { label: `${eff?.onTime ?? 0}% On-time Rate`, conf: eff?.onTime ?? 0, color: '#3B82F6', y: 214, attention: (eff?.onTime ?? 0) < 70 },
-                      { label: `${eff?.accuracy ?? 0}% Accuracy Score`, conf: eff?.accuracy ?? 0, color: '#8B5CF6', y: 314, attention: (eff?.accuracy ?? 0) < 80 },
+                      { label: `${eff?.onTime ?? 0}% On-time Rate`, conf: eff?.onTime ?? 0, color: '#1D4ED8', y: 214, attention: (eff?.onTime ?? 0) < 70 },
+                      { label: `${eff?.accuracy ?? 0}% Accuracy Score`, conf: eff?.accuracy ?? 0, color: '#6D28D9', y: 314, attention: (eff?.accuracy ?? 0) < 80 },
                       { label: `${eff?.reportsAuthorized ?? 0} Reports Authorized`, conf: Math.min(100, Math.round(((eff?.reportsAuthorized ?? 0) / Math.max(eff?.specimensProcessed ?? 1, 1)) * 100)), color: '#6366F1', y: 452, attention: false },
                     ];
                     const LX = 500; // label dot x
@@ -552,7 +552,7 @@ export default function DashboardPage() {
                             <div style={{ fontSize: 13, color: '#6B7280', marginLeft: 19, marginTop: 2 }}>Confidence {f.conf}%</div>
                             {f.attention && (
                               <div style={{ marginLeft: 19, marginTop: 5 }}>
-                                <span style={{ fontSize: 11, fontWeight: 700, color: '#EF4444', background: '#FEF2F2', borderRadius: 6, padding: '2px 8px' }}>+ Attention</span>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: '#991B1B', background: '#FEF2F2', borderRadius: 6, padding: '2px 8px' }}>+ Attention</span>
                               </div>
                             )}
                           </div>
@@ -565,32 +565,32 @@ export default function DashboardPage() {
 
               {/* Processing Specimen overlay */}
               <div style={{ position: 'absolute', left: 20, top: 'auto', bottom: 110, zIndex: 4, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(12px)', borderRadius: 16, padding: '14px 18px', border: '1px solid rgba(79,70,229,0.12)', boxShadow: '0 8px 24px rgba(79,70,229,0.12)', width: 220 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Processing Specimen</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Processing Specimen</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 10, background: 'transparent', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                     <SpecimenIcon type={selectedRecord?.specimen} size={36} />
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{selectedRecord?.labNumber ?? '—'}</div>
-                    <div style={{ fontSize: 11, color: '#64748B' }}>{selectedRecord?.specimen ? specLabel(selectedRecord.specimen) : 'No active specimen'}</div>
-                    <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 1 }}>{selectedRecord?.patient ?? ''}</div>
+                    <div style={{ fontSize: 11, color: '#475569' }}>{selectedRecord?.specimen ? specLabel(selectedRecord.specimen) : 'No active specimen'}</div>
+                    <div style={{ fontSize: 11, color: '#475569', marginTop: 1 }}>{selectedRecord?.patient ?? ''}</div>
                   </div>
                 </div>
                 {(() => {
                   const pct = PROGRESS_MAP[selectedRecord?.status ?? 'Pending'] ?? 5;
                   return (
                     <>
-                      <div style={{ fontSize: 11, color: '#64748B', marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}>
+                      <div style={{ fontSize: 11, color: '#475569', marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}>
                         <span>Analyzing Cells…</span>
                         <span style={{ fontWeight: 700, color: '#4F46E5' }}>{pct}%</span>
                       </div>
                       <div style={{ height: 5, background: '#EEF2FF', borderRadius: 999, overflow: 'hidden' }}>
-                        <div style={{ height: 5, borderRadius: 999, background: 'linear-gradient(90deg,#4F46E5,#7C3AED)', width: `${pct}%`, transition: 'width 1s ease-out' }} />
+                        <div style={{ height: 5, borderRadius: 999, background: 'linear-gradient(90deg,#4F46E5,#6B21A8)', width: `${pct}%`, transition: 'width 1s ease-out' }} />
                       </div>
                     </>
                   );
                 })()}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: '#94A3B8' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: '#475569' }}>
                   <span>Estimated completion</span>
                   <span style={{ fontWeight: 600, color: '#4F46E5', fontFamily: 'monospace' }}>00:00:18</span>
                 </div>
@@ -605,8 +605,8 @@ export default function DashboardPage() {
                   </svg>
                   {MODEL_VIEWS[modelView]} View <ChevronDown size={14} />
                 </button>
-                <div style={{ textAlign: 'center', marginTop: 6, fontSize: 11, color: '#94A3B8', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2">
+                <div style={{ textAlign: 'center', marginTop: 6, fontSize: 11, color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2">
                     <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
                   </svg>
                   Click on markers to view cell details
@@ -624,7 +624,7 @@ export default function DashboardPage() {
               {/* Interpretation */}
               <div style={{ background: '#F4F4FB', borderRadius: 16, padding: '16px 18px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: '#64748B' }}>Interpretation</span>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: '#475569' }}>Interpretation</span>
                   <span style={{ fontSize: 11, fontWeight: 700, color: '#4F46E5', background: '#EEF2FF', borderRadius: 999, padding: '3px 10px' }}>High Confidence</span>
                 </div>
                 <div style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', letterSpacing: '-0.02em', marginBottom: 4 }}>
@@ -634,7 +634,7 @@ export default function DashboardPage() {
                       ? `${specLabel(selectedRecord.specimen)} Analysis`
                       : 'No Active Cases'}
                 </div>
-                <div style={{ fontSize: 14, color: '#64748B' }}>
+                <div style={{ fontSize: 14, color: '#475569' }}>
                   {selectedRecord?.client
                     ? `Client: ${selectedRecord.client}`
                     : 'Awaiting cytological analysis.'}
@@ -643,37 +643,37 @@ export default function DashboardPage() {
 
               {/* DIAGNOSIS */}
               <div style={{ marginBottom: 0 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Diagnosis</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Diagnosis</div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>
                   {selectedRecord?.urgent ? 'Atypical Cells Detected' : 'Specimen Under Review'}
                 </div>
-                <div style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>
+                <div style={{ fontSize: 13, color: '#475569', marginTop: 2 }}>
                   {selectedRecord?.client ?? 'Awaiting analysis'}
                 </div>
               </div>
 
               {/* CONFIDENCE */}
               <div style={{ padding: '12px 14px', background: '#F4F4FB', borderRadius: 12 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Confidence</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Confidence</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ flex: 1, height: 6, background: '#E2E8F0', borderRadius: 999 }}>
-                    <div style={{ height: 6, borderRadius: 999, background: 'linear-gradient(90deg,#4F46E5,#7C3AED)', width: `${targetConf}%`, transition: 'width 1s' }} />
+                    <div style={{ height: 6, borderRadius: 999, background: 'linear-gradient(90deg,#4F46E5,#6B21A8)', width: `${targetConf}%`, transition: 'width 1s' }} />
                   </div>
                   <span style={{ fontSize: 14, fontWeight: 800, color: '#4F46E5', fontFamily: 'Geist,sans-serif', minWidth: 36 }}>{displayConf}%</span>
                 </div>
-                <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 4 }}>Based on {eff?.specimensProcessed ?? 0} processed specimens</div>
+                <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>Based on {eff?.specimensProcessed ?? 0} processed specimens</div>
               </div>
 
               {/* DETECTED FEATURES */}
               <div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Detected Features</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Detected Features</div>
                 {[
                   { label: 'Specimen Type', value: specLabel(selectedRecord?.specimen) },
                   { label: 'Specimens Processed', value: `${eff?.specimensProcessed ?? 0} total` },
                   { label: 'Abnormal Cells', value: selectedRecord?.urgent ? 'Detected — Moderate' : 'Not detected' },
                 ].map(({ label, value }, i, arr) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: i < arr.length - 1 ? '1px solid #F1F0EA' : 'none' }}>
-                    <span style={{ fontSize: 13, color: '#64748B' }}>{label}</span>
+                    <span style={{ fontSize: 13, color: '#475569' }}>{label}</span>
                     <span style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{value}</span>
                   </div>
                 ))}
@@ -681,7 +681,7 @@ export default function DashboardPage() {
 
               {/* RECOMMENDED ACTION */}
               <div style={{ padding: '12px 14px', background: '#F0FDF4', borderRadius: 12, border: '1px solid #BBF7D0' }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#16A34A', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Recommended Action</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#166534', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Recommended Action</div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>
                   {selectedRecord?.urgent
                     ? 'Priority review — escalate to senior pathologist'
@@ -709,7 +709,7 @@ export default function DashboardPage() {
             <div style={{ background: '#FAFBFF', borderRadius: 20, padding: '20px 24px', border: '1px solid #F1F0EA' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Monthly Case Volume</span>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#64748B', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 999, padding: '3px 10px', cursor: 'pointer' }}>6 Months ▾</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 999, padding: '3px 10px', cursor: 'pointer' }}>6 Months ▾</div>
               </div>
               <SubscriptionBars data={volRows} />
               <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -721,7 +721,7 @@ export default function DashboardPage() {
                 ].map(({ value, label }) => (
                   <div key={label} style={{ background: '#F8F9FF', borderRadius: 12, padding: '12px 14px' }}>
                     <div style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{value}</div>
-                    <div style={{ fontSize: 12, color: '#64748B', fontWeight: 500, marginTop: 4 }}>{label}</div>
+                    <div style={{ fontSize: 12, color: '#475569', fontWeight: 500, marginTop: 4 }}>{label}</div>
                   </div>
                 ))}
               </div>
@@ -752,7 +752,7 @@ export default function DashboardPage() {
                   </svg>
                   <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                     <div style={{ fontSize: 30, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{totalSpecimens || d.priorityRecords?.length || 0}</div>
-                    <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600, textAlign: 'center', marginTop: 3 }}>Total Cases</div>
+                    <div style={{ fontSize: 11, color: '#475569', fontWeight: 600, textAlign: 'center', marginTop: 3 }}>Total Cases</div>
                   </div>
                 </div>
                 <div style={{ width: '100%', maxWidth: 280, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -760,7 +760,7 @@ export default function DashboardPage() {
                     <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ width: 9, height: 9, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                        <span style={{ fontSize: 13, color: '#64748B', fontWeight: 500 }}>{label}</span>
+                        <span style={{ fontSize: 13, color: '#475569', fontWeight: 500 }}>{label}</span>
                       </div>
                       <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{pct}%</span>
                     </div>
@@ -775,7 +775,7 @@ export default function DashboardPage() {
                 <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Performance</span>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: 22, fontWeight: 800, color: '#4F46E5', fontFamily: 'Geist,sans-serif', lineHeight: 1.1 }}>{eff?.authorization ?? 0}%</div>
-                  <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>Accuracy</div>
+                  <div style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>Accuracy</div>
                 </div>
               </div>
               <PerformanceArea />
@@ -787,9 +787,9 @@ export default function DashboardPage() {
                   { label: 'F1 Score', v: Math.min(99, (eff?.authorization ?? 0) + 4) },
                 ].map(({ label, v }) => (
                   <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ width: 82, fontSize: 12, color: '#64748B', fontWeight: 600, flexShrink: 0 }}>{label}</span>
+                    <span style={{ width: 82, fontSize: 12, color: '#475569', fontWeight: 600, flexShrink: 0 }}>{label}</span>
                     <div style={{ flex: 1, height: 8, borderRadius: 999, background: '#EEF0F6', overflow: 'hidden' }}>
-                      <div style={{ width: `${v}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg,#6366F1,#8B5CF6)' }} />
+                      <div style={{ width: `${v}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg,#6366F1,#6D28D9)' }} />
                     </div>
                     <span style={{ width: 36, textAlign: 'right', fontSize: 12, fontWeight: 700, color: '#0F172A', flexShrink: 0 }}>{v}%</span>
                   </div>
@@ -814,9 +814,9 @@ export default function DashboardPage() {
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{meta.title}</div>
-                        {a.labNumber && <div style={{ fontSize: 12, color: '#94A3B8', fontWeight: 500, marginTop: 2 }}>{a.labNumber}</div>}
+                        {a.labNumber && <div style={{ fontSize: 12, color: '#475569', fontWeight: 500, marginTop: 2 }}>{a.labNumber}</div>}
                       </div>
-                      <div style={{ fontSize: 12, color: '#94A3B8', fontWeight: 500, flexShrink: 0 }}>{new Date(a.at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</div>
+                      <div style={{ fontSize: 12, color: '#475569', fontWeight: 500, flexShrink: 0 }}>{new Date(a.at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</div>
                     </div>
                   );
                 })}

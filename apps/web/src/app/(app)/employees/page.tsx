@@ -159,7 +159,7 @@ export default function EmployeesPage() {
                       <td className="px-4 py-3">
                         {e.isActive
                           ? <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-label-sm text-label-sm font-medium" style={{ background: '#F0FDF4', color: '#16A34A' }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: '#16A34A' }} />Active</span>
-                          : <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-label-sm text-label-sm font-medium" style={{ background: '#F1F5F9', color: '#64748B' }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: '#94A3B8' }} />Inactive</span>}
+                          : <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-label-sm text-label-sm font-medium" style={{ background: '#F1F5F9', color: '#475569' }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: '#475569' }} />Inactive</span>}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">

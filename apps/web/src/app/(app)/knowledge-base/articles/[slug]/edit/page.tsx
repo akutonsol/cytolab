@@ -17,9 +17,9 @@ export default function EditArticlePage() {
   return (
     <KbAccessGate>
       {isLoading ? (
-        <div className="p-10 text-center text-[14px] text-[#94A3B8]" style={{ background: '#F8FAFC' }}>Loading…</div>
+        <div className="p-10 text-center text-[14px] text-[#475569]" style={{ background: '#F8FAFC' }}>Loading…</div>
       ) : isError || !article ? (
-        <div className="p-10 text-center text-[14px] text-[#94A3B8]" style={{ background: '#F8FAFC' }}>Article not found.</div>
+        <div className="p-10 text-center text-[14px] text-[#475569]" style={{ background: '#F8FAFC' }}>Article not found.</div>
       ) : (
         <ArticleEditor article={article} />
       )}

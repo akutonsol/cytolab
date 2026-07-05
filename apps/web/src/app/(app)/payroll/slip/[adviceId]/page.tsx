@@ -19,11 +19,11 @@ export default function PayslipPage() {
   return (
     <div className="min-h-full" style={{ background: '#F8FAFC' }}>
       <div className="py-8">
-        <button onClick={() => router.back()} className="no-print mb-4 flex items-center gap-1.5 text-[13px] font-medium text-[#64748B] hover:text-[#0F172A]">
+        <button onClick={() => router.back()} className="no-print mb-4 flex items-center gap-1.5 text-[13px] font-medium text-[#475569] hover:text-[#0F172A]">
           <ArrowLeft size={15} /> Back
         </button>
         {isLoading ? (
-          <div className="rounded-2xl border border-[#E2E8F0] bg-white p-12 text-center text-[14px] text-[#64748B]">Loading payslip…</div>
+          <div className="rounded-2xl border border-[#E2E8F0] bg-white p-12 text-center text-[14px] text-[#475569]">Loading payslip…</div>
         ) : isError || !slip ? (
           <div className="rounded-2xl border border-[#FECACA] bg-[#FEF2F2] p-8 text-center text-[15px] font-semibold text-[#991B1B]">Payslip not found</div>
         ) : (

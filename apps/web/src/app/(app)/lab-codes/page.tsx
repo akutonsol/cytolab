@@ -168,7 +168,7 @@ function LabCodesTab() {
       <div className="min-w-0 flex-1">
         {/* KPI strip */}
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <KpiCard icon={<Tag size={20} />} iconClass="bg-violet-50 text-violet-600" label="Total Lab Codes" value={total} sub="All lab region codes" spark="#94A3B8" />
+          <KpiCard icon={<Tag size={20} />} iconClass="bg-violet-50 text-violet-600" label="Total Lab Codes" value={total} sub="All lab region codes" spark="#475569" />
           <KpiCard icon={<Globe size={20} />} iconClass="bg-green-50 text-green-700" label="Regions" value={regions.length} sub="Covered regions" spark="#16A34A" />
           <KpiCard icon={<ShieldCheck size={20} />} iconClass="bg-blue-50 text-blue-600" label="Active Codes" value={activeCount} sub={`${activePct}% active`} spark="#2563EB" />
           <KpiCard icon={<Database size={20} />} iconClass="bg-yellow-50 text-yellow-400" label="Codes In Use" value={codesInUse} sub="Referenced by clients" spark="#FACC15" />
@@ -430,7 +430,7 @@ function CodeCatalogTab({ variant }: { variant: 'sheets' | 'findings' }) {
     <div>
       {/* KPI strip */}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <KpiCard icon={<cfg.emptyIcon size={20} />} iconClass="bg-violet-50 text-violet-600" label={cfg.totalLabel} value={total} sub={cfg.totalSub} spark="#94A3B8" />
+        <KpiCard icon={<cfg.emptyIcon size={20} />} iconClass="bg-violet-50 text-violet-600" label={cfg.totalLabel} value={total} sub={cfg.totalSub} spark="#475569" />
         <KpiCard icon={<cfg.midIcon size={20} />} iconClass="bg-green-50 text-green-700" label={cfg.midLabel} value={mid} sub={cfg.midSub} spark="#16A34A" />
         <KpiCard icon={<Clock size={20} />} iconClass="bg-blue-50 text-blue-600" label="Recently Added" value={recentlyAdded} sub="Last 30 days" spark="#2563EB" />
       </div>

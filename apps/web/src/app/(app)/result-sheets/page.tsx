@@ -30,30 +30,30 @@ interface Rec {
 }
 
 // ── Palette (zero-orange: amber → detector-safe yellow / lime) ────────────────
-const GREEN = '#16A34A', RED = '#EF4444', YELLOW = '#FACC15', AMBER = '#EAB308', LIME = '#65A30D', INDIGO = '#6366F1', SLATE = '#94A3B8';
+const GREEN = '#166534', RED = '#991B1B', YELLOW = '#854D0E', AMBER = '#854D0E', LIME = '#3F6212', INDIGO = '#6366F1', SLATE = '#475569';
 
 // Specimen enum → display label + accent colour.
 const SPEC_META: Record<string, { label: string; color: string }> = {
-  PLEURAL_FLD: { label: 'Pleural Fluid', color: '#3B82F6' },
-  BODY_FLUID: { label: 'Body Fluid', color: '#14B8A6' },
-  BREAST_ASP: { label: 'Breast Aspirate', color: '#EC4899' },
+  PLEURAL_FLD: { label: 'Pleural Fluid', color: '#1D4ED8' },
+  BODY_FLUID: { label: 'Body Fluid', color: '#0F766E' },
+  BREAST_ASP: { label: 'Breast Aspirate', color: '#9D174D' },
   URINE: { label: 'Urine Cytology', color: YELLOW },
-  CERV_SCRAP: { label: 'Cervical Scrape', color: '#22C55E' },
-  ENDOCERV_ASP: { label: 'Endocervical Asp.', color: '#8B5CF6' },
-  VAG_POOL: { label: 'Vaginal Pool', color: '#8B5CF6' },
-  CSF: { label: 'CSF', color: '#06B6D4' },
-  SYNOVIAL_FLD: { label: 'Synovial Fluid', color: '#14B8A6' },
-  JOINT_ASP: { label: 'Joint Asp.', color: '#14B8A6' },
-  SPUTUM: { label: 'Sputum', color: '#3B82F6' },
-  BRONCHIAL_WASH: { label: 'Bronchial Wash', color: '#3B82F6' },
-  THYROID_FNA: { label: 'Thyroid FNA', color: '#0D9488' },
-  LYMPH_NODE: { label: 'Lymph Node FNA', color: '#0D9488' },
+  CERV_SCRAP: { label: 'Cervical Scrape', color: '#166534' },
+  ENDOCERV_ASP: { label: 'Endocervical Asp.', color: '#6D28D9' },
+  VAG_POOL: { label: 'Vaginal Pool', color: '#6D28D9' },
+  CSF: { label: 'CSF', color: '#0E7490' },
+  SYNOVIAL_FLD: { label: 'Synovial Fluid', color: '#0F766E' },
+  JOINT_ASP: { label: 'Joint Asp.', color: '#0F766E' },
+  SPUTUM: { label: 'Sputum', color: '#1D4ED8' },
+  BRONCHIAL_WASH: { label: 'Bronchial Wash', color: '#1D4ED8' },
+  THYROID_FNA: { label: 'Thyroid FNA', color: '#115E59' },
+  LYMPH_NODE: { label: 'Lymph Node FNA', color: '#115E59' },
   OTHER: { label: 'Other', color: SLATE },
 };
 const prettify = (t: string) => t.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 const specMeta = (t?: string) => SPEC_META[t ?? ''] ?? { label: t ? prettify(t) : 'Other', color: SLATE };
 
-const AVATAR_HEX = ['#4F46E5', '#7C3AED', '#2563EB', '#0D9488', '#16A34A', '#9333EA'];
+const AVATAR_HEX = ['#4F46E5', '#6B21A8', '#1D4ED8', '#115E59', '#166534', '#7E22CE'];
 const avatarBg = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h += s.charCodeAt(i); return AVATAR_HEX[h % AVATAR_HEX.length]; };
 const initialsOf = (name: string) => name.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?';
 
@@ -78,21 +78,21 @@ const confMeta = (pct: number) => pct >= 90 ? { color: GREEN, label: 'High' } : 
 
 // Status pill colours.
 const STATUS_PILL: Record<string, { bg: string; fg: string; label: string }> = {
-  Pending: { bg: '#F1F5F9', fg: '#64748B', label: 'PENDING' },
+  Pending: { bg: '#F1F5F9', fg: '#475569', label: 'PENDING' },
   Submitted: { bg: '#EEF2FF', fg: '#4F46E5', label: 'SUBMITTED' },
-  Processing: { bg: '#E0F2FE', fg: '#0284C7', label: 'PROCESSING' },
-  Partial: { bg: '#E0F2FE', fg: '#0284C7', label: 'PARTIAL' },
-  Resulted: { bg: '#EDE9FE', fg: '#7C3AED', label: 'RESULTED' },
-  Completed: { bg: '#EDE9FE', fg: '#7C3AED', label: 'COMPLETED' },
-  Approved: { bg: '#DCFCE7', fg: '#16A34A', label: 'AUTHORIZED' },
-  Billed: { bg: '#DCFCE7', fg: '#16A34A', label: 'BILLED' },
-  Paid: { bg: '#DCFCE7', fg: '#16A34A', label: 'PAID' },
-  Viewed: { bg: '#DCFCE7', fg: '#16A34A', label: 'VIEWED' },
+  Processing: { bg: '#E0F2FE', fg: '#075985', label: 'PROCESSING' },
+  Partial: { bg: '#E0F2FE', fg: '#075985', label: 'PARTIAL' },
+  Resulted: { bg: '#EDE9FE', fg: '#6B21A8', label: 'RESULTED' },
+  Completed: { bg: '#EDE9FE', fg: '#6B21A8', label: 'COMPLETED' },
+  Approved: { bg: '#DCFCE7', fg: '#166534', label: 'AUTHORIZED' },
+  Billed: { bg: '#DCFCE7', fg: '#166534', label: 'BILLED' },
+  Paid: { bg: '#DCFCE7', fg: '#166534', label: 'PAID' },
+  Viewed: { bg: '#DCFCE7', fg: '#166534', label: 'VIEWED' },
   OnHold: { bg: '#FEF9C3', fg: '#854D0E', label: 'ON HOLD' },
-  Failed: { bg: '#FEE2E2', fg: '#DC2626', label: 'FAILED' },
-  Disabled: { bg: '#F1F5F9', fg: '#64748B', label: 'DISABLED' },
+  Failed: { bg: '#FEE2E2', fg: '#991B1B', label: 'FAILED' },
+  Disabled: { bg: '#F1F5F9', fg: '#475569', label: 'DISABLED' },
 };
-const statusPill = (s: string) => STATUS_PILL[s] ?? { bg: '#F1F5F9', fg: '#64748B', label: s.toUpperCase() };
+const statusPill = (s: string) => STATUS_PILL[s] ?? { bg: '#F1F5F9', fg: '#475569', label: s.toUpperCase() };
 
 // Urgency derived from urgency flag + time in queue.
 const urgencyOf = (r: Rec): 'URGENT' | 'HIGH' | 'NORMAL' => {
@@ -101,9 +101,9 @@ const urgencyOf = (r: Rec): 'URGENT' | 'HIGH' | 'NORMAL' => {
   return days > 3 && !isAuthorized(r) ? 'HIGH' : 'NORMAL';
 };
 const URGENCY_PILL = {
-  URGENT: { bg: '#FEE2E2', fg: '#DC2626' },
+  URGENT: { bg: '#FEE2E2', fg: '#991B1B' },
   HIGH: { bg: '#ECFCCB', fg: LIME },
-  NORMAL: { bg: '#F1F5F9', fg: '#64748B' },
+  NORMAL: { bg: '#F1F5F9', fg: '#475569' },
 };
 
 const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—');
@@ -414,7 +414,7 @@ export default function ResultSheetsPage() {
           <div className="mb-4 flex flex-wrap gap-2">
             {TABS.map(([v, l, n]) => (
               <button key={v} onClick={() => { setTab(v); }} className="rounded-full border px-4 py-2 text-sm font-semibold transition-colors"
-                style={tab === v ? { background: '#4F46E5', color: '#fff', borderColor: '#4F46E5' } : { background: '#fff', color: '#64748B', borderColor: '#E2E8F0' }}>
+                style={tab === v ? { background: '#4F46E5', color: '#fff', borderColor: '#4F46E5' } : { background: '#fff', color: '#475569', borderColor: '#E2E8F0' }}>
                 {l} ({n.toLocaleString()})
               </button>
             ))}
@@ -489,7 +489,7 @@ export default function ResultSheetsPage() {
           <div className={`${CARD} p-5`}>
             <div className="mb-3 flex items-center justify-between"><div className="text-sm font-semibold text-charcoal-heading">Today&apos;s Activity</div><button className="text-xs font-semibold text-primary hover:underline">View all</button></div>
             <div className="flex flex-col gap-3">
-              {([['Submitted', '#4F46E5'], ['Processing', '#0284C7'], ['In Review', '#7C3AED'], ['Authorized', GREEN]] as const).map(([k, c]) => (
+              {([['Submitted', '#4F46E5'], ['Processing', '#075985'], ['In Review', '#6B21A8'], ['Authorized', GREEN]] as const).map(([k, c]) => (
                 <div key={k} className="flex items-center justify-between">
                   <span className="flex items-center gap-2.5 text-sm text-slate-600"><span className="h-2.5 w-2.5 rounded-full" style={{ background: c }} /> {k}</span>
                   <span className="text-sm font-bold text-charcoal-heading">{(activity as any)[k]}</span>
@@ -498,7 +498,7 @@ export default function ResultSheetsPage() {
             </div>
           </div>
 
-          <div className="rounded-xl p-5 text-white shadow-sm" style={{ background: 'linear-gradient(135deg,#4F46E5 0%,#6D28D9 100%)' }}>
+          <div className="rounded-xl p-5 text-white shadow-sm" style={{ backgroundColor: '#4338CA', backgroundImage: 'linear-gradient(135deg,#4F46E5 0%,#6D28D9 100%)' }}>
             <div className="mb-3 flex items-center gap-2"><Sparkles size={16} /><div className="text-sm font-semibold">AI Insights</div><span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold">BETA</span></div>
             {aiLoading ? (
               <div className="flex flex-col gap-2.5">
@@ -514,7 +514,7 @@ export default function ResultSheetsPage() {
                 <li>Avg AI confidence: <span className="font-semibold text-white">{aiAvg}%</span></li>
               </ul>
             )}
-            <button className="mt-4 text-[13px] font-semibold text-white hover:underline">View AI Recommendations →</button>
+            <button className="mt-4 bg-transparent text-[13px] font-semibold text-white hover:underline">View AI Recommendations →</button>
           </div>
 
           <div className={`${CARD} p-5`}>
@@ -599,13 +599,13 @@ export default function ResultSheetsPage() {
           <p className="mt-2 font-body-sm text-body-sm text-secondary">{confirm.content}</p>
           <div className="mt-6 flex justify-end gap-2">
             <button className="btn-secondary" onClick={() => setConfirm(null)}>Cancel</button>
-            <button className="btn-primary" style={confirm.danger ? { background: '#DC2626', boxShadow: '0 4px 12px rgba(220,38,38,0.2)' } : undefined} onClick={() => { confirm.onOk(); setConfirm(null); }}>{confirm.okText}</button>
+            <button className="btn-primary" style={confirm.danger ? { background: '#991B1B', boxShadow: '0 4px 12px rgba(220,38,38,0.2)' } : undefined} onClick={() => { confirm.onOk(); setConfirm(null); }}>{confirm.okText}</button>
           </div>
         </Overlay>
       )}
 
       {toast && (
-        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 font-label-md text-label-md text-white shadow-lg" style={{ background: toast.type === 'ok' ? '#16A34A' : toast.type === 'err' ? '#DC2626' : '#4F46E5' }}>{toast.msg}</div>
+        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 font-label-md text-label-md text-white shadow-lg" style={{ background: toast.type === 'ok' ? '#166534' : toast.type === 'err' ? '#991B1B' : '#4F46E5' }}>{toast.msg}</div>
       )}
     </div>
   );

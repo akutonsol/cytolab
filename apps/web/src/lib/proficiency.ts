@@ -55,11 +55,11 @@ export const TYPE_META: Record<ProfTestType, { bg: string; fg: string }> = {
 };
 
 export const STATUS_META: Record<ProfTestStatus, { label: string; bg: string; fg: string }> = {
-  Draft: { label: 'Draft', bg: '#F1F5F9', fg: '#64748B' },
+  Draft: { label: 'Draft', bg: '#F1F5F9', fg: '#475569' },
   Active: { label: 'Active', bg: '#DBEAFE', fg: '#1D4ED8' },
   Grading: { label: 'Grading', bg: '#F5F3FF', fg: '#7C3AED' },
   Completed: { label: 'Completed', bg: '#DCFCE7', fg: '#16A34A' },
-  Archived: { label: 'Archived', bg: '#F1F5F9', fg: '#94A3B8' },
+  Archived: { label: 'Archived', bg: '#F1F5F9', fg: '#475569' },
 };
 
 export const DIFFICULTY_META: Record<CaseDifficulty, { bg: string; fg: string }> = {

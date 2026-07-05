@@ -14,7 +14,7 @@ import { useAuth } from '@/lib/auth';
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-2 py-1.5 text-[13px]">
-      <span className="text-[#94A3B8]">{label}</span>
+      <span className="text-[#475569]">{label}</span>
       <span className="font-semibold text-[#E2E8F0]">{value}</span>
     </div>
   );

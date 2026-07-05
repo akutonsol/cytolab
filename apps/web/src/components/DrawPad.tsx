@@ -146,7 +146,7 @@ export function DrawPad({
             display: 'flex', alignItems: 'center',
             justifyContent: 'center', pointerEvents: 'none',
           }}>
-            <span style={{ fontSize: 13, color: '#94A3B8', fontStyle: 'italic' }}>
+            <span style={{ fontSize: 13, color: '#475569', fontStyle: 'italic' }}>
               Sign here...
             </span>
           </div>
@@ -164,14 +164,14 @@ export function DrawPad({
           display: 'flex', alignItems: 'center',
           justifyContent: 'space-between', marginTop: 8,
         }}>
-          <span style={{ fontSize: 11, color: '#94A3B8' }}>
+          <span style={{ fontSize: 11, color: '#475569' }}>
             Draw your signature above
           </span>
           <div style={{ display: 'flex', gap: 6 }}>
             <button type="button" onClick={clear}
               style={{
                 display: 'flex', alignItems: 'center', gap: 4,
-                fontSize: 12, fontWeight: 600, color: '#64748B',
+                fontSize: 12, fontWeight: 600, color: '#475569',
                 background: 'none', border: '1px solid #E2E8F0',
                 borderRadius: 8, padding: '4px 10px', cursor: 'pointer',
               }}>

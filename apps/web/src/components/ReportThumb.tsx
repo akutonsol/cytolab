@@ -7,7 +7,7 @@ const TINT: Record<ReportCategory, string> = {
   Specimen: '#E0E7FF', Clinical: '#DBEAFE', Financial: '#DCFCE7', Patient: '#EDE9FE', Staff: '#F1F5F9', Quality: '#FEF2F2',
 };
 const BAR: Record<ReportCategory, string> = {
-  Specimen: '#4F46E5', Clinical: '#3B82F6', Financial: '#16A34A', Patient: '#7C3AED', Staff: '#64748B', Quality: '#DC2626',
+  Specimen: '#4F46E5', Clinical: '#3B82F6', Financial: '#16A34A', Patient: '#7C3AED', Staff: '#475569', Quality: '#DC2626',
 };
 
 export function ReportThumb({ category }: { category: ReportCategory }) {

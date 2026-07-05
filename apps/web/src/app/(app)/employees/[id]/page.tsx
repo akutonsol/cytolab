@@ -14,7 +14,7 @@ const initials = (s: string) => (s || '?').split(/\s+/).filter(Boolean).slice(0,
 const EVENT_LABEL: Record<string, string> = { ClockIn: 'Clock In', ClockOut: 'Clock Out', BreakStart: 'Break Start', BreakEnd: 'Break End', LunchStart: 'Lunch Start', LunchEnd: 'Lunch End' };
 const EVENT_TINT: Record<string, string> = { ClockIn: 'text-green-700', ClockOut: 'text-red-600', BreakStart: 'text-violet-600', BreakEnd: 'text-violet-600', LunchStart: 'text-slate-500', LunchEnd: 'text-slate-500' };
 const TS_STATUS: Record<string, { bg: string; fg: string }> = {
-  Draft: { bg: '#F1F5F9', fg: '#64748B' }, Submitted: { bg: '#E0F2FE', fg: '#0284C7' }, UnderReview: { bg: '#EEF2FF', fg: '#4F46E5' },
+  Draft: { bg: '#F1F5F9', fg: '#475569' }, Submitted: { bg: '#E0F2FE', fg: '#0284C7' }, UnderReview: { bg: '#EEF2FF', fg: '#4F46E5' },
   Approved: { bg: '#DCFCE7', fg: '#16A34A' }, Rejected: { bg: '#FEE2E2', fg: '#DC2626' }, PayrollLocked: { bg: '#F1F5F9', fg: '#334155' },
 };
 

@@ -467,7 +467,7 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
                   justifyContent: 'space-between',
                   borderTop: '1px solid #F1F5F9',
                 }}>
-                  <span style={{ fontSize: 12, color: '#94A3B8', fontWeight: 500 }}>
+                  <span style={{ fontSize: 12, color: '#475569', fontWeight: 500 }}>
                     Actual slide upload available in Phase 6
                   </span>
                   <span style={{
@@ -582,7 +582,7 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
             <div style={DS.divider} />
             <div style={DS.toggleRow}>
               <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
-                Submit as Urgent <span style={{ color: '#94A3B8', fontWeight: 400 }}>· additional cost for express results</span>
+                Submit as Urgent <span style={{ color: '#475569', fontWeight: 400 }}>· additional cost for express results</span>
               </span>
               <Form.Item name="urgent" valuePropName="checked" noStyle>
                 <Switch />

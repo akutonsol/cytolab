@@ -221,7 +221,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {screens.sm && (
           <span className="text-left leading-tight">
             <span className="block text-sm font-medium text-gray-800">{firstName}</span>
-            <span className="block text-xs text-gray-500">{role}</span>
+            <span className="block text-xs text-gray-700">{role}</span>
           </span>
         )}
         <DownOutlined className="text-gray-500" style={{ fontSize: 11 }} />
@@ -291,7 +291,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 {accountButton}
                 <div className="ml-3 leading-tight">
-                  <div className="text-lg text-gray-500">Hi, {greetingName}!</div>
+                  <div className="text-lg text-gray-700">Hi, {greetingName}!</div>
                   <div className="text-xl font-bold text-gray-900">Welcome Back</div>
                 </div>
               </div>

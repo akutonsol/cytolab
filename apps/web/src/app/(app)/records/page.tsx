@@ -38,9 +38,9 @@ const SPECIMEN: Record<string, string> = {
 const SPEC_COLOR: Record<string, string> = {
   PLEURAL_FLD: '#3B82F6', URINE: '#FACC15', BREAST_ASP: '#EC4899', CERV_SCRAP: '#22C55E', ENDOCERV_ASP: '#8B5CF6', VAG_POOL: '#8B5CF6',
   CSF: '#06B6D4', SYNOVIAL_FLD: '#14B8A6', JOINT_ASP: '#14B8A6', BODY_FLUID: '#14B8A6', SPUTUM: '#3B82F6', BRONCHIAL_WASH: '#3B82F6',
-  THYROID_FNA: '#0D9488', LYMPH_NODE: '#0D9488', OTHER: '#94A3B8',
+  THYROID_FNA: '#0D9488', LYMPH_NODE: '#0D9488', OTHER: '#475569',
 };
-const specColor = (t?: string) => SPEC_COLOR[t ?? ''] ?? '#94A3B8';
+const specColor = (t?: string) => SPEC_COLOR[t ?? ''] ?? '#475569';
 const specLabel = (t?: string | null) => (t ? SPECIMEN[t] ?? t : 'Other');
 
 // Specimen enum → Lucide icon + chip colours (inline hex so JIT can't purge them).
@@ -60,9 +60,9 @@ const SPEC_UI: Record<string, { Icon: LucideIcon; bg: string; fg: string }> = {
   CSF: { Icon: Droplet, bg: '#CCFBF1', fg: '#0D9488' },
   SYNOVIAL_FLD: { Icon: Droplet, bg: '#CCFBF1', fg: '#0D9488' },
   JOINT_ASP: { Icon: Droplet, bg: '#CCFBF1', fg: '#0D9488' },
-  OTHER: { Icon: FlaskConical, bg: '#F1F5F9', fg: '#64748B' },
+  OTHER: { Icon: FlaskConical, bg: '#F1F5F9', fg: '#475569' },
 };
-const specUI = (t?: string) => SPEC_UI[t ?? ''] ?? { Icon: FlaskConical, bg: '#F1F5F9', fg: '#64748B' };
+const specUI = (t?: string) => SPEC_UI[t ?? ''] ?? { Icon: FlaskConical, bg: '#F1F5F9', fg: '#475569' };
 
 // Specimen options shown in the worklist filter popover (enum → label).
 const SPEC_FILTER_OPTS: [string, string][] = [
@@ -73,7 +73,7 @@ const SPEC_FILTER_OPTS: [string, string][] = [
 const ACTIVE = ['Pending', 'Submitted', 'Processing', 'Partial', 'Completed', 'Resulted'];
 const COMPLETED_SET = ['Approved', 'Billed', 'Paid', 'Viewed'];
 const PROCESSING_SET = ['Processing', 'Partial'];
-const GREEN = '#16A34A', RED = '#E11D48', INDIGO = '#4F46E5', BLUE = '#3B82F6', TEAL = '#14B8A6', SLATE = '#94A3B8';
+const GREEN = '#16A34A', RED = '#E11D48', INDIGO = '#4F46E5', BLUE = '#3B82F6', TEAL = '#14B8A6', SLATE = '#475569';
 
 const AVATAR_HEX = ['#4F46E5', '#7C3AED', '#2563EB', '#0D9488', '#16A34A', '#9333EA'];
 const avatarBg = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h += s.charCodeAt(i); return AVATAR_HEX[h % AVATAR_HEX.length]; };
@@ -101,10 +101,10 @@ const STATUS_PILL: Record<string, { bg: string; fg: string }> = {
   Processing: { bg: '#EDE9FE', fg: '#7C3AED' }, Partial: { bg: '#EDE9FE', fg: '#7C3AED' },
   Completed: { bg: '#DCFCE7', fg: GREEN }, Resulted: { bg: '#EEF2FF', fg: INDIGO },
   Approved: { bg: '#DCFCE7', fg: GREEN }, Billed: { bg: '#DCFCE7', fg: GREEN }, Paid: { bg: '#DCFCE7', fg: GREEN }, Viewed: { bg: '#DCFCE7', fg: GREEN },
-  Submitted: { bg: '#E0F2FE', fg: '#0284C7' }, Failed: { bg: '#FEE2E2', fg: '#DC2626' }, Disabled: { bg: '#F1F5F9', fg: '#64748B' },
-  OnHold: { bg: '#FEF9C3', fg: '#854D0E' }, Pending: { bg: '#F1F5F9', fg: '#64748B' },
+  Submitted: { bg: '#E0F2FE', fg: '#0284C7' }, Failed: { bg: '#FEE2E2', fg: '#DC2626' }, Disabled: { bg: '#F1F5F9', fg: '#475569' },
+  OnHold: { bg: '#FEF9C3', fg: '#854D0E' }, Pending: { bg: '#F1F5F9', fg: '#475569' },
 };
-const statusPill = (s: string) => STATUS_PILL[s] ?? { bg: '#F1F5F9', fg: '#64748B' };
+const statusPill = (s: string) => STATUS_PILL[s] ?? { bg: '#F1F5F9', fg: '#475569' };
 
 const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 
@@ -404,7 +404,7 @@ export default function SamplesPage() {
             </div>
             <div className="mt-3 flex flex-wrap gap-2 px-5">
               {TABS.map(([v, l]) => (
-                <button key={v} onClick={() => { setTab(v); }} className="rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors" style={tab === v ? { background: INDIGO, color: '#fff', borderColor: INDIGO } : { background: '#fff', color: '#64748B', borderColor: '#E2E8F0' }}>{l} ({tabCount(v)})</button>
+                <button key={v} onClick={() => { setTab(v); }} className="rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors" style={tab === v ? { background: INDIGO, color: '#fff', borderColor: INDIGO } : { background: '#fff', color: '#475569', borderColor: '#E2E8F0' }}>{l} ({tabCount(v)})</button>
               ))}
             </div>
 
@@ -454,7 +454,7 @@ export default function SamplesPage() {
                           </div>
                         ); })()}</td>
                         <td className={CELL}><div className="text-sm font-bold text-charcoal-heading">LAB# {r.labNumber ?? '—'}</div><div className="text-[11px] text-slate-500">{clientLabel(r)}</div></td>
-                        <td className={CELL}><span className="flex items-center gap-1.5 text-sm" style={{ color: r.urgent ? RED : '#64748B' }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: r.urgent ? RED : SLATE }} />{r.urgent ? 'Urgent' : 'Normal'}</span></td>
+                        <td className={CELL}><span className="flex items-center gap-1.5 text-sm" style={{ color: r.urgent ? RED : '#475569' }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: r.urgent ? RED : SLATE }} />{r.urgent ? 'Urgent' : 'Normal'}</span></td>
                         <td className={CELL}>
                           <div className="flex items-center gap-1.5">
                             <span className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase" style={{ background: sp.bg, color: sp.fg }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: sp.fg }} />{r.status}</span>
@@ -513,7 +513,7 @@ export default function SamplesPage() {
                 <div key={i} className="flex flex-1 flex-col items-center gap-1">
                   <span className="text-[9px] font-semibold text-slate-500">{b.v}</span>
                   <div className="w-full rounded-t" style={{ height: `${(b.v / barPeak) * 60}px`, minHeight: 3, background: b.cur ? INDIGO : '#C7D2FE' }} />
-                  <span className="text-[9px]" style={{ color: b.cur ? INDIGO : '#94A3B8', fontWeight: b.cur ? 700 : 500 }}>{b.l}</span>
+                  <span className="text-[9px]" style={{ color: b.cur ? INDIGO : '#475569', fontWeight: b.cur ? 700 : 500 }}>{b.l}</span>
                 </div>
               ))}
             </div>

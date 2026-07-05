@@ -30,7 +30,7 @@ export default function ArticleViewPage() {
     onSuccess: (_d, helpful) => setSentHelpful(helpful),
   });
 
-  if (isLoading) return <div className="p-10 text-center text-[14px] text-[#94A3B8]" style={{ background: '#F8FAFC' }}>Loading…</div>;
+  if (isLoading) return <div className="p-10 text-center text-[14px] text-[#475569]" style={{ background: '#F8FAFC' }}>Loading…</div>;
   if (isError || !article) {
     return (
       <div className="min-h-full pt-4" style={{ background: '#F8FAFC' }}>
@@ -45,7 +45,7 @@ export default function ArticleViewPage() {
   return (
     <div className="min-h-full pb-12 pt-4" style={{ background: '#F8FAFC' }}>
       {/* Breadcrumb */}
-      <div className="mb-4 flex flex-wrap items-center gap-1.5 text-[13px] text-[#94A3B8]">
+      <div className="mb-4 flex flex-wrap items-center gap-1.5 text-[13px] text-[#475569]">
         <button onClick={() => router.push('/knowledge-base')} className="hover:text-[#4F46E5]">Knowledge Base</button>
         <ChevronRight size={13} />
         <button onClick={() => router.push(`/knowledge-base/articles?category=${article.categoryId}`)} className="hover:text-[#4F46E5]">{article.category?.name ?? 'General'}</button>
@@ -60,7 +60,7 @@ export default function ArticleViewPage() {
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h1 className="text-[30px] font-bold leading-tight tracking-tight text-[#0F172A]">{article.title}</h1>
-                <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-[#94A3B8]">
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-[#475569]">
                   <span className="rounded-md bg-[#EEF3FF] px-2 py-0.5 font-medium text-[#4F46E5]">{article.category?.name ?? 'General'}</span>
                   {article.status !== 'PUBLISHED' && <span className="rounded-md bg-[#FEF9C3] px-2 py-0.5 font-semibold" style={{ color: '#A16207' }}>{article.status}</span>}
                   <span className="inline-flex items-center gap-1"><Eye size={12} /> {article.viewCount}</span>
@@ -71,7 +71,7 @@ export default function ArticleViewPage() {
                   <button onClick={() => router.push(`/knowledge-base/articles/${slug}/edit`)}
                     className="flex h-9 items-center gap-1.5 rounded-lg border border-[#4F46E5] px-3 text-[13px] font-semibold text-[#4F46E5] hover:bg-[#EEF3FF]"><Pencil size={14} /> Edit</button>
                 )}
-                <button onClick={() => window.print()} className="flex h-9 items-center gap-1.5 rounded-lg border border-[#E2E8F0] px-3 text-[13px] font-semibold text-[#64748B] hover:bg-[#F1F5F9]"><Printer size={14} /> Print</button>
+                <button onClick={() => window.print()} className="flex h-9 items-center gap-1.5 rounded-lg border border-[#E2E8F0] px-3 text-[13px] font-semibold text-[#475569] hover:bg-[#F1F5F9]"><Printer size={14} /> Print</button>
               </div>
             </div>
 
@@ -79,7 +79,7 @@ export default function ArticleViewPage() {
 
             {!!article.tags.length && (
               <div className="mt-6 flex flex-wrap gap-1.5 border-t border-[#F1F5F9] pt-5">
-                {article.tags.map((t) => <span key={t} className="rounded-md bg-[#F1F5F9] px-2 py-0.5 text-[12px] text-[#64748B]">{t}</span>)}
+                {article.tags.map((t) => <span key={t} className="rounded-md bg-[#F1F5F9] px-2 py-0.5 text-[12px] text-[#475569]">{t}</span>)}
               </div>
             )}
           </div>
@@ -109,18 +109,18 @@ export default function ArticleViewPage() {
         {/* Sidebar */}
         <aside className="space-y-4 print:hidden">
           <div className={`${CARD} p-5`}>
-            <div className="mb-3 text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">Details</div>
+            <div className="mb-3 text-[12px] font-semibold uppercase tracking-wide text-[#475569]">Details</div>
             <dl className="space-y-2.5 text-[13px]">
-              <div className="flex justify-between gap-2"><dt className="text-[#94A3B8]">Author</dt><dd className="text-right font-medium text-[#334155]">{article.authorName ?? '—'}</dd></div>
-              <div className="flex justify-between gap-2"><dt className="text-[#94A3B8]">Published</dt><dd className="text-right font-medium text-[#334155]">{fmtDate(article.publishedAt)}</dd></div>
-              <div className="flex justify-between gap-2"><dt className="text-[#94A3B8]">Updated</dt><dd className="text-right font-medium text-[#334155]">{fmtDate(article.updatedAt)}</dd></div>
-              <div className="flex justify-between gap-2"><dt className="text-[#94A3B8]">Views</dt><dd className="text-right font-medium text-[#334155]">{article.viewCount}</dd></div>
+              <div className="flex justify-between gap-2"><dt className="text-[#475569]">Author</dt><dd className="text-right font-medium text-[#334155]">{article.authorName ?? '—'}</dd></div>
+              <div className="flex justify-between gap-2"><dt className="text-[#475569]">Published</dt><dd className="text-right font-medium text-[#334155]">{fmtDate(article.publishedAt)}</dd></div>
+              <div className="flex justify-between gap-2"><dt className="text-[#475569]">Updated</dt><dd className="text-right font-medium text-[#334155]">{fmtDate(article.updatedAt)}</dd></div>
+              <div className="flex justify-between gap-2"><dt className="text-[#475569]">Views</dt><dd className="text-right font-medium text-[#334155]">{article.viewCount}</dd></div>
             </dl>
           </div>
 
           {!!article.related.length && (
             <div className={`${CARD} p-5`}>
-              <div className="mb-3 text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">Related articles</div>
+              <div className="mb-3 text-[12px] font-semibold uppercase tracking-wide text-[#475569]">Related articles</div>
               <div className="space-y-1">
                 {article.related.map((r) => (
                   <button key={r.id} onClick={() => router.push(`/knowledge-base/articles/${r.slug}`)}

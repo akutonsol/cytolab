@@ -33,7 +33,7 @@ function Avatar({ service, size = 40 }: { service: Service; size?: number }) {
 function StatusBadge({ active }: { active: boolean }) {
   return active
     ? <span className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-bold" style={{ background: '#ECFCCB', color: '#4D7C0F' }}><CheckCircle2 size={13} /> Active</span>
-    : <span className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-bold" style={{ background: '#F1F5F9', color: '#94A3B8' }}><XCircle size={13} /> Inactive</span>;
+    : <span className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-bold" style={{ background: '#F1F5F9', color: '#475569' }}><XCircle size={13} /> Inactive</span>;
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -103,7 +103,7 @@ export default function ServicesPage() {
                 <Avatar service={s} size={46} />
                 <div className="min-w-0">
                   <div className="truncate text-[18px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>{s.name}</div>
-                  <div className="truncate font-mono text-[14px] text-[#94A3B8]">{s.code}</div>
+                  <div className="truncate font-mono text-[14px] text-[#475569]">{s.code}</div>
                 </div>
               </div>
               <div className="mt-6 flex items-center justify-between">
@@ -112,7 +112,7 @@ export default function ServicesPage() {
               </div>
             </button>
           ))}
-          {services.length === 0 && <div className="col-span-full rounded-3xl border border-[#EDEDED] bg-white p-8 text-center text-[15px] text-[#94A3B8]">No services yet.</div>}
+          {services.length === 0 && <div className="col-span-full rounded-3xl border border-[#EDEDED] bg-white p-8 text-center text-[15px] text-[#475569]">No services yet.</div>}
         </div>
       </div>
 
@@ -124,7 +124,7 @@ export default function ServicesPage() {
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div className="inline-flex gap-1 rounded-2xl border border-[#EDEDED] bg-white p-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
             {([['all', 'All'], ['active', 'Active'], ['inactive', 'Inactive']] as const).map(([v, l]) => (
-              <button key={v} onClick={() => setTab(v)} className="rounded-xl px-5 py-2.5 text-[15px] font-semibold transition-colors" style={{ background: tab === v ? '#F1F1EF' : 'transparent', color: tab === v ? '#0F172A' : '#94A3B8' }}>{l}</button>
+              <button key={v} onClick={() => setTab(v)} className="rounded-xl px-5 py-2.5 text-[15px] font-semibold transition-colors" style={{ background: tab === v ? '#F1F1EF' : 'transparent', color: tab === v ? '#0F172A' : '#475569' }}>{l}</button>
             ))}
           </div>
           <div className="flex items-center gap-3">
@@ -140,8 +140,8 @@ export default function ServicesPage() {
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
               <Package size={48} className="text-[#E2E8F0]" />
-              <div className="text-[16px] font-semibold text-[#64748B]">No services found</div>
-              <div className="text-[13px] text-[#94A3B8]">Add your first lab service to start billing</div>
+              <div className="text-[16px] font-semibold text-[#475569]">No services found</div>
+              <div className="text-[13px] text-[#475569]">Add your first lab service to start billing</div>
               <button onClick={openAdd} className="mt-2 flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-semibold text-white" style={{ background: '#0F172A' }}><Plus size={15} /> Add Service</button>
             </div>
           ) : (
@@ -162,7 +162,7 @@ export default function ServicesPage() {
                           <Avatar service={s} size={44} />
                           <div className="min-w-0">
                             <div className="text-[16px] font-semibold text-[#0F172A]">{s.name}</div>
-                            <div className="truncate text-[13px] text-[#94A3B8]" title={desc} style={{ maxWidth: 320 }}>{desc || '—'}</div>
+                            <div className="truncate text-[13px] text-[#475569]" title={desc} style={{ maxWidth: 320 }}>{desc || '—'}</div>
                           </div>
                         </div>
                       </td>
@@ -172,15 +172,15 @@ export default function ServicesPage() {
                       <td className="px-6 py-5">
                         {confirming ? (
                           <div className="flex items-center justify-end gap-2 text-[12px]">
-                            <span className="text-[#64748B]">Delete?</span>
+                            <span className="text-[#475569]">Delete?</span>
                             <button onClick={() => delMut.mutate(s.id)} disabled={delMut.isPending} className="rounded-lg px-3 py-1 font-semibold text-white" style={{ background: '#DC2626' }}>Delete</button>
-                            <button onClick={() => setConfirmId(null)} className="rounded-lg border border-[#E2E8F0] px-3 py-1 font-semibold text-[#64748B]">Cancel</button>
+                            <button onClick={() => setConfirmId(null)} className="rounded-lg border border-[#E2E8F0] px-3 py-1 font-semibold text-[#475569]">Cancel</button>
                           </div>
                         ) : (
                           <div className="flex items-center justify-end gap-2">
-                            <button title="Edit" onClick={() => openEdit(s)} className="grid h-9 w-9 place-items-center rounded-xl border border-[#EEF0EE] text-[#64748B] transition-colors hover:bg-[#F5F7FF] hover:text-[#4F46E5]"><Pencil size={15} /></button>
-                            <button title={s.active ? 'Deactivate' : 'Activate'} onClick={() => toggleMut.mutate(s)} disabled={toggleMut.isPending} className="grid h-9 w-9 place-items-center rounded-xl border border-[#EEF0EE] transition-colors hover:bg-[#F5F7FF]" style={{ color: s.active ? '#4F46E5' : '#94A3B8' }}>{s.active ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}</button>
-                            <button title="Delete" onClick={() => setConfirmId(s.id)} className="grid h-9 w-9 place-items-center rounded-xl border border-[#EEF0EE] text-[#64748B] transition-colors hover:bg-[#FEF2F2] hover:text-[#DC2626]"><Trash2 size={15} /></button>
+                            <button title="Edit" onClick={() => openEdit(s)} className="grid h-9 w-9 place-items-center rounded-xl border border-[#EEF0EE] text-[#475569] transition-colors hover:bg-[#F5F7FF] hover:text-[#4F46E5]"><Pencil size={15} /></button>
+                            <button title={s.active ? 'Deactivate' : 'Activate'} onClick={() => toggleMut.mutate(s)} disabled={toggleMut.isPending} className="grid h-9 w-9 place-items-center rounded-xl border border-[#EEF0EE] transition-colors hover:bg-[#F5F7FF]" style={{ color: s.active ? '#4F46E5' : '#475569' }}>{s.active ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}</button>
+                            <button title="Delete" onClick={() => setConfirmId(s.id)} className="grid h-9 w-9 place-items-center rounded-xl border border-[#EEF0EE] text-[#475569] transition-colors hover:bg-[#FEF2F2] hover:text-[#DC2626]"><Trash2 size={15} /></button>
                           </div>
                         )}
                       </td>
@@ -252,7 +252,7 @@ function ServiceModal({ open, service, isEdit, onClose, onSaved, onError }: {
           <div>
             <label style={DS.label}>Service Code<span style={{ color: '#DC2626' }}> *</span></label>
             <input style={DS.input} value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. PAP-001" />
-            <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>Unique identifier for billing</div>
+            <div style={{ fontSize: 12, color: '#475569', marginTop: 4 }}>Unique identifier for billing</div>
           </div>
           <div>
             <label style={DS.label}>Description</label>
@@ -261,10 +261,10 @@ function ServiceModal({ open, service, isEdit, onClose, onSaved, onError }: {
           <div>
             <label style={DS.label}>Price<span style={{ color: '#DC2626' }}> *</span></label>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <span style={{ fontSize: 18, fontWeight: 700, color: '#64748B' }}>$</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: '#475569' }}>$</span>
               <input type="number" min="0" step="0.01" style={DS.input} value={priceStr} onChange={(e) => setPriceStr(e.target.value)} placeholder="0.00" />
             </div>
-            <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>Price in dollars (e.g. 1.20 = $1.20)</div>
+            <div style={{ fontSize: 12, color: '#475569', marginTop: 4 }}>Price in dollars (e.g. 1.20 = $1.20)</div>
           </div>
           <div style={DS.toggleRow}>
             <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>Active</span>

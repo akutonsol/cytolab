@@ -52,12 +52,12 @@ export const TYPE_META: Record<AppointmentType, { label: string; color: string; 
 };
 
 export const STATUS_META: Record<AppointmentStatus, { label: string; fg: string; bg: string; strike?: boolean }> = {
-  Scheduled: { label: 'Scheduled', fg: '#64748B', bg: '#F1F5F9' },
+  Scheduled: { label: 'Scheduled', fg: '#475569', bg: '#F1F5F9' },
   Confirmed: { label: 'Confirmed', fg: '#4F46E5', bg: '#EEF2FF' },
   CheckedIn: { label: 'Checked In', fg: '#1D4ED8', bg: '#DBEAFE' },
   Completed: { label: 'Completed', fg: '#16A34A', bg: '#DCFCE7' },
   NoShow: { label: 'No Show', fg: '#B91C1C', bg: '#FEE2E2' },
-  Cancelled: { label: 'Cancelled', fg: '#94A3B8', bg: '#F1F5F9', strike: true },
+  Cancelled: { label: 'Cancelled', fg: '#475569', bg: '#F1F5F9', strike: true },
   Rescheduled: { label: 'Rescheduled', fg: '#B45309', bg: '#FFFBEB' }, // amber, not orange
 };
 

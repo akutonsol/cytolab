@@ -55,7 +55,7 @@ export function levelFor(confidence: number | null): AIConfidenceLevel | null {
 /** Ring / accent color for a confidence value or level. */
 export function confidenceColor(level: AIConfidenceLevel | null, confidence?: number | null): string {
   const l = level ?? levelFor(confidence ?? null);
-  return l ? LEVEL_META[l].ring : '#94A3B8';
+  return l ? LEVEL_META[l].ring : '#475569';
 }
 
 export const SPECIMEN_LABEL: Record<string, string> = {
