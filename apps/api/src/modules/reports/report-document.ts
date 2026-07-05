@@ -217,41 +217,48 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
   const firstSpecimenDate = specimens.find((s) => s.dateReceived)?.dateReceived ?? null;
 
   // ── 1. Header band ──────────────────────────────────────────────────────────
+  // A single-row table filled indigo: the band auto-sizes to its content
+  // (tight around the lab name when there's no contact info, taller when there
+  // is), so the fill never leaves an empty strip that overlaps the info section.
   const headerBand: Content = {
-    stack: [
-      { canvas: [{ type: 'rect', x: 0, y: 0, w: CW, h: 80, color: INDIGO }] },
-      {
-        columns: [
-          // LEFT — lab name + subtitle (~35% of 483pt content width)
-          {
-            width: 169,
-            stack: [
-              { text: lab.name, color: WHITE, fontSize: 14, bold: true, noWrap: true },
-              { text: 'Cytology & Pathology Laboratory', color: WHITE, fontSize: 8, noWrap: true, margin: [0, 3, 0, 0] },
-            ],
-          },
-          // CENTER — report title (~40% width + noWrap so it never breaks lines)
-          {
-            width: 193,
-            stack: [
-              { text: 'CYTOLOGY REPORT', color: WHITE, fontSize: 18, bold: true, characterSpacing: 0, alignment: 'center', noWrap: true },
-            ],
-          },
-          // RIGHT — ref, date, lab contact (~25%)
-          {
-            width: 121,
-            stack: [
-              { text: `Ref  ${reportRef}`, color: INDIGO_ON, fontSize: 10, alignment: 'right' },
-              { text: fmtDate(reportDate), color: '#C7D2FE', fontSize: 9, alignment: 'right', margin: [0, 2, 0, 0] },
-              ...(lab.address ? [{ text: lab.address, color: WHITE, fontSize: 7, alignment: 'right', margin: [0, 3, 0, 0] } as Content] : []),
-              ...(lab.phone ? [{ text: lab.phone, color: WHITE, fontSize: 7, alignment: 'right', margin: [0, 1, 0, 0] } as Content] : []),
-              ...(lab.email ? [{ text: lab.email, color: WHITE, fontSize: 7, alignment: 'right', margin: [0, 1, 0, 0] } as Content] : []),
-            ],
-          },
-        ],
-        margin: [16, -64, 16, 0],
-      },
-    ],
+    table: {
+      widths: [169, 193, 121],
+      body: [[
+        // LEFT — lab name + subtitle
+        {
+          stack: [
+            { text: lab.name, color: WHITE, fontSize: 14, bold: true, noWrap: true },
+            { text: 'Cytology & Pathology Laboratory', color: WHITE, fontSize: 8, noWrap: true, margin: [0, 3, 0, 0] },
+          ],
+        },
+        // CENTER — report title
+        {
+          stack: [
+            { text: 'CYTOLOGY REPORT', color: WHITE, fontSize: 18, bold: true, characterSpacing: 0, alignment: 'center', noWrap: true },
+          ],
+          margin: [0, 2, 0, 0],
+        },
+        // RIGHT — ref, date, lab contact
+        {
+          stack: [
+            { text: `Ref  ${reportRef}`, color: INDIGO_ON, fontSize: 10, alignment: 'right' },
+            { text: fmtDate(reportDate), color: '#C7D2FE', fontSize: 9, alignment: 'right', margin: [0, 2, 0, 0] },
+            ...(lab.address ? [{ text: lab.address, color: WHITE, fontSize: 7, alignment: 'right', margin: [0, 3, 0, 0] } as Content] : []),
+            ...(lab.phone ? [{ text: lab.phone, color: WHITE, fontSize: 7, alignment: 'right', margin: [0, 1, 0, 0] } as Content] : []),
+            ...(lab.email ? [{ text: lab.email, color: WHITE, fontSize: 7, alignment: 'right', margin: [0, 1, 0, 0] } as Content] : []),
+          ],
+        },
+      ]],
+    },
+    layout: {
+      fillColor: () => INDIGO,
+      hLineWidth: () => 0,
+      vLineWidth: () => 0,
+      paddingLeft: () => 16,
+      paddingRight: () => 16,
+      paddingTop: () => 12,
+      paddingBottom: () => 12,
+    },
   };
 
   // ── Urgency banner (only if flagged) ────────────────────────────────────────
@@ -268,11 +275,10 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
     : [];
 
   // ── 2. Patient + specimen information ───────────────────────────────────────
-  // The header band's columns use a -64 top margin to overlay the 80pt indigo
-  // rect, which shrinks the band's flow height; this top margin gives the info
-  // section clearance so it never renders under the band.
+  // The header band (a fill-color table) now flows at its true content height,
+  // so a small top margin is all that's needed below it.
   const infoColumns: Content = {
-    margin: [0, 20, 0, 0],
+    margin: [0, 6, 0, 0],
     columns: [
       {
         width: '*',
