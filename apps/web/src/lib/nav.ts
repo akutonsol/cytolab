@@ -128,12 +128,21 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Employees', path: '/employees', permission: 'employee:view' },
       { label: 'Departments', path: '/departments', permission: 'department:view' },
       { label: 'Payroll', path: '/payroll', permission: 'payroll:view' },
+    ],
+  },
+  {
+    key: 'workforce',
+    label: 'Workforce',
+    icon: CalendarClock,
+    // Every item is gated on WORKFORCE_MANAGEMENT, so when the feature is off the
+    // group has no visible items and NavPills drops the pill entirely.
+    items: [
       { label: 'Attendance', path: '/workforce', permission: 'record:view', feature: 'WORKFORCE_MANAGEMENT', icon: Clock },
       { label: 'Timesheets', path: '/workforce/timesheets', permission: 'record:view', feature: 'WORKFORCE_MANAGEMENT', icon: FileClock },
       { label: 'Scheduling', path: '/workforce/schedule', permission: 'record:view', feature: 'WORKFORCE_MANAGEMENT', icon: CalendarDays },
       { label: 'Leave', path: '/workforce/leave', permission: 'record:view', feature: 'WORKFORCE_MANAGEMENT', icon: CalendarOff },
       { label: 'Overtime', path: '/workforce/overtime', permission: 'record:view', feature: 'WORKFORCE_MANAGEMENT', icon: Timer },
-      { label: 'Workforce Reports', path: '/workforce/reports', permission: 'record:view', feature: 'WORKFORCE_MANAGEMENT', icon: BarChart3 },
+      { label: 'Reports', path: '/workforce/reports', permission: 'record:view', feature: 'WORKFORCE_MANAGEMENT', icon: BarChart3 },
       { label: 'Productivity', path: '/workforce/productivity', permission: 'record:view', feature: 'WORKFORCE_MANAGEMENT', icon: ScatterChart },
       { label: 'Performance', path: '/workforce/performance', permission: 'record:view', feature: 'WORKFORCE_MANAGEMENT', icon: Award },
     ],
@@ -205,7 +214,7 @@ export const ANALYTICS_ITEM: NavItem = { label: 'Analytics', path: '/analytics',
 
 // Top-nav layout: which groups are center dropdowns vs. tucked into the account
 // (avatar) menu. Everything stays reachable.
-export const CENTER_GROUP_KEYS = ['lab', 'results', 'finance', 'people', 'resources'];
+export const CENTER_GROUP_KEYS = ['lab', 'results', 'finance', 'people', 'workforce', 'resources'];
 export const ACCOUNT_GROUP_KEY = 'platform';
 
 const ALL_ITEMS = [...NAV_GROUPS.flatMap((g) => g.items), ANALYTICS_ITEM];
