@@ -1,9 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Download, Shield } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Severity = 'info' | 'success' | 'warning' | 'error';
@@ -23,6 +25,9 @@ interface LogEntry {
 interface LogPage { data: LogEntry[]; total: number; page: number; pageSize: number; totalPages: number }
 
 const PAGE_SIZE = 25;
+// Stable empty fallback — a fresh [] each render would retrigger the
+// infinite-scroll fetchFn (which depends on the entries array identity).
+const NO_LOGS: LogEntry[] = [];
 
 const TYPE_OPTIONS: { value: '' | LogType; label: string }[] = [
   { value: '', label: 'All types' },
@@ -87,7 +92,6 @@ export default function SystemLogPage() {
   const [userId, setUserId] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
-  const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({
     queryKey: ['system-logs', type, userId, from, to],
@@ -97,8 +101,17 @@ export default function SystemLogPage() {
         .then((r) => r.data),
   });
 
-  const entries = data?.data ?? [];
+  const entries = data?.data ?? NO_LOGS;
   const total = data?.total ?? 0;
+
+  // Infinite scroll over the fetched (server-filtered, capped) entries. A new
+  // fetch → new `entries` identity → the hook reloads from the first window.
+  const fetchFn = useCallback(
+    (page: number, pageSize: number) => Promise.resolve(clientPage(entries, page, pageSize)),
+    [entries],
+  );
+  const { items: pageRows, loading, initialLoading, hasMore, sentinelRef } =
+    useInfiniteScroll<LogEntry>({ fetchFn, pageSize: PAGE_SIZE });
 
   // User dropdown options derived from the events themselves.
   const users = useMemo(() => {
@@ -120,11 +133,7 @@ export default function SystemLogPage() {
   }, [entries, total]);
 
   const hasFilters = !!(type || userId || from || to);
-  const clearFilters = () => { setType(''); setUserId(''); setFrom(''); setTo(''); setPage(1); };
-
-  const totalPages = Math.max(1, Math.ceil(entries.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const pageRows = entries.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const clearFilters = () => { setType(''); setUserId(''); setFrom(''); setTo(''); };
 
   const exportCsv = () => {
     const header = ['Time', 'Actor', 'Email', 'Action', 'Subject', 'Type', 'Severity'];
@@ -166,21 +175,21 @@ export default function SystemLogPage() {
         {/* Filter bar */}
         <div className="glass-card mb-5 flex flex-wrap items-end gap-3 rounded-2xl p-4">
           <Field label="Type">
-            <select value={type} onChange={(e) => { setType(e.target.value as '' | LogType); setPage(1); }} className={selectCls}>
+            <select value={type} onChange={(e) => { setType(e.target.value as '' | LogType); }} className={selectCls}>
               {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </Field>
           <Field label="User">
-            <select value={userId} onChange={(e) => { setUserId(e.target.value); setPage(1); }} className={selectCls}>
+            <select value={userId} onChange={(e) => { setUserId(e.target.value); }} className={selectCls}>
               <option value="">All users</option>
               {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
             </select>
           </Field>
           <Field label="From">
-            <input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(1); }} className={selectCls} />
+            <input type="date" value={from} onChange={(e) => { setFrom(e.target.value); }} className={selectCls} />
           </Field>
           <Field label="To">
-            <input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(1); }} className={selectCls} />
+            <input type="date" value={to} onChange={(e) => { setTo(e.target.value); }} className={selectCls} />
           </Field>
           {hasFilters && (
             <button onClick={clearFilters} className="mb-0.5 font-label-sm text-label-sm text-primary hover:underline">Clear filters</button>
@@ -209,7 +218,7 @@ export default function SystemLogPage() {
                 </tr>
               </thead>
               <tbody>
-                {isLoading ? (
+                {isLoading || initialLoading ? (
                   <tr><td colSpan={6} className="px-4 py-16 text-center font-body-sm text-body-sm text-secondary">Loading…</td></tr>
                 ) : pageRows.length === 0 ? (
                   <tr>
@@ -274,18 +283,9 @@ export default function SystemLogPage() {
             </table>
           </div>
 
-          {/* Pagination */}
-          {entries.length > 0 && (
-            <div className="flex items-center justify-between border-t border-surface-container-low px-4 py-3">
-              <span className="font-body-sm text-body-sm text-secondary">
-                {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, entries.length)} of {entries.length}
-              </span>
-              <div className="flex items-center gap-2">
-                <button className="btn-secondary !px-3 !py-1.5" disabled={safePage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} style={{ opacity: safePage <= 1 ? 0.5 : 1 }}>← Prev</button>
-                <span className="font-label-sm text-label-sm text-secondary">Page {safePage} of {totalPages}</span>
-                <button className="btn-secondary !px-3 !py-1.5" disabled={safePage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} style={{ opacity: safePage >= totalPages ? 0.5 : 1 }}>Next →</button>
-              </div>
-            </div>
+          {/* Infinite scroll: auto-loads the next window of entries on scroll. */}
+          {pageRows.length > 0 && (
+            <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
           )}
         </div>
       </div>

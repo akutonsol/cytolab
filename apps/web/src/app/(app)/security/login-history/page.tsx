@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { History, Search } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import { Badge, SecurityPage, Table } from '@/components/security/ui';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
+import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { fmtDateTime, securityApi, type LoginAttempt } from '@/lib/security';
 
 const inputCls = 'h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-400';
@@ -16,10 +17,21 @@ export default function LoginHistoryPage() {
   const [to, setTo] = useState('');
   const [applied, setApplied] = useState<Record<string, string | undefined>>({});
 
-  const { data = [], isLoading } = useQuery({
-    queryKey: ['login-history', applied],
-    queryFn: () => securityApi.loginAttempts(applied),
-  });
+  // The endpoint returns the whole (server-filtered, capped) list; fetch it once
+  // per applied-filter set and window it client-side for infinite scroll.
+  const cacheRef = useRef<{ key: string; all: LoginAttempt[] } | null>(null);
+  const fetchFn = useCallback(
+    async (page: number, pageSize: number) => {
+      const key = JSON.stringify(applied);
+      if (!cacheRef.current || cacheRef.current.key !== key) {
+        cacheRef.current = { key, all: await securityApi.loginAttempts(applied) };
+      }
+      return clientPage(cacheRef.current.all, page, pageSize);
+    },
+    [applied],
+  );
+  const { items, loading, initialLoading, hasMore, sentinelRef } =
+    useInfiniteScroll<LoginAttempt>({ fetchFn, pageSize: 20 });
 
   const apply = () =>
     setApplied({
@@ -49,8 +61,8 @@ export default function LoginHistoryPage() {
 
       <div className="rounded-2xl border border-slate-200 bg-white">
         <Table<LoginAttempt>
-          rows={data}
-          loading={isLoading}
+          rows={items}
+          loading={initialLoading}
           rowKey={(l) => l.id}
           empty="No login attempts match."
           columns={[
@@ -67,6 +79,9 @@ export default function LoginHistoryPage() {
             },
           ]}
         />
+        {items.length > 0 && (
+          <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
+        )}
       </div>
     </SecurityPage>
   );

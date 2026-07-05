@@ -1,14 +1,18 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { CalendarOff, Check, Plus, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { FeatureGate } from '@/components/FeatureGate';
 import { useMyEmployee, empName, fmtDate, daysBetweenInclusive, WF_STATUS } from '@/lib/workforce';
+import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 
 const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
+// Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
+const NO_ROWS: any[] = [];
 const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
 const CELL = 'px-4 py-3 align-middle text-sm';
 
@@ -67,11 +71,14 @@ function MyLeaveTab() {
     queryFn: () => api.get(`/workforce/leave/balance/${employee!.id}`).then((r) => r.data),
     enabled: !!employee?.id,
   });
-  const { data: requests = [] } = useQuery({
+  const { data: requestsData } = useQuery({
     queryKey: ['leave-requests', employee?.id],
     queryFn: () => api.get('/workforce/leave/requests', { params: { employeeId: employee!.id } }).then((r) => r.data),
     enabled: !!employee?.id,
   });
+  const requests = (requestsData ?? NO_ROWS) as any[];
+  const fetchFn = useCallback((p: number, ps: number) => Promise.resolve(clientPage(requests, p, ps)), [requests]);
+  const { items: pageRows, loading, initialLoading, hasMore, sentinelRef } = useInfiniteScroll<any>({ fetchFn, pageSize: 20 });
 
   if (isLoading) return <div className="p-8 text-sm text-slate-400">Loading…</div>;
   if (!employee) return <div className={`${CARD} p-6 text-sm text-slate-500`}>No employee profile is linked to your account.</div>;
@@ -110,8 +117,8 @@ function MyLeaveTab() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><th className={TH}>Type</th><th className={TH}>Start</th><th className={TH}>End</th><th className={`${TH} text-right`}>Days</th><th className={TH}>Status</th></tr></thead>
             <tbody>
-              {requests.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-400">No leave requests yet.</td></tr>}
-              {requests.map((r: any) => (
+              {!initialLoading && requests.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-400">No leave requests yet.</td></tr>}
+              {pageRows.map((r: any) => (
                 <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className={`${CELL} font-medium text-charcoal-heading`}>{r.leaveType?.name ?? '—'}</td>
                   <td className={`${CELL} text-slate-600`}>{fmtDate(r.startDate)}</td>
@@ -123,6 +130,7 @@ function MyLeaveTab() {
             </tbody>
           </table>
         </div>
+        {pageRows.length > 0 && <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />}
       </div>
 
       {reqOpen && <RequestModal employeeId={employee.id} onClose={() => setReqOpen(false)} />}
@@ -145,10 +153,13 @@ function ManageLeaveTab() {
     ...(endDate ? { endDate } : {}),
   }), [status, startDate, endDate]);
 
-  const { data: requests = [] } = useQuery({
+  const { data: requestsData } = useQuery({
     queryKey: ['leave-requests', 'manage', params],
     queryFn: () => api.get('/workforce/leave/requests', { params }).then((r) => r.data),
   });
+  const requests = (requestsData ?? NO_ROWS) as any[];
+  const fetchFn = useCallback((p: number, ps: number) => Promise.resolve(clientPage(requests, p, ps)), [requests]);
+  const { items: pageRows, loading, initialLoading, hasMore, sentinelRef } = useInfiniteScroll<any>({ fetchFn, pageSize: 20 });
   const invalidate = () => { qc.invalidateQueries({ queryKey: ['leave-requests'] }); qc.invalidateQueries({ queryKey: ['wf-notif-unread'] }); };
   const approve = useMutation({ mutationFn: (id: string) => api.patch(`/workforce/leave/requests/${id}/approve`), onSuccess: invalidate });
   const reject = useMutation({
@@ -172,8 +183,8 @@ function ManageLeaveTab() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Type</th><th className={TH}>Dates</th><th className={`${TH} text-right`}>Days</th><th className={TH}>Reason</th><th className={TH}>Status</th><th className={`${TH} text-right`}>Actions</th></tr></thead>
             <tbody>
-              {requests.length === 0 && <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-400">No leave requests match these filters.</td></tr>}
-              {requests.map((r: any) => (
+              {!initialLoading && requests.length === 0 && <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-400">No leave requests match these filters.</td></tr>}
+              {pageRows.map((r: any) => (
                 <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className={`${CELL} font-medium text-charcoal-heading`}>{empName(r.employee)}</td>
                   <td className={`${CELL} text-slate-600`}>{r.leaveType?.name ?? '—'}</td>
@@ -202,6 +213,7 @@ function ManageLeaveTab() {
             </tbody>
           </table>
         </div>
+        {pageRows.length > 0 && <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />}
       </div>
     </div>
   );

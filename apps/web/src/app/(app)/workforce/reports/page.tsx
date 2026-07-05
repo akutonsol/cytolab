@@ -1,14 +1,18 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { BarChart3, CalendarOff, Download, FileClock, Timer } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, fmtHours, fmtMoney, fmtMultiplier, rateColor, WARN_FG } from '@/lib/workforce';
+import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 
 const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
+// Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
+const NO_ROWS: any[] = [];
 const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
 const CELL = 'px-4 py-3 align-middle text-sm';
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -41,11 +45,15 @@ function AttendanceTab() {
   const departments = useMemo(() => Array.from(new Map(employees.filter((e) => e.department).map((e) => [e.department!.id, e.department!.name])).entries()), [employees]);
 
   const params = { startDate: start, endDate: end, ...(departmentId ? { departmentId } : {}) };
-  const { data: rows = [] } = useQuery({
+  const { data: rowsData } = useQuery({
     queryKey: ['rpt-attendance', params],
     queryFn: () => api.get('/workforce/reports/attendance-summary', { params }).then((r) => r.data),
     enabled: !!start && !!end,
   });
+  const rows = (rowsData ?? NO_ROWS) as any[];
+  // Infinite scroll over the attendance summary rows (export still uses the full set).
+  const fetchFn = useCallback((p: number, ps: number) => Promise.resolve(clientPage(rows, p, ps)), [rows]);
+  const { items: pageRows, loading, initialLoading, hasMore, sentinelRef } = useInfiniteScroll<any>({ fetchFn, pageSize: 20 });
 
   return (
     <div>
@@ -71,8 +79,8 @@ function AttendanceTab() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Department</th><th className={`${TH} text-right`}>Total Days</th><th className={`${TH} text-right`}>Present</th><th className={`${TH} text-right`}>Absent</th><th className={`${TH} text-right`}>Late</th><th className={`${TH} text-right`}>On Leave</th><th className={`${TH} text-right`}>Attendance Rate</th></tr></thead>
             <tbody>
-              {rows.length === 0 && <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-400">No data for this range.</td></tr>}
-              {rows.map((r: any) => (
+              {!initialLoading && rows.length === 0 && <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-400">No data for this range.</td></tr>}
+              {pageRows.map((r: any) => (
                 <tr key={r.employeeId} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className={`${CELL} font-medium text-charcoal-heading`}>{r.name}</td>
                   <td className={`${CELL} text-slate-600`}>{r.department ?? '—'}</td>
@@ -87,6 +95,7 @@ function AttendanceTab() {
             </tbody>
           </table>
         </div>
+        {pageRows.length > 0 && <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />}
       </div>
     </div>
   );

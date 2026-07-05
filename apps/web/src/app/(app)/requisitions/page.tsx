@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   AlertCircle, Calendar, CheckCircle2, ChevronsUpDown, CircleDashed, Eye, FileText, Filter,
   Inbox, MoreHorizontal, Plus, RotateCcw, Search, Upload,
@@ -9,6 +9,8 @@ import { useQuery } from '@tanstack/react-query';
 import { PieChart, Pie, Cell } from 'recharts';
 import { api, type Paginated } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { RequisitionFormDrawer } from '@/components/RequisitionFormDrawer';
 import { RequisitionReportModal } from '@/components/RequisitionReportModal';
 
@@ -50,6 +52,9 @@ const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString(undef
 const fmtTime = (d?: string | null) => (d ? new Date(d).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '');
 
 const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
+// Stable empty fallback: a fresh [] each render would change the filtered-list
+// identity and retrigger the infinite-scroll fetchFn on every render.
+const NO_REQS: Requisition[] = [];
 
 function StatusBadge({ status }: { status: string }) {
   const u = statusUI(status);
@@ -65,14 +70,12 @@ export default function RequisitionsPage() {
   const [clientF, setClientF] = useState('all');
   const [dateRange, setDateRange] = useState('30');
   const [sortDesc, setSortDesc] = useState(true);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
 
   const { data, isFetching, isError, error, refetch } = useQuery({
     queryKey: ['requisitions', 'all'],
     queryFn: () => api.get<Paginated<Requisition>>('/requisitions', { params: { page: 1, pageSize: 500 } }).then((r) => r.data),
   });
-  const all = data?.data ?? [];
+  const all = data?.data ?? NO_REQS;
   const errorMessage = (error as any)?.code === 'ECONNABORTED' ? 'The request timed out. Please try again.'
     : (error as any)?.response?.data?.message ?? 'Could not load requisitions. Please try again.';
 
@@ -109,13 +112,17 @@ export default function RequisitionsPage() {
     });
   }, [all, search, statusF, clientF, dateRange, sortDesc]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const safePage = Math.min(page, totalPages);
-  const pageRows = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
-  const rangeStart = filtered.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
-  const rangeEnd = Math.min(safePage * pageSize, filtered.length);
+  // Infinite scroll over the client-side filtered set (aggregates still use the
+  // full `all`). Changing any filter recomputes `filtered` → new fetchFn → the
+  // hook reloads from page 1 automatically.
+  const fetchFn = useCallback(
+    (page: number, pageSize: number) => Promise.resolve(clientPage(filtered, page, pageSize)),
+    [filtered],
+  );
+  const { items: pageRows, loading, initialLoading, hasMore, sentinelRef } =
+    useInfiniteScroll<Requisition>({ fetchFn, pageSize: 20 });
 
-  const clearFilters = () => { setSearch(''); setStatusF('all'); setClientF('all'); setDateRange('30'); setPage(1); };
+  const clearFilters = () => { setSearch(''); setStatusF('all'); setClientF('all'); setDateRange('30'); };
   // Client {id,name} list for the report modal's client filter.
   const reportClients = useMemo(() => {
     const m = new Map<string, string>();
@@ -143,12 +150,12 @@ export default function RequisitionsPage() {
       <div className={`${CARD} mb-6 flex flex-wrap items-center gap-3 p-4`}>
         <div className="flex h-12 min-w-[280px] flex-1 items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 text-slate-400">
           <Search size={18} />
-          <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Search by ref #, client, or accession..." className="w-full border-none bg-transparent text-base text-slate-700 outline-none placeholder:text-slate-400" />
+          <input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search by ref #, client, or accession..." className="w-full border-none bg-transparent text-base text-slate-700 outline-none placeholder:text-slate-400" />
         </div>
-        <select className={SELECT} value={statusF} onChange={(e) => { setStatusF(e.target.value); setPage(1); }}><option value="all">All Statuses</option>{statusOptions.map((s) => <option key={s} value={s}>{statusUI(s).label}</option>)}</select>
-        <select className={SELECT} value={clientF} onChange={(e) => { setClientF(e.target.value); setPage(1); }}><option value="all">All Clients</option>{clientOptions.map((c) => <option key={c} value={c}>{c}</option>)}</select>
+        <select className={SELECT} value={statusF} onChange={(e) => { setStatusF(e.target.value); }}><option value="all">All Statuses</option>{statusOptions.map((s) => <option key={s} value={s}>{statusUI(s).label}</option>)}</select>
+        <select className={SELECT} value={clientF} onChange={(e) => { setClientF(e.target.value); }}><option value="all">All Clients</option>{clientOptions.map((c) => <option key={c} value={c}>{c}</option>)}</select>
         <div className="relative">
-          <select className={`${SELECT} pl-9`} value={dateRange} onChange={(e) => { setDateRange(e.target.value); setPage(1); }}><option value="7">Last 7 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option><option value="all">All Time</option></select>
+          <select className={`${SELECT} pl-9`} value={dateRange} onChange={(e) => { setDateRange(e.target.value); }}><option value="7">Last 7 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option><option value="all">All Time</option></select>
           <Calendar size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         </div>
         <button onClick={clearFilters} className="flex h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-base font-medium text-slate-600 hover:bg-slate-50"><Filter size={16} /> Filters</button>
@@ -183,7 +190,7 @@ export default function RequisitionsPage() {
                   {isFetching && all.length === 0 && Array.from({ length: 6 }).map((_, i) => (
                     <tr key={i} className="border-b border-slate-100"><td colSpan={8} className="px-5 py-4"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></td></tr>
                   ))}
-                  {!isFetching && filtered.length === 0 && <tr><td colSpan={8} className="px-5 py-12 text-center text-sm text-slate-400">No requisitions found.</td></tr>}
+                  {!isFetching && !initialLoading && filtered.length === 0 && <tr><td colSpan={8} className="px-5 py-12 text-center text-sm text-slate-400">No requisitions found.</td></tr>}
                   {pageRows.map((r) => {
                     const name = clientName(r);
                     return (
@@ -216,17 +223,10 @@ export default function RequisitionsPage() {
               </table>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-6 py-5">
-              <div className="text-base text-secondary">Showing {rangeStart} to {rangeEnd} of {filtered.length} requisitions</div>
-              <div className="flex items-center gap-3">
-                <select className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-600 outline-none focus:border-primary" value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}>{[10, 20, 50].map((s) => <option key={s} value={s}>{s} / page</option>)}</select>
-                <div className="flex items-center gap-1">
-                  <button className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-lg text-slate-500 disabled:opacity-40" disabled={safePage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>‹</button>
-                  {Array.from({ length: totalPages }).slice(0, 5).map((_, i) => <button key={i} onClick={() => setPage(i + 1)} className="grid h-10 min-w-10 place-items-center rounded-lg px-2.5 text-base font-medium" style={safePage === i + 1 ? { background: '#4F46E5', color: '#fff' } : { color: '#64748B' }}>{i + 1}</button>)}
-                  <button className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-lg text-slate-500 disabled:opacity-40" disabled={safePage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>›</button>
-                </div>
-              </div>
-            </div>
+            {/* Infinite scroll: auto-loads more of the filtered list on scroll. */}
+            {filtered.length > 0 && (
+              <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
+            )}
           </div>
         </div>
 

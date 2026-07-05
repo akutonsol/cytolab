@@ -1,14 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Check, Eye, Plus, Send, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, empName, fmtDate } from '@/lib/workforce';
+import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 
 const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
+// Stable empty fallback — a fresh [] each render would retrigger the
+// infinite-scroll fetchFn (which depends on the filtered array identity).
+const NO_ROWS: any[] = [];
 const STATUS: Record<string, { bg: string; fg: string }> = {
   Draft: { bg: '#F1F5F9', fg: '#64748B' }, Submitted: { bg: '#E0F2FE', fg: '#0284C7' }, UnderReview: { bg: '#EEF2FF', fg: '#4F46E5' },
   Approved: { bg: '#DCFCE7', fg: '#16A34A' }, Rejected: { bg: '#FEE2E2', fg: '#DC2626' }, PayrollLocked: { bg: '#F1F5F9', fg: '#334155' },
@@ -51,13 +56,23 @@ function List() {
   const qc = useQueryClient();
   const [genOpen, setGenOpen] = useState(false);
   const [statusF, setStatusF] = useState('all');
-  const { data: rows = [] } = useQuery({ queryKey: ['timesheets'], queryFn: () => api.get('/workforce/timesheets').then((r) => r.data) });
+  const { data } = useQuery({ queryKey: ['timesheets'], queryFn: () => api.get('/workforce/timesheets').then((r) => r.data) });
+  const rows = (data ?? NO_ROWS) as any[];
 
   const act = useMutation({
     mutationFn: ({ id, action, reason }: { id: string; action: string; reason?: string }) => api.post(`/workforce/timesheets/${id}/${action}`, reason ? { reason } : {}),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['timesheets'] }),
   });
-  const filtered = rows.filter((r: any) => statusF === 'all' || r.status === statusF);
+  const filtered = useMemo(() => rows.filter((r: any) => statusF === 'all' || r.status === statusF), [rows, statusF]);
+
+  // Infinite scroll over the client-side filtered timesheets.
+  const fetchFn = useCallback(
+    (p: number, ps: number) => Promise.resolve(clientPage(filtered, p, ps)),
+    [filtered],
+  );
+  const { items: pageRows, loading, initialLoading, hasMore, sentinelRef } =
+    useInfiniteScroll<any>({ fetchFn, pageSize: 20 });
+
   const TH = 'px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
   const CELL = 'px-5 py-4 align-middle text-sm';
 
@@ -79,8 +94,8 @@ function List() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Period</th><th className={`${TH} text-right`}>Regular Hrs</th><th className={`${TH} text-right`}>OT Hrs</th><th className={`${TH} text-right`}>Total</th><th className={TH}>Status</th><th className={`${TH} text-right`}>Actions</th></tr></thead>
             <tbody>
-              {filtered.length === 0 && <tr><td colSpan={7} className="px-5 py-12 text-center text-sm text-slate-400">No timesheets yet. Generate one from clock events.</td></tr>}
-              {filtered.map((r: any) => {
+              {!initialLoading && filtered.length === 0 && <tr><td colSpan={7} className="px-5 py-12 text-center text-sm text-slate-400">No timesheets yet. Generate one from clock events.</td></tr>}
+              {pageRows.map((r: any) => {
                 const s = STATUS[r.status] ?? STATUS.Draft;
                 const name = r.employee?.user ? `${r.employee.user.firstName} ${r.employee.user.lastName}` : '—';
                 return (
@@ -107,6 +122,9 @@ function List() {
             </tbody>
           </table>
         </div>
+        {pageRows.length > 0 && (
+          <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
+        )}
       </div>
       {genOpen && <GenerateModal onClose={() => setGenOpen(false)} />}
     </div>

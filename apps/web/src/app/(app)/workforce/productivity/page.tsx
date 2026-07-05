@@ -1,14 +1,18 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Activity, ChevronDown, ChevronRight, FlaskConical, Gauge, Minus, Plus, TrendingDown, TrendingUp } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, empName, fmtHours } from '@/lib/workforce';
+import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 
 const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
+// Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
+const NO_ROWS: any[] = [];
 const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
 const CELL = 'px-4 py-3 align-middle text-sm';
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -109,7 +113,10 @@ function ProductivityPage() {
   const { data: benchmarks } = useQuery({ queryKey: ['prod-benchmarks'], queryFn: () => api.get('/workforce/productivity/benchmarks').then((r) => r.data) });
   const { data: leaders = [] } = useQuery({ queryKey: ['prod-leaderboard'], queryFn: () => api.get('/workforce/productivity/leaderboard').then((r) => r.data) });
   const summaryParams = useMemo(() => ({ startDate: start, endDate: end }), [start, end]);
-  const { data: summary = [] } = useQuery({ queryKey: ['prod-summary', summaryParams], queryFn: () => api.get('/workforce/productivity/summary', { params: summaryParams }).then((r) => r.data), enabled: !!start && !!end });
+  const { data: summaryData } = useQuery({ queryKey: ['prod-summary', summaryParams], queryFn: () => api.get('/workforce/productivity/summary', { params: summaryParams }).then((r) => r.data), enabled: !!start && !!end });
+  const summary = (summaryData ?? NO_ROWS) as any[];
+  const fetchFn = useCallback((p: number, ps: number) => Promise.resolve(clientPage(summary, p, ps)), [summary]);
+  const { items: pageRows, loading, initialLoading, hasMore, sentinelRef } = useInfiniteScroll<any>({ fetchFn, pageSize: 20 });
 
   return (
     <div className="w-full">
@@ -174,8 +181,8 @@ function ProductivityPage() {
               <table className="w-full border-collapse">
                 <thead><tr className="border-y border-slate-100"><th className={TH}>Employee</th><th className={`${TH} text-right`}>Specimens/Day</th><th className={`${TH} text-right`}>Avg TAT</th><th className={`${TH} text-right`}>Quality</th><th className={`${TH} text-right`}>Reports</th><th className={`${TH} text-right`}>Trend</th></tr></thead>
                 <tbody>
-                  {summary.length === 0 && <tr><td colSpan={6} className="px-4 py-12 text-center text-sm text-slate-400">No metrics for this range.</td></tr>}
-                  {summary.map((r: any) => (
+                  {!initialLoading && summary.length === 0 && <tr><td colSpan={6} className="px-4 py-12 text-center text-sm text-slate-400">No metrics for this range.</td></tr>}
+                  {pageRows.map((r: any) => (
                     <tr key={r.employeeId} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className={`${CELL} font-medium text-charcoal-heading`}>{r.name}</td>
                       <td className={`${CELL} text-right`}>{r.avgSpecimensPerDay}</td>
@@ -188,6 +195,7 @@ function ProductivityPage() {
                 </tbody>
               </table>
             </div>
+            {pageRows.length > 0 && <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />}
           </div>
 
           {isManager && <LogMetric />}

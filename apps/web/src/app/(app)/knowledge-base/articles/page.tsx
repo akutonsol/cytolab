@@ -1,11 +1,13 @@
 'use client';
 
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Eye, FileText, Pin, Search, Tag } from 'lucide-react';
 import { KbStatus, listArticles, listCategories } from '@/lib/knowledge-base';
 import { useAuth } from '@/lib/auth';
+import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 
 const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)]';
 const STATUS_TINT: Record<KbStatus, string> = { PUBLISHED: '#16A34A', DRAFT: '#A16207', ARCHIVED: '#64748B' };
@@ -32,6 +34,16 @@ function ArticleListInner() {
   });
 
   const filtered = useMemo(() => (tag ? (articles ?? []).filter((a) => a.tags.includes(tag)) : articles ?? []), [articles, tag]);
+
+  // Infinite scroll over the (client-side filtered) article list. Changing a
+  // filter recomputes `filtered` → new fetchFn → reload from the first window.
+  const fetchFn = useCallback(
+    (p: number, ps: number) => Promise.resolve(clientPage(filtered, p, ps)),
+    [filtered],
+  );
+  const { items: pageArticles, loading, initialLoading, hasMore, sentinelRef } =
+    useInfiniteScroll({ fetchFn, pageSize: 20 });
+
   const tagCloud = useMemo(() => {
     const counts = new Map<string, number>();
     for (const a of articles ?? []) for (const t of a.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
@@ -101,7 +113,7 @@ function ArticleListInner() {
             <div className={`${CARD} p-10 text-center text-[14px] text-[#94A3B8]`}>No articles match your filters.</div>
           ) : (
             <div className="space-y-3">
-              {filtered.map((a) => (
+              {pageArticles.map((a) => (
                 <button key={a.id} onClick={() => router.push(`/knowledge-base/articles/${a.slug}`)}
                   className={`${CARD} block w-full p-5 text-left transition-shadow hover:shadow-[0_8px_30px_rgba(79,70,229,0.10)]`}>
                   <div className="flex items-start justify-between gap-3">
@@ -123,6 +135,8 @@ function ArticleListInner() {
                   </div>
                 </button>
               ))}
+              {/* Infinite scroll: auto-loads more articles as you scroll. */}
+              <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
             </div>
           )}
         </main>

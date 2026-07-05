@@ -1,12 +1,17 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Award, Check, Plus, Target, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, useMyEmployee, empName, fmtDate } from '@/lib/workforce';
+import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
+
+// Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
+const NO_ROWS: any[] = [];
 
 const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
@@ -162,7 +167,10 @@ function ReviewsTab() {
   const [detailId, setDetailId] = useState<string | null>(null);
 
   const params = useMemo(() => ({ ...(employeeId ? { employeeId } : {}), ...(period ? { period } : {}), ...(status !== 'ALL' ? { status } : {}) }), [employeeId, period, status]);
-  const { data: reviews = [] } = useQuery({ queryKey: ['perf-reviews', params], queryFn: () => api.get('/workforce/performance/reviews', { params }).then((r) => r.data) });
+  const { data: reviewsData } = useQuery({ queryKey: ['perf-reviews', params], queryFn: () => api.get('/workforce/performance/reviews', { params }).then((r) => r.data) });
+  const reviews = (reviewsData ?? NO_ROWS) as any[];
+  const fetchFn = useCallback((p: number, ps: number) => Promise.resolve(clientPage(reviews, p, ps)), [reviews]);
+  const { items: pageRows, loading, initialLoading, hasMore, sentinelRef } = useInfiniteScroll<any>({ fetchFn, pageSize: 20 });
 
   return (
     <div>
@@ -184,8 +192,8 @@ function ReviewsTab() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Period</th><th className={`${TH} text-right`}>Overall</th><th className={`${TH} text-right`}>Attend.</th><th className={`${TH} text-right`}>Prod.</th><th className={`${TH} text-right`}>Quality</th><th className={TH}>Status</th><th className={TH}>Reviewer</th></tr></thead>
             <tbody>
-              {reviews.length === 0 && <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-400">No reviews match these filters.</td></tr>}
-              {reviews.map((r: any) => (
+              {!initialLoading && reviews.length === 0 && <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-400">No reviews match these filters.</td></tr>}
+              {pageRows.map((r: any) => (
                 <tr key={r.id} className="cursor-pointer border-b border-slate-100 hover:bg-slate-50" onClick={() => setDetailId(r.id)}>
                   <td className={`${CELL} font-medium text-charcoal-heading`}>{empName(r.employee)}</td>
                   <td className={`${CELL} text-slate-600`}>{r.period}</td>
@@ -200,6 +208,7 @@ function ReviewsTab() {
             </tbody>
           </table>
         </div>
+        {pageRows.length > 0 && <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />}
       </div>
 
       {newOpen && <NewReviewModal onClose={() => setNewOpen(false)} />}
@@ -275,7 +284,10 @@ function GoalsTab() {
   const [editing, setEditing] = useState<any>(null);
 
   const params = useMemo(() => ({ ...(employeeId ? { employeeId } : {}), ...(status !== 'ALL' ? { status } : {}) }), [employeeId, status]);
-  const { data: goals = [] } = useQuery({ queryKey: ['perf-goals', params], queryFn: () => api.get('/workforce/performance/goals', { params }).then((r) => r.data) });
+  const { data: goalsData } = useQuery({ queryKey: ['perf-goals', params], queryFn: () => api.get('/workforce/performance/goals', { params }).then((r) => r.data) });
+  const goals = (goalsData ?? NO_ROWS) as any[];
+  const fetchFn = useCallback((p: number, ps: number) => Promise.resolve(clientPage(goals, p, ps)), [goals]);
+  const { items: pageRows, loading, initialLoading, hasMore, sentinelRef } = useInfiniteScroll<any>({ fetchFn, pageSize: 20 });
 
   return (
     <div>
@@ -296,8 +308,8 @@ function GoalsTab() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Title</th><th className={TH}>Target Date</th><th className={TH}>Progress</th><th className={TH}>Status</th></tr></thead>
             <tbody>
-              {goals.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-400">No goals match these filters.</td></tr>}
-              {goals.map((g: any) => (
+              {!initialLoading && goals.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-400">No goals match these filters.</td></tr>}
+              {pageRows.map((g: any) => (
                 <tr key={g.id} className="cursor-pointer border-b border-slate-100 hover:bg-slate-50" onClick={() => setEditing(g)}>
                   <td className={`${CELL} text-slate-600`}>{empName(g.employee)}</td>
                   <td className={`${CELL} font-medium text-charcoal-heading`}>{g.title}</td>
@@ -314,6 +326,7 @@ function GoalsTab() {
             </tbody>
           </table>
         </div>
+        {pageRows.length > 0 && <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />}
       </div>
 
       {newOpen && <NewGoalModal onClose={() => setNewOpen(false)} />}

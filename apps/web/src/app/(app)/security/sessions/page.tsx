@@ -1,24 +1,40 @@
 'use client';
 
+import { useCallback, useRef, useState } from 'react';
 import { MonitorSmartphone } from 'lucide-react';
 import { message, Popconfirm } from 'antd';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { fmtDateTime, fullName, relTime, securityApi, type UserSession } from '@/lib/security';
 import { SecurityPage, Table, dangerBtn } from '@/components/security/ui';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
+import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 
 export default function SecuritySessionsPage() {
-  const qc = useQueryClient();
-  const { data = [], isLoading } = useQuery({ queryKey: ['security-sessions'], queryFn: () => securityApi.sessions() });
-  const invalidate = () => qc.invalidateQueries({ queryKey: ['security-sessions'] });
+  // Sessions are returned as a whole array; fetch once and window client-side.
+  // Bumping `refreshKey` (after a terminate) busts the cache and reloads.
+  const [refreshKey, setRefreshKey] = useState(0);
+  const cacheRef = useRef<{ key: number; all: UserSession[] } | null>(null);
+  const fetchFn = useCallback(
+    async (page: number, pageSize: number) => {
+      if (!cacheRef.current || cacheRef.current.key !== refreshKey) {
+        cacheRef.current = { key: refreshKey, all: await securityApi.sessions() };
+      }
+      return clientPage(cacheRef.current.all, page, pageSize);
+    },
+    [refreshKey],
+  );
+  const { items, loading, initialLoading, hasMore, sentinelRef } =
+    useInfiniteScroll<UserSession>({ fetchFn, pageSize: 20 });
+  const reload = () => setRefreshKey((k) => k + 1);
 
   const terminate = useMutation({
     mutationFn: (id: string) => securityApi.terminateSession(id),
-    onSuccess: () => { message.success('Session terminated'); invalidate(); },
+    onSuccess: () => { message.success('Session terminated'); reload(); },
     onError: () => message.error('Could not terminate session'),
   });
   const terminateAll = useMutation({
     mutationFn: (userId: string) => securityApi.terminateAllForUser(userId),
-    onSuccess: () => { message.success('All sessions terminated for user'); invalidate(); },
+    onSuccess: () => { message.success('All sessions terminated for user'); reload(); },
     onError: () => message.error('Could not terminate sessions'),
   });
 
@@ -26,8 +42,8 @@ export default function SecuritySessionsPage() {
     <SecurityPage title="Active Sessions" subtitle="Every live device session across the platform" icon={<MonitorSmartphone size={20} />} back="/security">
       <div className="rounded-2xl border border-slate-200 bg-white">
         <Table<UserSession>
-          rows={data}
-          loading={isLoading}
+          rows={items}
+          loading={initialLoading}
           rowKey={(s) => s.id}
           empty="No active sessions."
           columns={[
@@ -51,6 +67,9 @@ export default function SecuritySessionsPage() {
             },
           ]}
         />
+        {items.length > 0 && (
+          <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
+        )}
       </div>
     </SecurityPage>
   );

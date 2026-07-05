@@ -1,14 +1,18 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Check, ChevronDown, ChevronRight, Plus, Settings2, Timer, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, empName, fmtDate, fmtHours, fmtMultiplier, WF_STATUS } from '@/lib/workforce';
+import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 
 const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
+// Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
+const NO_ROWS: any[] = [];
 const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
 const CELL = 'px-4 py-3 align-middle text-sm';
 
@@ -120,10 +124,13 @@ function OvertimePage() {
     ...(status !== 'ALL' ? { status } : {}),
   }), [employeeId, startDate, endDate, status]);
 
-  const { data: records = [] } = useQuery({
+  const { data: recordsData } = useQuery({
     queryKey: ['overtime-records', params],
     queryFn: () => api.get('/workforce/overtime/records', { params }).then((r) => r.data),
   });
+  const records = (recordsData ?? NO_ROWS) as any[];
+  const fetchFn = useCallback((p: number, ps: number) => Promise.resolve(clientPage(records, p, ps)), [records]);
+  const { items: pageRows, loading, initialLoading, hasMore, sentinelRef } = useInfiniteScroll<any>({ fetchFn, pageSize: 20 });
   const { data: rules = [] } = useQuery({
     queryKey: ['overtime-rules'],
     queryFn: () => api.get('/workforce/overtime/rules').then((r) => r.data),
@@ -164,8 +171,8 @@ function OvertimePage() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Date</th><th className={`${TH} text-right`}>Regular Hrs</th><th className={`${TH} text-right`}>Overtime Hrs</th><th className={`${TH} text-right`}>Rate</th><th className={TH}>Status</th>{isManager && <th className={`${TH} text-right`}>Actions</th>}</tr></thead>
             <tbody>
-              {records.length === 0 && <tr><td colSpan={isManager ? 7 : 6} className="px-4 py-12 text-center text-sm text-slate-400">No overtime records. Use “Calculate Overtime” to generate them.</td></tr>}
-              {records.map((r: any) => (
+              {!initialLoading && records.length === 0 && <tr><td colSpan={isManager ? 7 : 6} className="px-4 py-12 text-center text-sm text-slate-400">No overtime records. Use “Calculate Overtime” to generate them.</td></tr>}
+              {pageRows.map((r: any) => (
                 <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className={`${CELL} font-medium text-charcoal-heading`}>{empName(r.employee)}</td>
                   <td className={`${CELL} text-slate-600`}>{fmtDate(r.date)}</td>
@@ -188,6 +195,7 @@ function OvertimePage() {
             </tbody>
           </table>
         </div>
+        {pageRows.length > 0 && <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />}
       </div>
 
       {/* Rules (manager only, collapsible) */}

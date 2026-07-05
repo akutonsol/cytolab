@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   AlertTriangle, CalendarClock, CheckCircle2, Clock, Headset, Megaphone, Plus, Search, Send, X,
@@ -10,6 +10,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api, type Paginated } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
+
+// Stable empty fallback — a fresh [] each render would retrigger the
+// infinite-scroll fetchFn (which depends on the rows array identity).
+const NO_TICKETS: Ticket[] = [];
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'PENDING_RESPONSE' | 'RESOLVED' | 'CLOSED';
@@ -149,7 +155,16 @@ function TicketsTab() {
     queryKey: ['support-tickets', params],
     queryFn: () => api.get<Paginated<Ticket>>('/system/support/tickets', { params: { ...params, pageSize: 100 } }).then((r) => r.data),
   });
-  const rows = page?.data ?? [];
+  const rows = page?.data ?? NO_TICKETS;
+
+  // Infinite scroll over the fetched (server-filtered) tickets. Filter changes
+  // refetch → new `rows` identity → the hook reloads from the first window.
+  const fetchFn = useCallback(
+    (p: number, ps: number) => Promise.resolve(clientPage(rows, p, ps)),
+    [rows],
+  );
+  const { items: ticketRows, loading, initialLoading, hasMore, sentinelRef } =
+    useInfiniteScroll<Ticket>({ fetchFn, pageSize: 20 });
 
   const KPIS = [
     { label: 'Open', value: stats?.open ?? 0, color: '#2563EB' },
@@ -194,9 +209,9 @@ function TicketsTab() {
               </tr>
             </thead>
             <tbody>
-              {isFetching && rows.length === 0 && <tr><td colSpan={9} className="px-4 py-10 text-center text-[#94A3B8]">Loading…</td></tr>}
-              {!isFetching && rows.length === 0 && <tr><td colSpan={9} className="px-4 py-12 text-center text-[#94A3B8]">No tickets found.</td></tr>}
-              {rows.map((t) => (
+              {(isFetching || initialLoading) && rows.length === 0 && <tr><td colSpan={9} className="px-4 py-10 text-center text-[#94A3B8]">Loading…</td></tr>}
+              {!isFetching && !initialLoading && rows.length === 0 && <tr><td colSpan={9} className="px-4 py-12 text-center text-[#94A3B8]">No tickets found.</td></tr>}
+              {ticketRows.map((t) => (
                 <tr key={t.id} onClick={() => setOpenId(t.id)} className="cursor-pointer border-b border-[#F1F5F9] transition-colors hover:bg-[#F8FAFC]">
                   <td className="px-4 py-3.5 font-mono text-[13px] font-bold text-[#0F172A]">{t.ticketNumber}</td>
                   <td className="px-4 py-3.5 max-w-[280px] truncate text-[#334155]">{t.title}</td>
@@ -212,6 +227,10 @@ function TicketsTab() {
             </tbody>
           </table>
         </div>
+        {/* Infinite scroll: auto-loads the next window of tickets on scroll. */}
+        {ticketRows.length > 0 && (
+          <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
+        )}
       </div>
 
       {newOpen && <NewTicketModal users={users} onClose={() => setNewOpen(false)} />}
