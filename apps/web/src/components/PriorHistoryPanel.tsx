@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, CalendarClock, FileText, History, Stethoscope, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -55,8 +55,28 @@ const ageFrom = (dob?: string | null) => {
   return a;
 };
 
+// Client-side filters (data is already loaded). Reset when the panel closes.
+const STATUS_PILLS = ['all', 'APPROVED', 'COMPLETED', 'PENDING'] as const;
+type StatusPill = (typeof STATUS_PILLS)[number];
+const dateCutoff = (range: string): number | null => {
+  if (range === 'all') return null;
+  const d = new Date();
+  if (range === '6m') d.setMonth(d.getMonth() - 6);
+  else if (range === '1y') d.setFullYear(d.getFullYear() - 1);
+  else if (range === '2y') d.setFullYear(d.getFullYear() - 2);
+  else if (range === '5y') d.setFullYear(d.getFullYear() - 5);
+  return d.getTime();
+};
+
 export function PriorHistoryPanel({ open, onClose, patientId, excludeRecordId }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState('all');
+  const [status, setStatus] = useState<StatusPill>('all');
+  const [specType, setSpecType] = useState('all');
+  const filtersActive = dateRange !== 'all' || status !== 'all' || specType !== 'all';
+  const clearFilters = () => { setDateRange('all'); setStatus('all'); setSpecType('all'); };
+  // Filters live only while the panel is open.
+  useEffect(() => { if (!open) { setDateRange('all'); setStatus('all'); setSpecType('all'); } }, [open]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['patient-history', patientId, excludeRecordId],
@@ -71,6 +91,20 @@ export function PriorHistoryPanel({ open, onClose, patientId, excludeRecordId }:
     return Array.from(s);
   }, [data]);
 
+  // Combined (AND) client-side filtering.
+  const filtered = useMemo(() => {
+    const cutoff = dateCutoff(dateRange);
+    return (data?.records ?? []).filter((r) => {
+      if (cutoff !== null && new Date(r.specimenDate ?? r.createdAt).getTime() < cutoff) return false;
+      if (status !== 'all' && r.status.toUpperCase() !== status) return false;
+      if (specType !== 'all') {
+        const isGyn = r.formType === 'Gynecology';
+        if (specType === 'GYN' ? !isGyn : (isGyn || !r.formType)) return false;
+      }
+      return true;
+    });
+  }, [data, dateRange, status, specType]);
+
   if (!open || typeof document === 'undefined') return null;
   const age = ageFrom(data?.patientDob);
 
@@ -84,12 +118,51 @@ export function PriorHistoryPanel({ open, onClose, patientId, excludeRecordId }:
             <div>
               <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">Prior Cytology History</h3>
               <p className="mt-0.5 font-body-sm text-body-sm text-secondary">
-                {data ? `${data.patientName}${age !== null ? ` · ${age} yrs` : ''} · ${data.totalRecords} prior record${data.totalRecords === 1 ? '' : 's'}` : 'Loading…'}
+                {data
+                  ? `${data.patientName}${age !== null ? ` · ${age} yrs` : ''} · ${filtersActive
+                      ? `Showing ${filtered.length} of ${data.totalRecords} records`
+                      : `${data.totalRecords} prior record${data.totalRecords === 1 ? '' : 's'}`}`
+                  : 'Loading…'}
               </p>
             </div>
           </div>
           <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-slate-100"><X size={16} /></button>
         </div>
+
+        {/* Filters (client-side; combine with AND) */}
+        {(data?.records?.length ?? 0) > 0 && (
+          <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-5 py-3">
+            <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600">
+              <option value="all">All Time</option>
+              <option value="6m">Last 6 months</option>
+              <option value="1y">Last 1 year</option>
+              <option value="2y">Last 2 years</option>
+              <option value="5y">Last 5 years</option>
+            </select>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              {STATUS_PILLS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setStatus(s)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium ${status === s ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                >
+                  {s === 'all' ? 'All' : s}
+                </button>
+              ))}
+            </div>
+
+            <select value={specType} onChange={(e) => setSpecType(e.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600">
+              <option value="all">All Types</option>
+              <option value="GYN">GYN</option>
+              <option value="NON-GYN">NON-GYN</option>
+            </select>
+
+            {filtersActive && (
+              <button onClick={clearFilters} className="ml-auto text-xs text-indigo-600 hover:underline">Clear filters</button>
+            )}
+          </div>
+        )}
 
         {/* Prior-abnormal alert */}
         {priorAbnormal.length > 0 && (
@@ -114,9 +187,16 @@ export function PriorHistoryPanel({ open, onClose, patientId, excludeRecordId }:
               <p className="font-headline-sm text-headline-sm text-charcoal-heading">No prior history</p>
               <p className="max-w-xs font-body-sm text-body-sm text-secondary">This is the patient’s first cytology record in the lab.</p>
             </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-center">
+              <History size={44} className="text-[#E2E8F0]" />
+              <p className="font-headline-sm text-headline-sm text-charcoal-heading">No matching records</p>
+              <p className="max-w-xs font-body-sm text-body-sm text-secondary">No prior records match the current filters.</p>
+              <button onClick={clearFilters} className="text-xs text-indigo-600 hover:underline">Clear filters</button>
+            </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {data!.records.map((r) => {
+              {filtered.map((r) => {
                 const st = statusStyle(r.status);
                 const isGyn = r.formType === 'Gynecology';
                 const open = expanded === r.id;
