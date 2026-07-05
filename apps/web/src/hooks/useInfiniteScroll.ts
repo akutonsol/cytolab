@@ -22,7 +22,12 @@ export function useInfiniteScroll<T>({ fetchFn, pageSize = 20, enabled = true }:
     try {
       setLoading(true);
       setError(null);
-      const result = await fetchFn(pageNum, pageSize);
+      // Race the fetch against a minimum 600ms so the spinner is always visible
+      // even when the data resolves instantly (e.g. client-windowed lists).
+      const [result] = await Promise.all([
+        fetchFn(pageNum, pageSize),
+        new Promise(resolve => setTimeout(resolve, 600)),
+      ]);
       setItems(prev => reset ? result.data : [...prev, ...result.data]);
       setTotal(result.total);
       setPage(pageNum);
@@ -44,7 +49,7 @@ export function useInfiniteScroll<T>({ fetchFn, pageSize = 20, enabled = true }:
     if (!sentinelRef.current || !hasMore || loading) return;
     observerRef.current = new IntersectionObserver(
       entries => { if (entries[0].isIntersecting) loadPage(page + 1); },
-      { threshold: 0.1, rootMargin: '100px' }
+      { threshold: 0.1, rootMargin: '200px' }
     );
     observerRef.current.observe(sentinelRef.current);
     return () => observerRef.current?.disconnect();
