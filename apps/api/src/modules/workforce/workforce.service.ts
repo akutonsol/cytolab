@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ClockEventType, Prisma, ShiftType, TimesheetStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { WorkforceNotificationService } from './workforce-notification.service';
 import {
   AssignShiftDto, AttendanceSummaryQuery, BulkAssignDto, ClockDto, ClockHistoryQuery, CorrectClockDto,
   CreateShiftDto, GenerateTimesheetDto, ScheduleQuery, TimesheetQuery, UpdateShiftDto,
@@ -17,7 +18,10 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 
 @Injectable()
 export class WorkforceService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: WorkforceNotificationService,
+  ) {}
 
   // ── Shift detection ─────────────────────────────────────────────────────────
   private async shiftForTime(when: Date) {
@@ -183,14 +187,42 @@ export class WorkforceService {
     return this.prisma.timesheet.update({ where: { id }, data });
   }
 
-  submitTimesheet(id: string) {
-    return this.transitionTimesheet(id, { status: TimesheetStatus.Submitted, submittedAt: new Date() });
+  private period(ts: { periodStart: Date; periodEnd: Date }) {
+    return `${ts.periodStart.toISOString().slice(0, 10)}–${ts.periodEnd.toISOString().slice(0, 10)}`;
   }
-  approveTimesheet(id: string, userId?: string) {
-    return this.transitionTimesheet(id, { status: TimesheetStatus.Approved, approvedAt: new Date(), reviewedAt: new Date(), reviewedBy: userId ? { connect: { id: userId } } : undefined });
+
+  async submitTimesheet(id: string) {
+    const ts = await this.transitionTimesheet(id, { status: TimesheetStatus.Submitted, submittedAt: new Date() });
+    const managers = await this.notifications.managerRecipientIds();
+    await this.notifications.notifyMany(
+      managers, 'TIMESHEET_SUBMITTED', 'Timesheet submitted',
+      `A timesheet for ${this.period(ts)} was submitted for review.`, ts.id, 'Timesheet',
+    );
+    return ts;
   }
-  rejectTimesheet(id: string, reason: string, userId?: string) {
-    return this.transitionTimesheet(id, { status: TimesheetStatus.Rejected, reviewedAt: new Date(), notes: reason, reviewedBy: userId ? { connect: { id: userId } } : undefined });
+
+  async approveTimesheet(id: string, userId?: string) {
+    const ts = await this.transitionTimesheet(id, { status: TimesheetStatus.Approved, approvedAt: new Date(), reviewedAt: new Date(), reviewedBy: userId ? { connect: { id: userId } } : undefined });
+    const emp = await this.prisma.employee.findFirst({ where: { id: ts.employeeId }, select: { userId: true } });
+    if (emp) {
+      await this.notifications.notify(
+        emp.userId, 'TIMESHEET_APPROVED', 'Timesheet approved',
+        `Your timesheet for ${this.period(ts)} was approved.`, ts.id, 'Timesheet',
+      );
+    }
+    return ts;
+  }
+
+  async rejectTimesheet(id: string, reason: string, userId?: string) {
+    const ts = await this.transitionTimesheet(id, { status: TimesheetStatus.Rejected, reviewedAt: new Date(), notes: reason, reviewedBy: userId ? { connect: { id: userId } } : undefined });
+    const emp = await this.prisma.employee.findFirst({ where: { id: ts.employeeId }, select: { userId: true } });
+    if (emp) {
+      await this.notifications.notify(
+        emp.userId, 'TIMESHEET_REJECTED', 'Timesheet rejected',
+        `Your timesheet for ${this.period(ts)} was rejected: ${reason}`, ts.id, 'Timesheet',
+      );
+    }
+    return ts;
   }
 
   // ── Scheduling ──────────────────────────────────────────────────────────────

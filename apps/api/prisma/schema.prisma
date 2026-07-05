@@ -257,73 +257,76 @@ model Workspace {
 }
 
 model User {
-  id                     String                 @id @default(uuid())
-  labId                  String
-  lab                    Lab                    @relation(fields: [labId], references: [id])
-  email                  String
-  passwordHash           String
-  firstName              String
-  lastName               String
+  id                      String                  @id @default(uuid())
+  labId                   String
+  lab                     Lab                     @relation(fields: [labId], references: [id])
+  email                   String
+  passwordHash            String
+  firstName               String
+  lastName                String
   // Authorizer signature image for rendered reports (Phase 3.5). Typed name
   // (firstName lastName) is the fallback when this is absent.
-  signatureUrl           String?
+  signatureUrl            String?
   // Professional designation for staff who authorize result sheets (legacy
   // Authorizer.type). Null for non-authorizer staff; rendered on the report.
-  authorizerDesignation  AuthorizerDesignation?
-  isActive               Boolean                @default(true)
-  accountId              String
-  account                Account                @relation(fields: [accountId], references: [id])
-  workspaceId            String?
-  workspace              Workspace?             @relation(fields: [workspaceId], references: [id])
-  roles                  UserRole[]
-  authAttempts           AuthAttempt[]
-  recordStatusEvents     RecordStatusEvent[]
-  authorizedResultSheets ResultSheet[]          @relation("ResultSheetAuthorizer")
-  authoredReports        Report[]               @relation("ReportAuthor")
-  resultSheetEvents      ResultSheetEvent[]
-  aiDraftsCreated        AiDraft[]              @relation("AiDraftCreatedBy")
-  aiDraftsAccepted       AiDraft[]              @relation("AiDraftAcceptedBy")
-  aiScreeningsReviewed   AIScreeningResult[]    @relation("AIScreeningReviewer")
-  consultRequests        ConsultRequest[]       @relation("ConsultRequester")
-  recordCodings          RecordCoding[]
-  assignedChangeRequests ChangeRequest[]        @relation("ChangeRequestAssignee")
-  changeRequestMessages  ChangeRequestMessage[] @relation("ChangeRequestMessageStaffAuthor")
-  changeRequestEvents    ChangeRequestEvent[]   @relation("ChangeRequestEventStaffActor")
-  threadParticipants     ThreadParticipant[]
-  authoredMessages       Message[]
-  assignedAppointments   Appointment[]          @relation("AppointmentAssignee")
-  createdAppointments    Appointment[]          @relation("AppointmentCreator")
-  notifications          Notification[]
-  typingIndicators       TypingIndicator[]
+  authorizerDesignation   AuthorizerDesignation?
+  isActive                Boolean                 @default(true)
+  accountId               String
+  account                 Account                 @relation(fields: [accountId], references: [id])
+  workspaceId             String?
+  workspace               Workspace?              @relation(fields: [workspaceId], references: [id])
+  roles                   UserRole[]
+  authAttempts            AuthAttempt[]
+  recordStatusEvents      RecordStatusEvent[]
+  authorizedResultSheets  ResultSheet[]           @relation("ResultSheetAuthorizer")
+  authoredReports         Report[]                @relation("ReportAuthor")
+  resultSheetEvents       ResultSheetEvent[]
+  aiDraftsCreated         AiDraft[]               @relation("AiDraftCreatedBy")
+  aiDraftsAccepted        AiDraft[]               @relation("AiDraftAcceptedBy")
+  aiScreeningsReviewed    AIScreeningResult[]     @relation("AIScreeningReviewer")
+  consultRequests         ConsultRequest[]        @relation("ConsultRequester")
+  recordCodings           RecordCoding[]
+  assignedChangeRequests  ChangeRequest[]         @relation("ChangeRequestAssignee")
+  changeRequestMessages   ChangeRequestMessage[]  @relation("ChangeRequestMessageStaffAuthor")
+  changeRequestEvents     ChangeRequestEvent[]    @relation("ChangeRequestEventStaffActor")
+  threadParticipants      ThreadParticipant[]
+  authoredMessages        Message[]
+  assignedAppointments    Appointment[]           @relation("AppointmentAssignee")
+  createdAppointments     Appointment[]           @relation("AppointmentCreator")
+  notifications           Notification[]
+  typingIndicators        TypingIndicator[]
   // HR / Payroll (Phase 7)
-  employeeProfile        Employee?              @relation("EmployeeUser")
-  managedDepartments     Department[]           @relation("DepartmentManager")
-  processedPayrollRuns   PayrollRun[]           @relation("PayrollProcessor")
-  approvedPayrollRuns    PayrollRun[]           @relation("PayrollApprover")
-  resultTemplates        ResultTemplate[]       @relation("ResultTemplateCreator")
-  bethesdaResults        BethesdaResult[]       @relation("BethesdaReporter")
-  acknowledgedTatAlerts  TATAlert[]             @relation("TATAcknowledger")
-  toggledFeatures        LabFeature[]           @relation("LabFeatureToggler")
-  escalationsAssigned    EscalationRecord[]     @relation("EscalationAssignee")
-  escalationsReviewed    EscalationRecord[]     @relation("EscalationReviewer")
-  assignedRecords        Record[]               @relation("RecordAssignee")
-  workloadTarget         WorkloadTarget?
-  qcChecks               QCCheck[]
-  formsReceived          RequisitionTracking[]  @relation("FormReceiver")
-  benchReceived          RequisitionTracking[]  @relation("BenchReceiver")
-  formsVerified          RequisitionTracking[]  @relation("FormVerifier")
-  formsFiled             RequisitionTracking[]  @relation("FormFiler")
-  trackingEvents         TrackingEvent[]        @relation("TrackingEventActor")
-  correlationsReviewed   CorrelationCase[]      @relation("CorrelationReviewer")
-  correlationsCreated    CorrelationCase[]      @relation("CorrelationCreator")
-  proficiencyTests       ProficiencyTest[]      @relation("ProfTestCreator")
-  proficiencyResponses   ProficiencyResponse[]  @relation("ProfResponder")
-  reagentLotsCreated     ReagentLot[]           @relation("ReagentCreator")
-  reagentUsages          ReagentUsage[]         @relation("ReagentUser")
-  clockEventEdits        ClockEvent[]           @relation("ClockEventEditor")
-  timesheetsReviewed     Timesheet[]            @relation("TimesheetReviewer")
-  createdAt              DateTime               @default(now())
-  updatedAt              DateTime               @updatedAt
+  employeeProfile         Employee?               @relation("EmployeeUser")
+  managedDepartments      Department[]            @relation("DepartmentManager")
+  processedPayrollRuns    PayrollRun[]            @relation("PayrollProcessor")
+  approvedPayrollRuns     PayrollRun[]            @relation("PayrollApprover")
+  resultTemplates         ResultTemplate[]        @relation("ResultTemplateCreator")
+  bethesdaResults         BethesdaResult[]        @relation("BethesdaReporter")
+  acknowledgedTatAlerts   TATAlert[]              @relation("TATAcknowledger")
+  toggledFeatures         LabFeature[]            @relation("LabFeatureToggler")
+  escalationsAssigned     EscalationRecord[]      @relation("EscalationAssignee")
+  escalationsReviewed     EscalationRecord[]      @relation("EscalationReviewer")
+  assignedRecords         Record[]                @relation("RecordAssignee")
+  workloadTarget          WorkloadTarget?
+  qcChecks                QCCheck[]
+  formsReceived           RequisitionTracking[]   @relation("FormReceiver")
+  benchReceived           RequisitionTracking[]   @relation("BenchReceiver")
+  formsVerified           RequisitionTracking[]   @relation("FormVerifier")
+  formsFiled              RequisitionTracking[]   @relation("FormFiler")
+  trackingEvents          TrackingEvent[]         @relation("TrackingEventActor")
+  correlationsReviewed    CorrelationCase[]       @relation("CorrelationReviewer")
+  correlationsCreated     CorrelationCase[]       @relation("CorrelationCreator")
+  proficiencyTests        ProficiencyTest[]       @relation("ProfTestCreator")
+  proficiencyResponses    ProficiencyResponse[]   @relation("ProfResponder")
+  reagentLotsCreated      ReagentLot[]            @relation("ReagentCreator")
+  reagentUsages           ReagentUsage[]          @relation("ReagentUser")
+  clockEventEdits         ClockEvent[]            @relation("ClockEventEditor")
+  timesheetsReviewed      Timesheet[]             @relation("TimesheetReviewer")
+  leaveRequestsApproved   LeaveRequest[]          @relation("LeaveApprover")
+  overtimeRecordsApproved OvertimeRecord[]        @relation("OvertimeApprover")
+  workforceNotifications  WorkforceNotification[] @relation("WorkforceNotificationRecipient")
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
 
   @@unique([labId, email])
   @@index([accountId])
@@ -397,9 +400,9 @@ model AuthAttempt {
 // ---- Phase 2: Lab Intake ----
 
 model Patient {
-  id               String           @id @default(uuid())
+  id               String            @id @default(uuid())
   labId            String
-  lab              Lab              @relation(fields: [labId], references: [id])
+  lab              Lab               @relation(fields: [labId], references: [id])
   registrationNo   String
   firstName        String
   lastName         String
@@ -417,14 +420,14 @@ model Patient {
   // Nullable stub — actual upload/serving deferred to Phase 6 file storage.
   avatarUrl        String?
   clientId         String?
-  client           Client?          @relation(fields: [clientId], references: [id])
+  client           Client?           @relation(fields: [clientId], references: [id])
   addresses        PatientAddress[]
   records          Record[]
   appointments     Appointment[]
   correlationCases CorrelationCase[]
   recalls          RecallRecord[]
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
   @@unique([labId, registrationNo])
   @@index([labId])
@@ -497,27 +500,27 @@ model Client {
 }
 
 model Requisition {
-  id           String            @id @default(uuid())
-  labId        String
-  lab          Lab               @relation(fields: [labId], references: [id])
+  id             String               @id @default(uuid())
+  labId          String
+  lab            Lab                  @relation(fields: [labId], references: [id])
   // Human-facing requisition number (legacy Ref#, e.g. 1460). Auto-generated
   // per lab via a seeded LabSequence; imported verbatim during migration.
   // Nullable at the column level (survives existing rows) but always set on
   // create — mirrors PortalUser.username.
-  referenceNo  String?
-  status       RequisitionStatus @default(Pending)
+  referenceNo    String?
+  status         RequisitionStatus    @default(Pending)
   // Batch total = Σ line costs, in minor units (cents). Never a float.
-  amount       Int               @default(0)
-  clientId     String?
-  client       Client?           @relation(fields: [clientId], references: [id])
-  workspaceId  String?
-  workspace    Workspace?        @relation(fields: [workspaceId], references: [id])
-  lines        RequisitionLine[]
-  dateReceived DateTime?
+  amount         Int                  @default(0)
+  clientId       String?
+  client         Client?              @relation(fields: [clientId], references: [id])
+  workspaceId    String?
+  workspace      Workspace?           @relation(fields: [workspaceId], references: [id])
+  lines          RequisitionLine[]
+  dateReceived   DateTime?
   tracking       RequisitionTracking?
   trackingEvents TrackingEvent[]
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
 
   @@unique([labId, referenceNo])
   @@index([labId])
@@ -548,66 +551,66 @@ model RequisitionLine {
 }
 
 model Record {
-  id                String                  @id @default(uuid())
-  labId             String
-  lab               Lab                     @relation(fields: [labId], references: [id])
+  id                   String                  @id @default(uuid())
+  labId                String
+  lab                  Lab                     @relation(fields: [labId], references: [id])
   // Internal, stable system id (never human-edited). Generated at create.
-  identifier        String
+  identifier           String
   // Human-facing case number (legacy Lab No., e.g. CBL26-06-465). Generated per
   // lab via a MONTHLY-reset LabSequence; imported verbatim. Nullable at the
   // column level (survives existing rows) but always set on create.
-  labNumber         String?
+  labNumber            String?
   // Which clinical form this case uses — the discriminator for which
   // *ClinicalFeatures relation applies. Reuses RequisitionFormType (flows
   // requisition-line -> record); one shared enum.
-  formType          RequisitionFormType?
+  formType             RequisitionFormType?
   // Referring/requesting doctor (free-text on the record form).
-  doctor            String?
-  clinicalDiagnosis String?
-  specimenDate      DateTime?
-  urgent            Boolean                 @default(false)
-  medicalEntry      String?
-  billed            Boolean                 @default(false)
-  status            RecordStatus            @default(Pending)
-  dateStatus        DateTime?
-  patientId         String
-  patient           Patient                 @relation(fields: [patientId], references: [id])
-  clientId          String?
-  client            Client?                 @relation(fields: [clientId], references: [id])
-  workspaceId       String?
-  workspace         Workspace?              @relation(fields: [workspaceId], references: [id])
-  specimens         Specimen[]
-  statusHistory     RecordStatusEvent[]
-  requisitionLines  RequisitionLine[]
-  therapy           Therapy?
-  gynFeatures       GynClinicalFeatures?
-  nonGynFeatures    NonGynClinicalFeatures?
-  resultSheets      ResultSheet[]
-  bethesdaResult    BethesdaResult?
-  tatAlerts         TATAlert[]
-  escalations       EscalationRecord[]
-  qcChecks          QCCheck[]
-  cytologyCorrelations CorrelationCase[]    @relation("CytologyRecord")
-  reagentUsages     ReagentUsage[]
-  recalls           RecallRecord[]
-  digitalSlides     DigitalSlide[]
-  aiScreening       AIScreeningResult?
-  consultRequests   ConsultRequest[]
-  codings           RecordCoding[]
-  fhirTransmissions FHIRTransmission[]
+  doctor               String?
+  clinicalDiagnosis    String?
+  specimenDate         DateTime?
+  urgent               Boolean                 @default(false)
+  medicalEntry         String?
+  billed               Boolean                 @default(false)
+  status               RecordStatus            @default(Pending)
+  dateStatus           DateTime?
+  patientId            String
+  patient              Patient                 @relation(fields: [patientId], references: [id])
+  clientId             String?
+  client               Client?                 @relation(fields: [clientId], references: [id])
+  workspaceId          String?
+  workspace            Workspace?              @relation(fields: [workspaceId], references: [id])
+  specimens            Specimen[]
+  statusHistory        RecordStatusEvent[]
+  requisitionLines     RequisitionLine[]
+  therapy              Therapy?
+  gynFeatures          GynClinicalFeatures?
+  nonGynFeatures       NonGynClinicalFeatures?
+  resultSheets         ResultSheet[]
+  bethesdaResult       BethesdaResult?
+  tatAlerts            TATAlert[]
+  escalations          EscalationRecord[]
+  qcChecks             QCCheck[]
+  cytologyCorrelations CorrelationCase[]       @relation("CytologyRecord")
+  reagentUsages        ReagentUsage[]
+  recalls              RecallRecord[]
+  digitalSlides        DigitalSlide[]
+  aiScreening          AIScreeningResult?
+  consultRequests      ConsultRequest[]
+  codings              RecordCoding[]
+  fhirTransmissions    FHIRTransmission[]
   // Case assignment (Tier 2 — workload balancing). Fields are unconditional in
   // the schema; only the UI is feature-gated.
-  assignedToId      String?
-  assignedTo        User?                   @relation("RecordAssignee", fields: [assignedToId], references: [id])
-  assignedAt        DateTime?
-  assignedById      String?
-  bills             Bill[]
-  changeRequests    ChangeRequest[]
-  attachments       RecordAttachment[]
-  cabinetId         String?
-  cabinet           Cabinet?                @relation(fields: [cabinetId], references: [id])
-  createdAt         DateTime                @default(now())
-  updatedAt         DateTime                @updatedAt
+  assignedToId         String?
+  assignedTo           User?                   @relation("RecordAssignee", fields: [assignedToId], references: [id])
+  assignedAt           DateTime?
+  assignedById         String?
+  bills                Bill[]
+  changeRequests       ChangeRequest[]
+  attachments          RecordAttachment[]
+  cabinetId            String?
+  cabinet              Cabinet?                @relation(fields: [cabinetId], references: [id])
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
 
   @@unique([labId, identifier])
   @@unique([labId, labNumber])
@@ -1412,28 +1415,28 @@ enum ThreadType {
 // assigned staff member.
 
 model Appointment {
-  id             String            @id @default(cuid())
-  labId          String
-  lab            Lab               @relation(fields: [labId], references: [id])
-  patientId      String?
-  patient        Patient?          @relation(fields: [patientId], references: [id])
-  clientId       String?
-  client         Client?           @relation(fields: [clientId], references: [id])
-  title          String            @default("")
-  type           AppointmentType   @default(COLLECTION)
-  status         AppointmentStatus @default(SCHEDULED)
-  scheduledAt    DateTime
-  duration       Int               @default(30)
-  location       String?
-  doctorName     String?
-  notes          String?
+  id          String            @id @default(cuid())
+  labId       String
+  lab         Lab               @relation(fields: [labId], references: [id])
+  patientId   String?
+  patient     Patient?          @relation(fields: [patientId], references: [id])
+  clientId    String?
+  client      Client?           @relation(fields: [clientId], references: [id])
+  title       String            @default("")
+  type        AppointmentType   @default(COLLECTION)
+  status      AppointmentStatus @default(SCHEDULED)
+  scheduledAt DateTime
+  duration    Int               @default(30)
+  location    String?
+  doctorName  String?
+  notes       String?
 
   assignedUserId String?
-  assignedUser   User?             @relation("AppointmentAssignee", fields: [assignedUserId], references: [id])
+  assignedUser   User?   @relation("AppointmentAssignee", fields: [assignedUserId], references: [id])
 
   // Link back to the recall that triggered this appointment.
   recallRecordId String?
-  recallRecord   RecallRecord?     @relation(fields: [recallRecordId], references: [id])
+  recallRecord   RecallRecord? @relation(fields: [recallRecordId], references: [id])
 
   // Lifecycle outcomes.
   checkedInAt        DateTime?
@@ -1634,19 +1637,19 @@ model Department {
 // HR record for a staff member. One Employee per User (1:1). salary is the
 // MONTHLY basic in minor units (cents).
 model Employee {
-  id                    String         @id @default(uuid())
+  id                    String            @id @default(uuid())
   labId                 String
-  lab                   Lab            @relation(fields: [labId], references: [id])
-  userId                String         @unique
-  user                  User           @relation("EmployeeUser", fields: [userId], references: [id])
+  lab                   Lab               @relation(fields: [labId], references: [id])
+  userId                String            @unique
+  user                  User              @relation("EmployeeUser", fields: [userId], references: [id])
   departmentId          String?
-  department            Department?    @relation(fields: [departmentId], references: [id])
+  department            Department?       @relation(fields: [departmentId], references: [id])
   employeeNo            String
   jobTitle              String
-  employmentType        EmploymentType @default(FullTime)
+  employmentType        EmploymentType    @default(FullTime)
   startDate             DateTime
   endDate               DateTime?
-  salary                Int            @default(0) // monthly basic, minor units (cents)
+  salary                Int               @default(0) // monthly basic, minor units (cents)
   bankName              String?
   bankAccount           String?
   bankBranch            String?
@@ -1656,14 +1659,17 @@ model Employee {
   emergencyContactName  String?
   emergencyContactPhone String?
   address               String?
-  isActive              Boolean        @default(true)
-  isFixedSalary         Boolean        @default(true) // false = hourly (hours entered per run)
+  isActive              Boolean           @default(true)
+  isFixedSalary         Boolean           @default(true) // false = hourly (hours entered per run)
   payAdvices            PayAdvice[]
   clockEvents           ClockEvent[]
   timesheets            Timesheet[]
   shiftAssignments      ShiftAssignment[]
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+  leaveBalances         LeaveBalance[]
+  leaveRequests         LeaveRequest[]
+  overtimeRecords       OvertimeRecord[]
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
 
   @@unique([labId, employeeNo])
   @@index([labId])
@@ -2275,7 +2281,7 @@ model CorrelationCase {
 
   // Cytology side.
   cytologyRecordId   String
-  cytologyRecord     Record  @relation("CytologyRecord", fields: [cytologyRecordId], references: [id])
+  cytologyRecord     Record   @relation("CytologyRecord", fields: [cytologyRecordId], references: [id])
   cytologyDate       DateTime
   cytologyDiagnosis  String
   cytologyBethesdaId String?
@@ -2402,8 +2408,8 @@ model ProficiencyResponse {
   score       Int?
   gradedAt    DateTime?
   gradedById  String?
-  submittedAt DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  submittedAt DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@unique([caseId, responderId])
 }
@@ -2710,15 +2716,15 @@ enum CodingType {
 
 // A lab's coding dictionary entry (LOINC/SNOMED/ICD10/CPT).
 model MedicalCode {
-  id       String     @id @default(cuid())
-  labId    String
-  lab      Lab        @relation(fields: [labId], references: [id])
-  system   CodeSystem
-  code     String
-  display  String
-  category String?
-  isActive Boolean    @default(true)
-  usageCount Int      @default(0)
+  id         String     @id @default(cuid())
+  labId      String
+  lab        Lab        @relation(fields: [labId], references: [id])
+  system     CodeSystem
+  code       String
+  display    String
+  category   String?
+  isActive   Boolean    @default(true)
+  usageCount Int        @default(0)
 
   recordCodings RecordCoding[]
   createdAt     DateTime       @default(now())
@@ -2957,4 +2963,142 @@ enum ShiftAssignmentStatus {
   Completed
   Absent
   Late
+}
+
+// ─── Tier 6: Workforce Management — Phase 2 ──────────────────────────────────
+// Leave, overtime, notifications. All money in integer cents; tenancy stamped
+// automatically for models carrying labId (LeaveBalance is scoped via employee).
+
+model LeaveType {
+  id               String         @id @default(cuid())
+  labId            String
+  name             String
+  maxDaysPerYear   Int            @default(0)
+  requiresApproval Boolean        @default(true)
+  isActive         Boolean        @default(true)
+  balances         LeaveBalance[]
+  requests         LeaveRequest[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([labId])
+}
+
+model LeaveBalance {
+  id          String    @id @default(cuid())
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  leaveTypeId String
+  leaveType   LeaveType @relation(fields: [leaveTypeId], references: [id])
+  year        Int
+  entitlement Int       @default(0) // days
+  used        Int       @default(0) // days
+  pending     Int       @default(0) // days
+
+  @@unique([employeeId, leaveTypeId, year])
+  @@index([employeeId, year])
+}
+
+model LeaveRequest {
+  id              String             @id @default(cuid())
+  labId           String
+  employeeId      String
+  employee        Employee           @relation(fields: [employeeId], references: [id])
+  leaveTypeId     String
+  leaveType       LeaveType          @relation(fields: [leaveTypeId], references: [id])
+  startDate       DateTime
+  endDate         DateTime
+  totalDays       Int
+  reason          String?
+  status          LeaveRequestStatus @default(PENDING)
+  approvedById    String?
+  approvedBy      User?              @relation("LeaveApprover", fields: [approvedById], references: [id])
+  approvedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([labId, status])
+  @@index([employeeId])
+}
+
+model OvertimeRule {
+  id                     String           @id @default(cuid())
+  labId                  String
+  name                   String
+  dailyThresholdMinutes  Int              @default(480)
+  weeklyThresholdMinutes Int              @default(2400)
+  rateMultiplierX100     Int              @default(150) // 150 = 1.5x
+  requiresApproval       Boolean          @default(true)
+  isActive               Boolean          @default(true)
+  records                OvertimeRecord[]
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+
+  @@index([labId])
+}
+
+model OvertimeRecord {
+  id              String         @id @default(cuid())
+  labId           String
+  employeeId      String
+  employee        Employee       @relation(fields: [employeeId], references: [id])
+  date            DateTime
+  regularMinutes  Int            @default(0)
+  overtimeMinutes Int            @default(0)
+  overtimeRuleId  String
+  overtimeRule    OvertimeRule   @relation(fields: [overtimeRuleId], references: [id])
+  status          OvertimeStatus @default(PENDING)
+  approvedById    String?
+  approvedBy      User?          @relation("OvertimeApprover", fields: [approvedById], references: [id])
+  approvedAt      DateTime?
+  timesheetId     String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([labId, employeeId, date])
+  @@index([labId, status])
+  @@index([employeeId, date])
+}
+
+model WorkforceNotification {
+  id                String                    @id @default(cuid())
+  labId             String
+  recipientId       String
+  recipient         User                      @relation("WorkforceNotificationRecipient", fields: [recipientId], references: [id])
+  type              WorkforceNotificationType
+  title             String
+  body              String
+  isRead            Boolean                   @default(false)
+  relatedEntityId   String?
+  relatedEntityType String?
+  createdAt         DateTime                  @default(now())
+
+  @@index([labId, recipientId, isRead])
+  @@index([recipientId, createdAt])
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum OvertimeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum WorkforceNotificationType {
+  LEAVE_REQUEST_SUBMITTED
+  LEAVE_APPROVED
+  LEAVE_REJECTED
+  OVERTIME_APPROVED
+  OVERTIME_REJECTED
+  TIMESHEET_SUBMITTED
+  TIMESHEET_APPROVED
+  TIMESHEET_REJECTED
+  MISSING_PUNCH_ALERT
 }
