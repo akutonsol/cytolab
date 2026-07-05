@@ -143,6 +143,13 @@ distributing load across IPs. The `http_req_failed<0.01` threshold "failed" **by
 - **Serious (WCAG 1.4.3)** — `color-contrast` fails on **every** audited page (6–200 nodes each);
   light slate/gray text on white is below 4.5:1. Plus `scrollable-region-focusable` on /dashboard.
   → **filed TKT-2026-0008 (MEDIUM)**.
+  > **Note (TKT-2026-0008):** Color contrast fix blocked — systemic issue in entangled uncommitted
+  > page files. Affected colors: `#94a3b8` (slate-400), `#9ca3af` (gray-400), `#16a34a` (green-600 at
+  > 3.3:1), `#64748b` (slate-500 on tinted backgrounds). Fix requires coordinated sweep of patients,
+  > records, result-sheets, workforce, dashboard pages after page-rewrite windows commit. Action:
+  > replace `text-slate-400`→`text-slate-500`, `text-gray-400`→`text-gray-500`, success labels
+  > `green-600`→`green-700` across all affected pages. TKT-2026-0008 remains open pending post-rewrite
+  > sweep.
 - No moderate/minor violations surfaced. These are pre-existing markup/design-token issues, not
   introduced by QA. Fixes: add `aria-label` to unlabeled selects/icon-buttons; darken low-contrast
   text tokens to ≥4.5:1.
