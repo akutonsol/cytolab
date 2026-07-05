@@ -269,6 +269,9 @@ export default function ResultSheetsPage() {
   const aiHigh = all.filter((r) => confOf(r) >= 90).length;
   const aiReview = all.filter((r) => confOf(r) < 70).length;
   const aiConflict = all.filter((r) => r.urgent && confOf(r) < 80).length;
+  const aiAvg = all.length ? Math.round(all.reduce((s, r) => s + confOf(r), 0) / all.length) : 0;
+  // Show a skeleton while the first page of reports is still loading.
+  const aiLoading = isFetching && all.length === 0;
   const specDist = useMemo(() => {
     const counts = new Map<string, number>();
     for (const r of all) { const l = specMeta(r.specimens?.[0]?.type).label; counts.set(l, (counts.get(l) ?? 0) + 1); }
@@ -497,11 +500,20 @@ export default function ResultSheetsPage() {
 
           <div className="rounded-xl p-5 text-white shadow-sm" style={{ background: 'linear-gradient(135deg,#4F46E5 0%,#6D28D9 100%)' }}>
             <div className="mb-3 flex items-center gap-2"><Sparkles size={16} /><div className="text-sm font-semibold">AI Insights</div><span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold">BETA</span></div>
-            <ul className="flex flex-col gap-2.5 text-[13px] text-white/90">
-              <li>{aiHigh} reports have high AI confidence (≥90%)</li>
-              <li>{aiReview} reports require pathologist review (confidence &lt;70%)</li>
-              <li>{aiConflict} reports have conflicting AI findings</li>
-            </ul>
+            {aiLoading ? (
+              <div className="flex flex-col gap-2.5">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="h-3.5 animate-pulse rounded bg-white/25" style={{ width: `${90 - i * 12}%` }} />
+                ))}
+              </div>
+            ) : (
+              <ul className="flex flex-col gap-2.5 text-[13px] text-white/90">
+                <li><span className="font-semibold text-white">{aiHigh}</span> reports have high AI confidence (≥90%)</li>
+                <li><span className="font-semibold text-white">{aiReview}</span> reports require pathologist review (confidence &lt;70%)</li>
+                <li><span className="font-semibold text-white">{aiConflict}</span> reports have conflicting AI findings</li>
+                <li>Avg AI confidence: <span className="font-semibold text-white">{aiAvg}%</span></li>
+              </ul>
+            )}
             <button className="mt-4 text-[13px] font-semibold text-white hover:underline">View AI Recommendations →</button>
           </div>
 
