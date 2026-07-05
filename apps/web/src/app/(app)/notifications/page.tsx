@@ -1,10 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell, CheckCircle2, Clock, DollarSign, FlaskConical, MessageSquare, X, XCircle } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 
 type NType =
   | 'RECORD_SUBMITTED' | 'RECORD_RESULTED' | 'RECORD_APPROVED' | 'RECORD_FAILED' | 'AUTHORIZATION_NEEDED'
@@ -48,19 +50,22 @@ export default function NotificationsPage() {
   const router = useRouter();
   const qc = useQueryClient();
   const [tab, setTab] = useState('all');
-  const [page, setPage] = useState(1);
 
   const { data: unread = 0 } = useQuery({
     queryKey: ['notifications-unread'],
     queryFn: () => api.get('/notifications/unread-count').then((r) => r.data.count as number),
   });
 
-  const { data } = useQuery({
-    queryKey: ['notifications', tab, page],
-    queryFn: () => api.get('/notifications', { params: { pageSize: page * 20, ...(tab === 'unread' ? { read: false } : {}) } }).then((r) => r.data),
-  });
-  const rows: Notif[] = data?.data ?? [];
-  const total: number = data?.total ?? 0;
+  // Infinite scroll: switching to/from the "unread" tab changes the API filter
+  // (and so the fetchFn identity), which resets the list to page 1; the other
+  // tabs are client-side filters over the accumulated rows.
+  const unreadOnly = tab === 'unread';
+  const fetchFn = useCallback(
+    (page: number, pageSize: number) =>
+      api.get('/notifications', { params: { page, pageSize, ...(unreadOnly ? { read: false } : {}) } }).then((r) => r.data),
+    [unreadOnly],
+  );
+  const { items: rows, loading, initialLoading, hasMore, sentinelRef } = useInfiniteScroll<Notif>({ fetchFn, pageSize: 20 });
 
   const shown = useMemo(() => {
     if (tab === 'records') return rows.filter((n) => RECORD_TYPES.includes(n.type));
@@ -100,14 +105,14 @@ export default function NotificationsPage() {
       {/* Filter tabs */}
       <div className="mb-5 inline-flex flex-wrap gap-1 rounded-xl border border-[#E5E3DC] bg-white p-1">
         {TABS.map(([v, l]) => (
-          <button key={v} onClick={() => { setTab(v); setPage(1); }}
+          <button key={v} onClick={() => setTab(v)}
             className={`rounded-lg px-4 py-2 text-[13px] font-semibold transition-colors ${tab === v ? 'bg-[#4F46E5] text-white' : 'text-[#64748B] hover:text-[#0F172A]'}`}>{l}</button>
         ))}
       </div>
 
       {/* List */}
       <div className="overflow-hidden rounded-[20px] border border-[#E5E3DC] bg-white">
-        {shown.length === 0 ? (
+        {shown.length === 0 && !initialLoading ? (
           <div className="flex flex-col items-center gap-2 py-20 text-center">
             <Bell size={48} className="text-[#E2E8F0]" />
             <div className="text-[16px] font-semibold text-[#64748B]">No notifications</div>
@@ -139,11 +144,7 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {tab !== 'unread' && total > rows.length && (
-        <div className="mt-4 flex justify-center">
-          <button onClick={() => setPage((p) => p + 1)} className="rounded-xl border border-[#E5E3DC] bg-white px-5 py-2.5 text-[13px] font-semibold text-[#0F172A] transition-colors hover:bg-[#F9F8F5]">Load more</button>
-        </div>
-      )}
+      <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
     </div>
   );
 }
