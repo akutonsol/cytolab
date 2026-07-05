@@ -30,9 +30,9 @@ const ICONS: Record<string, LucideIcon> = {
   PackageSearch, Printer, BarChart3, GitCompare, GraduationCap, FlaskConical, BellRing,
   ScanEye, Sparkles, Video, Tags, Network,
 };
-const TIER_COLOR: Record<number, string> = { 1: '#64748B', 2: '#4F46E5', 3: '#3B82F6', 4: '#8B5CF6', 5: '#9333EA' };
-const TIER_TINT: Record<number, string> = { 1: '#F1F5F9', 2: '#EEF2FF', 3: '#EFF6FF', 4: '#F5F3FF', 5: '#FAF5FF' };
-const TIERS = [2, 3, 4, 5];
+const TIER_COLOR: Record<number, string> = { 1: '#64748B', 2: '#4F46E5', 3: '#3B82F6', 4: '#8B5CF6', 5: '#9333EA', 6: '#6366F1' };
+const TIER_TINT: Record<number, string> = { 1: '#F1F5F9', 2: '#EEF2FF', 3: '#EFF6FF', 4: '#F5F3FF', 5: '#FAF5FF', 6: '#EEF2FF' };
+const TIERS = [2, 3, 4, 5, 6];
 
 // ─── Toggle switch ───────────────────────────────────────────────────────────
 function Toggle({ on, disabled, onChange }: { on: boolean; disabled?: boolean; onChange: () => void }) {
