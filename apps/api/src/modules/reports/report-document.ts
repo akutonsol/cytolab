@@ -254,8 +254,10 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
       fillColor: () => INDIGO,
       hLineWidth: () => 0,
       vLineWidth: () => 0,
-      paddingLeft: () => 16,
-      paddingRight: () => 16,
+      // Pad only the outer edges: columns (169+193+121=483) + 16 + 16 = 515 (CW).
+      // Padding every cell would add 96pt and overflow the right margin.
+      paddingLeft: (i: number) => (i === 0 ? 16 : 0),
+      paddingRight: (i: number, node: any) => (i === node.table.widths.length - 1 ? 16 : 0),
       paddingTop: () => 12,
       paddingBottom: () => 12,
     },
