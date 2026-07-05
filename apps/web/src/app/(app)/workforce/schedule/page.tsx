@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Plus, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FeatureGate } from '@/components/FeatureGate';
@@ -17,6 +17,7 @@ function Grid() {
   const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
   const [deptId, setDeptId] = useState('all');
   const [picker, setPicker] = useState<{ employeeId: string; date: string } | null>(null);
+  const [assignError, setAssignError] = useState<string | null>(null);
 
   const wk = iso(weekStart);
   const { data: schedule } = useQuery({ queryKey: ['schedule', wk, deptId], queryFn: () => api.get('/workforce/schedule', { params: { weekStart: wk, departmentId: deptId === 'all' ? undefined : deptId } }).then((r) => r.data) });
@@ -41,7 +42,13 @@ function Grid() {
   const assign = useMutation({
     mutationFn: (v: { employeeId: string; shiftId: string; date: string }) => api.post('/workforce/schedule/assign', v),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['schedule'] }); setPicker(null); },
+    onError: (e: any) => setAssignError(e?.response?.data?.message ?? 'Could not assign shift. Please try again.'),
   });
+  // The shift currently being saved (drives the per-option spinner).
+  const savingShiftId = assign.isPending ? assign.variables?.shiftId : null;
+  // Open the picker for a cell, clearing any prior error/in-flight state.
+  const openPicker = (employeeId: string, date: string) => { assign.reset(); setAssignError(null); setPicker({ employeeId, date }); };
+  const closePicker = () => { assign.reset(); setAssignError(null); setPicker(null); };
 
   const rangeLabel = `${new Date(days[0]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${new Date(days[6]).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
@@ -83,7 +90,7 @@ function Grid() {
                       {a ? (
                         <span className={`inline-block rounded-lg px-2 py-1 text-[11px] font-semibold ${SHIFT_CHIP[a.shift.type] ?? 'bg-slate-100 text-slate-700'}`} title={`${a.shift.startTime}–${a.shift.endTime}`}>{a.shift.name}</span>
                       ) : (
-                        <button onClick={() => setPicker({ employeeId: e.id, date: d })} className="grid h-7 w-7 place-items-center rounded-lg border border-dashed border-slate-200 text-slate-300 hover:border-primary hover:text-primary"><Plus size={14} /></button>
+                        <button onClick={() => openPicker(e.id, d)} className="grid h-7 w-7 place-items-center rounded-lg border border-dashed border-slate-200 text-slate-300 hover:border-primary hover:text-primary"><Plus size={14} /></button>
                       )}
                     </td>
                   );
@@ -102,18 +109,27 @@ function Grid() {
 
       {/* Assign picker */}
       {picker && (
-        <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={() => setPicker(null)}>
+        <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={closePicker}>
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Assign Shift</h3><button onClick={() => setPicker(null)} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button></div>
+            <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Assign Shift</h3><button onClick={closePicker} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button></div>
             <div className="mb-3 text-sm text-slate-500">{empName(rows.find((r) => r.id === picker.employeeId))} · {new Date(picker.date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</div>
             <div className="flex flex-col gap-2">
               {shifts.map((s: any) => (
-                <button key={s.id} onClick={() => assign.mutate({ employeeId: picker.employeeId, shiftId: s.id, date: picker.date })} disabled={assign.isPending} className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left hover:border-primary">
+                <button
+                  key={s.id}
+                  onClick={() => { setAssignError(null); assign.mutate({ employeeId: picker.employeeId, shiftId: s.id, date: picker.date }); }}
+                  disabled={assign.isPending}
+                  className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left transition-colors hover:border-primary disabled:opacity-60"
+                >
                   <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${SHIFT_CHIP[s.type] ?? 'bg-slate-100 text-slate-700'}`}>{s.name}</span>
-                  <span className="text-xs text-slate-400">{s.startTime}–{s.endTime}</span>
+                  {savingShiftId === s.id
+                    ? <Loader2 size={15} className="animate-spin text-primary" />
+                    : <span className="text-xs text-slate-400">{s.startTime}–{s.endTime}</span>}
                 </button>
               ))}
+              {shifts.length === 0 && <div className="rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-400">No shifts defined yet.</div>}
             </div>
+            {assignError && <div className="mt-3 text-sm text-error">{assignError}</div>}
           </div>
         </div>
       )}
