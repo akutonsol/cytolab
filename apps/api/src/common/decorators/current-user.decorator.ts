@@ -7,6 +7,8 @@ export interface AuthUser {
   roles: string[];
   permissions: string[];
   isSuperRole?: boolean;
+  /** Present on cookie-era tokens; used for idle-timeout enforcement. */
+  sessionId?: string;
 }
 
 export const CurrentUser = createParamDecorator(

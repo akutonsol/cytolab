@@ -39,9 +39,10 @@ const SPECIAL_OBJECTS: Record<string, string[]> = {
   notification: ['view', 'change', 'delete'],
   applicationprefs: ['view', 'change', 'reports', 'dashboard'],
   accountprefs: ['view', 'change'],
-  // Internal System Health dashboard — intentionally assigned to NO default role,
-  // so only super roles (which bypass the permission guard) can reach it.
-  system: ['health'],
+  // Internal System Health dashboard + Security Center — intentionally assigned
+  // to NO default role, so only super roles (which bypass the permission guard)
+  // can reach them.
+  system: ['health', 'security'],
   // Form Setup (clinical-feature UI config). Lab-admin territory — assigned to no
   // default staff role; super roles reach it via the guard bypass.
   formconfig: ['view', 'manage'],

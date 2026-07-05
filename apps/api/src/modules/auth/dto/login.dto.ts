@@ -15,6 +15,32 @@ export class RefreshDto {
   refreshToken!: string;
 }
 
+export class MfaChallengeDto {
+  @IsString()
+  @IsNotEmpty()
+  mfaToken!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  code!: string;
+}
+
+export class MfaSendDto {
+  @IsString()
+  @IsNotEmpty()
+  mfaToken!: string;
+}
+
+export class ChangePasswordDto {
+  @IsString()
+  @IsNotEmpty()
+  currentPassword!: string;
+
+  @IsString()
+  @MinLength(12)
+  newPassword!: string;
+}
+
 export class RegisterLabDto {
   // bootstrap: creates a Lab + its first Superuser
   @IsString()
@@ -29,7 +55,7 @@ export class RegisterLabDto {
   email!: string;
 
   @IsString()
-  @MinLength(8)
+  @MinLength(12)
   password!: string;
 
   @IsString()

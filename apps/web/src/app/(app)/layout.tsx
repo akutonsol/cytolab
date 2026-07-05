@@ -8,7 +8,7 @@ import {
   ReadOutlined, SearchOutlined, SettingOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { Megaphone, Microscope, Mic, ToggleRight, X } from 'lucide-react';
+import { Megaphone, Microscope, Mic, ShieldAlert, ToggleRight, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useDictationContext } from '@/lib/dictation-context';
 import { ACCOUNT_GROUP_KEY, ANALYTICS_ITEM, HOME_ITEM, NAV_GROUPS } from '@/lib/nav';
@@ -78,10 +78,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // Real first name for the "Hi, …" greeting (JWT claims carry no name).
   const { data: profile } = useQuery({
     queryKey: ['auth-me'],
-    queryFn: () => api.get('/auth/me').then((r) => r.data as { firstName?: string }),
+    queryFn: () =>
+      api.get('/auth/me').then(
+        (r) => r.data as { firstName?: string; mfaRequired?: boolean; mfaEnabled?: boolean },
+      ),
     enabled: isAuthed,
     staleTime: 5 * 60_000,
   });
+  // Persistent nag: the account must use MFA but hasn't set it up yet.
+  const mfaSetupNeeded = !!profile?.mfaRequired && !profile?.mfaEnabled;
   const screens = Grid.useBreakpoint();
 
   useEffect(() => { if (hydrated && !isAuthed) router.replace('/login'); }, [hydrated, isAuthed, router]);
@@ -105,6 +110,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const accountItems = accountGroup.items.filter(navVisible);
   const superGroup = NAV_GROUPS.find((g) => g.key === 'superuser');
   const superItems = superGroup ? superGroup.items.filter(navVisible) : [];
+  const securityGroup = NAV_GROUPS.find((g) => g.key === 'security');
+  const securityItems = securityGroup ? securityGroup.items.filter(navVisible) : [];
 
   // Full grouped menu (used in the mobile drawer).
   const drawerMenu: MenuProps['items'] = useMemo(
@@ -130,7 +137,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const logout = () => { clear(); router.replace('/login'); };
+  // Revoke the server session + clear the auth cookies (best-effort), then drop
+  // local claims and return to /login.
+  const logout = () => {
+    api.post('/auth/logout').catch(() => {}).finally(() => { clear(); router.replace('/login'); });
+  };
   const initials = (claims?.email ?? '?').slice(0, 2).toUpperCase();
   const localPart = (claims?.email ?? '').split('@')[0];
   const firstName = ((localPart.split(/[._-]/)[0] || 'there').replace(/[^a-z]/gi, '') || 'there').replace(/^\w/, (c) => c.toUpperCase());
@@ -144,6 +155,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       { key: 'who', label: <span style={{ color: '#9ca3af', fontSize: 12 }}>{claims?.email}</span>, disabled: true },
       { type: 'divider' },
       ...accountItems.map((i) => ({ key: i.path, label: i.label, icon: i.path === '/settings' ? <SettingOutlined /> : undefined })),
+      ...(securityItems.length
+        ? [
+            { type: 'divider' as const },
+            { key: 'security-label', label: <span style={{ color: '#9ca3af', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4 }}>Security</span>, disabled: true },
+            ...securityItems.map((i) => ({ key: i.path, label: i.label, icon: <ShieldAlert size={15} /> })),
+          ]
+        : []),
       ...(superItems.length
         ? [
             { type: 'divider' as const },
@@ -259,6 +277,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           )}
         </div>
       </header>
+
+      {/* MFA required but not configured — persistent (non-dismissible) banner. */}
+      {mfaSetupNeeded && (
+        <div style={{ position: 'relative', zIndex: 15, display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px', background: '#EEF2FF', borderTop: '1px solid #C7D2FE', borderBottom: '1px solid #C7D2FE' }}>
+          <ShieldAlert size={16} style={{ color: '#4338CA', flexShrink: 0 }} />
+          <span style={{ fontSize: 13, color: '#4338CA' }}>
+            <span style={{ fontWeight: 700 }}>Your account requires two-factor authentication.</span>
+            <span style={{ marginLeft: 8, opacity: 0.9 }}>Set it up to keep access to your lab.</span>
+          </span>
+          <button onClick={() => router.push('/profile/security')} style={{ marginLeft: 'auto', border: 'none', background: '#4F46E5', color: '#fff', fontSize: 12, fontWeight: 600, padding: '5px 12px', borderRadius: 8, cursor: 'pointer', flexShrink: 0 }}>
+            Set up MFA
+          </button>
+        </div>
+      )}
 
       {/* Active system announcements — slim, dismissible per session. */}
       {visibleAnnouncements.map((a) => {

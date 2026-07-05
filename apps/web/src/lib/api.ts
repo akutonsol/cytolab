@@ -1,51 +1,48 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { useAuthStore } from './auth';
+import { claimsFromMe, useAuthStore } from './auth';
 
 // Same-origin: Next rewrites /api/v1/* to the NestJS API on :4000 (next.config.mjs).
-// A finite timeout guarantees a hung request rejects (error state) instead of
-// spinning forever.
-export const api = axios.create({ baseURL: '/api/v1', timeout: 20_000 });
+// `withCredentials` sends the HttpOnly auth cookies on every request; auth is no
+// longer carried in an Authorization header.
+export const api = axios.create({ baseURL: '/api/v1', timeout: 20_000, withCredentials: true });
 
-api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken;
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-// Single-flight refresh: many concurrent 401s share one refresh round-trip.
-let refreshing: Promise<string | null> | null = null;
-
-async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = useAuthStore.getState().refreshToken;
-  // No refresh token is itself a logged-out state — clear so the route guard
-  // sees `isAuthed === false` and navigates cleanly (no token left behind that
-  // would bounce /login back to a protected page).
-  if (!refreshToken) {
-    useAuthStore.getState().clear();
-    return null;
-  }
+/** Hydrate the claim store from the cookie session. Clears on failure. */
+export async function loadClaims(): Promise<boolean> {
   try {
-    // Bare axios (not `api`) so this request skips the interceptors below; its
-    // own timeout so a stuck refresh can't wedge every queued request.
-    const res = await axios.post('/api/v1/auth/refresh', { refreshToken }, { timeout: 20_000 });
-    useAuthStore.getState().setTokens(res.data.accessToken, res.data.refreshToken);
-    return res.data.accessToken as string;
+    const { data } = await api.get('/auth/me');
+    useAuthStore.getState().setClaims(claimsFromMe(data));
+    return true;
   } catch {
     useAuthStore.getState().clear();
-    return null;
+    return false;
+  }
+}
+
+// Single-flight refresh: many concurrent 401s share one refresh round-trip.
+let refreshing: Promise<boolean> | null = null;
+
+async function refreshCookie(): Promise<boolean> {
+  try {
+    // Bare axios (skips the interceptors below); the refresh token rides in its
+    // HttpOnly cookie, so no body is needed.
+    await axios.post('/api/v1/auth/refresh', {}, { timeout: 20_000, withCredentials: true });
+    return true;
+  } catch {
+    useAuthStore.getState().clear();
+    return false;
   }
 }
 
 /**
- * Deliberately refresh the session (not driven by a 401). Used when the app
- * detects a token whose claims are stale (below the expected version) — it
- * re-issues a token carrying the current claims so the UI never renders from a
- * stale token. Returns true on success; on failure the store is cleared so the
- * route guard sends the user to /login.
+ * Deliberately refresh the session (not driven by a 401) and re-hydrate claims —
+ * used when the app detects stale claims (below the expected version). Returns
+ * true on success; on failure the store is cleared so the guard sends the user
+ * to /login.
  */
 export async function refreshSession(): Promise<boolean> {
-  const token = await refreshAccessToken();
-  return token != null;
+  const ok = await refreshCookie();
+  if (!ok) return false;
+  return loadClaims();
 }
 
 api.interceptors.response.use(
@@ -58,19 +55,13 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && original && !original._retry && !isAuthCall) {
       original._retry = true;
-      refreshing = refreshing ?? refreshAccessToken();
-      const token = await refreshing;
+      refreshing = refreshing ?? refreshCookie();
+      const ok = await refreshing;
       refreshing = null;
-      if (token) {
-        original.headers.Authorization = `Bearer ${token}`;
-        return api(original);
-      }
-      // Refresh failed: tokens are now cleared. We deliberately do NOT
-      // window.location.href = '/login' here — a hard navigation fights the
-      // React route guard and ping-pongs (the loop). Clearing the store flips
-      // `isAuthed` to false, and the guard performs a single soft redirect to
-      // /login. The rejection below also lets React Query surface an error
-      // state instead of spinning forever.
+      if (ok) return api(original);
+      // Refresh failed: the store is cleared, flipping `isAuthed` false so the
+      // route guard performs a single soft redirect to /login. We deliberately
+      // avoid a hard navigation here (it fights the guard and ping-pongs).
     }
     return Promise.reject(error);
   },

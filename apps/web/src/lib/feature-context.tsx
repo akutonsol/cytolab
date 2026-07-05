@@ -25,7 +25,7 @@ const Ctx = createContext<FeatureContextValue>({
  * enforced. A logged-out app has no lab, so gating is a no-op (returns enabled).
  */
 export function FeatureProvider({ children }: { children: ReactNode }) {
-  const accessToken = useAuthStore((s) => s.accessToken);
+  const isAuthed = useAuthStore((s) => !!s.claims);
 
   const { data, isLoading } = useQuery({
     queryKey: ['lab-features-enabled'],
@@ -33,20 +33,20 @@ export function FeatureProvider({ children }: { children: ReactNode }) {
       const res = await api.get<{ enabled: FeatureKey[] }>('/lab-features/enabled');
       return res.data.enabled;
     },
-    enabled: !!accessToken,
+    enabled: isAuthed,
     staleTime: 5 * 60_000,
   });
 
   const value = useMemo<FeatureContextValue>(() => {
-    const loading = !!accessToken && isLoading && !data;
+    const loading = isAuthed && isLoading && !data;
     const set = new Set<FeatureKey>(data ?? []);
     return {
-      // No token → nothing to gate (login/public shells). Loading → optimistic on.
-      isEnabled: (key) => (!accessToken ? true : loading ? true : set.has(key)),
+      // Logged out → nothing to gate (login/public shells). Loading → optimistic on.
+      isEnabled: (key) => (!isAuthed ? true : loading ? true : set.has(key)),
       enabledFeatures: data ?? [],
       isLoading: loading,
     };
-  }, [accessToken, isLoading, data]);
+  }, [isAuthed, isLoading, data]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

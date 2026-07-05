@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { LabContext } from '../common/tenancy/lab-context';
 import { tenancyExtension } from '../common/tenancy/tenancy.extension';
+import { phiEncryptionExtension } from '../common/crypto/phi-encryption.extension';
 
 @Injectable()
 export class PrismaService
@@ -22,7 +23,11 @@ export class PrismaService
     // `$connect()` is never called explicitly the client still works. The hooks
     // are kept as a best-effort eager connect / clean disconnect, not a
     // correctness requirement.
-    return this.$extends(tenancyExtension(labContext)) as unknown as PrismaService;
+    // Two chained extensions: the tenancy guard (lab/client scoping) and
+    // transparent PHI field encryption. Both are $allModels/$allOperations
+    // wrappers and compose cleanly.
+    return this.$extends(tenancyExtension(labContext))
+      .$extends(phiEncryptionExtension()) as unknown as PrismaService;
   }
 
   async onModuleInit() {

@@ -3375,6 +3375,187 @@ model SystemAnnouncement {
   @@index([labId, isActive])
 }
 
+// ============================================================================
+// Enterprise Security (Phase 1–5)
+// Auth hardening, session/device tracking, login protection, MFA, and the
+// Security Center. See docs/SECURITY.md for the operational runbook.
+// ============================================================================
+
+/// Opaque refresh tokens (hashed) — one row per active device session. Rotated
+/// on every /auth/refresh; revoked on logout.
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique // SHA-256 hash of the opaque token, never the raw value
+  deviceId  String
+  ipAddress String
+  userAgent String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+/// A tracked login session (one per device). Powers the Security Center session
+/// list, idle timeout, and impossible-travel detection.
+model UserSession {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId     String
+  deviceName   String?
+  browser      String?
+  os           String?
+  ipAddress    String
+  country      String?
+  city         String?
+  lat          Float?
+  lng          Float?
+  lastActiveAt DateTime  @default(now())
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+}
+
+/// Every login attempt (success or failure) — the audit source for brute-force,
+/// credential-stuffing, and the login-history screen. Not tenant-scoped: attempts
+/// are recorded before a lab is resolved.
+model LoginAttempt {
+  id         String   @id @default(cuid())
+  email      String?
+  username   String?
+  ipAddress  String
+  userAgent  String?
+  browser    String?
+  os         String?
+  device     String?
+  country    String?
+  city       String?
+  lat        Float?
+  lng        Float?
+  success    Boolean
+  failReason String?
+  userId     String?
+  createdAt  DateTime @default(now())
+
+  @@index([ipAddress])
+  @@index([email])
+  @@index([createdAt])
+}
+
+/// An active or historical account lock. Auto-expiring locks set autoUnlockAt;
+/// permanent locks leave it null and require an admin unlock.
+model AccountLock {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reason       String
+  lockedAt     DateTime  @default(now())
+  lockedById   String?
+  unlockedAt   DateTime?
+  unlockedById String?
+  autoUnlockAt DateTime?
+}
+
+/// A device the user has completed MFA on — future logins from it skip MFA
+/// (unless impossible travel is detected).
+model TrustedDevice {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId   String
+  deviceName String?
+  browser    String?
+  os         String?
+  ipAddress  String?
+  trustedAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+
+  @@unique([userId, deviceId])
+}
+
+/// Per-user MFA configuration. totpSecret is AES-256-GCM encrypted; backupCodes
+/// are hashed. A missing row means MFA is not configured.
+model MfaConfig {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totpEnabled  Boolean  @default(false)
+  totpSecret   String? // encrypted
+  emailEnabled Boolean  @default(false)
+  backupCodes  String[] // hashed
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+/// A pending MFA challenge (email OTP or step-up). code is hashed for email OTP.
+model MfaChallenge {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String // 'totp' | 'email'
+  code      String? // hashed, for email OTP
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+/// The last N password hashes per user, enforcing no-reuse on password change.
+model PasswordHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hash      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// An IP denylist entry. Auto-added on credential stuffing (24h expiry) or added
+/// manually by an admin (optionally permanent).
+model BlockedIp {
+  id          String    @id @default(cuid())
+  ipAddress   String    @unique
+  reason      String
+  blockedAt   DateTime  @default(now())
+  blockedById String?
+  expiresAt   DateTime?
+  permanent   Boolean   @default(false)
+}
+
+/// A raised security signal surfaced in the Security Center. labId/userId are
+/// nullable because some signals (e.g. credential stuffing) are pre-auth.
+model SecurityAlert {
+  id           String    @id @default(cuid())
+  labId        String?
+  userId       String?
+  type         String // IMPOSSIBLE_TRAVEL | BRUTE_FORCE | CREDENTIAL_STUFFING | SUSPICIOUS_IP | AFTER_HOURS | MASS_EXPORT
+  severity     String // LOW | MEDIUM | HIGH | CRITICAL
+  title        String
+  detail       String
+  ipAddress    String?
+  resolved     Boolean   @default(false)
+  resolvedAt   DateTime?
+  resolvedById String?
+  createdAt    DateTime  @default(now())
+
+  @@index([createdAt])
+  @@index([resolved])
+}
+
+/// Global key/value system configuration (e.g. the password policy). Not
+/// tenant-scoped — these are platform-wide settings.
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
 // ─── Knowledge Base (Resources) ──────────────────────────────────────────────
 
 enum KbArticleStatus {

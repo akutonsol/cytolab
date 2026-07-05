@@ -75,7 +75,9 @@ import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.mod
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
+    // Global default: 100 requests / minute / IP. Auth routes tighten this
+    // per-handler via @Throttle (login/refresh: 5/min).
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     TenancyModule,
     PrismaModule,
     AuthModule,

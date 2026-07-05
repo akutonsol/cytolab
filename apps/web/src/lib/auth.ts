@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-// Minimum staff-token claims version this build understands. Must match the
-// API's TOKEN_CLAIMS_VERSION. A decoded token below this predates a permissions
-// -model change and must NOT be used to render UI — the app forces a refresh.
-export const EXPECTED_CLAIMS_VERSION = 2;
+// Minimum staff-claims version this build understands. Must match the API's
+// TOKEN_CLAIMS_VERSION. Claims below this predate a permissions-model change and
+// must NOT be used to render UI — the app forces a refresh.
+export const EXPECTED_CLAIMS_VERSION = 3;
 
 export interface AuthClaims {
   userId: string;
@@ -17,25 +17,31 @@ export interface AuthClaims {
   ver: number;
 }
 
+/**
+ * Cookie-era auth store.
+ *
+ * The access + refresh tokens now live in HttpOnly cookies the browser cannot
+ * read, so the store no longer holds tokens — it holds only the (non-secret)
+ * claims used to gate nav and permissions. Actual authentication rides on the
+ * cookies; these claims are hydrated from `GET /auth/me` after login/refresh.
+ */
 interface AuthState {
-  accessToken: string | null;
-  refreshToken: string | null;
-  setTokens: (accessToken: string, refreshToken: string) => void;
+  claims: AuthClaims | null;
+  setClaims: (claims: AuthClaims | null) => void;
   clear: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      accessToken: null,
-      refreshToken: null,
-      setTokens: (accessToken, refreshToken) => set({ accessToken, refreshToken }),
-      clear: () => set({ accessToken: null, refreshToken: null }),
+      claims: null,
+      setClaims: (claims) => set({ claims }),
+      clear: () => set({ claims: null }),
     }),
     {
       name: 'cytolab-auth',
       storage: createJSONStorage(() => localStorage),
-      partialize: (s) => ({ accessToken: s.accessToken, refreshToken: s.refreshToken }),
+      partialize: (s) => ({ claims: s.claims }),
     },
   ),
 );
@@ -43,12 +49,7 @@ export const useAuthStore = create<AuthState>()(
 /**
  * True once the persisted store has been read from localStorage on the client.
  * The route guard must wait for this before deciding logged-in vs logged-out.
- *
- * Uses zustand-persist's hydration API, which completes (and fires
- * onFinishHydration) even when there is NOTHING stored — unlike the previous
- * onRehydrateStorage flag, which never flipped true for a logged-out user and
- * left the guard stuck on a spinner. Starts false to match the server render
- * (avoids a hydration mismatch), then flips true after mount.
+ * Starts false to match the server render, then flips true after mount.
  */
 export function useHydrated(): boolean {
   const [hydrated, setHydrated] = useState(false);
@@ -60,31 +61,23 @@ export function useHydrated(): boolean {
   return hydrated;
 }
 
-/** Decode the JWT payload to read roles/permissions — the source of truth for nav gating. */
-export function decodeClaims(token: string | null): AuthClaims | null {
-  if (!token) return null;
-  try {
-    const part = token.split('.')[1];
-    const json = atob(part.replace(/-/g, '+').replace(/_/g, '/'));
-    const p = JSON.parse(json);
-    return {
-      userId: p.sub,
-      email: p.email,
-      labId: p.labId,
-      roles: p.roles ?? [],
-      permissions: p.permissions ?? [],
-      isSuperRole: p.isSuperRole === true,
-      ver: typeof p.ver === 'number' ? p.ver : 0,
-    };
-  } catch {
-    return null;
-  }
+/** Map a `GET /auth/me` payload into the client claim shape. */
+export function claimsFromMe(data: any): AuthClaims {
+  return {
+    userId: data.id,
+    email: data.email,
+    labId: data.labId,
+    roles: data.roles ?? [],
+    permissions: data.permissions ?? [],
+    isSuperRole: data.isSuperRole === true,
+    ver: typeof data.ver === 'number' ? data.ver : EXPECTED_CLAIMS_VERSION,
+  };
 }
 
 /**
- * A token whose claims predate the current permission model (below the expected
- * version). Its roles/permissions/isSuperRole can't be trusted to render UI, so
- * the app must refresh rather than show a misleadingly empty app.
+ * Claims that predate the current permission model (below the expected
+ * version). Their roles/permissions can't be trusted to render UI, so the app
+ * must re-hydrate rather than show a misleadingly empty app.
  */
 export function claimsAreStale(claims: AuthClaims | null): boolean {
   return !!claims && claims.ver < EXPECTED_CLAIMS_VERSION;
@@ -103,9 +96,8 @@ export function claimsHavePermission(claims: AuthClaims | null, code?: string): 
 }
 
 export function useAuth() {
-  const accessToken = useAuthStore((s) => s.accessToken);
+  const claims = useAuthStore((s) => s.claims);
   const hydrated = useHydrated();
-  const claims = useMemo(() => decodeClaims(accessToken), [accessToken]);
-  const can = (code?: string) => claimsHavePermission(claims, code);
+  const can = useMemo(() => (code?: string) => claimsHavePermission(claims, code), [claims]);
   return { claims, hydrated, isAuthed: !!claims, stale: claimsAreStale(claims), can };
 }
