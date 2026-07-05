@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Apply the saved theme before paint to avoid a flash of the default. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('cytolab-theme');if(t&&['indigo','emerald','violet','rose','ocean','slate','dark'].indexOf(t)>-1)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('cytolab-theme');if(t&&['indigo','emerald','violet','rose','ocean','sky','slate','dark'].indexOf(t)>-1)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
           }}
         />
       </head>

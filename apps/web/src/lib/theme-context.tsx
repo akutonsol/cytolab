@@ -10,6 +10,7 @@ export const themes: ThemeDef[] = [
   { id: 'violet', name: 'Violet', color: '#7C3AED' },
   { id: 'rose', name: 'Rose', color: '#E11D48' },
   { id: 'ocean', name: 'Ocean', color: '#3f97ef' },
+  { id: 'sky', name: 'Sky', color: '#0798ff' },
   { id: 'slate', name: 'Professional', color: '#334155' },
   { id: 'dark', name: 'Dark', color: '#0F172A' },
 ];

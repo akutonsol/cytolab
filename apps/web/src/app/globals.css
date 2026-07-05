@@ -408,6 +408,12 @@ select option {
   --color-primary-soft: rgba(63, 151, 239, 0.10); --color-primary-light: #e8f3fd;
   --color-bg-main: #f5faff;
 }
+[data-theme='sky'] {
+  --color-primary: #0798ff;
+  --color-primary-hover: #0680d9;
+  --color-primary-soft: #e0f2ff;
+  --color-bg-main: #f0f7ff;
+}
 [data-theme='dark'] {
   --color-primary: #6366f1; --color-primary-hover: #818cf8;
   --color-primary-soft: rgba(99, 102, 241, 0.20); --color-primary-light: #1e1b4b;
