@@ -137,9 +137,8 @@ distributing load across IPs. The `http_req_failed<0.01` threshold "failed" **by
   (/patients ×1, /result-sheets ×6, /system/support ×4); `button-name`: an icon button lacks
   discernible text (/result-sheets ×1). → **filed TKT-2026-0007 (HIGH) — RESOLVED** (aria-labels added;
   axe re-run shows `critical=0` on all 6 pages).
-  > **Note (TKT-2026-0007):** aria-labels for `patients/page.tsx` and `result-sheets/page.tsx` are
-  > applied in working tree but not yet committed — entangled with page-rewrite window. Re-run
-  > `npx playwright test a11y` after that window commits to verify `critical=0` still holds.
+  > **Note (TKT-2026-0007):** ✅ VERIFIED — aria-labels committed in 2da3ff2 and 074d545. axe re-run
+  > confirms critical=0 on all 6 pages. TKT-2026-0007 fully resolved.
 - **Serious (WCAG 1.4.3)** — `color-contrast` fails on **every** audited page (6–200 nodes each);
   light slate/gray text on white is below 4.5:1. Plus `scrollable-region-focusable` on /dashboard.
   → **filed TKT-2026-0008 (MEDIUM)**.
