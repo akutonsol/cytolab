@@ -222,24 +222,24 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
       { canvas: [{ type: 'rect', x: 0, y: 0, w: CW, h: 80, color: INDIGO }] },
       {
         columns: [
-          // LEFT — lab name + subtitle (~28% of 483pt content width)
+          // LEFT — lab name + subtitle (~35% of 483pt content width)
           {
-            width: 135,
+            width: 169,
             stack: [
-              { text: lab.name, color: WHITE, fontSize: 18, bold: true },
-              { text: 'Cytology & Pathology Laboratory', color: '#C7D2FE', fontSize: 10, margin: [0, 3, 0, 0] },
+              { text: lab.name, color: WHITE, fontSize: 14, bold: true, noWrap: true },
+              { text: 'Cytology & Pathology Laboratory', color: WHITE, fontSize: 8, noWrap: true, margin: [0, 3, 0, 0] },
             ],
           },
-          // CENTER — report title (~44% width + noWrap so it never breaks lines)
+          // CENTER — report title (~40% width + noWrap so it never breaks lines)
           {
-            width: 213,
+            width: 193,
             stack: [
-              { text: 'CYTOLOGY REPORT', color: WHITE, fontSize: 18, bold: true, characterSpacing: 0.5, alignment: 'center', noWrap: true },
+              { text: 'CYTOLOGY REPORT', color: WHITE, fontSize: 18, bold: true, characterSpacing: 0, alignment: 'center', noWrap: true },
             ],
           },
-          // RIGHT — ref, date, lab contact (~28%)
+          // RIGHT — ref, date, lab contact (~25%)
           {
-            width: 135,
+            width: 121,
             stack: [
               { text: `Ref  ${reportRef}`, color: INDIGO_ON, fontSize: 10, alignment: 'right' },
               { text: fmtDate(reportDate), color: '#C7D2FE', fontSize: 9, alignment: 'right', margin: [0, 2, 0, 0] },
@@ -260,7 +260,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
         {
           stack: [
             { canvas: [{ type: 'rect', x: 0, y: 0, w: CW, h: 22, color: RED_LIGHT }] },
-            { text: 'URGENT  —  PRIORITY PROCESSING REQUIRED', color: RED, bold: true, characterSpacing: 1, fontSize: 10, alignment: 'center', margin: [0, -16, 0, 0] },
+            { text: 'URGENT  —  PRIORITY PROCESSING REQUIRED', color: RED, bold: true, characterSpacing: 0, fontSize: 10, alignment: 'center', margin: [0, -16, 0, 0] },
           ],
           margin: [0, 6, 0, 0],
         },
@@ -466,7 +466,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
                   { type: 'line', x1: 5, y1: 14, x2: 15, y2: 1, lineWidth: 2.4, lineColor: GREEN },
                 ],
               },
-              { width: 'auto', text: 'AUTHORIZED', color: GREEN, bold: true, fontSize: 14, characterSpacing: 1, margin: [6, 1, 0, 0] },
+              { width: 'auto', text: 'AUTHORIZED', color: GREEN, bold: true, fontSize: 14, characterSpacing: 0, margin: [6, 1, 0, 0] },
             ],
           },
           { text: 'This report has been reviewed and authorized for release by:', fontSize: 9, color: SLATE_LIGHT, margin: [0, 8, 0, 4] },
@@ -478,7 +478,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
     : {
         width: '*',
         stack: [
-          { text: 'PENDING AUTHORIZATION', color: RED, bold: true, fontSize: 12, characterSpacing: 1 },
+          { text: 'PENDING AUTHORIZATION', color: RED, bold: true, fontSize: 12, characterSpacing: 0 },
           { text: 'This report is not yet authorized for release.', fontSize: 9, color: SLATE_LIGHT, margin: [0, 4, 0, 0] },
         ],
       };
@@ -495,7 +495,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
   const authRight: any = {
     width: 200,
     stack: [
-      { text: 'DIGITAL SIGNATURE', fontSize: 8, bold: true, color: SLATE_MUTED, characterSpacing: 1, alignment: 'center', margin: [0, 0, 0, 4] },
+      { text: 'DIGITAL SIGNATURE', fontSize: 8, bold: true, color: SLATE_MUTED, characterSpacing: 0, alignment: 'center', margin: [0, 0, 0, 4] },
       {
         table: { widths: ['*'], heights: [58], body: [[{ stack: [signatureInner], border: [true, true, true, true] }]] },
         layout: {
@@ -523,14 +523,14 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
             {
               width: '*',
               stack: [
-                { text: 'CYTOTECHNOLOGIST', fontSize: 8, bold: true, color: SLATE_MUTED, characterSpacing: 1 },
+                { text: 'CYTOTECHNOLOGIST', fontSize: 8, bold: true, color: SLATE_MUTED, characterSpacing: 0 },
                 { text: cytotechnologist || '—', fontSize: 11, bold: true, color: SLATE, margin: [0, 3, 0, 0] },
               ],
             },
             {
               width: '*',
               stack: [
-                { text: 'COMMENTS', fontSize: 8, bold: true, color: SLATE_MUTED, characterSpacing: 1 },
+                { text: 'COMMENTS', fontSize: 8, bold: true, color: SLATE_MUTED, characterSpacing: 0 },
                 { text: 'APPROVED', fontSize: 11, bold: true, color: GREEN, margin: [0, 3, 0, 0] },
               ],
             },
@@ -557,7 +557,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
     fontSize: 9,
     italics: true,
     color: SLATE_MUTED,
-    characterSpacing: 0.5,
+    characterSpacing: 0,
     margin: [0, 20, 0, 0],
   };
 
@@ -616,7 +616,7 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function findingTh(text: string): TableCell {
-  return { text, fontSize: 9, bold: true, color: SLATE_MUTED, characterSpacing: 0.5, fillColor: SUBTLE_BG };
+  return { text, fontSize: 9, bold: true, color: SLATE_MUTED, characterSpacing: 0, fillColor: SUBTLE_BG };
 }
 
 function chunk<T>(arr: T[], size: number): T[][] {
