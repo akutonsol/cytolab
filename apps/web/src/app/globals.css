@@ -737,3 +737,10 @@ select option {
 .kb-prose th { background: #F8FAFC; font-weight: 600; color: #0F172A; }
 .kb-prose img { max-width: 100%; border-radius: 10px; margin: 1em 0; }
 .kb-prose hr { border: none; border-top: 1px solid #E2E8F0; margin: 1.5em 0; }
+
+/* Fade-in for freshly-rendered grouped rows (e.g. client-folder headers). */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn { animation: fadeIn 0.3s ease-out; }

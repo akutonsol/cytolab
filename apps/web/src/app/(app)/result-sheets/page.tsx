@@ -458,7 +458,14 @@ export default function ResultSheetsPage() {
                   {groupByClient
                     ? groups.map(([name, recs]) => (
                         <Fragment key={name}>
-                          <tr className="bg-slate-50"><td colSpan={8} className="px-5 py-2 text-xs font-bold uppercase tracking-wide text-slate-500">{name} · {recs.length}</td></tr>
+                          <tr className="animate-fadeIn">
+                            <td colSpan={8} className="border-l-4 border-indigo-500 bg-slate-50 py-2.5 pl-3 pr-5">
+                              <span className="inline-flex items-center gap-2">
+                                <span className="text-[13px] font-bold uppercase tracking-wide text-gray-900">{name}</span>
+                                <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">{recs.length}</span>
+                              </span>
+                            </td>
+                          </tr>
                           {recs.map(row)}
                         </Fragment>
                       ))
