@@ -58,6 +58,7 @@ import { TeleconsultModule } from './modules/teleconsult/teleconsult.module';
 import { CodingModule } from './modules/coding/coding.module';
 import { FhirModule } from './modules/fhir/fhir.module';
 import { ReportCenterModule } from './modules/report-center/report-center.module';
+import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.module';
 
 /**
  * Cytolab modular monolith.
@@ -128,6 +129,7 @@ import { ReportCenterModule } from './modules/report-center/report-center.module
     CodingModule,
     FhirModule,
     ReportCenterModule,
+    KnowledgeBaseModule,
   ],
   controllers: [HealthController],
   providers: [

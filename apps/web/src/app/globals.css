@@ -712,3 +712,23 @@ select option {
   .printable { box-shadow: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .printable * { box-shadow: none !important; }
 }
+
+/* ─── Knowledge Base markdown output ─────────────────────────────────────── */
+.kb-prose { color: #334155; font-size: 15px; line-height: 1.75; }
+.kb-prose h1 { font-size: 28px; font-weight: 700; color: #0F172A; margin: 1.4em 0 0.5em; line-height: 1.25; }
+.kb-prose h2 { font-size: 22px; font-weight: 700; color: #0F172A; margin: 1.3em 0 0.5em; }
+.kb-prose h3 { font-size: 18px; font-weight: 600; color: #0F172A; margin: 1.2em 0 0.4em; }
+.kb-prose p { margin: 0.75em 0; }
+.kb-prose a { color: #4F46E5; text-decoration: underline; }
+.kb-prose ul { list-style: disc; padding-left: 1.5em; margin: 0.75em 0; }
+.kb-prose ol { list-style: decimal; padding-left: 1.5em; margin: 0.75em 0; }
+.kb-prose li { margin: 0.3em 0; }
+.kb-prose blockquote { border-left: 3px solid #C7D2FE; background: #F5F7FF; padding: 0.5em 1em; margin: 1em 0; color: #475569; border-radius: 0 8px 8px 0; }
+.kb-prose code { background: #F1F5F9; color: #4F46E5; padding: 0.1em 0.4em; border-radius: 4px; font-size: 0.9em; }
+.kb-prose pre { background: #0F172A; color: #E2E8F0; padding: 1em; border-radius: 10px; overflow-x: auto; margin: 1em 0; }
+.kb-prose pre code { background: transparent; color: inherit; padding: 0; }
+.kb-prose table { width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 14px; }
+.kb-prose th, .kb-prose td { border: 1px solid #E2E8F0; padding: 0.5em 0.75em; text-align: left; }
+.kb-prose th { background: #F8FAFC; font-weight: 600; color: #0F172A; }
+.kb-prose img { max-width: 100%; border-radius: 10px; margin: 1em 0; }
+.kb-prose hr { border: none; border-top: 1px solid #E2E8F0; margin: 1.5em 0; }

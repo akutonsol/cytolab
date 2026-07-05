@@ -4,6 +4,7 @@ import {
   Award,
   BarChart2,
   BarChart3,
+  Book,
   Brain,
   CalendarClock,
   CalendarDays,
@@ -129,6 +130,15 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    key: 'resources',
+    label: 'Resources',
+    icon: Book,
+    items: [
+      // No permission/feature — the knowledge base is open to every authed user.
+      { label: 'Knowledge Base', path: '/knowledge-base', icon: Book },
+    ],
+  },
+  {
     key: 'platform',
     label: 'Platform',
     icon: AppWindow,
@@ -168,7 +178,7 @@ export const ANALYTICS_ITEM: NavItem = { label: 'Analytics', path: '/analytics',
 
 // Top-nav layout: which groups are center dropdowns vs. tucked into the account
 // (avatar) menu. Everything stays reachable.
-export const CENTER_GROUP_KEYS = ['lab', 'results', 'finance', 'people'];
+export const CENTER_GROUP_KEYS = ['lab', 'results', 'finance', 'people', 'resources'];
 export const ACCOUNT_GROUP_KEY = 'platform';
 
 const ALL_ITEMS = [...NAV_GROUPS.flatMap((g) => g.items), ANALYTICS_ITEM];

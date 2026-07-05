@@ -3374,3 +3374,75 @@ model SystemAnnouncement {
 
   @@index([labId, isActive])
 }
+
+// ─── Knowledge Base (Resources) ──────────────────────────────────────────────
+
+enum KbArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+/// A grouping of knowledge-base articles. Lab-scoped (tenancy extension stamps
+/// and filters labId automatically — never filter it by hand).
+model KbCategory {
+  id          String      @id @default(cuid())
+  labId       String
+  name        String
+  description String?
+  icon        String?
+  sortOrder   Int         @default(0)
+  isActive    Boolean     @default(true)
+  articles    KbArticle[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([labId])
+}
+
+/// A single Markdown knowledge-base article. `slug` is unique per lab.
+model KbArticle {
+  id             String          @id @default(cuid())
+  labId          String
+  categoryId     String
+  category       KbCategory      @relation(fields: [categoryId], references: [id])
+  title          String
+  slug           String
+  content        String // Markdown
+  excerpt        String?
+  status         KbArticleStatus @default(DRAFT)
+  isPinned       Boolean         @default(false)
+  viewCount      Int             @default(0)
+  authorId       String
+  lastEditedById String?
+  tags           String[]
+  attachments    KbAttachment[]
+  feedback       KbFeedback[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  publishedAt    DateTime?
+
+  @@unique([labId, slug])
+  @@index([labId, status])
+  @@index([labId, categoryId])
+}
+
+model KbAttachment {
+  id        String    @id @default(cuid())
+  articleId String
+  article   KbArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  fileName  String
+  fileUrl   String
+  fileSize  Int
+  createdAt DateTime  @default(now())
+}
+
+model KbFeedback {
+  id        String    @id @default(cuid())
+  articleId String
+  article   KbArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  userId    String?
+  helpful   Boolean
+  comment   String?
+  createdAt DateTime  @default(now())
+}
