@@ -320,6 +320,8 @@ model User {
   proficiencyResponses   ProficiencyResponse[]  @relation("ProfResponder")
   reagentLotsCreated     ReagentLot[]           @relation("ReagentCreator")
   reagentUsages          ReagentUsage[]         @relation("ReagentUser")
+  clockEventEdits        ClockEvent[]           @relation("ClockEventEditor")
+  timesheetsReviewed     Timesheet[]            @relation("TimesheetReviewer")
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
@@ -1657,6 +1659,9 @@ model Employee {
   isActive              Boolean        @default(true)
   isFixedSalary         Boolean        @default(true) // false = hourly (hours entered per run)
   payAdvices            PayAdvice[]
+  clockEvents           ClockEvent[]
+  timesheets            Timesheet[]
+  shiftAssignments      ShiftAssignment[]
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
 
@@ -1967,6 +1972,9 @@ enum FeatureKey {
   TELECONSULTATION
   LOINC_SNOMED
   HL7_FHIR
+
+  // Tier 6 — Workforce
+  WORKFORCE_MANAGEMENT
 }
 
 // One row per (lab, feature). Toggle history is not retained — each toggle
@@ -2812,4 +2820,141 @@ model FHIRTransmission {
 
   @@index([labId, status])
   @@index([recordId])
+}
+
+// ─── Tier 6: Workforce Management ─────────────────────────────────────────────
+model ClockEvent {
+  id         String         @id @default(cuid())
+  labId      String
+  employeeId String
+  employee   Employee       @relation(fields: [employeeId], references: [id])
+  type       ClockEventType
+  timestamp  DateTime       @default(now())
+  method     ClockMethod    @default(Desktop)
+  location   String?
+  ipAddress  String?
+  deviceId   String?
+  notes      String?
+  editedAt   DateTime?
+  editedById String?
+  editedBy   User?          @relation("ClockEventEditor", fields: [editedById], references: [id])
+  editReason String?
+  createdAt  DateTime       @default(now())
+
+  @@index([employeeId, timestamp])
+  @@index([labId, timestamp])
+}
+
+model Timesheet {
+  id            String           @id @default(cuid())
+  labId         String
+  employeeId    String
+  employee      Employee         @relation(fields: [employeeId], references: [id])
+  periodStart   DateTime
+  periodEnd     DateTime
+  status        TimesheetStatus  @default(Draft)
+  regularHours  Float            @default(0)
+  overtimeHours Float            @default(0)
+  totalHours    Float            @default(0)
+  submittedAt   DateTime?
+  reviewedById  String?
+  reviewedBy    User?            @relation("TimesheetReviewer", fields: [reviewedById], references: [id])
+  reviewedAt    DateTime?
+  approvedAt    DateTime?
+  notes         String?
+  entries       TimesheetEntry[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@unique([labId, employeeId, periodStart])
+  @@index([labId])
+}
+
+model TimesheetEntry {
+  id            String    @id @default(cuid())
+  timesheetId   String
+  timesheet     Timesheet @relation(fields: [timesheetId], references: [id], onDelete: Cascade)
+  date          DateTime
+  clockIn       DateTime?
+  clockOut      DateTime?
+  breakMinutes  Int       @default(0)
+  regularHours  Float     @default(0)
+  overtimeHours Float     @default(0)
+  shift         ShiftType @default(Morning)
+  notes         String?
+
+  @@index([timesheetId])
+}
+
+model Shift {
+  id          String            @id @default(cuid())
+  labId       String
+  name        String
+  startTime   String
+  endTime     String
+  type        ShiftType
+  color       String            @default("#4F46E5")
+  isActive    Boolean           @default(true)
+  assignments ShiftAssignment[]
+
+  @@unique([labId, name])
+  @@index([labId])
+}
+
+model ShiftAssignment {
+  id          String                @id @default(cuid())
+  labId       String
+  employeeId  String
+  employee    Employee              @relation(fields: [employeeId], references: [id])
+  shiftId     String
+  shift       Shift                 @relation(fields: [shiftId], references: [id])
+  date        DateTime
+  status      ShiftAssignmentStatus @default(Scheduled)
+  notes       String?
+  createdById String?
+
+  @@index([employeeId, date])
+  @@index([labId, date])
+}
+
+enum ClockEventType {
+  ClockIn
+  ClockOut
+  BreakStart
+  BreakEnd
+  LunchStart
+  LunchEnd
+}
+
+enum ClockMethod {
+  Desktop
+  Mobile
+  Tablet
+  Kiosk
+  QRCode
+}
+
+enum TimesheetStatus {
+  Draft
+  Submitted
+  UnderReview
+  Approved
+  Rejected
+  PayrollLocked
+}
+
+enum ShiftType {
+  Morning
+  Evening
+  Night
+  Weekend
+  Holiday
+}
+
+enum ShiftAssignmentStatus {
+  Scheduled
+  Confirmed
+  Completed
+  Absent
+  Late
 }

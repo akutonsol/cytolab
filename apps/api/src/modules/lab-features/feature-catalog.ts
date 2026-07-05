@@ -39,6 +39,8 @@ export const FEATURE_TIERS: Record<FeatureKey, number> = {
   TELECONSULTATION: 5,
   LOINC_SNOMED: 5,
   HL7_FHIR: 5,
+  // Tier 6 — Workforce
+  WORKFORCE_MANAGEMENT: 6,
 };
 
 /** Features already built and deployed — enabled by default on seed. */
@@ -66,6 +68,7 @@ export const BUILT_FEATURES: ReadonlySet<FeatureKey> = new Set<FeatureKey>([
   'TELECONSULTATION',
   'LOINC_SNOMED',
   'HL7_FHIR',
+  'WORKFORCE_MANAGEMENT',
 ]);
 
 export const ALL_FEATURE_KEYS = Object.keys(FEATURE_TIERS) as FeatureKey[];

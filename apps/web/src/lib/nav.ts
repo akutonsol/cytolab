@@ -7,6 +7,8 @@ import {
   CalendarDays,
   CheckCheck,
   CheckSquare,
+  Clock,
+  FileClock,
   FileBarChart,
   CreditCard,
   GitMerge,
@@ -110,6 +112,9 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Employees', path: '/employees', permission: 'employee:view' },
       { label: 'Departments', path: '/departments', permission: 'department:view' },
       { label: 'Payroll', path: '/payroll', permission: 'payroll:view' },
+      { label: 'Attendance', path: '/workforce', permission: 'record:view', feature: 'WORKFORCE_MANAGEMENT', icon: Clock },
+      { label: 'Timesheets', path: '/workforce/timesheets', permission: 'record:view', feature: 'WORKFORCE_MANAGEMENT', icon: FileClock },
+      { label: 'Scheduling', path: '/workforce/schedule', permission: 'record:view', feature: 'WORKFORCE_MANAGEMENT', icon: CalendarDays },
     ],
   },
   {

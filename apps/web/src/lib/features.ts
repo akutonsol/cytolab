@@ -30,7 +30,8 @@ export type FeatureKey =
   | 'AI_SCREENING'
   | 'TELECONSULTATION'
   | 'LOINC_SNOMED'
-  | 'HL7_FHIR';
+  | 'HL7_FHIR'
+  | 'WORKFORCE_MANAGEMENT';
 
 export interface FeatureDefinition {
   key: FeatureKey;
@@ -62,6 +63,7 @@ export const TIER_META: Record<number, TierMeta> = {
   3: { tier: 3, name: 'Operational', description: 'Efficiency tools for lab staff workflows.', color: 'blue' },
   4: { tier: 4, name: 'Compliance', description: 'Analytics and regulatory compliance tools.', color: 'violet' },
   5: { tier: 5, name: 'Enterprise', description: 'Advanced technology differentiators.', color: 'purple' },
+  6: { tier: 6, name: 'Workforce', description: 'Staff time, attendance, timesheets and scheduling.', color: 'indigo' },
 };
 
 export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
@@ -209,6 +211,13 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     name: 'HL7 / FHIR Interface',
     description: 'Exchange orders and results with EHRs over HL7 v2 and FHIR interfaces.',
     tier: 5, tierName: 'Enterprise', icon: 'Network', docsUrl: null, navPath: '/fhir', dependsOn: [],
+  },
+  // ── Tier 6 — Workforce ─────────────────────────────────────────────
+  WORKFORCE_MANAGEMENT: {
+    key: 'WORKFORCE_MANAGEMENT',
+    name: 'Workforce Management',
+    description: 'Time clock, attendance, timesheets and shift scheduling for lab staff.',
+    tier: 6, tierName: 'Workforce', icon: 'Clock', docsUrl: null, navPath: '/workforce', dependsOn: [],
   },
 };
 

@@ -17,6 +17,7 @@ import { RecordsModule } from './modules/records/records.module';
 import { CabinetsModule } from './modules/cabinets/cabinets.module';
 import { CodeSheetsModule } from './modules/code-sheets/code-sheets.module';
 import { LabCodesModule } from './modules/lab-codes/lab-codes.module';
+import { WorkforceModule } from './modules/workforce/workforce.module';
 import { ResultSheetsModule } from './modules/result-sheets/result-sheets.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { AiModule } from './modules/ai/ai.module';
@@ -86,6 +87,7 @@ import { ReportCenterModule } from './modules/report-center/report-center.module
     CabinetsModule,
     CodeSheetsModule,
     LabCodesModule,
+    WorkforceModule,
     ResultSheetsModule,
     ReportsModule,
     AiModule,
