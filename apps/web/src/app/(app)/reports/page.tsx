@@ -1,13 +1,15 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  Award, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Clock, Download,
+  Award, CheckCircle, ChevronDown, Clock, Download,
   ExternalLink, Eye, FileText, Filter, Search, X,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 
 interface Summary { total: number; thisMonth: number; authorized: number; pending: number }
 interface Report {
@@ -44,7 +46,6 @@ function ReportsWorkspace() {
   const qc = useQueryClient();
   const recordIdParam = useSearchParams().get('recordId');
 
-  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [formFilter, setFormFilter] = useState<'all' | 'Gynecology' | 'NonGynecology'>('all');
   const [dateFilter, setDateFilter] = useState<'all' | 'week' | 'month'>('all');
@@ -56,14 +57,16 @@ function ReportsWorkspace() {
   const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3200); };
 
   const { data: summary } = useQuery<Summary>({ queryKey: ['reports-summary'], queryFn: () => api.get('/reports/summary').then((r) => r.data) });
-  const { data: list, isLoading } = useQuery<Paginated<Report>>({
-    queryKey: ['reports', page],
-    queryFn: () => api.get('/reports', { params: { page, pageSize: PAGE_SIZE } }).then((r) => r.data),
-  });
 
-  const rows = list?.data ?? [];
-  const total = list?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  // Server-side infinite scroll: each page is fetched from the API and appended.
+  // Client-side filters (form/date/search) apply over the accumulated rows.
+  const fetchFn = useCallback(
+    (page: number, pageSize: number) =>
+      api.get<Paginated<Report>>('/reports', { params: { page, pageSize } }).then((r) => r.data),
+    [],
+  );
+  const { items: rows, loading, initialLoading, hasMore, sentinelRef, total, reset } =
+    useInfiniteScroll<Report>({ fetchFn, pageSize: PAGE_SIZE });
 
   // Client-side filters over the current page.
   const filtered = useMemo(() => {
@@ -172,7 +175,7 @@ function ReportsWorkspace() {
           </div>
         </div>
 
-        {isLoading ? (
+        {initialLoading ? (
           <div className="grid h-40 place-items-center text-[13px] text-[#9CA3AF]">Loading…</div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-4 py-20">
@@ -233,20 +236,9 @@ function ReportsWorkspace() {
           </div>
         )}
 
-        {/* Pagination */}
-        {total > 0 && (
-          <div className="mt-6 flex items-center justify-between">
-            <p className="font-body-sm text-body-sm text-secondary">
-              Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}
-            </p>
-            <div className="flex items-center gap-1">
-              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-                className="grid h-9 w-9 place-items-center rounded-lg border border-outline-variant/20 bg-white hover:bg-surface-container-low disabled:opacity-40"><ChevronLeft size={16} /></button>
-              <span className="px-4 font-label-md text-label-md text-on-surface">{page} / {totalPages}</span>
-              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                className="grid h-9 w-9 place-items-center rounded-lg border border-outline-variant/20 bg-white hover:bg-surface-container-low disabled:opacity-40"><ChevronRight size={16} /></button>
-            </div>
-          </div>
+        {/* Infinite scroll: auto-loads the next page from the server on scroll. */}
+        {rows.length > 0 && (
+          <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
         )}
       </div>
 
@@ -257,7 +249,7 @@ function ReportsWorkspace() {
           onReleased={() => {
             setReleaseOpen(false);
             notify('ok', 'Report released successfully');
-            qc.invalidateQueries({ queryKey: ['reports'] });
+            reset(); // reload the infinite-scroll list from page 1
             qc.invalidateQueries({ queryKey: ['reports-summary'] });
             clearParam();
           }}

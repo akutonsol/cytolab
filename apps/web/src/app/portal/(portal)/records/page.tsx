@@ -1,11 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Download, Eye, Search } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { portalApi } from '@/lib/portal-api';
 import { fmtDate, isAuthorized, specLabel, StatusBadge } from '@/lib/portal-ui';
+import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 
 const TH = 'px-4 py-3 text-left font-label-sm text-label-sm text-secondary uppercase tracking-wider whitespace-nowrap';
 const CELL = 'px-4 py-3.5 font-body-sm text-body-sm text-on-surface align-middle';
@@ -15,13 +17,14 @@ export default function PortalRecordsPage() {
   const router = useRouter();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'all' | 'pending' | 'authorized'>('all');
-  const [page, setPage] = useState(1);
 
   const { data, isFetching } = useQuery({
     queryKey: ['portal-records', 'all'],
     queryFn: () => portalApi.get('/portal/records', { params: { pageSize: 100 } }).then((r) => r.data),
   });
-  const all: any[] = data?.data ?? [];
+  // useMemo keeps `all` stable while loading so the infinite-scroll fetchFn
+  // (derived from `filtered`) doesn't reload every render.
+  const all: any[] = useMemo(() => data?.data ?? [], [data]);
 
   const filtered = useMemo(() => {
     let rows = all;
@@ -34,9 +37,9 @@ export default function PortalRecordsPage() {
     return rows;
   }, [all, q, status]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const curPage = Math.min(page, totalPages);
-  const rows = filtered.slice((curPage - 1) * PAGE_SIZE, curPage * PAGE_SIZE);
+  // Infinite scroll over the client-side filtered records.
+  const fetchFn = useCallback((p: number, ps: number) => Promise.resolve(clientPage(filtered, p, ps)), [filtered]);
+  const { items: rows, loading, initialLoading, hasMore, sentinelRef } = useInfiniteScroll<any>({ fetchFn, pageSize: PAGE_SIZE });
 
   const download = async (r: any) => {
     try {
@@ -50,7 +53,7 @@ export default function PortalRecordsPage() {
   };
 
   const tab = (v: typeof status, label: string) => (
-    <button onClick={() => { setStatus(v); setPage(1); }}
+    <button onClick={() => { setStatus(v); }}
       className={`rounded-lg px-4 py-2 font-label-md text-label-md transition-colors ${status === v ? 'bg-white text-primary shadow-sm' : 'text-secondary hover:text-on-surface'}`}>
       {label}
     </button>
@@ -66,7 +69,7 @@ export default function PortalRecordsPage() {
         </div>
         <div className="flex h-11 w-[260px] max-w-full items-center gap-2 rounded-xl border border-[#E2E8F0] bg-white px-3 text-[#94A3B8]">
           <Search size={16} />
-          <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Search records"
+          <input value={q} onChange={(e) => { setQ(e.target.value); }} placeholder="Search records"
             className="w-full border-none bg-transparent text-[14px] text-[#0F172A] outline-none placeholder:text-[#94A3B8]" />
         </div>
       </div>
@@ -87,7 +90,7 @@ export default function PortalRecordsPage() {
               {isFetching && all.length === 0 && Array.from({ length: 6 }).map((_, i) => (
                 <tr key={i} className="border-b border-outline-variant/10"><td colSpan={5} className="px-4 py-3"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></td></tr>
               ))}
-              {!isFetching && rows.length === 0 && (
+              {!isFetching && !initialLoading && rows.length === 0 && (
                 <tr><td colSpan={5} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">No records found.</td></tr>
               )}
               {rows.map((r) => (
@@ -110,15 +113,9 @@ export default function PortalRecordsPage() {
           </table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="mt-5 flex items-center justify-between">
-            <div className="font-body-sm text-body-sm text-secondary">{filtered.length} records</div>
-            <div className="flex items-center gap-2">
-              <button className="btn-secondary" disabled={curPage <= 1} style={{ opacity: curPage <= 1 ? 0.5 : 1 }} onClick={() => setPage((p) => Math.max(1, p - 1))}>←</button>
-              <span className="font-body-sm text-body-sm text-secondary">Page {curPage} / {totalPages}</span>
-              <button className="btn-secondary" disabled={curPage >= totalPages} style={{ opacity: curPage >= totalPages ? 0.5 : 1 }} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>→</button>
-            </div>
-          </div>
+        {/* Infinite scroll: auto-loads more records on scroll. */}
+        {rows.length > 0 && (
+          <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
         )}
       </div>
     </div>

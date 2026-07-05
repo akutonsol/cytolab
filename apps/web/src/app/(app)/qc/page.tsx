@@ -1,12 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, CheckCircle2, FlaskConical, Plus, ShieldCheck, X } from 'lucide-react';
 import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api, type Paginated } from '@/lib/api';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { useAuth } from '@/lib/auth';
 import { useFeatures } from '@/lib/feature-context';
 import {
@@ -191,7 +193,6 @@ export default function QCPage() {
   const canLog = can('record:change');
   const [logOpen, setLogOpen] = useState(false);
   const [resolveAlert, setResolveAlert] = useState<QCAlert | null>(null);
-  const [page, setPage] = useState(1);
   const [fType, setFType] = useState('');
   const [fResult, setFResult] = useState('');
   const [fEquip, setFEquip] = useState('');
@@ -199,12 +200,16 @@ export default function QCPage() {
   const { data: stats } = useQuery<QCStats>({ queryKey: ['qc-stats'], queryFn: () => api.get('/qc/stats').then((r) => r.data), enabled });
   const { data: equipment = [] } = useQuery<Equipment[]>({ queryKey: ['qc-equipment'], queryFn: () => api.get('/equipment').then((r) => r.data), enabled });
   const { data: alerts = [] } = useQuery<QCAlert[]>({ queryKey: ['qc-alerts'], queryFn: () => api.get('/qc/alerts').then((r) => r.data), enabled, refetchInterval: 60_000 });
-  const { data: logPage } = useQuery<Paginated<QCCheck>>({
-    queryKey: ['qc-list', page, fType, fResult, fEquip],
-    queryFn: () => api.get('/qc', { params: { page, pageSize: 15, ...(fType && { checkType: fType }), ...(fResult && { result: fResult }), ...(fEquip && { equipmentId: fEquip }) } }).then((r) => r.data),
-    enabled,
-  });
-  const checks = logPage?.data ?? [];
+
+  // Server-side infinite scroll for the QC log. Filters are server params, so a
+  // filter change gives a new fetchFn → the hook reloads from page 1.
+  const fetchFn = useCallback(
+    (page: number, pageSize: number) =>
+      api.get<Paginated<QCCheck>>('/qc', { params: { page, pageSize, ...(fType && { checkType: fType }), ...(fResult && { result: fResult }), ...(fEquip && { equipmentId: fEquip }) } }).then((r) => r.data),
+    [fType, fResult, fEquip],
+  );
+  const { items: checks, loading, initialLoading, hasMore, sentinelRef, reset } =
+    useInfiniteScroll<QCCheck>({ fetchFn, pageSize: 15, enabled });
 
   if (!enabled) {
     return (
@@ -244,13 +249,13 @@ export default function QCPage() {
         {/* Log table */}
         <div className="rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
           <div className="flex flex-wrap items-center gap-2 border-b border-[#EEF2F7] p-3">
-            <select value={fType} onChange={(e) => { setFType(e.target.value); setPage(1); }} className="h-9 rounded-lg border border-[#E2E8F0] px-2 text-[13px] outline-none">
+            <select value={fType} onChange={(e) => { setFType(e.target.value); }} className="h-9 rounded-lg border border-[#E2E8F0] px-2 text-[13px] outline-none">
               <option value="">All types</option>{CHECK_TYPES.map((t) => <option key={t} value={t}>{checkTypeLabel(t)}</option>)}
             </select>
-            <select value={fResult} onChange={(e) => { setFResult(e.target.value); setPage(1); }} className="h-9 rounded-lg border border-[#E2E8F0] px-2 text-[13px] outline-none">
+            <select value={fResult} onChange={(e) => { setFResult(e.target.value); }} className="h-9 rounded-lg border border-[#E2E8F0] px-2 text-[13px] outline-none">
               <option value="">All results</option><option>Pass</option><option>Marginal</option><option>Fail</option>
             </select>
-            <select value={fEquip} onChange={(e) => { setFEquip(e.target.value); setPage(1); }} className="h-9 rounded-lg border border-[#E2E8F0] px-2 text-[13px] outline-none">
+            <select value={fEquip} onChange={(e) => { setFEquip(e.target.value); }} className="h-9 rounded-lg border border-[#E2E8F0] px-2 text-[13px] outline-none">
               <option value="">All equipment</option>{equipment.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
             </select>
           </div>
@@ -264,7 +269,7 @@ export default function QCPage() {
                 </tr>
               </thead>
               <tbody>
-                {checks.length === 0 ? (
+                {!initialLoading && checks.length === 0 ? (
                   <tr><td colSpan={6} className="px-3 py-10 text-center text-[#94A3B8]">No QC checks logged yet.</td></tr>
                 ) : checks.map((c) => (
                   <tr key={c.id} className="border-b border-[#F1F5F9]">
@@ -279,14 +284,9 @@ export default function QCPage() {
               </tbody>
             </table>
           </div>
-          {logPage && logPage.totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-[#EEF2F7] px-3 py-2.5 text-[13px] text-[#64748B]">
-              <span>Page {logPage.page} of {logPage.totalPages} · {logPage.total} checks</span>
-              <div className="flex gap-2">
-                <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded-lg border border-[#E2E8F0] px-3 py-1 disabled:opacity-40">Prev</button>
-                <button disabled={page >= logPage.totalPages} onClick={() => setPage((p) => p + 1)} className="rounded-lg border border-[#E2E8F0] px-3 py-1 disabled:opacity-40">Next</button>
-              </div>
-            </div>
+          {/* Infinite scroll: auto-loads the next page of QC checks on scroll. */}
+          {checks.length > 0 && (
+            <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
           )}
         </div>
 
@@ -341,8 +341,8 @@ export default function QCPage() {
         </div>
       </div>
 
-      {logOpen && <LogQCModal equipment={equipment} onClose={() => setLogOpen(false)} />}
-      {resolveAlert && <ResolveModal alert={resolveAlert} onClose={() => setResolveAlert(null)} />}
+      {logOpen && <LogQCModal equipment={equipment} onClose={() => { setLogOpen(false); reset(); }} />}
+      {resolveAlert && <ResolveModal alert={resolveAlert} onClose={() => { setResolveAlert(null); reset(); }} />}
     </div>
   );
 }

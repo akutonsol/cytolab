@@ -1,10 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, CheckCircle2, ChevronDown, ChevronRight, ShieldCheck } from 'lucide-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
+import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { money, monthYear, thisMonth, fmtDate, previewAdvice, type RunDetail } from '@/lib/payroll';
 
 interface Emp {
@@ -29,7 +31,6 @@ export default function PayrollWizardPage() {
   const [period, setPeriod] = useState(thisMonth());
   const [payrollDate, setPayrollDate] = useState(new Date().toISOString().slice(0, 10));
   const [lines, setLines] = useState<Record<string, Line>>({});
-  const [page, setPage] = useState(1);
   const [result, setResult] = useState<RunDetail | null>(null);
   const [approved, setApproved] = useState<RunDetail | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -75,8 +76,10 @@ export default function PayrollWizardPage() {
     onError: (e: any) => setErr(e?.response?.data?.message ?? 'Approval failed'),
   });
 
-  const pageEmps = employees.slice((page - 1) * PAGE, page * PAGE);
-  const totalPages = Math.max(1, Math.ceil(employees.length / PAGE));
+  // Infinite scroll over the active employees (editable payroll rows). Line
+  // edits are keyed by employee id in `lines`, so they survive as rows append.
+  const fetchFn = useCallback((p: number, ps: number) => Promise.resolve(clientPage(employees, p, ps)), [employees]);
+  const { items: pageEmps, loading, initialLoading, hasMore, sentinelRef } = useInfiniteScroll<Emp>({ fetchFn, pageSize: PAGE });
 
   return (
     <div className="min-h-full" style={{ background: '#F8FAFC' }}>
@@ -175,11 +178,14 @@ export default function PayrollWizardPage() {
               </table>
             </div>
 
+            {/* Infinite scroll: auto-loads more employee rows on scroll. */}
+            {employees.length > 0 && (
+              <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
+            )}
+
             <div className="mt-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <button className="btn-secondary !px-3 !py-1.5" disabled={page <= 1} style={{ opacity: page <= 1 ? 0.5 : 1 }} onClick={() => setPage((p) => p - 1)}>← Prev</button>
-                <span className="font-label-sm text-label-sm text-secondary">Page {page} of {totalPages} · {employees.length} employees</span>
-                <button className="btn-secondary !px-3 !py-1.5" disabled={page >= totalPages} style={{ opacity: page >= totalPages ? 0.5 : 1 }} onClick={() => setPage((p) => p + 1)}>Next →</button>
+              <div className="font-label-sm text-label-sm text-secondary">
+                Showing {pageEmps.length} of {employees.length} employees
               </div>
               <div className="flex gap-2">
                 <button className="btn-secondary" onClick={() => router.push('/payroll')}>Back</button>

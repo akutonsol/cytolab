@@ -1,14 +1,16 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  AlertTriangle, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock,
+  AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Clock,
   Download, ExternalLink, MoreHorizontal, Plus, Search, Settings, SlidersHorizontal, TrendingUp, DollarSign,
 } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
+import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (cents: number) => '$' + ((cents ?? 0) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -63,7 +65,6 @@ export default function PaymentsPage() {
   const [tab, setTab] = useState<'all' | 'unverified' | 'verified'>('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [timeframe, setTimeframe] = useState('all');
-  const [page, setPage] = useState(1);
   const [period, setPeriod] = useState('Yearly');
   const [menuId, setMenuId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -136,10 +137,9 @@ export default function PaymentsPage() {
     }
     return rows;
   }, [payments, tab, typeFilter, timeframe, search]); // eslint-disable-line react-hooks/exhaustive-deps
-  const total = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const pageRows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  // Infinite scroll over the client-side filtered payments.
+  const fetchFn = useCallback((p: number, ps: number) => Promise.resolve(clientPage(filtered, p, ps)), [filtered]);
+  const { items: pageRows, loading, initialLoading, hasMore, sentinelRef } = useInfiniteScroll<Payment & { bill?: any }>({ fetchFn, pageSize: PAGE_SIZE });
 
   const selectCls = 'h-9 rounded-lg border border-[#E2E8F0] bg-white px-3 text-[13px] text-[#374151] outline-none focus:border-[#4F46E5] cursor-pointer';
   const th = 'px-4 py-3 text-left text-[13px] font-medium text-[#94A3B8]';
@@ -210,7 +210,7 @@ export default function PaymentsPage() {
         {/* Tabs */}
         <div className="mb-4 flex flex-wrap gap-2">
           {([['all', 'All', payments.length], ['unverified', 'Unverified', unverifiedCount], ['verified', 'Verified', verifiedCount]] as const).map(([v, l, n]) => (
-            <button key={v} onClick={() => { setTab(v); setPage(1); }} className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold transition-colors"
+            <button key={v} onClick={() => { setTab(v); }} className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold transition-colors"
               style={tab === v ? { background: '#EEF2FF', color: '#4F46E5', border: '1px solid #C7D2FE' } : { background: 'transparent', color: '#64748B', border: '1px solid transparent' }}>
               <Settings size={14} /> {l} ({n})
             </button>
@@ -220,26 +220,26 @@ export default function PaymentsPage() {
         <div className={`${CARD} p-5`}>
           {/* Filter row */}
           <div className="mb-4 flex flex-wrap items-center gap-2">
-            <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }} className={selectCls}>
+            <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); }} className={selectCls}>
               <option value="all">All Types</option><option value="Cash">Cash</option><option value="Cheque">Cheque</option><option value="CreditCard">Credit Card</option><option value="DebitCard">Debit Card</option><option value="BankTransfer">Bank Transfer</option><option value="Other">Other</option>
             </select>
-            <select value={tab} onChange={(e) => { setTab(e.target.value as any); setPage(1); }} className={selectCls}>
+            <select value={tab} onChange={(e) => { setTab(e.target.value as any); }} className={selectCls}>
               <option value="all">All Status</option><option value="verified">Verified</option><option value="unverified">Unverified</option>
             </select>
-            <select value={timeframe} onChange={(e) => { setTimeframe(e.target.value); setPage(1); }} className={selectCls}>
+            <select value={timeframe} onChange={(e) => { setTimeframe(e.target.value); }} className={selectCls}>
               <option value="all">All Time</option><option value="week">This Week</option><option value="month">This Month</option><option value="year">This Year</option>
             </select>
             <div className="ml-auto flex items-center gap-2">
               <div className="flex h-9 w-[240px] items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-3.5 text-[#9CA3AF]">
                 <Search size={15} />
-                <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Search Bill# or Client…" className="w-full border-none bg-transparent text-[13px] text-[#0F172A] outline-none placeholder:text-[#9CA3AF]" />
+                <input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search Bill# or Client…" className="w-full border-none bg-transparent text-[13px] text-[#0F172A] outline-none placeholder:text-[#9CA3AF]" />
               </div>
               <button className="flex h-9 items-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-3 text-[13px] font-medium text-[#374151]"><SlidersHorizontal size={14} /> Filter</button>
             </div>
           </div>
 
           {/* Table */}
-          {pageRows.length === 0 ? (
+          {!initialLoading && pageRows.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
               <DollarSign size={48} className="text-[#E2E8F0]" />
               <div className="text-[14px] font-medium text-[#94A3B8]">No payments found</div>
@@ -297,14 +297,9 @@ export default function PaymentsPage() {
             </div>
           )}
 
-          {totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-end gap-2">
-              <button disabled={safePage === 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="grid h-9 w-9 place-items-center rounded-full border border-[#EEF2F7] text-[#6B7280] disabled:opacity-40 hover:bg-[#F5F7FF]"><ChevronLeft size={16} /></button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).slice(Math.max(0, safePage - 3), safePage + 2).map((n) => (
-                <button key={n} onClick={() => setPage(n)} className="grid h-9 min-w-9 place-items-center rounded-full px-2 text-[13px] font-bold" style={{ background: n === safePage ? '#EEF3FF' : 'transparent', color: n === safePage ? '#4F46E5' : '#6B7280' }}>{n}</button>
-              ))}
-              <button disabled={safePage === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="grid h-9 w-9 place-items-center rounded-full border border-[#EEF2F7] text-[#6B7280] disabled:opacity-40 hover:bg-[#F5F7FF]"><ChevronRight size={16} /></button>
-            </div>
+          {/* Infinite scroll: auto-loads more payments on scroll. */}
+          {pageRows.length > 0 && (
+            <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
           )}
         </div>
       </div>

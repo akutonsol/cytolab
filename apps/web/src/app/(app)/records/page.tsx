@@ -1,23 +1,27 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  AlertCircle, AlertTriangle, CheckCircle, ChevronDown, Filter, FlaskConical, MoreHorizontal, Pencil, Plus, Printer,
+  Activity, AlertTriangle, CheckCircle2, Droplet, Droplets, Eye, Filter,
+  FlaskConical, Microscope, MoreHorizontal, Plus, Printer, Search, Settings, Syringe, TestTube, Trash2, X,
+  type LucideIcon,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { PieChart, Pie, Cell } from 'recharts';
 import { api, type Paginated } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { RecordFormDrawer } from '@/components/RecordFormDrawer';
-import { FeatureGate } from '@/components/FeatureGate';
 import { PrintLabelsModal } from '@/components/PrintLabelsModal';
 import { useFeatures } from '@/lib/feature-context';
+import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
+import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import type { FormType } from '@/lib/specimen-types';
 
 interface Rec {
-  id: string; labNumber?: string | null; identifier: string; formType?: string | null; status: string; urgent: boolean;
-  specimenDate?: string | null; createdAt: string;
-  patient?: { firstName: string; lastName: string; registrationNo?: string };
+  id: string; labNumber?: string | null; identifier?: string; formType?: string | null; status: string; urgent: boolean;
+  specimenDate?: string | null; createdAt: string; updatedAt?: string | null;
+  patient?: { firstName: string; lastName: string; registrationNo?: string | null; gender?: string | null; dateOfBirth?: string | null };
   assignedToId?: string | null;
   assignedTo?: { id: string; firstName: string; lastName: string } | null;
   specimens?: { id: string; type?: string }[];
@@ -27,46 +31,59 @@ interface Rec {
 }
 
 const SPECIMEN: Record<string, string> = {
-  ENDOCERV_ASP: 'Endocervical asp.', CERV_SCRAP: 'Cervical scrape', VAG_POOL: 'Vaginal pool', URINE: 'Urine cytology',
-  CSF: 'CSF', PLEURAL_FLD: 'Pleural fluid', BREAST_ASP: 'Breast asp.', JOINT_ASP: 'Joint asp.', SYNOVIAL_FLD: 'Synovial fluid', OTHER: 'Other',
-  SPUTUM: 'Sputum cytology', BRONCHIAL_WASH: 'Bronchial wash', THYROID_FNA: 'Thyroid FNA', LYMPH_NODE: 'Lymph node FNA', BONE_MARROW: 'Bone marrow', SKIN_SCRAPING: 'Skin scraping',
+  ENDOCERV_ASP: 'Endocervical Asp.', CERV_SCRAP: 'Cervical Scrape', VAG_POOL: 'Vaginal Pool', URINE: 'Urine Cytology',
+  CSF: 'CSF', PLEURAL_FLD: 'Pleural Fluid', BREAST_ASP: 'Breast Aspirate', JOINT_ASP: 'Joint Asp.', SYNOVIAL_FLD: 'Synovial Fluid', OTHER: 'Other',
+  BODY_FLUID: 'Body Fluid', SPUTUM: 'Sputum', BRONCHIAL_WASH: 'Bronchial Wash', THYROID_FNA: 'Thyroid FNA', LYMPH_NODE: 'Lymph Node FNA', BONE_MARROW: 'Bone Marrow', SKIN_SCRAPING: 'Skin Scraping',
 };
+const SPEC_COLOR: Record<string, string> = {
+  PLEURAL_FLD: '#3B82F6', URINE: '#FACC15', BREAST_ASP: '#EC4899', CERV_SCRAP: '#22C55E', ENDOCERV_ASP: '#8B5CF6', VAG_POOL: '#8B5CF6',
+  CSF: '#06B6D4', SYNOVIAL_FLD: '#14B8A6', JOINT_ASP: '#14B8A6', BODY_FLUID: '#14B8A6', SPUTUM: '#3B82F6', BRONCHIAL_WASH: '#3B82F6',
+  THYROID_FNA: '#0D9488', LYMPH_NODE: '#0D9488', OTHER: '#94A3B8',
+};
+const specColor = (t?: string) => SPEC_COLOR[t ?? ''] ?? '#94A3B8';
+const specLabel = (t?: string | null) => (t ? SPECIMEN[t] ?? t : 'Other');
+
+// Specimen enum → Lucide icon + chip colours (inline hex so JIT can't purge them).
+// Urine keeps a detector-safe yellow (#EAB308) per the zero-orange rule.
+const SPEC_UI: Record<string, { Icon: LucideIcon; bg: string; fg: string }> = {
+  PLEURAL_FLD: { Icon: Droplets, bg: '#DBEAFE', fg: '#2563EB' },
+  SPUTUM: { Icon: Droplets, bg: '#DBEAFE', fg: '#2563EB' },
+  BRONCHIAL_WASH: { Icon: Droplets, bg: '#DBEAFE', fg: '#2563EB' },
+  URINE: { Icon: FlaskConical, bg: '#FEF9C3', fg: '#EAB308' },
+  BREAST_ASP: { Icon: Syringe, bg: '#FCE7F3', fg: '#DB2777' },
+  THYROID_FNA: { Icon: Syringe, bg: '#FCE7F3', fg: '#DB2777' },
+  LYMPH_NODE: { Icon: Syringe, bg: '#FCE7F3', fg: '#DB2777' },
+  CERV_SCRAP: { Icon: Microscope, bg: '#DCFCE7', fg: '#16A34A' },
+  ENDOCERV_ASP: { Icon: TestTube, bg: '#F3E8FF', fg: '#9333EA' },
+  VAG_POOL: { Icon: TestTube, bg: '#F3E8FF', fg: '#9333EA' },
+  BODY_FLUID: { Icon: Droplet, bg: '#CCFBF1', fg: '#0D9488' },
+  CSF: { Icon: Droplet, bg: '#CCFBF1', fg: '#0D9488' },
+  SYNOVIAL_FLD: { Icon: Droplet, bg: '#CCFBF1', fg: '#0D9488' },
+  JOINT_ASP: { Icon: Droplet, bg: '#CCFBF1', fg: '#0D9488' },
+  OTHER: { Icon: FlaskConical, bg: '#F1F5F9', fg: '#64748B' },
+};
+const specUI = (t?: string) => SPEC_UI[t ?? ''] ?? { Icon: FlaskConical, bg: '#F1F5F9', fg: '#64748B' };
+
+// Specimen options shown in the worklist filter popover (enum → label).
+const SPEC_FILTER_OPTS: [string, string][] = [
+  ['PLEURAL_FLD', 'Pleural Fluid'], ['URINE', 'Urine Cytology'], ['BREAST_ASP', 'Breast Aspirate'],
+  ['CERV_SCRAP', 'Cervical Scrape'], ['ENDOCERV_ASP', 'Endocervical Asp.'], ['BODY_FLUID', 'Body Fluid'], ['OTHER', 'Other'],
+];
+
 const ACTIVE = ['Pending', 'Submitted', 'Processing', 'Partial', 'Completed', 'Resulted'];
 const COMPLETED_SET = ['Approved', 'Billed', 'Paid', 'Viewed'];
-const PROCESSING_SET = ['Processing', 'Partial', 'Submitted'];
+const PROCESSING_SET = ['Processing', 'Partial'];
+const GREEN = '#16A34A', RED = '#E11D48', INDIGO = '#4F46E5', BLUE = '#3B82F6', TEAL = '#14B8A6', SLATE = '#94A3B8';
 
-// ── Design tokens (DESIGN.md) ────────────────────────────────────────────────
-const GEIST = "'Geist', 'Inter', system-ui, sans-serif";
-const HEAD = '#0F172A';
-const SECONDARY = '#49607e';
-const PRIMARY = '#4F46E5';
-const glass: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.85)',
-  backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)',
-  border: '1px solid rgba(73,96,126,0.05)',
-  boxShadow: '0 20px 40px rgba(0,0,0,0.04), 0 2px 4px rgba(79,70,229,0.05)',
-  borderRadius: 16,
-};
-
-// Avatar palette (name-hashed). Amber swatch from the template swapped for
-// violet to keep the zero-orange rule.
-const AVATARS = [
-  { bg: '#EEF2FF', fg: '#4F46E5' },
-  { bg: '#F0FDF4', fg: '#16A34A' },
-  { bg: '#FFF1F2', fg: '#E11D48' },
-  { bg: '#F5F3FF', fg: '#7C3AED' },
-  { bg: '#F0F9FF', fg: '#0284C7' },
-];
-const nameHash = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
-const avatarFor = (name: string) => AVATARS[nameHash(name || '?') % AVATARS.length];
-
-const specLabel = (t?: string | null) => (t ? SPECIMEN[t] ?? t : null);
+const AVATAR_HEX = ['#4F46E5', '#7C3AED', '#2563EB', '#0D9488', '#16A34A', '#9333EA'];
+const avatarBg = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h += s.charCodeAt(i); return AVATAR_HEX[h % AVATAR_HEX.length]; };
 const patientName = (r: Rec) => (r.patient ? `${r.patient.firstName} ${r.patient.lastName}`.trim() : '—');
-const initials = (r: Rec) => ((r.patient?.firstName?.[0] ?? '') + (r.patient?.lastName?.[0] ?? '')).toUpperCase() || '??';
+const initialsOf = (name: string) => name.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?';
 const clientLabel = (r: Rec) => (r.client ? (r.client.officeName || `${r.client.firstName} ${r.client.lastName}`.trim()) : '—');
+const physician = (r: Rec) => (r.client ? `${r.client.firstName} ${r.client.lastName}`.trim() : '');
+const ageOf = (dob?: string | null) => { if (!dob) return null; const d = new Date(dob); return Number.isNaN(+d) ? null : Math.floor((Date.now() - d.getTime()) / (365.25 * 86_400_000)); };
 const dateFmt = (d?: string | null) => (d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—');
-const clock = (d: string) => new Date(d).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+const clock = (d?: string | null) => (d ? new Date(d).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '');
 const sameDay = (a: string | number, b: string | number) => new Date(a).toDateString() === new Date(b).toDateString();
 const relTime = (d: string) => {
   const s = (Date.now() - new Date(d).getTime()) / 1000;
@@ -75,127 +92,87 @@ const relTime = (d: string) => {
   if (sameDay(d, Date.now() - 86_400_000)) return 'Yesterday';
   return `${Math.floor(s / 86400)}d ago`;
 };
-const overdueH = (d: string) => Math.round(((Date.now() - new Date(d).getTime()) / 3_600_000) * 10) / 10;
-
-const statusBadge = (s: string): { bg: string; fg: string } => {
-  switch (s) {
-    case 'Processing':
-    case 'Partial': return { bg: '#EEF2FF', fg: '#4F46E5' };
-    case 'Completed': return { bg: '#dcfce7', fg: '#16A34A' };
-    case 'Resulted': return { bg: '#dbeafe', fg: '#1d4ed8' };
-    case 'Approved':
-    case 'Billed':
-    case 'Paid':
-    case 'Viewed': return { bg: '#dcfce7', fg: '#16A34A' };
-    case 'Submitted': return { bg: '#e2e8f0', fg: '#49607e' };
-    case 'Failed':
-    case 'Disabled': return { bg: '#fef2f2', fg: '#dc2626' };
-    default: return { bg: '#f1f4f7', fg: '#49607e' };
-  }
-};
-const STATUS_ACTION: Record<string, string> = {
-  Pending: 'created', Submitted: 'submitted', Processing: 'in processing', Partial: 'partially resulted',
-  Completed: 'completed', Resulted: 'resulted', Approved: 'approved', Billed: 'billed', Paid: 'paid',
-  Viewed: 'viewed', OnHold: 'put on hold', Failed: 'failed', Disabled: 'cancelled',
-};
+// Real elapsed time since the sample was received (no fabricated TAT target).
+const elapsedLabel = (d: string) => { const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000); return m < 90 ? `${m}m in lab` : m < 1440 ? `${Math.floor(m / 60)}h in lab` : `${Math.floor(m / 1440)}d in lab`; };
+const STATUS_ACTION: Record<string, string> = { Pending: 'created', Submitted: 'submitted', Processing: 'processing', Partial: 'partially resulted', Completed: 'completed', Resulted: 'resulted', Approved: 'approved', Billed: 'billed', Paid: 'paid', Viewed: 'viewed', OnHold: 'on hold', Failed: 'failed', Disabled: 'cancelled' };
 const statusAction = (s: string) => STATUS_ACTION[s] ?? s.toLowerCase();
 
-const kpiLabel: React.CSSProperties = { fontFamily: GEIST, fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: SECONDARY };
-const cardHead: React.CSSProperties = { fontFamily: GEIST, fontSize: 18, fontWeight: 600, color: HEAD };
+const STATUS_PILL: Record<string, { bg: string; fg: string }> = {
+  Processing: { bg: '#EDE9FE', fg: '#7C3AED' }, Partial: { bg: '#EDE9FE', fg: '#7C3AED' },
+  Completed: { bg: '#DCFCE7', fg: GREEN }, Resulted: { bg: '#EEF2FF', fg: INDIGO },
+  Approved: { bg: '#DCFCE7', fg: GREEN }, Billed: { bg: '#DCFCE7', fg: GREEN }, Paid: { bg: '#DCFCE7', fg: GREEN }, Viewed: { bg: '#DCFCE7', fg: GREEN },
+  Submitted: { bg: '#E0F2FE', fg: '#0284C7' }, Failed: { bg: '#FEE2E2', fg: '#DC2626' }, Disabled: { bg: '#F1F5F9', fg: '#64748B' },
+  OnHold: { bg: '#FEF9C3', fg: '#854D0E' }, Pending: { bg: '#F1F5F9', fg: '#64748B' },
+};
+const statusPill = (s: string) => STATUS_PILL[s] ?? { bg: '#F1F5F9', fg: '#64748B' };
 
-function Kpi({ label, value, delta, deltaColor, icon, iconBg, iconFg, borderLeft }:
-  { label: string; value: number; delta: string; deltaColor: string; icon: React.ReactNode; iconBg: string; iconFg: string; borderLeft?: string }) {
+const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
+
+// Real 7-day trend line — no data means no line (nothing fabricated).
+function Sparkline({ color, data, w = 72, h = 30 }: { color: string; data: number[]; w?: number; h?: number }) {
+  if (data.length < 2 || data.every((v) => v === data[0])) return <div style={{ width: w, height: h }} className="shrink-0" />;
+  const max = Math.max(...data), min = Math.min(...data), range = max - min || 1;
+  const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * (h - 4) - 2}`).join(' ');
+  return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="shrink-0" aria-hidden><polyline points={pts} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" opacity={0.9} /></svg>;
+}
+
+function KpiCard({ icon, iconClass, label, value, sub, subColor, spark, sparkData }: { icon: React.ReactNode; iconClass: string; label: string; value: React.ReactNode; sub: string; subColor: string; spark: string; sparkData: number[] }) {
   return (
-    <div style={{ ...glass, padding: 16, display: 'flex', flexDirection: 'column', ...(borderLeft ? { borderLeft: `4px solid ${borderLeft}` } : {}) }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <span style={{ ...kpiLabel, fontSize: 10 }}>{label}</span>
-        <span style={{ width: 28, height: 28, borderRadius: 8, display: 'grid', placeItems: 'center', background: iconBg, color: iconFg }}>{icon}</span>
+    <div className={`${CARD} p-4`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${iconClass}`}>{icon}</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</span>
+          </div>
+          <div className="mt-2 text-3xl font-bold leading-none text-charcoal-heading">{value}</div>
+          <div className="mt-1.5 text-[11px] font-semibold" style={{ color: subColor }}>{sub}</div>
+        </div>
+        <Sparkline color={spark} data={sparkData} />
       </div>
-      <span style={{ fontFamily: GEIST, fontSize: 30, fontWeight: 700, lineHeight: 1, color: HEAD, marginTop: 8 }}>{value.toLocaleString()}</span>
-      <span style={{ fontSize: 12, fontWeight: 600, color: deltaColor, marginTop: 5 }}>{delta}</span>
     </div>
   );
 }
 
-function Bar({ label, pct, color }: { label: string; pct: number; color: string }) {
-  return (
-    <div style={{ marginTop: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <span style={{ fontSize: 14, color: HEAD }}>{label}</span>
-        <span style={{ fontSize: 14, fontWeight: 700, color }}>{pct}%</span>
-      </div>
-      <div style={{ width: '100%', height: 8, borderRadius: 999, background: '#ebeef1', overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${Math.min(100, pct)}%`, borderRadius: 999, background: color }} />
-      </div>
-    </div>
-  );
-}
-
-// Form-type icon: requisition form for GYN, specimen tube/vial for NON-GYN.
-function FormTypeIcon({ gyn }: { gyn: boolean }) {
-  return (
-    <div style={{ width: 36, height: 36, borderRadius: 9, flexShrink: 0, background: gyn ? '#EEF3FF' : '#F1F5F9', color: gyn ? PRIMARY : SECONDARY, display: 'grid', placeItems: 'center' }}>
-      {gyn ? (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-          <line x1="16" y1="13" x2="8" y2="13" />
-          <line x1="16" y1="17" x2="8" y2="17" />
-          <polyline points="10 9 9 9 8 9" />
-        </svg>
-      ) : (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="8" y="2" width="8" height="20" rx="4" />
-          <line x1="8" y1="7" x2="16" y2="7" />
-          <line x1="12" y1="12" x2="12" y2="16" />
-        </svg>
-      )}
-    </div>
-  );
-}
+type Tab = 'all' | 'urgent' | 'processing' | 'submitted' | 'completed';
 
 export default function SamplesPage() {
   const { can, claims } = useAuth();
   const router = useRouter();
   const qc = useQueryClient();
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const message = {
-    success: (msg: string) => { setToast({ type: 'ok', msg }); setTimeout(() => setToast(null), 3000); },
-    error: (msg: string) => { setToast({ type: 'err', msg }); setTimeout(() => setToast(null), 3000); },
-  };
+  const { isEnabled } = useFeatures();
+
+  const [tab, setTab] = useState<Tab>('all');
+  const [search, setSearch] = useState('');
+  const [fMine, setFMine] = useState(false);
+  const [fSpecTypes, setFSpecTypes] = useState<Set<string>>(new Set());
+  const [fPriority, setFPriority] = useState<'all' | 'urgent' | 'normal'>('all');
+  const [fDate, setFDate] = useState<'today' | '7' | '30' | 'all'>('7');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [chooseOpen, setChooseOpen] = useState(false);
   const [drawer, setDrawer] = useState<{ formType: FormType; recordId?: string } | null>(null);
-  const [goal, setGoal] = useState(150);
-  const [editingGoal, setEditingGoal] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(8);
-  const sentinelRef = useRef<HTMLTableRowElement | null>(null);
-  const hasMoreRef = useRef(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [fStatus, setFStatus] = useState('');
-  const [fUrgent, setFUrgent] = useState(false);
-  const [fMine, setFMine] = useState(false);
-  const [fQuery, setFQuery] = useState('');
+  const [menuId, setMenuId] = useState<string | null>(null);
+  const [labelSel, setLabelSel] = useState<Set<string>>(new Set());
+  const [printIds, setPrintIds] = useState<string[] | null>(null);
+  const [confirmDel, setConfirmDel] = useState<Rec | null>(null);
+  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
+  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3000); };
 
   const { data } = useQuery({
     queryKey: ['records-all'],
     queryFn: () => api.get<Paginated<Rec>>('/specimens', { params: { page: 1, pageSize: 500 } }).then((r) => r.data),
   });
-  const all = data?.data ?? [];
+  // useMemo keeps `all` referentially stable while loading (a fresh [] each
+  // render would retrigger the infinite-scroll fetchFn via `filtered`).
+  const all = useMemo(() => data?.data ?? [], [data]);
 
-  // Records with an open abnormal-result escalation → red flag on the row.
-  const { isEnabled } = useFeatures();
   const { data: openEscalations } = useQuery({
     queryKey: ['escalations', 'open'],
     queryFn: () => api.get<Array<{ record: { id: string }; severity: string }>>('/escalations', { params: { open: true } }).then((r) => r.data),
     enabled: can('record:view') && isEnabled('ABNORMAL_ESCALATION'),
   });
-  const escalatedRecordIds = useMemo(() => {
-    const m = new Map<string, string>();
-    (openEscalations ?? []).forEach((e) => m.set(e.record.id, e.severity));
-    return m;
-  }, [openEscalations]);
+  const escalatedRecordIds = useMemo(() => { const m = new Map<string, string>(); (openEscalations ?? []).forEach((e) => m.set(e.record.id, e.severity)); return m; }, [openEscalations]);
 
-  // Records with a linked QC failure → yellow warning icon on the row.
   const { data: qcFailures } = useQuery({
     queryKey: ['qc-failures-records'],
     queryFn: () => api.get<Paginated<{ recordId: string | null }>>('/qc', { params: { result: 'Fail', pageSize: 500 } }).then((r) => r.data),
@@ -205,398 +182,400 @@ export default function SamplesPage() {
 
   const del = useMutation({
     mutationFn: (id: string) => api.delete(`/specimen/delete/${id}`),
-    onSuccess: () => { message.success('Sample deleted'); qc.invalidateQueries({ queryKey: ['records-all'] }); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not delete'),
+    onSuccess: () => { notify('ok', 'Sample deleted'); qc.invalidateQueries({ queryKey: ['records-all'] }); setConfirmDel(null); },
+    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Could not delete'),
   });
 
-  // ── Derived counts (all client-side from the loaded window) ────────────────
-  const startToday = new Date(); startToday.setHours(0, 0, 0, 0);
-  const startYest = new Date(startToday); startYest.setDate(startYest.getDate() - 1);
-  const newToday = all.filter((r) => new Date(r.createdAt) >= startToday).length;
-  const newYest = all.filter((r) => { const d = new Date(r.createdAt); return d >= startYest && d < startToday; }).length;
-  const newDelta = newYest ? Math.round(((newToday - newYest) / newYest) * 100) : (newToday > 0 ? 100 : 0);
-
-  const completedCount = all.filter((r) => COMPLETED_SET.includes(r.status)).length;
-  const authorized = all.filter((r) => (r.resultSheets ?? []).some((s) => s.authorized)).length;
-  const accuracy = all.length ? Math.round((authorized / all.length) * 100) : 0;
-  const processingCount = all.filter((r) => PROCESSING_SET.includes(r.status)).length;
-  const urgentAll = all.filter((r) => r.urgent);
-
-  const approvedRecs = all.filter((r) => COMPLETED_SET.includes(r.status));
-  const analyzerPct = all.length ? Math.round((approvedRecs.length / all.length) * 100) : 0;
-  const withinTat = approvedRecs.filter((r) => {
-    const sub = r.statusHistory?.find((h) => h.status === 'Submitted')?.createdAt;
-    const app = r.statusHistory?.find((h) => h.status === 'Approved')?.createdAt;
-    return sub && app && (new Date(app).getTime() - new Date(sub).getTime()) <= 3 * 86_400_000;
-  }).length;
-  const tatPct = approvedRecs.length ? Math.round((withinTat / approvedRecs.length) * 100) : 0;
-
-  // Bars: bucket by day of week (Mon→Sun), current day highlighted.
-  const WD = [{ k: 1, l: 'M' }, { k: 2, l: 'T' }, { k: 3, l: 'W' }, { k: 4, l: 'T' }, { k: 5, l: 'F' }, { k: 6, l: 'S' }, { k: 0, l: 'S' }];
-  const todayDow = new Date().getDay();
-  const bars = WD.map((w) => ({ l: w.l, v: all.filter((r) => new Date(r.createdAt).getDay() === w.k).length, cur: w.k === todayDow }));
-  const barPeak = Math.max(1, ...bars.map((b) => b.v));
-
-  const activeRecs = all
-    .filter((r) => ACTIVE.includes(r.status))
-    .filter((r) => (fStatus ? r.status === fStatus : true))
-    .filter((r) => (fUrgent ? r.urgent : true))
-    .filter((r) => (fMine ? r.assignedToId === claims?.userId : true))
-    .filter((r) => {
-      if (!fQuery) return true;
-      const s = fQuery.toLowerCase();
-      return patientName(r).toLowerCase().includes(s) || (r.labNumber ?? '').toLowerCase().includes(s);
-    });
-  const activeFilterCount = (fStatus ? 1 : 0) + (fUrgent ? 1 : 0) + (fQuery ? 1 : 0) + (fMine ? 1 : 0);
   const showAssignee = isEnabled('CASE_ASSIGNMENT');
   const showLabels = isEnabled('SLIDE_LABEL_PRINTING');
-  const totalCols = 4 + (showAssignee ? 1 : 0) + (showLabels ? 1 : 0);
-  const [labelSel, setLabelSel] = useState<Set<string>>(new Set());
-  const [printIds, setPrintIds] = useState<string[] | null>(null);
   const toggleLabelSel = (id: string) => setLabelSel((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  const clearFilters = () => { setFStatus(''); setFUrgent(false); setFQuery(''); setFMine(false); };
-  const worklist = activeRecs.slice(0, visibleCount);
-  const hasMore = visibleCount < activeRecs.length;
-  hasMoreRef.current = hasMore;
 
-  const events = all
-    .flatMap((r) => (r.statusHistory ?? []).map((h) => ({ status: h.status, createdAt: h.createdAt, user: h.user, labNumber: r.labNumber })))
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 6);
+  // ── KPIs ───────────────────────────────────────────────────────────────────
+  const startToday = new Date(); startToday.setHours(0, 0, 0, 0);
+  const newToday = all.filter((r) => new Date(r.createdAt) >= startToday).length;
+  const newSamples = all.filter((r) => ['Pending', 'Submitted'].includes(r.status)).length;
+  const completedCount = all.filter((r) => COMPLETED_SET.includes(r.status)).length;
+  const authorized = all.filter((r) => (r.resultSheets ?? []).some((s) => s.authorized)).length;
+  const accuracy = all.length ? Math.round((authorized / all.length) * 1000) / 10 : 0;
+  const processingCount = all.filter((r) => PROCESSING_SET.includes(r.status)).length;
+  const urgentAll = all.filter((r) => r.urgent);
+  const onHoldCount = all.filter((r) => r.status === 'OnHold').length;
+
+  const approvedRecs = all.filter((r) => COMPLETED_SET.includes(r.status));
+  const tatHours = approvedRecs.map((r) => {
+    const sub = r.statusHistory?.find((h) => h.status === 'Submitted')?.createdAt;
+    const app = r.statusHistory?.find((h) => h.status === 'Approved')?.createdAt;
+    return sub && app ? (new Date(app).getTime() - new Date(sub).getTime()) / 3_600_000 : null;
+  }).filter((v): v is number => v != null);
+  const avgTat = tatHours.length ? Math.round((tatHours.reduce((s, v) => s + v, 0) / tatHours.length) * 10) / 10 : null;
+  const tatPct = tatHours.length ? Math.round((tatHours.filter((h) => h <= 72).length / tatHours.length) * 100) : 0;
+
+  // Completion-rate donut (proportional workload).
+  const completionSegs = [
+    { label: 'Completed', value: completedCount, color: GREEN },
+    { label: 'Processing', value: processingCount, color: '#7C3AED' },
+    { label: 'Urgent', value: urgentAll.length, color: RED },
+    { label: 'On Hold', value: onHoldCount, color: SLATE },
+  ];
+  const completionRate = all.length ? Math.round((completedCount / all.length) * 1000) / 10 : 0;
+
+  // Specimen distribution donut.
+  const specDist = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of all) counts.set(specLabel(r.specimens?.[0]?.type), (counts.get(specLabel(r.specimens?.[0]?.type)) ?? 0) + 1);
+    const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+    const top = sorted.slice(0, 4).map(([label, value]) => ({ label, value }));
+    const others = sorted.slice(4).reduce((s, [, v]) => s + v, 0);
+    const rows = others > 0 ? [...top, { label: 'Other', value: others }] : top;
+    const sum = rows.reduce((s, x) => s + x.value, 0) || 1;
+    const colorFor = (label: string) => Object.entries(SPECIMEN).find(([, l]) => l === label)?.[0];
+    return rows.map((x) => ({ ...x, pct: Math.round((x.value / sum) * 100), color: x.label === 'Other' ? SLATE : specColor(colorFor(x.label)) }));
+  }, [all]);
+
+  // Real last-7-calendar-days buckets (used by KPI sparklines + the summary bars).
+  const WD_LABEL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const last7 = Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (6 - i)); return d; });
+  const daySeries = (pred: (r: Rec) => boolean) => last7.map((d) => {
+    const next = new Date(d); next.setDate(d.getDate() + 1);
+    return all.filter((r) => { const t = new Date(r.createdAt); return pred(r) && t >= d && t < next; }).length;
+  });
+  const newSeries = daySeries(() => true);
+  const completedSeries = daySeries((r) => COMPLETED_SET.includes(r.status));
+  const urgentSeries = daySeries((r) => r.urgent);
+  const processingSeries = daySeries((r) => PROCESSING_SET.includes(r.status));
+  const todayIdx = 6;
+  const bars = last7.map((d, i) => ({ l: WD_LABEL[d.getDay()], v: newSeries[i], cur: i === todayIdx }));
+  const barPeak = Math.max(1, ...bars.map((b) => b.v));
+
+  // Recent activity: real records ordered by updatedAt.
+  const recent = useMemo(() => [...all].sort((a, b) => new Date(b.updatedAt ?? b.createdAt).getTime() - new Date(a.updatedAt ?? a.createdAt).getTime()).slice(0, 4), [all]);
+
+  // ── Worklist filtering ─────────────────────────────────────────────────────
+  const tabPred: Record<Tab, (r: Rec) => boolean> = {
+    all: (r) => ACTIVE.includes(r.status), urgent: (r) => r.urgent, processing: (r) => PROCESSING_SET.includes(r.status),
+    submitted: (r) => r.status === 'Submitted', completed: (r) => COMPLETED_SET.includes(r.status),
+  };
+  const tabCount = (t: Tab) => all.filter(tabPred[t]).length;
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const startTodayMs = new Date().setHours(0, 0, 0, 0);
+    return all.filter(tabPred[tab])
+      .filter((r) => (fMine ? r.assignedToId === claims?.userId : true))
+      .filter((r) => fSpecTypes.size === 0 || fSpecTypes.has(r.specimens?.[0]?.type ?? ''))
+      .filter((r) => (fPriority === 'all' ? true : fPriority === 'urgent' ? r.urgent : !r.urgent))
+      .filter((r) => {
+        if (fDate === 'all') return true;
+        const t = new Date(r.createdAt).getTime();
+        return fDate === 'today' ? t >= startTodayMs : t >= Date.now() - Number(fDate) * 86_400_000;
+      })
+      .filter((r) => !q || `${patientName(r)} ${r.labNumber ?? ''} ${r.client?.accountNo ?? ''}`.toLowerCase().includes(q));
+  }, [all, tab, search, fMine, claims?.userId, fSpecTypes, fPriority, fDate]);
+  const activeFilterCount = (fMine ? 1 : 0) + (fSpecTypes.size > 0 ? 1 : 0) + (fPriority !== 'all' ? 1 : 0) + (fDate !== '7' ? 1 : 0);
+  const toggleSpec = (t: string) => setFSpecTypes((s) => { const n = new Set(s); if (n.has(t)) n.delete(t); else n.add(t); return n; });
+  const clearFilters = () => { setFMine(false); setFSpecTypes(new Set()); setFPriority('all'); setFDate('7'); };
+
+  // Infinite scroll over the client-side filtered worklist (aggregates use the
+  // full `all`). Any filter/tab/search change recomputes `filtered` → new
+  // fetchFn → the hook reloads from the first window.
+  const fetchFn = useCallback(
+    (p: number, ps: number) => Promise.resolve(clientPage(filtered, p, ps)),
+    [filtered],
+  );
+  const { items: pageRows, loading, initialLoading, hasMore, sentinelRef } =
+    useInfiniteScroll<Rec>({ fetchFn, pageSize: 20 });
 
   const openChoose = () => { if (can('record:create')) setChooseOpen(true); };
-
-  // Infinite scroll: reveal more active rows as the sentinel nears the viewport.
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && hasMoreRef.current) setVisibleCount((c) => c + 8);
-    }, { rootMargin: '300px' });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [activeRecs.length]);
-  // Reset the window when filters change.
-  useEffect(() => { setVisibleCount(8); }, [fStatus, fUrgent, fQuery, fMine]);
+  const TH = 'px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap';
+  const CELL = 'px-5 py-4 align-middle';
+  const TABS: [Tab, string][] = [['all', 'All'], ['urgent', 'Urgent'], ['processing', 'Processing'], ['submitted', 'Submitted'], ['completed', 'Completed']];
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* ═══════════ HEADER ═══════════ */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="w-full">
+      {/* Header */}
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 style={{ fontFamily: GEIST, fontSize: 28, fontWeight: 700, color: HEAD, lineHeight: 1.1 }}>Sample Management</h1>
-          <p style={{ fontSize: 14, color: SECONDARY, marginTop: 4 }}>Real-time status tracking for clinical diagnostic samples.</p>
+          <h1 className="text-[30px] font-bold leading-tight tracking-tight text-charcoal-heading">Sample Management</h1>
+          <p className="mt-1 text-sm text-secondary">Real-time status tracking for clinical diagnostic samples.</p>
         </div>
         <div className="flex items-center gap-2.5">
-          <div style={{ position: 'relative' }}>
-            <button onClick={() => setFiltersOpen((v) => !v)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 44, padding: '0 18px', borderRadius: 12, background: '#fff', border: `1px solid ${filtersOpen || activeFilterCount ? PRIMARY : '#e6e9f2'}`, color: activeFilterCount ? PRIMARY : HEAD, fontFamily: GEIST, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-              <Filter size={16} /> Filters
-              {activeFilterCount > 0 && <span style={{ display: 'grid', placeItems: 'center', minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, background: PRIMARY, color: '#fff', fontSize: 11, fontWeight: 700 }}>{activeFilterCount}</span>}
-            </button>
-            {filtersOpen && (
-              <>
-                <div onClick={() => setFiltersOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
-                <div style={{ position: 'absolute', right: 0, top: 52, zIndex: 50, width: 288, background: '#fff', border: '1px solid #ebeef1', borderRadius: 16, boxShadow: '0 20px 40px rgba(0,0,0,0.10), 0 2px 4px rgba(79,70,229,0.05)', padding: 16 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <span style={{ ...cardHead, fontSize: 15 }}>Filter Worklist</span>
-                    {activeFilterCount > 0 && <button onClick={clearFilters} style={{ background: 'none', border: 'none', cursor: 'pointer', color: PRIMARY, fontSize: 12, fontWeight: 600 }}>Clear all</button>}
+          {can('record:create') && <button onClick={openChoose} className="btn-primary"><Plus size={16} /> New Sample</button>}
+        </div>
+      </div>
+
+      {/* Main grid */}
+      <div className="flex flex-col gap-6 xl:flex-row">
+        <div className="flex min-w-0 flex-1 flex-col gap-6">
+          {/* KPI strip */}
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+            <KpiCard icon={<FlaskConical size={18} />} iconClass="bg-indigo-50 text-indigo-600" label="New Samples" value={newSamples} sub={`+${newToday} today`} subColor={GREEN} spark={INDIGO} sparkData={newSeries} />
+            <KpiCard icon={<CheckCircle2 size={18} />} iconClass="bg-green-50 text-green-600" label="Completed" value={completedCount} sub={`${accuracy}% authorized`} subColor={GREEN} spark={GREEN} sparkData={completedSeries} />
+            <KpiCard icon={<AlertTriangle size={18} />} iconClass="bg-red-50 text-red-600" label="Urgent" value={urgentAll.length} sub="Needs attention" subColor={RED} spark={RED} sparkData={urgentSeries} />
+            <KpiCard icon={<Settings size={18} />} iconClass="bg-blue-50 text-blue-600" label="Processing" value={processingCount} sub="Active in lab" subColor={BLUE} spark={BLUE} sparkData={processingSeries} />
+            <KpiCard icon={<Activity size={18} />} iconClass="bg-teal-50 text-teal-600" label="Avg TAT" value={avgTat != null ? `${avgTat} hrs` : '—'} sub={avgTat != null ? 'avg turnaround' : 'no data yet'} subColor={SLATE} spark={TEAL} sparkData={completedSeries} />
+          </div>
+
+          {/* Urgent Flagged + Automation */}
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.4fr_1fr]">
+            <div className={`${CARD} p-5`}>
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2"><span className="text-base font-semibold text-charcoal-heading">Urgent Flagged Cases</span><span className="rounded-full bg-error-container px-2 py-0.5 text-xs font-bold text-error">{urgentAll.length}</span></div>
+                <button onClick={() => setTab('urgent')} className="text-xs font-semibold text-primary hover:underline">View all urgent →</button>
+              </div>
+              <div className="flex flex-col gap-2">
+                {urgentAll.length === 0 && <div className="py-6 text-center text-sm font-semibold text-green-600">✓ No urgent cases</div>}
+                {urgentAll.slice(0, 4).map((r) => (
+                  <div key={r.id} onClick={() => router.push(`/records/${r.id}`)} className="flex cursor-pointer items-center gap-3 rounded-lg border-l-4 bg-red-50/60 px-3 py-2.5 hover:bg-red-50" style={{ borderColor: RED }}>
+                    {(() => { const { Icon } = specUI(r.specimens?.[0]?.type); return (
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full" style={{ background: '#FEE2E2', color: '#EF4444' }}><Icon size={20} /></span>
+                    ); })()}
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold text-charcoal-heading">{specLabel(r.specimens?.[0]?.type)}</div>
+                      {physician(r) && <div className="truncate text-xs text-slate-500">{physician(r)}</div>}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-bold text-charcoal-heading">LAB# {r.labNumber ?? '—'}</div>
+                      <div className="truncate text-xs text-slate-500">{clientLabel(r)}</div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <div className="text-sm font-semibold" style={{ color: RED }}>{elapsedLabel(r.createdAt)}</div>
+                      <div className="text-xs text-slate-400">Since {clock(r.createdAt)}</div>
+                    </div>
                   </div>
+                ))}
+              </div>
+            </div>
 
-                  <label style={{ ...kpiLabel, display: 'block', marginBottom: 6 }}>Search</label>
-                  <input value={fQuery} onChange={(e) => setFQuery(e.target.value)} placeholder="Patient or LAB#"
-                    style={{ width: '100%', height: 38, borderRadius: 10, border: '1px solid #e6e9f2', padding: '0 12px', fontSize: 14, color: HEAD, outline: 'none', boxSizing: 'border-box' }} />
+            <div className={`${CARD} p-5`}>
+              <span className="text-base font-semibold text-charcoal-heading">Automation Overview</span>
+              {/* Analyzer instrument metrics are not available from the API yet —
+                  placeholder instead of fabricated performance numbers. */}
+              <div className="mt-3 flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 py-6 text-center">
+                <Settings size={22} className="text-slate-300" />
+                <div className="text-sm font-semibold text-slate-500">Analyzer performance — coming soon</div>
+                <div className="text-xs text-slate-400">Live instrument metrics aren&apos;t available yet.</div>
+              </div>
+              <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Average Turnaround (real)</div>
+              <div className="mt-2 flex items-center gap-3">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full" style={{ width: `${tatPct}%`, background: GREEN }} /></div>
+                <span className="text-sm font-bold text-charcoal-heading">{avgTat != null ? `${avgTat} hrs` : '—'}</span>
+              </div>
+              <div className="mt-2 text-xs text-slate-400">{tatHours.length > 0 ? `${tatPct}% of ${tatHours.length} authorized within 72h` : 'No completed turnaround data yet'}</div>
+            </div>
+          </div>
 
-                  <label style={{ ...kpiLabel, display: 'block', margin: '14px 0 6px' }}>Status</label>
-                  <div style={{ position: 'relative' }}>
-                    <select value={fStatus} onChange={(e) => setFStatus(e.target.value)}
-                      style={{ width: '100%', height: 38, borderRadius: 10, border: '1px solid #e6e9f2', padding: '0 32px 0 12px', fontSize: 14, color: HEAD, outline: 'none', appearance: 'none', background: '#fff', cursor: 'pointer', boxSizing: 'border-box' }}>
-                      <option value="">All active statuses</option>
-                      {ACTIVE.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                    <ChevronDown size={15} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: SECONDARY, pointerEvents: 'none' }} />
-                  </div>
-
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, cursor: 'pointer', fontSize: 14, color: HEAD }}>
-                    <input type="checkbox" checked={fUrgent} onChange={(e) => setFUrgent(e.target.checked)} style={{ width: 15, height: 15, accentColor: PRIMARY, cursor: 'pointer' }} />
-                    Urgent only
-                  </label>
-
-                  {showAssignee && (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, cursor: 'pointer', fontSize: 14, color: HEAD }}>
-                      <input type="checkbox" checked={fMine} onChange={(e) => setFMine(e.target.checked)} style={{ width: 15, height: 15, accentColor: PRIMARY, cursor: 'pointer' }} />
-                      My Cases only
-                    </label>
+          {/* Active Worklist */}
+          <div className={`${CARD} p-0`}>
+            <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5">
+              <span className="text-base font-semibold text-charcoal-heading">Active Worklist ({tabCount('all')})</span>
+              <div className="flex items-center gap-2">
+                <div className="flex h-9 w-56 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-slate-400"><Search size={15} /><input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search by patient, ID, accession..." className="w-full border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400" /></div>
+                <div className="relative">
+                  <button onClick={() => setFiltersOpen((v) => !v)} className="relative grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50" style={activeFilterCount > 0 ? { borderColor: INDIGO, color: INDIGO } : undefined}>
+                    <Filter size={15} />
+                    {activeFilterCount > 0 && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white" style={{ background: INDIGO }} />}
+                  </button>
+                  {filtersOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setFiltersOpen(false)} />
+                      <div className="absolute right-0 top-11 z-50 w-72 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
+                        <div className="mb-3 flex items-center justify-between"><span className="text-sm font-semibold text-charcoal-heading">Filters</span>{activeFilterCount > 0 && <span className="text-xs text-slate-400">{activeFilterCount} active</span>}</div>
+                        {showAssignee && <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={fMine} onChange={(e) => { setFMine(e.target.checked); }} style={{ accentColor: INDIGO }} /> My Cases only</label>}
+                        <div className="mb-1 mt-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Specimen Type</div>
+                        <div className="flex max-h-44 flex-col gap-1.5 overflow-auto pr-1">
+                          {SPEC_FILTER_OPTS.map(([v, l]) => <label key={v} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={fSpecTypes.has(v)} onChange={() => toggleSpec(v)} style={{ accentColor: INDIGO }} /> {l}</label>)}
+                        </div>
+                        <div className="mb-1 mt-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Priority</div>
+                        <div className="flex flex-col gap-1.5">
+                          {([['all', 'All'], ['urgent', 'Urgent only'], ['normal', 'Normal only']] as const).map(([v, l]) => <label key={v} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="radio" name="wl-priority" checked={fPriority === v} onChange={() => { setFPriority(v); }} style={{ accentColor: INDIGO }} /> {l}</label>)}
+                        </div>
+                        <div className="mb-1 mt-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Date Range</div>
+                        <div className="flex flex-col gap-1.5">
+                          {([['today', 'Today'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['all', 'All time']] as const).map(([v, l]) => <label key={v} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="radio" name="wl-date" checked={fDate === v} onChange={() => { setFDate(v); }} style={{ accentColor: INDIGO }} /> {l}</label>)}
+                        </div>
+                        <div className="mt-4 flex gap-2">
+                          <button onClick={clearFilters} className="flex-1 rounded-lg border border-slate-200 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Clear filters</button>
+                          <button onClick={() => setFiltersOpen(false)} className="btn-primary flex-1 justify-center">Apply</button>
+                        </div>
+                      </div>
+                    </>
                   )}
-
-                  <button onClick={() => setFiltersOpen(false)} style={{ width: '100%', marginTop: 16, height: 40, borderRadius: 10, background: PRIMARY, border: 'none', color: '#fff', fontFamily: GEIST, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Done</button>
                 </div>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2 px-5">
+              {TABS.map(([v, l]) => (
+                <button key={v} onClick={() => { setTab(v); }} className="rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors" style={tab === v ? { background: INDIGO, color: '#fff', borderColor: INDIGO } : { background: '#fff', color: '#64748B', borderColor: '#E2E8F0' }}>{l} ({tabCount(v)})</button>
+              ))}
+            </div>
+
+            {showLabels && labelSel.size > 0 && (
+              <div className="mt-3 flex items-center gap-2 px-5">
+                <button onClick={() => setPrintIds(Array.from(labelSel))} className="flex h-9 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-semibold text-white"><Printer size={15} /> Print Labels ({labelSel.size})</button>
+                <button onClick={() => setLabelSel(new Set())} className="h-9 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-500">Clear</button>
+              </div>
+            )}
+
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-y border-slate-100">
+                    <th className={`${TH} w-10`} />
+                    <th className={TH}>Patient</th><th className={TH}>Specimen Type</th><th className={TH}>Accession / Lab ID</th>
+                    <th className={TH}>Priority</th><th className={TH}>Status</th>{showAssignee && <th className={TH}>Assigned To</th>}
+                    <th className={TH}>Received</th><th className={`${TH} text-right`}>Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {!initialLoading && pageRows.length === 0 && <tr><td colSpan={9} className="px-5 py-14 text-center text-sm text-slate-400">No samples found.</td></tr>}
+                  {pageRows.map((r) => {
+                    const name = patientName(r);
+                    const age = ageOf(r.patient?.dateOfBirth);
+                    const sp = statusPill(r.status);
+                    return (
+                      <tr key={r.id} className="border-b border-slate-100 transition-colors hover:bg-slate-50">
+                        <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={labelSel.has(r.id)} onChange={() => toggleLabelSel(r.id)} style={{ accentColor: INDIGO }} /></td>
+                        <td className={CELL}>
+                          <div className="flex items-center gap-3">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[11px] font-semibold text-white" style={{ background: avatarBg(name) }}>{initialsOf(name)}</span>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 text-sm font-semibold text-charcoal-heading">
+                                {name}
+                                {escalatedRecordIds.has(r.id) && <span title={`${escalatedRecordIds.get(r.id)} escalation`} className="grid h-4 w-4 place-items-center rounded bg-red-100 text-red-700"><AlertTriangle size={11} /></span>}
+                                {qcFailedRecordIds.has(r.id) && <span title="QC failure" className="grid h-4 w-4 place-items-center rounded bg-yellow-100 text-yellow-700"><AlertTriangle size={11} /></span>}
+                              </div>
+                              <div className="text-[11px] text-slate-400">Reg No: {r.patient?.registrationNo ?? '—'}{r.patient?.gender ? ` • ${r.patient.gender[0]}` : ''}{age != null ? ` / ${age}` : ''}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className={CELL}>{(() => { const u = specUI(r.specimens?.[0]?.type); return (
+                          <div className="flex items-center gap-2.5">
+                            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full" style={{ background: u.bg, color: u.fg }}><u.Icon size={16} /></span>
+                            <span className="text-sm text-slate-600">{specLabel(r.specimens?.[0]?.type)}</span>
+                          </div>
+                        ); })()}</td>
+                        <td className={CELL}><div className="text-sm font-bold text-charcoal-heading">LAB# {r.labNumber ?? '—'}</div><div className="text-[11px] text-slate-400">{clientLabel(r)}</div></td>
+                        <td className={CELL}><span className="flex items-center gap-1.5 text-sm" style={{ color: r.urgent ? RED : '#64748B' }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: r.urgent ? RED : SLATE }} />{r.urgent ? 'Urgent' : 'Normal'}</span></td>
+                        <td className={CELL}>
+                          <div className="flex items-center gap-1.5">
+                            <span className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase" style={{ background: sp.bg, color: sp.fg }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: sp.fg }} />{r.status}</span>
+                            {r.urgent && <span className="rounded-full bg-error-container px-2 py-1 text-[10px] font-bold text-error">URGENT</span>}
+                          </div>
+                        </td>
+                        {showAssignee && <td className={CELL}><span className="text-sm text-slate-600">{r.assignedTo ? `${r.assignedTo.firstName} ${r.assignedTo.lastName?.[0] ?? ''}.` : <span className="text-slate-400">Unassigned</span>}</span></td>}
+                        <td className={CELL}><div className="text-sm text-charcoal-heading">{dateFmt(r.specimenDate ?? r.createdAt)}</div><div className="text-[11px] text-slate-400">{clock(r.specimenDate ?? r.createdAt)}</div></td>
+                        <td className={CELL}>
+                          <div className="relative flex justify-end">
+                            <button aria-label="Details" onClick={() => setMenuId(menuId === r.id ? null : r.id)} className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreHorizontal size={16} /></button>
+                            {menuId === r.id && (
+                              <>
+                                <div className="fixed inset-0 z-10" onClick={() => setMenuId(null)} />
+                                <div className="absolute right-0 top-10 z-20 w-44 rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+                                  <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50" onClick={() => { setMenuId(null); router.push(`/records/${r.id}`); }}><Eye size={14} /> View Details</button>
+                                  {showLabels && <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50" onClick={() => { setMenuId(null); setPrintIds([r.id]); }}><Printer size={14} /> Print Labels</button>}
+                                  <div className="my-1 border-t border-slate-100" />
+                                  <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-error hover:bg-error-container" onClick={() => { setMenuId(null); setConfirmDel(r); }}><Trash2 size={14} /> Delete</button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Small count label + infinite-scroll sentinel (auto-loads on scroll). */}
+            {filtered.length > 0 && (
+              <>
+                <div className="border-t border-slate-100 px-5 pt-3 text-sm text-secondary">Showing {pageRows.length} of {filtered.length} samples</div>
+                <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
               </>
             )}
           </div>
-          {can('record:create') && (
-            <button onClick={openChoose} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 44, padding: '0 20px', borderRadius: 12, background: PRIMARY, border: 'none', color: '#fff', fontFamily: GEIST, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-              <Plus size={17} /> New Sample
-            </button>
-          )}
         </div>
-      </div>
 
-      {/* ═══════════ CONTENT GRID ═══════════ */}
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-      {/* ═══════════ LEFT COLUMN ═══════════ */}
-      <div className="flex min-w-0 flex-col gap-6">
-        {/* Top band: compact KPIs next to Urgent Flagged + Automation */}
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.25fr_1fr_1fr]">
-          <div className="grid grid-cols-2 gap-4">
-            <Kpi label="New Samples" value={newToday}
-              delta={`${newDelta >= 0 ? '↑ +' : '↓ '}${newDelta}% vs yesterday`}
-              deltaColor={newDelta >= 0 ? '#16A34A' : '#E11D48'}
-              icon={<Plus size={15} />} iconBg="#EEF2FF" iconFg={PRIMARY} />
-            <Kpi label="Completed" value={completedCount}
-              delta={`${accuracy}% Accuracy`} deltaColor="#16A34A"
-              icon={<CheckCircle size={15} />} iconBg="#F0FDF4" iconFg="#16A34A" borderLeft="#65A30D" />
-            <Kpi label="Processing" value={processingCount}
-              delta="Active in lab" deltaColor={PRIMARY}
-              icon={<FlaskConical size={15} />} iconBg="#EEF2FF" iconFg={PRIMARY} />
-            <Kpi label="Urgent" value={urgentAll.length}
-              delta="Requires attention" deltaColor="#E11D48"
-              icon={<AlertTriangle size={15} />} iconBg="#FFF1F2" iconFg="#E11D48" borderLeft="#E11D48" />
-          </div>
-
-          {/* Urgent Flagged Cases */}
-          <div style={{ ...glass, padding: 20 }}>
-            <div style={{ ...cardHead, fontSize: 16 }}>Urgent Flagged Cases</div>
-            <div style={{ marginTop: 12 }}>
-              {urgentAll.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '18px 0', color: '#16A34A', fontSize: 14, fontWeight: 600 }}>✓ No urgent cases</div>
-              ) : (
-                urgentAll.slice(0, 4).map((r) => (
-                  <div key={r.id} onClick={() => router.push(`/records/${r.id}`)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '8px 12px', background: '#fff1f2', borderRadius: 10, marginBottom: 8, cursor: 'pointer' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: HEAD, whiteSpace: 'nowrap' }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: '#E11D48' }} />LAB# {r.labNumber ?? '—'}
-                    </span>
-                    <span style={{ fontSize: 12, color: '#E11D48', fontWeight: 600, whiteSpace: 'nowrap' }}>{overdueH(r.createdAt)}h overdue</span>
-                  </div>
-                ))
-              )}
+        {/* Sidebar */}
+        <div className="flex w-full shrink-0 flex-col gap-6 xl:w-[300px]">
+          {/* Sample Summary */}
+          <div className={`${CARD} p-5`}>
+            <div className="mb-2 flex items-center justify-between"><span className="text-sm font-semibold text-charcoal-heading">Sample Summary</span><span className="rounded-full border border-slate-200 px-2 py-0.5 text-xs text-slate-400">Last 7 days</span></div>
+            <div className="text-4xl font-bold text-charcoal-heading">{all.length.toLocaleString()}</div>
+            <div className="text-xs text-slate-400">Total samples</div>
+            <div className="mt-4 grid grid-cols-4 gap-2 text-center">
+              {([['Completed', completedCount, GREEN], ['Urgent', urgentAll.length, RED], ['Processing', processingCount, '#0284C7'], ['On Hold', onHoldCount, SLATE]] as const).map(([l, v, c]) => (
+                <div key={l}><div className="text-lg font-bold" style={{ color: c }}>{v}</div><div className="text-[10px] text-slate-400">{l}</div></div>
+              ))}
             </div>
-          </div>
-
-          {/* Automation Overview */}
-          <div style={{ ...glass, padding: 20 }}>
-            <div style={{ ...cardHead, fontSize: 16 }}>Automation Overview</div>
-            <div style={{ fontSize: 12, color: SECONDARY, marginTop: 2 }}>Instrument efficiency for current shift</div>
-            <Bar label="Analyzer Performance" pct={analyzerPct} color={PRIMARY} />
-            <FeatureGate feature="TAT_ALERTS">
-              <Bar label="Avg TAT Performance" pct={tatPct} color="#16A34A" />
-            </FeatureGate>
-          </div>
-        </div>
-
-        {/* Active Worklist */}
-        <div style={{ ...glass, overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #ebeef1' }}>
-            <span style={cardHead}>Active Worklist</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {showLabels && labelSel.size > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button onClick={() => setPrintIds(Array.from(labelSel))} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 10, background: PRIMARY, border: 'none', color: '#fff', fontFamily: GEIST, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                    <Printer size={15} /> Print Labels ({labelSel.size})
-                  </button>
-                  <button onClick={() => setLabelSel(new Set())} style={{ height: 34, padding: '0 10px', borderRadius: 10, background: '#fff', border: '1px solid #E2E8F0', color: SECONDARY, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Clear</button>
+            <div className="mt-4 flex items-end gap-1.5" style={{ height: 90 }}>
+              {bars.map((b, i) => (
+                <div key={i} className="flex flex-1 flex-col items-center gap-1">
+                  <span className="text-[9px] font-semibold text-slate-400">{b.v}</span>
+                  <div className="w-full rounded-t" style={{ height: `${(b.v / barPeak) * 60}px`, minHeight: 3, background: b.cur ? INDIGO : '#C7D2FE' }} />
+                  <span className="text-[9px]" style={{ color: b.cur ? INDIGO : '#94A3B8', fontWeight: b.cur ? 700 : 500 }}>{b.l}</span>
                 </div>
-              )}
-              <button onClick={openChoose} title="New sample" style={{ color: SECONDARY, background: 'none', border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>
-                <MoreHorizontal size={18} />
-              </button>
+              ))}
             </div>
           </div>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                {['Patient', 'Accession / Lab ID', 'Status', ...(showAssignee ? ['Assigned To'] : []), 'Details', ...(showLabels ? ['Labels'] : [])].map((h) => (
-                  <th key={h} style={{ textAlign: 'left', padding: '12px 24px', borderBottom: '1px solid #ebeef1', fontFamily: GEIST, fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: SECONDARY }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {worklist.length === 0 && (
-                <tr><td colSpan={totalCols} style={{ padding: '40px 24px', textAlign: 'center', color: '#94A3B8', fontSize: 14 }}>No active samples.</td></tr>
-              )}
-              {worklist.map((r) => {
-                const av = avatarFor(patientName(r));
-                const sb = statusBadge(r.status);
+          {/* Completion Rate */}
+          <div className={`${CARD} p-5`}>
+            <div className="mb-3 text-sm font-semibold text-charcoal-heading">Completion Rate</div>
+            <div className="flex items-center gap-4">
+              <div className="relative shrink-0">
+                <PieChart width={110} height={110}><Pie data={completionSegs} dataKey="value" cx="50%" cy="50%" innerRadius={38} outerRadius={52} paddingAngle={2} stroke="none">{completionSegs.map((s, i) => <Cell key={i} fill={s.color} />)}</Pie></PieChart>
+                <div className="absolute inset-0 flex flex-col items-center justify-center"><span className="text-lg font-bold text-charcoal-heading">{completionRate}%</span><span className="text-[9px] text-slate-400">completed</span></div>
+              </div>
+              <div className="flex flex-1 flex-col gap-1.5">
+                {completionSegs.map((s) => <div key={s.label} className="flex items-center justify-between text-xs"><span className="flex items-center gap-1.5 text-slate-600"><span className="h-2 w-2 rounded-full" style={{ background: s.color }} /> {s.label}</span><span className="font-semibold text-charcoal-heading">{s.value}</span></div>)}
+              </div>
+            </div>
+          </div>
+
+          {/* Specimen Distribution */}
+          <div className={`${CARD} p-5`}>
+            <div className="mb-2 text-sm font-semibold text-charcoal-heading">Specimen Distribution</div>
+            <div className="flex items-center gap-3">
+              <PieChart width={110} height={110}><Pie data={specDist} dataKey="value" cx="50%" cy="50%" innerRadius={32} outerRadius={50} paddingAngle={2} stroke="none">{specDist.map((s, i) => <Cell key={i} fill={s.color} />)}</Pie></PieChart>
+              <div className="flex flex-1 flex-col gap-1.5">
+                {specDist.map((s) => <div key={s.label} className="flex items-center justify-between text-[12px]"><span className="flex items-center gap-1.5 text-slate-600"><span className="h-2 w-2 rounded-full" style={{ background: s.color }} /> {s.label}</span><span className="font-semibold text-charcoal-heading">{s.pct}%</span></div>)}
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          <div className={`${CARD} p-5`}>
+            <div className="mb-3 flex items-center justify-between"><span className="text-sm font-semibold text-charcoal-heading">Recent Activity</span><button onClick={() => router.push('/records')} className="text-xs font-semibold text-primary hover:underline">View all</button></div>
+            <div className="flex flex-col gap-3">
+              {recent.length === 0 && <div className="text-sm text-slate-400">No recent activity.</div>}
+              {recent.map((r) => {
+                const name = patientName(r);
                 return (
-                  <tr key={r.id} onClick={() => router.push(`/records/${r.id}`)}
-                    style={{ cursor: 'pointer', borderBottom: '1px solid #f1f4f7' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = '#f7fafd')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
-                    {/* Patient */}
-                    <td style={{ padding: '16px 24px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <FormTypeIcon gyn={r.formType === 'Gynecology'} />
-                        <div style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0, background: av.bg, color: av.fg, display: 'grid', placeItems: 'center', fontFamily: GEIST, fontSize: 15, fontWeight: 700 }}>{initials(r)}</div>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 17, fontWeight: 600, color: HEAD }}>
-                            {patientName(r)}
-                            {escalatedRecordIds.has(r.id) && (
-                              <span title={`${escalatedRecordIds.get(r.id)} escalation — open`} style={{ display: 'inline-grid', placeItems: 'center', width: 20, height: 20, borderRadius: 6, background: '#FEE2E2', color: '#B91C1C' }}>
-                                <AlertTriangle size={13} />
-                              </span>
-                            )}
-                            {qcFailedRecordIds.has(r.id) && (
-                              <span title="QC failure logged for this record" style={{ display: 'inline-grid', placeItems: 'center', width: 20, height: 20, borderRadius: 6, background: '#FEFCE8', color: '#A16207' }}>
-                                <AlertTriangle size={13} />
-                              </span>
-                            )}
-                          </div>
-                          {r.patient?.registrationNo && <div style={{ fontSize: 13, color: SECONDARY, marginTop: 2 }}>Reg No: {r.patient.registrationNo}</div>}
-                        </div>
-                      </div>
-                    </td>
-                    {/* Accession / Lab ID */}
-                    <td style={{ padding: '16px 24px' }}>
-                      <div style={{ fontFamily: GEIST, fontSize: 16, fontWeight: 700, color: HEAD }}>LAB# {r.labNumber ?? '—'}</div>
-                      <div style={{ fontSize: 13, color: SECONDARY, marginTop: 2 }}>{clientLabel(r)}</div>
-                    </td>
-                    {/* Status */}
-                    <td style={{ padding: '16px 24px' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 13px', borderRadius: 999, fontSize: 13, fontWeight: 700, background: sb.bg, color: sb.fg }}>
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: sb.fg }} />{r.status}
-                      </span>
-                      {r.urgent && (
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 11, fontWeight: 700, color: '#E11D48' }}>
-                          <AlertCircle size={11} /> URGENT
-                        </div>
-                      )}
-                    </td>
-                    {/* Assigned To */}
-                    {showAssignee && (
-                      <td style={{ padding: '16px 24px' }}>
-                        {r.assignedTo ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                            {(() => { const av = avatarFor(`${r.assignedTo.firstName} ${r.assignedTo.lastName}`); return (
-                              <span style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, background: av.bg, color: av.fg, display: 'grid', placeItems: 'center', fontFamily: GEIST, fontSize: 12, fontWeight: 700 }}>
-                                {`${r.assignedTo.firstName?.[0] ?? ''}${r.assignedTo.lastName?.[0] ?? ''}`.toUpperCase()}
-                              </span>); })()}
-                            <span style={{ fontSize: 14, color: HEAD }}>{r.assignedTo.firstName} {r.assignedTo.lastName}</span>
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: 13, color: '#94A3B8' }}>Unassigned</span>
-                        )}
-                      </td>
-                    )}
-                    {/* Details */}
-                    <td style={{ padding: '16px 24px' }}>
-                      <div style={{ fontSize: 16, color: HEAD }}>{specLabel(r.specimens?.[0]?.type) ?? (r.formType === 'Gynecology' ? 'Gynaecology' : 'Non-Gynaecology')}</div>
-                      <div style={{ fontSize: 13, color: SECONDARY, marginTop: 2 }}>{dateFmt(r.specimenDate ?? r.createdAt)}</div>
-                    </td>
-                    {/* Labels */}
-                    {showLabels && (
-                      <td style={{ padding: '16px 24px' }} onClick={(e) => e.stopPropagation()}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <input type="checkbox" checked={labelSel.has(r.id)} onChange={() => toggleLabelSel(r.id)} title="Select for batch print" style={{ accentColor: PRIMARY, width: 15, height: 15, cursor: 'pointer' }} />
-                          <button onClick={() => setPrintIds([r.id])} title="Print labels" style={{ display: 'grid', placeItems: 'center', width: 32, height: 32, borderRadius: 8, border: '1px solid #E2E8F0', background: '#fff', color: PRIMARY, cursor: 'pointer' }}>
-                            <Printer size={15} />
-                          </button>
-                        </div>
-                      </td>
-                    )}
-                  </tr>
+                  <div key={r.id} className="flex items-center gap-3">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[11px] font-semibold text-white" style={{ background: avatarBg(name) }}>{initialsOf(name)}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[13px] text-charcoal-heading">Sample <span className="font-bold text-primary">{r.labNumber ?? '—'}</span> {statusAction(r.status)}</div>
+                      <div className="text-[11px] text-slate-400">{relTime(r.updatedAt ?? r.createdAt)}</div>
+                    </div>
+                  </div>
                 );
               })}
-              <tr ref={sentinelRef}>
-                <td colSpan={totalCols} style={{ padding: '14px 24px', textAlign: 'center', color: '#94A3B8', fontSize: 13, fontWeight: 500 }}>
-                  {hasMore ? 'Loading more…' : activeRecs.length > 0 ? `Showing all ${activeRecs.length} active samples` : ''}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-      </div>
-
-      {/* ═══════════ RIGHT COLUMN ═══════════ */}
-      <div className="flex flex-col gap-6">
-        {/* Samples Processed */}
-        <div style={{ ...glass, padding: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={cardHead}>Samples Processed</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, border: '1px solid #ebeef1', borderRadius: 999, padding: '4px 10px', fontSize: 12, fontWeight: 600, color: SECONDARY, cursor: 'pointer' }}>Week <ChevronDown size={13} /></span>
-          </div>
-          <div style={{ fontFamily: GEIST, fontSize: 56, fontWeight: 700, lineHeight: 1, color: HEAD, marginTop: 12 }}>{all.length}</div>
-          <div style={{ fontSize: 13, color: SECONDARY, marginTop: 4 }}>Total samples today</div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 120, marginTop: 18 }}>
-            {bars.map((b, i) => (
-              <div key={i} style={{ flex: 1, height: `${(b.v / barPeak) * 100}%`, minHeight: 4, background: b.cur ? PRIMARY : '#e2dfff', borderRadius: '6px 6px 0 0' }} />
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            {bars.map((b, i) => (
-              <div key={i} style={{ flex: 1, textAlign: 'center', fontFamily: GEIST, fontSize: 12, fontWeight: b.cur ? 700 : 500, color: b.cur ? PRIMARY : '#94A3B8' }}>{b.l}</div>
-            ))}
-          </div>
-        </div>
-
-        {/* Completion Rate */}
-        <div style={{ ...glass, padding: 24 }}>
-          <div style={cardHead}>Completion Rate</div>
-          <div style={{ fontSize: 13, color: SECONDARY, marginTop: 2 }}>Shift objective status</div>
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}><Gauge value={approvedRecs.length} goal={goal} /></div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderTop: '1px solid #ebeef1', paddingTop: 16, marginTop: 16 }}>
-            <span style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, background: '#f1f4f7', color: SECONDARY, display: 'grid', placeItems: 'center' }}><Pencil size={15} /></span>
-            {editingGoal ? (
-              <input autoFocus type="number" defaultValue={goal}
-                onBlur={(e) => { setGoal(Math.max(1, +e.target.value || goal)); setEditingGoal(false); }}
-                onKeyDown={(e) => { if (e.key === 'Enter') { setGoal(Math.max(1, +(e.target as HTMLInputElement).value || goal)); setEditingGoal(false); } }}
-                style={{ flex: 1, height: 40, borderRadius: 12, border: `1px solid ${PRIMARY}`, padding: '0 12px', fontSize: 14, fontWeight: 600, color: HEAD, outline: 'none' }} />
-            ) : (
-              <button onClick={() => setEditingGoal(true)} style={{ flex: 1, background: PRIMARY, color: '#fff', border: 'none', borderRadius: 12, padding: '10px 20px', fontFamily: GEIST, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Change Target</button>
-            )}
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div style={{ ...glass, padding: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={cardHead}>Recent Activity</span>
-            <button onClick={() => router.push('/records')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: PRIMARY, fontFamily: GEIST, fontSize: 11, fontWeight: 700, letterSpacing: '0.06em' }}>VIEW ALL</button>
-          </div>
-          <div style={{ marginTop: 12 }}>
-            {events.length === 0 && <div style={{ padding: '16px 0', textAlign: 'center', color: '#94A3B8', fontSize: 14 }}>No recent activity.</div>}
-            {events.map((ev, i) => {
-              const ui = ((ev.user?.firstName?.[0] ?? '') + (ev.user?.lastName?.[0] ?? '')).toUpperCase();
-              return (
-                <div key={i} style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid #f1f4f7' }}>
-                  <span style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, background: '#EEF2FF', color: PRIMARY, display: 'grid', placeItems: 'center', fontFamily: GEIST, fontSize: 12, fontWeight: 700 }}>
-                    {ui || <FlaskConical size={15} />}
-                  </span>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: HEAD }}>
-                      Sample <span style={{ background: '#EEF2FF', color: PRIMARY, padding: '2px 8px', borderRadius: 999, fontFamily: GEIST, fontSize: 11, fontWeight: 700 }}>{ev.labNumber ?? '—'}</span> {statusAction(ev.status)}
-                    </div>
-                    <div style={{ fontSize: 12, color: SECONDARY, marginTop: 2 }}>{relTime(ev.createdAt)}</div>
-                  </div>
-                </div>
-              );
-            })}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Choose form (New Sample) */}
+      {/* New Sample chooser */}
       {chooseOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setChooseOpen(false)}>
-          <div className="w-full max-w-md rounded-card bg-white p-6 shadow-float" onClick={(e) => e.stopPropagation()}>
-            <div style={{ ...cardHead, fontSize: 20 }}>New sample</div>
-            <div style={{ fontSize: 14, color: SECONDARY, marginTop: 2 }}>Choose the form type to begin.</div>
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="text-lg font-bold text-charcoal-heading">New sample</div>
+            <div className="mt-1 text-sm text-secondary">Choose the form type to begin.</div>
             <div className="mt-5 grid grid-cols-2 gap-3">
               {(['Gynecology', 'NonGynecology'] as FormType[]).map((ft) => (
-                <button key={ft} onClick={() => { setChooseOpen(false); setDrawer({ formType: ft }); }}
-                  className="flex flex-col items-center gap-2 rounded-control border border-card py-7 transition-colors hover:border-primary hover:bg-primary-soft">
-                  <FlaskConical size={26} className="text-primary" />
-                  <span className="text-small font-bold text-text">{ft === 'Gynecology' ? 'Gynecology' : 'Non-Gynecology'}</span>
+                <button key={ft} onClick={() => { setChooseOpen(false); setDrawer({ formType: ft }); }} className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 py-7 transition-colors hover:border-primary hover:bg-indigo-50">
+                  <FlaskConical size={26} className="text-primary" /><span className="text-sm font-bold text-charcoal-heading">{ft === 'Gynecology' ? 'Gynecology' : 'Non-Gynecology'}</span>
                 </button>
               ))}
             </div>
@@ -604,41 +583,20 @@ export default function SamplesPage() {
         </div>
       )}
 
-      {drawer && <RecordFormDrawer open onClose={() => { setDrawer(null); qc.invalidateQueries({ queryKey: ['records-all'] }); }} formType={drawer.formType} recordId={drawer.recordId} />}
-      {printIds && <PrintLabelsModal recordIds={printIds} onClose={() => setPrintIds(null)} />}
-      </div>
-
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg"
-          style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>
-          {toast.msg}
+      {confirmDel && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setConfirmDel(null)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-1 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Delete this sample?</h3><button onClick={() => setConfirmDel(null)} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={16} /></button></div>
+            <p className="mt-1 text-sm text-secondary">{confirmDel.labNumber ?? 'This sample'} will be permanently deleted.</p>
+            <div className="mt-5 flex justify-end gap-2"><button className="btn-secondary" onClick={() => setConfirmDel(null)}>Cancel</button><button className="btn-primary" style={{ background: '#DC2626' }} disabled={del.isPending} onClick={() => del.mutate(confirmDel.id)}>{del.isPending ? 'Deleting…' : 'Delete'}</button></div>
+          </div>
         </div>
       )}
-    </div>
-  );
-}
 
-function Gauge({ value, goal }: { value: number; goal: number }) {
-  const size = 190, sw = 14, r = (size - sw) / 2 - 6, cx = size / 2, cy = size / 2;
-  const c = 2 * Math.PI * r;
-  const arc = 0.72; // 260° sweep, gap at the bottom
-  const frac = Math.min(1, goal ? value / goal : 0);
-  const start = 135; // degrees (7–8 o'clock)
-  const ang = (start + frac * arc * 360) * (Math.PI / 180);
-  const mx = cx + r * Math.cos(ang), my = cy + r * Math.sin(ang);
-  return (
-    <div style={{ position: 'relative', width: size, height: size }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#eef2f7" strokeWidth={sw} strokeLinecap="round"
-          strokeDasharray={`${arc * c} ${c}`} transform={`rotate(${start} ${cx} ${cy})`} />
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#4F46E5" strokeWidth={sw} strokeLinecap="round"
-          strokeDasharray={`${frac * arc * c} ${c}`} transform={`rotate(${start} ${cx} ${cy})`} />
-        <circle cx={mx} cy={my} r={5} fill="#fff" stroke="#4F46E5" strokeWidth={3} />
-      </svg>
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontFamily: GEIST, fontSize: 48, fontWeight: 700, color: HEAD, letterSpacing: '-0.02em' }}>{value}</span>
-        <span style={{ fontSize: 13, fontWeight: 600, color: SECONDARY }}>Goal {goal}</span>
-      </div>
+      {drawer && <RecordFormDrawer open onClose={() => { setDrawer(null); qc.invalidateQueries({ queryKey: ['records-all'] }); }} formType={drawer.formType} recordId={drawer.recordId} />}
+      {printIds && <PrintLabelsModal recordIds={printIds} onClose={() => setPrintIds(null)} />}
+
+      {toast && <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>{toast.msg}</div>}
     </div>
   );
 }
