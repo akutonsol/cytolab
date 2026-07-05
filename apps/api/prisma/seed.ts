@@ -46,6 +46,9 @@ const SPECIAL_OBJECTS: Record<string, string[]> = {
   // Form Setup (clinical-feature UI config). Lab-admin territory — assigned to no
   // default staff role; super roles reach it via the guard bypass.
   formconfig: ['view', 'manage'],
+  // Knowledge Base authoring (view is open to all authed users; managing/editing
+  // articles is gated). Assigned to no default role — super roles reach it.
+  kb: ['manage'],
 };
 
 async function main() {
