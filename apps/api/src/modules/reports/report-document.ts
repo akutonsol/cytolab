@@ -17,7 +17,22 @@ export interface ReportDocumentData {
     identifier: string;
     labNumber?: string | null;
     clinicalDiagnosis?: string | null;
+    referringDoctor?: string | null;
+    isGyn?: boolean;
+    collectionDate?: Date | null;
+    registeredAt?: Date | null;
   };
+  // Gynaecological clinical details — present only for GYN records.
+  gyn?: {
+    previousCytology: boolean;
+    clinicalAppearanceOfCervix?: string | null;
+    pregnancies?: number | null;
+    nowPregnant: boolean;
+    lmp?: Date | null;
+    routineCheck: boolean;
+  } | null;
+  // Cytotechnologist who entered the results (distinct from the authorizer).
+  cytotechnologist?: string | null;
   patient: {
     firstName: string;
     lastName: string;
@@ -97,6 +112,20 @@ const fmtDateTime = (d?: Date | null): string =>
       })
     : '—';
 
+// Collection time is treated as "not stated" when the stored time is midnight.
+const timeNotStated = (d?: Date | null): boolean => {
+  if (!d) return false;
+  const x = new Date(d);
+  return x.getHours() === 0 && x.getMinutes() === 0;
+};
+
+// "Coll/Sent" value: date, plus time when known, else a "(*)" marker.
+const fmtCollection = (d?: Date | null): string => {
+  if (!d) return '—';
+  if (timeNotStated(d)) return `${fmtDate(d)}  (*)`;
+  return `${fmtDate(d)}  ${new Date(d).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+};
+
 // ─── Small builders ───────────────────────────────────────────────────────────
 const sectionLabel = (text: string, topMargin = 16): Content => ({
   text,
@@ -158,7 +187,7 @@ const accentBox = (fill: string, accent: string | null, body: Content[], margin:
  * (data in, definition out) so it can be unit-tested without rendering.
  */
 export function buildReportDefinition(data: ReportDocumentData): TDocumentDefinitions {
-  const { lab, record, patient, client, specimens, entries, narrative, authorizer } = data;
+  const { lab, record, patient, client, specimens, entries, narrative, authorizer, gyn, cytotechnologist } = data;
 
   const patientName = [patient.firstName, patient.middleName, patient.lastName].filter(Boolean).join(' ');
   const reportRef = record.labNumber || record.identifier;
@@ -224,8 +253,10 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
             infoRow('Patient Name', patientName, { bold: true }),
             infoRow('Date of Birth', `${fmtDate(patient.dateOfBirth)}${patient.age != null ? `   (Age ${patient.age})` : ''}`),
             infoRow('Gender', patient.gender),
-            infoRow('Registration No.', patient.registrationNo),
-            infoRow('Contact', patient.phoneNumber),
+            infoRow('Med Rec #', patient.registrationNo),
+            infoRow('Tel No', patient.phoneNumber),
+            infoRow('Ref Dr', record.referringDoctor),
+            infoRow('Clinic', referring),
           ]),
         ],
       },
@@ -236,15 +267,56 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
           infoTable([
             infoRow('Lab Number', record.labNumber, { bold: true, color: INDIGO }),
             infoRow('Specimen Type', specimens[0]?.type),
-            infoRow('Specimen Date', fmtDate(firstSpecimenDate)),
+            infoRow('Coll/Sent', fmtCollection(record.collectionDate)),
+            infoRow("Rec'd", fmtDate(firstSpecimenDate)),
+            infoRow("Reg'd", fmtDate(record.registeredAt)),
             infoRow('Report Date', fmtDate(reportDate)),
-            infoRow('Referring Client', referring),
           ]),
         ],
       },
     ],
     columnGap: 28,
   };
+
+  // Footnote shown only when a collection time was not captured.
+  const collectionFootnote: Content[] =
+    record.collectionDate && timeNotStated(record.collectionDate)
+      ? [{ text: '(*) = Collection time not stated', fontSize: 8, italics: true, color: SLATE_MUTED, margin: [0, 5, 0, 0] }]
+      : [];
+
+  // ── Gynaecological details (GYN records only) ───────────────────────────────
+  const gynSection: Content[] = gyn
+    ? [
+        sectionLabel('GYNAECOLOGICAL DETAILS'),
+        accentBox(INDIGO_LIGHT, null, [
+          {
+            columns: [
+              {
+                width: '*',
+                stack: [
+                  infoTable([
+                    infoRow('Previous Cytology', gyn.previousCytology ? 'Yes' : 'No'),
+                    infoRow('Now Pregnant', gyn.nowPregnant ? 'Yes' : 'No'),
+                    infoRow('Routine Check', gyn.routineCheck ? 'Yes' : 'No'),
+                  ]),
+                ],
+              },
+              {
+                width: '*',
+                stack: [
+                  infoTable([
+                    infoRow('No. of Pregnancies', gyn.pregnancies != null ? String(gyn.pregnancies) : null),
+                    infoRow('LMP', gyn.lmp ? fmtDate(gyn.lmp) : null),
+                    infoRow('Clinical Appearance', gyn.clinicalAppearanceOfCervix),
+                  ]),
+                ],
+              },
+            ],
+            columnGap: 20,
+          },
+        ]),
+      ]
+    : [];
 
   // ── 3. Specimens received (indigo-tinted box) ───────────────────────────────
   const specimenGrid: Content =
@@ -412,6 +484,32 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
     ],
   };
 
+  // ── Cytotechnologist (result entry) — distinct from the authorizer ──────────
+  const cytotechSection: Content[] = authorized
+    ? [
+        {
+          margin: [0, 18, 0, 0],
+          columns: [
+            {
+              width: '*',
+              stack: [
+                { text: 'CYTOTECHNOLOGIST', fontSize: 8, bold: true, color: SLATE_MUTED, characterSpacing: 1 },
+                { text: cytotechnologist || '—', fontSize: 11, bold: true, color: SLATE, margin: [0, 3, 0, 0] },
+              ],
+            },
+            {
+              width: '*',
+              stack: [
+                { text: 'COMMENTS', fontSize: 8, bold: true, color: SLATE_MUTED, characterSpacing: 1 },
+                { text: 'APPROVED', fontSize: 11, bold: true, color: GREEN, margin: [0, 3, 0, 0] },
+              ],
+            },
+          ],
+          columnGap: 24,
+        },
+      ]
+    : [];
+
   const authorizationSection: Content = {
     margin: [0, 22, 0, 0],
     unbreakable: true,
@@ -420,6 +518,17 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
       sectionLabel('AUTHORIZATION', 12),
       { columns: [authLeft, authRight], columnGap: 24 },
     ],
+  };
+
+  // ── End-of-report marker ────────────────────────────────────────────────────
+  const endMarker: Content = {
+    text: '--- End of Laboratory Report ---',
+    alignment: 'center',
+    fontSize: 9,
+    italics: true,
+    color: SLATE_MUTED,
+    characterSpacing: 0.5,
+    margin: [0, 20, 0, 0],
   };
 
   // ── Assemble ────────────────────────────────────────────────────────────────
@@ -459,6 +568,8 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
       headerBand,
       ...urgencyBanner,
       infoColumns,
+      ...collectionFootnote,
+      ...gynSection,
       divider(14),
       sectionLabel('SPECIMENS RECEIVED'),
       accentBox(INDIGO_LIGHT, null, [specimenGrid]),
@@ -466,7 +577,9 @@ export function buildReportDefinition(data: ReportDocumentData): TDocumentDefini
       ...findingsBlocks,
       ...narrativeSection,
       ...diagnosisSection,
+      ...cytotechSection,
       authorizationSection,
+      endMarker,
     ],
   };
 }

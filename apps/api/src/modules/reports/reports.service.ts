@@ -131,13 +131,17 @@ export class ReportsService {
         reports: {
           orderBy: { releasedAt: 'desc' },
           take: 1,
-          select: { content: true, medicalEntry: true },
+          select: { content: true, medicalEntry: true, writtenBy: { select: { firstName: true, lastName: true } } },
         },
         record: {
           select: {
             identifier: true,
             labNumber: true,
             clinicalDiagnosis: true,
+            doctor: true,
+            formType: true,
+            specimenDate: true,
+            createdAt: true,
             lab: { select: { name: true, address: true, phone: true, email: true, logoUrl: true } },
             patient: {
               select: {
@@ -155,6 +159,10 @@ export class ReportsService {
             specimens: {
               select: { type: true, label: true, bloodGroup: true, dateReceived: true },
             },
+            gynFeatures: {
+              select: { previousCytology: true, clinicalAppearanceOfCervix: true, pregnancies: true, nowPregnant: true, lmp: true, routineCheck: true },
+            },
+            assignedTo: { select: { firstName: true, lastName: true } },
           },
         },
       },
@@ -171,6 +179,11 @@ export class ReportsService {
       : 'Authorizer';
     const narrative = sheet.reports[0] ?? null;
 
+    // Cytotechnologist = whoever wrote the report content (entered the results),
+    // distinct from the authorizing pathologist; fall back to the case assignee.
+    const cytoWriter = narrative?.writtenBy ?? r.assignedTo ?? null;
+    const cytotechnologist = cytoWriter ? `${cytoWriter.firstName} ${cytoWriter.lastName}`.trim() : null;
+
     const data: ReportDocumentData = {
       lab: {
         name: r.lab.name,
@@ -183,7 +196,25 @@ export class ReportsService {
         identifier: r.identifier,
         labNumber: r.labNumber,
         clinicalDiagnosis: r.clinicalDiagnosis,
+        referringDoctor: r.doctor,
+        isGyn: r.formType === 'Gynecology',
+        collectionDate: r.specimenDate,
+        registeredAt: r.createdAt,
       },
+      // Show the GYN details section for every GYN record; when no features row
+      // has been captured yet, fields fall back to defaults ("No" / "—").
+      gyn:
+        r.formType === 'Gynecology'
+          ? {
+              previousCytology: r.gynFeatures?.previousCytology ?? false,
+              clinicalAppearanceOfCervix: r.gynFeatures?.clinicalAppearanceOfCervix ?? null,
+              pregnancies: r.gynFeatures?.pregnancies ?? null,
+              nowPregnant: r.gynFeatures?.nowPregnant ?? false,
+              lmp: r.gynFeatures?.lmp ?? null,
+              routineCheck: r.gynFeatures?.routineCheck ?? false,
+            }
+          : null,
+      cytotechnologist,
       patient: {
         firstName: r.patient.firstName,
         lastName: r.patient.lastName,
