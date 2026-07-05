@@ -51,12 +51,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [refreshing, setRefreshing] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Live unread-notification count for the bell badge (polls every 30s).
+  // Live unread-notification count for the bell badge (polls every 30s). Combines
+  // both sources — system (/notifications) and workforce (/workforce/notifications,
+  // feature-gated → fail soft to 0).
   const { data: unread = 0 } = useQuery({
     queryKey: ['notifications-unread'],
-    queryFn: () => api.get('/notifications/unread-count').then((r) => r.data.count as number),
+    queryFn: async () => {
+      const [sys, wf] = await Promise.all([
+        api.get('/notifications/unread-count').then((r) => r.data.count as number).catch(() => 0),
+        api.get('/workforce/notifications/unread-count').then((r) => r.data.count as number).catch(() => 0),
+      ]);
+      return sys + wf;
+    },
     refetchInterval: 30_000,
-    enabled: isAuthed && can('notification:view'),
+    enabled: isAuthed,
   });
 
   // Active system announcements → slim dismissible banner below the nav.
