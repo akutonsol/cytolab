@@ -135,101 +135,136 @@ enum PortalTokenType {
   Reset
 }
 
+// ---- Digital Requisition Portal (DRP) ----
+
+enum BatchStatus {
+  DRAFT
+  PENDING_PAYMENT
+  PAID
+  SUBMITTED
+  PROCESSING
+  COMPLETED
+  REJECTED
+}
+
+enum PaymentMethod {
+  CARD
+  BANK_TRANSFER
+  CHEQUE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum ScanStatus {
+  UPLOADING
+  PROCESSING
+  EXTRACTED
+  NEEDS_REVIEW
+  CONFIRMED
+}
+
 // ---- F1: Multi-lab tenancy (every tenant-owned model carries labId) ----
 
 model Lab {
-  id                     String                   @id @default(uuid())
-  name                   String
-  slug                   String                   @unique
-  logoUrl                String?
+  id                      String                   @id @default(uuid())
+  name                    String
+  slug                    String                   @unique
+  logoUrl                 String?
   // Branding shown on rendered report PDFs (Phase 3.5).
-  address                String?
-  phone                  String?
-  email                  String?
-  currency               String                   @default("JMD")
-  isActive               Boolean                  @default(true)
+  address                 String?
+  phone                   String?
+  email                   String?
+  currency                String                   @default("JMD")
+  isActive                Boolean                  @default(true)
   // Analytics targets. targetTatDays: expected turnaround (Submitted->Approved);
   // monthlyVolumeTarget: expected specimens/month (null -> derived from history).
-  targetTatDays          Int                      @default(3)
-  monthlyVolumeTarget    Int?
-  createdAt              DateTime                 @default(now())
-  updatedAt              DateTime                 @updatedAt
-  accounts               Account[]
-  users                  User[]
-  workspaces             Workspace[]
-  patients               Patient[]
-  clientTypes            ClientType[]
-  clients                Client[]
-  requisitions           Requisition[]
-  records                Record[]
-  specimens              Specimen[]
-  requisitionLines       RequisitionLine[]
-  recordStatusEvents     RecordStatusEvent[]
-  therapies              Therapy[]
-  cabinets               Cabinet[]
-  codeSheets             CodeSheet[]
-  codeFindings           CodeFinding[]
-  labCodes               LabCode[]
-  aiSettings             LabAiSettings?
-  aiDrafts               AiDraft[]
-  resultSheets           ResultSheet[]
-  resultEntries          ResultEntry[]
-  resultLines            ResultLine[]
-  reports                Report[]
-  resultSheetEvents      ResultSheetEvent[]
-  services               Service[]
-  taxes                  Tax[]
-  bills                  Bill[]
-  billLines              BillLine[]
-  billTaxes              BillTax[]
-  payments               Payment[]
-  portalUsers            PortalUser[]
-  portalAccessTokens     PortalAccessToken[]
-  changeRequests         ChangeRequest[]
-  changeRequestMessages  ChangeRequestMessage[]
-  changeRequestEvents    ChangeRequestEvent[]
-  patientAddresses       PatientAddress[]
-  clientAddresses        ClientAddress[]
-  sequences              LabSequence[]
-  gynClinicalFeatures    GynClinicalFeatures[]
-  nonGynClinicalFeatures NonGynClinicalFeatures[]
-  specimenImages         SpecimenImage[]
-  recordAttachments      RecordAttachment[]
-  threads                Thread[]
-  appointments           Appointment[]
-  formConfigs            FormConfig[]
-  notifications          Notification[]
-  departments            Department[]
-  employees              Employee[]
-  payrollRuns            PayrollRun[]
-  payAdvices             PayAdvice[]
-  resultTemplates        ResultTemplate[]
-  bethesdaResults        BethesdaResult[]
-  tatConfigs             TATConfig[]
-  tatAlerts              TATAlert[]
-  features               LabFeature[]
-  escalations            EscalationRecord[]
-  workloadTargets        WorkloadTarget[]
-  qcChecks               QCCheck[]
-  equipment              Equipment[]
-  qcFailureAlerts        QCFailureAlert[]
-  requisitionTrackings   RequisitionTracking[]
-  trackingEvents         TrackingEvent[]
-  correlationCases       CorrelationCase[]
-  proficiencyTests       ProficiencyTest[]
-  proficiencyCases       ProficiencyCase[]
-  proficiencyResponses   ProficiencyResponse[]
-  reagentLots            ReagentLot[]
-  reagentUsages          ReagentUsage[]
-  recalls                RecallRecord[]
-  digitalSlides          DigitalSlide[]
-  slideAnnotations       SlideAnnotation[]
-  aiScreenings           AIScreeningResult[]
-  consultRequests        ConsultRequest[]
-  medicalCodes           MedicalCode[]
-  recordCodings          RecordCoding[]
-  fhirEndpoints          FHIREndpoint[]
-  fhirTransmissions      FHIRTransmission[]
+  targetTatDays           Int                      @default(3)
+  monthlyVolumeTarget     Int?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  accounts                Account[]
+  users                   User[]
+  workspaces              Workspace[]
+  patients                Patient[]
+  clientTypes             ClientType[]
+  clients                 Client[]
+  requisitions            Requisition[]
+  records                 Record[]
+  specimens               Specimen[]
+  requisitionLines        RequisitionLine[]
+  recordStatusEvents      RecordStatusEvent[]
+  therapies               Therapy[]
+  cabinets                Cabinet[]
+  codeSheets              CodeSheet[]
+  codeFindings            CodeFinding[]
+  labCodes                LabCode[]
+  aiSettings              LabAiSettings?
+  aiDrafts                AiDraft[]
+  resultSheets            ResultSheet[]
+  resultEntries           ResultEntry[]
+  resultLines             ResultLine[]
+  reports                 Report[]
+  resultSheetEvents       ResultSheetEvent[]
+  services                Service[]
+  taxes                   Tax[]
+  bills                   Bill[]
+  billLines               BillLine[]
+  billTaxes               BillTax[]
+  payments                Payment[]
+  portalUsers             PortalUser[]
+  portalAccessTokens      PortalAccessToken[]
+  changeRequests          ChangeRequest[]
+  changeRequestMessages   ChangeRequestMessage[]
+  changeRequestEvents     ChangeRequestEvent[]
+  requisitionBatches      RequisitionBatch[]
+  digitalRequisitionForms DigitalRequisitionForm[]
+  patientAddresses        PatientAddress[]
+  clientAddresses         ClientAddress[]
+  sequences               LabSequence[]
+  gynClinicalFeatures     GynClinicalFeatures[]
+  nonGynClinicalFeatures  NonGynClinicalFeatures[]
+  specimenImages          SpecimenImage[]
+  recordAttachments       RecordAttachment[]
+  threads                 Thread[]
+  appointments            Appointment[]
+  formConfigs             FormConfig[]
+  notifications           Notification[]
+  departments             Department[]
+  employees               Employee[]
+  payrollRuns             PayrollRun[]
+  payAdvices              PayAdvice[]
+  resultTemplates         ResultTemplate[]
+  bethesdaResults         BethesdaResult[]
+  tatConfigs              TATConfig[]
+  tatAlerts               TATAlert[]
+  features                LabFeature[]
+  escalations             EscalationRecord[]
+  workloadTargets         WorkloadTarget[]
+  qcChecks                QCCheck[]
+  equipment               Equipment[]
+  qcFailureAlerts         QCFailureAlert[]
+  requisitionTrackings    RequisitionTracking[]
+  trackingEvents          TrackingEvent[]
+  correlationCases        CorrelationCase[]
+  proficiencyTests        ProficiencyTest[]
+  proficiencyCases        ProficiencyCase[]
+  proficiencyResponses    ProficiencyResponse[]
+  reagentLots             ReagentLot[]
+  reagentUsages           ReagentUsage[]
+  recalls                 RecallRecord[]
+  digitalSlides           DigitalSlide[]
+  slideAnnotations        SlideAnnotation[]
+  aiScreenings            AIScreeningResult[]
+  consultRequests         ConsultRequest[]
+  medicalCodes            MedicalCode[]
+  recordCodings           RecordCoding[]
+  fhirEndpoints           FHIREndpoint[]
+  fhirTransmissions       FHIRTransmission[]
 }
 
 model Account {
@@ -467,51 +502,53 @@ model ClientType {
 }
 
 model Client {
-  id                    String                 @id @default(uuid())
-  labId                 String
-  lab                   Lab                    @relation(fields: [labId], references: [id])
-  firstName             String
-  lastName              String
-  officeName            String?
+  id                      String                   @id @default(uuid())
+  labId                   String
+  lab                     Lab                      @relation(fields: [labId], references: [id])
+  firstName               String
+  lastName                String
+  officeName              String?
   // Client account number (legacy AC#, e.g. CYLB-577071) — lab-code prefix +
   // seeded LabSequence counter; imported verbatim. Nullable at the column level
   // but always set on create.
-  accountNo             String?
+  accountNo               String?
   // Supports the patient form's "choose client by name OR email" search.
-  email                 String?
-  phoneNumber           String?
-  mobileNumber          String?
-  officeNumber          String?
-  faxNumber             String?
+  email                   String?
+  phoneNumber             String?
+  mobileNumber            String?
+  officeNumber            String?
+  faxNumber               String?
   // Active/blocked toggles from the legacy Client form.
-  active                Boolean                @default(true)
-  blocked               Boolean                @default(false)
+  active                  Boolean                  @default(true)
+  blocked                 Boolean                  @default(false)
   // Nullable stub — actual upload/serving deferred to Phase 6 file storage.
-  avatarUrl             String?
+  avatarUrl               String?
   // The client's assigned lab code/region (legacy "Labcode" dropdown). Closes
   // the Phase 3 "LabCode <-> Client" tracked debt.
-  labCodeId             String?
-  labCode               LabCode?               @relation(fields: [labCodeId], references: [id])
+  labCodeId               String?
+  labCode                 LabCode?                 @relation(fields: [labCodeId], references: [id])
   // Optional workspace the client belongs to (legacy "Workspace" section).
-  workspaceId           String?
-  workspace             Workspace?             @relation(fields: [workspaceId], references: [id])
-  clientTypeId          String?
-  clientType            ClientType?            @relation(fields: [clientTypeId], references: [id])
-  patients              Patient[]
-  requisitions          Requisition[]
-  records               Record[]
-  specimens             Specimen[]
-  cabinets              Cabinet[]
-  bills                 Bill[]
-  addresses             ClientAddress[]
-  portalUsers           PortalUser[]
-  changeRequests        ChangeRequest[]
-  changeRequestMessages ChangeRequestMessage[]
-  changeRequestEvents   ChangeRequestEvent[]
-  threads               Thread[]
-  appointments          Appointment[]
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
+  workspaceId             String?
+  workspace               Workspace?               @relation(fields: [workspaceId], references: [id])
+  clientTypeId            String?
+  clientType              ClientType?              @relation(fields: [clientTypeId], references: [id])
+  patients                Patient[]
+  requisitions            Requisition[]
+  records                 Record[]
+  specimens               Specimen[]
+  cabinets                Cabinet[]
+  bills                   Bill[]
+  addresses               ClientAddress[]
+  portalUsers             PortalUser[]
+  changeRequests          ChangeRequest[]
+  changeRequestMessages   ChangeRequestMessage[]
+  changeRequestEvents     ChangeRequestEvent[]
+  threads                 Thread[]
+  appointments            Appointment[]
+  requisitionBatches      RequisitionBatch[]
+  digitalRequisitionForms DigitalRequisitionForm[]
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
 
   @@unique([labId, accountNo])
   @@index([labCodeId])
@@ -3292,28 +3329,28 @@ enum SubmitterType {
 }
 
 model SupportTicket {
-  id              String          @id @default(cuid())
-  labId           String
-  ticketNumber    String          @unique // auto-generated e.g. TKT-2026-0001
-  title           String
-  description     String
-  category        TicketCategory
-  priority        TicketPriority  @default(MEDIUM)
-  status          TicketStatus    @default(OPEN)
-  submitterType   SubmitterType
-  submittedById   String? // userId if staff
-  submitterName   String // always stored for consultants/clients
-  submitterEmail  String
-  assignedToId    String? // User
-  resolvedAt      DateTime?
-  closedAt        DateTime?
-  resolutionNotes String?
-  slaDeadline     DateTime? // calculated on create based on priority
-  comments        SupportComment[]
-  attachments     SupportAttachment[]
+  id                 String              @id @default(cuid())
+  labId              String
+  ticketNumber       String              @unique // auto-generated e.g. TKT-2026-0001
+  title              String
+  description        String
+  category           TicketCategory
+  priority           TicketPriority      @default(MEDIUM)
+  status             TicketStatus        @default(OPEN)
+  submitterType      SubmitterType
+  submittedById      String? // userId if staff
+  submitterName      String // always stored for consultants/clients
+  submitterEmail     String
+  assignedToId       String? // User
+  resolvedAt         DateTime?
+  closedAt           DateTime?
+  resolutionNotes    String?
+  slaDeadline        DateTime? // calculated on create based on priority
+  comments           SupportComment[]
+  attachments        SupportAttachment[]
   maintenanceWindows MaintenanceWindow[]
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   @@index([labId, status])
   @@index([labId, createdAt])
@@ -3630,4 +3667,105 @@ model KbFeedback {
   helpful   Boolean
   comment   String?
   createdAt DateTime  @default(now())
+}
+
+// ---- Digital Requisition Portal (DRP) ----
+// Clients assemble a batch of digital cytology requisition forms in the portal
+// (manual entry or AI-scanned paper forms), sign, pay, and submit. On submit the
+// forms become real Requisition/Record chains in the lab. Both models carry
+// clientId so the portal tenancy layer can client-scope direct operations.
+
+model RequisitionBatch {
+  id               String                   @id @default(cuid())
+  labId            String
+  lab              Lab                      @relation(fields: [labId], references: [id])
+  batchNumber      String                   @unique // BATCH-2026-XXXX
+  clientId         String
+  client           Client                   @relation(fields: [clientId], references: [id])
+  submittedById    String
+  status           BatchStatus              @default(DRAFT)
+  totalForms       Int                      @default(0)
+  totalAmountCents Int                      @default(0)
+  paymentMethod    PaymentMethod?
+  paymentStatus    PaymentStatus            @default(PENDING)
+  paymentRef       String?
+  paymentPaidAt    DateTime?
+  notes            String?
+  manifestUrl      String? // PDF manifest
+  forms            DigitalRequisitionForm[]
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  submittedAt      DateTime?
+
+  @@index([labId, status])
+  @@index([clientId])
+}
+
+model DigitalRequisitionForm {
+  id         String           @id @default(cuid())
+  labId      String
+  lab        Lab              @relation(fields: [labId], references: [id])
+  clientId   String?
+  client     Client?          @relation(fields: [clientId], references: [id])
+  batchId    String
+  batch      RequisitionBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  formNumber Int // position in batch 1,2,3...
+
+  // Scan data
+  scanStatus    ScanStatus?
+  rawScanUrl    String? // uploaded PDF/image
+  extractedData Json? // raw OCR output
+  ocrConfidence Float? // 0-1
+
+  // Patient info
+  patientName   String?
+  patientDob    DateTime?
+  hospRegNumber String?
+
+  // Doctor/Lab info
+  doctorName    String?
+  doctorAddress String?
+
+  // Specimen info
+  specimenDate DateTime?
+  specimenType String? // ENDOCERV_ASP | VAG_POOL | CERV_SCRAP | SPECIMEN_16
+
+  // Clinical features
+  routineCheck        Boolean?
+  lmp                 String?
+  lengthOfCycle       String?
+  abnormalBleeding    Boolean?
+  leucorrhoea         Boolean?
+  specialType         String?
+  noPregnancies       String?
+  nowPregnant         Boolean?
+  menopauseDate       DateTime?
+  clinicalAppearance  String?
+  pelvicAbnormalities String?
+  otherClinicalData   String?
+  clinicalDiagnosis   String?
+  previousCytology    Boolean?
+
+  // Therapy
+  hormone      String?
+  radiation    String?
+  surgical     String?
+  otherTherapy String?
+
+  // Signature
+  signatureDataUrl String? // base64 canvas signature
+  signedAt         DateTime?
+  signedByName     String?
+
+  // Internal
+  accessionNumber String? // assigned on submission
+  requisitionId   String? // linked requisition after processing
+  needsReview     Boolean @default(false)
+  reviewNotes     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([labId, batchId])
+  @@index([clientId])
 }

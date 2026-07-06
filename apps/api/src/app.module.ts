@@ -14,6 +14,7 @@ import { RolesModule } from './modules/roles/roles.module';
 import { PatientsModule } from './modules/patients/patients.module';
 import { ClientsModule } from './modules/clients/clients.module';
 import { RequisitionsModule } from './modules/requisitions/requisitions.module';
+import { RequisitionPortalModule } from './modules/requisition-portal/requisition-portal.module';
 import { RecordsModule } from './modules/records/records.module';
 import { CabinetsModule } from './modules/cabinets/cabinets.module';
 import { CodeSheetsModule } from './modules/code-sheets/code-sheets.module';
@@ -88,6 +89,7 @@ import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.mod
     PatientsModule,
     ClientsModule,
     RequisitionsModule,
+    RequisitionPortalModule,
     RecordsModule,
     CabinetsModule,
     CodeSheetsModule,
