@@ -278,7 +278,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="premium-scroll" style={{ height: '100vh', position: 'relative', overflowY: 'auto', overflowX: 'hidden', scrollbarGutter: 'stable', background: CANVAS, display: 'flex', flexDirection: 'column' }}>
+    <div className="premium-scroll" style={{ height: '100vh', position: 'relative', overflowY: 'auto', overflowX: 'hidden', background: CANVAS, display: 'flex', flexDirection: 'column' }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');`}</style>
 
       <header className="top-navigation">
