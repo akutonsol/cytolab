@@ -29,50 +29,6 @@ const TRUST = [
   { Icon: Clock, label: '99.9% Uptime', desc: 'Reliable. Always.' },
 ];
 
-// Specimen vial faked as a spinning 3D cylinder: the flat photo is sliced into
-// vertical strips arranged around a cylinder so it curves and reads as round as
-// it rotates (a single 2D image can't otherwise look solid mid-spin).
-function SpinningVial() {
-  const N = 48;                          // strip count around the cylinder
-  const H = 600;                         // on-screen tube height (px)
-  const Wtex = Math.round(0.2244 * H);   // un-stretched image width (aspect 313:1395)
-  const R = Wtex / Math.PI;              // radius: image spans the front 180deg arc
-  const sw = (2 * Math.PI * R) / N;      // display width per strip
-  // Texture u wraps front (0->1) then mirrors on the back (1->0) so the seams
-  // land at the thin sides and the front always shows the whole tube.
-  const u = (k: number) => 1 - Math.abs(1 - 2 * (((k / N) + 0.25) % 1));
-  return (
-    <div
-      className="pointer-events-none absolute left-[49%] top-1/2 z-[5] hidden -translate-x-1/2 -translate-y-1/2 xl:block"
-      style={{ width: `${2 * R}px`, height: `${H}px`, perspective: '1500px' }}
-      aria-hidden
-    >
-      <div className="vial-cyl relative h-full w-full" style={{ transformStyle: 'preserve-3d' }}>
-        {Array.from({ length: N }, (_, i) => {
-          const uLo = Math.min(u(i), u(i + 1));
-          return (
-            <div
-              key={i}
-              className="absolute top-0 h-full"
-              style={{
-                left: '50%',
-                width: `${sw + 0.6}px`,
-                marginLeft: `${-sw / 2}px`,
-                transform: `rotateY(${(360 / N) * i}deg) translateZ(${R}px)`,
-                backfaceVisibility: 'hidden',
-                backgroundImage: 'url(/specimen-tube-cyl.png)',
-                backgroundRepeat: 'no-repeat',
-                backgroundSize: `${Wtex}px ${H}px`,
-                backgroundPosition: `${-uLo * Wtex}px 0`,
-              }}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 // A wide central "tube" pill that frames the vial, flanked by two slimmer pills.
 function PillBackdrop() {
   return (
@@ -163,8 +119,14 @@ export default function LoginPage() {
         <PillBackdrop />
       </div>
 
-      {/* Specimen vial — spinning pseudo-3D cylinder, over the seam between panels. */}
-      <SpinningVial />
+      {/* Specimen vial — the 3D render shown in its natural state, over the seam. */}
+      <div className="pointer-events-none absolute inset-0 z-[5] hidden xl:block" aria-hidden>
+        <img
+          src="/specimen-tube-3d-cut.png"
+          alt=""
+          className="absolute left-[49%] top-1/2 h-[640px] w-auto -translate-x-1/2 -translate-y-1/2 select-none drop-shadow-[0_20px_45px_rgba(0,0,0,0.28)]"
+        />
+      </div>
 
       <div className="relative z-10 flex min-h-screen flex-col">
         {/* Header */}
