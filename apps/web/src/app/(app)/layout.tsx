@@ -282,7 +282,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');`}</style>
 
       <header className="top-navigation">
-        <div className="nav-inner" style={{ flexDirection: 'column', alignItems: 'stretch', justifyContent: 'center', gap: 6, paddingTop: showCenter ? 8 : 6, paddingBottom: 6 }}>
+        <div className="nav-inner page-container" style={{ flexDirection: 'column', alignItems: 'stretch', justifyContent: 'center', gap: 6, paddingTop: showCenter ? 8 : 6, paddingBottom: 6 }}>
           {/* ROW 1 — logo + subtitle (left), search + action icons (right).
               zIndex kept above the pills row so the clock dropdown overlays them. */}
           <div style={{ position: 'relative', zIndex: 40, display: 'flex', alignItems: 'center', gap: 16, minHeight: 44 }}>
@@ -396,7 +396,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       })}
 
       <main style={{ position: 'relative', zIndex: 1, flex: 1, padding: '16px 0', background: 'var(--color-bg-main)' }}>
-        <div className="dashboard">{children}</div>
+        <div className="dashboard page-container">{children}</div>
       </main>
 
       <Drawer title={<Logo />} placement="left" width={300} open={drawerOpen} onClose={() => setDrawerOpen(false)} styles={{ body: { padding: 0 } }}>
