@@ -57,15 +57,18 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     const onConnect = () => { setConnected(true); console.debug('[Realtime] connected'); };
     const onDisconnect = () => { setConnected(false); console.debug('[Realtime] disconnected'); };
     const onError = (err: Error) => console.warn('[Realtime] connect_error:', err.message);
+    const onAny = (event: string, payload: unknown) => console.debug('[Realtime] event:', event, payload);
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
     socket.on('connect_error', onError);
+    socket.onAny(onAny);
     bindings.forEach(([event, fn]) => socket.on(event, fn));
 
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
       socket.off('connect_error', onError);
+      socket.offAny(onAny);
       bindings.forEach(([event, fn]) => socket.off(event, fn));
       disconnectSocket();
       setConnected(false);
