@@ -774,6 +774,16 @@ select option {
   animation: fadeSlideIn 0.3s ease-out forwards;
 }
 
+/* Focus Mode — staggered panel entrance. */
+@keyframes focusPanelIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.focus-panel-enter {
+  opacity: 0;
+  animation: focusPanelIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 /* ────────────────────────────────────────────────────────────────────────
    Login page: premium pseudo-3D specimen vial.
    A single photoreal cutout PNG made to feel cylindrical and alive through

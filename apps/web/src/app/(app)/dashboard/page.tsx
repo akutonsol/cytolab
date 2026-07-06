@@ -17,6 +17,7 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { GlassCard } from '@/components/dashboard/glass-card';
 import { ActivityTray } from '@/components/dashboard/ActivityTray';
 import { LiveStatusRibbon } from '@/components/dashboard/LiveStatusRibbon';
+import { FocusMode } from '@/components/dashboard/FocusMode';
 import { PerformanceArea, SubscriptionBars } from './charts';
 
 const GREEN = '#166534', BLUE = '#4F46E5';
@@ -300,6 +301,356 @@ export default function DashboardPage() {
   const emailName = (claims?.email ?? '').split('@')[0].split(/[._-]/)[0].replace(/[^a-z]/gi, '');
   const firstName = me?.firstName?.trim() || ov?.greeting?.firstName || (emailName ? emailName[0].toUpperCase() + emailName.slice(1) : 'there');
 
+  const focusSpecimenQueue = (
+            <div style={{ height: 540, background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <span style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Specimen Queue</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 999, padding: '4px 10px', cursor: 'pointer' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>All Types</span>
+                  <ChevronDown size={12} color="#475569" />
+                </div>
+              </div>
+              <div className="premium-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, overflowY: 'auto', minHeight: 0 }}>
+                {(d.priorityRecords || []).slice(0, 6).map((r: any) => {
+                  const sel = selectedRecord?.id === r.id;
+                  // Priority → colored left stripe + dot (replaces the text badge).
+                  // Zero-orange: Medium uses dark amber #92400E (not amber-500).
+                  const priority: string = r.urgent ? 'High Priority' : 'Normal Priority';
+                  const stripe = priority === 'Critical' ? '#111827'
+                    : priority === 'High Priority' ? '#EF4444'
+                    : priority === 'Medium Priority' ? '#92400E' : '#10B981';
+                  return (
+                    <div key={r.id} onClick={() => setSelectedRecord(r)} title={priority}
+                      style={{ display: 'flex', alignItems: 'center', gap: 14, minHeight: 72, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: sel ? '#EEF2FF' : 'transparent', border: sel ? '1px solid #C7D2FE' : '1px solid transparent', borderLeft: `4px solid ${stripe}`, transition: 'all 0.3s' }}
+                      onMouseEnter={(e) => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = '#F8FAFC'; }}
+                      onMouseLeave={(e) => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}>
+                      <SpecimenIcon type={r.specimen} size={56} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 2 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: stripe, flexShrink: 0 }} />
+                          <span style={{ fontSize: 14.5, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>{r.labNumber ?? '—'}</span>
+                        </div>
+                        <div style={{ fontSize: 12.5, color: '#475569', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {specLabel(r.specimen)}{r.patient ? ` · ${r.patient}` : ''}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 3 }}>
+                          <span style={{ fontSize: 11, color: '#9ca3af' }}>Received {new Date(r.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#818CF8' }} />
+                            <span style={{ fontSize: 10, fontWeight: 600, color: '#4F46E5' }}>AI Screening Complete</span>
+                          </span>
+                        </div>
+                      </div>
+                      {sel
+                        ? <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: '#4F46E5' }} />
+                        : <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: dotFor(r.status) }} />}
+                    </div>
+                  );
+                })}
+              </div>
+              <button onClick={() => router.push('/records')} style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: '#4F46E5', background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0' }}>
+                View all specimens <ArrowUpRight size={14} />
+              </button>
+            </div>
+  );
+  const focusAiModel = (
+            <div className="ai-model-container" style={{ height: 540, background: '#FFFFFF', borderRadius: 20, border: '2px solid #EEF2FF', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              {/* Header (overlays the stage so the head can fill the panel) */}
+              <div style={{ padding: '20px 24px 0', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 4 }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Cytology Model</div>
+                <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 shadow-sm">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" style={{ animationDuration: '1.5s' }} />
+                  <span className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Live</span>
+                  <span className="text-[11px] font-medium text-gray-500">Scanning</span>
+                </div>
+              </div>
+
+              {/* Analysis stage — head fills the panel, scalp near the top */}
+              <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
+                <div style={{ position: 'relative', width: 760, height: 520, maxWidth: '100%', overflow: 'hidden' }}>
+                  {(() => {
+                    const isGyn = ['CERV_SCRAP', 'ENDOCERV_ASP', 'VAG_POOL'].includes(selectedRecord?.specimen ?? '');
+                    const markers = MARKER_SETS[isGyn ? 'GYN' : 'NONGYN'].map((m) => ({ ...m, color: selectedRecord?.urgent ? '#991B1B' : m.color }));
+                    const findings = [
+                      { label: selectedRecord?.specimen ? specLabel(selectedRecord.specimen) : 'Awaiting Analysis', conf: eff?.authorization ?? 0, color: '#6366F1', y: 100, attention: selectedRecord?.urgent ?? false },
+                      { label: `${eff?.onTime ?? 0}% On-time Rate`, conf: eff?.onTime ?? 0, color: '#1D4ED8', y: 214, attention: (eff?.onTime ?? 0) < 70 },
+                      { label: `${eff?.accuracy ?? 0}% Accuracy Score`, conf: eff?.accuracy ?? 0, color: '#6D28D9', y: 314, attention: (eff?.accuracy ?? 0) < 80 },
+                      { label: `${eff?.reportsAuthorized ?? 0} Reports Authorized`, conf: Math.min(100, Math.round(((eff?.reportsAuthorized ?? 0) / Math.max(eff?.specimensProcessed ?? 1, 1)) * 100)), color: '#6366F1', y: 452, attention: false },
+                    ];
+                    const LX = 500; // label dot x
+                    return (
+                      <>
+                        {/* dotted connectors marker → label */}
+                        <svg width="760" height="520" viewBox="0 0 760 520" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
+                          {markers.map((m, i) => (
+                            <line key={i} x1={m.x} y1={m.y} x2={LX} y2={findings[i].y} stroke="#818CF8" strokeWidth={1.8} strokeDasharray="4 5" />
+                          ))}
+                        </svg>
+                        {/* aura */}
+                        <div style={{ position: 'absolute', left: -130, top: -60, width: 780, height: 760, background: 'radial-gradient(55% 55% at 47% 44%, rgba(255,255,255,0.85) 0%, rgba(167,139,250,0.35) 38%, rgba(139,92,246,0.20) 55%, rgba(99,102,241,0.08) 68%, transparent 78%)', filter: 'blur(8px)', zIndex: 0 }} />
+                        {/* floating cytology particles */}
+                        {[
+                          { size: 32, top: '12%', left: '10%', delay: '0s', dur: '7s' },
+                          { size: 24, top: '30%', left: '6%', delay: '1.5s', dur: '9s' },
+                          { size: 28, top: '60%', left: '8%', delay: '3s', dur: '8s' },
+                          { size: 20, top: '75%', left: '18%', delay: '2s', dur: '10s' },
+                          { size: 26, top: '18%', left: '72%', delay: '4s', dur: '7.5s' },
+                          { size: 22, top: '50%', left: '78%', delay: '5s', dur: '8.5s' },
+                          { size: 18, top: '82%', left: '68%', delay: '1s', dur: '9.5s' },
+                        ].map((p, i) => (
+                          <div key={i} style={{ position: 'absolute', top: p.top, left: p.left, pointerEvents: 'none', zIndex: 1, animation: `particleFloat ${p.dur} ease-in-out infinite`, animationDelay: p.delay, opacity: 0.75, filter: 'drop-shadow(0 2px 8px rgba(99,102,241,0.3))' }}>
+                            <SpecimenIcon type={(['CERV_SCRAP', 'BREAST_ASP', 'URINE', 'PLEURAL_FLD', 'CSF', 'ENDOCERV_ASP', 'VAG_POOL'])[i % 7]} size={p.size} />
+                          </div>
+                        ))}
+                        {/* rotating halo beneath the bust */}
+                        <div style={{ position: 'absolute', left: 70, top: 450, width: 370, height: 80, borderRadius: '50%', background: 'radial-gradient(50% 50% at 50% 50%, rgba(167,139,250,0.3) 0%, rgba(99,102,241,0.15) 45%, transparent 70%)', filter: 'blur(8px)', zIndex: 1, animation: 'haloRotate 6s ease-in-out infinite' }} />
+                        {/* head — box matches the image's 1.5 aspect (no letterbox); scalp near top */}
+                        <img src="/ai-man.png" alt="AI Cytology Model" className="ai-breathe"
+                          style={{ position: 'absolute', left: -167, top: -18, width: 833, height: 555, objectFit: 'contain', objectPosition: 'center', filter: 'brightness(1.52) contrast(1.14) saturate(0.35) drop-shadow(0 18px 40px rgba(99,102,241,0.3))', zIndex: 2 }} />
+                        {/* glossy white top-light to mimic the reference render */}
+                        <div style={{ position: 'absolute', left: 80, top: 20, width: 360, height: 340, background: 'radial-gradient(46% 42% at 50% 26%, rgba(255,255,255,0.55), rgba(255,255,255,0.12) 46%, transparent 66%)', mixBlendMode: 'screen', pointerEvents: 'none', zIndex: 2 }} />
+                        {/* target markers (soft halo + ring + center) */}
+                        {markers.map((m, i) => (
+                          <div key={i} style={{ position: 'absolute', left: m.x, top: m.y, transform: 'translate(-50%,-50%)', zIndex: 3, width: 48, height: 48, borderRadius: '50%', display: 'grid', placeItems: 'center', background: `radial-gradient(50% 50% at 50% 50%, ${m.color}33, transparent 70%)` }}>
+                            <div className="ai-pulse" style={{ width: 28, height: 28, borderRadius: '50%', background: 'white', border: `2px solid ${m.color}`, boxShadow: `0 0 10px ${m.color}66`, display: 'grid', placeItems: 'center' }}>
+                              <div style={{ width: 10, height: 10, borderRadius: '50%', background: m.color }} />
+                            </div>
+                          </div>
+                        ))}
+                        {/* findings labels (plain, connected) */}
+                        {findings.map((f, i) => (
+                          <div key={i} style={{ position: 'absolute', left: LX, top: f.y, transform: 'translateY(-50%)', width: 210, zIndex: 3 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                              <div style={{ width: 10, height: 10, borderRadius: '50%', background: f.color, flexShrink: 0 }} />
+                              <span style={{ fontSize: 16, fontWeight: 800, color: '#1E1B4B' }}>{f.label}</span>
+                            </div>
+                            <div style={{ fontSize: 13, color: '#6B7280', marginLeft: 19, marginTop: 2 }}>Confidence {f.conf}%</div>
+                            {f.attention && (
+                              <div style={{ marginLeft: 19, marginTop: 5 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: '#991B1B', background: '#FEF2F2', borderRadius: 6, padding: '2px 8px' }}>+ Attention</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Processing Specimen overlay */}
+              <div style={{ position: 'absolute', left: 20, top: 'auto', bottom: 110, zIndex: 4, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(12px)', borderRadius: 16, padding: '14px 18px', border: '1px solid rgba(79,70,229,0.12)', boxShadow: '0 8px 24px rgba(79,70,229,0.12)', width: 220 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Processing Specimen</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'transparent', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                    <SpecimenIcon type={selectedRecord?.specimen} size={36} />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{selectedRecord?.labNumber ?? '—'}</div>
+                    <div style={{ fontSize: 11, color: '#475569' }}>{selectedRecord?.specimen ? specLabel(selectedRecord.specimen) : 'No active specimen'}</div>
+                    <div style={{ fontSize: 11, color: '#475569', marginTop: 1 }}>{selectedRecord?.patient ?? ''}</div>
+                  </div>
+                </div>
+                {(() => {
+                  const pct = PROGRESS_MAP[selectedRecord?.status ?? 'Pending'] ?? 5;
+                  return (
+                    <>
+                      <div style={{ fontSize: 11, color: '#475569', marginBottom: 6 }}>Scanning Cells…</div>
+                      <div style={{ height: 8, background: '#EEF2FF', borderRadius: 999, overflow: 'hidden', marginBottom: 4 }}>
+                        <div style={{ height: 8, borderRadius: 999, background: 'linear-gradient(90deg,#4F46E5,#6B21A8)', width: `${pct}%`, transition: 'width 0.5s ease-out' }} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#9ca3af' }}>
+                        <span>{pct}% Complete</span>
+                        <span style={{ fontFamily: 'monospace', color: '#4F46E5' }}>00:00:18</span>
+                      </div>
+                    </>
+                  );
+                })()}
+                <div style={{ marginTop: 8, fontSize: 11, color: '#475569' }}>
+                  <span style={{ fontWeight: 700, color: '#0F172A' }}>{cellsAnalyzed.toLocaleString()}</span> cells analyzed
+                </div>
+              </div>
+
+              {/* View selector pill + marker hint */}
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 24px 22px', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 4 }}>
+                <button onClick={() => setModelView((v) => (v + 1) % MODEL_VIEWS.length)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'white', border: '1px solid #EEF2F7', boxShadow: '0 6px 18px rgba(79,70,229,0.10)', borderRadius: 999, padding: '11px 24px', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#4F46E5', fontFamily: 'Geist,sans-serif' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2">
+                    <circle cx="12" cy="12" r="3" /><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
+                  </svg>
+                  {MODEL_VIEWS[modelView]} View <ChevronDown size={14} />
+                </button>
+                <div style={{ textAlign: 'center', marginTop: 6, fontSize: 11, color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  Click on markers to view cell details
+                </div>
+              </div>
+            </div>
+  );
+  const focusAiFindings = (
+            <div key={selectedRecord?.id} className="premium-scroll" style={{ height: 540, background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', overflowY: 'auto', animation: 'findingsFadeIn 0.4s ease-out' }}>
+              <div className="flex h-full flex-col gap-3">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">AI Findings</span>
+                  <span className="text-xs font-semibold text-indigo-600">{selectedRecord?.labNumber ?? '—'}</span>
+                </div>
+
+                {/* AI status */}
+                <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-2.5">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+                  <span className="text-[12px] font-bold text-emerald-700">✓ AI Screening Complete</span>
+                </div>
+
+                {/* AI version + trust signals */}
+                <div className="rounded-xl bg-gray-50 p-2.5">
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[13px] font-black text-gray-900">CYTO AI</span>
+                    <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-600">v3.2</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">✓ FDA Validated</span>
+                    <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">✓ CAP Certified</span>
+                  </div>
+                  <div className="mt-1 text-[10px] text-gray-400">85,203 cases processed</div>
+                </div>
+
+                {/* Confidence + colour coding. Zero-orange: safe tiers only —
+                    emerald ≥80, dark amber-800 60–79, red <60 (no orange-500/600). */}
+                <div className="rounded-xl bg-gray-50 p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Confidence</span>
+                    <span className={`text-[13px] font-black ${displayConf >= 80 ? 'text-emerald-600' : displayConf >= 60 ? 'text-amber-800' : 'text-red-600'}`}>{displayConf}%</span>
+                  </div>
+                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
+                    <div className={`h-full rounded-full transition-all duration-1000 ${displayConf >= 80 ? 'bg-emerald-500' : displayConf >= 60 ? 'bg-yellow-400' : 'bg-red-500'}`} style={{ width: `${targetConf}%` }} />
+                  </div>
+                  <div className="mt-1 flex justify-between">
+                    <span className="text-[10px] text-gray-400">Based on {eff?.specimensProcessed ?? 0} specimens</span>
+                    <span className={`text-[10px] font-semibold ${displayConf >= 80 ? 'text-emerald-600' : displayConf >= 60 ? 'text-amber-800' : 'text-red-600'}`}>{displayConf >= 80 ? 'High Confidence' : displayConf >= 60 ? 'Moderate' : 'Low Confidence'}</span>
+                  </div>
+                  <div className={`mt-0.5 text-[10px] font-semibold ${displayConf >= 80 ? 'text-emerald-600' : displayConf >= 60 ? 'text-amber-800' : 'text-red-600'}`}>
+                    {displayConf >= 80 ? 'Very Low Risk of Misclassification' : displayConf >= 60 ? 'Low Risk of Misclassification' : 'Manual Review Strongly Recommended'}
+                  </div>
+                </div>
+
+                {/* AI Confidence history — grew as more cells were analysed. */}
+                <div className="rounded-xl bg-gray-50 p-3">
+                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">AI Confidence History</div>
+                  <div className="flex h-12 items-end gap-1.5">
+                    {[{ time: '08:41', value: 61 }, { time: '08:42', value: 72 }, { time: '08:43', value: 79 }, { time: '08:44', value: 84 }].map((point) => (
+                      <div key={point.time} className="flex flex-1 flex-col items-center gap-1">
+                        <div className="w-full rounded-sm bg-indigo-200 transition-all duration-500" style={{ height: `${(point.value / 100) * 40}px` }} />
+                        <span className="text-[9px] text-gray-400">{point.time}</span>
+                      </div>
+                    ))}
+                    <div className="flex flex-1 flex-col items-center gap-1">
+                      <div className="w-full rounded-sm bg-indigo-600" style={{ height: '40px' }} />
+                      <span className="text-[9px] font-bold text-indigo-600">Now</span>
+                    </div>
+                  </div>
+                  <div className="mt-1 text-[10px] text-gray-400">Confidence increased as more cells were analyzed</div>
+                </div>
+
+                {/* AI Decision Probabilities — the differentiator. Zero-orange severity
+                    palette: HSIL red · ASC-US rose · LSIL bright-yellow · Normal emerald. */}
+                <div className="rounded-xl bg-indigo-50 p-3">
+                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-indigo-600">AI Decision Probabilities</div>
+                  {[
+                    { label: 'HSIL', prob: 84, color: 'bg-red-500' },
+                    { label: 'ASC-US', prob: 9, color: 'bg-rose-400' },
+                    { label: 'LSIL', prob: 5, color: 'bg-yellow-400' },
+                    { label: 'Normal', prob: 2, color: 'bg-emerald-500' },
+                  ].map(({ label, prob, color }) => (
+                    <div key={label} className="mb-1.5 flex items-center gap-2 last:mb-0">
+                      <span className="w-14 text-[11px] font-semibold text-gray-700">{label}</span>
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white">
+                        <div className={`h-full rounded-full ${color}`} style={{ width: `${prob}%` }} />
+                      </div>
+                      <span className="w-8 text-right text-[11px] font-bold text-gray-600">{prob}%</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Prediction */}
+                <div>
+                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Prediction</div>
+                  <div className="text-[15px] font-bold text-gray-900">{selectedRecord?.urgent ? 'Atypical Cells Detected' : 'Specimen Under Review'}</div>
+                  <div className="text-[11px] text-gray-500">{selectedRecord?.client ?? 'Awaiting analysis'}</div>
+                </div>
+
+                <div className="h-px w-full bg-gray-100" />
+
+                {/* XAI — AI evidence with per-finding confidence */}
+                <div>
+                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">AI Evidence</div>
+                  {[
+                    { label: 'Nuclear enlargement', confidence: 94 },
+                    { label: 'Hyperchromasia', confidence: 87 },
+                    { label: 'Dense clustering', confidence: 81 },
+                    { label: 'Irregular chromatin', confidence: 73 },
+                  ].map(({ label, confidence }) => (
+                    <div key={label} className="mb-2 last:mb-0">
+                      <div className="mb-0.5 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[11px] text-emerald-500">✓</span>
+                          <span className="text-[11px] font-medium text-gray-700">{label}</span>
+                        </div>
+                        <span className="text-[11px] font-bold text-gray-600">{confidence}%</span>
+                      </div>
+                      <div className="h-1 w-full overflow-hidden rounded-full bg-gray-100">
+                        <div className="h-full rounded-full bg-indigo-400" style={{ width: `${confidence}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="h-px w-full bg-gray-100" />
+
+                {/* Human review workflow timeline */}
+                <div>
+                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">Review Workflow</div>
+                  {[
+                    { label: 'AI Screening Complete', done: true, active: false },
+                    { label: 'Human Review Pending', done: false, active: true },
+                    { label: 'Pathologist Authorization', done: false, active: false },
+                    { label: 'Released', done: false, active: false },
+                  ].map(({ label, done, active }) => (
+                    <div key={label} className="mb-1.5 flex items-center gap-2 last:mb-0">
+                      <div className={`h-3 w-3 flex-shrink-0 rounded-full ${done ? 'bg-emerald-500' : active ? 'animate-pulse bg-indigo-500' : 'bg-gray-200'}`} />
+                      <span className={`text-[11px] ${done ? 'font-medium text-emerald-600' : active ? 'font-bold text-indigo-600' : 'font-medium text-gray-400'}`}>{label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Recommended next step — guided CTA with review time / priority / role.
+                    Zero-orange: amber-50/100 + amber-800/900 only (amber-600/700 render or
+                    anti-alias orange); HIGH priority uses red-600. */}
+                <div className="mt-auto rounded-xl border border-amber-100 bg-amber-50 p-3">
+                  <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-amber-800">Recommended Next Step</div>
+                  <div className="mb-2 text-[13px] font-bold text-amber-900">Immediate Cytotechnologist Review</div>
+                  <div className="mb-3 flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] text-amber-800">Estimated review time</div>
+                      <div className="text-[12px] font-bold text-amber-900">3 min</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-amber-800">Priority</div>
+                      <div className="text-[12px] font-bold text-red-600">HIGH</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-amber-800">AI Role</div>
+                      <div className="text-[12px] font-bold text-amber-900">Screening Only</div>
+                    </div>
+                  </div>
+                  <button onClick={() => router.push(`/records/${selectedRecord?.id ?? ''}`)} className="w-full rounded-xl bg-indigo-600 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-indigo-700">Open Review →</button>
+                </div>
+              </div>
+            </div>
+  );
+
   return (
     <div className="dashboard-theme -my-4" style={{ minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'relative', zIndex: 1, padding: '4px 0 40px', background: '#F8F9FD' }}>
@@ -486,355 +837,25 @@ export default function DashboardPage() {
               width — no fixed px widths, so the grid scales with the viewport and
               the right column reaches the same edge as the nav. minmax(0,…) keeps
               wide children from overflowing. */}
+          {/* Hero section — three-column workspace, with a Focus Mode overlay. */}
+          <div style={{ position: 'relative' }}>
+            <FocusMode
+              specimenQueue={focusSpecimenQueue}
+              aiModel={focusAiModel}
+              aiFindings={focusAiFindings}
+              kpiStats={[
+                { label: 'Active Specimens', value: String(d.priorityRecords?.length || 0), sub: `${d.priorityRecords?.filter((r: any) => r.urgent).length || 0} urgent` },
+                { label: 'Cases Today', value: String(ov?.today?.requisitionsToday || 0), sub: 'received today' },
+                { label: 'Avg Turnaround', value: kpis?.avgTat ? `${kpis.avgTat}d` : '—', sub: 'within target' },
+                { label: 'Pending Review', value: String(kpis?.pendingRequisitions || 0), sub: `${d.priorityRecords?.filter((r: any) => r.urgent).length || 0} high priority` },
+                { label: 'Auth Rate', value: `${eff?.authorization || 0}%`, sub: 'on target' },
+              ]}
+            />
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.8fr) minmax(0, 1fr)', gap: 20, alignItems: 'stretch' }}>
-            {/* LEFT: Specimen Queue */}
-            <div style={{ height: 540, background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <span style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Specimen Queue</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 999, padding: '4px 10px', cursor: 'pointer' }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>All Types</span>
-                  <ChevronDown size={12} color="#475569" />
-                </div>
-              </div>
-              <div className="premium-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, overflowY: 'auto', minHeight: 0 }}>
-                {(d.priorityRecords || []).slice(0, 6).map((r: any) => {
-                  const sel = selectedRecord?.id === r.id;
-                  // Priority → colored left stripe + dot (replaces the text badge).
-                  // Zero-orange: Medium uses dark amber #92400E (not amber-500).
-                  const priority: string = r.urgent ? 'High Priority' : 'Normal Priority';
-                  const stripe = priority === 'Critical' ? '#111827'
-                    : priority === 'High Priority' ? '#EF4444'
-                    : priority === 'Medium Priority' ? '#92400E' : '#10B981';
-                  return (
-                    <div key={r.id} onClick={() => setSelectedRecord(r)} title={priority}
-                      style={{ display: 'flex', alignItems: 'center', gap: 14, minHeight: 72, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: sel ? '#EEF2FF' : 'transparent', border: sel ? '1px solid #C7D2FE' : '1px solid transparent', borderLeft: `4px solid ${stripe}`, transition: 'all 0.3s' }}
-                      onMouseEnter={(e) => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = '#F8FAFC'; }}
-                      onMouseLeave={(e) => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}>
-                      <SpecimenIcon type={r.specimen} size={56} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 2 }}>
-                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: stripe, flexShrink: 0 }} />
-                          <span style={{ fontSize: 14.5, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>{r.labNumber ?? '—'}</span>
-                        </div>
-                        <div style={{ fontSize: 12.5, color: '#475569', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {specLabel(r.specimen)}{r.patient ? ` · ${r.patient}` : ''}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 3 }}>
-                          <span style={{ fontSize: 11, color: '#9ca3af' }}>Received {new Date(r.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#818CF8' }} />
-                            <span style={{ fontSize: 10, fontWeight: 600, color: '#4F46E5' }}>AI Screening Complete</span>
-                          </span>
-                        </div>
-                      </div>
-                      {sel
-                        ? <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: '#4F46E5' }} />
-                        : <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: dotFor(r.status) }} />}
-                    </div>
-                  );
-                })}
-              </div>
-              <button onClick={() => router.push('/records')} style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: '#4F46E5', background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0' }}>
-                View all specimens <ArrowUpRight size={14} />
-              </button>
-            </div>
-
-            {/* CENTER: AI Cytology Model — elevated centerpiece (border + aiGlow). */}
-            <div className="ai-model-container" style={{ height: 540, background: '#FFFFFF', borderRadius: 20, border: '2px solid #EEF2FF', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              {/* Header (overlays the stage so the head can fill the panel) */}
-              <div style={{ padding: '20px 24px 0', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 4 }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Cytology Model</div>
-                <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 shadow-sm">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" style={{ animationDuration: '1.5s' }} />
-                  <span className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Live</span>
-                  <span className="text-[11px] font-medium text-gray-500">Scanning</span>
-                </div>
-              </div>
-
-              {/* Analysis stage — head fills the panel, scalp near the top */}
-              <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
-                <div style={{ position: 'relative', width: 760, height: 520, maxWidth: '100%', overflow: 'hidden' }}>
-                  {(() => {
-                    const isGyn = ['CERV_SCRAP', 'ENDOCERV_ASP', 'VAG_POOL'].includes(selectedRecord?.specimen ?? '');
-                    const markers = MARKER_SETS[isGyn ? 'GYN' : 'NONGYN'].map((m) => ({ ...m, color: selectedRecord?.urgent ? '#991B1B' : m.color }));
-                    const findings = [
-                      { label: selectedRecord?.specimen ? specLabel(selectedRecord.specimen) : 'Awaiting Analysis', conf: eff?.authorization ?? 0, color: '#6366F1', y: 100, attention: selectedRecord?.urgent ?? false },
-                      { label: `${eff?.onTime ?? 0}% On-time Rate`, conf: eff?.onTime ?? 0, color: '#1D4ED8', y: 214, attention: (eff?.onTime ?? 0) < 70 },
-                      { label: `${eff?.accuracy ?? 0}% Accuracy Score`, conf: eff?.accuracy ?? 0, color: '#6D28D9', y: 314, attention: (eff?.accuracy ?? 0) < 80 },
-                      { label: `${eff?.reportsAuthorized ?? 0} Reports Authorized`, conf: Math.min(100, Math.round(((eff?.reportsAuthorized ?? 0) / Math.max(eff?.specimensProcessed ?? 1, 1)) * 100)), color: '#6366F1', y: 452, attention: false },
-                    ];
-                    const LX = 500; // label dot x
-                    return (
-                      <>
-                        {/* dotted connectors marker → label */}
-                        <svg width="760" height="520" viewBox="0 0 760 520" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
-                          {markers.map((m, i) => (
-                            <line key={i} x1={m.x} y1={m.y} x2={LX} y2={findings[i].y} stroke="#818CF8" strokeWidth={1.8} strokeDasharray="4 5" />
-                          ))}
-                        </svg>
-                        {/* aura */}
-                        <div style={{ position: 'absolute', left: -130, top: -60, width: 780, height: 760, background: 'radial-gradient(55% 55% at 47% 44%, rgba(255,255,255,0.85) 0%, rgba(167,139,250,0.35) 38%, rgba(139,92,246,0.20) 55%, rgba(99,102,241,0.08) 68%, transparent 78%)', filter: 'blur(8px)', zIndex: 0 }} />
-                        {/* floating cytology particles */}
-                        {[
-                          { size: 32, top: '12%', left: '10%', delay: '0s', dur: '7s' },
-                          { size: 24, top: '30%', left: '6%', delay: '1.5s', dur: '9s' },
-                          { size: 28, top: '60%', left: '8%', delay: '3s', dur: '8s' },
-                          { size: 20, top: '75%', left: '18%', delay: '2s', dur: '10s' },
-                          { size: 26, top: '18%', left: '72%', delay: '4s', dur: '7.5s' },
-                          { size: 22, top: '50%', left: '78%', delay: '5s', dur: '8.5s' },
-                          { size: 18, top: '82%', left: '68%', delay: '1s', dur: '9.5s' },
-                        ].map((p, i) => (
-                          <div key={i} style={{ position: 'absolute', top: p.top, left: p.left, pointerEvents: 'none', zIndex: 1, animation: `particleFloat ${p.dur} ease-in-out infinite`, animationDelay: p.delay, opacity: 0.75, filter: 'drop-shadow(0 2px 8px rgba(99,102,241,0.3))' }}>
-                            <SpecimenIcon type={(['CERV_SCRAP', 'BREAST_ASP', 'URINE', 'PLEURAL_FLD', 'CSF', 'ENDOCERV_ASP', 'VAG_POOL'])[i % 7]} size={p.size} />
-                          </div>
-                        ))}
-                        {/* rotating halo beneath the bust */}
-                        <div style={{ position: 'absolute', left: 70, top: 450, width: 370, height: 80, borderRadius: '50%', background: 'radial-gradient(50% 50% at 50% 50%, rgba(167,139,250,0.3) 0%, rgba(99,102,241,0.15) 45%, transparent 70%)', filter: 'blur(8px)', zIndex: 1, animation: 'haloRotate 6s ease-in-out infinite' }} />
-                        {/* head — box matches the image's 1.5 aspect (no letterbox); scalp near top */}
-                        <img src="/ai-man.png" alt="AI Cytology Model" className="ai-breathe"
-                          style={{ position: 'absolute', left: -167, top: -18, width: 833, height: 555, objectFit: 'contain', objectPosition: 'center', filter: 'brightness(1.52) contrast(1.14) saturate(0.35) drop-shadow(0 18px 40px rgba(99,102,241,0.3))', zIndex: 2 }} />
-                        {/* glossy white top-light to mimic the reference render */}
-                        <div style={{ position: 'absolute', left: 80, top: 20, width: 360, height: 340, background: 'radial-gradient(46% 42% at 50% 26%, rgba(255,255,255,0.55), rgba(255,255,255,0.12) 46%, transparent 66%)', mixBlendMode: 'screen', pointerEvents: 'none', zIndex: 2 }} />
-                        {/* target markers (soft halo + ring + center) */}
-                        {markers.map((m, i) => (
-                          <div key={i} style={{ position: 'absolute', left: m.x, top: m.y, transform: 'translate(-50%,-50%)', zIndex: 3, width: 48, height: 48, borderRadius: '50%', display: 'grid', placeItems: 'center', background: `radial-gradient(50% 50% at 50% 50%, ${m.color}33, transparent 70%)` }}>
-                            <div className="ai-pulse" style={{ width: 28, height: 28, borderRadius: '50%', background: 'white', border: `2px solid ${m.color}`, boxShadow: `0 0 10px ${m.color}66`, display: 'grid', placeItems: 'center' }}>
-                              <div style={{ width: 10, height: 10, borderRadius: '50%', background: m.color }} />
-                            </div>
-                          </div>
-                        ))}
-                        {/* findings labels (plain, connected) */}
-                        {findings.map((f, i) => (
-                          <div key={i} style={{ position: 'absolute', left: LX, top: f.y, transform: 'translateY(-50%)', width: 210, zIndex: 3 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                              <div style={{ width: 10, height: 10, borderRadius: '50%', background: f.color, flexShrink: 0 }} />
-                              <span style={{ fontSize: 16, fontWeight: 800, color: '#1E1B4B' }}>{f.label}</span>
-                            </div>
-                            <div style={{ fontSize: 13, color: '#6B7280', marginLeft: 19, marginTop: 2 }}>Confidence {f.conf}%</div>
-                            {f.attention && (
-                              <div style={{ marginLeft: 19, marginTop: 5 }}>
-                                <span style={{ fontSize: 11, fontWeight: 700, color: '#991B1B', background: '#FEF2F2', borderRadius: 6, padding: '2px 8px' }}>+ Attention</span>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-
-              {/* Processing Specimen overlay */}
-              <div style={{ position: 'absolute', left: 20, top: 'auto', bottom: 110, zIndex: 4, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(12px)', borderRadius: 16, padding: '14px 18px', border: '1px solid rgba(79,70,229,0.12)', boxShadow: '0 8px 24px rgba(79,70,229,0.12)', width: 220 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Processing Specimen</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'transparent', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                    <SpecimenIcon type={selectedRecord?.specimen} size={36} />
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{selectedRecord?.labNumber ?? '—'}</div>
-                    <div style={{ fontSize: 11, color: '#475569' }}>{selectedRecord?.specimen ? specLabel(selectedRecord.specimen) : 'No active specimen'}</div>
-                    <div style={{ fontSize: 11, color: '#475569', marginTop: 1 }}>{selectedRecord?.patient ?? ''}</div>
-                  </div>
-                </div>
-                {(() => {
-                  const pct = PROGRESS_MAP[selectedRecord?.status ?? 'Pending'] ?? 5;
-                  return (
-                    <>
-                      <div style={{ fontSize: 11, color: '#475569', marginBottom: 6 }}>Scanning Cells…</div>
-                      <div style={{ height: 8, background: '#EEF2FF', borderRadius: 999, overflow: 'hidden', marginBottom: 4 }}>
-                        <div style={{ height: 8, borderRadius: 999, background: 'linear-gradient(90deg,#4F46E5,#6B21A8)', width: `${pct}%`, transition: 'width 0.5s ease-out' }} />
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#9ca3af' }}>
-                        <span>{pct}% Complete</span>
-                        <span style={{ fontFamily: 'monospace', color: '#4F46E5' }}>00:00:18</span>
-                      </div>
-                    </>
-                  );
-                })()}
-                <div style={{ marginTop: 8, fontSize: 11, color: '#475569' }}>
-                  <span style={{ fontWeight: 700, color: '#0F172A' }}>{cellsAnalyzed.toLocaleString()}</span> cells analyzed
-                </div>
-              </div>
-
-              {/* View selector pill + marker hint */}
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 24px 22px', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 4 }}>
-                <button onClick={() => setModelView((v) => (v + 1) % MODEL_VIEWS.length)}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'white', border: '1px solid #EEF2F7', boxShadow: '0 6px 18px rgba(79,70,229,0.10)', borderRadius: 999, padding: '11px 24px', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#4F46E5', fontFamily: 'Geist,sans-serif' }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2">
-                    <circle cx="12" cy="12" r="3" /><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
-                  </svg>
-                  {MODEL_VIEWS[modelView]} View <ChevronDown size={14} />
-                </button>
-                <div style={{ textAlign: 'center', marginTop: 6, fontSize: 11, color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
-                  </svg>
-                  Click on markers to view cell details
-                </div>
-              </div>
-            </div>
-
-            {/* RIGHT: AI Findings — re-keyed so it fades in on each selection */}
-            <div key={selectedRecord?.id} className="premium-scroll" style={{ height: 540, background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', overflowY: 'auto', animation: 'findingsFadeIn 0.4s ease-out' }}>
-              <div className="flex h-full flex-col gap-3">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">AI Findings</span>
-                  <span className="text-xs font-semibold text-indigo-600">{selectedRecord?.labNumber ?? '—'}</span>
-                </div>
-
-                {/* AI status */}
-                <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-2.5">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-                  <span className="text-[12px] font-bold text-emerald-700">✓ AI Screening Complete</span>
-                </div>
-
-                {/* AI version + trust signals */}
-                <div className="rounded-xl bg-gray-50 p-2.5">
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="text-[13px] font-black text-gray-900">CYTO AI</span>
-                    <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-600">v3.2</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">✓ FDA Validated</span>
-                    <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">✓ CAP Certified</span>
-                  </div>
-                  <div className="mt-1 text-[10px] text-gray-400">85,203 cases processed</div>
-                </div>
-
-                {/* Confidence + colour coding. Zero-orange: safe tiers only —
-                    emerald ≥80, dark amber-800 60–79, red <60 (no orange-500/600). */}
-                <div className="rounded-xl bg-gray-50 p-3">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Confidence</span>
-                    <span className={`text-[13px] font-black ${displayConf >= 80 ? 'text-emerald-600' : displayConf >= 60 ? 'text-amber-800' : 'text-red-600'}`}>{displayConf}%</span>
-                  </div>
-                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
-                    <div className={`h-full rounded-full transition-all duration-1000 ${displayConf >= 80 ? 'bg-emerald-500' : displayConf >= 60 ? 'bg-yellow-400' : 'bg-red-500'}`} style={{ width: `${targetConf}%` }} />
-                  </div>
-                  <div className="mt-1 flex justify-between">
-                    <span className="text-[10px] text-gray-400">Based on {eff?.specimensProcessed ?? 0} specimens</span>
-                    <span className={`text-[10px] font-semibold ${displayConf >= 80 ? 'text-emerald-600' : displayConf >= 60 ? 'text-amber-800' : 'text-red-600'}`}>{displayConf >= 80 ? 'High Confidence' : displayConf >= 60 ? 'Moderate' : 'Low Confidence'}</span>
-                  </div>
-                  <div className={`mt-0.5 text-[10px] font-semibold ${displayConf >= 80 ? 'text-emerald-600' : displayConf >= 60 ? 'text-amber-800' : 'text-red-600'}`}>
-                    {displayConf >= 80 ? 'Very Low Risk of Misclassification' : displayConf >= 60 ? 'Low Risk of Misclassification' : 'Manual Review Strongly Recommended'}
-                  </div>
-                </div>
-
-                {/* AI Confidence history — grew as more cells were analysed. */}
-                <div className="rounded-xl bg-gray-50 p-3">
-                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">AI Confidence History</div>
-                  <div className="flex h-12 items-end gap-1.5">
-                    {[{ time: '08:41', value: 61 }, { time: '08:42', value: 72 }, { time: '08:43', value: 79 }, { time: '08:44', value: 84 }].map((point) => (
-                      <div key={point.time} className="flex flex-1 flex-col items-center gap-1">
-                        <div className="w-full rounded-sm bg-indigo-200 transition-all duration-500" style={{ height: `${(point.value / 100) * 40}px` }} />
-                        <span className="text-[9px] text-gray-400">{point.time}</span>
-                      </div>
-                    ))}
-                    <div className="flex flex-1 flex-col items-center gap-1">
-                      <div className="w-full rounded-sm bg-indigo-600" style={{ height: '40px' }} />
-                      <span className="text-[9px] font-bold text-indigo-600">Now</span>
-                    </div>
-                  </div>
-                  <div className="mt-1 text-[10px] text-gray-400">Confidence increased as more cells were analyzed</div>
-                </div>
-
-                {/* AI Decision Probabilities — the differentiator. Zero-orange severity
-                    palette: HSIL red · ASC-US rose · LSIL bright-yellow · Normal emerald. */}
-                <div className="rounded-xl bg-indigo-50 p-3">
-                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-indigo-600">AI Decision Probabilities</div>
-                  {[
-                    { label: 'HSIL', prob: 84, color: 'bg-red-500' },
-                    { label: 'ASC-US', prob: 9, color: 'bg-rose-400' },
-                    { label: 'LSIL', prob: 5, color: 'bg-yellow-400' },
-                    { label: 'Normal', prob: 2, color: 'bg-emerald-500' },
-                  ].map(({ label, prob, color }) => (
-                    <div key={label} className="mb-1.5 flex items-center gap-2 last:mb-0">
-                      <span className="w-14 text-[11px] font-semibold text-gray-700">{label}</span>
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white">
-                        <div className={`h-full rounded-full ${color}`} style={{ width: `${prob}%` }} />
-                      </div>
-                      <span className="w-8 text-right text-[11px] font-bold text-gray-600">{prob}%</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Prediction */}
-                <div>
-                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Prediction</div>
-                  <div className="text-[15px] font-bold text-gray-900">{selectedRecord?.urgent ? 'Atypical Cells Detected' : 'Specimen Under Review'}</div>
-                  <div className="text-[11px] text-gray-500">{selectedRecord?.client ?? 'Awaiting analysis'}</div>
-                </div>
-
-                <div className="h-px w-full bg-gray-100" />
-
-                {/* XAI — AI evidence with per-finding confidence */}
-                <div>
-                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">AI Evidence</div>
-                  {[
-                    { label: 'Nuclear enlargement', confidence: 94 },
-                    { label: 'Hyperchromasia', confidence: 87 },
-                    { label: 'Dense clustering', confidence: 81 },
-                    { label: 'Irregular chromatin', confidence: 73 },
-                  ].map(({ label, confidence }) => (
-                    <div key={label} className="mb-2 last:mb-0">
-                      <div className="mb-0.5 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] text-emerald-500">✓</span>
-                          <span className="text-[11px] font-medium text-gray-700">{label}</span>
-                        </div>
-                        <span className="text-[11px] font-bold text-gray-600">{confidence}%</span>
-                      </div>
-                      <div className="h-1 w-full overflow-hidden rounded-full bg-gray-100">
-                        <div className="h-full rounded-full bg-indigo-400" style={{ width: `${confidence}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="h-px w-full bg-gray-100" />
-
-                {/* Human review workflow timeline */}
-                <div>
-                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">Review Workflow</div>
-                  {[
-                    { label: 'AI Screening Complete', done: true, active: false },
-                    { label: 'Human Review Pending', done: false, active: true },
-                    { label: 'Pathologist Authorization', done: false, active: false },
-                    { label: 'Released', done: false, active: false },
-                  ].map(({ label, done, active }) => (
-                    <div key={label} className="mb-1.5 flex items-center gap-2 last:mb-0">
-                      <div className={`h-3 w-3 flex-shrink-0 rounded-full ${done ? 'bg-emerald-500' : active ? 'animate-pulse bg-indigo-500' : 'bg-gray-200'}`} />
-                      <span className={`text-[11px] ${done ? 'font-medium text-emerald-600' : active ? 'font-bold text-indigo-600' : 'font-medium text-gray-400'}`}>{label}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Recommended next step — guided CTA with review time / priority / role.
-                    Zero-orange: amber-50/100 + amber-800/900 only (amber-600/700 render or
-                    anti-alias orange); HIGH priority uses red-600. */}
-                <div className="mt-auto rounded-xl border border-amber-100 bg-amber-50 p-3">
-                  <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-amber-800">Recommended Next Step</div>
-                  <div className="mb-2 text-[13px] font-bold text-amber-900">Immediate Cytotechnologist Review</div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <div>
-                      <div className="text-[10px] text-amber-800">Estimated review time</div>
-                      <div className="text-[12px] font-bold text-amber-900">3 min</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-amber-800">Priority</div>
-                      <div className="text-[12px] font-bold text-red-600">HIGH</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-amber-800">AI Role</div>
-                      <div className="text-[12px] font-bold text-amber-900">Screening Only</div>
-                    </div>
-                  </div>
-                  <button onClick={() => router.push(`/records/${selectedRecord?.id ?? ''}`)} className="w-full rounded-xl bg-indigo-600 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-indigo-700">Open Review →</button>
-                </div>
-              </div>
-            </div>
+            {focusSpecimenQueue}
+            {focusAiModel}
+            {focusAiFindings}
+          </div>
           </div>
 
           {/* ═══ SECTION 3: BOTTOM ROW ═══ */}
