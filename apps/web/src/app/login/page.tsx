@@ -122,9 +122,9 @@ export default function LoginPage() {
       {/* Specimen vial — static, floating over the seam between panels. */}
       <div className="pointer-events-none absolute inset-0 z-[5] hidden xl:block" aria-hidden>
         <img
-          src="/specimen-tube-cut.png"
+          src="/specimen-tube.png"
           alt=""
-          className="absolute left-[55%] top-1/2 w-[188px] -translate-x-1/2 -translate-y-1/2 select-none drop-shadow-[0_12px_30px_rgba(0,0,0,0.30)]"
+          className="absolute left-[55%] top-1/2 w-[360px] -translate-x-1/2 -translate-y-1/2 select-none mix-blend-screen"
         />
       </div>
 
