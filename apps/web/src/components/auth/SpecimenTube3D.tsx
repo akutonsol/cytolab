@@ -210,7 +210,7 @@ function Scene({ mousePos }: { mousePos: React.MutableRefObject<{ x: number; y: 
 
       {/* Scaled up to fill the backdrop. Blood lives inside the GlassTube group
           so it rotates with the tube (see GlassTube). */}
-      <group scale={[1.62, 1.62, 1.62]}>
+      <group scale={[1.42, 1.42, 1.42]}>
         <GlassTube tubeRotation={tubeRotation} mousePos={mousePos} />
       </group>
     </>
