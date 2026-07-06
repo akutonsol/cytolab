@@ -774,3 +774,139 @@ select option {
   animation: fadeSlideIn 0.6s ease-out forwards;
 }
 
+/* ────────────────────────────────────────────────────────────────────────
+   Login page: premium pseudo-3D specimen vial.
+   A single photoreal cutout PNG made to feel cylindrical and alive through
+   nested, compositor-only transforms (GPU: transform / opacity / filter).
+   Layer order (outer → inner): scene(perspective) › glow › shadow ›
+   tilt(mouse, JS) › float(CSS) › rotate(CSS) › img + sheen + speculars.
+   ──────────────────────────────────────────────────────────────────────── */
+.vial-scene { transform-style: preserve-3d; }
+.vial-tilt,
+.vial-float,
+.vial-rotate {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.vial-tilt { transform-origin: 50% 50%; }
+.vial-float { animation: vialFloat 6s cubic-bezier(0.37, 0, 0.63, 1) infinite; }
+.vial-rotate {
+  transform-origin: 50% 50%;
+  animation: vialRotate 10s ease-in-out infinite;
+}
+.vial-img {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+  user-select: none;
+  filter: drop-shadow(0 22px 45px rgba(0, 0, 0, 0.30));
+  backface-visibility: hidden;
+}
+
+/* Confine every light overlay to the exact vial silhouette. */
+.vial-mask {
+  -webkit-mask-image: url('/specimen-tube-3d-cut.png');
+  mask-image: url('/specimen-tube-3d-cut.png');
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+/* Moving glass reflection: a soft white diagonal that sweeps L→R. */
+.vial-sheen-wrap { position: absolute; inset: 0; overflow: hidden; }
+.vial-sheen {
+  position: absolute;
+  top: -10%;
+  left: 0;
+  height: 120%;
+  width: 55%;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.16) 42%,
+    rgba(255, 255, 255, 0.28) 50%,
+    rgba(255, 255, 255, 0.16) 58%,
+    transparent 100%
+  );
+  filter: blur(2px);
+  mix-blend-mode: screen;
+  will-change: transform;
+  animation: vialSheen 8s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+}
+
+/* Two slow vertical specular streaks — sell the cylindrical roundness. */
+.vial-spec {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.55), transparent 70%);
+  mix-blend-mode: screen;
+  filter: blur(5px);
+  will-change: transform;
+}
+.vial-spec-a { left: 30%; top: 16%; width: 22px; height: 130px; animation: vialSpecA 11s ease-in-out infinite; }
+.vial-spec-b { left: 60%; top: 40%; width: 15px; height: 90px;  animation: vialSpecB 13s ease-in-out infinite; }
+
+/* Soft blue ambient glow behind the tube. */
+.vial-glow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 400px;
+  width: 400px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(86, 84, 255, 0.15), transparent 70%);
+}
+
+/* Ground shadow that stretches/softens as the tube floats. */
+.vial-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: -30px;
+  height: 34px;
+  width: 150px;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.5), transparent 70%);
+  filter: blur(20px);
+  opacity: 0.18;
+  will-change: transform, opacity;
+  animation: vialShadow 6s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+}
+
+@keyframes vialRotate {
+  0%   { transform: rotateY(0deg); }
+  23%  { transform: rotateY(13deg); }   /* slight overshoot */
+  25%  { transform: rotateY(12deg); }   /* settle */
+  50%  { transform: rotateY(0deg); }
+  73%  { transform: rotateY(-13deg); }
+  75%  { transform: rotateY(-12deg); }
+  100% { transform: rotateY(0deg); }
+}
+@keyframes vialFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+@keyframes vialSheen {
+  0%        { transform: translateX(-160%); }
+  55%, 100% { transform: translateX(240%); }
+}
+@keyframes vialSpecA {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(5px, -16px); }
+}
+@keyframes vialSpecB {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(-5px, 13px); }
+}
+@keyframes vialShadow {
+  0%, 100% { transform: translateX(-50%) scaleX(1);    opacity: 0.18; }
+  50%      { transform: translateX(-50%) scaleX(1.08); opacity: 0.13; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vial-float, .vial-rotate, .vial-sheen, .vial-spec, .vial-shadow { animation: none !important; }
+}
+

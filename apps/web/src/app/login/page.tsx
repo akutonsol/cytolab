@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import {
@@ -28,6 +28,63 @@ const TRUST = [
   { Icon: CheckCircle2, label: 'Trusted by Labs', desc: 'Powering diagnostics worldwide' },
   { Icon: Clock, label: '99.9% Uptime', desc: 'Reliable. Always.' },
 ];
+
+// Premium pseudo-3D specimen vial. The photoreal cutout PNG is made to feel
+// cylindrical and alive through nested compositor-only transforms: a continuous
+// idle turn (±12°) + a slow float, a mouse-follow tilt with spring inertia, a
+// sweeping glass reflection, and two drifting speculars. All GPU (transform /
+// opacity / filter); no layout properties are animated.
+function SpecimenVial() {
+  const tiltRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = tiltRef.current;
+    if (!el) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const cur = { x: 0, y: 0 };
+    const target = { x: 0, y: 0 };
+    let raf = 0;
+
+    const onMove = (e: MouseEvent) => {
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      target.y = ((e.clientX - cx) / cx) * 18;   // rotateY, max ±18°
+      target.x = -((e.clientY - cy) / cy) * 8;   // rotateX, max ±8° (inverted)
+    };
+    const tick = () => {
+      cur.x += (target.x - cur.x) * 0.07;        // spring lerp → smooth follow
+      cur.y += (target.y - cur.y) * 0.07;
+      el.style.transform = `rotateX(${cur.x.toFixed(2)}deg) rotateY(${cur.y.toFixed(2)}deg)`;
+      raf = requestAnimationFrame(tick);
+    };
+    window.addEventListener('mousemove', onMove, { passive: true });
+    raf = requestAnimationFrame(tick);
+    return () => { window.removeEventListener('mousemove', onMove); cancelAnimationFrame(raf); };
+  }, []);
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-[5] hidden xl:block" aria-hidden>
+      <div
+        className="vial-scene absolute left-[49%] top-1/2 h-[640px] w-[149px] -translate-x-1/2 -translate-y-1/2"
+        style={{ perspective: '1400px' }}
+      >
+        <div className="vial-glow" />
+        <div className="vial-shadow" />
+        <div ref={tiltRef} className="vial-tilt">
+          <div className="vial-float">
+            <div className="vial-rotate">
+              <img src="/specimen-tube-3d-cut.png" alt="" className="vial-img" />
+              <div className="vial-sheen-wrap vial-mask"><div className="vial-sheen" /></div>
+              <div className="vial-spec vial-spec-a vial-mask" />
+              <div className="vial-spec vial-spec-b vial-mask" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // A wide central "tube" pill that frames the vial, flanked by two slimmer pills.
 function PillBackdrop() {
@@ -119,14 +176,8 @@ export default function LoginPage() {
         <PillBackdrop />
       </div>
 
-      {/* Specimen vial — static 3D render (3d-specimen.png cutout). */}
-      <div className="pointer-events-none absolute inset-0 z-[5] hidden xl:block" aria-hidden>
-        <img
-          src="/specimen-tube-3d-cut.png"
-          alt=""
-          className="absolute left-[49%] top-1/2 h-[640px] w-auto -translate-x-1/2 -translate-y-1/2 select-none drop-shadow-[0_20px_45px_rgba(0,0,0,0.28)]"
-        />
-      </div>
+      {/* Specimen vial — premium pseudo-3D render (see SpecimenVial). */}
+      <SpecimenVial />
 
       <div className="relative z-10 flex min-h-screen flex-col">
         {/* Header */}
