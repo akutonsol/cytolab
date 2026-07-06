@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bar, BarChart, Area, AreaChart, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
-import { Check, Clock, Droplet, FlaskConical, Filter, Plus, ScanLine, TestTube, TrendingUp } from 'lucide-react';
+import { Calendar, Check, ChevronDown, Clock, Droplet, FlaskConical, Filter, Plus, ScanLine, SlidersHorizontal, TestTube, TrendingUp } from 'lucide-react';
 
 // ── Palette (zero-orange: indigo / teal / emerald / slate only) ──────────────
 const INDIGO = '#4F46E5', INDIGO_LT = '#A5B4FC', TEAL = '#0D9488', EMERALD = '#10B981', SLATE = '#94A3B8';
@@ -16,9 +16,7 @@ const VOLUME = [
   { m: 'Jan', gyn: 150, nongyn: 74 }, { m: 'Feb', gyn: 120, nongyn: 60 },
   { m: 'Mar', gyn: 130, nongyn: 66 }, { m: 'Apr', gyn: 140, nongyn: 82 },
   { m: 'May', gyn: 145, nongyn: 70 }, { m: 'Jun', gyn: 139, nongyn: 72 },
-]; // sums to 1,248
-const VOLUME_TOTAL = VOLUME.reduce((s, r) => s + r.gyn + r.nongyn, 0); // 1,248
-const VOLUME_AVG = Math.round(VOLUME.reduce((s, r) => s + r.gyn + r.nongyn, 0) / VOLUME.length);
+]; // Monthly (default); Weekly/Quarterly/Yearly variants below drive the period selector.
 
 const PRACTICE = [
   { label: 'Total Cases', value: '135', Icon: FlaskConical },
@@ -37,6 +35,29 @@ const CONVERSION = [
   { m: 'May', authorized: 108, pending: 32 }, { m: 'Jun', authorized: 78, pending: 22 },
   { m: 'Jul', authorized: 92, pending: 28 }, { m: 'Aug', authorized: 128, pending: 36 },
 ];
+
+// ── Period selector datasets (header "Monthly" dropdown) ─────────────────────
+const weeklyVolume = [
+  { m: 'Mon', gyn: 24, nongyn: 13 }, { m: 'Tue', gyn: 31, nongyn: 16 }, { m: 'Wed', gyn: 28, nongyn: 14 },
+  { m: 'Thu', gyn: 35, nongyn: 18 }, { m: 'Fri', gyn: 30, nongyn: 15 }, { m: 'Sat', gyn: 18, nongyn: 9 }, { m: 'Sun', gyn: 12, nongyn: 6 },
+];
+const quarterlyVolume = [
+  { m: 'Q1', gyn: 400, nongyn: 220 }, { m: 'Q2', gyn: 424, nongyn: 224 }, { m: 'Q3', gyn: 388, nongyn: 210 }, { m: 'Q4', gyn: 412, nongyn: 236 },
+];
+const yearlyVolume = [
+  { m: '2023', gyn: 1420, nongyn: 780 }, { m: '2024', gyn: 1560, nongyn: 880 }, { m: '2025', gyn: 1680, nongyn: 940 },
+];
+const weeklyConversion = [
+  { m: 'Mon', authorized: 22, pending: 8 }, { m: 'Tue', authorized: 28, pending: 9 }, { m: 'Wed', authorized: 25, pending: 7 },
+  { m: 'Thu', authorized: 31, pending: 10 }, { m: 'Fri', authorized: 27, pending: 8 }, { m: 'Sat', authorized: 15, pending: 5 }, { m: 'Sun', authorized: 10, pending: 4 },
+];
+const quarterlyConversion = [
+  { m: 'Q1', authorized: 380, pending: 110 }, { m: 'Q2', authorized: 412, pending: 96 }, { m: 'Q3', authorized: 366, pending: 104 }, { m: 'Q4', authorized: 398, pending: 118 },
+];
+const yearlyConversion = [
+  { m: '2023', authorized: 1320, pending: 380 }, { m: '2024', authorized: 1480, pending: 360 }, { m: '2025', authorized: 1560, pending: 420 },
+];
+const PERIOD_LABEL = { Weekly: '7 days', Monthly: '6 months', Quarterly: '4 quarters', Yearly: '3 years' } as const;
 
 const DISTRIBUTION = [
   { label: 'Cervical Scrape', specimens: 567, pct: 42, color: INDIGO, Icon: ScanLine },
@@ -401,6 +422,37 @@ export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]>('Overview');
   const [revPeriod, setRevPeriod] = useState<'Monthly' | 'Quarterly' | 'Yearly'>('Monthly');
 
+  const [period, setPeriod] = useState<'Weekly' | 'Monthly' | 'Quarterly' | 'Yearly'>('Monthly');
+  const [periodOpen, setPeriodOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filters, setFilters] = useState({ specimenType: 'All', client: 'All', doctor: 'All', dateRange: 'Last 6 months' });
+  const periodRef = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  // Close either popover when clicking outside its own container.
+  useEffect(() => {
+    if (!periodOpen && !filterOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (periodRef.current && !periodRef.current.contains(e.target as Node)) setPeriodOpen(false);
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [periodOpen, filterOpen]);
+
+  // Swap the Overview volume + conversion charts to the selected period's dataset.
+  const chartData = useMemo(() => {
+    switch (period) {
+      case 'Weekly': return { volume: weeklyVolume, conversion: weeklyConversion };
+      case 'Quarterly': return { volume: quarterlyVolume, conversion: quarterlyConversion };
+      case 'Yearly': return { volume: yearlyVolume, conversion: yearlyConversion };
+      default: return { volume: VOLUME, conversion: CONVERSION };
+    }
+  }, [period]);
+  const volTotal = useMemo(() => chartData.volume.reduce((s, r) => s + r.gyn + r.nongyn, 0), [chartData]);
+  const volAvg = Math.round(volTotal / chartData.volume.length);
+  const activeFilterCount = Object.values(filters).filter((v) => v !== 'All' && v !== 'Last 6 months').length;
+
   return (
     <div className="pb-10 pt-4">
       {/* Page header */}
@@ -421,12 +473,99 @@ export default function AnalyticsPage() {
               {tab}
             </button>
           ))}
-          <button className="ml-1 flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">
-            Monthly <span className="text-gray-400">▾</span>
-          </button>
-          <button className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">
-            <Filter size={14} /> Filter
-          </button>
+          {/* Period selector */}
+          <div ref={periodRef} className="relative ml-1">
+            <button
+              onClick={() => { setPeriodOpen((o) => !o); setFilterOpen(false); }}
+              className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            >
+              <Calendar size={14} className="text-gray-400" />
+              {period}
+              <ChevronDown size={13} className={`text-gray-400 transition-transform ${periodOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {periodOpen && (
+              <div className="absolute right-0 top-full z-50 mt-1 min-w-[140px] rounded-xl border border-gray-100 bg-white py-1 shadow-lg">
+                {(['Weekly', 'Monthly', 'Quarterly', 'Yearly'] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => { setPeriod(p); setPeriodOpen(false); }}
+                    className={`w-full px-4 py-2 text-left text-sm transition-colors ${
+                      period === p ? 'bg-indigo-50 font-semibold text-indigo-600' : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Filter panel */}
+          <div ref={filterRef} className="relative">
+            <button
+              onClick={() => { setFilterOpen((o) => !o); setPeriodOpen(false); }}
+              className={`flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${
+                activeFilterCount > 0 ? 'border-indigo-200 bg-indigo-50 text-indigo-700' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <SlidersHorizontal size={14} />
+              Filter
+              {activeFilterCount > 0 && (
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+            {filterOpen && (
+              <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-2xl border border-gray-100 bg-white p-5 shadow-lg">
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-900">Filter Analytics</span>
+                  <button
+                    onClick={() => setFilters({ specimenType: 'All', client: 'All', doctor: 'All', dateRange: 'Last 6 months' })}
+                    className="text-xs text-indigo-600 hover:underline"
+                  >
+                    Reset all
+                  </button>
+                </div>
+                <div className="mb-4">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">Specimen Type</label>
+                  <select
+                    value={filters.specimenType}
+                    onChange={(e) => setFilters((f) => ({ ...f, specimenType: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700"
+                  >
+                    {['All', 'Cervical Scrape', 'Breast Aspirate', 'Urine Cytology', 'Body Fluid', 'Endocervical Asp'].map((o) => <option key={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div className="mb-4">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">Client</label>
+                  <select
+                    value={filters.client}
+                    onChange={(e) => setFilters((f) => ({ ...f, client: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700"
+                  >
+                    {['All', 'Kingston Medical', 'Montego Diagnostics', 'Spanish Town Clinic', 'Ocho Rios Pathology'].map((o) => <option key={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div className="mb-4">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">Date Range</label>
+                  <select
+                    value={filters.dateRange}
+                    onChange={(e) => setFilters((f) => ({ ...f, dateRange: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700"
+                  >
+                    {['Last 30 days', 'Last 3 months', 'Last 6 months', 'Last 12 months', 'Year to date'].map((o) => <option key={o}>{o}</option>)}
+                  </select>
+                </div>
+                <button
+                  onClick={() => setFilterOpen(false)}
+                  className="w-full rounded-xl bg-indigo-600 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+                >
+                  Apply Filters
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -447,17 +586,17 @@ export default function AnalyticsPage() {
               <div className="mb-4 flex items-start justify-between">
                 <span className="text-lg font-bold text-gray-900">Monthly Specimen Volume</span>
                 <div className="text-right">
-                  <div className="text-xs font-medium text-gray-400">6 months</div>
-                  <div className="text-2xl font-black text-gray-900">{VOLUME_TOTAL.toLocaleString()}</div>
+                  <div className="text-xs font-medium text-gray-400">{PERIOD_LABEL[period]}</div>
+                  <div className="text-2xl font-black text-gray-900">{volTotal.toLocaleString()}</div>
                 </div>
               </div>
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={VOLUME} barGap={4} barCategoryGap="28%">
+                <BarChart data={chartData.volume} barGap={4} barCategoryGap="28%">
                   <CartesianGrid vertical={false} stroke="#F1F5F9" />
                   <XAxis dataKey="m" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94A3B8' }} />
                   <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#94A3B8' }} width={32} />
                   <Tooltip cursor={{ fill: 'rgba(79,70,229,0.05)' }} contentStyle={{ borderRadius: 10, border: '1px solid #E5E7EB', fontSize: 12 }} />
-                  <ReferenceLine y={VOLUME_AVG} stroke="#94A3B8" strokeDasharray="4 4" />
+                  <ReferenceLine y={volAvg} stroke="#94A3B8" strokeDasharray="4 4" />
                   <Bar dataKey="gyn" name="GYN" fill={INDIGO} radius={[6, 6, 0, 0]} maxBarSize={16} />
                   <Bar dataKey="nongyn" name="NON-GYN" fill={INDIGO_LT} radius={[6, 6, 0, 0]} maxBarSize={16} />
                 </BarChart>
@@ -517,7 +656,7 @@ export default function AnalyticsPage() {
                   </div>
                 </div>
                 <ResponsiveContainer width="100%" height={150}>
-                  <BarChart data={CONVERSION} barCategoryGap="30%">
+                  <BarChart data={chartData.conversion} barCategoryGap="30%">
                     <XAxis dataKey="m" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#94A3B8' }} />
                     <Tooltip cursor={{ fill: 'rgba(79,70,229,0.05)' }} contentStyle={{ borderRadius: 10, border: '1px solid #E5E7EB', fontSize: 12 }} />
                     <Bar dataKey="authorized" name="Authorized" stackId="c" fill={INDIGO} radius={[0, 0, 0, 0]} maxBarSize={22} />
