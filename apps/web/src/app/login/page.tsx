@@ -1,15 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { animate, motion, useMotionValue, useReducedMotion, useSpring, useTransform } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import {
   ArrowRight, CheckCircle2, Clock, Eye, EyeOff, HelpCircle, LineChart, List, Lock,
   ShieldCheck, User, Users,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { api, loadClaims } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+
+// WebGL specimen tube — browser-only (Three.js needs the DOM/GPU), so SSR is off.
+const SpecimenTube3D = dynamic(
+  () => import('@/components/auth/SpecimenTube3D').then((m) => ({ default: m.SpecimenTube3D })),
+  { ssr: false, loading: () => <div style={{ width: '100%', height: '100%' }} /> },
+);
 
 interface LoginValues { email: string; password: string }
 interface MfaState {
@@ -29,94 +35,6 @@ const TRUST = [
   { Icon: CheckCircle2, label: 'Trusted by Labs', desc: 'Powering diagnostics worldwide' },
   { Icon: Clock, label: '99.9% Uptime', desc: 'Reliable. Always.' },
 ];
-
-// Suspended "cells" drifting in the liquid — placed in the two blood-only bands
-// (above and below the label), never over the white label.
-const CELLS = [
-  { left: '34%', top: '35%', size: 3,   anim: 'vialCellA', dur: 9,  delay: 0 },
-  { left: '58%', top: '38%', size: 2,   anim: 'vialCellC', dur: 11, delay: 1.5 },
-  { left: '30%', top: '70%', size: 3,   anim: 'vialCellB', dur: 10, delay: 0.6 },
-  { left: '62%', top: '74%', size: 2.5, anim: 'vialCellA', dur: 13, delay: 2.2 },
-  { left: '45%', top: '82%', size: 2,   anim: 'vialCellC', dur: 12, delay: 3 },
-  { left: '38%', top: '88%', size: 3,   anim: 'vialCellB', dur: 14, delay: 1 },
-  { left: '66%', top: '90%', size: 2,   anim: 'vialCellA', dur: 10, delay: 2.6 },
-];
-
-// Premium pseudo-3D specimen vial. The photoreal cutout PNG is made to feel
-// cylindrical and alive through nested, compositor-only transforms (all GPU):
-// a continuous idle turn (±12°) + slow float, a Framer-Motion spring mouse-tilt,
-// a sweeping glass reflection, and drifting speculars. The liquid also reacts —
-// the meniscus glint and suspended cells counter-tilt (±4°) against the total
-// rotation, driven off the same Framer motion values.
-function SpecimenVial() {
-  const reduce = useReducedMotion();
-
-  // Pointer → smoothed tilt (max ±18° Y, ±8° X).
-  const px = useMotionValue(0);
-  const py = useMotionValue(0);
-  const tiltY = useSpring(px, { stiffness: 120, damping: 20, mass: 0.4 });
-  const tiltX = useSpring(py, { stiffness: 120, damping: 20, mass: 0.4 });
-
-  // Continuous idle turn ±12° (easeInOut ≈ easeInOutSine).
-  const idleY = useMotionValue(0);
-
-  // Blood counter-tilts against the TOTAL rotation (idle + mouse), clamped ±4°.
-  const bloodZ = useTransform([idleY, tiltY], ([a, b]: number[]) =>
-    Math.max(-4, Math.min(4, -(a + b) * 0.33)));
-
-  useEffect(() => {
-    if (reduce) return;
-    const controls = animate(idleY, [0, 12, 0, -12, 0], { duration: 10, ease: 'easeInOut', repeat: Infinity });
-    const onMove = (e: MouseEvent) => {
-      const cx = window.innerWidth / 2;
-      const cy = window.innerHeight / 2;
-      px.set(((e.clientX - cx) / cx) * 18);
-      py.set(-((e.clientY - cy) / cy) * 8);
-    };
-    window.addEventListener('mousemove', onMove, { passive: true });
-    return () => { controls.stop(); window.removeEventListener('mousemove', onMove); };
-  }, [reduce, idleY, px, py]);
-
-  return (
-    <div className="pointer-events-none absolute inset-0 z-[5] hidden xl:block" aria-hidden>
-      <div
-        className="vial-scene absolute left-[49%] top-1/2 h-[640px] w-[149px] -translate-x-1/2 -translate-y-1/2"
-        style={{ perspective: '1400px' }}
-      >
-        <div className="vial-glow" />
-        <div className="vial-shadow" />
-        <motion.div className="vial-tilt" style={{ rotateX: tiltX, rotateY: tiltY }}>
-          <div className="vial-float">
-            <motion.div className="vial-rotate" style={{ rotateY: idleY }}>
-              <img src="/specimen-tube-3d-cut.png" alt="" className="vial-img" />
-
-              {/* Living liquid — meniscus glint + suspended cells, counter-tilting. */}
-              <div className="vial-liquid vial-mask">
-                <motion.div className="vial-blood-tilt" style={{ rotateZ: bloodZ }}>
-                  <div className="vial-meniscus" />
-                  {CELLS.map((c, i) => (
-                    <span
-                      key={i}
-                      className="vial-cell"
-                      style={{
-                        left: c.left, top: c.top, width: c.size, height: c.size,
-                        animation: `${c.anim} ${c.dur}s ease-in-out ${c.delay}s infinite`,
-                      }}
-                    />
-                  ))}
-                </motion.div>
-              </div>
-
-              <div className="vial-sheen-wrap vial-mask"><div className="vial-sheen" /></div>
-              <div className="vial-spec vial-spec-a vial-mask" />
-              <div className="vial-spec vial-spec-b vial-mask" />
-            </motion.div>
-          </div>
-        </motion.div>
-      </div>
-    </div>
-  );
-}
 
 // A wide central "tube" pill that frames the vial, flanked by two slimmer pills.
 function PillBackdrop() {
@@ -208,8 +126,12 @@ export default function LoginPage() {
         <PillBackdrop />
       </div>
 
-      {/* Specimen vial — premium pseudo-3D render (see SpecimenVial). */}
-      <SpecimenVial />
+      {/* Specimen tube — premium WebGL render (Three.js PBR glass + blood sim). */}
+      <div className="pointer-events-none absolute inset-0 z-[5] hidden xl:block" aria-hidden>
+        <div className="absolute left-[49%] top-1/2 h-[640px] w-[300px] -translate-x-1/2 -translate-y-1/2">
+          <SpecimenTube3D />
+        </div>
+      </div>
 
       <div className="relative z-10 flex min-h-screen flex-col">
         {/* Header */}
@@ -366,8 +288,8 @@ export default function LoginPage() {
               <div key={t.label} className="flex min-w-[200px] items-center gap-3">
                 <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/20 bg-white/10 text-white"><t.Icon size={20} /></span>
                 <div className="leading-tight">
-                  <div className="text-sm font-bold">{t.label}</div>
-                  <div className="text-[11px] text-blue-100/60">{t.desc}</div>
+                  <div className="text-base font-bold">{t.label}</div>
+                  <div className="text-sm text-blue-100/80">{t.desc}</div>
                 </div>
               </div>
             ))}
