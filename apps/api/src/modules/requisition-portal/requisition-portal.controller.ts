@@ -136,8 +136,12 @@ export class RequisitionPortalController {
 
   // ── Payment ──
   @Post(':id/payment/initiate')
-  initiatePayment(@Param('id') id: string, @Body() dto: InitiatePaymentDto) {
-    return this.service.initiatePayment(id, dto);
+  initiatePayment(
+    @CurrentPortalUser() user: PortalPrincipal,
+    @Param('id') id: string,
+    @Body() dto: InitiatePaymentDto,
+  ) {
+    return this.service.initiatePayment(id, dto, user);
   }
 
   @Post(':id/payment/confirm')

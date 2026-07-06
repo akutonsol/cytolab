@@ -68,9 +68,17 @@ export class SaveSignatureDto {
   @IsString() @IsOptional() signedByName?: string;
 }
 
-/** Choose a payment method and begin payment. */
+/** Choose a payment method and begin payment. Card fields are required only
+ *  when paymentMethod === CARD (PowerTranz SPI-3DS Sale). */
 export class InitiatePaymentDto {
   @IsEnum(PaymentMethod) paymentMethod!: PaymentMethod;
+  @IsString() @IsOptional() cardPan?: string;
+  @IsString() @IsOptional() cardCvv?: string;
+  @IsString() @IsOptional() cardExpiration?: string; // MMYY or MM/YY
+  @IsString() @IsOptional() cardholderName?: string;
+  @IsString() @IsOptional() billingLine1?: string;
+  @IsString() @IsOptional() billingCity?: string;
+  @IsString() @IsOptional() billingPostalCode?: string;
 }
 
 /** Confirm a payment (manual/staff or gateway webhook). */

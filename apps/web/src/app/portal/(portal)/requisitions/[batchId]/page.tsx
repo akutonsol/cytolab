@@ -10,6 +10,7 @@ import { portalApi } from '@/lib/portal-api';
 import { DigitalRequisitionForm, DigitalForm } from '@/components/portal/DigitalRequisitionForm';
 import { ScanUploadModal } from '@/components/portal/ScanUploadModal';
 import { SignatureCanvas } from '@/components/portal/SignatureCanvas';
+import { CardPaymentModal } from '@/components/portal/CardPaymentModal';
 
 interface Batch {
   id: string;
@@ -42,6 +43,7 @@ export default function BatchEditorPage() {
   const [editForm, setEditForm] = useState<DigitalForm | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
   const [signAllOpen, setSignAllOpen] = useState(false);
+  const [cardModalOpen, setCardModalOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const { data: batch } = useQuery({
@@ -88,14 +90,17 @@ export default function BatchEditorPage() {
     onSuccess: invalidate,
   });
   const submit = useMutation({
-    mutationFn: async () => {
-      if (batch?.paymentMethod === 'CARD' && batch.paymentStatus !== 'PAID') {
-        await portalApi.post(`/portal/batches/${batchId}/payment/confirm`, {});
-      }
-      return portalApi.post(`/portal/batches/${batchId}/submit`).then((r) => r.data);
-    },
+    mutationFn: () => portalApi.post(`/portal/batches/${batchId}/submit`).then((r) => r.data),
     onSuccess: () => { invalidate(); setSubmitted(true); },
   });
+
+  // CARD requires a completed PowerTranz payment before submitting; other
+  // methods (cheque / bank transfer) settle out of band.
+  const needsCardPayment = () => batch?.paymentMethod === 'CARD' && batch.paymentStatus !== 'PAID';
+  const onSubmitClick = () => {
+    if (needsCardPayment()) setCardModalOpen(true);
+    else submit.mutate();
+  };
 
   const signAll = useMutation({
     mutationFn: async (dataUrl: string) => {
@@ -308,11 +313,11 @@ export default function BatchEditorPage() {
           )}
 
           <button
-            onClick={() => submit.mutate()}
+            onClick={onSubmitClick}
             disabled={!batch.paymentMethod || submit.isPending || batch.totalForms === 0 || readyCount !== batch.forms.length}
             className="w-full rounded-2xl bg-indigo-600 py-4 text-base font-bold text-white transition-colors hover:bg-indigo-700 disabled:bg-gray-300"
           >
-            {submit.isPending ? 'Submitting…' : `Submit ${batch.totalForms} Requisitions`}
+            {submit.isPending ? 'Submitting…' : needsCardPayment() ? `Pay & Submit ${batch.totalForms} Requisitions` : `Submit ${batch.totalForms} Requisitions`}
           </button>
           {readyCount !== batch.forms.length && (
             <p className="mt-2 text-center text-xs text-red-500">All forms must be complete and signed before submitting.</p>
@@ -335,6 +340,14 @@ export default function BatchEditorPage() {
         />
       )}
       {scanOpen && <ScanUploadModal batchId={batchId} onClose={() => setScanOpen(false)} onDone={invalidate} />}
+      {cardModalOpen && (
+        <CardPaymentModal
+          batchId={batchId}
+          amountLabel={money(batch.totalForms * FEE_PER_FORM)}
+          onClose={() => setCardModalOpen(false)}
+          onPaid={() => { setCardModalOpen(false); invalidate(); submit.mutate(); }}
+        />
+      )}
       {signAllOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setSignAllOpen(false)}>
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>

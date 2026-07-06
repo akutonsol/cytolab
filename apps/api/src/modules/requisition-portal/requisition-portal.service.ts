@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -34,6 +34,7 @@ import { allocateSequence, isUniqueConflict } from '../../common/util/lab-sequen
 import type { PortalPrincipal } from '../portal/common/portal-principal';
 import { OcrService } from './ocr.service';
 import { ManifestService } from './manifest.service';
+import { PowerTranzService } from './powertranz.service';
 import {
   ConfirmPaymentDto,
   CreateBatchDto,
@@ -63,6 +64,7 @@ export class RequisitionPortalService {
     private mail: MailService,
     private ocr: OcrService,
     private manifest: ManifestService,
+    private powertranz: PowerTranzService,
   ) {}
 
   // ─────────────────────────── Batches (portal) ───────────────────────────
@@ -270,19 +272,15 @@ export class RequisitionPortalService {
 
   // ───────────────────────────── Payment ─────────────────────────────
 
-  async initiatePayment(id: string, dto: InitiatePaymentDto) {
+  async initiatePayment(id: string, dto: InitiatePaymentDto, user: PortalPrincipal) {
     const batch = await this.getBatch(id);
     await this.prisma.requisitionBatch.update({
       where: { id },
       data: { paymentMethod: dto.paymentMethod, status: BatchStatus.PENDING_PAYMENT },
     });
+
     if (dto.paymentMethod === PaymentMethod.CARD) {
-      // A real integration would create a PowerTranz hosted-page session here.
-      return {
-        method: dto.paymentMethod,
-        redirectUrl: `/portal/requisitions/${id}?pay=card`,
-        amountCents: batch.totalAmountCents,
-      };
+      return this.initiateCardPayment(batch, dto, user);
     }
     if (dto.paymentMethod === PaymentMethod.BANK_TRANSFER) {
       return {
@@ -291,6 +289,102 @@ export class RequisitionPortalService {
       };
     }
     return { method: dto.paymentMethod, payableTo: 'Cytolabs Associates Ltd.', reference: batch.batchNumber };
+  }
+
+  /** PowerTranz SPI-3DS Sale. Returns RedirectData (3DS challenge) or settles a
+   *  frictionless card immediately. */
+  private async initiateCardPayment(
+    batch: Prisma.RequisitionBatchGetPayload<{ include: { forms: true } }>,
+    dto: InitiatePaymentDto,
+    user: PortalPrincipal,
+  ) {
+    if (!this.powertranz.configured) {
+      throw new BadRequestException('Card payments are not configured');
+    }
+    if (!dto.cardPan || !dto.cardCvv || !dto.cardExpiration || !dto.cardholderName) {
+      throw new BadRequestException('Card details are required for card payment');
+    }
+
+    const transactionId = randomUUID();
+    const callbackBase =
+      process.env.POWERTRANZ_CALLBACK_URL || 'http://localhost:4000/api/v1/portal/payment/callback';
+    const sale = await this.powertranz.sale({
+      transactionId,
+      orderId: batch.batchNumber,
+      amountCents: batch.totalAmountCents,
+      currency: '388', // JMD
+      card: { pan: dto.cardPan, cvv: dto.cardCvv, expiration: dto.cardExpiration, cardholderName: dto.cardholderName },
+      billing: { line1: dto.billingLine1, city: dto.billingCity, postalCode: dto.billingPostalCode, countryCode: '388', email: user.email },
+      callbackUrl: `${callbackBase}?bid=${batch.id}`,
+    });
+
+    if (!sale.ok) throw new BadRequestException(sale.error ?? 'Payment could not be started');
+
+    // Stash the transaction id so status/reconciliation can find it.
+    await this.prisma.requisitionBatch.update({ where: { id: batch.id }, data: { paymentRef: transactionId } });
+
+    if (sale.requiresRedirect) {
+      // 3DS challenge — the client renders redirectData in an iframe; PowerTranz
+      // then posts back to the callback which settles the payment.
+      return { method: 'CARD', requiresRedirect: true, redirectData: sale.redirectData, spiToken: sale.spiToken };
+    }
+
+    // Frictionless (SP1) — settle now.
+    const done = await this.powertranz.complete(sale.spiToken!);
+    if (done.approved) {
+      await this.markPaid(batch.id, done.transactionId ?? transactionId);
+      return { method: 'CARD', requiresRedirect: false, paid: true };
+    }
+    await this.prisma.requisitionBatch.update({ where: { id: batch.id }, data: { paymentStatus: PaymentStatus.FAILED } });
+    return { method: 'CARD', requiresRedirect: false, paid: false, error: done.message };
+  }
+
+  /**
+   * PowerTranz MerchantResponseUrl callback. Public (no portal JWT — PowerTranz
+   * posts server-to-server), keyed by our batch id in the query string. Settles
+   * the payment with the returned SpiToken and updates the batch. Runs in system
+   * scope since there is no request tenancy context.
+   */
+  async handlePaymentCallback(batchId: string, body: Record<string, unknown>): Promise<{ status: string; orderId?: string; message?: string }> {
+    // PowerTranz may nest the payload as a JSON string under `Response`.
+    let parsed: Record<string, any> = { ...body };
+    if (typeof body.Response === 'string') {
+      try { parsed = { ...parsed, ...JSON.parse(body.Response) }; } catch { /* keep flat body */ }
+    }
+    const spiToken: string | undefined = parsed.SpiToken || parsed.spiToken;
+    const isoCode: string | undefined = parsed.IsoResponseCode;
+    const authStatus: string | undefined =
+      parsed.RiskManagement?.ThreeDSecure?.AuthenticationStatus ?? parsed.AuthenticationStatus;
+
+    const is3dsComplete =
+      !!spiToken && (['3D0', 'SP4', 'SP1'].includes(isoCode ?? '') || ['Y', 'A', 'C'].includes(authStatus ?? ''));
+
+    if (!is3dsComplete) {
+      const msg = parsed.Errors?.[0]?.Message || parsed.ResponseMessage || 'Authentication failed';
+      return { status: 'declined', message: msg };
+    }
+
+    return this.labContext.runSystem(async () => {
+      const done = await this.powertranz.complete(spiToken!);
+      if (done.approved) {
+        await this.markPaid(batchId, done.transactionId ?? undefined);
+        return { status: 'payment_processing', orderId: batchId };
+      }
+      await this.prisma.requisitionBatch.update({ where: { id: batchId }, data: { paymentStatus: PaymentStatus.FAILED } });
+      return { status: 'declined', message: done.message, orderId: batchId };
+    });
+  }
+
+  private async markPaid(batchId: string, paymentRef?: string) {
+    await this.prisma.requisitionBatch.update({
+      where: { id: batchId },
+      data: {
+        paymentStatus: PaymentStatus.PAID,
+        paymentPaidAt: new Date(),
+        status: BatchStatus.PAID,
+        ...(paymentRef ? { paymentRef } : {}),
+      },
+    });
   }
 
   async confirmPayment(id: string, dto: ConfirmPaymentDto) {
