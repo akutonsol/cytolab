@@ -230,8 +230,8 @@ export default function DashboardPage() {
   if (isError) return <div className="p-2 text-sm text-text-secondary">Dashboard is unavailable right now.</div>;
   if (isLoading || !d) {
     return (
-      <div className="dashboard-theme -m-4" style={{ minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'relative', zIndex: 1, padding: '36px 16px 40px' }}>
+      <div className="dashboard-theme -my-4" style={{ minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', zIndex: 1, padding: '36px 0 40px' }}>
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
@@ -285,8 +285,8 @@ export default function DashboardPage() {
   const firstName = me?.firstName?.trim() || ov?.greeting?.firstName || (emailName ? emailName[0].toUpperCase() + emailName.slice(1) : 'there');
 
   return (
-    <div className="dashboard-theme -m-4" style={{ minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'relative', zIndex: 1, padding: '4px 16px 40px', background: '#f3f4f8' }}>
+    <div className="dashboard-theme -my-4" style={{ minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'relative', zIndex: 1, padding: '4px 0 40px', background: '#f3f4f8' }}>
         <FeatureGate feature="PROFICIENCY_TESTING">
           {activeProfTests > 0 && (
             <button onClick={() => router.push('/proficiency')}
