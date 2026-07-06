@@ -434,7 +434,11 @@ export default function DashboardPage() {
           </div>
 
           {/* ═══ SECTION 2: MAIN 3-COLUMN GRID ═══ */}
-          <div style={{ display: 'grid', gridTemplateColumns: '400px minmax(0,1fr) 400px', gap: 20, alignItems: 'stretch' }}>
+          {/* Fluid columns (~1 : 1.8 : 1) that stretch to fill the full content
+              width — no fixed px widths, so the grid scales with the viewport and
+              the right column reaches the same edge as the nav. minmax(0,…) keeps
+              wide children from overflowing. */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.8fr) minmax(0, 1fr)', gap: 20, alignItems: 'stretch' }}>
             {/* LEFT: Specimen Queue */}
             <div style={{ height: 540, background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
