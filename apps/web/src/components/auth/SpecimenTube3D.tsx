@@ -4,6 +4,61 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { Environment } from '@react-three/drei';
 import * as THREE from 'three';
 
+// Specimen label — drawn to a 2D canvas (barcode + patient data) and mapped
+// around the label cylinder so it curves with the glass. Content sits in the
+// middle arc with cream margins, so it reads on the front as the tube turns.
+function createLabelTexture(): THREE.CanvasTexture {
+  const W = 1024, H = 696;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+
+  // Cream paper base.
+  ctx.fillStyle = '#efeae0';
+  ctx.fillRect(0, 0, W, H);
+
+  const cxL = W * 0.25, cxR = W * 0.75, cw = cxR - cxL, mid = W * 0.5;
+
+  // Barcode — alternating bars of varied width.
+  const widths = [3,1,2,4,1,2,1,3,2,1,4,1,2,1,3,2,1,3,1,2,4,1,2,1,3,1,2,4,1,2,3,1,2,1,4,1,3,2,1,2,4,1,2,3,1,2,1,3];
+  const unit = cw / widths.reduce((a, b) => a + b, 0);
+  ctx.fillStyle = '#111111';
+  let x = cxL, ink = true;
+  for (const wgt of widths) {
+    const bw = wgt * unit;
+    if (ink) ctx.fillRect(x, H * 0.07, bw, H * 0.20);
+    x += bw;
+    ink = !ink;
+  }
+
+  // Patient text.
+  ctx.fillStyle = '#1a1a1a';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '600 46px Arial, sans-serif';
+  ctx.fillText('PTN ID: ABX58732', mid, H * 0.375);
+
+  // Subtle divider.
+  ctx.strokeStyle = '#c8b878';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cxL, H * 0.50);
+  ctx.lineTo(cxR, H * 0.50);
+  ctx.stroke();
+
+  ctx.fillStyle = '#1a1a1a';
+  ctx.font = '600 44px Arial, sans-serif';
+  ctx.fillText('NAME: JOHN DOE', mid, H * 0.655);
+  ctx.font = '500 40px Arial, sans-serif';
+  ctx.fillText('DOB: 12/05/1982', mid, H * 0.80);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  return tex;
+}
+
 // Blood liquid — a living volume filling the lower half of the tube. The body
 // cylinder + rounded bottom stay RIGID (an independent tilt pokes the mesh
 // through the glass walls), but the thin top surface ripples like a real
@@ -160,6 +215,7 @@ function GlassTube({ tubeRotation, mousePos }: {
   const targetRotY = useRef(0);
   const currentRotY = useRef(0);
   const currentTiltX = useRef(0);
+  const labelTex = useMemo(() => createLabelTexture(), []);
 
   useFrame((_, delta) => {
     // Continuous slow rotation
@@ -240,21 +296,17 @@ function GlassTube({ tubeRotation, mousePos }: {
         <meshPhysicalMaterial color="#AA0000" roughness={0.4} />
       </mesh>
 
-      {/* Cream paper label — hugs the glass outer surface (radius ≈ glass 0.215) */}
+      {/* Cream paper label with printed barcode + patient data (canvas texture).
+          Hugs the glass outer surface (radius ≈ glass 0.215). */}
       <mesh position={[0, 0.0, 0]}>
         <cylinderGeometry args={[0.216, 0.201, 0.9, 128, 1, true]} />
         <meshStandardMaterial
-          color="#ede8d8"
-          roughness={0.88}
+          map={labelTex}
+          color="#ffffff"
+          roughness={0.82}
           metalness={0}
           side={THREE.DoubleSide}
         />
-      </mesh>
-
-      {/* Single thin barcode stripe — just outside the label so it sits ON it */}
-      <mesh position={[0, 0.18, 0]}>
-        <cylinderGeometry args={[0.217, 0.202, 0.05, 128, 1, true]} />
-        <meshStandardMaterial color="#2a2a2a" roughness={0.95} side={THREE.DoubleSide} />
       </mesh>
 
       {/* Primary specular highlight */}
