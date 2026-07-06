@@ -90,6 +90,7 @@ export function ClinicalWorkstation({
     <div
       className="fixed inset-0 z-[9999] flex flex-col"
       style={{
+        height: '100vh',
         background: isAnimating ? '#0a0b14' : 'transparent',
         transition: 'background 0.3s ease',
       }}
@@ -237,6 +238,7 @@ export function ClinicalWorkstation({
       <div
         className="flex flex-1 min-h-0 gap-0"
         style={{
+          overflow: 'hidden',
           opacity: isAnimating ? 1 : 0,
           transform: isAnimating ? 'translateY(0)' : 'translateY(12px)',
           transition: 'all 0.35s ease 0.15s',
@@ -261,7 +263,19 @@ export function ClinicalWorkstation({
             </div>
           </div>
           <div className="flex-1 overflow-auto p-2" style={{ fontSize: '11px' }}>
-            {specimenQueue}
+            <style>{`
+              .workstation-queue .bg-white,
+              .workstation-queue [class*="bg-white"] { background: transparent !important; }
+              .workstation-queue .border-gray-100,
+              .workstation-queue [class*="border-gray"] { border-color: rgba(255,255,255,0.08) !important; }
+              .workstation-queue .text-gray-900,
+              .workstation-queue [class*="text-gray-9"] { color: rgba(255,255,255,0.9) !important; }
+              .workstation-queue .text-gray-500,
+              .workstation-queue .text-gray-600 { color: rgba(255,255,255,0.4) !important; }
+            `}</style>
+            <div className="workstation-queue">
+              {specimenQueue}
+            </div>
           </div>
         </div>
 
@@ -276,7 +290,13 @@ export function ClinicalWorkstation({
             </span>
           </div>
           <div className="flex-1 overflow-hidden relative">
-            {aiModel}
+            <style>{`
+              .workstation-model > div,
+              .workstation-model .bg-white { background: transparent !important; }
+            `}</style>
+            <div className="workstation-model">
+              {aiModel}
+            </div>
             {/* Zoom controls */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-sm border border-white/10 rounded-xl px-3 py-2">
               <button className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors">
@@ -312,7 +332,28 @@ export function ClinicalWorkstation({
             </span>
           </div>
           <div className="flex-1 overflow-auto">
-            {aiFindings}
+            <style>{`
+              .workstation-findings .bg-white,
+              .workstation-findings .bg-gray-50 { background: rgba(255,255,255,0.04) !important; }
+              .workstation-findings .text-gray-900 { color: rgba(255,255,255,0.9) !important; }
+              .workstation-findings .text-gray-500,
+              .workstation-findings .text-gray-600 { color: rgba(255,255,255,0.45) !important; }
+              .workstation-findings .border-gray-100,
+              .workstation-findings .border-gray-200 { border-color: rgba(255,255,255,0.08) !important; }
+              .workstation-findings .bg-indigo-50 { background: rgba(99,102,241,0.15) !important; }
+              .workstation-findings .text-indigo-600 { color: #818cf8 !important; }
+              .workstation-findings .bg-emerald-50 { background: rgba(16,185,129,0.15) !important; }
+              .workstation-findings .text-emerald-600,
+              .workstation-findings .text-emerald-700 { color: #34d399 !important; }
+              .workstation-findings .bg-amber-50 { background: rgba(180,83,9,0.2) !important; }
+              .workstation-findings .text-amber-700,
+              .workstation-findings .text-amber-800,
+              .workstation-findings .text-amber-900 { color: #fbbf24 !important; }
+              .workstation-findings .bg-gray-100 { background: rgba(255,255,255,0.06) !important; }
+            `}</style>
+            <div className="workstation-findings">
+              {aiFindings}
+            </div>
           </div>
         </div>
       </div>
