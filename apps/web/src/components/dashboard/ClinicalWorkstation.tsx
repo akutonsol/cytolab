@@ -238,6 +238,8 @@ export function ClinicalWorkstation({
       <div
         className="flex flex-1 min-h-0 gap-0"
         style={{
+          flex: 1,
+          minHeight: 0,
           overflow: 'hidden',
           opacity: isAnimating ? 1 : 0,
           transform: isAnimating ? 'translateY(0)' : 'translateY(12px)',
@@ -247,7 +249,7 @@ export function ClinicalWorkstation({
         {/* Left — Specimen Queue */}
         <div
           className="flex flex-col border-r border-white/8"
-          style={{ width: '320px', flexShrink: 0, background: 'rgba(10,11,20,0.95)' }}
+          style={{ width: '320px', flexShrink: 0, height: '100%', overflow: 'hidden', background: 'rgba(10,11,20,0.95)' }}
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
             <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest">
@@ -263,17 +265,38 @@ export function ClinicalWorkstation({
             </div>
           </div>
           <div className="flex-1 overflow-auto p-2" style={{ fontSize: '11px' }}>
-            <style>{`
-              .workstation-queue .bg-white,
-              .workstation-queue [class*="bg-white"] { background: transparent !important; }
-              .workstation-queue .border-gray-100,
-              .workstation-queue [class*="border-gray"] { border-color: rgba(255,255,255,0.08) !important; }
-              .workstation-queue .text-gray-900,
-              .workstation-queue [class*="text-gray-9"] { color: rgba(255,255,255,0.9) !important; }
-              .workstation-queue .text-gray-500,
-              .workstation-queue .text-gray-600 { color: rgba(255,255,255,0.4) !important; }
-            `}</style>
-            <div className="workstation-queue">
+            <div className="workstation-queue" style={{ height: '100%', overflow: 'auto' }}>
+              <style>{`
+                .workstation-queue .rounded-2xl,
+                .workstation-queue .rounded-xl {
+                  background: transparent !important;
+                  border-color: rgba(255,255,255,0.06) !important;
+                }
+                .workstation-queue h2,
+                .workstation-queue h3,
+                .workstation-queue .font-semibold,
+                .workstation-queue .font-bold {
+                  color: rgba(255,255,255,0.85) !important;
+                }
+                .workstation-queue .text-gray-400,
+                .workstation-queue .text-gray-500,
+                .workstation-queue .text-gray-600 {
+                  color: rgba(255,255,255,0.4) !important;
+                }
+                .workstation-queue select,
+                .workstation-queue button:not([class*="indigo"]) {
+                  background: rgba(255,255,255,0.06) !important;
+                  border-color: rgba(255,255,255,0.1) !important;
+                  color: rgba(255,255,255,0.7) !important;
+                }
+                .workstation-queue .bg-white {
+                  background: rgba(255,255,255,0.03) !important;
+                }
+                .workstation-queue .shadow,
+                .workstation-queue .shadow-sm {
+                  box-shadow: none !important;
+                }
+              `}</style>
               {specimenQueue}
             </div>
           </div>
@@ -282,7 +305,7 @@ export function ClinicalWorkstation({
         {/* Center — AI Model */}
         <div
           className="flex flex-col flex-1 min-w-0"
-          style={{ background: 'rgba(8,9,18,0.98)' }}
+          style={{ flex: 1, minWidth: 0, height: '100%', overflow: 'hidden', background: 'rgba(8,9,18,0.98)' }}
         >
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/8">
             <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest">
@@ -324,7 +347,7 @@ export function ClinicalWorkstation({
         {/* Right — AI Findings */}
         <div
           className="flex flex-col border-l border-white/8"
-          style={{ width: '360px', flexShrink: 0, background: 'rgba(10,11,20,0.95)' }}
+          style={{ width: '360px', flexShrink: 0, height: '100%', overflow: 'hidden', background: 'rgba(10,11,20,0.95)' }}
         >
           <div className="px-4 py-2.5 border-b border-white/8">
             <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest">
