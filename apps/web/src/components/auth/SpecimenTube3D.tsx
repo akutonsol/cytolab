@@ -1,56 +1,152 @@
 'use client';
-import { useRef, useEffect, Suspense } from 'react';
+import { useRef, useEffect, useMemo, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Environment } from '@react-three/drei';
 import * as THREE from 'three';
 
-// Blood liquid — a STATIC volume filling the lower half of the tube. Rendered
-// inside the glass group (see GlassTube) so it rotates with the tube but never
-// tilts independently — an independent tilt pokes the rigid mesh through the
-// glass walls. Radius is kept well inside the glass inner wall (0.195).
-function BloodLiquid(_props: {
+// Blood liquid — a living volume filling the lower half of the tube. The body
+// cylinder + rounded bottom stay RIGID (an independent tilt pokes the mesh
+// through the glass walls), but the thin top surface ripples like a real
+// meniscus and a handful of droplets bob above it to read as sloshing/splash.
+// Radius is kept well inside the glass inner wall (0.195). Rendered inside the
+// glass group (see GlassTube) so it rotates with the tube.
+const SURFACE_Y = 0.5;
+const DROPS = [
+  { r: 0.055, a: 0.0, speed: 1.9, phase: 0.0, size: 0.020 },
+  { r: 0.100, a: 2.1, speed: 1.5, phase: 1.2, size: 0.015 },
+  { r: 0.040, a: 4.0, speed: 2.3, phase: 2.4, size: 0.024 },
+  { r: 0.110, a: 5.2, speed: 1.7, phase: 3.1, size: 0.013 },
+  { r: 0.080, a: 3.0, speed: 2.0, phase: 0.6, size: 0.018 },
+];
+
+function BloodLiquid({ mousePos }: {
   tubeRotation: React.MutableRefObject<number>;
   mousePos: React.MutableRefObject<{ x: number; y: number }>;
 }) {
+  const surfaceRef = useRef<THREE.Mesh>(null);
+  const dropsRef = useRef<THREE.Group>(null);
+  const glintRef = useRef<THREE.Mesh>(null);
+  const flowRef = useRef<THREE.Group>(null);
+
+  // Rippling surface disc — flat-lying circle whose vertices we displace each
+  // frame. Keep a pristine copy of the base positions to offset from.
+  const surfaceGeom = useMemo(() => new THREE.CircleGeometry(0.168, 56), []);
+  const basePos = useMemo(
+    () => Float32Array.from(surfaceGeom.attributes.position.array as ArrayLike<number>),
+    [surfaceGeom],
+  );
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+
+    // 1) Ripple the meniscus — sum of a few sine waves for organic motion.
+    if (surfaceRef.current) {
+      const pos = surfaceRef.current.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = basePos[i * 3], y = basePos[i * 3 + 1];
+        const r = Math.sqrt(x * x + y * y);
+        const wave =
+          Math.sin(r * 26 - t * 3.4) * 0.010 +
+          Math.sin(x * 22 + t * 2.1) * 0.006 +
+          Math.cos(y * 20 - t * 1.7) * 0.005;
+        pos.setZ(i, wave);
+      }
+      pos.needsUpdate = true;
+      surfaceRef.current.geometry.computeVertexNormals();
+
+      // Gentle slosh — a slow idle sway plus a nudge toward the cursor.
+      surfaceRef.current.rotation.x = -Math.PI / 2 + Math.sin(t * 0.9) * 0.05 + mousePos.current.y * 0.06;
+      surfaceRef.current.rotation.z = Math.cos(t * 0.7) * 0.05 - mousePos.current.x * 0.06;
+    }
+
+    // 2) Splash droplets — bob just above the surface and drift in a slow orbit.
+    if (dropsRef.current) {
+      dropsRef.current.children.forEach((child, i) => {
+        const d = DROPS[i];
+        const bob = Math.abs(Math.sin(t * d.speed + d.phase));
+        child.position.set(
+          Math.cos(d.a + t * 0.4) * d.r,
+          SURFACE_Y + 0.01 + bob * 0.055,
+          Math.sin(d.a + t * 0.4) * d.r,
+        );
+        child.scale.setScalar(0.6 + bob * 0.6);
+      });
+    }
+
+    // 3) Specular glint skating across the surface.
+    if (glintRef.current) {
+      glintRef.current.position.x = Math.sin(t * 0.8) * 0.07;
+      glintRef.current.position.z = Math.cos(t * 0.8) * 0.07;
+    }
+
+    // 4) Flow streaks — bright caustic highlights orbiting the lower body so the
+    //    rigid blood column reads as moving/flowing liquid.
+    if (flowRef.current) {
+      flowRef.current.rotation.y = t * 0.6;
+      flowRef.current.position.y = Math.sin(t * 1.3) * 0.02;
+    }
+  });
+
   return (
     <group>
-      {/* Blood body */}
+      {/* Blood body — rigid */}
       <mesh position={[0, -0.3, 0]}>
         <cylinderGeometry args={[0.172, 0.172, 1.6, 64]} />
-        <meshPhysicalMaterial
-          color="#3d0000"
-          roughness={0.05}
-          metalness={0.15}
-          envMapIntensity={1.5}
-        />
+        <meshPhysicalMaterial color="#3d0000" roughness={0.05} metalness={0.15} envMapIntensity={1.5} />
       </mesh>
-      {/* Rounded bottom */}
+      {/* Rounded bottom — rigid */}
       <mesh position={[0, -1.1, 0]}>
         <sphereGeometry args={[0.172, 64, 64, 0, Math.PI * 2, 0, Math.PI / 2]} />
         <meshPhysicalMaterial color="#3d0000" roughness={0.05} metalness={0.15} />
       </mesh>
-      {/* Blood surface — glossy top */}
-      <mesh position={[0, 0.5, 0]}>
-        <cylinderGeometry args={[0.170, 0.170, 0.02, 64]} />
+
+      {/* Rippling meniscus — glossy, reflective liquid surface */}
+      <mesh ref={surfaceRef} geometry={surfaceGeom} position={[0, SURFACE_Y, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <meshPhysicalMaterial
-          color="#1a0000"
-          roughness={0.0}
-          metalness={0.3}
+          color="#2a0000"
+          roughness={0.02}
+          metalness={0.35}
+          clearcoat={1}
+          clearcoatRoughness={0.05}
           envMapIntensity={3}
+          side={THREE.DoubleSide}
         />
       </mesh>
-      {/* Surface highlight — tiny bright spot */}
-      <mesh position={[-0.06, 0.51, 0.1]}>
-        <sphereGeometry args={[0.025, 16, 16]} />
-        <meshStandardMaterial
-          color="#ffffff"
-          transparent
-          opacity={0.15}
-          roughness={0}
-          emissive="#ffffff"
-          emissiveIntensity={0.3}
-        />
+
+      {/* Moving specular glint on the surface */}
+      <mesh ref={glintRef} position={[0, SURFACE_Y + 0.012, 0]}>
+        <sphereGeometry args={[0.03, 16, 16]} />
+        <meshStandardMaterial color="#ffffff" transparent opacity={0.18} roughness={0} emissive="#ffffff" emissiveIntensity={0.35} />
       </mesh>
+
+      {/* Splash droplets bobbing above the surface */}
+      <group ref={dropsRef}>
+        {DROPS.map((d, i) => (
+          <mesh key={i} position={[0, SURFACE_Y, 0]}>
+            <sphereGeometry args={[d.size, 20, 20]} />
+            <meshPhysicalMaterial color="#4a0000" roughness={0.04} metalness={0.2} clearcoat={1} envMapIntensity={2} />
+          </mesh>
+        ))}
+      </group>
+
+      {/* Flow streaks — orbit the lower blood column to fake liquid motion */}
+      <group ref={flowRef}>
+        {[0, 2.1, 4.2].map((ang, i) => (
+          <mesh key={i} position={[Math.cos(ang) * 0.1735, -0.68, Math.sin(ang) * 0.1735]} rotation={[0, -ang + Math.PI / 2, 0]}>
+            <planeGeometry args={[0.045, 0.92]} />
+            <meshStandardMaterial
+              color="#ff5a5a"
+              transparent
+              opacity={0.16}
+              emissive="#ff2a2a"
+              emissiveIntensity={0.5}
+              roughness={0}
+              side={THREE.DoubleSide}
+              depthWrite={false}
+            />
+          </mesh>
+        ))}
+      </group>
     </group>
   );
 }
