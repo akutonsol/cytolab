@@ -49,7 +49,7 @@ export function ClinicalWorkstation({
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === 'Escape') close();
       if (e.key === 'ArrowRight') onNextCase?.();
       if (e.key === 'ArrowLeft') onPrevCase?.();
