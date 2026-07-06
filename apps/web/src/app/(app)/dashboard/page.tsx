@@ -638,7 +638,7 @@ export default function DashboardPage() {
                   <span style={{ fontSize: 14, fontWeight: 500, color: '#475569' }}>Interpretation</span>
                   <span style={{ fontSize: 11, fontWeight: 700, color: '#4F46E5', background: '#EEF2FF', borderRadius: 999, padding: '3px 10px' }}>High Confidence</span>
                 </div>
-                <div style={{ fontSize: 25, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', letterSpacing: '-0.02em', marginBottom: 4 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1.35, marginBottom: 4 }}>
                   {selectedRecord?.urgent
                     ? 'Urgent Case — Immediate Review'
                     : selectedRecord?.specimen

@@ -77,22 +77,22 @@ export function ActivityTray() {
 
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-2.5 shadow-sm">
-      <span className="mr-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Action Center</span>
+      <span className="mr-2 text-xs font-bold uppercase tracking-widest text-gray-900">Action Center</span>
       <div className="h-4 w-px bg-gray-200" />
       {chips.map((chip) => (
         <button
           key={chip.key}
           onClick={chip.onClick}
-          className={`flex items-center gap-2 rounded-xl px-3 py-1.5 transition-colors ${chip.chipBg}`}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 transition-colors ${chip.chipBg}`}
         >
-          <span className={`h-2 w-2 rounded-full ${chip.dot} ${chip.pulse ? 'animate-pulse' : ''}`} />
-          <span className={`text-xs font-semibold ${chip.text}`}>{chip.count} {chip.label}</span>
+          <span className={`h-2.5 w-2.5 rounded-full ${chip.dot} ${chip.pulse ? 'animate-pulse' : ''}`} />
+          <span className={`text-[13px] font-semibold ${chip.text}`}>{chip.count} {chip.label}</span>
         </button>
       ))}
       <div className="ml-auto">
         <button
           onClick={() => router.push('/notifications')}
-          className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+          className="text-[13px] font-semibold text-indigo-600 underline underline-offset-2 hover:text-indigo-800"
         >
           View All →
         </button>

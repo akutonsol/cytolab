@@ -266,7 +266,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </span>
               <div style={{ lineHeight: 1.1 }}>
                 <div style={{ fontFamily: 'Geist, sans-serif', fontSize: 20, fontWeight: 700, letterSpacing: 0.6, color: '#111827' }}>CYTOLAB</div>
-                {screens.sm && <div style={{ fontSize: 12, fontWeight: 500, color: '#9ca3af', marginTop: 1 }}>Cytology &amp; Pathology Laboratory System</div>}
+                {screens.sm && <div style={{ fontSize: 13, fontWeight: 500, color: '#1f2937', marginTop: 1 }}>Cytology &amp; Pathology Laboratory System</div>}
               </div>
             </div>
 
@@ -315,15 +315,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   {/* Identity: name + role */}
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-gray-900">{firstName}</span>
-                    <span className="text-xs font-medium text-gray-400">{role}</span>
+                    <span className="text-[13px] font-semibold text-gray-600">{role}</span>
                   </div>
                   <div className="my-1 h-px w-full bg-gray-100" />
-                  {/* Contextual greeting — word + first name, clean two lines. */}
-                  <div className="flex items-center gap-1.5 text-[15px] font-bold leading-tight text-gray-900">
-                    {greeting.night ? <Moon size={15} className="text-violet-500" /> : <Sun size={15} className="text-[#A16207]" />}
-                    <span>{greeting.text}</span>
+                  {/* Contextual greeting — word + first name on one line. */}
+                  <div className="flex items-center gap-1.5 text-[16px] font-bold leading-tight text-gray-900">
+                    {greeting.night ? <Moon size={16} className="text-violet-500" /> : <Sun size={16} className="text-[#A16207]" />}
+                    <span>{greeting.text} <span className={`text-[18px] font-black ${greeting.night ? 'text-violet-600' : 'text-indigo-600'}`}>{greetingName}</span></span>
                   </div>
-                  <div className={`text-[13px] font-semibold ${greeting.night ? 'text-violet-600' : 'text-indigo-600'}`}>{greetingName}</div>
                 </div>
               </div>
               <NavPills justify="flex-end" />
