@@ -107,7 +107,7 @@ export default function LoginPage() {
   };
   const onKey = (ev: React.KeyboardEvent) => { if (ev.key === 'Enter') submit(); };
 
-  const inputCls = 'block w-full rounded-2xl border border-slate-200 bg-white py-4 pl-14 pr-14 font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-[#1d35d1] focus:ring-2 focus:ring-[#1d35d1]/10';
+  const inputCls = 'block w-full rounded-2xl border-2 border-dashed border-slate-200 bg-white py-5 pl-14 pr-14 font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-solid focus:border-[#1d35d1] focus:ring-2 focus:ring-[#1d35d1]/10';
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden text-white" style={{ background: 'var(--login-bg, #1435d1)' }}>
@@ -132,10 +132,10 @@ export default function LoginPage() {
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-7 sm:px-12">
           <div className="flex items-center gap-4">
-            <img src="/cyto-icon-white.png" alt="CYTOLAB" className="h-14 w-14" />
+            <img src="/cyto-icon-white.png" alt="CYTOLAB" className="h-16 w-16" />
             <div className="leading-tight">
-              <div className="text-2xl font-extrabold uppercase tracking-tight">CYTOLAB</div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-white/80">Cytology &amp; Pathology Laboratory System</div>
+              <div className="text-3xl font-extrabold uppercase tracking-tight">CYTOLAB</div>
+              <div className="mt-0.5 text-[15px] font-medium leading-snug text-white/85">Cytology &amp; Pathology<br />Laboratory System</div>
             </div>
           </div>
           <a href="mailto:support@cytolab.local" className="flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-80">
@@ -254,7 +254,7 @@ export default function LoginPage() {
                     id="mfa-code" inputMode="text" autoComplete="one-time-code" placeholder="Verification code"
                     value={code} onChange={(e) => setCode(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') challenge.mutate(); }}
-                    className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-center text-[16px] tracking-[0.3em] text-slate-800 outline-none focus:border-[#1d35d1] focus:ring-2 focus:ring-[#1d35d1]/10"
+                    className="block w-full rounded-2xl border-2 border-dashed border-slate-200 bg-white px-4 py-5 text-center text-[16px] tracking-[0.3em] text-slate-800 outline-none focus:border-solid focus:border-[#1d35d1] focus:ring-2 focus:ring-[#1d35d1]/10"
                   />
                   <button
                     type="button" onClick={() => { setFormError(null); challenge.mutate(); }} disabled={challenge.isPending || !code.trim()}
