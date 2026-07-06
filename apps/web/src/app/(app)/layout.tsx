@@ -241,12 +241,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', background: CANVAS, display: 'flex', flexDirection: 'column' }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');`}</style>
 
-      <header style={heroZone}>
-        <div style={heroBg(showCenter)}>
+      <header className="top-navigation">
+        <div className="nav-inner" style={{ flexDirection: 'column', alignItems: 'stretch', justifyContent: 'center', gap: 8, paddingTop: showCenter ? 12 : 8, paddingBottom: showCenter ? 8 : 8 }}>
           {/* ROW 1 — logo + subtitle (left), search + action icons (right).
               zIndex kept above the pills row so the clock dropdown overlays them. */}
           <div style={{ position: 'relative', zIndex: 40, display: 'flex', alignItems: 'center', gap: 16, minHeight: 44 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="logo">
               {!showCenter && <button aria-label="Menu" onClick={() => setDrawerOpen(true)} className={iconBtnCls}><MenuOutlined /></button>}
               <span style={{ display: 'grid', placeItems: 'center', width: 36, height: 36, borderRadius: 11, background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)', color: '#fff', boxShadow: '0 6px 16px rgba(79,70,229,0.3)', flexShrink: 0 }}>
                 <Microscope size={20} strokeWidth={1.9} />
@@ -257,7 +257,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div className="nav-actions" style={{ marginLeft: 'auto' }}>
               {isAnyDictationActive && (
                 <div title="Dictation active" style={{ display: 'flex', alignItems: 'center', gap: 7, height: 36, padding: '0 12px', borderRadius: 999, background: '#EEF2FF', color: '#4F46E5', fontSize: 13, fontWeight: 600 }}>
                   <span style={{ position: 'relative', display: 'grid', placeItems: 'center' }}>
@@ -268,7 +268,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
               )}
               {screens.md && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 44, width: 360, borderRadius: 999, padding: '0 14px', border: '1px solid #e5e7eb', background: '#fff', boxShadow: '0 1px 2px rgba(16,24,40,0.04)' }}>
+                <div className="nav-search">
                   <SearchOutlined style={{ color: '#9ca3af', fontSize: 16 }} />
                   <input placeholder="Search cases, patients, reports…" onFocus={() => router.push('/search')} onChange={(e) => router.push(`/search?q=${encodeURIComponent(e.target.value)}`)} style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: 14, color: '#111827' }} />
                 </div>
@@ -282,9 +282,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <button aria-label="Notifications" onClick={() => router.push('/notifications')} className={`${iconBtnCls} relative`}>
                 <BellOutlined />
                 {unread > 0 && (
-                  <span style={{ position: 'absolute', top: 0, right: 0, minWidth: 18, height: 18, padding: '0 4px', borderRadius: 999, background: '#EF4444', color: 'white', fontSize: 10, fontWeight: 700, display: 'grid', placeItems: 'center' }}>
-                    {unread > 9 ? '9+' : unread}
-                  </span>
+                  <span className="notification-dot">{unread > 9 ? '9+' : unread}</span>
                 )}
               </button>
               <ThemeSwitcher triggerStyle={iconBtnStyle} />
@@ -298,7 +296,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginTop: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 {accountButton}
-                <div className="ml-3 leading-tight">
+                <div className="user-greeting ml-3">
                   <div className="text-lg text-gray-700">Hi, {greetingName}!</div>
                   <div className="text-xl font-bold text-gray-900">Welcome Back</div>
                 </div>
@@ -352,14 +350,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 // Soft blue-gray → lavender canvas; the whole app is one seamless surface.
 // Single shared canvas colour painted once on the outermost container. The top
 // bar and every page's content are transparent over it, so they're all exactly
-// this colour with no seam.
+// this colour with no seam. The frosted .top-navigation floats over this canvas.
 const CANVAS = '#f3f4f8';
-const heroZone: React.CSSProperties = { position: 'sticky', top: 0, zIndex: 20 };
-const heroBg = (tall: boolean): React.CSSProperties => ({
-  position: 'relative', background: '#f3f4f8',
-  padding: tall ? '10px 16px 4px' : '8px 16px', minHeight: tall ? 96 : 56,
-});
-// Clean circular icon buttons: no border/fill until hovered.
-const iconBtnCls = 'grid h-10 w-10 place-items-center rounded-full border-0 bg-transparent text-lg text-gray-500 cursor-pointer transition-colors hover:bg-gray-100';
+// Enterprise-nav icon buttons (see .nav-icon): 46px, radius 14, white wash on hover.
+const iconBtnCls = 'nav-icon text-lg text-gray-500';
 // Inline equivalent for the ThemeSwitcher trigger (it only takes a style prop).
-const iconBtnStyle: React.CSSProperties = { display: 'grid', placeItems: 'center', width: 40, height: 40, borderRadius: 999, border: 'none', background: 'transparent', color: '#6b7280', fontSize: 18, cursor: 'pointer' };
+const iconBtnStyle: React.CSSProperties = { display: 'grid', placeItems: 'center', width: 46, height: 46, borderRadius: 14, border: 'none', background: 'transparent', color: '#6b7280', fontSize: 18, cursor: 'pointer' };

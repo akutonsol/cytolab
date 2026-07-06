@@ -1007,3 +1007,180 @@ select option {
   }
 }
 
+/* ==========================================
+   CYTOLAB NAVIGATION SYSTEM
+========================================== */
+
+:root {
+  --nav-height: 96px;
+}
+
+.top-navigation {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  min-height: var(--nav-height);
+  background: rgba(247, 249, 255, 0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(30, 40, 70, 0.06);
+  box-shadow: 0 8px 30px rgba(28, 32, 60, 0.04);
+}
+
+.nav-inner {
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 0 56px;
+  min-height: var(--nav-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+}
+
+.user-greeting {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-search {
+  width: 420px;
+  height: 52px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(50, 55, 70, 0.08);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: 0.25s;
+}
+
+.nav-search:focus-within {
+  border-color: #5c4ef5;
+  box-shadow: 0 0 0 4px rgba(92, 78, 245, 0.10);
+}
+
+.navigation-menu {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.nav-item {
+  height: 54px;
+  padding: 0 22px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(50, 55, 70, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: 0.25s;
+  cursor: pointer;
+}
+
+.nav-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(40, 45, 70, 0.08);
+}
+
+.nav-item.active {
+  background: #5c4ef5;
+  color: white;
+  border: none;
+  box-shadow: 0 14px 35px rgba(92, 78, 245, 0.35);
+}
+
+.clock-card {
+  min-width: 165px;
+  height: 54px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(50, 55, 70, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  cursor: pointer;
+}
+
+.clock-status {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.12);
+}
+
+.clock-time {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.clock-label {
+  font-size: 12px;
+  color: #75809a;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.25s;
+  cursor: pointer;
+}
+
+.nav-icon:hover {
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(35, 40, 60, 0.06);
+}
+
+.notification-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ff4d4f;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+}
+

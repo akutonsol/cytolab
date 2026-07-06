@@ -107,12 +107,11 @@ export function ClockWidget({ compact = false, nav = false }: { compact?: boolea
 
     return (
       <div className="relative" style={{ zIndex: open ? 60 : undefined }}>
-        <button onClick={() => setOpen((o) => !o)}
-          className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-white px-3 py-1.5 shadow-sm ring-4 ring-green-100/60 transition-colors hover:bg-green-50/40">
-          <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+        <button onClick={() => setOpen((o) => !o)} className="clock-card" style={{ gap: 12 }}>
+          <span className="clock-status" />
           <span className="text-left leading-tight">
-            <span className="block font-mono text-sm font-bold text-gray-900">{hhmmss(now)}</span>
-            <span className="block text-[11px] text-gray-500">Clocked In</span>
+            <span className="clock-time block font-mono text-gray-900">{hhmmss(now)}</span>
+            <span className="clock-label block">Clocked In</span>
           </span>
           <span className="grid h-6 w-6 place-items-center rounded-full bg-gray-100 text-gray-500"><ChevronDown size={14} /></span>
         </button>

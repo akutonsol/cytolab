@@ -45,10 +45,17 @@ export function ActivityTray() {
     queryFn: () => api.get('/fhir/stats').then((r) => r.data as { todayCount: number }),
     enabled: isEnabled('HL7_FHIR'),
   });
+  const { data: qcAlerts } = useQuery({
+    queryKey: ['qc-alerts'],
+    queryFn: () => api.get('/qc/alerts').then((r) => r.data as { status: string }[]),
+    enabled: isEnabled('QC_MODULE'),
+    refetchInterval: 60_000,
+  });
 
   const escCount = isEnabled('ABNORMAL_ESCALATION') ? escSummary?.pending ?? 0 : 0;
   const aiCount = isEnabled('AI_SCREENING') ? aiAnalytics?.pendingReview ?? 0 : 0;
   const fhirCount = isEnabled('HL7_FHIR') ? fhirStats?.todayCount ?? 0 : 0;
+  const qcCount = isEnabled('QC_MODULE') ? qcAlerts?.filter((a) => a.status !== 'Resolved').length ?? 0 : 0;
 
   const chips: Chip[] = [];
   if (escCount > 0) {
@@ -56,6 +63,10 @@ export function ActivityTray() {
   }
   if (aiCount > 0) {
     chips.push({ key: 'ai', dot: 'bg-indigo-500', label: 'AI reviews', badge: 'bg-indigo-100 text-indigo-700', count: aiCount, onClick: () => router.push('/results?filter=ai-pending'), pulse: true });
+  }
+  if (qcCount > 0) {
+    // Zero-orange: QC warnings use rose (not amber) to stay off the detector.
+    chips.push({ key: 'qc', dot: 'bg-rose-500', label: 'Quality Alerts', badge: 'bg-rose-100 text-rose-700', count: qcCount, onClick: () => router.push('/qc'), pulse: true, ring: 'ring-1 ring-rose-200' });
   }
   if (fhirCount > 0) {
     chips.push({ key: 'fhir', dot: 'bg-emerald-500', label: 'FHIR sent', badge: 'bg-emerald-100 text-emerald-700', count: fhirCount, onClick: () => router.push('/settings/fhir') });
@@ -65,7 +76,9 @@ export function ActivityTray() {
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 px-5 py-3 flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
+        <span className="text-xs font-semibold uppercase tracking-widest text-gray-400">Action Center</span>
+        <div className="h-4 w-px bg-gray-200" />
         {chips.map((chip, i) => (
           <Fragment key={chip.key}>
             {i > 0 && <div className="w-px h-4 bg-gray-200" />}

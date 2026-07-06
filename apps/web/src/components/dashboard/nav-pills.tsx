@@ -52,11 +52,7 @@ export function NavPills({ justify = 'flex-end' }: { justify?: React.CSSProperti
   const Pill = (isActive: boolean, icon: React.ReactNode, label: string, onClick?: () => void) => (
     <button
       onClick={onClick}
-      className={`inline-flex cursor-pointer items-center gap-2.5 whitespace-nowrap rounded-full px-5 py-2.5 text-base font-semibold transition-colors ${
-        isActive
-          ? 'border-0 bg-indigo-600 text-white shadow-sm'
-          : 'border border-gray-200 bg-white text-gray-700 shadow-sm hover:bg-gray-50'
-      }`}
+      className={`nav-item whitespace-nowrap text-base font-semibold ${isActive ? 'active text-white' : 'text-gray-700'}`}
     >
       <span className={`inline-flex ${isActive ? 'text-white' : 'text-indigo-500'}`}>{icon}</span>
       <span>{label}</span>
@@ -65,7 +61,7 @@ export function NavPills({ justify = 'flex-end' }: { justify?: React.CSSProperti
   );
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: justify }}>
+    <div className="navigation-menu" style={{ flexWrap: 'wrap', justifyContent: justify }}>
       {can(HOME_ITEM.permission) && Pill(pathname === HOME_ITEM.path, createElement(HOME_ITEM.icon!, { size: 20, strokeWidth: 1.9 }), HOME_ITEM.label, () => router.push(HOME_ITEM.path))}
       {centerGroups.map((g) => (
         <Dropdown key={g.key} trigger={['hover', 'click']} menu={{ items: g.visible.map((i: any) => ({ key: i.path, label: itemLabel(i) })), onClick: ({ key }) => router.push(key) }}>
