@@ -319,8 +319,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   </div>
                   <div className="my-1 h-px w-full bg-gray-100" />
                   {/* Contextual greeting — word + first name on one line. */}
-                  <div className="flex items-center gap-1.5 text-[16px] font-bold leading-tight text-gray-900">
-                    {greeting.night ? <Moon size={16} className="text-violet-500" /> : <Sun size={16} className="text-[#A16207]" />}
+                  <div className="flex items-center gap-1.5 text-[18px] font-bold leading-tight text-gray-900">
+                    {greeting.night ? <Moon size={18} className="text-violet-500" /> : <Sun size={18} className="text-[#A16207]" />}
                     <span>{greeting.text} <span className={`text-[18px] font-black ${greeting.night ? 'text-violet-600' : 'text-indigo-600'}`}>{greetingName}</span></span>
                   </div>
                 </div>
@@ -375,7 +375,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 // Single shared canvas colour painted once on the outermost container. The top
 // bar and every page's content are transparent over it, so they're all exactly
 // this colour with no seam. The frosted .top-navigation floats over this canvas.
-const CANVAS = '#f3f4f8';
+const CANVAS = '#F8F9FD';
 // Enterprise-nav icon buttons (see .nav-icon): 46px, radius 14, white wash on hover.
 const iconBtnCls = 'nav-icon text-lg text-gray-500';
 // Inline equivalent for the ThemeSwitcher trigger (it only takes a style prop).

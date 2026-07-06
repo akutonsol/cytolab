@@ -15,6 +15,7 @@ import { useFeatures } from '@/lib/feature-context';
 import { FeatureGate } from '@/components/FeatureGate';
 import { GlassCard } from '@/components/dashboard/glass-card';
 import { ActivityTray } from '@/components/dashboard/ActivityTray';
+import { LiveStatusRibbon } from '@/components/dashboard/LiveStatusRibbon';
 import { PerformanceArea, SubscriptionBars } from './charts';
 
 const GREEN = '#166534', BLUE = '#4F46E5';
@@ -286,7 +287,7 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-theme -my-4" style={{ minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'relative', zIndex: 1, padding: '4px 0 40px', background: '#f3f4f8' }}>
+      <div style={{ position: 'relative', zIndex: 1, padding: '4px 0 40px', background: '#F8F9FD' }}>
         <FeatureGate feature="PROFICIENCY_TESTING">
           {activeProfTests > 0 && (
             <button onClick={() => router.push('/proficiency')}
@@ -341,7 +342,9 @@ export default function DashboardPage() {
           )}
         </FeatureGate>
 
-        <div style={{ marginTop: 12, background: '#F9FAFC', marginLeft: -16, marginRight: -16, marginBottom: -40, paddingLeft: 16, paddingRight: 16, paddingTop: 20, paddingBottom: 40 }} className="flex flex-col gap-5">
+        <div style={{ marginTop: 12, background: 'transparent', marginLeft: -16, marginRight: -16, marginBottom: -40, paddingLeft: 16, paddingRight: 16, paddingTop: 20, paddingBottom: 40 }} className="flex flex-col gap-5">
+          {/* ═══ LIVE STATUS RIBBON (slim single-line status between nav + Action Center) ═══ */}
+          <LiveStatusRibbon stats={{ activeSpecimens: d.priorityRecords?.length || 0, escalations: d.priorityRecords?.filter((r: any) => r.urgent).length || 0 }} />
           {/* ═══ ACTIVITY TRAY (consolidates escalation / AI review / FHIR alerts) ═══ */}
           <ActivityTray />
 
@@ -395,7 +398,7 @@ export default function DashboardPage() {
               <div key={i} style={{
                 background: 'white',
                 borderRadius: 18,
-                padding: '22px 24px',
+                padding: '30px 24px',
                 border: '1px solid #EEF2F7',
                 boxShadow: '0 4px 24px rgba(0,0,0,0.04)',
                 display: 'flex',
@@ -490,8 +493,8 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* CENTER: AI Cytology Model */}
-            <div className="ai-model-container" style={{ height: 540, background: '#FFFFFF', borderRadius: 20, border: '1px solid #EEF2F7', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            {/* CENTER: AI Cytology Model — elevated centerpiece (border + aiGlow). */}
+            <div className="ai-model-container" style={{ height: 540, background: '#FFFFFF', borderRadius: 20, border: '2px solid #EEF2FF', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               {/* Header (overlays the stage so the head can fill the panel) */}
               <div style={{ padding: '20px 24px 0', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 4 }}>
                 <div style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Cytology Model</div>
