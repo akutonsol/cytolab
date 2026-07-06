@@ -1,254 +1,292 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
-import { Skeleton } from 'antd';
-import { Activity, CheckCircle2, FileCheck, FileText, FlaskConical } from 'lucide-react';
-import { api } from '@/lib/api';
-import { SubscriptionBars, PerformanceArea } from '../dashboard/charts';
+import { useState } from 'react';
+import {
+  Bar, BarChart, Area, AreaChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
+} from 'recharts';
+import { Check, Clock, Droplet, FlaskConical, Filter, Plus, ScanLine, TestTube, TrendingUp } from 'lucide-react';
 
-// ── Case-distribution donut classes (colours match the dashboard palette,
-//    zero-orange: indigo / teal / violet / blue / slate). ──
-const specimenTypes = [
-  { label: 'Body Fluid', color: '#4F46E5', pct: 42 },
-  { label: 'Respiratory', color: '#0E7490', pct: 28 },
-  { label: 'Urine', color: '#6D28D9', pct: 16 },
-  { label: 'CSF', color: '#1D4ED8', pct: 8 },
-  { label: 'Other', color: '#475569', pct: 6 },
+// ── Palette (zero-orange: indigo / teal / emerald / slate only) ──────────────
+const INDIGO = '#4F46E5', INDIGO_LT = '#A5B4FC', TEAL = '#0D9488', EMERALD = '#10B981', SLATE = '#94A3B8';
+const CARD = 'bg-white rounded-2xl border border-gray-100 p-6 shadow-sm';
+
+// ── Seeded data (matches the reference; monthly/financial breakdowns are not
+//    yet exposed by /analytics/home, so these are placeholders ready to wire). ──
+const VOLUME = [
+  { m: 'Jan', gyn: 150, nongyn: 74 }, { m: 'Feb', gyn: 120, nongyn: 60 },
+  { m: 'Mar', gyn: 130, nongyn: 66 }, { m: 'Apr', gyn: 140, nongyn: 82 },
+  { m: 'May', gyn: 145, nongyn: 70 }, { m: 'Jun', gyn: 139, nongyn: 72 },
+]; // sums to 1,248
+const VOLUME_TOTAL = VOLUME.reduce((s, r) => s + r.gyn + r.nongyn, 0); // 1,248
+const VOLUME_AVG = Math.round(VOLUME.reduce((s, r) => s + r.gyn + r.nongyn, 0) / VOLUME.length);
+
+const PRACTICE = [
+  { label: 'Total Cases', value: '135', Icon: FlaskConical },
+  { label: 'Total Authorized', value: '89', Icon: Check },
+  { label: 'Avg TAT', value: '2.4d', Icon: Clock },
 ];
-const specBucket = (t?: string | null) => {
-  const x = t ?? '';
-  if (['SPUTUM', 'BRONCHIAL_WASH'].includes(x)) return 'Respiratory';
-  if (x === 'URINE') return 'Urine';
-  if (x === 'CSF') return 'CSF';
-  if (['PLEURAL_FLD', 'SYNOVIAL_FLD', 'JOINT_ASP', 'BREAST_ASP', 'THYROID_FNA', 'LYMPH_NODE', 'BONE_MARROW'].includes(x)) return 'Body Fluid';
-  return 'Other';
-};
+const BREAKDOWN = [
+  { label: 'Cervical Scrape', pct: 42, count: 567, color: INDIGO },
+  { label: 'Breast Aspirate', pct: 24, count: 324, color: TEAL },
+  { label: 'Urine Cytology', pct: 18, count: 243, color: EMERALD },
+];
 
-function activityMeta(status: string): { title: string; Icon: typeof Activity } {
-  const s = (status || '').toLowerCase();
-  if (/(submit|receiv|regist|accession)/.test(s)) return { title: 'New specimen received', Icon: FileText };
-  if (/(process|progress|screen)/.test(s)) return { title: 'Processing started', Icon: FlaskConical };
-  if (/(result|complet|analys)/.test(s)) return { title: 'Analysis completed', Icon: CheckCircle2 };
-  if (/(approv|authoriz|final|report|sign)/.test(s)) return { title: 'Report finalized', Icon: FileCheck };
-  if (/(bill|invoic|paid|charge)/.test(s)) return { title: 'Invoice billed', Icon: FileText };
-  return { title: status || 'Activity', Icon: Activity };
+const CONVERSION = [
+  { m: 'Jan', authorized: 118, pending: 34 }, { m: 'Feb', authorized: 142, pending: 46 },
+  { m: 'Mar', authorized: 120, pending: 30 }, { m: 'Apr', authorized: 96, pending: 40 },
+  { m: 'May', authorized: 108, pending: 32 }, { m: 'Jun', authorized: 78, pending: 22 },
+  { m: 'Jul', authorized: 92, pending: 28 }, { m: 'Aug', authorized: 128, pending: 36 },
+];
+
+const DISTRIBUTION = [
+  { label: 'Cervical Scrape', specimens: 567, pct: 42, color: INDIGO, Icon: ScanLine },
+  { label: 'Breast Aspirate', specimens: 324, pct: 31, color: TEAL, Icon: TestTube },
+  { label: 'Urine Cytology', specimens: 243, pct: 18, color: EMERALD, Icon: FlaskConical },
+  { label: 'Body Fluid', specimens: 114, pct: 11, color: SLATE, Icon: Droplet },
+];
+
+const REVENUE = [
+  { m: 'Jan', revenue: 720 }, { m: 'Feb', revenue: 640 }, { m: 'Mar', revenue: 910 },
+  { m: 'Apr', revenue: 1180 }, { m: 'May', revenue: 1040 }, { m: 'Jun', revenue: 1320 },
+  { m: 'Jul', revenue: 1210 }, { m: 'Aug', revenue: 1450 }, { m: 'Sep', revenue: 1380 },
+  { m: 'Oct', revenue: 1290 }, { m: 'Nov', revenue: 1160 }, { m: 'Dec', revenue: 1279 },
+];
+const TOP_SERVICES = [
+  { name: 'Cervical Scrape', amount: 8234 },
+  { name: 'Breast Aspirate', amount: 2847 },
+  { name: 'Urine Cytology', amount: 1498 },
+];
+
+const TABS = ['Overview', 'Clinical', 'Specimens', 'Financial', 'Patients'] as const;
+const usd = (n: number) => `$${n.toLocaleString()}`;
+
+function GrowthBadge({ pct }: { pct: number }) {
+  return (
+    <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">
+      <TrendingUp size={11} /> {pct}%
+    </span>
+  );
 }
 
-const CARD: React.CSSProperties = { background: '#FAFBFF', borderRadius: 20, padding: '20px 24px', border: '1px solid #F1F0EA' };
-
-export default function AnalyticsPage() {
-  const router = useRouter();
-  // Shares the ['dashboard-home'] cache with the dashboard (React Query dedupes).
-  const { data: d, isLoading, isError } = useQuery({
-    queryKey: ['dashboard-home'],
-    queryFn: () => api.get('/analytics/home').then((r) => r.data),
-  });
-
+function RevenueTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
   return (
-    <div className="pb-10 pt-4" style={{ minHeight: '100%' }}>
-      {/* Page header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
-        <p className="text-sm text-gray-500 mt-1">Laboratory performance metrics and insights</p>
-      </div>
-
-      {isError ? (
-        <div className="p-2 text-sm text-text-secondary">Analytics are unavailable right now.</div>
-      ) : isLoading || !d ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 20 }}>
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} style={CARD}><Skeleton active paragraph={{ rows: 5 }} /></div>
-          ))}
-        </div>
-      ) : (
-        <AnalyticsContent d={d} router={router} />
-      )}
+    <div className="rounded-lg border border-gray-100 bg-white px-3 py-2 text-xs shadow-md">
+      <div className="font-semibold text-gray-900">{label}</div>
+      <div className="text-[#4F46E5]">Revenue: {usd(payload[0].value)}</div>
     </div>
   );
 }
 
-function AnalyticsContent({ d, router }: { d: any; router: ReturnType<typeof useRouter> }) {
-  const up = (d.throughput?.deltaPct ?? 0) >= 0;
-  const eff = d.effectiveness;
-  const totalSpecimens = d.throughput?.series?.reduce((s: number, i: any) => s + (i.value || 0), 0) || 0;
-
-  // Monthly Case Volume — bucket the throughput series into 6 months; `gap`
-  // fills each capsule up to a soft target. Reused by the chart + stat tiles.
-  const volRows = (() => {
-    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const now = new Date();
-    const series = d.throughput?.series ?? [];
-    const chunk = Math.max(1, Math.ceil(series.length / 6));
-    const rows = Array.from({ length: 6 }, (_, i) => {
-      const dt = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
-      const current = series.slice(i * chunk, (i + 1) * chunk).reduce((s: number, r: any) => s + (r.value || 0), 0);
-      return { month: MONTHS[dt.getMonth()], current, gap: 0 };
-    });
-    const maxC = Math.max(1, ...rows.map((r) => r.current));
-    const target = Math.round(maxC * 1.3);
-    rows.forEach((r) => { r.gap = Math.max(0, target - r.current); });
-    return rows;
-  })();
-  const volTotal = volRows.reduce((s, r) => s + r.current, 0);
-  const volAvg = Math.round(volTotal / volRows.length);
-  const volPeak = volRows.reduce((a, b) => (b.current > a.current ? b : a), volRows[0]);
-  const volTarget = (volRows[0]?.current ?? 0) + (volRows[0]?.gap ?? 0);
-  const volAttain = volTarget > 0 ? Math.min(100, Math.round((volTotal / (volTarget * volRows.length)) * 100)) : 0;
-
-  // Case distribution — bucket the priority queue's specimen types into the five
-  // donut classes; fall back to the static mix when the queue is empty.
-  const specCounts: Record<string, number> = {};
-  for (const r of (d.priorityRecords ?? [])) {
-    const g = specBucket(r.specimen);
-    specCounts[g] = (specCounts[g] ?? 0) + 1;
-  }
-  const specTotalCount = Object.values(specCounts).reduce((s, v) => s + v, 0);
-  const specimenTypesDynamic = specTotalCount > 0
-    ? specimenTypes.map((t) => ({ ...t, pct: Math.round(((specCounts[t.label] ?? 0) / specTotalCount) * 100) }))
-    : specimenTypes;
-
-  // Standalone, trend-focused KPIs (distinct from the main dashboard's KPI strip).
-  const kpis = [
-    { label: 'Monthly Volume', value: volTotal.toLocaleString(), sub: `${up ? '▲' : '▼'} ${Math.abs(d.throughput?.deltaPct ?? 0)}% vs prev period` },
-    { label: 'AI Performance', value: `${eff?.accuracy ?? eff?.authorization ?? 0}%`, sub: 'Model accuracy' },
-    { label: 'Authorization Rate', value: `${eff?.authorization ?? 0}%`, sub: 'Reports authorized' },
-    { label: 'On-Time Rate', value: `${eff?.onTime ?? 0}%`, sub: 'Within TAT target' },
-  ];
+export default function AnalyticsPage() {
+  const [activeTab, setActiveTab] = useState<(typeof TABS)[number]>('Overview');
+  const [revPeriod, setRevPeriod] = useState<'Monthly' | 'Quarterly' | 'Yearly'>('Monthly');
 
   return (
-    <>
-      {/* Trend KPI strip */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 16, marginBottom: 24 }}>
-        {kpis.map((k) => (
-          <div key={k.label} style={CARD}>
-            <div style={{ fontSize: 12, color: '#475569', fontWeight: 600 }}>{k.label}</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1.1, marginTop: 6 }}>{k.value}</div>
-            <div style={{ fontSize: 12, color: '#475569', marginTop: 4 }}>{k.sub}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Chart sections */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 20 }}>
-        {/* Monthly Case Volume */}
-        <div style={CARD}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <span style={{ fontSize: 17, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Monthly Case Volume</span>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 999, padding: '3px 10px', cursor: 'pointer' }}>6 Months ▾</div>
-          </div>
-          <SubscriptionBars data={volRows} />
-          <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {[
-              { value: volTotal, label: 'Total cases' },
-              { value: volAvg, label: 'Avg / month' },
-              { value: volPeak?.month ?? '—', label: 'Peak month' },
-              { value: `${volAttain}%`, label: 'Target met' },
-            ].map(({ value, label }) => (
-              <div key={label} style={{ background: '#F8F9FF', borderRadius: 12, padding: '12px 14px' }}>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{value}</div>
-                <div style={{ fontSize: 12, color: '#475569', fontWeight: 500, marginTop: 4 }}>{label}</div>
-              </div>
-            ))}
-          </div>
+    <div className="pb-10 pt-4">
+      {/* Page header */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
+          <p className="text-sm text-gray-500">Laboratory performance overview</p>
         </div>
-
-        {/* Case Distribution by Type */}
-        <div style={CARD}>
-          <div style={{ fontSize: 17, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', marginBottom: 16 }}>Case Distribution by Type</div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
-            <div style={{ position: 'relative', width: 180, height: 180, flexShrink: 0 }}>
-              <svg viewBox="0 0 180 180" width="180" height="180">
-                {(() => {
-                  const types = specimenTypesDynamic.filter((t) => t.pct > 0);
-                  const r = 70, circ = 2 * Math.PI * r, gap = 2.5;
-                  let offset = 0;
-                  return types.map(({ color, pct }, i) => {
-                    const dash = (pct / 100) * circ;
-                    const el = (
-                      <circle key={i} cx="90" cy="90" r={r} fill="none" stroke={color} strokeWidth="20"
-                        strokeDasharray={`${dash - gap} ${circ - dash + gap}`}
-                        strokeDashoffset={-(offset / 100) * circ}
-                        transform="rotate(-90 90 90)" />
-                    );
-                    offset += pct;
-                    return el;
-                  });
-                })()}
-              </svg>
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ fontSize: 30, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{totalSpecimens || d.priorityRecords?.length || 0}</div>
-                <div style={{ fontSize: 11, color: '#475569', fontWeight: 600, textAlign: 'center', marginTop: 3 }}>Total Cases</div>
-              </div>
-            </div>
-            <div style={{ width: '100%', maxWidth: 280, display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {specimenTypesDynamic.map(({ label, color, pct }) => (
-                <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 9, height: 9, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, color: '#475569', fontWeight: 500 }}>{label}</span>
-                  </div>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{pct}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* AI Performance */}
-        <div style={CARD}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-            <span style={{ fontSize: 17, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Performance</span>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: '#4F46E5', fontFamily: 'Geist,sans-serif', lineHeight: 1.1 }}>{eff?.authorization ?? 0}%</div>
-              <div style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>Accuracy</div>
-            </div>
-          </div>
-          <PerformanceArea />
-          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {[
-              { label: 'Sensitivity', v: Math.min(99, (eff?.authorization ?? 0) + 8) },
-              { label: 'Specificity', v: Math.min(99, (eff?.authorization ?? 0) + 5) },
-              { label: 'Precision', v: Math.min(99, (eff?.authorization ?? 0) + 2) },
-              { label: 'F1 Score', v: Math.min(99, (eff?.authorization ?? 0) + 4) },
-            ].map(({ label, v }) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ width: 82, fontSize: 12, color: '#475569', fontWeight: 600, flexShrink: 0 }}>{label}</span>
-                <div style={{ flex: 1, height: 8, borderRadius: 999, background: '#EEF0F6', overflow: 'hidden' }}>
-                  <div style={{ width: `${v}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg,#6366F1,#6D28D9)' }} />
-                </div>
-                <span style={{ width: 36, textAlign: 'right', fontSize: 12, fontWeight: 700, color: '#0F172A', flexShrink: 0 }}>{v}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div style={{ ...CARD, padding: '20px', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <span style={{ fontSize: 17, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Recent Activity</span>
-            <button onClick={() => router.push('/records')} style={{ fontSize: 12, fontWeight: 600, color: '#4F46E5', background: 'none', border: 'none', cursor: 'pointer' }}>View all</button>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-            {(d.activity || []).slice(0, 5).map((a: any, i: number, arr: any[]) => {
-              const meta = activityMeta(a.status);
-              const Icon = meta.Icon;
-              return (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', borderBottom: i < arr.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 11, background: '#EEF2FF', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                    <Icon size={17} color="#4F46E5" />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{meta.title}</div>
-                    {a.labNumber && <div style={{ fontSize: 12, color: '#475569', fontWeight: 500, marginTop: 2 }}>{a.labNumber}</div>}
-                  </div>
-                  <div style={{ fontSize: 12, color: '#475569', fontWeight: 500, flexShrink: 0 }}>{new Date(a.at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</div>
-                </div>
-              );
-            })}
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === tab ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-100'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+          <button className="ml-1 flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">
+            Monthly <span className="text-gray-400">▾</span>
+          </button>
+          <button className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">
+            <Filter size={14} /> Filter
+          </button>
         </div>
       </div>
-    </>
+
+      {activeTab !== 'Overview' ? (
+        <div className={`${CARD} flex items-center justify-center py-24 text-sm text-gray-500`}>
+          {activeTab} analytics — coming soon.
+        </div>
+      ) : (
+        <>
+          {/* ── TOP SECTION ── */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Left — Monthly Specimen Volume */}
+            <div className={CARD}>
+              <div className="mb-4 flex items-start justify-between">
+                <span className="text-lg font-bold text-gray-900">Monthly Specimen Volume</span>
+                <div className="text-right">
+                  <div className="text-xs font-medium text-gray-400">6 months</div>
+                  <div className="text-2xl font-black text-gray-900">{VOLUME_TOTAL.toLocaleString()}</div>
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={VOLUME} barGap={4} barCategoryGap="28%">
+                  <CartesianGrid vertical={false} stroke="#F1F5F9" />
+                  <XAxis dataKey="m" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94A3B8' }} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#94A3B8' }} width={32} />
+                  <Tooltip cursor={{ fill: 'rgba(79,70,229,0.05)' }} contentStyle={{ borderRadius: 10, border: '1px solid #E5E7EB', fontSize: 12 }} />
+                  <ReferenceLine y={VOLUME_AVG} stroke="#94A3B8" strokeDasharray="4 4" />
+                  <Bar dataKey="gyn" name="GYN" fill={INDIGO} radius={[6, 6, 0, 0]} maxBarSize={16} />
+                  <Bar dataKey="nongyn" name="NON-GYN" fill={INDIGO_LT} radius={[6, 6, 0, 0]} maxBarSize={16} />
+                </BarChart>
+              </ResponsiveContainer>
+
+              {/* Practice Overview */}
+              <div className="mt-5 border-t border-gray-100 pt-5">
+                <div className="mb-4 text-sm font-bold text-gray-900">Practice Overview</div>
+                <div className="grid grid-cols-3 gap-3">
+                  {PRACTICE.map(({ label, value, Icon }) => (
+                    <div key={label} className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-gray-200 text-gray-500">
+                        <Icon size={18} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-xs text-gray-500">{label}</div>
+                        <div className="text-lg font-black text-gray-900">{value}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Breakdown bars */}
+                <div className="mt-5 space-y-3">
+                  {BREAKDOWN.map(({ label, pct, count, color }) => (
+                    <div key={label}>
+                      <div className="mb-1 flex items-center justify-between text-xs">
+                        <span className="font-medium text-gray-600">{label}</span>
+                        <span className="font-semibold text-gray-900">{pct}% / {count}</span>
+                      </div>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right column */}
+            <div className="flex flex-col gap-6">
+              {/* Case Conversion Rate */}
+              <div className={CARD}>
+                <div className="mb-4 flex items-start justify-between gap-4">
+                  <span className="text-lg font-bold text-gray-900">Case Conversion Rate</span>
+                  <div className="flex items-start gap-3">
+                    <div>
+                      <div className="text-xs text-gray-500">New Cases</div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-3xl font-black text-gray-900">2,847</span>
+                        <GrowthBadge pct={24} />
+                      </div>
+                    </div>
+                    <div className="rounded-xl bg-gray-900 p-4 text-white">
+                      <div className="flex items-center gap-2 text-xs text-white/70"><Clock size={12} /> Growth</div>
+                      <div className="mt-1 text-xl font-black">+12%</div>
+                    </div>
+                  </div>
+                </div>
+                <ResponsiveContainer width="100%" height={150}>
+                  <BarChart data={CONVERSION} barCategoryGap="30%">
+                    <XAxis dataKey="m" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#94A3B8' }} />
+                    <Tooltip cursor={{ fill: 'rgba(79,70,229,0.05)' }} contentStyle={{ borderRadius: 10, border: '1px solid #E5E7EB', fontSize: 12 }} />
+                    <Bar dataKey="authorized" name="Authorized" stackId="c" fill={INDIGO} radius={[0, 0, 0, 0]} maxBarSize={22} />
+                    <Bar dataKey="pending" name="Received" stackId="c" fill={INDIGO_LT} radius={[6, 6, 0, 0]} maxBarSize={22} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Specimen Type Distribution */}
+              <div className={CARD}>
+                <div className="mb-4 text-lg font-bold text-gray-900">Specimen Type Distribution</div>
+                <div className="space-y-4">
+                  {DISTRIBUTION.map(({ label, specimens, pct, color, Icon }) => (
+                    <div key={label} className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ background: `${color}1A`, color }}>
+                        <Icon size={16} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-gray-900">{label}</span>
+                          <span className="text-sm font-bold text-gray-900">{pct}%</span>
+                        </div>
+                        <div className="mb-1.5 text-xs text-gray-500">{specimens} specimens</div>
+                        <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
+                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── BOTTOM SECTION: Revenue ── */}
+          <div className={`${CARD} mt-6`}>
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div className="text-sm font-medium text-gray-500">Total Revenue</div>
+                <div className="mt-1 flex items-center gap-3">
+                  <span className="text-4xl font-black text-gray-900">$12,579</span>
+                  <GrowthBadge pct={8} />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center rounded-lg border border-gray-200 bg-white p-0.5">
+                  {(['Monthly', 'Quarterly', 'Yearly'] as const).map((p) => (
+                    <button key={p} onClick={() => setRevPeriod(p)}
+                      className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${revPeriod === p ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
+                      {p}
+                    </button>
+                  ))}
+                </div>
+                <button className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"><Filter size={14} /> Filter</button>
+                <button className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"><Plus size={14} /> Add widget</button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_260px]">
+              {/* Revenue trend */}
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={REVENUE} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={INDIGO} stopOpacity={0.22} />
+                      <stop offset="100%" stopColor={INDIGO} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                  <XAxis dataKey="m" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94A3B8' }} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#94A3B8' }} width={44} tickFormatter={(v) => `$${v}`} />
+                  <Tooltip content={<RevenueTooltip />} cursor={{ stroke: INDIGO, strokeWidth: 1, strokeDasharray: '4 4' }} />
+                  <Area type="monotone" dataKey="revenue" stroke={INDIGO} strokeWidth={2.5} fill="url(#revFill)" dot={{ r: 3, fill: INDIGO }} activeDot={{ r: 5 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+
+              {/* Top Services */}
+              <div className="rounded-xl border border-gray-100 bg-[#FAFBFF] p-5">
+                <div className="mb-4 text-base font-bold text-gray-900">Top Services</div>
+                <div className="space-y-4">
+                  {TOP_SERVICES.map((s) => (
+                    <div key={s.name}>
+                      <div className="text-sm text-gray-500">{s.name}</div>
+                      <div className="text-2xl font-black text-gray-900">{usd(s.amount)}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
