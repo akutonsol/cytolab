@@ -119,12 +119,12 @@ export default function LoginPage() {
         <PillBackdrop />
       </div>
 
-      {/* Specimen vial — static, floating over the seam between panels. */}
-      <div className="pointer-events-none absolute inset-0 z-[5] hidden xl:block" aria-hidden>
+      {/* Specimen vial — slow 3D turn, floating over the seam between panels. */}
+      <div className="pointer-events-none absolute inset-0 z-[5] hidden xl:block" style={{ perspective: '1100px' }} aria-hidden>
         <img
           src="/specimen-tube.png"
           alt=""
-          className="absolute left-[49%] top-1/2 w-[420px] -translate-x-1/2 -translate-y-1/2 select-none mix-blend-screen"
+          className="animate-vial-turn absolute left-[49%] top-1/2 w-[420px] -translate-x-1/2 -translate-y-1/2 select-none mix-blend-screen"
         />
       </div>
 
