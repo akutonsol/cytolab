@@ -361,7 +361,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       })}
 
       <main style={{ position: 'relative', zIndex: 1, flex: 1, padding: '24px 0 16px', background: 'transparent' }}>
-        <div className="dashboard page-container">{children}</div>
+        <div className="dashboard page-container">
+          {/* Fade + slide the page content in on each route change. */}
+          <div key={pathname} className="animate-fade-slide-in">{children}</div>
+        </div>
       </main>
 
       <Drawer title={<Logo />} placement="left" width={300} open={drawerOpen} onClose={() => setDrawerOpen(false)} styles={{ body: { padding: 0 } }}>
