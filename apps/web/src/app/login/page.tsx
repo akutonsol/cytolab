@@ -29,22 +29,13 @@ const TRUST = [
   { Icon: Clock, label: '99.9% Uptime', desc: 'Reliable. Always.' },
 ];
 
-// Three columns of tall rounded pills sitting directly behind the vial.
+// Three tall translucent pills drifting behind the vial.
 function PillBackdrop() {
-  const cols = [
-    { x: 20, ys: [40, 230, 420] },
-    { x: 147, ys: [-40, 150, 340, 530] },
-    { x: 274, ys: [40, 230, 420] },
-  ];
   return (
-    <div className="pointer-events-none absolute left-[48%] top-1/2 z-0 hidden -translate-x-1/2 -translate-y-1/2 xl:block" aria-hidden>
-      <svg width="360" height="600" viewBox="0 0 360 600" fill="none">
-        {cols.map((c) =>
-          c.ys.map((y) => (
-            <rect key={`${c.x}-${y}`} x={c.x} y={y} width="66" height="150" rx="33" fill="rgba(255,255,255,0.18)" />
-          )),
-        )}
-      </svg>
+    <div className="pointer-events-none absolute left-[52%] top-1/2 hidden -translate-x-1/2 -translate-y-1/2 gap-5 xl:flex" aria-hidden>
+      <div className="w-[120px] rounded-full bg-white/10" style={{ height: 500, marginTop: 50 }} />
+      <div className="w-[120px] rounded-full bg-white/10" style={{ height: 600 }} />
+      <div className="w-[120px] rounded-full bg-white/10" style={{ height: 450, marginTop: 100 }} />
     </div>
   );
 }
@@ -116,143 +107,144 @@ export default function LoginPage() {
   };
   const onKey = (ev: React.KeyboardEvent) => { if (ev.key === 'Enter') submit(); };
 
-  const inputCls = 'h-[52px] w-full rounded-xl border border-gray-200 bg-white pl-11 pr-11 text-[15px] text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100';
+  const inputCls = 'block w-full rounded-2xl border border-slate-200 bg-white py-4 pl-14 pr-14 font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-[#1d35d1] focus:ring-2 focus:ring-[#1d35d1]/10';
 
   return (
-    <div
-      className="relative min-h-screen w-full overflow-hidden"
-      style={{ background: 'var(--login-bg, #153ac9)' }}
-    >
-      <PillBackdrop />
-      <div className="pointer-events-none absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-white/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-52 right-10 h-[560px] w-[560px] rounded-full bg-white/[0.07] blur-3xl" />
+    <div className="relative min-h-screen w-full overflow-hidden text-white" style={{ background: 'var(--login-bg, #1435d1)' }}>
+      {/* Background layers */}
+      <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
+        <div className="login-dots absolute inset-0 opacity-40" />
+        <div className="absolute -left-52 -top-52 h-[800px] w-[800px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)' }} />
+        <div className="absolute -bottom-72 -right-24 h-[1000px] w-[1000px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%)' }} />
+        <PillBackdrop />
+      </div>
 
       {/* Specimen vial — static, floating over the seam between panels. */}
-      <div className="pointer-events-none absolute inset-0 z-20 hidden xl:block">
+      <div className="pointer-events-none absolute inset-0 z-[5] hidden xl:block" aria-hidden>
         <img
           src="/specimen-tube-cut.png"
-          alt="Blood specimen vial"
-          className="absolute left-[57%] top-1/2 w-[190px] -translate-x-1/2 -translate-y-1/2 select-none drop-shadow-[0_12px_30px_rgba(0,0,0,0.30)]"
+          alt=""
+          className="absolute left-[55%] top-1/2 w-[188px] -translate-x-1/2 -translate-y-1/2 select-none drop-shadow-[0_12px_30px_rgba(0,0,0,0.30)]"
         />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1400px] flex-col px-6 pt-7 pb-8 lg:px-12">
-        {/* Top bar */}
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <div className="relative z-10 flex min-h-screen flex-col">
+        {/* Header */}
+        <header className="flex items-center justify-between px-6 py-7 sm:px-12">
+          <div className="flex items-center gap-4">
             <img src="/cyto-icon-white.png" alt="CYTOLAB" className="h-14 w-14" />
             <div className="leading-tight">
-              <div className="text-[22px] font-extrabold tracking-tight text-white">CYTOLAB</div>
-              <div className="text-[13px] leading-snug text-white/70">Cytology &amp; Pathology<br />Laboratory System</div>
+              <div className="text-2xl font-extrabold uppercase tracking-tight">CYTOLAB</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-white/80">Cytology &amp; Pathology Laboratory System</div>
             </div>
           </div>
-          <a href="mailto:support@cytolab.local" className="hidden items-center gap-1.5 text-[14px] text-white/75 transition-colors hover:text-white sm:flex">
-            <HelpCircle size={16} /> Need help?
+          <a href="mailto:support@cytolab.local" className="flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-80">
+            <HelpCircle size={20} /> <span className="hidden sm:inline">Need help?</span>
           </a>
         </header>
 
         {/* Main */}
-        <div className="grid flex-1 items-center gap-10 py-8 lg:grid-cols-2">
-          {/* Left: marketing + vial */}
-          <div className="relative hidden lg:block">
-            <h1 className="text-5xl font-black leading-[1.01] tracking-tight text-white xl:text-[72px]">
+        <main className="grid flex-1 grid-cols-12 items-center gap-8 px-6 pb-12 sm:px-12">
+          {/* Left: marketing */}
+          <div className="col-span-12 flex max-w-2xl flex-col justify-center lg:col-span-7">
+            <h1 className="mb-7 text-5xl font-extrabold leading-[1.0] tracking-tight sm:text-6xl xl:text-[80px]">
               Don&rsquo;t Just Test.<br />Optimize.
             </h1>
-            <p className="mt-5 max-w-md text-[14px] leading-relaxed text-white/75">
+            <p className="mb-10 max-w-xl text-lg leading-relaxed text-blue-50/90">
               A next-generation diagnostics experience that transforms lab results into actionable
               intelligence. By combining clinical data with AI-driven analysis, we deliver precise
               insights that support proactive, personalized health optimization.
             </p>
-            <div className="mt-8 flex flex-col gap-5">
+            <div className="space-y-7">
               {FEATURES.map((f) => (
                 <div key={f.label} className="flex items-start gap-4">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/15 text-white ring-1 ring-white/25"><f.Icon size={18} /></span>
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-white/20 bg-white/10 text-white"><f.Icon size={20} /></span>
                   <div>
-                    <div className="text-[15px] font-bold text-white">{f.label}</div>
-                    <div className="max-w-xs text-[13px] leading-relaxed text-white/70">{f.desc}</div>
+                    <div className="text-lg font-bold">{f.label}</div>
+                    <div className="text-sm text-blue-100/70">{f.desc}</div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Right: floating form card */}
-          <div className="flex w-full justify-center lg:justify-end">
-            <div className="animate-fade-slide-in w-full max-w-[440px] rounded-[28px] bg-white p-8 shadow-2xl shadow-indigo-950/30 sm:p-10">
-              <div className="mb-7 text-center">
-                <h2 className="text-[28px] font-bold text-gray-900">{mfa ? 'Two-Factor Verification' : 'Welcome Back'}</h2>
-                <p className="mt-2 text-sm text-gray-500">
+          {/* Right: login card */}
+          <div className="col-span-12 flex justify-center lg:col-span-5 lg:justify-end">
+            <div className="w-full max-w-[560px] rounded-[40px] bg-white p-8 text-slate-900 shadow-2xl sm:p-12">
+              <div className="mb-8 text-center">
+                <h2 className="mb-2 text-3xl font-extrabold sm:text-4xl">{mfa ? 'Two-Factor Verification' : 'Welcome Back'}</h2>
+                <p className="font-medium text-slate-500">
                   {mfa ? 'Enter the verification code to continue' : 'Sign in to continue to your account'}
                 </p>
               </div>
 
               {sessionExpired && !mfa && (
-                <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-[13px] font-medium text-amber-800">
+                <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-[13px] font-semibold text-amber-800">
                   Your session has expired. Please sign in again.
                 </div>
               )}
               {formError && (
-                <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-[13px] font-medium text-red-700">
+                <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-center text-[13px] font-semibold text-red-700">
                   {formError}
                 </div>
               )}
 
               {!mfa ? (
-                <div className="flex flex-col gap-5">
-                  <div>
-                    <label htmlFor="login-email" className="mb-1.5 block text-[13px] font-semibold text-gray-700">Email or Username</label>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label htmlFor="login-email" className="ml-1 block text-sm font-bold text-slate-700">Email or Username</label>
                     <div className="relative">
-                      <User size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <User size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         id="login-email" type="email" autoComplete="email" placeholder="Enter your email or username"
                         value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={onKey}
                         className={`${inputCls} ${errors.email ? '!border-red-300' : ''}`}
                       />
-                      <List size={18} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-300" />
+                      <List size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" />
                     </div>
-                    {errors.email && <div className="mt-1 text-[12px] text-red-500">{errors.email}</div>}
+                    {errors.email && <div className="ml-1 text-[12px] text-red-500">{errors.email}</div>}
                   </div>
 
-                  <div>
-                    <label htmlFor="login-password" className="mb-1.5 block text-[13px] font-semibold text-gray-700">Password</label>
+                  <div className="space-y-2">
+                    <label htmlFor="login-password" className="ml-1 block text-sm font-bold text-slate-700">Password</label>
                     <div className="relative">
-                      <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <Lock size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         id="login-password" type={showPw ? 'text' : 'password'} autoComplete="current-password" placeholder="Enter your password"
                         value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={onKey}
                         className={`${inputCls} ${errors.password ? '!border-red-300' : ''}`}
                       />
                       <button type="button" aria-label={showPw ? 'Hide password' : 'Show password'} onClick={() => setShowPw((v) => !v)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                        {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                        {showPw ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
                     </div>
-                    {errors.password && <div className="mt-1 text-[12px] text-red-500">{errors.password}</div>}
+                    {errors.password && <div className="ml-1 text-[12px] text-red-500">{errors.password}</div>}
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <label className="flex cursor-pointer items-center gap-2 text-[13px] text-gray-600">
+                  <div className="flex items-center justify-between px-1">
+                    <label className="flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-500">
                       <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 accent-indigo-600" />
+                        className="h-5 w-5 rounded border-slate-300 accent-[#1d35d1]" />
                       Remember me
                     </label>
-                    <a href="mailto:support@cytolab.local" className="text-[13px] font-semibold text-indigo-600 hover:text-indigo-700">Forgot password?</a>
+                    <a href="mailto:support@cytolab.local" className="text-sm font-bold text-[#1d35d1] hover:underline">Forgot password?</a>
                   </div>
 
                   <button
                     type="button" onClick={submit} disabled={login.isPending}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-4 text-base font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
+                    className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#1d35d1] py-4 text-lg font-bold text-white shadow-xl shadow-[#1d35d1]/20 transition-all hover:bg-[#1628a8] active:scale-[0.98] disabled:opacity-60"
                   >
-                    {login.isPending ? 'Signing in…' : 'Sign In'} <ArrowRight size={18} />
+                    {login.isPending ? 'Signing in…' : 'Sign In'} <ArrowRight size={20} />
                   </button>
 
-                  <p className="text-center text-[13px] text-gray-500">
-                    Don&rsquo;t have an account? <span className="font-semibold text-indigo-600">Contact your administrator.</span>
+                  <p className="text-center font-medium text-slate-500">
+                    Don&rsquo;t have an account? <a href="mailto:support@cytolab.local" className="font-bold text-[#1d35d1] hover:underline">Contact your administrator.</a>
                   </p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-5">
-                  <p className="text-center text-[13px] text-gray-500">
+                <div className="space-y-6">
+                  <p className="text-center text-sm font-medium text-slate-500">
                     {mfa.methods.totpEnabled
                       ? 'Enter the 6-digit code from your authenticator app.'
                       : 'Enter the verification code sent to your email.'}
@@ -262,40 +254,42 @@ export default function LoginPage() {
                     id="mfa-code" inputMode="text" autoComplete="one-time-code" placeholder="Verification code"
                     value={code} onChange={(e) => setCode(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') challenge.mutate(); }}
-                    className="h-[52px] w-full rounded-xl border border-gray-200 bg-white px-4 text-center text-[16px] tracking-[0.3em] text-gray-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                    className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-center text-[16px] tracking-[0.3em] text-slate-800 outline-none focus:border-[#1d35d1] focus:ring-2 focus:ring-[#1d35d1]/10"
                   />
                   <button
                     type="button" onClick={() => { setFormError(null); challenge.mutate(); }} disabled={challenge.isPending || !code.trim()}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-4 text-base font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
+                    className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#1d35d1] py-4 text-lg font-bold text-white shadow-xl shadow-[#1d35d1]/20 transition-all hover:bg-[#1628a8] active:scale-[0.98] disabled:opacity-60"
                   >
-                    {challenge.isPending ? 'Verifying…' : 'Verify'} <ArrowRight size={18} />
+                    {challenge.isPending ? 'Verifying…' : 'Verify'} <ArrowRight size={20} />
                   </button>
                   {mfa.methods.emailEnabled && (
                     <button type="button" onClick={() => { setFormError(null); sendEmailCode.mutate(); }} disabled={sendEmailCode.isPending}
-                      className="text-[13px] font-semibold text-indigo-600 underline-offset-2 hover:underline">
+                      className="w-full text-sm font-bold text-[#1d35d1] underline-offset-2 hover:underline">
                       {sendEmailCode.isPending ? 'Sending…' : 'Send a code to my email'}
                     </button>
                   )}
                   <button type="button" onClick={() => { setMfa(null); setCode(''); setFormError(null); }}
-                    className="text-[13px] text-gray-500 hover:text-gray-800">← Back to sign in</button>
+                    className="w-full text-sm font-medium text-slate-500 hover:text-slate-800">← Back to sign in</button>
                 </div>
               )}
             </div>
           </div>
-        </div>
+        </main>
 
-        {/* Trust bar */}
-        <div className="grid grid-cols-2 gap-x-6 gap-y-5 border-t border-white/15 pt-6 sm:grid-cols-4">
-          {TRUST.map((t, i) => (
-            <div key={t.label} className={`flex items-center gap-3 ${i > 0 ? 'sm:border-l sm:border-white/15 sm:pl-6' : ''}`}>
-              <t.Icon size={20} className="shrink-0 text-white" />
-              <div className="leading-tight">
-                <div className="text-[13px] font-bold text-white">{t.label}</div>
-                <div className="text-[11px] text-white/60">{t.desc}</div>
+        {/* Footer trust bar */}
+        <footer className="px-6 py-8 sm:px-12">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-8 border-t border-white/10 pt-8">
+            {TRUST.map((t) => (
+              <div key={t.label} className="flex min-w-[200px] items-center gap-3">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/20 bg-white/10 text-white"><t.Icon size={20} /></span>
+                <div className="leading-tight">
+                  <div className="text-sm font-bold">{t.label}</div>
+                  <div className="text-[11px] text-blue-100/60">{t.desc}</div>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </footer>
       </div>
 
       {toast && (

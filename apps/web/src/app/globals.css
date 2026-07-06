@@ -756,8 +756,14 @@ select option {
 }
 .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
 
-/* Login page: exact brand-blue canvas token. */
-:root { --login-bg: #153ac9; }
+/* Login page: brand-blue canvas + primary tokens. */
+:root { --login-bg: #1435d1; --login-primary: #1d35d1; --login-primary-dark: #1628a8; }
+
+/* Login page: subtle dotted texture over the canvas. */
+.login-dots {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1.5px, transparent 1.5px);
+  background-size: 40px 40px;
+}
 
 /* Login page: form-card entrance. */
 @keyframes fadeSlideIn {
