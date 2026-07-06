@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #F0EFE9;
+  --bg2: #E8E7E1;
+  --ink: #09090E;
+  --blue: #4F46E5;
+  --blue2: #3f97ef;
+  --border: rgba(9,9,14,0.07);
+  --borderl: rgba(9,9,14,0.04);
+  /* --font-serif / --font-sans / --font-mono are injected on <html> by next/font
+     (via the `variable` option in layout.tsx); do not re-declare them here —
+     `--font-serif: var(--font-serif)` is self-referential and breaks the fonts. */
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans), 'Inter', sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Film grain overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.022;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 140px;
+}
