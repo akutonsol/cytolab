@@ -146,8 +146,8 @@ export default function LoginPage() {
         {/* Main */}
         <main className="grid flex-1 grid-cols-12 items-center gap-8 px-6 pb-12 sm:px-12">
           {/* Left: marketing */}
-          <div className="col-span-12 flex max-w-2xl flex-col justify-center lg:col-span-7">
-            <h1 className="mb-7 text-5xl font-extrabold leading-[1.0] tracking-tight sm:text-6xl xl:text-[80px]">
+          <div className="col-span-12 flex flex-col justify-center lg:col-span-7">
+            <h1 className="mb-7 text-6xl font-black leading-[0.95] tracking-tighter sm:text-7xl xl:text-[88px]">
               Don&rsquo;t Just Test.<br />Optimize.
             </h1>
             <p className="mb-10 max-w-xl text-lg leading-relaxed text-blue-50/90">
