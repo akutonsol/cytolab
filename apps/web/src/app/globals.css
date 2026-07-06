@@ -756,6 +756,9 @@ select option {
 }
 .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
 
+/* Login page: exact brand-blue canvas token. */
+:root { --login-bg: #153ac9; }
+
 /* Login page: form-card entrance. */
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateY(20px); }
@@ -763,4 +766,14 @@ select option {
 }
 .animate-fade-slide-in {
   animation: fadeSlideIn 0.6s ease-out forwards;
+}
+
+/* Login page: slow continuous Y-axis spin for the specimen vial. */
+@keyframes vialRotate {
+  0% { transform: translateX(-50%) translateY(-50%) rotateY(0deg); }
+  100% { transform: translateX(-50%) translateY(-50%) rotateY(360deg); }
+}
+.animate-vial {
+  animation: vialRotate 6s linear infinite;
+  transform-style: preserve-3d;
 }

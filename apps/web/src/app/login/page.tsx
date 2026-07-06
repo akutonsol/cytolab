@@ -29,21 +29,23 @@ const TRUST = [
   { Icon: Clock, label: '99.9% Uptime', desc: 'Reliable. Always.' },
 ];
 
-// Soft rounded-pill wash floating across the blue background.
+// Three columns of tall rounded pills sitting directly behind the vial.
 function PillBackdrop() {
   const cols = [
-    { x: 60, ys: [60, 220, 400, 580] },
-    { x: 150, ys: [140, 330, 520] },
-    { x: 240, ys: [90, 280, 470, 650] },
+    { x: 20, ys: [40, 230, 420] },
+    { x: 147, ys: [-40, 150, 340, 530] },
+    { x: 274, ys: [40, 230, 420] },
   ];
   return (
-    <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 320 720" preserveAspectRatio="xMidYMid slice" aria-hidden>
-      {cols.map((c) =>
-        c.ys.map((y) => (
-          <rect key={`${c.x}-${y}`} x={c.x} y={y} width="52" height="130" rx="26" fill="rgba(255,255,255,0.06)" />
-        )),
-      )}
-    </svg>
+    <div className="pointer-events-none absolute left-[48%] top-1/2 z-0 hidden -translate-x-1/2 -translate-y-1/2 xl:block" aria-hidden>
+      <svg width="360" height="600" viewBox="0 0 360 600" fill="none">
+        {cols.map((c) =>
+          c.ys.map((y) => (
+            <rect key={`${c.x}-${y}`} x={c.x} y={y} width="66" height="150" rx="33" fill="rgba(255,255,255,0.18)" />
+          )),
+        )}
+      </svg>
+    </div>
   );
 }
 
@@ -119,13 +121,22 @@ export default function LoginPage() {
   return (
     <div
       className="relative min-h-screen w-full overflow-hidden"
-      style={{ background: 'linear-gradient(135deg,#2563EB 0%,#4F46E5 52%,#4338CA 100%)' }}
+      style={{ background: 'var(--login-bg, #153ac9)' }}
     >
       <PillBackdrop />
       <div className="pointer-events-none absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-white/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-52 right-10 h-[560px] w-[560px] rounded-full bg-indigo-300/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-52 right-10 h-[560px] w-[560px] rounded-full bg-white/[0.07] blur-3xl" />
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1400px] flex-col px-6 py-7 lg:px-12">
+      {/* Specimen vial — floats over the seam between panels with a slow Y-axis spin. */}
+      <div className="pointer-events-none absolute inset-0 z-20 hidden xl:block" style={{ perspective: '1200px' }}>
+        <img
+          src="/specimen-tube-cut.png"
+          alt="Blood specimen vial"
+          className="animate-vial absolute left-[48%] top-1/2 w-[180px] select-none drop-shadow-[0_12px_30px_rgba(0,0,0,0.30)]"
+        />
+      </div>
+
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1400px] flex-col px-6 pt-7 pb-8 lg:px-12">
         {/* Top bar */}
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -163,13 +174,6 @@ export default function LoginPage() {
                 </div>
               ))}
             </div>
-
-            {/* Photorealistic specimen vial floating toward the center. */}
-            <img
-              src="/specimen-tube-cut.png"
-              alt="Blood specimen vial"
-              className="pointer-events-none absolute -right-24 top-1/2 hidden h-[78vh] max-h-[660px] w-auto -translate-y-1/2 select-none xl:block"
-            />
           </div>
 
           {/* Right: floating form card */}
