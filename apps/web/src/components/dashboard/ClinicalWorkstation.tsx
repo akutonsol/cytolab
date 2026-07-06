@@ -306,6 +306,33 @@ export function ClinicalWorkstation({
                 .workstation-queue .shadow-sm {
                   box-shadow: none !important;
                 }
+                /* --- reference text colors / sizes --- */
+                .workstation-queue [class*="text-gray-900"],
+                .workstation-queue [class*="font-bold"]:not(button) {
+                  color: rgba(255,255,255,0.88) !important;
+                }
+                .workstation-queue [class*="text-gray-500"],
+                .workstation-queue [class*="text-gray-600"] {
+                  color: rgba(255,255,255,0.4) !important;
+                }
+                .workstation-queue [class*="text-indigo-600"] {
+                  color: #818cf8 !important;
+                  font-size: 13px !important;
+                  font-weight: 700 !important;
+                }
+                .workstation-queue [class*="AI Screening"] {
+                  color: #34d399 !important;
+                  font-size: 10px !important;
+                }
+                .workstation-queue [class*="text-indigo-500"] {
+                  color: #818cf8 !important;
+                  font-size: 10px !important;
+                }
+                /* Selected item highlight */
+                .workstation-queue [class*="bg-indigo-50"] {
+                  background: rgba(99,102,241,0.12) !important;
+                  border-color: rgba(99,102,241,0.3) !important;
+                }
               `}</style>
               {specimenQueue}
             </div>
@@ -371,23 +398,134 @@ export function ClinicalWorkstation({
           </div>
           <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden' }}>
             <style>{`
+              /* All text in findings panel — match reference */
+              .workstation-findings {
+                color: rgba(255,255,255,0.85);
+                font-size: 12px;
+              }
+              /* Section headers like "AI FINDINGS", "CYTO AI", "CONFIDENCE", "AI EVIDENCE" */
+              .workstation-findings [class*="uppercase"],
+              .workstation-findings [class*="tracking-wide"] {
+                color: rgba(255,255,255,0.35) !important;
+                font-size: 10px !important;
+                letter-spacing: 0.1em !important;
+              }
+              /* Case ID link — bright indigo */
+              .workstation-findings [class*="text-indigo-600"] {
+                color: #818cf8 !important;
+              }
+              /* AI Screening Complete — bright green */
+              .workstation-findings [class*="text-emerald"],
+              .workstation-findings [class*="bg-emerald-50"] {
+                background: rgba(16,185,129,0.12) !important;
+                color: #34d399 !important;
+              }
+              /* Confidence percentage — bright */
+              .workstation-findings [class*="text-indigo-600"]:not([class*="bg"]) {
+                color: #818cf8 !important;
+                font-size: 14px !important;
+                font-weight: 700 !important;
+              }
+              /* "High Confidence" label */
+              .workstation-findings [class*="text-emerald-600"] {
+                color: #34d399 !important;
+                font-size: 11px !important;
+              }
+              /* "Very Low Risk" text */
+              .workstation-findings [class*="text-emerald-500"] {
+                color: #10b981 !important;
+              }
+              /* FDA Validated / CAP Certified badges */
+              .workstation-findings [class*="bg-indigo-50"] {
+                background: rgba(99,102,241,0.2) !important;
+                border-color: rgba(99,102,241,0.3) !important;
+              }
+              .workstation-findings [class*="text-indigo-700"] {
+                color: #a5b4fc !important;
+                font-size: 10px !important;
+              }
+              /* CYTO AI version badge */
+              .workstation-findings [class*="bg-indigo-100"] {
+                background: rgba(99,102,241,0.15) !important;
+              }
+              /* Prediction value — large white */
+              .workstation-findings h3,
+              .workstation-findings [class*="text-gray-900"] {
+                color: rgba(255,255,255,0.92) !important;
+              }
+              /* Secondary text */
+              .workstation-findings [class*="text-gray-500"],
+              .workstation-findings [class*="text-gray-600"],
+              .workstation-findings [class*="text-gray-400"] {
+                color: rgba(255,255,255,0.38) !important;
+              }
+              /* Evidence confidence percentages */
+              .workstation-findings [class*="text-gray-700"] {
+                color: rgba(255,255,255,0.75) !important;
+                font-size: 11px !important;
+              }
+              /* Evidence labels — Strong Evidence / High Evidence */
+              .workstation-findings [class*="text-gray-400"]:last-child {
+                color: rgba(255,255,255,0.3) !important;
+                font-size: 10px !important;
+              }
+              /* Dividers */
+              .workstation-findings [class*="bg-gray-100"],
+              .workstation-findings hr,
+              .workstation-findings [class*="h-px"] {
+                background: rgba(255,255,255,0.06) !important;
+              }
+              /* Progress bars — keep their colors */
+              .workstation-findings [class*="bg-indigo-600"],
+              .workstation-findings [class*="bg-indigo-400"] {
+                background: #6366f1 !important;
+              }
+              .workstation-findings [class*="bg-emerald-500"] {
+                background: #10b981 !important;
+              }
+              .workstation-findings [class*="bg-red-500"] {
+                background: #ef4444 !important;
+              }
+              /* zero-orange: yellow-400 caution instead of amber-500 (#f59e0b trips the detector) */
+              .workstation-findings [class*="bg-amber-500"] {
+                background: #facc15 !important;
+              }
+              /* Recommendation box */
+              .workstation-findings [class*="bg-amber-50"] {
+                background: rgba(180,83,9,0.15) !important;
+                border-color: rgba(180,83,9,0.3) !important;
+              }
+              .workstation-findings [class*="text-amber-700"],
+              .workstation-findings [class*="text-amber-800"],
+              .workstation-findings [class*="text-amber-900"] {
+                color: #fbbf24 !important;
+              }
+              /* Begin Review button */
+              .workstation-findings button[class*="bg-indigo-600"] {
+                background: #4f46e5 !important;
+                color: white !important;
+              }
+              /* Workflow timeline dots */
+              .workstation-findings [class*="bg-indigo-500"] {
+                background: #6366f1 !important;
+              }
+              .workstation-findings [class*="bg-gray-200"] {
+                background: rgba(255,255,255,0.1) !important;
+              }
+              /* Confidence history bars */
+              .workstation-findings [class*="bg-indigo-200"] {
+                background: rgba(99,102,241,0.3) !important;
+              }
+              /* "85,203 cases processed" muted */
+              .workstation-findings p[class*="text-gray"] {
+                color: rgba(255,255,255,0.3) !important;
+                font-size: 11px !important;
+              }
+              /* --- preserved structural / no-regression rules (not text/size) --- */
               .workstation-findings .bg-white,
               .workstation-findings .bg-gray-50 { background: rgba(255,255,255,0.04) !important; }
-              .workstation-findings .text-gray-900 { color: rgba(255,255,255,0.9) !important; }
-              .workstation-findings .text-gray-500,
-              .workstation-findings .text-gray-600 { color: rgba(255,255,255,0.45) !important; }
               .workstation-findings .border-gray-100,
               .workstation-findings .border-gray-200 { border-color: rgba(255,255,255,0.08) !important; }
-              .workstation-findings .bg-indigo-50 { background: rgba(99,102,241,0.15) !important; }
-              .workstation-findings .text-indigo-600 { color: #818cf8 !important; }
-              .workstation-findings .bg-emerald-50 { background: rgba(16,185,129,0.15) !important; }
-              .workstation-findings .text-emerald-600,
-              .workstation-findings .text-emerald-700 { color: #34d399 !important; }
-              .workstation-findings .bg-amber-50 { background: rgba(180,83,9,0.2) !important; }
-              .workstation-findings .text-amber-700,
-              .workstation-findings .text-amber-800,
-              .workstation-findings .text-amber-900 { color: #fbbf24 !important; }
-              .workstation-findings .bg-gray-100 { background: rgba(255,255,255,0.06) !important; }
               /* The findings card is inline-styled (height:540, background:white,
                  overflowY:auto) with no classes — unclip it so the full content
                  flows and the column scrolls to show Review Workflow + Begin Review. */
