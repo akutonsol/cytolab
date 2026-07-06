@@ -777,8 +777,8 @@ select option {
 /* Login page: continuous rotation of the pseudo-3D vial cylinder (strips wrapped
    around a Y axis in SpinningVial), so it reads as a solid round bottle turning. */
 @keyframes vialSpin3d {
-  0%   { transform: rotateY(-62deg); }
-  50%  { transform: rotateY(62deg); }
-  100% { transform: rotateY(-62deg); }
+  0%   { transform: rotateY(-18deg); }
+  50%  { transform: rotateY(40deg); }
+  100% { transform: rotateY(-18deg); }
 }
-.vial-cyl { animation: vialSpin3d 9s ease-in-out infinite; }
+.vial-cyl { animation: vialSpin3d 8s ease-in-out infinite; }
