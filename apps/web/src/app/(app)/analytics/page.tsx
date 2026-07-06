@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-  Bar, BarChart, Area, AreaChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
+  Bar, BarChart, Area, AreaChart, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
 import { Check, Clock, Droplet, FlaskConical, Filter, Plus, ScanLine, TestTube, TrendingUp } from 'lucide-react';
 
@@ -60,6 +60,325 @@ const TOP_SERVICES = [
 const TABS = ['Overview', 'Clinical', 'Specimens', 'Financial', 'Patients'] as const;
 const usd = (n: number) => `$${n.toLocaleString()}`;
 
+// ── Shared chart chrome ──────────────────────────────────────────────────────
+const INDIGO_100 = '#E0E7FF';
+const AX = { fontSize: 11, fill: '#94A3B8' } as const;
+const TIP = { borderRadius: 10, border: '1px solid #E5E7EB', fontSize: 12 } as const;
+const CUR = { fill: 'rgba(79,70,229,0.05)' } as const;
+
+function ChartCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <h3 className="font-semibold text-gray-900">{title}</h3>
+      <p className="mb-4 text-sm text-gray-500">{subtitle ?? ''}</p>
+      {children}
+    </div>
+  );
+}
+
+function BigStatCard({ title, subtitle, value, delta, data, dataKey }: { title: string; subtitle: string; value: string; delta: number; data: any[]; dataKey: string }) {
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <h3 className="font-semibold text-gray-900">{title}</h3>
+      <p className="text-sm text-gray-500">{subtitle}</p>
+      <div className="my-4 flex items-baseline gap-2">
+        <span className="text-4xl font-black text-gray-900">{value}</span>
+        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-sm font-semibold text-emerald-700">↑ {delta}%</span>
+      </div>
+      <ResponsiveContainer width="100%" height={160}>
+        <AreaChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+          <XAxis dataKey="month" tick={AX} tickLine={false} axisLine={false} />
+          <Tooltip contentStyle={TIP} />
+          <Area type="monotone" dataKey={dataKey} stroke={INDIGO} fill="#EEF2FF" strokeWidth={2} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ═══ CLINICAL ════════════════════════════════════════════════════════════════
+const bethesdaData = [
+  { category: 'NILM', count: 892 }, { category: 'ASC-US', count: 124 }, { category: 'LSIL', count: 67 },
+  { category: 'ASC-H', count: 34 }, { category: 'HSIL', count: 28 }, { category: 'AGC', count: 12 }, { category: 'Malignant', count: 8 },
+];
+const abnormalTrendData = [
+  { month: 'Jan', rate: 8.2, benchmark: 7.5 }, { month: 'Feb', rate: 7.8, benchmark: 7.5 }, { month: 'Mar', rate: 9.1, benchmark: 7.5 },
+  { month: 'Apr', rate: 8.5, benchmark: 7.5 }, { month: 'May', rate: 7.9, benchmark: 7.5 }, { month: 'Jun', rate: 8.8, benchmark: 7.5 },
+];
+const tatData = [
+  { type: 'Cervical Scrape', avg: 2.1, target: 3.0 }, { type: 'Breast Aspirate', avg: 2.8, target: 3.0 },
+  { type: 'Urine Cytology', avg: 1.9, target: 2.5 }, { type: 'Body Fluid', avg: 3.2, target: 3.0 }, { type: 'Endocervical', avg: 2.4, target: 3.0 },
+];
+const authRateData = [
+  { month: 'Jan', rate: 80 }, { month: 'Feb', rate: 81 }, { month: 'Mar', rate: 82 },
+  { month: 'Apr', rate: 83 }, { month: 'May', rate: 83 }, { month: 'Jun', rate: 84 },
+];
+
+function ClinicalTab() {
+  return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <ChartCard title="Bethesda Classification" subtitle="TBS 2014 category distribution">
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={bethesdaData} margin={{ top: 4, right: 8, left: 0, bottom: 12 }}>
+            <CartesianGrid vertical={false} stroke="#F1F5F9" />
+            <XAxis dataKey="category" tick={AX} tickLine={false} axisLine={false} interval={0} angle={-20} textAnchor="end" height={44} />
+            <YAxis tick={AX} tickLine={false} axisLine={false} width={40} />
+            <Tooltip contentStyle={TIP} cursor={CUR} />
+            <Bar dataKey="count" fill={INDIGO} radius={[4, 4, 0, 0]} maxBarSize={34} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Abnormal Detection Rate" subtitle="Monthly abnormal findings trend (%)">
+        <ResponsiveContainer width="100%" height={240}>
+          <LineChart data={abnormalTrendData}>
+            <CartesianGrid vertical={false} stroke="#F1F5F9" />
+            <XAxis dataKey="month" tick={AX} tickLine={false} axisLine={false} />
+            <YAxis tick={AX} tickLine={false} axisLine={false} width={36} />
+            <Tooltip contentStyle={TIP} />
+            <Line type="monotone" dataKey="rate" name="Abnormal rate" stroke={INDIGO} strokeWidth={2.5} dot={{ r: 3, fill: INDIGO }} />
+            <Line type="monotone" dataKey="benchmark" name="Benchmark" stroke="#CBD5E1" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Turnaround Time Performance" subtitle="Average TAT vs target by specimen type (days)">
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={tatData} layout="vertical" margin={{ left: 8, right: 12 }}>
+            <CartesianGrid horizontal={false} stroke="#F1F5F9" />
+            <XAxis type="number" tick={AX} tickLine={false} axisLine={false} unit="d" />
+            <YAxis dataKey="type" type="category" tick={AX} tickLine={false} axisLine={false} width={110} />
+            <Tooltip contentStyle={TIP} cursor={CUR} />
+            <Bar dataKey="avg" name="Avg TAT" fill={INDIGO} radius={[0, 4, 4, 0]} maxBarSize={12} />
+            <Bar dataKey="target" name="Target" fill={INDIGO_100} radius={[0, 4, 4, 0]} maxBarSize={12} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <BigStatCard title="Authorization Rate" subtitle="Monthly authorization performance" value="84%" delta={2} data={authRateData} dataKey="rate" />
+    </div>
+  );
+}
+
+// ═══ SPECIMENS ═══════════════════════════════════════════════════════════════
+const specVolumeByType = [
+  { type: 'Cervical', count: 567 }, { type: 'Breast', count: 324 }, { type: 'Urine', count: 243 },
+  { type: 'Body Fluid', count: 114 }, { type: 'Endocervical', count: 98 }, { type: 'Sputum', count: 62 },
+];
+const statusPipeline = [
+  { stage: 'Received', count: 1248 }, { stage: 'Screening', count: 412 }, { stage: 'Resulted', count: 356 },
+  { stage: 'Authorized', count: 298 }, { stage: 'Released', count: 276 },
+];
+const clientSource = [
+  { client: 'Kingston Medical', count: 312 }, { client: 'St. Andrew Clinic', count: 248 }, { client: 'Montego Health', count: 186 },
+  { client: 'Spanish Town Lab', count: 142 }, { client: 'Mandeville Clinic', count: 98 },
+];
+const processingTime = [
+  { type: 'Cervical', hours: 18 }, { type: 'Breast', hours: 26 }, { type: 'Urine', hours: 14 },
+  { type: 'Body Fluid', hours: 30 }, { type: 'Endocervical', hours: 20 },
+];
+
+function SpecimensTab() {
+  return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <ChartCard title="Specimen Volume by Type" subtitle="Total specimens processed (6 months)">
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={specVolumeByType}>
+            <CartesianGrid vertical={false} stroke="#F1F5F9" />
+            <XAxis dataKey="type" tick={AX} tickLine={false} axisLine={false} interval={0} angle={-20} textAnchor="end" height={44} />
+            <YAxis tick={AX} tickLine={false} axisLine={false} width={40} />
+            <Tooltip contentStyle={TIP} cursor={CUR} />
+            <Bar dataKey="count" fill={TEAL} radius={[4, 4, 0, 0]} maxBarSize={34} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Specimen Status Pipeline" subtitle="Current distribution across the workflow">
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={statusPipeline} layout="vertical" margin={{ left: 8, right: 12 }}>
+            <CartesianGrid horizontal={false} stroke="#F1F5F9" />
+            <XAxis type="number" tick={AX} tickLine={false} axisLine={false} />
+            <YAxis dataKey="stage" type="category" tick={AX} tickLine={false} axisLine={false} width={90} />
+            <Tooltip contentStyle={TIP} cursor={CUR} />
+            <Bar dataKey="count" fill={INDIGO} radius={[0, 4, 4, 0]} maxBarSize={18} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Client Source Distribution" subtitle="Referring clients by specimen count">
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={clientSource} layout="vertical" margin={{ left: 8, right: 12 }}>
+            <CartesianGrid horizontal={false} stroke="#F1F5F9" />
+            <XAxis type="number" tick={AX} tickLine={false} axisLine={false} />
+            <YAxis dataKey="client" type="category" tick={AX} tickLine={false} axisLine={false} width={120} />
+            <Tooltip contentStyle={TIP} cursor={CUR} />
+            <Bar dataKey="count" fill={EMERALD} radius={[0, 4, 4, 0]} maxBarSize={16} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Processing Time by Type" subtitle="Average hours in processing">
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={processingTime}>
+            <CartesianGrid vertical={false} stroke="#F1F5F9" />
+            <XAxis dataKey="type" tick={AX} tickLine={false} axisLine={false} interval={0} angle={-20} textAnchor="end" height={44} />
+            <YAxis tick={AX} tickLine={false} axisLine={false} width={40} unit="h" />
+            <Tooltip contentStyle={TIP} cursor={CUR} />
+            <Bar dataKey="hours" fill={INDIGO} radius={[4, 4, 0, 0]} maxBarSize={34} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+    </div>
+  );
+}
+
+// ═══ FINANCIAL ═══════════════════════════════════════════════════════════════
+const revenueByClient = [
+  { client: 'Kingston Medical', revenue: 4120 }, { client: 'St. Andrew Clinic', revenue: 2980 }, { client: 'Montego Health', revenue: 2140 },
+  { client: 'Spanish Town Lab', revenue: 1620 }, { client: 'Mandeville Clinic', revenue: 980 },
+];
+const outstandingPayments = [
+  { month: 'Jan', amount: 1420 }, { month: 'Feb', amount: 1180 }, { month: 'Mar', amount: 1360 },
+  { month: 'Apr', amount: 980 }, { month: 'May', amount: 1120 }, { month: 'Jun', amount: 860 },
+];
+const servicesRevenue = [
+  { service: 'Cervical Scrape', revenue: 8234 }, { service: 'Breast Aspirate', revenue: 2847 },
+  { service: 'Urine Cytology', revenue: 1498 }, { service: 'Body Fluid', revenue: 640 },
+];
+const revenueVsTarget = [
+  { month: 'Jan', revenue: 1720, target: 1800 }, { month: 'Feb', revenue: 1640, target: 1800 }, { month: 'Mar', revenue: 1910, target: 1800 },
+  { month: 'Apr', revenue: 2180, target: 2000 }, { month: 'May', revenue: 2040, target: 2000 }, { month: 'Jun', revenue: 2320, target: 2000 },
+];
+
+function FinancialTab() {
+  return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <ChartCard title="Revenue by Client" subtitle="Top referring clients (JMD $)">
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={revenueByClient} layout="vertical" margin={{ left: 8, right: 12 }}>
+            <CartesianGrid horizontal={false} stroke="#F1F5F9" />
+            <XAxis type="number" tick={AX} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
+            <YAxis dataKey="client" type="category" tick={AX} tickLine={false} axisLine={false} width={120} />
+            <Tooltip contentStyle={TIP} cursor={CUR} formatter={(v: any) => usd(Number(v))} />
+            <Bar dataKey="revenue" fill={INDIGO} radius={[0, 4, 4, 0]} maxBarSize={16} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Outstanding Payments" subtitle="Unpaid balance trend (JMD $)">
+        <ResponsiveContainer width="100%" height={240}>
+          <AreaChart data={outstandingPayments} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="outFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={TEAL} stopOpacity={0.22} />
+                <stop offset="100%" stopColor={TEAL} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid vertical={false} stroke="#F1F5F9" />
+            <XAxis dataKey="month" tick={AX} tickLine={false} axisLine={false} />
+            <YAxis tick={AX} tickLine={false} axisLine={false} width={48} tickFormatter={(v) => `$${v}`} />
+            <Tooltip contentStyle={TIP} formatter={(v: any) => usd(Number(v))} />
+            <Area type="monotone" dataKey="amount" stroke={TEAL} strokeWidth={2.5} fill="url(#outFill)" />
+          </AreaChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Services Revenue" subtitle="Revenue by service (JMD $)">
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={servicesRevenue}>
+            <CartesianGrid vertical={false} stroke="#F1F5F9" />
+            <XAxis dataKey="service" tick={AX} tickLine={false} axisLine={false} interval={0} angle={-20} textAnchor="end" height={50} />
+            <YAxis tick={AX} tickLine={false} axisLine={false} width={48} tickFormatter={(v) => `$${v}`} />
+            <Tooltip contentStyle={TIP} cursor={CUR} formatter={(v: any) => usd(Number(v))} />
+            <Bar dataKey="revenue" fill={EMERALD} radius={[4, 4, 0, 0]} maxBarSize={40} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Monthly Revenue vs Target" subtitle="Actual revenue against monthly target">
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={revenueVsTarget} barGap={4}>
+            <CartesianGrid vertical={false} stroke="#F1F5F9" />
+            <XAxis dataKey="month" tick={AX} tickLine={false} axisLine={false} />
+            <YAxis tick={AX} tickLine={false} axisLine={false} width={48} tickFormatter={(v) => `$${v}`} />
+            <Tooltip contentStyle={TIP} cursor={CUR} formatter={(v: any) => usd(Number(v))} />
+            <Bar dataKey="revenue" name="Revenue" fill={INDIGO} radius={[4, 4, 0, 0]} maxBarSize={16} />
+            <Bar dataKey="target" name="Target" fill={INDIGO_100} radius={[4, 4, 0, 0]} maxBarSize={16} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+    </div>
+  );
+}
+
+// ═══ PATIENTS ════════════════════════════════════════════════════════════════
+const registrationTrend = [
+  { month: 'Jan', count: 214 }, { month: 'Feb', count: 198 }, { month: 'Mar', count: 242 },
+  { month: 'Apr', count: 268 }, { month: 'May', count: 251 }, { month: 'Jun', count: 289 },
+];
+const ageDistribution = [
+  { range: '<20', count: 42 }, { range: '20-29', count: 186 }, { range: '30-39', count: 312 },
+  { range: '40-49', count: 264 }, { range: '50-59', count: 148 }, { range: '60+', count: 96 },
+];
+const recallComplianceData = [
+  { month: 'Jan', rate: 82 }, { month: 'Feb', rate: 84 }, { month: 'Mar', rate: 85 },
+  { month: 'Apr', rate: 86 }, { month: 'May', rate: 87 }, { month: 'Jun', rate: 88 },
+];
+const referringDoctors = [
+  { doctor: 'Dr. Campbell', cases: 142 }, { doctor: 'Dr. Reid', cases: 118 }, { doctor: 'Dr. Blake', cases: 96 },
+  { doctor: 'Dr. Grant', cases: 74 }, { doctor: 'Dr. Johnson', cases: 58 },
+];
+
+function PatientsTab() {
+  return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <ChartCard title="Patient Registration" subtitle="New patient registrations per month">
+        <ResponsiveContainer width="100%" height={240}>
+          <AreaChart data={registrationTrend} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="regFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={INDIGO} stopOpacity={0.22} />
+                <stop offset="100%" stopColor={INDIGO} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid vertical={false} stroke="#F1F5F9" />
+            <XAxis dataKey="month" tick={AX} tickLine={false} axisLine={false} />
+            <YAxis tick={AX} tickLine={false} axisLine={false} width={36} />
+            <Tooltip contentStyle={TIP} />
+            <Area type="monotone" dataKey="count" stroke={INDIGO} strokeWidth={2.5} fill="url(#regFill)" dot={{ r: 3, fill: INDIGO }} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Age Distribution" subtitle="Patients by age range">
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={ageDistribution}>
+            <CartesianGrid vertical={false} stroke="#F1F5F9" />
+            <XAxis dataKey="range" tick={AX} tickLine={false} axisLine={false} />
+            <YAxis tick={AX} tickLine={false} axisLine={false} width={40} />
+            <Tooltip contentStyle={TIP} cursor={CUR} />
+            <Bar dataKey="count" fill={TEAL} radius={[4, 4, 0, 0]} maxBarSize={40} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <BigStatCard title="Recall Compliance" subtitle="Patients returning within recall window" value="88%" delta={4} data={recallComplianceData} dataKey="rate" />
+
+      <ChartCard title="Referring Doctor Performance" subtitle="Cases referred by top physicians">
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={referringDoctors} layout="vertical" margin={{ left: 8, right: 12 }}>
+            <CartesianGrid horizontal={false} stroke="#F1F5F9" />
+            <XAxis type="number" tick={AX} tickLine={false} axisLine={false} />
+            <YAxis dataKey="doctor" type="category" tick={AX} tickLine={false} axisLine={false} width={100} />
+            <Tooltip contentStyle={TIP} cursor={CUR} />
+            <Bar dataKey="cases" fill={INDIGO} radius={[0, 4, 4, 0]} maxBarSize={16} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+    </div>
+  );
+}
+
 function GrowthBadge({ pct }: { pct: number }) {
   return (
     <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">
@@ -111,10 +430,14 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {activeTab !== 'Overview' ? (
-        <div className={`${CARD} flex items-center justify-center py-24 text-sm text-gray-500`}>
-          {activeTab} analytics — coming soon.
-        </div>
+      {activeTab === 'Clinical' ? (
+        <ClinicalTab />
+      ) : activeTab === 'Specimens' ? (
+        <SpecimensTab />
+      ) : activeTab === 'Financial' ? (
+        <FinancialTab />
+      ) : activeTab === 'Patients' ? (
+        <PatientsTab />
       ) : (
         <>
           {/* ── TOP SECTION ── */}
