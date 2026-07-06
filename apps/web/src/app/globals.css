@@ -336,8 +336,18 @@ select option {
   0% { opacity: 0; transform: translateY(8px); }
   100% { opacity: 1; transform: translateY(0); }
 }
+/* KPI sparkline — draw the line in once on mount (left→right clip reveal). */
+@keyframes sparklineDraw {
+  from { clip-path: inset(0 100% 0 0); opacity: 1; }
+  to { clip-path: inset(0 0% 0 0); opacity: 1; }
+}
+.sparkline-animate {
+  opacity: 0;
+  animation: sparklineDraw 1.2s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards;
+}
 @media (prefers-reduced-motion: reduce) {
   [style*="particleFloat"], [style*="haloRotate"], [style*="livePulse"] { animation: none !important; }
+  .sparkline-animate { opacity: 1; animation: none !important; clip-path: none !important; }
 }
 
 /* ============================================================

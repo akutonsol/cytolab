@@ -313,7 +313,8 @@ export default function DashboardPage() {
               <div className="premium-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, overflowY: 'auto', minHeight: 0 }}>
                 {(d.priorityRecords || []).slice(0, 6).map((r: any) => {
                   const sel = selectedRecord?.id === r.id;
-                  // Priority → colored left stripe + dot (replaces the text badge).
+                  // Priority → small colored dot beside the lab number (no left
+                  // stripe — the dot alone conveys it, softer/enterprise look).
                   // Zero-orange: Medium uses dark amber #92400E (not amber-500).
                   const priority: string = r.urgent ? 'High Priority' : 'Normal Priority';
                   const stripe = priority === 'Critical' ? '#111827'
@@ -321,7 +322,7 @@ export default function DashboardPage() {
                     : priority === 'Medium Priority' ? '#92400E' : '#10B981';
                   return (
                     <div key={r.id} onClick={() => setSelectedRecord(r)} title={priority}
-                      style={{ display: 'flex', alignItems: 'center', gap: 14, minHeight: 72, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: sel ? '#EEF2FF' : 'transparent', border: sel ? '1px solid #C7D2FE' : '1px solid transparent', borderLeft: `4px solid ${stripe}`, transition: 'all 0.3s' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 14, minHeight: 72, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: sel ? '#EEF2FF' : 'transparent', border: sel ? '1px solid #C7D2FE' : '1px solid transparent', transition: 'all 0.3s' }}
                       onMouseEnter={(e) => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = '#F8FAFC'; }}
                       onMouseLeave={(e) => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}>
                       <SpecimenIcon type={r.specimen} size={56} />
@@ -469,6 +470,13 @@ export default function DashboardPage() {
                 <div style={{ marginTop: 8, fontSize: 11, color: '#475569' }}>
                   <span style={{ fontWeight: 700, color: '#0F172A' }}>{cellsAnalyzed.toLocaleString()}</span> cells analyzed
                 </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, paddingTop: 6, borderTop: '1px solid #F3F4F6' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981' }} />
+                    <span style={{ fontSize: 10, color: '#9ca3af' }}>GPU Node 2</span>
+                  </span>
+                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#4F46E5' }}>00:00:18</span>
+                </div>
               </div>
 
               {/* View selector pill + marker hint */}
@@ -527,9 +535,12 @@ export default function DashboardPage() {
                   <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
                     <div className={`h-full rounded-full transition-all duration-1000 ${displayConf >= 80 ? 'bg-emerald-500' : displayConf >= 60 ? 'bg-yellow-400' : 'bg-red-500'}`} style={{ width: `${targetConf}%` }} />
                   </div>
-                  <div className="mt-1 flex justify-between">
+                  <div className="mt-1 flex items-start justify-between">
                     <span className="text-[10px] text-gray-400">Based on {eff?.specimensProcessed ?? 0} specimens</span>
-                    <span className={`text-[10px] font-semibold ${displayConf >= 80 ? 'text-emerald-600' : displayConf >= 60 ? 'text-amber-800' : 'text-red-600'}`}>{displayConf >= 80 ? 'High Confidence' : displayConf >= 60 ? 'Moderate' : 'Low Confidence'}</span>
+                    <div className="text-right">
+                      <span className={`text-[10px] font-semibold ${displayConf >= 80 ? 'text-emerald-600' : displayConf >= 60 ? 'text-amber-800' : 'text-red-600'}`}>{displayConf >= 80 ? 'High Confidence' : displayConf >= 60 ? 'Moderate' : 'Low Confidence'}</span>
+                      <div className="text-[10px] text-gray-400">Est. false positive: {((100 - displayConf) * 0.3).toFixed(1)}%</div>
+                    </div>
                   </div>
                   <div className={`mt-0.5 text-[10px] font-semibold ${displayConf >= 80 ? 'text-emerald-600' : displayConf >= 60 ? 'text-amber-800' : 'text-red-600'}`}>
                     {displayConf >= 80 ? 'Very Low Risk of Misclassification' : displayConf >= 60 ? 'Low Risk of Misclassification' : 'Manual Review Strongly Recommended'}
@@ -598,7 +609,10 @@ export default function DashboardPage() {
                           <span className="text-[11px] text-emerald-500">✓</span>
                           <span className="text-[11px] font-medium text-gray-700">{label}</span>
                         </div>
-                        <span className="text-[11px] font-bold text-gray-600">{confidence}%</span>
+                        <div className="text-right">
+                          <span className="text-[11px] font-bold text-gray-700">{confidence}%</span>
+                          <span className="ml-1 text-[10px] text-gray-400">{confidenceLabel(confidence)}</span>
+                        </div>
                       </div>
                       <div className="h-1 w-full overflow-hidden rounded-full bg-gray-100">
                         <div className="h-full rounded-full bg-indigo-400" style={{ width: `${confidence}%` }} />
@@ -613,14 +627,29 @@ export default function DashboardPage() {
                 <div>
                   <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">Review Workflow</div>
                   {[
-                    { label: 'AI Screening Complete', done: true, active: false },
-                    { label: 'Human Review Pending', done: false, active: true },
-                    { label: 'Pathologist Authorization', done: false, active: false },
-                    { label: 'Released', done: false, active: false },
-                  ].map(({ label, done, active }) => (
-                    <div key={label} className="mb-1.5 flex items-center gap-2 last:mb-0">
-                      <div className={`h-3 w-3 flex-shrink-0 rounded-full ${done ? 'bg-emerald-500' : active ? 'animate-pulse bg-indigo-500' : 'bg-gray-200'}`} />
-                      <span className={`text-[11px] ${done ? 'font-medium text-emerald-600' : active ? 'font-bold text-indigo-600' : 'font-medium text-gray-400'}`}>{label}</span>
+                    { label: 'AI Screening Complete', state: 'done' },
+                    { label: 'Human Review', state: 'active' },
+                    { label: 'Authorization', state: 'pending' },
+                    { label: 'Released', state: 'pending' },
+                  ].map(({ label, state }, i, arr) => (
+                    <div key={label} className="flex flex-col">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-full ${
+                          state === 'done' ? 'bg-emerald-500'
+                            : state === 'active' ? 'animate-pulse bg-indigo-500 ring-4 ring-indigo-500/20'
+                            : 'bg-gray-200'
+                        }`}>
+                          {state === 'done' && <span className="text-[8px] text-white">✓</span>}
+                        </div>
+                        <span className={`text-[12px] font-medium ${
+                          state === 'done' ? 'text-emerald-600'
+                            : state === 'active' ? 'font-bold text-indigo-600'
+                            : 'text-gray-400'
+                        }`}>{label}</span>
+                      </div>
+                      {i < arr.length - 1 && (
+                        <div className={`ml-[6px] h-4 w-px ${state === 'done' ? 'bg-emerald-300' : 'bg-gray-200'}`} />
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1019,11 +1048,19 @@ function CountUp({ target, duration = 1000 }: { target: number; duration?: numbe
   return <>{count}</>;
 }
 
-// Tiny indigo sparkline (last-7-days trend) under a KPI value.
+// Per-finding evidence strength label from a confidence percentage.
+const confidenceLabel = (pct: number) =>
+  pct >= 90 ? 'Strong Evidence'
+    : pct >= 80 ? 'High Evidence'
+    : pct >= 70 ? 'Moderate Evidence' : 'Supporting Evidence';
+
+// Tiny indigo sparkline (last-7-days trend) under a KPI value. The line draws in
+// once on mount via the `.sparkline-animate` clip-path keyframe (see globals.css).
 function Sparkline({ data }: { data: number[] }) {
   const rows = data.map((value, i) => ({ i, value }));
   return (
     <div className="mt-2 h-8">
+      <div className="sparkline-animate h-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={rows} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
           <defs>
@@ -1035,6 +1072,7 @@ function Sparkline({ data }: { data: number[] }) {
           <Area type="monotone" dataKey="value" stroke="#6366f1" strokeWidth={1.5} fill="url(#sparkGradient)" dot={false} isAnimationActive={false} />
         </AreaChart>
       </ResponsiveContainer>
+      </div>
     </div>
   );
 }
