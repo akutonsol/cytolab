@@ -18,11 +18,6 @@ const VOLUME = [
   { m: 'May', gyn: 145, nongyn: 70 }, { m: 'Jun', gyn: 139, nongyn: 72 },
 ]; // Monthly (default); Weekly/Quarterly/Yearly variants below drive the period selector.
 
-const PRACTICE = [
-  { label: 'Total Cases', value: '135', Icon: FlaskConical },
-  { label: 'Total Authorized', value: '89', Icon: Check },
-  { label: 'Avg TAT', value: '2.4d', Icon: Clock },
-];
 const BREAKDOWN = [
   { label: 'Cervical Scrape', pct: 42, count: 567, color: INDIGO },
   { label: 'Breast Aspirate', pct: 24, count: 324, color: TEAL },
@@ -58,6 +53,15 @@ const yearlyConversion = [
   { m: '2023', authorized: 1320, pending: 380 }, { m: '2024', authorized: 1480, pending: 360 }, { m: '2025', authorized: 1560, pending: 420 },
 ];
 const PERIOD_LABEL = { Weekly: '7 days', Monthly: '6 months', Quarterly: '4 quarters', Yearly: '3 years' } as const;
+
+// Filter multipliers — each client contributes a share of overall volume; date
+// range trims how many periods of data are shown.
+const clientMultipliers: Record<string, number> = {
+  All: 1.0, 'Kingston Medical': 0.42, 'Montego Diagnostics': 0.31, 'Spanish Town Clinic': 0.18, 'Ocho Rios Pathology': 0.09,
+};
+const dateRangeMonths: Record<string, number> = {
+  'Last 30 days': 1, 'Last 3 months': 3, 'Last 6 months': 6, 'Last 12 months': 12,
+};
 
 const DISTRIBUTION = [
   { label: 'Cervical Scrape', specimens: 567, pct: 42, color: INDIGO, Icon: ScanLine },
@@ -449,8 +453,41 @@ export default function AnalyticsPage() {
       default: return { volume: VOLUME, conversion: CONVERSION };
     }
   }, [period]);
-  const volTotal = useMemo(() => chartData.volume.reduce((s, r) => s + r.gyn + r.nongyn, 0), [chartData]);
-  const volAvg = Math.round(volTotal / chartData.volume.length);
+  // Apply the filter panel to the (period-switched) datasets.
+  const filteredData = useMemo(() => {
+    const mult = clientMultipliers[filters.client] ?? 1;
+    // Specimen type → keep only the matching GYN/NON-GYN share.
+    let volume = filters.specimenType === 'All'
+      ? chartData.volume
+      : chartData.volume.map((month) => ({
+          ...month,
+          gyn: filters.specimenType === 'Cervical Scrape' ? month.gyn
+            : filters.specimenType === 'Endocervical Asp' ? Math.round(month.gyn * 0.3) : 0,
+          nongyn: filters.specimenType === 'Urine Cytology' ? month.nongyn
+            : filters.specimenType === 'Breast Aspirate' ? Math.round(month.nongyn * 0.6)
+            : filters.specimenType === 'Body Fluid' ? Math.round(month.nongyn * 0.2) : 0,
+        }));
+    // Date range → trim to the last N periods.
+    const months = filters.dateRange === 'Year to date' ? new Date().getMonth() + 1 : (dateRangeMonths[filters.dateRange] ?? 6);
+    volume = volume.slice(-months);
+    // Client → scale conversion volumes.
+    const conversion = mult === 1
+      ? chartData.conversion
+      : chartData.conversion.map((m) => ({ ...m, authorized: Math.round(m.authorized * mult), pending: Math.round(m.pending * mult) }));
+    return { volume, conversion };
+  }, [chartData, filters.specimenType, filters.client, filters.dateRange]);
+  const volTotal = useMemo(() => filteredData.volume.reduce((s, r) => s + r.gyn + r.nongyn, 0), [filteredData]);
+  const volAvg = filteredData.volume.length ? Math.round(volTotal / filteredData.volume.length) : 0;
+
+  // Practice Overview totals scale with the client filter.
+  const practice = useMemo(() => {
+    const mult = clientMultipliers[filters.client] ?? 1;
+    return [
+      { label: 'Total Cases', value: String(Math.round(135 * mult)), Icon: FlaskConical },
+      { label: 'Total Authorized', value: String(Math.round(89 * mult)), Icon: Check },
+      { label: 'Avg TAT', value: '2.4d', Icon: Clock },
+    ];
+  }, [filters.client]);
   const activeFilterCount = Object.values(filters).filter((v) => v !== 'All' && v !== 'Last 6 months').length;
 
   return (
@@ -569,6 +606,31 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
+      {/* Active filter summary (Overview only — filters subset the Overview charts) */}
+      {activeTab === 'Overview' && activeFilterCount > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+          <span>Showing:</span>
+          {filters.specimenType !== 'All' && (
+            <span className="rounded-full bg-indigo-50 px-2 py-0.5 font-medium text-indigo-700">
+              {filters.specimenType}
+              <button onClick={() => setFilters((f) => ({ ...f, specimenType: 'All' }))} className="ml-1 text-indigo-400 hover:text-indigo-600">×</button>
+            </span>
+          )}
+          {filters.client !== 'All' && (
+            <span className="rounded-full bg-indigo-50 px-2 py-0.5 font-medium text-indigo-700">
+              {filters.client}
+              <button onClick={() => setFilters((f) => ({ ...f, client: 'All' }))} className="ml-1 text-indigo-400 hover:text-indigo-600">×</button>
+            </span>
+          )}
+          {filters.dateRange !== 'Last 6 months' && (
+            <span className="rounded-full bg-indigo-50 px-2 py-0.5 font-medium text-indigo-700">
+              {filters.dateRange}
+              <button onClick={() => setFilters((f) => ({ ...f, dateRange: 'Last 6 months' }))} className="ml-1 text-indigo-400 hover:text-indigo-600">×</button>
+            </span>
+          )}
+        </div>
+      )}
+
       {activeTab === 'Clinical' ? (
         <ClinicalTab />
       ) : activeTab === 'Specimens' ? (
@@ -591,7 +653,7 @@ export default function AnalyticsPage() {
                 </div>
               </div>
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={chartData.volume} barGap={4} barCategoryGap="28%">
+                <BarChart data={filteredData.volume} barGap={4} barCategoryGap="28%">
                   <CartesianGrid vertical={false} stroke="#F1F5F9" />
                   <XAxis dataKey="m" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94A3B8' }} />
                   <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#94A3B8' }} width={32} />
@@ -606,7 +668,7 @@ export default function AnalyticsPage() {
               <div className="mt-5 border-t border-gray-100 pt-5">
                 <div className="mb-4 text-sm font-bold text-gray-900">Practice Overview</div>
                 <div className="grid grid-cols-3 gap-3">
-                  {PRACTICE.map(({ label, value, Icon }) => (
+                  {practice.map(({ label, value, Icon }) => (
                     <div key={label} className="flex items-center gap-3">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-gray-200 text-gray-500">
                         <Icon size={18} />
@@ -656,7 +718,7 @@ export default function AnalyticsPage() {
                   </div>
                 </div>
                 <ResponsiveContainer width="100%" height={150}>
-                  <BarChart data={chartData.conversion} barCategoryGap="30%">
+                  <BarChart data={filteredData.conversion} barCategoryGap="30%">
                     <XAxis dataKey="m" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#94A3B8' }} />
                     <Tooltip cursor={{ fill: 'rgba(79,70,229,0.05)' }} contentStyle={{ borderRadius: 10, border: '1px solid #E5E7EB', fontSize: 12 }} />
                     <Bar dataKey="authorized" name="Authorized" stackId="c" fill={INDIGO} radius={[0, 0, 0, 0]} maxBarSize={22} />
