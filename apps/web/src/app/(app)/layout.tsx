@@ -218,8 +218,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const dateLabel = getDateLabel();
   const activeCount = homeData?.priorityRecords?.length;
   const awaitingCount = overview?.kpis?.pendingRequisitions;
-  const activeLabel = activeCount != null ? `${activeCount} Active Cases` : 'Cytolab LIMS';
-  const awaitingLabel = awaitingCount != null ? `${awaitingCount} Awaiting Review` : 'Clinical Dashboard';
 
   // Account (avatar) dropdown: email header + admin/platform sections + Settings + Sign out.
   const accountMenu: MenuProps = {
@@ -340,14 +338,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 {accountButton}
                 <div className="mx-4 h-8 w-px bg-gray-200" />
                 <div className="flex flex-col gap-0.5">
-                  {/* Line 1 — contextual greeting */}
-                  <div className="flex items-center gap-1.5 text-[15px] font-semibold leading-tight text-gray-900">
-                    {greeting.night ? <Moon size={14} className="text-indigo-400" /> : <Sun size={14} className="text-indigo-400" />}
-                    <span>{greeting.text} {greetingName}</span>
+                  {/* Line 1 — contextual greeting (indigo name / violet on night shift). */}
+                  <div className="flex items-center text-[15px] font-semibold leading-tight">
+                    <span className="text-gray-500">{greeting.text} </span>
+                    <span className={`font-bold ${greeting.night ? 'text-violet-500' : 'text-indigo-600'}`}>{greetingName}</span>
+                    <span className="ml-1 inline-flex">
+                      {greeting.night ? <Moon size={14} className="text-violet-500" /> : <Sun size={14} className="text-[#A16207]" />}
+                    </span>
                   </div>
-                  {/* Line 2 — live context line */}
-                  <div className="whitespace-nowrap text-[13px] font-medium text-gray-400">
-                    {dayLabel} • {dateLabel} • {activeLabel} • {awaitingLabel}
+                  {/* Line 2 — live context line, colored per segment (amber = #A16207, detector-safe). */}
+                  <div className="flex items-center gap-1.5 whitespace-nowrap text-[13px] font-medium">
+                    <span className="text-gray-400">{dayLabel} • {dateLabel}</span>
+                    <span className="text-gray-300">•</span>
+                    {activeCount != null
+                      ? <span className="font-semibold text-indigo-500">{activeCount} Active Cases</span>
+                      : <span className="text-gray-400">Cytolab LIMS</span>}
+                    <span className="text-gray-300">•</span>
+                    {awaitingCount != null
+                      ? <span className="font-semibold text-[#A16207]">{awaitingCount} Awaiting Review</span>
+                      : <span className="text-gray-400">Clinical Dashboard</span>}
                   </div>
                 </div>
               </div>
