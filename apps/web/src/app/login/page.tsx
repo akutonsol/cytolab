@@ -132,7 +132,7 @@ export default function LoginPage() {
         <img
           src="/specimen-tube-cut.png"
           alt="Blood specimen vial"
-          className="absolute left-[48%] top-1/2 w-[180px] -translate-x-1/2 -translate-y-1/2 select-none drop-shadow-[0_12px_30px_rgba(0,0,0,0.30)]"
+          className="absolute left-[57%] top-1/2 w-[190px] -translate-x-1/2 -translate-y-1/2 select-none drop-shadow-[0_12px_30px_rgba(0,0,0,0.30)]"
         />
       </div>
 
@@ -140,10 +140,10 @@ export default function LoginPage() {
         {/* Top bar */}
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/cyto-icon-trim.png" alt="CYTOLAB" className="h-12 w-12 rounded-xl" />
+            <img src="/cyto-icon-white.png" alt="CYTOLAB" className="h-14 w-14" />
             <div className="leading-tight">
-              <div className="text-[20px] font-extrabold tracking-tight text-white">CYTOLAB</div>
-              <div className="text-[12px] text-white/70">Cytology &amp; Pathology Laboratory System</div>
+              <div className="text-[22px] font-extrabold tracking-tight text-white">CYTOLAB</div>
+              <div className="text-[13px] leading-snug text-white/70">Cytology &amp; Pathology<br />Laboratory System</div>
             </div>
           </div>
           <a href="mailto:support@cytolab.local" className="hidden items-center gap-1.5 text-[14px] text-white/75 transition-colors hover:text-white sm:flex">
@@ -155,7 +155,7 @@ export default function LoginPage() {
         <div className="grid flex-1 items-center gap-10 py-8 lg:grid-cols-2">
           {/* Left: marketing + vial */}
           <div className="relative hidden lg:block">
-            <h1 className="text-[52px] font-black leading-[1.04] tracking-tight text-white xl:text-6xl">
+            <h1 className="text-5xl font-black leading-[1.01] tracking-tight text-white xl:text-[72px]">
               Don&rsquo;t Just Test.<br />Optimize.
             </h1>
             <p className="mt-5 max-w-md text-[14px] leading-relaxed text-white/75">
