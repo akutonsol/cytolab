@@ -516,8 +516,10 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* View selector pill + marker hint */}
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 24px 22px', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 4 }}>
+              {/* View selector pill + marker hint. In the dark workstation the pill
+                  is lifted above the overlaid zoom-control bar and the hint (which
+                  would bleed through the buttons) is hidden. */}
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: dark ? '0 24px 84px' : '0 24px 22px', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 4 }}>
                 <button onClick={() => setModelView((v) => (v + 1) % MODEL_VIEWS.length)}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: m.viewBtnBg, border: `1px solid ${m.viewBtnBorder}`, boxShadow: m.viewBtnShadow, borderRadius: 999, padding: '11px 24px', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: m.viewBtnText, fontFamily: 'Geist,sans-serif' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={m.viewBtnText} strokeWidth="2">
@@ -525,12 +527,14 @@ export default function DashboardPage() {
                   </svg>
                   {MODEL_VIEWS[modelView]} View <ChevronDown size={14} />
                 </button>
-                <div style={{ textAlign: 'center', marginTop: 6, fontSize: 11, color: m.hint, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={m.hint} strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
-                  </svg>
-                  Click on markers to view cell details
-                </div>
+                {!dark && (
+                  <div style={{ textAlign: 'center', marginTop: 6, fontSize: 11, color: m.hint, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={m.hint} strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                    Click on markers to view cell details
+                  </div>
+                )}
               </div>
             </div>
     );

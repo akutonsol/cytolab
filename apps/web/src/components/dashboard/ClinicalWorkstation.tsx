@@ -391,26 +391,28 @@ export function ClinicalWorkstation({
             <div className="workstation-model" style={{ height: '100%' }}>
               {aiModel}
             </div>
-            {/* Zoom controls */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-sm border border-white/10 rounded-xl px-3 py-2">
-              <button className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors">
-                <Move size={13} className="text-white/50" />
-              </button>
-              <button className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors">
-                <Target size={13} className="text-white/50" />
-              </button>
-              <div className="w-px h-4 bg-white/10" />
-              <button onClick={() => setZoom(z => Math.max(z - 10, 50))} className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors">
-                <ZoomOut size={13} className="text-white/50" />
-              </button>
-              <span className="text-white/50 text-[11px] font-mono w-10 text-center">{zoom}%</span>
-              <button onClick={() => setZoom(z => Math.min(z + 10, 200))} className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors">
-                <ZoomIn size={13} className="text-white/50" />
-              </button>
-              <div className="w-px h-4 bg-white/10" />
-              <button onClick={() => setZoom(100)} className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors">
-                <Maximize2 size={13} className="text-white/50" />
-              </button>
+            {/* Zoom controls — solid indigo-tinted bar so nothing bleeds through */}
+            <style>{`
+              .ws-zoom-btn {
+                width: 36px; height: 36px; border-radius: 10px;
+                display: flex; align-items: center; justify-content: center;
+                background: rgba(99,102,241,0.14);
+                transition: background 0.15s ease;
+                cursor: pointer;
+              }
+              .ws-zoom-btn:hover { background: rgba(99,102,241,0.32); }
+              .ws-zoom-btn svg { color: #a5b4fc; }
+            `}</style>
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center"
+              style={{ gap: 8, background: 'rgba(16,18,30,0.97)', backdropFilter: 'blur(12px)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 14, padding: '8px 14px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', zIndex: 6 }}>
+              <button className="ws-zoom-btn"><Move size={16} /></button>
+              <button className="ws-zoom-btn"><Target size={16} /></button>
+              <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.12)', margin: '0 3px' }} />
+              <button onClick={() => setZoom(z => Math.max(z - 10, 50))} className="ws-zoom-btn"><ZoomOut size={16} /></button>
+              <span style={{ color: '#a5b4fc', fontSize: 12, fontFamily: 'monospace', fontWeight: 600, width: 48, textAlign: 'center' }}>{zoom}%</span>
+              <button onClick={() => setZoom(z => Math.min(z + 10, 200))} className="ws-zoom-btn"><ZoomIn size={16} /></button>
+              <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.12)', margin: '0 3px' }} />
+              <button onClick={() => setZoom(100)} className="ws-zoom-btn"><Maximize2 size={16} /></button>
             </div>
           </div>
         </div>
