@@ -35,6 +35,34 @@ export function ClinicalWorkstation({
   const [zoom, setZoom] = useState(100);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [modelExpanded, setModelExpanded] = useState(false);
+  // Pan tool (Move button): drag to move the zoomed model. Reset (Target) recenters.
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [panMode, setPanMode] = useState(false);
+  const [isPanning, setIsPanning] = useState(false);
+
+  const resetView = useCallback(() => { setZoom(100); setPan({ x: 0, y: 0 }); }, []);
+  // Drag via window listeners so the whole gesture uses one fixed start point
+  // (a per-render handler swap would otherwise drop most of the delta).
+  const startPan = (e: React.MouseEvent) => {
+    if (!panMode) return;
+    e.preventDefault();
+    const sx = e.clientX, sy = e.clientY, bx = pan.x, by = pan.y;
+    setIsPanning(true);
+    const onMove = (ev: MouseEvent) => setPan({ x: bx + (ev.clientX - sx), y: by + (ev.clientY - sy) });
+    const onUp = () => {
+      setIsPanning(false);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+  // Handlers/cursor shared by the normal + expanded model areas.
+  const panAreaProps = {
+    onMouseDown: startPan,
+    style: { flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' as const, cursor: panMode ? (isPanning ? 'grabbing' : 'grab') : 'default' },
+  };
+  const modelTransform = `translate(${pan.x}px, ${pan.y}px) scale(${zoom / 100})`;
 
   const open = useCallback(() => {
     requestAnimationFrame(() => setIsAnimating(true));
@@ -42,6 +70,8 @@ export function ClinicalWorkstation({
 
   const close = useCallback(() => {
     setModelExpanded(false);
+    setPanMode(false);
+    setPan({ x: 0, y: 0 });
     setIsAnimating(false);
     setTimeout(() => onClose(), 300);
   }, [onClose]);
@@ -103,9 +133,11 @@ export function ClinicalWorkstation({
   // toggles the contained fullscreen; Target recenters (100%).
   const zoomControls = (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center"
+      onMouseDown={e => e.stopPropagation()}
       style={{ gap: 8, background: 'rgba(16,18,30,0.97)', backdropFilter: 'blur(12px)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 14, padding: '8px 14px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', zIndex: 6 }}>
-      <button className="ws-zoom-btn" title="Pan"><Move size={16} /></button>
-      <button onClick={() => setZoom(100)} className="ws-zoom-btn" title="Recenter (100%)"><Target size={16} /></button>
+      <button onClick={() => setPanMode(v => !v)} className="ws-zoom-btn" title={panMode ? 'Pan tool (on) — drag to move' : 'Pan tool — drag to move'}
+        style={panMode ? { background: 'rgba(99,102,241,0.5)' } : undefined}><Move size={16} /></button>
+      <button onClick={resetView} className="ws-zoom-btn" title="Reset view (fit & recenter)"><Target size={16} /></button>
       <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.12)', margin: '0 3px' }} />
       <button onClick={() => setZoom(z => Math.max(z - 10, 50))} className="ws-zoom-btn" title="Zoom out"><ZoomOut size={16} /></button>
       <span style={{ color: '#a5b4fc', fontSize: 12, fontFamily: 'monospace', fontWeight: 600, width: 48, textAlign: 'center' }}>{zoom}%</span>
@@ -399,7 +431,7 @@ export function ClinicalWorkstation({
               AI Cytology Model
             </span>
           </div>
-          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
+          <div {...panAreaProps}>
             <style>{`
               .workstation-model > div:first-child {
                 height: 100% !important;
@@ -418,7 +450,7 @@ export function ClinicalWorkstation({
               .ws-zoom-btn:hover { background: rgba(99,102,241,0.32); }
               .ws-zoom-btn svg { color: #a5b4fc; }
             `}</style>
-            <div className="workstation-model" style={{ height: '100%', transform: `scale(${zoom / 100})`, transformOrigin: 'center center', transition: 'transform 0.2s ease' }}>
+            <div className="workstation-model" style={{ height: '100%', transform: modelTransform, transformOrigin: 'center center', transition: isPanning ? 'none' : 'transform 0.2s ease' }}>
               {aiModel}
             </div>
             {!modelExpanded && zoomControls}
@@ -653,8 +685,8 @@ export function ClinicalWorkstation({
               <X size={15} /> Close
             </button>
           </div>
-          <div style={{ flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden' }}>
-            <div className="workstation-model" style={{ height: '100%', transform: `scale(${zoom / 100})`, transformOrigin: 'center center', transition: 'transform 0.2s ease' }}>
+          <div {...panAreaProps}>
+            <div className="workstation-model" style={{ height: '100%', transform: modelTransform, transformOrigin: 'center center', transition: isPanning ? 'none' : 'transform 0.2s ease' }}>
               {aiModelExpanded ?? aiModel}
             </div>
             {zoomControls}
