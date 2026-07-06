@@ -775,6 +775,24 @@ select option {
   background-size: 40px 40px;
 }
 
+/* Login page: the backdrop pills breathe gently — a slow vertical scale +
+   opacity glow. Staggered per-pill via inline animation-delay. */
+@keyframes loginPillBreathe {
+  0%, 100% { transform: scaleY(1); opacity: 0.9; }
+  50% { transform: scaleY(1.035); opacity: 1.15; }
+}
+.login-pill {
+  transform-origin: center;
+  animation: loginPillBreathe 7s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+.login-pill-center {
+  animation-duration: 8.5s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-pill { animation: none; }
+}
+
 /* Login page: form-card entrance. */
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateY(8px); }

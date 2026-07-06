@@ -37,12 +37,13 @@ const TRUST = [
 ];
 
 // A wide central "tube" pill that frames the vial, flanked by two slimmer pills.
+// Each pill breathes gently (staggered) to give the backdrop subtle life.
 function PillBackdrop() {
   return (
     <div className="pointer-events-none absolute left-[49%] top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-6 xl:flex" aria-hidden>
-      <div className="w-[88px] rounded-full bg-white/10" style={{ height: 520, marginTop: 40 }} />
-      <div className="w-[190px] rounded-full bg-white/10" style={{ height: 720 }} />
-      <div className="w-[88px] rounded-full bg-white/10" style={{ height: 480, marginTop: 90 }} />
+      <div className="login-pill w-[88px] rounded-full bg-white/10" style={{ height: 520, marginTop: 40, animationDelay: '0s' }} />
+      <div className="login-pill login-pill-center w-[210px] rounded-full bg-white/10" style={{ height: 760, animationDelay: '0.6s' }} />
+      <div className="login-pill w-[88px] rounded-full bg-white/10" style={{ height: 480, marginTop: 90, animationDelay: '1.2s' }} />
     </div>
   );
 }
@@ -128,7 +129,7 @@ export default function LoginPage() {
 
       {/* Specimen tube — premium WebGL render (Three.js PBR glass + blood sim). */}
       <div className="pointer-events-none absolute inset-0 z-[5] hidden xl:block" aria-hidden>
-        <div className="absolute left-[49%] top-1/2 h-[640px] w-[300px] -translate-x-1/2 -translate-y-1/2">
+        <div className="absolute left-[49%] top-1/2 h-[720px] w-[340px] -translate-x-1/2 -translate-y-1/2">
           <SpecimenTube3D />
         </div>
       </div>
