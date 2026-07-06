@@ -489,6 +489,8 @@ export default function AnalyticsPage() {
     ];
   }, [filters.client]);
   const activeFilterCount = Object.values(filters).filter((v) => v !== 'All' && v !== 'Last 6 months').length;
+  // Volume card range label: prefer the active date-range filter, else the period.
+  const rangeLabel = filters.dateRange !== 'Last 6 months' ? filters.dateRange : PERIOD_LABEL[period];
 
   return (
     <div className="pb-10 pt-4">
@@ -648,7 +650,7 @@ export default function AnalyticsPage() {
               <div className="mb-4 flex items-start justify-between">
                 <span className="text-lg font-bold text-gray-900">Monthly Specimen Volume</span>
                 <div className="text-right">
-                  <div className="text-xs font-medium text-gray-400">{PERIOD_LABEL[period]}</div>
+                  <div className="text-xs font-medium text-gray-400">{rangeLabel}</div>
                   <div className="text-2xl font-black text-gray-900">{volTotal.toLocaleString()}</div>
                 </div>
               </div>
