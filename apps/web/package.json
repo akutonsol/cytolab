@@ -20,6 +20,7 @@
     "axios": "^1.7.0",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.21",
+    "framer-motion": "^12.42.2",
     "jsbarcode": "^3.12.3",
     "lucide-react": "^1.23.0",
     "marked": "^18.0.5",
