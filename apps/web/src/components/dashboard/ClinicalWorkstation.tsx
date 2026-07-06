@@ -17,6 +17,8 @@ interface WorkstationProps {
   };
   specimenQueue: React.ReactNode;
   aiModel: React.ReactNode;
+  /** Larger-scaled model used in the expanded (pop-out) fullscreen view. */
+  aiModelExpanded?: React.ReactNode;
   aiFindings: React.ReactNode;
   kpiStats: { label: string; value: string; sub?: string }[];
   onBeginReview?: () => void;
@@ -26,7 +28,7 @@ interface WorkstationProps {
 
 export function ClinicalWorkstation({
   isOpen, onClose, currentCase,
-  specimenQueue, aiModel, aiFindings,
+  specimenQueue, aiModel, aiModelExpanded, aiFindings,
   kpiStats, onBeginReview, onNextCase, onPrevCase,
 }: WorkstationProps) {
   const [isAnimating, setIsAnimating] = useState(false);
@@ -653,7 +655,7 @@ export function ClinicalWorkstation({
           </div>
           <div style={{ flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden' }}>
             <div className="workstation-model" style={{ height: '100%', transform: `scale(${zoom / 100})`, transformOrigin: 'center center', transition: 'transform 0.2s ease' }}>
-              {aiModel}
+              {aiModelExpanded ?? aiModel}
             </div>
             {zoomControls}
           </div>

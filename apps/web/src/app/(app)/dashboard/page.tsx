@@ -373,7 +373,7 @@ export default function DashboardPage() {
             </div>
     );
   };
-  const buildAiModel = (dark: boolean) => {
+  const buildAiModel = (dark: boolean, stageScale = 1.32) => {
     const m = dark
       ? { panelBg: 'transparent', panelBorder: 'rgba(255,255,255,0.06)', title: 'rgba(255,255,255,0.92)',
           livePillBg: 'rgba(255,255,255,0.08)', livePillShadow: 'none', liveText: '#34D399', scanText: 'rgba(255,255,255,0.5)',
@@ -408,7 +408,7 @@ export default function DashboardPage() {
                 {/* In the wider/taller workstation column, scale the whole stage
                     (head + markers + labels + connectors together) so it fills the
                     window like it does on the dashboard. */}
-                <div style={{ position: 'relative', width: 760, height: 520, maxWidth: '100%', overflow: 'hidden', transform: dark ? 'scale(1.32)' : undefined, transformOrigin: 'center center' }}>
+                <div style={{ position: 'relative', width: 760, height: 520, maxWidth: '100%', overflow: 'hidden', transform: dark ? `scale(${stageScale})` : undefined, transformOrigin: 'center center' }}>
                   {(() => {
                     const isGyn = ['CERV_SCRAP', 'ENDOCERV_ASP', 'VAG_POOL'].includes(selectedRecord?.specimen ?? '');
                     const markers = MARKER_SETS[isGyn ? 'GYN' : 'NONGYN'].map((m) => ({ ...m, color: selectedRecord?.urgent ? '#991B1B' : m.color }));
@@ -936,6 +936,7 @@ export default function DashboardPage() {
               }}
               specimenQueue={buildSpecimenQueue(true)}
               aiModel={buildAiModel(true)}
+              aiModelExpanded={buildAiModel(true, 1.95)}
               aiFindings={focusAiFindings}
               kpiStats={[
                 { label: 'Active Specimens', value: String(d.priorityRecords?.length || 0), sub: `${d.priorityRecords?.filter((r: any) => r.urgent).length || 0} urgent` },
