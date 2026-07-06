@@ -1,6 +1,5 @@
 'use client';
 
-import { Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -14,15 +13,17 @@ import { useFeatures } from '@/lib/feature-context';
  */
 type Chip = {
   key: string;
+  /** Chip background + hover, e.g. 'bg-red-50 hover:bg-red-100'. */
+  chipBg: string;
+  /** Status-dot colour, e.g. 'bg-red-500'. */
   dot: string;
+  /** Text colour, e.g. 'text-red-700'. */
+  text: string;
   label: string;
-  badge: string;
   count: number;
   onClick: () => void;
   /** Pulse the status dot to draw the eye to active alerts. */
   pulse?: boolean;
-  /** Optional ring utilities applied to the chip button (e.g. escalation). */
-  ring?: string;
 };
 
 export function ActivityTray() {
@@ -59,46 +60,43 @@ export function ActivityTray() {
 
   const chips: Chip[] = [];
   if (escCount > 0) {
-    chips.push({ key: 'esc', dot: 'bg-red-500', label: 'Escalation', badge: 'bg-red-100 text-red-700', count: escCount, onClick: () => router.push('/results?filter=escalated'), pulse: true, ring: 'ring-1 ring-red-200' });
+    chips.push({ key: 'esc', chipBg: 'bg-red-50 hover:bg-red-100', dot: 'bg-red-500', text: 'text-red-700', label: 'Escalation', count: escCount, onClick: () => router.push('/results?filter=escalated'), pulse: true });
   }
   if (aiCount > 0) {
-    chips.push({ key: 'ai', dot: 'bg-indigo-500', label: 'AI reviews', badge: 'bg-indigo-100 text-indigo-700', count: aiCount, onClick: () => router.push('/results?filter=ai-pending'), pulse: true });
+    chips.push({ key: 'ai', chipBg: 'bg-indigo-50 hover:bg-indigo-100', dot: 'bg-indigo-500', text: 'text-indigo-700', label: 'AI Reviews', count: aiCount, onClick: () => router.push('/results?filter=ai-pending'), pulse: true });
   }
   if (qcCount > 0) {
     // Zero-orange: QC warnings use rose (not amber) to stay off the detector.
-    chips.push({ key: 'qc', dot: 'bg-rose-500', label: 'Quality Alerts', badge: 'bg-rose-100 text-rose-700', count: qcCount, onClick: () => router.push('/qc'), pulse: true, ring: 'ring-1 ring-rose-200' });
+    chips.push({ key: 'qc', chipBg: 'bg-rose-50 hover:bg-rose-100', dot: 'bg-rose-500', text: 'text-rose-700', label: 'Quality Alerts', count: qcCount, onClick: () => router.push('/qc'), pulse: true });
   }
   if (fhirCount > 0) {
-    chips.push({ key: 'fhir', dot: 'bg-emerald-500', label: 'FHIR sent', badge: 'bg-emerald-100 text-emerald-700', count: fhirCount, onClick: () => router.push('/settings/fhir') });
+    chips.push({ key: 'fhir', chipBg: 'bg-emerald-50 hover:bg-emerald-100', dot: 'bg-emerald-500', text: 'text-emerald-700', label: 'FHIR Sent', count: fhirCount, onClick: () => router.push('/settings/fhir') });
   }
 
   if (chips.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 px-5 py-3 flex items-center justify-between gap-3">
-      <div className="flex items-center gap-3">
-        <span className="text-xs font-semibold uppercase tracking-widest text-gray-400">Action Center</span>
-        <div className="h-4 w-px bg-gray-200" />
-        {chips.map((chip, i) => (
-          <Fragment key={chip.key}>
-            {i > 0 && <div className="w-px h-4 bg-gray-200" />}
-            <button
-              onClick={chip.onClick}
-              className={`rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-xs flex items-center gap-2 hover:bg-gray-100 cursor-pointer ${chip.ring ?? ''}`}
-            >
-              <span className={`w-2 h-2 rounded-full ${chip.dot} ${chip.pulse ? 'animate-pulse' : ''}`} />
-              <span className="font-medium">{chip.label}</span>
-              <span className={`text-xs font-medium px-2 rounded-full ${chip.badge}`}>{chip.count}</span>
-            </button>
-          </Fragment>
-        ))}
+    <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-2.5 shadow-sm">
+      <span className="mr-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Action Center</span>
+      <div className="h-4 w-px bg-gray-200" />
+      {chips.map((chip) => (
+        <button
+          key={chip.key}
+          onClick={chip.onClick}
+          className={`flex items-center gap-2 rounded-xl px-3 py-1.5 transition-colors ${chip.chipBg}`}
+        >
+          <span className={`h-2 w-2 rounded-full ${chip.dot} ${chip.pulse ? 'animate-pulse' : ''}`} />
+          <span className={`text-xs font-semibold ${chip.text}`}>{chip.count} {chip.label}</span>
+        </button>
+      ))}
+      <div className="ml-auto">
+        <button
+          onClick={() => router.push('/notifications')}
+          className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+        >
+          View All →
+        </button>
       </div>
-      <button
-        onClick={() => router.push('/notifications')}
-        className="text-indigo-600 text-xs font-medium hover:text-indigo-700 shrink-0"
-      >
-        View all →
-      </button>
     </div>
   );
 }

@@ -360,6 +360,7 @@ export default function DashboardPage() {
                 sub: `${d.priorityRecords?.filter((r: any) => r.urgent).length || 0} urgent`,
                 subColor: '#991B1B',
                 isPriority: true,
+                isPrimary: true,
               },
               {
                 icon: <FlaskConical size={24} color="#4F46E5" />,
@@ -390,7 +391,7 @@ export default function DashboardPage() {
                 sub: eff?.authorization >= 80 ? 'On target' : 'Below target',
                 subColor: eff?.authorization >= 80 ? '#166534' : '#991B1B',
               },
-            ].map(({ icon, label, value, sub, subColor, isPriority }, i) => (
+            ].map(({ icon, label, value, sub, subColor, isPriority, isPrimary }: any, i) => (
               <div key={i} style={{
                 background: 'white',
                 borderRadius: 18,
@@ -403,6 +404,12 @@ export default function DashboardPage() {
                 ...(isPriority ? {
                   borderLeft: '4px solid #4F46E5',
                   background: 'linear-gradient(135deg, #FAFBFF 0%, #F4F4FE 100%)',
+                } : {}),
+                // Primary KPI (Active Specimens) — stronger indigo border + soft glow.
+                ...(isPrimary ? {
+                  border: '2px solid #C7D2FE',
+                  borderLeft: '4px solid #4F46E5',
+                  boxShadow: '0 4px 24px rgba(0,0,0,0.05), 0 2px 12px rgba(99,102,241,0.12)',
                 } : {}),
               }}>
                 <div style={{
@@ -453,7 +460,7 @@ export default function DashboardPage() {
                   const sel = selectedRecord?.id === r.id;
                   return (
                     <div key={r.id} onClick={() => setSelectedRecord(r)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 14, minHeight: 72, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: sel ? '#EEF2FF' : 'transparent', border: sel ? '1px solid #C7D2FE' : '1px solid transparent', transition: 'all 0.15s' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 14, minHeight: 72, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: sel ? '#EEF2FF' : 'transparent', border: sel ? '1px solid #C7D2FE' : '1px solid transparent', transition: 'all 0.3s' }}
                       onMouseEnter={(e) => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = '#F8FAFC'; }}
                       onMouseLeave={(e) => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}>
                       <SpecimenIcon type={r.specimen} size={56} />
@@ -484,7 +491,7 @@ export default function DashboardPage() {
             </div>
 
             {/* CENTER: AI Cytology Model */}
-            <div style={{ height: 540, background: '#FFFFFF', borderRadius: 20, border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(79,70,229,0.08)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div className="ai-model-container" style={{ height: 540, background: '#FFFFFF', borderRadius: 20, border: '1px solid #EEF2F7', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               {/* Header (overlays the stage so the head can fill the panel) */}
               <div style={{ padding: '20px 24px 0', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 4 }}>
                 <div style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Cytology Model</div>

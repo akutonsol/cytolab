@@ -983,10 +983,14 @@ select option {
   justify-content: space-between;
 }
 
-/* .dashboard now only carries page-container width via the shared class. */
+/* .dashboard carries page-container width via the shared class; a little top
+   padding gives the first section breathing room below the nav. */
+.dashboard {
+  padding-top: 12px;
+}
 
 .dashboard-section {
-  margin-top: 32px;
+  margin-top: 40px;
 }
 
 .grid {
@@ -1061,7 +1065,7 @@ select option {
 }
 
 .nav-search {
-  width: 420px;
+  width: 460px;
   height: 46px;
   border-radius: 14px;
   background: #ffffff;
@@ -1179,6 +1183,18 @@ select option {
   align-items: center;
   justify-content: center;
   border: 2px solid white;
+}
+
+/* Dashboard AI Cytology Model — very subtle breathing glow. */
+@keyframes aiGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.10); }
+  50%      { box-shadow: 0 0 40px rgba(99, 102, 241, 0.20); }
+}
+.ai-model-container {
+  animation: aiGlow 4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-model-container { animation: none; }
 }
 
 

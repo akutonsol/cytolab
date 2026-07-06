@@ -84,8 +84,9 @@ export function ClockWidget({ compact = false, nav = false }: { compact?: boolea
     if (!isClockedIn) {
       return (
         <button onClick={() => clock.mutate('ClockIn')} disabled={clock.isPending}
-          className="inline-flex items-center gap-2 rounded-full border-0 bg-indigo-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-60">
-          <LogIn size={16} /> CLOCK IN
+          className="clock-card transition-colors hover:bg-gray-50 disabled:opacity-60" style={{ gap: 8, minWidth: 0 }}>
+          <LogIn size={16} className="text-indigo-600" />
+          <span className="text-sm font-semibold text-indigo-600">Clock In</span>
         </button>
       );
     }
@@ -109,11 +110,11 @@ export function ClockWidget({ compact = false, nav = false }: { compact?: boolea
       <div className="relative" style={{ zIndex: open ? 60 : undefined }}>
         <button onClick={() => setOpen((o) => !o)} className="clock-card" style={{ gap: 12 }}>
           <span className="clock-status" />
-          <span className="text-left leading-tight">
-            <span className="clock-time block font-mono text-gray-900">{hhmmss(now)}</span>
-            <span className="clock-label block">Clocked In</span>
+          <span className="flex flex-col text-left leading-tight">
+            <span className="clock-time font-mono text-gray-900">{hhmmss(now)}</span>
+            <span className="clock-label">Shift Active</span>
           </span>
-          <span className="grid h-6 w-6 place-items-center rounded-full bg-gray-100 text-gray-500"><ChevronDown size={14} /></span>
+          <ChevronDown size={14} className="text-gray-400" />
         </button>
 
         {open && (

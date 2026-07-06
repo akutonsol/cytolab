@@ -38,12 +38,6 @@ function getGreetingParts(): { text: string; night: boolean } {
   if (hour >= 17 && hour < 21) return { text: 'Good Evening,', night: true };
   return { text: 'Night Shift —', night: true };
 }
-function getDayLabel(): string {
-  return new Date().toLocaleDateString('en-US', { weekday: 'long' });
-}
-function getDateLabel(): string {
-  return new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-}
 
 function Logo() {
   return (
@@ -114,21 +108,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // Persistent nag: the account must use MFA but hasn't set it up yet.
   const mfaSetupNeeded = !!profile?.mfaRequired && !profile?.mfaEnabled;
   const screens = Grid.useBreakpoint();
-
-  // Live context for the workspace-header line. Reuses the dashboard's cached
-  // query keys (React Query dedupes — no extra network call on /dashboard).
-  const { data: homeData } = useQuery({
-    queryKey: ['dashboard-home'],
-    queryFn: () => api.get('/analytics/home').then((r) => r.data as { priorityRecords?: unknown[] }),
-    enabled: isAuthed,
-    staleTime: 60_000,
-  });
-  const { data: overview } = useQuery({
-    queryKey: ['patients-overview'],
-    queryFn: () => api.get('/patients/overview').then((r) => r.data as { kpis?: { pendingRequisitions?: number } }),
-    enabled: isAuthed,
-    staleTime: 60_000,
-  });
 
   // Session-expired redirects carry ?reason so the login page can explain why.
   const sessionExpiredRef = useRef(false);
@@ -211,13 +190,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const greetingName = profile?.firstName?.trim() || firstName;
   const role = claims?.roles?.[0] ?? 'User';
 
-  // Workspace-header context line. Live counts when the dashboard data is
-  // available, otherwise product-branded fallbacks.
   const greeting = getGreetingParts();
-  const dayLabel = getDayLabel();
-  const dateLabel = getDateLabel();
-  const activeCount = homeData?.priorityRecords?.length;
-  const awaitingCount = overview?.kpis?.pendingRequisitions;
 
   // Account (avatar) dropdown: email header + admin/platform sections + Settings + Sign out.
   const accountMenu: MenuProps = {
@@ -266,7 +239,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <span className="grid h-9 w-9 place-items-center rounded-full bg-indigo-600 text-xs font-semibold text-white">{initials}</span>
           <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500" />
         </span>
-        {screens.sm && (
+        {!showCenter && screens.sm && (
           <span className="text-left leading-tight">
             <span className="block text-sm font-bold text-gray-900">{firstName}</span>
             <span className="block text-xs text-gray-700">{role}</span>
@@ -293,7 +266,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </span>
               <div style={{ lineHeight: 1.1 }}>
                 <div style={{ fontFamily: 'Geist, sans-serif', fontSize: 20, fontWeight: 700, letterSpacing: 0.6, color: '#111827' }}>CYTOLAB</div>
-                {screens.sm && <div style={{ fontSize: 12, color: '#111827', marginTop: 1 }}>Cytology &amp; Pathology Laboratory System</div>}
+                {screens.sm && <div style={{ fontSize: 12, fontWeight: 500, color: '#9ca3af', marginTop: 1 }}>Cytology &amp; Pathology Laboratory System</div>}
               </div>
             </div>
 
@@ -313,6 +286,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <input placeholder="Search cases, patients, reports…" onFocus={() => router.push('/search')} onChange={(e) => router.push(`/search?q=${encodeURIComponent(e.target.value)}`)} style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: 14, color: '#111827' }} />
                 </div>
               )}
+              {/* Divider separating search from the clock + utility icon cluster. */}
+              {screens.md && <div className="h-6 w-px bg-gray-200" style={{ margin: '0 4px' }} />}
               {screens.md && <ClockWidget nav />}
               {quickAdd.items && quickAdd.items.length > 0 && (
                 <Dropdown trigger={['click']} menu={quickAdd}><button aria-label="Quick add" className={iconBtnCls}><ReadOutlined /></button></Dropdown>
@@ -334,30 +309,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {/* ROW 2 — user pill + greeting (left) + nav pills (right), desktop only. */}
           {showCenter && (
             <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginTop: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 {accountButton}
-                <div className="mx-4 h-8 w-px bg-gray-200" />
-                <div className="flex flex-col gap-0.5">
-                  {/* Line 1 — contextual greeting (indigo name / violet on night shift). */}
-                  <div className="flex items-center text-[15px] font-semibold leading-tight">
-                    <span className="text-gray-500">{greeting.text} </span>
-                    <span className={`font-bold ${greeting.night ? 'text-violet-500' : 'text-indigo-600'}`}>{greetingName}</span>
-                    <span className="ml-1 inline-flex">
-                      {greeting.night ? <Moon size={14} className="text-violet-500" /> : <Sun size={14} className="text-[#A16207]" />}
-                    </span>
+                <div className="flex flex-col gap-0">
+                  {/* Identity: name + role */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-gray-900">{firstName}</span>
+                    <span className="text-xs font-medium text-gray-400">{role}</span>
                   </div>
-                  {/* Line 2 — live context line, colored per segment (amber = #A16207, detector-safe). */}
-                  <div className="flex items-center gap-1.5 whitespace-nowrap text-[13px] font-medium">
-                    <span className="text-gray-400">{dayLabel} • {dateLabel}</span>
-                    <span className="text-gray-300">•</span>
-                    {activeCount != null
-                      ? <span className="font-semibold text-indigo-500">{activeCount} Active Cases</span>
-                      : <span className="text-gray-400">Cytolab LIMS</span>}
-                    <span className="text-gray-300">•</span>
-                    {awaitingCount != null
-                      ? <span className="font-semibold text-[#A16207]">{awaitingCount} Awaiting Review</span>
-                      : <span className="text-gray-400">Clinical Dashboard</span>}
+                  <div className="my-1 h-px w-full bg-gray-100" />
+                  {/* Contextual greeting — word + first name, clean two lines. */}
+                  <div className="flex items-center gap-1.5 text-[15px] font-bold leading-tight text-gray-900">
+                    {greeting.night ? <Moon size={15} className="text-violet-500" /> : <Sun size={15} className="text-[#A16207]" />}
+                    <span>{greeting.text}</span>
                   </div>
+                  <div className={`text-[13px] font-semibold ${greeting.night ? 'text-violet-600' : 'text-indigo-600'}`}>{greetingName}</div>
                 </div>
               </div>
               <NavPills justify="flex-end" />
@@ -395,7 +361,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         );
       })}
 
-      <main style={{ position: 'relative', zIndex: 1, flex: 1, padding: '16px 0', background: 'transparent' }}>
+      <main style={{ position: 'relative', zIndex: 1, flex: 1, padding: '24px 0 16px', background: 'transparent' }}>
         <div className="dashboard page-container">{children}</div>
       </main>
 
