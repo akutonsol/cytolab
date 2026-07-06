@@ -268,7 +268,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </span>
         {screens.sm && (
           <span className="text-left leading-tight">
-            <span className="block text-sm font-medium text-gray-800">{firstName}</span>
+            <span className="block text-sm font-bold text-gray-900">{firstName}</span>
             <span className="block text-xs text-gray-700">{role}</span>
           </span>
         )}

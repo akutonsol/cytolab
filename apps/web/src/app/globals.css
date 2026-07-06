@@ -1184,3 +1184,19 @@ select option {
   border: 2px solid white;
 }
 
+/* Keep the nav's inner padding in lockstep with .dashboard so the top bar and
+   page content share the exact same edges at every breakpoint. Declared after
+   the .nav-inner base rule so these overrides win over its 56px shorthand. */
+@media (max-width: 1024px) {
+  .nav-inner {
+    padding-left: var(--page-padding-tablet);
+    padding-right: var(--page-padding-tablet);
+  }
+}
+@media (max-width: 640px) {
+  .nav-inner {
+    padding-left: var(--page-padding-mobile);
+    padding-right: var(--page-padding-mobile);
+  }
+}
+
