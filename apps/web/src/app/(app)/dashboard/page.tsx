@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
 import {
   Activity, ArrowRight, ArrowUpRight, Calendar, CalendarClock, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FileCheck, FileText, FlaskConical,
-  Folder, GraduationCap, Hourglass, Microscope, Monitor, MoreHorizontal, Plus, ShieldCheck, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
+  Folder, GraduationCap, Hourglass, Maximize2, Microscope, Monitor, MoreHorizontal, Plus, ShieldCheck, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
   TestTube, TrendingUp, User, Users, Video,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -17,7 +17,7 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { GlassCard } from '@/components/dashboard/glass-card';
 import { ActivityTray } from '@/components/dashboard/ActivityTray';
 import { LiveStatusRibbon } from '@/components/dashboard/LiveStatusRibbon';
-import { FocusMode } from '@/components/dashboard/FocusMode';
+import { ClinicalWorkstation } from '@/components/dashboard/ClinicalWorkstation';
 import { PerformanceArea, SubscriptionBars } from './charts';
 
 const GREEN = '#166534', BLUE = '#4F46E5';
@@ -208,6 +208,7 @@ export default function DashboardPage() {
   // The queue drives an in-place selection: which record the AI stage + findings
   // reflect. Defaults to the top-priority record once data arrives.
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [workstationOpen, setWorkstationOpen] = useState(false);
   useEffect(() => {
     if (d?.priorityRecords?.[0] && !selectedRecord) setSelectedRecord(d.priorityRecords[0]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -868,7 +869,27 @@ export default function DashboardPage() {
               wide children from overflowing. */}
           {/* Hero section — three-column workspace, with a Focus Mode overlay. */}
           <div style={{ position: 'relative' }}>
-            <FocusMode
+            {/* Trigger — enters the Clinical Review Workstation overlay. */}
+            <button
+              onClick={() => setWorkstationOpen(true)}
+              className="group absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 bg-white/80 shadow-sm backdrop-blur-sm transition-all duration-200 hover:border-indigo-200 hover:bg-indigo-50"
+              aria-label="Enter focus mode"
+              title="Enter Focus Mode"
+            >
+              <Maximize2 size={14} className="text-gray-400 transition-colors group-hover:text-indigo-600" />
+            </button>
+            <ClinicalWorkstation
+              isOpen={workstationOpen}
+              onClose={() => setWorkstationOpen(false)}
+              currentCase={{
+                id: 'DM26-03-014',
+                priority: 'High',
+                patientName: 'Nia Campbell',
+                patientAge: 34,
+                patientGender: 'F',
+                specimenType: 'Cervical Scrape',
+                accessionNumber: 'AC# CYD-100201',
+              }}
               specimenQueue={focusSpecimenQueue}
               aiModel={focusAiModel}
               aiFindings={focusAiFindings}
@@ -879,6 +900,9 @@ export default function DashboardPage() {
                 { label: 'Pending Review', value: String(kpis?.pendingRequisitions || 0), sub: `${d.priorityRecords?.filter((r: any) => r.urgent).length || 0} high priority` },
                 { label: 'Auth Rate', value: `${eff?.authorization || 0}%`, sub: 'on target' },
               ]}
+              onBeginReview={() => router.push('/result-sheets')}
+              onNextCase={() => {}}
+              onPrevCase={() => {}}
             />
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.8fr) minmax(0, 1fr)', gap: 20, alignItems: 'stretch' }}>
             {focusSpecimenQueue}

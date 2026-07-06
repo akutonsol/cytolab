@@ -811,6 +811,15 @@ select option {
   animation: focusBtnPing 1.5s ease-out 2s 3 forwards;
 }
 
+/* Clinical Review Workstation — dark theme variables. */
+.workstation-dark {
+  --ws-bg: #0a0b14;
+  --ws-surface: rgba(15,17,30,0.95);
+  --ws-border: rgba(255,255,255,0.08);
+  --ws-text: rgba(255,255,255,0.8);
+  --ws-muted: rgba(255,255,255,0.3);
+}
+
 /* ────────────────────────────────────────────────────────────────────────
    Login page: premium pseudo-3D specimen vial.
    A single photoreal cutout PNG made to feel cylindrical and alive through
