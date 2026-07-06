@@ -12,6 +12,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { LabContext } from '../../common/tenancy/lab-context';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { NotificationsHelper } from '../../modules/notifications/notifications.helper';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { paginate } from '../../common/dto/pagination.dto';
@@ -46,6 +47,7 @@ export class SupportService {
     private readonly prisma: PrismaService,
     private readonly labContext: LabContext,
     private readonly notifications: NotificationsHelper,
+    private readonly realtime: RealtimeGateway,
   ) {}
 
   /**
@@ -118,6 +120,11 @@ export class SupportService {
         entityType: 'SupportTicket',
       });
       if (ticket.assignedToId) await this.notifyAssignee(ticket.assignedToId, ticket.ticketNumber, ticket.id);
+    });
+    // Realtime: support desk is a superuser surface → push to all superusers.
+    this.realtime.emitToSuperusers('ticket:new', {
+      type: 'ticket:new',
+      data: { id: ticket.id, ticketNumber: ticket.ticketNumber, priority: ticket.priority, title: ticket.title },
     });
     return ticket;
   }

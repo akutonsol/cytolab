@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { CreateNotificationDto, NotificationQueryDto } from './dto/notification.dto';
 
 const notificationSelect = {
@@ -25,7 +26,10 @@ const notificationSelect = {
  */
 @Injectable()
 export class NotificationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private realtime: RealtimeGateway,
+  ) {}
 
   async findAll(userId: string, query: NotificationQueryDto) {
     const page = query.page ?? 1;
@@ -62,7 +66,7 @@ export class NotificationsService {
 
   /** Internal only — stamps labId from the ambient tenant context. */
   async create(dto: CreateNotificationDto) {
-    return this.prisma.notification.create({
+    const created = await this.prisma.notification.create({
       data: tenantCreate<Prisma.NotificationUncheckedCreateInput>({
         userId: dto.userId,
         type: dto.type,
@@ -73,5 +77,11 @@ export class NotificationsService {
         entityType: dto.entityType,
       }),
     });
+    // Realtime: push to just the recipient so their bell badge updates live.
+    this.realtime.emitToUser(dto.userId, 'notification:new', {
+      type: 'notification:new',
+      data: { id: created.id, title: created.title, type: created.type },
+    });
+    return created;
   }
 }

@@ -3,6 +3,8 @@ import { Prisma, RecordStatus, ResultSheetEventType } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
+import { LabContext } from '../../common/tenancy/lab-context';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { RecordsService } from '../records/records.service';
 import { EscalationService } from '../escalation/escalation.service';
 import {
@@ -50,6 +52,8 @@ export class ResultSheetsService {
     private prisma: PrismaService,
     private records: RecordsService,
     private escalation: EscalationService,
+    private labContext: LabContext,
+    private realtime: RealtimeGateway,
   ) {}
 
   // Build the nested entries/lines create payload. The tenancy guard stamps
@@ -254,6 +258,12 @@ export class ResultSheetsService {
     // Abnormal-result escalation (clinical safety — runs regardless of the
     // ABNORMAL_ESCALATION UI flag; best-effort, never throws).
     await this.escalation.evaluateRecord(sheet.recordId);
+
+    // Realtime: authorization changes auth-rate KPIs and record status → refresh.
+    this.realtime.emitToLab(this.labContext.getLabId(), 'result:authorized', {
+      type: 'result:authorized',
+      data: { id, recordId: sheet.recordId },
+    });
 
     return authorized;
   }

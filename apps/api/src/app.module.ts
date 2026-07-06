@@ -8,6 +8,7 @@ import { TenancyModule } from './common/tenancy/tenancy.module';
 import { PrismaModule } from './database/prisma.module';
 import { HealthController } from './health.controller';
 import { AuthModule } from './modules/auth/auth.module';
+import { RealtimeModule } from './modules/realtime/realtime.module';
 import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { PatientsModule } from './modules/patients/patients.module';
@@ -80,6 +81,7 @@ import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.mod
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     TenancyModule,
     PrismaModule,
+    RealtimeModule,
     AuthModule,
     UsersModule,
     RolesModule,

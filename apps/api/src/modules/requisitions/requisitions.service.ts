@@ -5,6 +5,7 @@ import { LabContext } from '../../common/tenancy/lab-context';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { allocateSequence, isUniqueConflict } from '../../common/util/lab-sequence';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { CreateRequisitionDto, RequisitionQueryDto, RequisitionReportDto } from './dto/requisition.dto';
 
 // Human-facing requisition number (legacy Ref#, e.g. 1460). Plain numeric, no
@@ -45,6 +46,7 @@ export class RequisitionsService {
   constructor(
     private prisma: PrismaService,
     private labContext: LabContext,
+    private realtime: RealtimeGateway,
   ) {}
 
   // Requisition queries are lab-scoped automatically by the tenancy extension.
@@ -206,6 +208,14 @@ export class RequisitionsService {
         await this.prisma.requisitionTracking
           .create({ data: tenantCreate<Prisma.RequisitionTrackingUncheckedCreateInput>({ requisitionId: created.id }) })
           .catch(() => undefined);
+        // Realtime: a new case/specimen arrived → push to the lab so dashboards,
+        // the specimen queue and KPI cards update without a refresh.
+        const labId = this.labContext.getLabId();
+        this.realtime.emitToLab(labId, 'specimen:new', {
+          type: 'specimen:new',
+          data: { id: created.id, referenceNo: created.referenceNo, status: created.status },
+        });
+        this.realtime.emitToLab(labId, 'dashboard:refresh', { type: 'dashboard:refresh' });
         return created;
       } catch (e) {
         if (isUniqueConflict(e, 'referenceNo') && attempt < MAX_REF_RETRIES) continue;

@@ -17,6 +17,7 @@ import { NavPills } from '@/components/dashboard/nav-pills';
 import { ClockWidget } from '@/components/workforce/ClockWidget';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { ReportIssueButton } from '@/components/ReportIssueButton';
+import { RealtimeProvider } from '@/components/providers/RealtimeProvider';
 import { useAuth, useAuthStore } from '@/lib/auth';
 import { api, refreshSession, validatePersistedSession } from '@/lib/api';
 
@@ -363,7 +364,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <main style={{ position: 'relative', zIndex: 1, flex: 1, padding: '24px 0 16px', background: 'transparent' }}>
         <div className="dashboard page-container">
           {/* Fade + slide the page content in on each route change. */}
-          <div key={pathname} className="animate-fade-slide-in">{children}</div>
+          <RealtimeProvider>
+            <div key={pathname} className="animate-fade-slide-in">{children}</div>
+          </RealtimeProvider>
         </div>
       </main>
 

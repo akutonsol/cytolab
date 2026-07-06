@@ -3,6 +3,7 @@ import { EscalationSeverity, EscalationStatus, EscalationTrigger, Prisma } from 
 import { PrismaService } from '../../database/prisma.service';
 import { LabContext } from '../../common/tenancy/lab-context';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { NotificationsHelper } from '../notifications/notifications.helper';
 import { EscalationQueryDto, ManualEscalateDto } from './dto/escalation.dto';
 import { BethesdaLite, REVIEW_TIMEFRAME, deriveSeverity, severityFromBethesda } from './escalation-severity';
@@ -34,6 +35,7 @@ export class EscalationService {
     private readonly prisma: PrismaService,
     private readonly labContext: LabContext,
     private readonly notify: NotificationsHelper,
+    private readonly realtime: RealtimeGateway,
   ) {}
 
   // ── Automatic trigger ────────────────────────────────────────────────
@@ -141,6 +143,12 @@ export class EscalationService {
     } else if (assignee) {
       await this.notify.notifyUser(assignee.id, data); // Abnormal → assigned pathologist only
     }
+
+    // Realtime: push to the lab so the Action Center escalation badge updates live.
+    this.realtime.emitToLab(record.labId, 'escalation:new', {
+      type: 'escalation:new',
+      data: { id: escalation.id, severity, recordId: record.id },
+    });
 
     return escalation;
   }

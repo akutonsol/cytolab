@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ClockEventType, Prisma, ShiftType, TimesheetStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { WorkforceNotificationService } from './workforce-notification.service';
 import {
   AssignShiftDto, AttendanceSummaryQuery, BulkAssignDto, ClockDto, ClockHistoryQuery, CorrectClockDto,
@@ -21,6 +22,7 @@ export class WorkforceService {
   constructor(
     private prisma: PrismaService,
     private notifications: WorkforceNotificationService,
+    private realtime: RealtimeGateway,
   ) {}
 
   // ── Shift detection ─────────────────────────────────────────────────────────
@@ -74,6 +76,14 @@ export class WorkforceService {
     });
     const dayEvents = await this.eventsForDay(dto.employeeId, now);
     const t = this.tally(dayEvents, now);
+    // Realtime: roster/attendance changes → push to the lab so the workforce
+    // dashboard updates live when someone clocks in/out.
+    const rtEvent = dto.type === ClockEventType.ClockIn ? 'attendance:clockin'
+      : dto.type === ClockEventType.ClockOut ? 'attendance:clockout' : 'attendance:update';
+    this.realtime.emitToLab(emp.labId, rtEvent, {
+      type: rtEvent,
+      data: { employeeId: dto.employeeId, clockType: dto.type, isClockedIn: t.isClockedIn },
+    });
     return {
       event,
       currentStatus: t.isClockedIn ? 'ClockedIn' : 'ClockedOut',
