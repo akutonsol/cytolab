@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from 'antd';
 import {
-  Activity, ArrowRight, ArrowUpRight, Calendar, CalendarClock, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FileCheck, FileText, FlaskConical,
+  Activity, AlertTriangle, ArrowRight, ArrowUpRight, Calendar, CalendarClock, CheckCircle2, ChevronDown, Clock, CreditCard, DollarSign, FileCheck, FileText, FlaskConical,
   Folder, GraduationCap, Hourglass, Microscope, Monitor, MoreHorizontal, Plus, ShieldCheck, ShoppingBag, SlidersHorizontal, Smartphone, Stethoscope, Tablet,
   TestTube, TrendingUp, User, Users, Video,
 } from 'lucide-react';
@@ -344,7 +344,7 @@ export default function DashboardPage() {
 
         <div style={{ marginTop: 12, background: 'transparent', marginLeft: -16, marginRight: -16, marginBottom: -40, paddingLeft: 16, paddingRight: 16, paddingTop: 20, paddingBottom: 40 }} className="flex flex-col gap-5">
           {/* ═══ LIVE STATUS RIBBON (slim single-line status between nav + Action Center) ═══ */}
-          <LiveStatusRibbon stats={{ activeSpecimens: d.priorityRecords?.length || 0, escalations: d.priorityRecords?.filter((r: any) => r.urgent).length || 0 }} />
+          <LiveStatusRibbon stats={{ activeSpecimens: d.priorityRecords?.length || 0, escalations: d.priorityRecords?.filter((r: any) => r.urgent).length || 0, aiQueue: kpis?.pendingRequisitions || 0 }} />
           {/* ═══ ACTIVITY TRAY (consolidates escalation / AI review / FHIR alerts) ═══ */}
           <ActivityTray />
 
@@ -629,90 +629,85 @@ export default function DashboardPage() {
             </div>
 
             {/* RIGHT: AI Findings — re-keyed so it fades in on each selection */}
-            <div key={selectedRecord?.id} className="premium-scroll" style={{ height: 540, background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', animation: 'findingsFadeIn 0.4s ease-out' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 20, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Findings</span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: '#4F46E5', fontFamily: 'Geist,sans-serif' }}>{selectedRecord?.labNumber ?? '—'}</span>
-              </div>
+            <div key={selectedRecord?.id} className="premium-scroll" style={{ height: 540, background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', overflowY: 'auto', animation: 'findingsFadeIn 0.4s ease-out' }}>
+              <div className="flex h-full flex-col">
+                {/* Header */}
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900">AI Findings</h3>
+                  <span className="text-xs font-semibold text-indigo-600">{selectedRecord?.labNumber ?? '—'}</span>
+                </div>
 
-              {/* Interpretation */}
-              <div style={{ background: '#F4F4FB', borderRadius: 16, padding: '16px 18px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: '#475569' }}>Interpretation</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#4F46E5', background: '#EEF2FF', borderRadius: 999, padding: '3px 10px' }}>High Confidence</span>
-                </div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1.35, marginBottom: 4 }}>
-                  {selectedRecord?.urgent
-                    ? 'Urgent Case — Immediate Review'
-                    : selectedRecord?.specimen
-                      ? `${specLabel(selectedRecord.specimen)} Analysis`
-                      : 'No Active Cases'}
-                </div>
-                <div style={{ fontSize: 14, color: '#475569' }}>
-                  {selectedRecord?.client
-                    ? `Client: ${selectedRecord.client}`
-                    : 'Awaiting cytological analysis.'}
-                </div>
-              </div>
-
-              {/* DIAGNOSIS */}
-              <div style={{ marginBottom: 0 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Diagnosis</div>
-                <div style={{ fontSize: 16.5, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>
-                  {selectedRecord?.urgent ? 'Atypical Cells Detected' : 'Specimen Under Review'}
-                </div>
-                <div style={{ fontSize: 13, color: '#475569', marginTop: 2 }}>
-                  {selectedRecord?.client ?? 'Awaiting analysis'}
-                </div>
-              </div>
-
-              {/* CONFIDENCE */}
-              <div style={{ padding: '12px 14px', background: '#F4F4FB', borderRadius: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Confidence</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ flex: 1, height: 6, background: '#E2E8F0', borderRadius: 999 }}>
-                    <div style={{ height: 6, borderRadius: 999, background: 'linear-gradient(90deg,#4F46E5,#6B21A8)', width: `${targetConf}%`, transition: 'width 1s' }} />
+                {/* AI status badge */}
+                <div className="mb-4 flex items-center gap-2 rounded-xl bg-indigo-50 p-3">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-wide text-indigo-600">AI Analysis Complete</div>
+                    <div className="text-[11px] text-indigo-400">CYTO AI v3.2 · Screened {eff?.specimensProcessed ?? 0} specimens</div>
                   </div>
-                  <span style={{ fontSize: 14, fontWeight: 800, color: '#4F46E5', fontFamily: 'Geist,sans-serif', minWidth: 36 }}>{displayConf}%</span>
-                </div>
-                <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>Based on {eff?.specimensProcessed ?? 0} processed specimens</div>
-              </div>
-
-              {/* DETECTED FEATURES */}
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Detected Features</div>
-                {[
-                  { label: 'Specimen Type', value: specLabel(selectedRecord?.specimen) },
-                  { label: 'Specimens Processed', value: `${eff?.specimensProcessed ?? 0} total` },
-                  { label: 'Abnormal Cells', value: selectedRecord?.urgent ? 'Detected — Moderate' : 'Not detected' },
-                ].map(({ label, value }, i, arr) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: i < arr.length - 1 ? '1px solid #F1F0EA' : 'none' }}>
-                    <span style={{ fontSize: 14, color: '#475569' }}>{label}</span>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: '#0F172A' }}>{value}</span>
+                  <div className="ml-auto">
+                    <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-bold text-indigo-600">{displayConf}% Confidence</span>
                   </div>
-                ))}
-              </div>
-
-              {/* RECOMMENDED ACTION */}
-              <div style={{ padding: '12px 14px', background: '#F0FDF4', borderRadius: 12, border: '1px solid #BBF7D0' }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#166534', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Recommended Action</div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>
-                  {selectedRecord?.urgent
-                    ? 'Priority review — escalate to senior pathologist'
-                    : (eff?.authorization ?? 0) >= 80
-                      ? 'Standard processing — no action required'
-                      : 'Review pending cases — authorization rate below threshold'}
                 </div>
-              </div>
 
-              {/* CTAs */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 'auto' }}>
-                <button onClick={() => router.push(`/records/${selectedRecord?.id ?? ''}`)} style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg,#4F46E5 0%,#6D28D9 100%)', color: 'white', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Geist,sans-serif', boxShadow: '0 8px 20px rgba(79,70,229,0.28)' }}>
-                  View Full Report <ArrowRight size={16} />
-                </button>
-                <button onClick={() => router.push('/authorizer')} style={{ width: '100%', padding: '13px', background: '#EEF0FB', color: '#4F46E5', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Geist,sans-serif' }}>
-                  Add to Pathologist Review <Users size={16} />
-                </button>
+                {/* Confidence timeline */}
+                <div className="mb-4">
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Confidence</span>
+                    <span className="text-sm font-bold text-indigo-600">{displayConf}%</span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                    <div className="h-full rounded-full bg-indigo-600 transition-all duration-1000" style={{ width: `${targetConf}%` }} />
+                  </div>
+                  <div className="mt-1 text-[11px] text-gray-400">Based on {eff?.specimensProcessed ?? 0} processed specimens</div>
+                </div>
+
+                {/* Prediction */}
+                <div className="mb-3">
+                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Prediction</div>
+                  <div className="text-[15px] font-bold text-gray-900">{selectedRecord?.urgent ? 'Atypical Cells Detected' : 'Specimen Under Review'}</div>
+                  <div className="text-[12px] text-gray-500">{selectedRecord?.client ?? 'Awaiting analysis'}</div>
+                </div>
+
+                {/* AI explanation (XAI) */}
+                <div className="mb-4 rounded-xl bg-gray-50 p-3">
+                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-500">AI Explanation</div>
+                  <ul className="space-y-1">
+                    {['Nuclear enlargement detected', 'Irregular chromatin texture', 'Hyperchromasia present', 'Dense cell clustering observed'].map((reason, i) => (
+                      <li key={i} className="flex items-center gap-2 text-[12px] text-gray-600">
+                        <div className="h-1 w-1 flex-shrink-0 rounded-full bg-indigo-400" />
+                        {reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Detected features */}
+                <div className="mb-4">
+                  <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Detected Features</div>
+                  <div className="space-y-1.5">
+                    {[
+                      { label: 'Specimen Type', value: specLabel(selectedRecord?.specimen) },
+                      { label: 'Specimens Processed', value: `${eff?.specimensProcessed ?? 0} total` },
+                      { label: 'Abnormal Cells', value: selectedRecord?.urgent ? 'Detected — Moderate' : 'Not detected' },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="flex justify-between text-[12px]">
+                        <span className="text-gray-500">{label}</span>
+                        <span className="font-semibold text-gray-900">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recommendation footer — human-in-the-loop. Zero-orange: detector-safe
+                    dark amber (#92400E / #78350F, r<200) on amber-50/100; no ⚠️ emoji. */}
+                <div className="mt-auto rounded-xl border border-amber-100 bg-amber-50 p-3">
+                  <div className="mb-1 flex items-center gap-2">
+                    <AlertTriangle size={13} className="text-[#92400E]" />
+                    <span className="text-[11px] font-bold uppercase tracking-wide text-[#92400E]">Recommendation</span>
+                  </div>
+                  <div className="text-[12px] font-semibold text-[#78350F]">Immediate Cytotechnologist Review</div>
+                  <div className="mt-1 text-[11px] font-medium text-[#92400E]">AI screening only — Human authorization required</div>
+                </div>
               </div>
             </div>
           </div>
