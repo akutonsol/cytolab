@@ -32,12 +32,14 @@ export function ClinicalWorkstation({
   const [isAnimating, setIsAnimating] = useState(false);
   const [zoom, setZoom] = useState(100);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [modelExpanded, setModelExpanded] = useState(false);
 
   const open = useCallback(() => {
     requestAnimationFrame(() => setIsAnimating(true));
   }, []);
 
   const close = useCallback(() => {
+    setModelExpanded(false);
     setIsAnimating(false);
     setTimeout(() => onClose(), 300);
   }, [onClose]);
@@ -50,17 +52,17 @@ export function ClinicalWorkstation({
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (e.key === 'Escape') close();
+      if (e.key === 'Escape') { if (modelExpanded) { setModelExpanded(false); return; } close(); }
       if (e.key === 'ArrowRight') onNextCase?.();
       if (e.key === 'ArrowLeft') onPrevCase?.();
       if (e.key === 'r' || e.key === 'R') onBeginReview?.();
       if (e.key === '?') setShowShortcuts(s => !s);
-      if (e.key === '+') setZoom(z => Math.min(z + 10, 200));
+      if (e.key === '+' || e.key === '=') setZoom(z => Math.min(z + 10, 200));
       if (e.key === '-') setZoom(z => Math.max(z - 10, 50));
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, close, onNextCase, onPrevCase, onBeginReview]);
+  }, [isOpen, close, onNextCase, onPrevCase, onBeginReview, modelExpanded]);
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : '';
@@ -93,6 +95,23 @@ export function ClinicalWorkstation({
     { label: 'Authorization', time: '—', state: 'pending' },
     { label: 'Released', time: '—', state: 'pending' },
   ];
+
+  // Shared zoom / pan / expand control bar — used in the normal model column and
+  // in the expanded (pop-out) view. Zoom scales the model wrapper; Maximize2
+  // toggles the contained fullscreen; Target recenters (100%).
+  const zoomControls = (
+    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center"
+      style={{ gap: 8, background: 'rgba(16,18,30,0.97)', backdropFilter: 'blur(12px)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 14, padding: '8px 14px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', zIndex: 6 }}>
+      <button className="ws-zoom-btn" title="Pan"><Move size={16} /></button>
+      <button onClick={() => setZoom(100)} className="ws-zoom-btn" title="Recenter (100%)"><Target size={16} /></button>
+      <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.12)', margin: '0 3px' }} />
+      <button onClick={() => setZoom(z => Math.max(z - 10, 50))} className="ws-zoom-btn" title="Zoom out"><ZoomOut size={16} /></button>
+      <span style={{ color: '#a5b4fc', fontSize: 12, fontFamily: 'monospace', fontWeight: 600, width: 48, textAlign: 'center' }}>{zoom}%</span>
+      <button onClick={() => setZoom(z => Math.min(z + 10, 200))} className="ws-zoom-btn" title="Zoom in"><ZoomIn size={16} /></button>
+      <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.12)', margin: '0 3px' }} />
+      <button onClick={() => setModelExpanded(v => !v)} className="ws-zoom-btn" title={modelExpanded ? 'Exit expanded view' : 'Expand'}><Maximize2 size={16} /></button>
+    </div>
+  );
 
   return createPortal(
     <div
@@ -387,12 +406,6 @@ export function ClinicalWorkstation({
                 border: none !important;
                 background: transparent !important;
               }
-            `}</style>
-            <div className="workstation-model" style={{ height: '100%' }}>
-              {aiModel}
-            </div>
-            {/* Zoom controls — solid indigo-tinted bar so nothing bleeds through */}
-            <style>{`
               .ws-zoom-btn {
                 width: 36px; height: 36px; border-radius: 10px;
                 display: flex; align-items: center; justify-content: center;
@@ -403,17 +416,10 @@ export function ClinicalWorkstation({
               .ws-zoom-btn:hover { background: rgba(99,102,241,0.32); }
               .ws-zoom-btn svg { color: #a5b4fc; }
             `}</style>
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center"
-              style={{ gap: 8, background: 'rgba(16,18,30,0.97)', backdropFilter: 'blur(12px)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 14, padding: '8px 14px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', zIndex: 6 }}>
-              <button className="ws-zoom-btn"><Move size={16} /></button>
-              <button className="ws-zoom-btn"><Target size={16} /></button>
-              <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.12)', margin: '0 3px' }} />
-              <button onClick={() => setZoom(z => Math.max(z - 10, 50))} className="ws-zoom-btn"><ZoomOut size={16} /></button>
-              <span style={{ color: '#a5b4fc', fontSize: 12, fontFamily: 'monospace', fontWeight: 600, width: 48, textAlign: 'center' }}>{zoom}%</span>
-              <button onClick={() => setZoom(z => Math.min(z + 10, 200))} className="ws-zoom-btn"><ZoomIn size={16} /></button>
-              <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.12)', margin: '0 3px' }} />
-              <button onClick={() => setZoom(100)} className="ws-zoom-btn"><Maximize2 size={16} /></button>
+            <div className="workstation-model" style={{ height: '100%', transform: `scale(${zoom / 100})`, transformOrigin: 'center center', transition: 'transform 0.2s ease' }}>
+              {aiModel}
             </div>
+            {!modelExpanded && zoomControls}
           </div>
         </div>
 
@@ -628,6 +634,31 @@ export function ClinicalWorkstation({
           </button>
         </div>
       </div>
+
+      {/* Expanded (pop-out) model — contained fullscreen with a Close button */}
+      {modelExpanded && (
+        <div className="absolute inset-0 z-20 flex flex-col" style={{ background: '#080912' }}>
+          <div className="flex items-center justify-between px-5"
+            style={{ height: '52px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15,17,30,0.96)' }}>
+            <div className="flex items-center gap-3">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>AI Cytology Model</span>
+              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Expanded view</span>
+            </div>
+            <button onClick={() => setModelExpanded(false)}
+              className="flex items-center gap-2 transition-colors hover:bg-white/20"
+              style={{ padding: '6px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'rgba(255,255,255,0.8)', fontSize: '12px', cursor: 'pointer' }}>
+              <X size={15} /> Close
+            </button>
+          </div>
+          <div style={{ flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden' }}>
+            <div className="workstation-model" style={{ height: '100%', transform: `scale(${zoom / 100})`, transformOrigin: 'center center', transition: 'transform 0.2s ease' }}>
+              {aiModel}
+            </div>
+            {zoomControls}
+          </div>
+        </div>
+      )}
 
       {/* Shortcuts modal */}
       {showShortcuts && (
