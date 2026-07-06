@@ -774,12 +774,11 @@ select option {
   animation: fadeSlideIn 0.6s ease-out forwards;
 }
 
-/* Login page: slow 3D "turn" for the specimen vial. A flat photo can't spin a
-   full 360 without flattening edge-on, so this eases through a limited Y-axis
-   arc under perspective, reading as a gentle rotation. */
+/* Login page: continuous Y-axis rotation for the specimen vial, like a body
+   spinning on its axis. Perspective gives it depth; a flat photo still passes
+   edge-on each half-turn, which is inherent to spinning a 2D image. */
 @keyframes vialTurn {
-  0%   { transform: translate(-50%, -50%) rotateY(-22deg); }
-  50%  { transform: translate(-50%, -50%) rotateY(22deg); }
-  100% { transform: translate(-50%, -50%) rotateY(-22deg); }
+  from { transform: translate(-50%, -50%) rotateY(0deg); }
+  to   { transform: translate(-50%, -50%) rotateY(360deg); }
 }
-.animate-vial-turn { animation: vialTurn 9s ease-in-out infinite; }
+.animate-vial-turn { animation: vialTurn 12s linear infinite; }
