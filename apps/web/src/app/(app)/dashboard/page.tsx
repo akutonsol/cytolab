@@ -354,7 +354,7 @@ export default function DashboardPage() {
           }}>
             {[
               {
-                icon: <TestTube size={20} color="#4F46E5" />,
+                icon: <TestTube size={24} color="#4F46E5" />,
                 label: 'Active Specimens',
                 value: d.priorityRecords?.length || 0,
                 sub: `${d.priorityRecords?.filter((r: any) => r.urgent).length || 0} urgent`,
@@ -362,21 +362,21 @@ export default function DashboardPage() {
                 isPriority: true,
               },
               {
-                icon: <FlaskConical size={20} color="#4F46E5" />,
+                icon: <FlaskConical size={24} color="#4F46E5" />,
                 label: 'Cases Today',
                 value: ov?.today?.requisitionsToday || 0,
                 sub: 'received today',
                 subColor: '#475569',
               },
               {
-                icon: <Clock size={20} color="#4F46E5" />,
+                icon: <Clock size={24} color="#4F46E5" />,
                 label: 'Avg Turnaround',
                 value: kpis?.avgTat ? `${kpis.avgTat}d` : '—',
                 sub: kpis?.avgTat <= 3 ? 'Within target' : 'Above target',
                 subColor: kpis?.avgTat <= 3 ? '#166534' : '#991B1B',
               },
               {
-                icon: <Activity size={20} color="#4F46E5" />,
+                icon: <Activity size={24} color="#4F46E5" />,
                 label: 'Pending Review',
                 value: kpis?.pendingRequisitions || 0,
                 sub: `${d.priorityRecords?.filter((r: any) => r.urgent).length || 0} high priority`,
@@ -384,7 +384,7 @@ export default function DashboardPage() {
                 isPriority: true,
               },
               {
-                icon: <CheckCircle2 size={20} color="#4F46E5" />,
+                icon: <CheckCircle2 size={24} color="#4F46E5" />,
                 label: 'Auth Rate',
                 value: `${eff?.authorization || 0}%`,
                 sub: eff?.authorization >= 80 ? 'On target' : 'Below target',
@@ -393,20 +393,20 @@ export default function DashboardPage() {
             ].map(({ icon, label, value, sub, subColor, isPriority }, i) => (
               <div key={i} style={{
                 background: 'white',
-                borderRadius: 16,
-                padding: '18px 20px',
+                borderRadius: 18,
+                padding: '22px 24px',
                 border: '1px solid #EEF2F7',
                 boxShadow: '0 4px 24px rgba(0,0,0,0.04)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 14,
+                gap: 16,
                 ...(isPriority ? {
-                  borderLeft: '3px solid #4F46E5',
+                  borderLeft: '4px solid #4F46E5',
                   background: 'linear-gradient(135deg, #FAFBFF 0%, #F4F4FE 100%)',
                 } : {}),
               }}>
                 <div style={{
-                  width: 40, height: 40, borderRadius: 12,
+                  width: 50, height: 50, borderRadius: 14,
                   background: '#EEF2FF',
                   display: 'grid', placeItems: 'center',
                   flexShrink: 0,
@@ -415,18 +415,18 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <div style={{
-                    fontSize: 11, fontWeight: 700, color: '#475569',
+                    fontSize: 12.5, fontWeight: 700, color: '#475569',
                     letterSpacing: '0.06em', textTransform: 'uppercase',
-                    marginBottom: 2,
+                    marginBottom: 3,
                   }}>{label}</div>
                   <div style={{
-                    fontSize: isPriority ? 36 : 28, fontWeight: 800, color: '#0F172A',
+                    fontSize: isPriority ? 42 : 34, fontWeight: 800, color: '#0F172A',
                     letterSpacing: '-0.02em', lineHeight: 1,
                     fontFamily: 'Geist, sans-serif',
                   }}>{value}</div>
                   <div style={{
-                    fontSize: 11, fontWeight: 600,
-                    color: subColor, marginTop: 3,
+                    fontSize: 12.5, fontWeight: 600,
+                    color: subColor, marginTop: 4,
                   }}>{sub}</div>
                 </div>
               </div>
@@ -442,7 +442,7 @@ export default function DashboardPage() {
             {/* LEFT: Specimen Queue */}
             <div style={{ height: 540, background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <span style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Specimen Queue</span>
+                <span style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Specimen Queue</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 999, padding: '4px 10px', cursor: 'pointer' }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>All Types</span>
                   <ChevronDown size={12} color="#475569" />
@@ -459,15 +459,15 @@ export default function DashboardPage() {
                       <SpecimenIcon type={r.specimen} size={56} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>{r.labNumber ?? '—'}</span>
+                          <span style={{ fontSize: 14.5, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>{r.labNumber ?? '—'}</span>
                           {r.urgent && (
                             <span style={{ fontSize: 10, fontWeight: 600, color: '#4F46E5', background: '#EEF2FF', borderRadius: 999, padding: '2px 8px' }}>High Priority</span>
                           )}
                         </div>
-                        <div style={{ fontSize: 11, color: '#475569', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: 12.5, color: '#475569', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {specLabel(r.specimen)}{r.patient ? ` · ${r.patient}` : ''}
                         </div>
-                        <div style={{ fontSize: 10, color: '#475569', marginTop: 1 }}>
+                        <div style={{ fontSize: 11.5, color: '#475569', marginTop: 2 }}>
                           Received {new Date(r.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
@@ -487,7 +487,7 @@ export default function DashboardPage() {
             <div style={{ height: 540, background: '#FFFFFF', borderRadius: 20, border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(79,70,229,0.08)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               {/* Header (overlays the stage so the head can fill the panel) */}
               <div style={{ padding: '20px 24px 0', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 4 }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Cytology Model</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Cytology Model</div>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 600, color: '#166534', marginTop: 6 }}>
                   <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#166534', boxShadow: '0 0 6px rgba(34,197,94,0.6)', animation: 'livePulse 2s ease-in-out infinite' }} />
                   Live Analysis
@@ -569,7 +569,7 @@ export default function DashboardPage() {
 
               {/* Processing Specimen overlay */}
               <div style={{ position: 'absolute', left: 20, top: 'auto', bottom: 110, zIndex: 4, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(12px)', borderRadius: 16, padding: '14px 18px', border: '1px solid rgba(79,70,229,0.12)', boxShadow: '0 8px 24px rgba(79,70,229,0.12)', width: 220 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Processing Specimen</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Processing Specimen</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 10, background: 'transparent', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                     <SpecimenIcon type={selectedRecord?.specimen} size={36} />
@@ -621,17 +621,17 @@ export default function DashboardPage() {
             {/* RIGHT: AI Findings — re-keyed so it fades in on each selection */}
             <div key={selectedRecord?.id} className="premium-scroll" style={{ height: 540, background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', animation: 'findingsFadeIn 0.4s ease-out' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Findings</span>
+                <span style={{ fontSize: 20, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Findings</span>
                 <span style={{ fontSize: 14, fontWeight: 700, color: '#4F46E5', fontFamily: 'Geist,sans-serif' }}>{selectedRecord?.labNumber ?? '—'}</span>
               </div>
 
               {/* Interpretation */}
               <div style={{ background: '#F4F4FB', borderRadius: 16, padding: '16px 18px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: '#475569' }}>Interpretation</span>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: '#475569' }}>Interpretation</span>
                   <span style={{ fontSize: 11, fontWeight: 700, color: '#4F46E5', background: '#EEF2FF', borderRadius: 999, padding: '3px 10px' }}>High Confidence</span>
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', letterSpacing: '-0.02em', marginBottom: 4 }}>
+                <div style={{ fontSize: 25, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', letterSpacing: '-0.02em', marginBottom: 4 }}>
                   {selectedRecord?.urgent
                     ? 'Urgent Case — Immediate Review'
                     : selectedRecord?.specimen
@@ -647,8 +647,8 @@ export default function DashboardPage() {
 
               {/* DIAGNOSIS */}
               <div style={{ marginBottom: 0 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Diagnosis</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Diagnosis</div>
+                <div style={{ fontSize: 16.5, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>
                   {selectedRecord?.urgent ? 'Atypical Cells Detected' : 'Specimen Under Review'}
                 </div>
                 <div style={{ fontSize: 13, color: '#475569', marginTop: 2 }}>
@@ -658,7 +658,7 @@ export default function DashboardPage() {
 
               {/* CONFIDENCE */}
               <div style={{ padding: '12px 14px', background: '#F4F4FB', borderRadius: 12 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Confidence</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Confidence</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ flex: 1, height: 6, background: '#E2E8F0', borderRadius: 999 }}>
                     <div style={{ height: 6, borderRadius: 999, background: 'linear-gradient(90deg,#4F46E5,#6B21A8)', width: `${targetConf}%`, transition: 'width 1s' }} />
@@ -670,15 +670,15 @@ export default function DashboardPage() {
 
               {/* DETECTED FEATURES */}
               <div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Detected Features</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Detected Features</div>
                 {[
                   { label: 'Specimen Type', value: specLabel(selectedRecord?.specimen) },
                   { label: 'Specimens Processed', value: `${eff?.specimensProcessed ?? 0} total` },
                   { label: 'Abnormal Cells', value: selectedRecord?.urgent ? 'Detected — Moderate' : 'Not detected' },
                 ].map(({ label, value }, i, arr) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: i < arr.length - 1 ? '1px solid #F1F0EA' : 'none' }}>
-                    <span style={{ fontSize: 13, color: '#475569' }}>{label}</span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{value}</span>
+                    <span style={{ fontSize: 14, color: '#475569' }}>{label}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#0F172A' }}>{value}</span>
                   </div>
                 ))}
               </div>
@@ -712,7 +712,7 @@ export default function DashboardPage() {
             {/* Monthly Case Volume */}
             <div style={{ background: '#FAFBFF', borderRadius: 20, padding: '20px 24px', border: '1px solid #F1F0EA' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Monthly Case Volume</span>
+                <span style={{ fontSize: 17, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Monthly Case Volume</span>
                 <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 999, padding: '3px 10px', cursor: 'pointer' }}>6 Months ▾</div>
               </div>
               <SubscriptionBars data={volRows} />
@@ -733,7 +733,7 @@ export default function DashboardPage() {
 
             {/* Case Distribution by Type */}
             <div style={{ background: '#FAFBFF', borderRadius: 20, padding: '20px 24px', border: '1px solid #F1F0EA' }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', marginBottom: 16 }}>Case Distribution by Type</div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif', marginBottom: 16 }}>Case Distribution by Type</div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
                 <div style={{ position: 'relative', width: 180, height: 180, flexShrink: 0 }}>
                   <svg viewBox="0 0 180 180" width="180" height="180">
@@ -776,7 +776,7 @@ export default function DashboardPage() {
             {/* AI Performance */}
             <div style={{ background: '#FAFBFF', borderRadius: 20, padding: '20px 24px', border: '1px solid #F1F0EA' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Performance</span>
+                <span style={{ fontSize: 17, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Performance</span>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: 22, fontWeight: 800, color: '#4F46E5', fontFamily: 'Geist,sans-serif', lineHeight: 1.1 }}>{eff?.authorization ?? 0}%</div>
                   <div style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>Accuracy</div>
@@ -804,7 +804,7 @@ export default function DashboardPage() {
             {/* Recent Activity */}
             <div style={{ background: '#FAFBFF', borderRadius: 20, padding: '20px', border: '1px solid #F1F0EA', display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <span style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Recent Activity</span>
+                <span style={{ fontSize: 17, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Recent Activity</span>
                 <button onClick={() => router.push('/records')} style={{ fontSize: 12, fontWeight: 600, color: '#4F46E5', background: 'none', border: 'none', cursor: 'pointer' }}>View all</button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
