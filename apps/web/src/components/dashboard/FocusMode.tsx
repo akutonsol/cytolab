@@ -17,6 +17,18 @@ interface FocusModeProps {
 export function FocusMode({ specimenQueue, aiModel, aiFindings, kpiStats }: FocusModeProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+
+  // Show the animated hint once per browser, then remember it's been seen.
+  useEffect(() => {
+    if (localStorage.getItem('focusModeHintShown') === '1') return;
+    setShowHint(true);
+    const t = setTimeout(() => {
+      setShowHint(false);
+      localStorage.setItem('focusModeHintShown', '1');
+    }, 6500);
+    return () => clearTimeout(t);
+  }, []);
 
   const open = useCallback(() => {
     setIsOpen(true);
@@ -50,15 +62,27 @@ export function FocusMode({ specimenQueue, aiModel, aiFindings, kpiStats }: Focu
 
   return (
     <>
-      {/* Trigger button — sits in the hero section. */}
-      <button
-        onClick={open}
-        className="group absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 bg-white/80 shadow-sm backdrop-blur-sm transition-all duration-200 hover:border-indigo-200 hover:bg-indigo-50"
-        title="Enter Focus Mode (F)"
-        aria-label="Enter focus mode"
-      >
-        <Maximize2 size={14} className="text-gray-400 transition-colors group-hover:text-indigo-600" />
-      </button>
+      {/* Trigger button — sits in the hero section, with a one-time animated hint. */}
+      <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
+        {showHint && (
+          <div
+            className="pointer-events-none flex items-center gap-1.5 rounded-full border border-white/10 bg-gray-900/80 px-3 py-1.5 text-[11px] font-medium text-white backdrop-blur-sm"
+            style={{ animation: 'focusHintPulse 4s ease-in-out 2s forwards', opacity: 0 }}
+          >
+            <kbd className="rounded bg-white/20 px-1.5 py-0.5 font-mono text-[10px]">F</kbd>
+            <span>Focus Mode</span>
+            <i className="ti ti-arrows-maximize text-[11px]" />
+          </div>
+        )}
+
+        <button
+          onClick={open}
+          className="focus-btn-ping group flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 bg-white/80 shadow-sm backdrop-blur-sm transition-all duration-200 hover:border-indigo-200 hover:bg-indigo-50"
+          aria-label="Enter focus mode (press F)"
+        >
+          <Maximize2 size={14} className="text-gray-400 transition-colors group-hover:text-indigo-600" />
+        </button>
+      </div>
 
       {/* Portal overlay */}
       {isOpen && createPortal(
@@ -103,28 +127,29 @@ export function FocusMode({ specimenQueue, aiModel, aiFindings, kpiStats }: Focu
               </div>
             </div>
 
-            {/* Three-column layout — staggered entrance. */}
-            <div className="grid flex-1 gap-4" style={{ gridTemplateColumns: '1fr 2fr 1fr', minHeight: 0 }}>
+            {/* Top row — Specimen Queue + AI Findings, side by side. */}
+            <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 1fr', height: '42%', minHeight: 0 }}>
               <div className="focus-panel-enter flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-sm" style={{ animationDelay: '0ms' }}>
-                <div className="border-b border-white/10 px-5 py-4">
+                <div className="border-b border-white/10 px-5 py-3">
                   <span className="text-[11px] font-semibold uppercase tracking-widest text-white/50">Specimen Queue</span>
                 </div>
                 <div className="flex-1 overflow-auto p-3">{specimenQueue}</div>
               </div>
 
               <div className="focus-panel-enter flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-sm" style={{ animationDelay: '50ms' }}>
-                <div className="border-b border-white/10 px-5 py-4">
-                  <span className="text-[11px] font-semibold uppercase tracking-widest text-white/50">AI Cytology Model</span>
-                </div>
-                <div className="flex-1 overflow-hidden">{aiModel}</div>
-              </div>
-
-              <div className="focus-panel-enter flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-sm" style={{ animationDelay: '100ms' }}>
-                <div className="border-b border-white/10 px-5 py-4">
+                <div className="border-b border-white/10 px-5 py-3">
                   <span className="text-[11px] font-semibold uppercase tracking-widest text-white/50">AI Findings</span>
                 </div>
                 <div className="flex-1 overflow-auto p-4">{aiFindings}</div>
               </div>
+            </div>
+
+            {/* Bottom row — AI Cytology Model, full width. */}
+            <div className="focus-panel-enter mt-4 flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-sm" style={{ height: '52%', minHeight: 0, animationDelay: '100ms' }}>
+              <div className="border-b border-white/10 px-5 py-3">
+                <span className="text-[11px] font-semibold uppercase tracking-widest text-white/50">AI Cytology Model</span>
+              </div>
+              <div className="flex-1 overflow-hidden">{aiModel}</div>
             </div>
 
             {/* KPI stats row */}
