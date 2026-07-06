@@ -781,4 +781,4 @@ select option {
   from { transform: translate(-50%, -50%) rotateY(0deg); }
   to   { transform: translate(-50%, -50%) rotateY(360deg); }
 }
-.animate-vial-turn { animation: vialTurn 12s linear infinite; }
+.animate-vial-turn { animation: vialTurn 6s linear infinite; }
