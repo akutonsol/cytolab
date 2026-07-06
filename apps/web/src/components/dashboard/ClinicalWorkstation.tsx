@@ -119,34 +119,21 @@ export function ClinicalWorkstation({
           <div className="px-2.5 py-1 bg-indigo-600 rounded-full text-white text-[11px] font-bold">
             Focus Mode
           </div>
-          <div className="w-px h-4 bg-white/10" />
-          {/* Case breadcrumb */}
-          <div className="flex items-center gap-2">
-            <span className="text-white font-bold text-[13px]">{currentCase.id}</span>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${priorityColor}`}>
-              {currentCase.priority} Priority
-            </span>
-            <span className="text-white/50 text-[12px]">·</span>
-            <span className="text-white/80 text-[12px]">{currentCase.patientName}</span>
-            <span className="text-white/40 text-[11px]">· {currentCase.patientAge}{currentCase.patientGender}</span>
-            <span className="text-white/50 text-[12px]">·</span>
-            <span className="text-white/60 text-[12px]">{currentCase.specimenType}</span>
-          </div>
         </div>
 
         {/* Center — Keyboard shortcuts bar */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {[
             { key: 'Esc', label: 'Exit Focus' },
             { key: '← →', label: 'Next / Prev Case' },
             { key: 'R', label: 'Begin Review' },
             { key: '?', label: 'Shortcuts' },
           ].map(({ key, label }) => (
-            <div key={key} className="flex items-center gap-1.5">
-              <kbd className="text-[10px] bg-white/10 text-white/70 px-1.5 py-0.5 rounded font-mono border border-white/10">
+            <div key={key} className="flex items-center gap-1">
+              <kbd className="text-[9px] bg-white/10 text-white/60 px-1.5 py-0.5 rounded font-mono border border-white/10 leading-tight">
                 {key}
               </kbd>
-              <span className="text-white/40 text-[11px]">{label}</span>
+              <span className="text-white/35 text-[10px]">{label}</span>
             </div>
           ))}
         </div>
@@ -176,6 +163,37 @@ export function ClinicalWorkstation({
               <div className="text-white/40 text-[10px]">Cytotechnologist</div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Case breadcrumb bar */}
+      <div className="flex items-center gap-8 px-5 py-2 border-b border-white/8"
+        style={{ background: 'rgba(12,14,24,0.97)', height: '44px' }}>
+        <div>
+          <div className="text-[10px] font-semibold text-white/30 uppercase tracking-widest mb-0.5">Current Case</div>
+          <div className="flex items-center gap-2">
+            <span className="text-white font-bold text-[14px]">{currentCase.id}</span>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${priorityColor}`}>
+              {currentCase.priority} Priority
+            </span>
+          </div>
+        </div>
+        <div className="w-px h-6 bg-white/10" />
+        <div>
+          <div className="text-[10px] font-semibold text-white/30 uppercase tracking-widest mb-0.5">Patient</div>
+          <div className="text-white text-[13px] font-semibold">
+            {currentCase.patientName} · <span className="text-white/50">{currentCase.patientAge}{currentCase.patientGender}</span>
+          </div>
+        </div>
+        <div className="w-px h-6 bg-white/10" />
+        <div>
+          <div className="text-[10px] font-semibold text-white/30 uppercase tracking-widest mb-0.5">Specimen</div>
+          <div className="text-white text-[13px] font-semibold">{currentCase.specimenType}</div>
+        </div>
+        <div className="w-px h-6 bg-white/10" />
+        <div>
+          <div className="text-[10px] font-semibold text-white/30 uppercase tracking-widest mb-0.5">Accession</div>
+          <div className="text-white text-[13px] font-mono">{currentCase.accessionNumber}</div>
         </div>
       </div>
 
@@ -227,7 +245,7 @@ export function ClinicalWorkstation({
         {/* Left — Specimen Queue */}
         <div
           className="flex flex-col border-r border-white/8"
-          style={{ width: '280px', flexShrink: 0, background: 'rgba(10,11,20,0.95)' }}
+          style={{ width: '320px', flexShrink: 0, background: 'rgba(10,11,20,0.95)' }}
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
             <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest">
@@ -242,7 +260,7 @@ export function ClinicalWorkstation({
               </button>
             </div>
           </div>
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto p-2" style={{ fontSize: '11px' }}>
             {specimenQueue}
           </div>
         </div>
@@ -256,9 +274,6 @@ export function ClinicalWorkstation({
             <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest">
               AI Cytology Model
             </span>
-            <div className="flex items-center gap-2 text-[11px] text-white/30">
-              <span>Accession: {currentCase.accessionNumber}</span>
-            </div>
           </div>
           <div className="flex-1 overflow-hidden relative">
             {aiModel}
@@ -289,7 +304,7 @@ export function ClinicalWorkstation({
         {/* Right — AI Findings */}
         <div
           className="flex flex-col border-l border-white/8"
-          style={{ width: '320px', flexShrink: 0, background: 'rgba(10,11,20,0.95)' }}
+          style={{ width: '360px', flexShrink: 0, background: 'rgba(10,11,20,0.95)' }}
         >
           <div className="px-4 py-2.5 border-b border-white/8">
             <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest">
