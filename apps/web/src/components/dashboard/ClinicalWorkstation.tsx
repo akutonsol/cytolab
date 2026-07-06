@@ -236,7 +236,7 @@ export function ClinicalWorkstation({
 
       {/* ── MAIN THREE COLUMNS ── */}
       <div
-        className="flex flex-1 min-h-0 gap-0"
+        className="flex gap-0"
         style={{
           flex: 1,
           minHeight: 0,
@@ -267,10 +267,20 @@ export function ClinicalWorkstation({
           <div className="flex-1 overflow-auto p-2" style={{ fontSize: '11px' }}>
             <div className="workstation-queue" style={{ height: '100%', overflow: 'auto' }}>
               <style>{`
+                /* The queue card is an inline-styled <div> (background:#fff,
+                   height:540) with no classes; target every direct div child so
+                   !important beats its inline background + fixed height. */
+                .workstation-queue > div {
+                  height: 100% !important;
+                  background: transparent !important;
+                  box-shadow: none !important;
+                  border: none !important;
+                }
                 .workstation-queue .rounded-2xl,
                 .workstation-queue .rounded-xl {
                   background: transparent !important;
                   border-color: rgba(255,255,255,0.06) !important;
+                  box-shadow: none !important;
                 }
                 .workstation-queue h2,
                 .workstation-queue h3,
@@ -312,12 +322,17 @@ export function ClinicalWorkstation({
               AI Cytology Model
             </span>
           </div>
-          <div className="flex-1 overflow-hidden relative">
+          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
             <style>{`
-              .workstation-model > div,
-              .workstation-model .bg-white { background: transparent !important; }
+              .workstation-model > div:first-child {
+                height: 100% !important;
+                min-height: 100% !important;
+                border-radius: 0 !important;
+                border: none !important;
+                background: transparent !important;
+              }
             `}</style>
-            <div className="workstation-model">
+            <div className="workstation-model" style={{ height: '100%' }}>
               {aiModel}
             </div>
             {/* Zoom controls */}
@@ -354,7 +369,7 @@ export function ClinicalWorkstation({
               AI Findings
             </span>
           </div>
-          <div className="flex-1 overflow-auto">
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden' }}>
             <style>{`
               .workstation-findings .bg-white,
               .workstation-findings .bg-gray-50 { background: rgba(255,255,255,0.04) !important; }
@@ -373,8 +388,19 @@ export function ClinicalWorkstation({
               .workstation-findings .text-amber-800,
               .workstation-findings .text-amber-900 { color: #fbbf24 !important; }
               .workstation-findings .bg-gray-100 { background: rgba(255,255,255,0.06) !important; }
+              /* The findings card is inline-styled (height:540, background:white,
+                 overflowY:auto) with no classes — unclip it so the full content
+                 flows and the column scrolls to show Review Workflow + Begin Review. */
+              .workstation-findings > div {
+                height: auto !important;
+                min-height: 100% !important;
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                overflow: visible !important;
+              }
             `}</style>
-            <div className="workstation-findings">
+            <div className="workstation-findings" style={{ padding: '12px' }}>
               {aiFindings}
             </div>
           </div>
