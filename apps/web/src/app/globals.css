@@ -1012,7 +1012,7 @@ select option {
 ========================================== */
 
 :root {
-  --nav-height: 96px;
+  --nav-height: 84px; /* reduced from 96px */
 }
 
 .top-navigation {
@@ -1065,8 +1065,8 @@ select option {
 
 .nav-search {
   width: 420px;
-  height: 52px;
-  border-radius: 18px;
+  height: 46px;
+  border-radius: 14px;
   background: #ffffff;
   border: 1px solid rgba(50, 55, 70, 0.08);
   padding: 0 20px;
@@ -1084,18 +1084,18 @@ select option {
 .navigation-menu {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
 }
 
 .nav-item {
-  height: 54px;
-  padding: 0 22px;
-  border-radius: 18px;
+  height: 46px;
+  padding: 0 14px;
+  border-radius: 14px;
   background: #ffffff;
   border: 1px solid rgba(50, 55, 70, 0.08);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   transition: 0.25s;
   cursor: pointer;
 }
@@ -1114,8 +1114,8 @@ select option {
 
 .clock-card {
   min-width: 165px;
-  height: 54px;
-  border-radius: 18px;
+  height: 46px;
+  border-radius: 14px;
   background: #ffffff;
   border: 1px solid rgba(50, 55, 70, 0.08);
   display: flex;

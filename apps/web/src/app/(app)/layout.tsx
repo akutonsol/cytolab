@@ -8,7 +8,7 @@ import {
   ReadOutlined, SearchOutlined, SettingOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { Megaphone, Microscope, Mic, ShieldAlert, ToggleRight, X } from 'lucide-react';
+import { Megaphone, Microscope, Mic, Moon, ShieldAlert, Sun, ToggleRight, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useDictationContext } from '@/lib/dictation-context';
 import { ACCOUNT_GROUP_KEY, ANALYTICS_ITEM, HOME_ITEM, NAV_GROUPS } from '@/lib/nav';
@@ -27,6 +27,23 @@ const ANN_BANNER: Record<string, { bg: string; border: string; fg: string }> = {
   WARNING: { bg: '#FFFBEB', border: '#FDE68A', fg: '#A16207' },
   CRITICAL: { bg: '#FEF2F2', border: '#FECACA', fg: '#DC2626' },
 };
+
+// Workspace-header greeting helpers (time-of-day aware). Zero-orange: the sun/
+// moon cue is a lucide icon in brand indigo, not an emoji (☀️ renders orange
+// and would trip the detector).
+function getGreetingParts(): { text: string; night: boolean } {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return { text: 'Good Morning,', night: false };
+  if (hour >= 12 && hour < 17) return { text: 'Good Afternoon,', night: false };
+  if (hour >= 17 && hour < 21) return { text: 'Good Evening,', night: true };
+  return { text: 'Night Shift —', night: true };
+}
+function getDayLabel(): string {
+  return new Date().toLocaleDateString('en-US', { weekday: 'long' });
+}
+function getDateLabel(): string {
+  return new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+}
 
 function Logo() {
   return (
@@ -97,6 +114,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // Persistent nag: the account must use MFA but hasn't set it up yet.
   const mfaSetupNeeded = !!profile?.mfaRequired && !profile?.mfaEnabled;
   const screens = Grid.useBreakpoint();
+
+  // Live context for the workspace-header line. Reuses the dashboard's cached
+  // query keys (React Query dedupes — no extra network call on /dashboard).
+  const { data: homeData } = useQuery({
+    queryKey: ['dashboard-home'],
+    queryFn: () => api.get('/analytics/home').then((r) => r.data as { priorityRecords?: unknown[] }),
+    enabled: isAuthed,
+    staleTime: 60_000,
+  });
+  const { data: overview } = useQuery({
+    queryKey: ['patients-overview'],
+    queryFn: () => api.get('/patients/overview').then((r) => r.data as { kpis?: { pendingRequisitions?: number } }),
+    enabled: isAuthed,
+    staleTime: 60_000,
+  });
 
   // Session-expired redirects carry ?reason so the login page can explain why.
   const sessionExpiredRef = useRef(false);
@@ -179,6 +211,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const greetingName = profile?.firstName?.trim() || firstName;
   const role = claims?.roles?.[0] ?? 'User';
 
+  // Workspace-header context line. Live counts when the dashboard data is
+  // available, otherwise product-branded fallbacks.
+  const greeting = getGreetingParts();
+  const dayLabel = getDayLabel();
+  const dateLabel = getDateLabel();
+  const activeCount = homeData?.priorityRecords?.length;
+  const awaitingCount = overview?.kpis?.pendingRequisitions;
+  const activeLabel = activeCount != null ? `${activeCount} Active Cases` : 'Cytolab LIMS';
+  const awaitingLabel = awaitingCount != null ? `${awaitingCount} Awaiting Review` : 'Clinical Dashboard';
+
   // Account (avatar) dropdown: email header + admin/platform sections + Settings + Sign out.
   const accountMenu: MenuProps = {
     items: [
@@ -242,7 +284,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');`}</style>
 
       <header className="top-navigation">
-        <div className="nav-inner" style={{ flexDirection: 'column', alignItems: 'stretch', justifyContent: 'center', gap: 8, paddingTop: showCenter ? 12 : 8, paddingBottom: showCenter ? 8 : 8 }}>
+        <div className="nav-inner" style={{ flexDirection: 'column', alignItems: 'stretch', justifyContent: 'center', gap: 6, paddingTop: showCenter ? 8 : 6, paddingBottom: 6 }}>
           {/* ROW 1 — logo + subtitle (left), search + action icons (right).
               zIndex kept above the pills row so the clock dropdown overlays them. */}
           <div style={{ position: 'relative', zIndex: 40, display: 'flex', alignItems: 'center', gap: 16, minHeight: 44 }}>
@@ -296,9 +338,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginTop: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 {accountButton}
-                <div className="user-greeting ml-3">
-                  <div className="text-lg text-gray-700">Hi, {greetingName}!</div>
-                  <div className="text-xl font-bold text-gray-900">Welcome Back</div>
+                <div className="mx-4 h-8 w-px bg-gray-200" />
+                <div className="flex flex-col gap-0.5">
+                  {/* Line 1 — contextual greeting */}
+                  <div className="flex items-center gap-1.5 text-[15px] font-semibold leading-tight text-gray-900">
+                    {greeting.night ? <Moon size={14} className="text-indigo-400" /> : <Sun size={14} className="text-indigo-400" />}
+                    <span>{greeting.text} {greetingName}</span>
+                  </div>
+                  {/* Line 2 — live context line */}
+                  <div className="whitespace-nowrap text-[13px] font-medium text-gray-400">
+                    {dayLabel} • {dateLabel} • {activeLabel} • {awaitingLabel}
+                  </div>
                 </div>
               </div>
               <NavPills justify="flex-end" />

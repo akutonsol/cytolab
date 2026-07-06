@@ -61,7 +61,7 @@ export function NavPills({ justify = 'flex-end' }: { justify?: React.CSSProperti
   );
 
   return (
-    <div className="navigation-menu" style={{ flexWrap: 'wrap', justifyContent: justify }}>
+    <div className="navigation-menu" style={{ flexWrap: 'nowrap', justifyContent: justify }}>
       {can(HOME_ITEM.permission) && Pill(pathname === HOME_ITEM.path, createElement(HOME_ITEM.icon!, { size: 20, strokeWidth: 1.9 }), HOME_ITEM.label, () => router.push(HOME_ITEM.path))}
       {centerGroups.map((g) => (
         <Dropdown key={g.key} trigger={['hover', 'click']} menu={{ items: g.visible.map((i: any) => ({ key: i.path, label: itemLabel(i) })), onClick: ({ key }) => router.push(key) }}>
