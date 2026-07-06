@@ -82,7 +82,7 @@ export function ClinicalWorkstation({
   const stepColor: Record<string, { dot: string; label: string; time: string }> = {
     done: { dot: '#10b981', label: '#34d399', time: '#10b981' },
     active: { dot: '#6366f1', label: '#818cf8', time: '#818cf8' },
-    pending: { dot: 'rgba(255,255,255,0.15)', label: 'rgba(255,255,255,0.3)', time: 'rgba(255,255,255,0.2)' },
+    pending: { dot: 'rgba(255,255,255,0.3)', label: 'rgba(255,255,255,0.62)', time: 'rgba(255,255,255,0.45)' },
   };
 
   const workflowSteps = [
@@ -599,10 +599,10 @@ export function ClinicalWorkstation({
               }`}
             >
               <div>
-                <div style={{ fontSize: '10px', fontWeight: 600, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                <div style={{ fontSize: '10px', fontWeight: 600, color: 'rgba(255,255,255,0.62)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   {label}
                 </div>
-                {sub && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)' }}>{sub}</div>}
+                {sub && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)' }}>{sub}</div>}
               </div>
               <div style={{ fontSize: '24px', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>{value}</div>
             </div>
