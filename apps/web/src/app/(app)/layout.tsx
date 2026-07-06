@@ -395,7 +395,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         );
       })}
 
-      <main style={{ position: 'relative', zIndex: 1, flex: 1, padding: '16px 0', background: 'var(--color-bg-main)' }}>
+      <main style={{ position: 'relative', zIndex: 1, flex: 1, padding: '16px 0', background: 'transparent' }}>
         <div className="dashboard page-container">{children}</div>
       </main>
 
