@@ -34,7 +34,7 @@ function PillBackdrop() {
   return (
     <div className="pointer-events-none absolute left-[49%] top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-6 xl:flex" aria-hidden>
       <div className="w-[88px] rounded-full bg-white/10" style={{ height: 520, marginTop: 40 }} />
-      <div className="w-[250px] rounded-full bg-white/10" style={{ height: 720 }} />
+      <div className="w-[190px] rounded-full bg-white/10" style={{ height: 720 }} />
       <div className="w-[88px] rounded-full bg-white/10" style={{ height: 480, marginTop: 90 }} />
     </div>
   );
