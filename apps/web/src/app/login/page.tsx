@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import {
@@ -29,87 +29,10 @@ const TRUST = [
   { Icon: Clock, label: '99.9% Uptime', desc: 'Reliable. Always.' },
 ];
 
-// A digital specimen: the flat 3D vial render given layered life — a slow idle
-// rotation, a swaying-liquid sheen, moving glass reflections, a periodic barcode
-// scan light, and a mouse-driven parallax tilt. Overlay layers are masked to the
-// vial silhouette so the light effects sit on the tube.
-function DigitalSpecimen() {
-  const tiltRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    let raf = 0;
-    let targetX = 0, targetY = 0, curX = 0, curY = 0;
-    const onMove = (e: MouseEvent) => {
-      targetX = (e.clientX / window.innerWidth - 0.5) * 2;   // -1..1
-      targetY = (e.clientY / window.innerHeight - 0.5) * 2;
-    };
-    const tick = () => {
-      curX += (targetX - curX) * 0.08;
-      curY += (targetY - curY) * 0.08;
-      if (tiltRef.current) {
-        tiltRef.current.style.transform =
-          `translate(${(curX * 14).toFixed(1)}px, ${(curY * 9).toFixed(1)}px) ` +
-          `rotateX(${(-curY * 9).toFixed(2)}deg) rotateY(${(curX * 12).toFixed(2)}deg)`;
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    window.addEventListener('mousemove', onMove);
-    raf = requestAnimationFrame(tick);
-    return () => { window.removeEventListener('mousemove', onMove); cancelAnimationFrame(raf); };
-  }, []);
-
-  const W = 150, H = 644;
-  const maskStyle: React.CSSProperties = {
-    WebkitMaskImage: 'url(/specimen-tube-3d-cut.png)',
-    maskImage: 'url(/specimen-tube-3d-cut.png)',
-    WebkitMaskSize: '100% 100%',
-    maskSize: '100% 100%',
-    WebkitMaskRepeat: 'no-repeat',
-    maskRepeat: 'no-repeat',
-  };
-  return (
-    <div className="pointer-events-none absolute inset-0 z-[5] hidden xl:block" style={{ perspective: '850px' }} aria-hidden>
-      <div className="absolute left-[49%] top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ transformStyle: 'preserve-3d' }}>
-        <div ref={tiltRef} style={{ transformStyle: 'preserve-3d' }}>
-          <div className="specimen-idle">
-            <div className="relative" style={{ width: W, height: H }}>
-              <img
-                src="/specimen-tube-3d-cut.png"
-                alt=""
-                className="absolute inset-0 h-full w-full select-none drop-shadow-[0_20px_45px_rgba(0,0,0,0.30)]"
-              />
-              {/* Liquid sway — soft sheen over the blood */}
-              <div className="absolute inset-0" style={maskStyle}>
-                <div
-                  className="specimen-liquid absolute inset-x-0"
-                  style={{ top: '63%', bottom: 0, background: 'linear-gradient(180deg, rgba(255,80,80,0.22), rgba(120,0,0,0) 40%)' }}
-                />
-              </div>
-              {/* Moving glass reflection */}
-              <div className="absolute inset-0 overflow-hidden" style={maskStyle}>
-                <div
-                  className="specimen-sheen absolute inset-0"
-                  style={{ background: 'linear-gradient(112deg, transparent 34%, rgba(255,255,255,0.38) 49%, transparent 64%)' }}
-                />
-              </div>
-              {/* Barcode scan light */}
-              <div className="absolute inset-0" style={maskStyle}>
-                <div
-                  className="specimen-scan absolute inset-x-0"
-                  style={{ top: '34%', height: '10px', mixBlendMode: 'screen', filter: 'blur(2px)', background: 'linear-gradient(180deg, transparent, rgba(150,220,255,0.95), transparent)' }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // A wide central "tube" pill that frames the vial, flanked by two slimmer pills.
 function PillBackdrop() {
   return (
-    <div className="specimen-pills pointer-events-none absolute left-[49%] top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-6 xl:flex" aria-hidden>
+    <div className="pointer-events-none absolute left-[49%] top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-6 xl:flex" aria-hidden>
       <div className="w-[88px] rounded-full bg-white/10" style={{ height: 520, marginTop: 40 }} />
       <div className="w-[190px] rounded-full bg-white/10" style={{ height: 720 }} />
       <div className="w-[88px] rounded-full bg-white/10" style={{ height: 480, marginTop: 90 }} />
@@ -196,8 +119,14 @@ export default function LoginPage() {
         <PillBackdrop />
       </div>
 
-      {/* Specimen vial — digital specimen with layered motion + parallax. */}
-      <DigitalSpecimen />
+      {/* Specimen vial — static 3D render (3d-specimen.png cutout). */}
+      <div className="pointer-events-none absolute inset-0 z-[5] hidden xl:block" aria-hidden>
+        <img
+          src="/specimen-tube-3d-cut.png"
+          alt=""
+          className="absolute left-[49%] top-1/2 h-[640px] w-auto -translate-x-1/2 -translate-y-1/2 select-none drop-shadow-[0_20px_45px_rgba(0,0,0,0.28)]"
+        />
+      </div>
 
       <div className="relative z-10 flex min-h-screen flex-col">
         {/* Header */}
