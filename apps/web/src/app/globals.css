@@ -756,17 +756,6 @@ select option {
 }
 .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
 
-/* Login page: continuous slow Y-axis spin for the blood vial. */
-@keyframes vialSpin {
-  from { transform: rotateY(0deg); }
-  to { transform: rotateY(360deg); }
-}
-.animate-vial-spin {
-  animation: vialSpin 8s linear infinite;
-  transform-style: preserve-3d;
-  transform-origin: center center;
-}
-
 /* Login page: form-card entrance. */
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateY(20px); }
