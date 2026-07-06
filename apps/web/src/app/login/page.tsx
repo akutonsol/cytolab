@@ -35,7 +35,7 @@ const TRUST = [
 function SpinningVial() {
   const N = 48;                          // strip count around the cylinder
   const H = 600;                         // on-screen tube height (px)
-  const Wtex = Math.round(0.2832 * H);   // un-stretched image width (aspect 435:1536)
+  const Wtex = Math.round(0.2244 * H);   // un-stretched image width (aspect 313:1395)
   const R = Wtex / Math.PI;              // radius: image spans the front 180deg arc
   const sw = (2 * Math.PI * R) / N;      // display width per strip
   // Texture u wraps front (0->1) then mirrors on the back (1->0) so the seams
