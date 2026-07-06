@@ -338,9 +338,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         );
       })}
 
-      <main className="premium-scroll" style={{ position: 'relative', zIndex: 1, flex: 1, overflow: 'auto', background: 'var(--color-bg-main)' }}>
-        <div className="mx-auto w-full max-w-[1440px] px-6 py-4">{children}</div>
-      </main>
+      <main className="premium-scroll" style={{ position: 'relative', zIndex: 1, flex: 1, overflow: 'auto', padding: 16, background: 'var(--color-bg-main)' }}>{children}</main>
 
       <Drawer title={<Logo />} placement="left" width={300} open={drawerOpen} onClose={() => setDrawerOpen(false)} styles={{ body: { padding: 0 } }}>
         <Menu mode="inline" selectedKeys={[pathname]} defaultOpenKeys={NAV_GROUPS.map((g) => g.key)} items={drawerMenu} onClick={({ key }) => navigate(key)} style={{ borderInlineEnd: 'none' }} />
