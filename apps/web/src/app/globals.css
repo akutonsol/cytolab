@@ -777,10 +777,10 @@ select option {
 /* Login page: "digital specimen" — layered life on the flat 3D vial render. */
 /* Slow idle rotation (perspective keeps it from going edge-on). */
 @keyframes specimenIdle {
-  0%, 100% { transform: rotateY(-13deg); }
-  50%      { transform: rotateY(13deg); }
+  0%, 100% { transform: rotateY(-16deg); }
+  50%      { transform: rotateY(16deg); }
 }
-.specimen-idle { animation: specimenIdle 16s ease-in-out infinite; transform-style: preserve-3d; }
+.specimen-idle { animation: specimenIdle 9s ease-in-out infinite; transform-style: preserve-3d; }
 
 /* Moving glass reflection sweeping diagonally across the tube. */
 @keyframes specimenSheen {

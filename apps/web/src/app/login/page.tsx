@@ -43,11 +43,12 @@ function DigitalSpecimen() {
       targetY = (e.clientY / window.innerHeight - 0.5) * 2;
     };
     const tick = () => {
-      curX += (targetX - curX) * 0.06;
-      curY += (targetY - curY) * 0.06;
+      curX += (targetX - curX) * 0.08;
+      curY += (targetY - curY) * 0.08;
       if (tiltRef.current) {
         tiltRef.current.style.transform =
-          `rotateX(${(-curY * 4).toFixed(2)}deg) rotateY(${(curX * 5).toFixed(2)}deg)`;
+          `translate(${(curX * 14).toFixed(1)}px, ${(curY * 9).toFixed(1)}px) ` +
+          `rotateX(${(-curY * 9).toFixed(2)}deg) rotateY(${(curX * 12).toFixed(2)}deg)`;
       }
       raf = requestAnimationFrame(tick);
     };
@@ -66,7 +67,7 @@ function DigitalSpecimen() {
     maskRepeat: 'no-repeat',
   };
   return (
-    <div className="pointer-events-none absolute inset-0 z-[5] hidden xl:block" style={{ perspective: '1400px' }} aria-hidden>
+    <div className="pointer-events-none absolute inset-0 z-[5] hidden xl:block" style={{ perspective: '850px' }} aria-hidden>
       <div className="absolute left-[49%] top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ transformStyle: 'preserve-3d' }}>
         <div ref={tiltRef} style={{ transformStyle: 'preserve-3d' }}>
           <div className="specimen-idle">
