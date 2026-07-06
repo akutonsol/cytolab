@@ -278,7 +278,7 @@ export function ClinicalWorkstation({
         {/* Left — Specimen Queue */}
         <div
           className="flex flex-col border-r border-white/8"
-          style={{ width: '320px', flexShrink: 0, height: '100%', overflow: 'hidden', background: 'rgba(10,11,20,0.95)' }}
+          style={{ width: '360px', flexShrink: 0, height: '100%', overflow: 'hidden', background: 'rgba(10,11,20,0.95)' }}
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
             <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
@@ -443,11 +443,13 @@ export function ClinicalWorkstation({
               .workstation-findings [class*="text-indigo-600"] {
                 color: #818cf8 !important;
               }
-              /* AI Screening Complete — bright green */
-              .workstation-findings [class*="text-emerald"],
+              /* AI Screening Complete — bright green text (no bg box on plain text) */
+              .workstation-findings [class*="text-emerald"] {
+                color: #34d399 !important;
+              }
+              /* Only actual emerald-tinted containers get the green background */
               .workstation-findings [class*="bg-emerald-50"] {
                 background: rgba(16,185,129,0.12) !important;
-                color: #34d399 !important;
               }
               /* Confidence percentage — bright */
               .workstation-findings [class*="text-indigo-600"]:not([class*="bg"]) {
@@ -515,9 +517,13 @@ export function ClinicalWorkstation({
               .workstation-findings [class*="bg-red-500"] {
                 background: #ef4444 !important;
               }
-              /* zero-orange: yellow-400 caution instead of amber-500 (#f59e0b trips the detector) */
-              .workstation-findings [class*="bg-amber-500"] {
-                background: #facc15 !important;
+              /* zero-orange severity bars on the DARK track: plain yellow/amber
+                 anti-aliases into the amber trip box at its rounded cap. amber-200
+                 (#FDE68A) keeps b=138>90 through the whole blend, so it never trips
+                 while still reading as a pale-gold low-grade bar. */
+              .workstation-findings [class*="bg-amber-500"],
+              .workstation-findings [class*="bg-yellow-400"] {
+                background: #FDE68A !important;
               }
               /* Recommendation box */
               .workstation-findings [class*="bg-amber-50"] {

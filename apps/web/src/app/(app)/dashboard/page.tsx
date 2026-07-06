@@ -302,13 +302,29 @@ export default function DashboardPage() {
   const emailName = (claims?.email ?? '').split('@')[0].split(/[._-]/)[0].replace(/[^a-z]/gi, '');
   const firstName = me?.firstName?.trim() || ov?.greeting?.firstName || (emailName ? emailName[0].toUpperCase() + emailName.slice(1) : 'there');
 
-  const focusSpecimenQueue = (
-            <div style={{ height: 540, background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+  // Dark = rendered inside the Clinical Workstation overlay (matches the dark
+  // reference); light = the normal dashboard grid. Same content, themed palette.
+  const buildSpecimenQueue = (dark: boolean) => {
+    const q = dark
+      ? { panelBg: 'transparent', panelBorder: 'transparent', panelShadow: 'none',
+          title: 'rgba(255,255,255,0.92)', pillBg: 'rgba(255,255,255,0.06)', pillBorder: 'rgba(255,255,255,0.12)', pillText: 'rgba(255,255,255,0.7)',
+          cardBg: 'rgba(255,255,255,0.02)', cardBorder: 'rgba(255,255,255,0.06)', hoverBg: 'rgba(255,255,255,0.05)',
+          selBg: 'rgba(99,102,241,0.12)', selBorder: 'rgba(129,140,248,0.55)',
+          caseId: 'rgba(255,255,255,0.92)', spec: 'rgba(255,255,255,0.55)', received: 'rgba(255,255,255,0.35)',
+          aiText: '#818CF8', viewAll: '#818CF8', priorityBadgeBg: 'rgba(255,255,255,0.08)', priorityBadgeText: 'rgba(255,255,255,0.6)' }
+      : { panelBg: 'white', panelBorder: '#EEF2F7', panelShadow: '0 4px 24px rgba(0,0,0,0.04)',
+          title: '#0F172A', pillBg: '#F8FAFC', pillBorder: '#E2E8F0', pillText: '#475569',
+          cardBg: 'transparent', cardBorder: 'transparent', hoverBg: '#F8FAFC',
+          selBg: '#EEF2FF', selBorder: '#C7D2FE',
+          caseId: '#0F172A', spec: '#475569', received: '#9ca3af',
+          aiText: '#4F46E5', viewAll: '#4F46E5', priorityBadgeBg: '#F1F5F9', priorityBadgeText: '#64748B' };
+    return (
+            <div style={{ height: 540, background: q.panelBg, borderRadius: 20, padding: '20px', border: `1px solid ${q.panelBorder}`, boxShadow: q.panelShadow, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <span style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Specimen Queue</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 999, padding: '4px 10px', cursor: 'pointer' }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>All Types</span>
-                  <ChevronDown size={12} color="#475569" />
+                <span style={{ fontSize: 18, fontWeight: 700, color: q.title, fontFamily: 'Geist,sans-serif' }}>Specimen Queue</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: q.pillBg, border: `1px solid ${q.pillBorder}`, borderRadius: 999, padding: '4px 10px', cursor: 'pointer' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: q.pillText }}>All Types</span>
+                  <ChevronDown size={12} color={q.pillText} />
                 </div>
               </div>
               <div className="premium-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, overflowY: 'auto', minHeight: 0 }}>
@@ -323,47 +339,67 @@ export default function DashboardPage() {
                     : priority === 'Medium Priority' ? '#92400E' : '#10B981';
                   return (
                     <div key={r.id} onClick={() => setSelectedRecord(r)} title={priority}
-                      style={{ display: 'flex', alignItems: 'center', gap: 14, minHeight: 72, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: sel ? '#EEF2FF' : 'transparent', border: sel ? '1px solid #C7D2FE' : '1px solid transparent', transition: 'all 0.3s' }}
-                      onMouseEnter={(e) => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = '#F8FAFC'; }}
-                      onMouseLeave={(e) => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: 14, minHeight: 72, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: sel ? q.selBg : q.cardBg, border: sel ? `1px solid ${q.selBorder}` : `1px solid ${q.cardBorder}`, transition: 'all 0.3s' }}
+                      onMouseEnter={(e) => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = q.hoverBg; }}
+                      onMouseLeave={(e) => { if (!sel) (e.currentTarget as HTMLDivElement).style.background = q.cardBg; }}>
                       <SpecimenIcon type={r.specimen} size={56} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 2 }}>
                           <span style={{ width: 8, height: 8, borderRadius: '50%', background: stripe, flexShrink: 0 }} />
-                          <span style={{ fontSize: 14.5, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>{r.labNumber ?? '—'}</span>
+                          <span style={{ fontSize: 14.5, fontWeight: 700, color: q.caseId, fontFamily: 'Geist,sans-serif', whiteSpace: 'nowrap' }}>{r.labNumber ?? '—'}</span>
+                          <span style={{ fontSize: 10, fontWeight: 600, color: q.priorityBadgeText, background: q.priorityBadgeBg, borderRadius: 5, padding: '1px 7px', whiteSpace: 'nowrap', flexShrink: 0 }}>{priority}</span>
                         </div>
-                        <div style={{ fontSize: 12.5, color: '#475569', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: 12.5, color: q.spec, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {specLabel(r.specimen)}{r.patient ? ` · ${r.patient}` : ''}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 3 }}>
-                          <span style={{ fontSize: 11, color: '#9ca3af' }}>Received {new Date(r.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span style={{ fontSize: 11, color: q.received }}>Received {new Date(r.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#818CF8' }} />
-                            <span style={{ fontSize: 10, fontWeight: 600, color: '#4F46E5' }}>AI Screening Complete</span>
+                            <span style={{ fontSize: 10, fontWeight: 600, color: q.aiText }}>AI Screening Complete</span>
                           </span>
                         </div>
                       </div>
                       {sel
-                        ? <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: '#4F46E5' }} />
+                        ? <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: dark ? '#818CF8' : '#4F46E5' }} />
                         : <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: dotFor(r.status) }} />}
                     </div>
                   );
                 })}
               </div>
-              <button onClick={() => router.push('/records')} style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: '#4F46E5', background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0' }}>
+              <button onClick={() => router.push('/records')} style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: q.viewAll, background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0' }}>
                 View all specimens <ArrowUpRight size={14} />
               </button>
             </div>
-  );
-  const focusAiModel = (
-            <div className="ai-model-container" style={{ height: 540, background: '#FFFFFF', borderRadius: 20, border: '2px solid #EEF2FF', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    );
+  };
+  const buildAiModel = (dark: boolean) => {
+    const m = dark
+      ? { panelBg: 'transparent', panelBorder: 'rgba(255,255,255,0.06)', title: 'rgba(255,255,255,0.92)',
+          livePillBg: 'rgba(255,255,255,0.08)', livePillShadow: 'none', liveText: '#34D399', scanText: 'rgba(255,255,255,0.5)',
+          findingLabel: 'rgba(255,255,255,0.95)', findingConf: 'rgba(255,255,255,0.45)',
+          attnText: '#F87171', attnBg: 'rgba(239,68,68,0.15)',
+          cardBg: 'rgba(18,20,38,0.9)', cardBorder: 'rgba(255,255,255,0.1)', cardShadow: '0 8px 24px rgba(0,0,0,0.4)',
+          cardLabel: 'rgba(255,255,255,0.45)', cardValue: 'rgba(255,255,255,0.92)', cardSub: 'rgba(255,255,255,0.55)',
+          progTrack: 'rgba(255,255,255,0.1)', mutedTime: 'rgba(255,255,255,0.35)', accent: '#818CF8', cardDivider: 'rgba(255,255,255,0.08)',
+          viewBtnBg: 'rgba(255,255,255,0.08)', viewBtnBorder: 'rgba(255,255,255,0.12)', viewBtnShadow: 'none', viewBtnText: '#A5B4FC', hint: 'rgba(255,255,255,0.4)' }
+      : { panelBg: '#FFFFFF', panelBorder: '#EEF2FF', title: '#0F172A',
+          livePillBg: 'rgba(255,255,255,0.9)', livePillShadow: '0 1px 2px rgba(0,0,0,0.05)', liveText: '#047857', scanText: '#6b7280',
+          findingLabel: '#1E1B4B', findingConf: '#6B7280',
+          attnText: '#991B1B', attnBg: '#FEF2F2',
+          cardBg: 'rgba(255,255,255,0.92)', cardBorder: 'rgba(79,70,229,0.12)', cardShadow: '0 8px 24px rgba(79,70,229,0.12)',
+          cardLabel: '#475569', cardValue: '#0F172A', cardSub: '#475569',
+          progTrack: '#EEF2FF', mutedTime: '#9ca3af', accent: '#4F46E5', cardDivider: '#F3F4F6',
+          viewBtnBg: 'white', viewBtnBorder: '#EEF2F7', viewBtnShadow: '0 6px 18px rgba(79,70,229,0.10)', viewBtnText: '#4F46E5', hint: '#475569' };
+    return (
+            <div className="ai-model-container" style={{ height: 540, background: m.panelBg, borderRadius: 20, border: `2px solid ${m.panelBorder}`, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               {/* Header (overlays the stage so the head can fill the panel) */}
               <div style={{ padding: '20px 24px 0', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 4 }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>AI Cytology Model</div>
-                <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 shadow-sm">
+                <div style={{ fontSize: 18, fontWeight: 700, color: m.title, fontFamily: 'Geist,sans-serif' }}>AI Cytology Model</div>
+                <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5" style={{ background: m.livePillBg, boxShadow: m.livePillShadow }}>
                   <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" style={{ animationDuration: '1.5s' }} />
-                  <span className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Live</span>
-                  <span className="text-[11px] font-medium text-gray-500">Scanning</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: m.liveText }}>Live</span>
+                  <span className="text-[11px] font-medium" style={{ color: m.scanText }}>Scanning</span>
                 </div>
               </div>
 
@@ -424,12 +460,12 @@ export default function DashboardPage() {
                           <div key={i} style={{ position: 'absolute', left: LX, top: f.y, transform: 'translateY(-50%)', width: 210, zIndex: 3 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                               <div style={{ width: 10, height: 10, borderRadius: '50%', background: f.color, flexShrink: 0 }} />
-                              <span style={{ fontSize: 16, fontWeight: 800, color: '#1E1B4B' }}>{f.label}</span>
+                              <span style={{ fontSize: 16, fontWeight: 800, color: m.findingLabel }}>{f.label}</span>
                             </div>
-                            <div style={{ fontSize: 13, color: '#6B7280', marginLeft: 19, marginTop: 2 }}>Confidence {f.conf}%</div>
+                            <div style={{ fontSize: 13, color: m.findingConf, marginLeft: 19, marginTop: 2 }}>Confidence {f.conf}%</div>
                             {f.attention && (
                               <div style={{ marginLeft: 19, marginTop: 5 }}>
-                                <span style={{ fontSize: 11, fontWeight: 700, color: '#991B1B', background: '#FEF2F2', borderRadius: 6, padding: '2px 8px' }}>+ Attention</span>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: m.attnText, background: m.attnBg, borderRadius: 6, padding: '2px 8px' }}>+ Attention</span>
                               </div>
                             )}
                           </div>
@@ -441,63 +477,64 @@ export default function DashboardPage() {
               </div>
 
               {/* Processing Specimen overlay */}
-              <div style={{ position: 'absolute', left: 20, top: 'auto', bottom: 110, zIndex: 4, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(12px)', borderRadius: 16, padding: '14px 18px', border: '1px solid rgba(79,70,229,0.12)', boxShadow: '0 8px 24px rgba(79,70,229,0.12)', width: 220 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Processing Specimen</div>
+              <div style={{ position: 'absolute', left: 20, top: 'auto', bottom: 110, zIndex: 4, background: m.cardBg, backdropFilter: 'blur(12px)', borderRadius: 16, padding: '14px 18px', border: `1px solid ${m.cardBorder}`, boxShadow: m.cardShadow, width: 220 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: m.cardLabel, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Processing Specimen</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 10, background: 'transparent', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                     <SpecimenIcon type={selectedRecord?.specimen} size={36} />
                   </div>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{selectedRecord?.labNumber ?? '—'}</div>
-                    <div style={{ fontSize: 11, color: '#475569' }}>{selectedRecord?.specimen ? specLabel(selectedRecord.specimen) : 'No active specimen'}</div>
-                    <div style={{ fontSize: 11, color: '#475569', marginTop: 1 }}>{selectedRecord?.patient ?? ''}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: m.cardValue }}>{selectedRecord?.labNumber ?? '—'}</div>
+                    <div style={{ fontSize: 11, color: m.cardSub }}>{selectedRecord?.specimen ? specLabel(selectedRecord.specimen) : 'No active specimen'}</div>
+                    <div style={{ fontSize: 11, color: m.cardSub, marginTop: 1 }}>{selectedRecord?.patient ?? ''}</div>
                   </div>
                 </div>
                 {(() => {
                   const pct = PROGRESS_MAP[selectedRecord?.status ?? 'Pending'] ?? 5;
                   return (
                     <>
-                      <div style={{ fontSize: 11, color: '#475569', marginBottom: 6 }}>Scanning Cells…</div>
-                      <div style={{ height: 8, background: '#EEF2FF', borderRadius: 999, overflow: 'hidden', marginBottom: 4 }}>
+                      <div style={{ fontSize: 11, color: m.cardSub, marginBottom: 6 }}>Scanning Cells…</div>
+                      <div style={{ height: 8, background: m.progTrack, borderRadius: 999, overflow: 'hidden', marginBottom: 4 }}>
                         <div style={{ height: 8, borderRadius: 999, background: 'linear-gradient(90deg,#4F46E5,#6B21A8)', width: `${pct}%`, transition: 'width 0.5s ease-out' }} />
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#9ca3af' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: m.mutedTime }}>
                         <span>{pct}% Complete</span>
-                        <span style={{ fontFamily: 'monospace', color: '#4F46E5' }}>00:00:18</span>
+                        <span style={{ fontFamily: 'monospace', color: m.accent }}>00:00:18</span>
                       </div>
                     </>
                   );
                 })()}
-                <div style={{ marginTop: 8, fontSize: 11, color: '#475569' }}>
-                  <span style={{ fontWeight: 700, color: '#0F172A' }}>{cellsAnalyzed.toLocaleString()}</span> cells analyzed
+                <div style={{ marginTop: 8, fontSize: 11, color: m.cardSub }}>
+                  <span style={{ fontWeight: 700, color: m.cardValue }}>{cellsAnalyzed.toLocaleString()}</span> cells analyzed
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, paddingTop: 6, borderTop: '1px solid #F3F4F6' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, paddingTop: 6, borderTop: `1px solid ${m.cardDivider}` }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981' }} />
-                    <span style={{ fontSize: 10, color: '#9ca3af' }}>GPU Node 2</span>
+                    <span style={{ fontSize: 10, color: m.mutedTime }}>GPU Node 2</span>
                   </span>
-                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#4F46E5' }}>00:00:18</span>
+                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: m.accent }}>00:00:18</span>
                 </div>
               </div>
 
               {/* View selector pill + marker hint */}
               <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 24px 22px', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 4 }}>
                 <button onClick={() => setModelView((v) => (v + 1) % MODEL_VIEWS.length)}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'white', border: '1px solid #EEF2F7', boxShadow: '0 6px 18px rgba(79,70,229,0.10)', borderRadius: 999, padding: '11px 24px', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#4F46E5', fontFamily: 'Geist,sans-serif' }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2">
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: m.viewBtnBg, border: `1px solid ${m.viewBtnBorder}`, boxShadow: m.viewBtnShadow, borderRadius: 999, padding: '11px 24px', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: m.viewBtnText, fontFamily: 'Geist,sans-serif' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={m.viewBtnText} strokeWidth="2">
                     <circle cx="12" cy="12" r="3" /><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
                   </svg>
                   {MODEL_VIEWS[modelView]} View <ChevronDown size={14} />
                 </button>
-                <div style={{ textAlign: 'center', marginTop: 6, fontSize: 11, color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2">
+                <div style={{ textAlign: 'center', marginTop: 6, fontSize: 11, color: m.hint, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={m.hint} strokeWidth="2">
                     <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
                   </svg>
                   Click on markers to view cell details
                 </div>
               </div>
             </div>
-  );
+    );
+  };
   const focusAiFindings = (
             <div key={selectedRecord?.id} className="premium-scroll" style={{ height: 540, background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', overflowY: 'auto', animation: 'findingsFadeIn 0.4s ease-out' }}>
               <div className="flex h-full flex-col gap-3">
@@ -890,8 +927,8 @@ export default function DashboardPage() {
                 specimenType: 'Cervical Scrape',
                 accessionNumber: 'AC# CYD-100201',
               }}
-              specimenQueue={focusSpecimenQueue}
-              aiModel={focusAiModel}
+              specimenQueue={buildSpecimenQueue(true)}
+              aiModel={buildAiModel(true)}
               aiFindings={focusAiFindings}
               kpiStats={[
                 { label: 'Active Specimens', value: String(d.priorityRecords?.length || 0), sub: `${d.priorityRecords?.filter((r: any) => r.urgent).length || 0} urgent` },
@@ -905,8 +942,8 @@ export default function DashboardPage() {
               onPrevCase={() => {}}
             />
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.8fr) minmax(0, 1fr)', gap: 20, alignItems: 'stretch' }}>
-            {focusSpecimenQueue}
-            {focusAiModel}
+            {buildSpecimenQueue(false)}
+            {buildAiModel(false)}
             {focusAiFindings}
           </div>
           </div>
