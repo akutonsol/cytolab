@@ -278,7 +278,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', background: CANVAS, display: 'flex', flexDirection: 'column' }}>
+    <div className="premium-scroll" style={{ height: '100vh', position: 'relative', overflowY: 'auto', overflowX: 'hidden', scrollbarGutter: 'stable', background: CANVAS, display: 'flex', flexDirection: 'column' }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');`}</style>
 
       <header className="top-navigation">
@@ -395,7 +395,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         );
       })}
 
-      <main className="premium-scroll" style={{ position: 'relative', zIndex: 1, flex: 1, overflow: 'auto', padding: '16px 0', background: 'var(--color-bg-main)' }}>
+      <main style={{ position: 'relative', zIndex: 1, flex: 1, padding: '16px 0', background: 'var(--color-bg-main)' }}>
         <div className="dashboard">{children}</div>
       </main>
 
