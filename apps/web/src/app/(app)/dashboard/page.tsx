@@ -405,7 +405,10 @@ export default function DashboardPage() {
 
               {/* Analysis stage — head fills the panel, scalp near the top */}
               <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
-                <div style={{ position: 'relative', width: 760, height: 520, maxWidth: '100%', overflow: 'hidden' }}>
+                {/* In the wider/taller workstation column, scale the whole stage
+                    (head + markers + labels + connectors together) so it fills the
+                    window like it does on the dashboard. */}
+                <div style={{ position: 'relative', width: 760, height: 520, maxWidth: '100%', overflow: 'hidden', transform: dark ? 'scale(1.32)' : undefined, transformOrigin: 'center center' }}>
                   {(() => {
                     const isGyn = ['CERV_SCRAP', 'ENDOCERV_ASP', 'VAG_POOL'].includes(selectedRecord?.specimen ?? '');
                     const markers = MARKER_SETS[isGyn ? 'GYN' : 'NONGYN'].map((m) => ({ ...m, color: selectedRecord?.urgent ? '#991B1B' : m.color }));
