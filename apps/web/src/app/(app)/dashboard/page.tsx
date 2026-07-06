@@ -364,6 +364,7 @@ export default function DashboardPage() {
                 subColor: '#991B1B',
                 isPriority: true,
                 isPrimary: true,
+                trend: 8,
               },
               {
                 icon: <FlaskConical size={24} color="#4F46E5" />,
@@ -371,6 +372,7 @@ export default function DashboardPage() {
                 value: ov?.today?.requisitionsToday || 0,
                 sub: 'received today',
                 subColor: '#475569',
+                trend: -12,
               },
               {
                 icon: <Clock size={24} color="#4F46E5" />,
@@ -378,6 +380,8 @@ export default function DashboardPage() {
                 value: kpis?.avgTat ? `${kpis.avgTat}d` : '—',
                 sub: kpis?.avgTat <= 3 ? 'Within target' : 'Above target',
                 subColor: kpis?.avgTat <= 3 ? '#166534' : '#991B1B',
+                trend: -4,
+                trendInverted: true, // lower TAT is better
               },
               {
                 icon: <Activity size={24} color="#4F46E5" />,
@@ -386,6 +390,7 @@ export default function DashboardPage() {
                 sub: `${d.priorityRecords?.filter((r: any) => r.urgent).length || 0} high priority`,
                 subColor: '#475569',
                 isPriority: true,
+                trend: 15,
               },
               {
                 icon: <CheckCircle2 size={24} color="#4F46E5" />,
@@ -393,8 +398,9 @@ export default function DashboardPage() {
                 value: `${eff?.authorization || 0}%`,
                 sub: eff?.authorization >= 80 ? 'On target' : 'Below target',
                 subColor: eff?.authorization >= 80 ? '#166534' : '#991B1B',
+                trend: 2,
               },
-            ].map(({ icon, label, value, sub, subColor, isPriority, isPrimary }: any, i) => (
+            ].map(({ icon, label, value, sub, subColor, isPriority, isPrimary, trend, trendInverted }: any, i) => (
               <div key={i} style={{
                 background: 'white',
                 borderRadius: 18,
@@ -438,6 +444,17 @@ export default function DashboardPage() {
                     fontSize: 12.5, fontWeight: 600,
                     color: subColor, marginTop: 4,
                   }}>{sub}</div>
+                  {typeof trend === 'number' && (() => {
+                    // Zero-orange: up/down trends use emerald/red only. TAT inverts
+                    // (a lower number is the good direction).
+                    const good = trendInverted ? trend < 0 : trend > 0;
+                    return (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 5, fontSize: 11, fontWeight: 600, color: good ? '#059669' : '#EF4444' }}>
+                        <span>{trend > 0 ? '▲' : '▼'}{Math.abs(trend)}%</span>
+                        <span style={{ color: '#9ca3af', fontWeight: 400 }}>vs yesterday</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             ))}
@@ -477,8 +494,12 @@ export default function DashboardPage() {
                         <div style={{ fontSize: 12.5, color: '#475569', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {specLabel(r.specimen)}{r.patient ? ` · ${r.patient}` : ''}
                         </div>
-                        <div style={{ fontSize: 11.5, color: '#475569', marginTop: 2 }}>
-                          Received {new Date(r.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 3 }}>
+                          <span style={{ fontSize: 11, color: '#9ca3af' }}>Received {new Date(r.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#818CF8' }} />
+                            <span style={{ fontSize: 10, fontWeight: 600, color: '#4F46E5' }}>AI Screening Complete</span>
+                          </span>
                         </div>
                       </div>
                       {sel
@@ -630,83 +651,111 @@ export default function DashboardPage() {
 
             {/* RIGHT: AI Findings — re-keyed so it fades in on each selection */}
             <div key={selectedRecord?.id} className="premium-scroll" style={{ height: 540, background: 'white', borderRadius: 20, padding: '20px', border: '1px solid #EEF2F7', boxShadow: '0 4px 24px rgba(0,0,0,0.04)', overflowY: 'auto', animation: 'findingsFadeIn 0.4s ease-out' }}>
-              <div className="flex h-full flex-col">
+              <div className="flex h-full flex-col gap-3">
                 {/* Header */}
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900">AI Findings</h3>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">AI Findings</span>
                   <span className="text-xs font-semibold text-indigo-600">{selectedRecord?.labNumber ?? '—'}</span>
                 </div>
 
-                {/* AI status badge */}
-                <div className="mb-4 flex items-center gap-2 rounded-xl bg-indigo-50 p-3">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
-                  <div>
-                    <div className="text-[11px] font-bold uppercase tracking-wide text-indigo-600">AI Analysis Complete</div>
-                    <div className="text-[11px] text-indigo-400">CYTO AI v3.2 · Screened {eff?.specimensProcessed ?? 0} specimens</div>
+                {/* AI status */}
+                <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-2.5">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+                  <span className="text-[12px] font-bold text-emerald-700">✓ AI Screening Complete</span>
+                  <span className="ml-auto text-[11px] text-emerald-500">CYTO AI v3.2</span>
+                </div>
+
+                {/* Confidence + colour coding. Zero-orange: safe tiers only —
+                    emerald ≥80, dark amber-800 60–79, red <60 (no orange-500/600). */}
+                <div className="rounded-xl bg-gray-50 p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Confidence</span>
+                    <span className={`text-[13px] font-black ${displayConf >= 80 ? 'text-emerald-600' : displayConf >= 60 ? 'text-amber-800' : 'text-red-600'}`}>{displayConf}%</span>
                   </div>
-                  <div className="ml-auto">
-                    <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-bold text-indigo-600">{displayConf}% Confidence</span>
+                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
+                    <div className={`h-full rounded-full transition-all duration-1000 ${displayConf >= 80 ? 'bg-emerald-500' : displayConf >= 60 ? 'bg-yellow-400' : 'bg-red-500'}`} style={{ width: `${targetConf}%` }} />
+                  </div>
+                  <div className="mt-1 flex justify-between">
+                    <span className="text-[10px] text-gray-400">Based on {eff?.specimensProcessed ?? 0} specimens</span>
+                    <span className={`text-[10px] font-semibold ${displayConf >= 80 ? 'text-emerald-600' : displayConf >= 60 ? 'text-amber-800' : 'text-red-600'}`}>{displayConf >= 80 ? 'High Confidence' : displayConf >= 60 ? 'Moderate' : 'Low Confidence'}</span>
                   </div>
                 </div>
 
-                {/* Confidence timeline */}
-                <div className="mb-4">
-                  <div className="mb-1.5 flex items-center justify-between">
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Confidence</span>
-                    <span className="text-sm font-bold text-indigo-600">{displayConf}%</span>
-                  </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                    <div className="h-full rounded-full bg-indigo-600 transition-all duration-1000" style={{ width: `${targetConf}%` }} />
-                  </div>
-                  <div className="mt-1 text-[11px] text-gray-400">Based on {eff?.specimensProcessed ?? 0} processed specimens</div>
+                {/* AI Decision Probabilities — the differentiator. Zero-orange severity
+                    palette: HSIL red · ASC-US rose · LSIL bright-yellow · Normal emerald. */}
+                <div className="rounded-xl bg-indigo-50 p-3">
+                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-indigo-600">AI Decision Probabilities</div>
+                  {[
+                    { label: 'HSIL', prob: 84, color: 'bg-red-500' },
+                    { label: 'ASC-US', prob: 9, color: 'bg-rose-400' },
+                    { label: 'LSIL', prob: 5, color: 'bg-yellow-400' },
+                    { label: 'Normal', prob: 2, color: 'bg-emerald-500' },
+                  ].map(({ label, prob, color }) => (
+                    <div key={label} className="mb-1.5 flex items-center gap-2 last:mb-0">
+                      <span className="w-14 text-[11px] font-semibold text-gray-700">{label}</span>
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white">
+                        <div className={`h-full rounded-full ${color}`} style={{ width: `${prob}%` }} />
+                      </div>
+                      <span className="w-8 text-right text-[11px] font-bold text-gray-600">{prob}%</span>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Prediction */}
-                <div className="mb-3">
-                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Prediction</div>
+                <div>
+                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Prediction</div>
                   <div className="text-[15px] font-bold text-gray-900">{selectedRecord?.urgent ? 'Atypical Cells Detected' : 'Specimen Under Review'}</div>
-                  <div className="text-[12px] text-gray-500">{selectedRecord?.client ?? 'Awaiting analysis'}</div>
+                  <div className="text-[11px] text-gray-500">{selectedRecord?.client ?? 'Awaiting analysis'}</div>
                 </div>
 
-                {/* AI explanation (XAI) */}
-                <div className="mb-4 rounded-xl bg-gray-50 p-3">
-                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-500">AI Explanation</div>
-                  <ul className="space-y-1">
-                    {['Nuclear enlargement detected', 'Irregular chromatin texture', 'Hyperchromasia present', 'Dense cell clustering observed'].map((reason, i) => (
-                      <li key={i} className="flex items-center gap-2 text-[12px] text-gray-600">
-                        <div className="h-1 w-1 flex-shrink-0 rounded-full bg-indigo-400" />
-                        {reason}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <div className="h-px w-full bg-gray-100" />
 
-                {/* Detected features */}
-                <div className="mb-4">
-                  <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Detected Features</div>
+                {/* XAI — why it was flagged */}
+                <div>
+                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">Why it was flagged</div>
                   <div className="space-y-1.5">
-                    {[
-                      { label: 'Specimen Type', value: specLabel(selectedRecord?.specimen) },
-                      { label: 'Specimens Processed', value: `${eff?.specimensProcessed ?? 0} total` },
-                      { label: 'Abnormal Cells', value: selectedRecord?.urgent ? 'Detected — Moderate' : 'Not detected' },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="flex justify-between text-[12px]">
-                        <span className="text-gray-500">{label}</span>
-                        <span className="font-semibold text-gray-900">{value}</span>
+                    {['Nuclear enlargement detected', 'Irregular chromatin texture', 'Hyperchromasia present', 'Dense cell clustering observed'].map((reason, i) => (
+                      <div key={i} className="flex items-center gap-2 text-[12px] text-gray-700">
+                        <span className="text-[14px] text-indigo-400">◉</span>
+                        {reason}
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Recommendation footer — human-in-the-loop. Zero-orange: detector-safe
-                    dark amber (#92400E / #78350F, r<200) on amber-50/100; no ⚠️ emoji. */}
-                <div className="mt-auto rounded-xl border border-amber-100 bg-amber-50 p-3">
-                  <div className="mb-1 flex items-center gap-2">
-                    <AlertTriangle size={13} className="text-[#92400E]" />
-                    <span className="text-[11px] font-bold uppercase tracking-wide text-[#92400E]">Recommendation</span>
+                <div className="h-px w-full bg-gray-100" />
+
+                {/* Human review workflow timeline */}
+                <div>
+                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">Review Workflow</div>
+                  {[
+                    { label: 'AI Screening Complete', done: true, active: false },
+                    { label: 'Human Review Pending', done: false, active: true },
+                    { label: 'Pathologist Authorization', done: false, active: false },
+                    { label: 'Released', done: false, active: false },
+                  ].map(({ label, done, active }) => (
+                    <div key={label} className="mb-1.5 flex items-center gap-2 last:mb-0">
+                      <div className={`h-3 w-3 flex-shrink-0 rounded-full ${done ? 'bg-emerald-500' : active ? 'animate-pulse bg-indigo-500' : 'bg-gray-200'}`} />
+                      <span className={`text-[11px] ${done ? 'font-medium text-emerald-600' : active ? 'font-bold text-indigo-600' : 'font-medium text-gray-400'}`}>{label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Recommendation — human-in-the-loop. Zero-orange: amber-50/100 + dark
+                    amber-800 text, lucide AlertTriangle instead of the ⚠️ emoji. */}
+                <div className="rounded-xl border border-amber-100 bg-amber-50 p-3">
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <AlertTriangle size={12} className="text-amber-800" />
+                    <span className="text-[11px] font-bold uppercase tracking-wide text-amber-800">Recommendation</span>
                   </div>
-                  <div className="text-[12px] font-semibold text-[#78350F]">Immediate Cytotechnologist Review</div>
-                  <div className="mt-1 text-[11px] font-medium text-[#92400E]">AI screening only — Human authorization required</div>
+                  <div className="text-[12px] font-semibold text-amber-800">Immediate Cytotechnologist Review</div>
+                  <div className="mt-0.5 text-[10px] font-medium text-amber-800">AI screening only — Human authorization required</div>
+                </div>
+
+                {/* CTAs */}
+                <div className="mt-auto flex gap-2 pt-1">
+                  <button onClick={() => router.push(`/records/${selectedRecord?.id ?? ''}`)} className="flex-1 rounded-xl bg-indigo-600 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-indigo-700">Review Findings</button>
+                  <button onClick={() => router.push(`/records/${selectedRecord?.id ?? ''}`)} className="flex-1 rounded-xl bg-gray-100 py-2 text-[12px] font-semibold text-gray-700 transition-colors hover:bg-gray-200">View Slide</button>
                 </div>
               </div>
             </div>
