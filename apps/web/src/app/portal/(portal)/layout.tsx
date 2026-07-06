@@ -12,6 +12,7 @@ import { PortalLogo } from '@/lib/portal-ui';
 const NAV = [
   { label: 'Dashboard', href: '/portal' },
   { label: 'My Records', href: '/portal/records' },
+  { label: 'Requisitions', href: '/portal/requisitions' },
   { label: 'Messages', href: '/portal/messages' },
 ];
 

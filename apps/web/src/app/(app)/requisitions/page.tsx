@@ -13,6 +13,7 @@ import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { RequisitionFormDrawer } from '@/components/RequisitionFormDrawer';
 import { RequisitionReportModal } from '@/components/RequisitionReportModal';
+import { PendingBatchesTab } from '@/components/requisitions/PendingBatchesTab';
 
 interface RequisitionLine { id: string; isCompleted: boolean }
 interface Requisition {
@@ -65,6 +66,7 @@ export default function RequisitionsPage() {
   const { can } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [tab, setTab] = useState<'requisitions' | 'batches'>('requisitions');
   const [search, setSearch] = useState('');
   const [statusF, setStatusF] = useState('all');
   const [clientF, setClientF] = useState('all');
@@ -146,6 +148,16 @@ export default function RequisitionsPage() {
         </div>
       </div>
 
+      {/* Tabs: standard requisitions vs incoming portal batches */}
+      <div className="mb-6 inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
+        <button onClick={() => setTab('requisitions')} className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${tab === 'requisitions' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>Requisitions</button>
+        <button onClick={() => setTab('batches')} className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${tab === 'batches' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>Pending Batches</button>
+      </div>
+
+      {tab === 'batches' ? (
+        <PendingBatchesTab can={can} />
+      ) : (
+      <>
       {/* Filter bar */}
       <div className={`${CARD} mb-6 flex flex-wrap items-center gap-3 p-4`}>
         <div className="flex h-12 min-w-[280px] flex-1 items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 text-slate-500">
@@ -283,6 +295,9 @@ export default function RequisitionsPage() {
           </div>
         </div>
       </div>
+
+      </>
+      )}
 
       <RequisitionFormDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
       <RequisitionReportModal open={reportOpen} onClose={() => setReportOpen(false)} clients={reportClients} />
