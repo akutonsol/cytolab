@@ -40,18 +40,14 @@ export function FocusMode({ specimenQueue, aiModel, aiFindings, kpiStats }: Focu
     setTimeout(() => setIsOpen(false), 350);
   }, []);
 
-  // Escape closes; `F` toggles open (unless typing in a field).
+  // Escape closes.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { if (isOpen) close(); return; }
-      if (e.key === 'f' || e.key === 'F') {
-        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-        if (!isOpen) open();
-      }
+      if (e.key === 'Escape' && isOpen) close();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, open, close]);
+  }, [isOpen, close]);
 
   // Prevent body scroll when open.
   useEffect(() => {
