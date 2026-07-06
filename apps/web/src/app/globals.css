@@ -774,3 +774,13 @@ select option {
   animation: fadeSlideIn 0.6s ease-out forwards;
 }
 
+/* Login page: slow presenting turn for the 3D vial render. Perspective keeps it
+   reading as depth; the swing stays within a range where the flat render does
+   not go edge-on. */
+@keyframes vialTurn {
+  0%   { transform: translate(-50%, -50%) rotateY(-24deg); }
+  50%  { transform: translate(-50%, -50%) rotateY(24deg); }
+  100% { transform: translate(-50%, -50%) rotateY(-24deg); }
+}
+.animate-vial-turn { animation: vialTurn 8s ease-in-out infinite; }
+
