@@ -69,13 +69,21 @@ export function ClinicalWorkstation({
 
   if (!isOpen) return null;
 
-  // Zero-orange: Medium uses a brand-neutral slate (no amber).
-  const priorityColor = {
-    Critical: 'bg-black text-white',
-    High: 'bg-red-500 text-white',
-    Medium: 'bg-slate-200 text-slate-700',
-    Low: 'bg-emerald-100 text-emerald-800',
+  // Zero-orange: Medium uses a brand-neutral slate (no amber). Inline styles
+  // only in this component so nothing gets overridden by Tailwind resets.
+  const priorityStyle = {
+    Critical: { background: '#000000', color: 'white' },
+    High: { background: '#ef4444', color: 'white' },
+    Medium: { background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)' },
+    Low: { background: 'rgba(16,185,129,0.2)', color: '#34d399' },
   }[currentCase.priority];
+
+  // Workflow timeline colors — match reference exactly.
+  const stepColor: Record<string, { dot: string; label: string; time: string }> = {
+    done: { dot: '#10b981', label: '#34d399', time: '#10b981' },
+    active: { dot: '#6366f1', label: '#818cf8', time: '#818cf8' },
+    pending: { dot: 'rgba(255,255,255,0.15)', label: 'rgba(255,255,255,0.3)', time: 'rgba(255,255,255,0.2)' },
+  };
 
   const workflowSteps = [
     { label: 'Uploaded', time: '08:35 AM', state: 'done' },
@@ -130,11 +138,20 @@ export function ClinicalWorkstation({
             { key: 'R', label: 'Begin Review' },
             { key: '?', label: 'Shortcuts' },
           ].map(({ key, label }) => (
-            <div key={key} className="flex items-center gap-1">
-              <kbd className="text-[9px] bg-white/10 text-white/60 px-1.5 py-0.5 rounded font-mono border border-white/10 leading-tight">
+            <div key={key} className="flex items-center gap-1.5">
+              <kbd style={{
+                fontSize: '11px',
+                background: 'rgba(255,255,255,0.12)',
+                color: 'rgba(255,255,255,0.75)',
+                padding: '2px 7px',
+                borderRadius: '5px',
+                fontFamily: 'monospace',
+                border: '1px solid rgba(255,255,255,0.15)',
+                lineHeight: '1.4',
+              }}>
                 {key}
               </kbd>
-              <span className="text-white/35 text-[10px]">{label}</span>
+              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)' }}>{label}</span>
             </div>
           ))}
         </div>
@@ -143,17 +160,27 @@ export function ClinicalWorkstation({
         <div className="flex items-center gap-3">
           <button
             onClick={() => {}}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white/8 hover:bg-white/12 border border-white/10 rounded-lg transition-colors"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px',
+              background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '12px',
+              cursor: 'pointer', transition: '0.2s',
+            }}
           >
-            <GitBranch size={12} className="text-white/50" />
-            <span className="text-white/60 text-[11px]">Compare Timeline</span>
+            <GitBranch size={12} style={{ color: 'rgba(255,255,255,0.5)' }} />
+            Compare Timeline
           </button>
           <button
             onClick={close}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white/8 hover:bg-white/12 border border-white/10 rounded-lg transition-colors"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px',
+              background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '12px',
+              cursor: 'pointer',
+            }}
           >
-            <X size={12} className="text-white/50" />
-            <span className="text-white/60 text-[11px]">Exit Focus Mode</span>
+            <X size={12} style={{ color: 'rgba(255,255,255,0.5)' }} />
+            Exit Focus Mode
           </button>
           <div className="flex items-center gap-2 ml-2">
             <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-white text-[11px] font-bold">
@@ -171,30 +198,30 @@ export function ClinicalWorkstation({
       <div className="flex items-center gap-8 px-5 py-2 border-b border-white/8"
         style={{ background: 'rgba(12,14,24,0.97)', height: '44px' }}>
         <div>
-          <div className="text-[10px] font-semibold text-white/30 uppercase tracking-widest mb-0.5">Current Case</div>
+          <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '2px' }}>Current Case</div>
           <div className="flex items-center gap-2">
-            <span className="text-white font-bold text-[14px]">{currentCase.id}</span>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${priorityColor}`}>
+            <span style={{ fontSize: '14px', fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>{currentCase.id}</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, ...priorityStyle, padding: '2px 8px', borderRadius: '4px' }}>
               {currentCase.priority} Priority
             </span>
           </div>
         </div>
         <div className="w-px h-6 bg-white/10" />
         <div>
-          <div className="text-[10px] font-semibold text-white/30 uppercase tracking-widest mb-0.5">Patient</div>
-          <div className="text-white text-[13px] font-semibold">
-            {currentCase.patientName} · <span className="text-white/50">{currentCase.patientAge}{currentCase.patientGender}</span>
+          <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '2px' }}>Patient</div>
+          <div style={{ fontSize: '14px', fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>
+            {currentCase.patientName} · <span style={{ color: 'rgba(255,255,255,0.5)' }}>{currentCase.patientAge}{currentCase.patientGender}</span>
           </div>
         </div>
         <div className="w-px h-6 bg-white/10" />
         <div>
-          <div className="text-[10px] font-semibold text-white/30 uppercase tracking-widest mb-0.5">Specimen</div>
-          <div className="text-white text-[13px] font-semibold">{currentCase.specimenType}</div>
+          <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '2px' }}>Specimen</div>
+          <div style={{ fontSize: '14px', fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>{currentCase.specimenType}</div>
         </div>
         <div className="w-px h-6 bg-white/10" />
         <div>
-          <div className="text-[10px] font-semibold text-white/30 uppercase tracking-widest mb-0.5">Accession</div>
-          <div className="text-white text-[13px] font-mono">{currentCase.accessionNumber}</div>
+          <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '2px' }}>Accession</div>
+          <div style={{ fontSize: '14px', fontWeight: 700, color: 'rgba(255,255,255,0.9)', fontFamily: 'monospace' }}>{currentCase.accessionNumber}</div>
         </div>
       </div>
 
@@ -210,25 +237,27 @@ export function ClinicalWorkstation({
       >
         {workflowSteps.map((step, i) => (
           <div key={step.label} className="flex items-center">
-            <div className="flex flex-col items-center px-5">
-              <div className={`w-2.5 h-2.5 rounded-full mb-1 ${
-                step.state === 'done' ? 'bg-emerald-500' :
-                step.state === 'active' ? 'bg-indigo-500 animate-pulse ring-4 ring-indigo-500/20' :
-                'bg-white/15'
-              }`} />
-              <span className={`text-[11px] font-semibold ${
-                step.state === 'done' ? 'text-emerald-400' :
-                step.state === 'active' ? 'text-indigo-400' :
-                'text-white/30'
-              }`}>{step.label}</span>
-              <span className={`text-[10px] ${
-                step.state === 'active' ? 'text-indigo-400 font-bold' : 'text-white/20'
-              }`}>{step.time}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 20px' }}>
+              <div style={{
+                width: '10px', height: '10px', borderRadius: '50%',
+                background: stepColor[step.state].dot,
+                marginBottom: '4px',
+                boxShadow: step.state === 'active' ? '0 0 0 4px rgba(99,102,241,0.2)' : 'none',
+                animation: step.state === 'active' ? 'pulse 2s infinite' : 'none',
+              }} />
+              <span style={{ fontSize: '11px', fontWeight: 600, color: stepColor[step.state].label }}>
+                {step.label}
+              </span>
+              <span style={{ fontSize: '10px', color: stepColor[step.state].time, fontWeight: step.state === 'active' ? 700 : 400 }}>
+                {step.time}
+              </span>
             </div>
             {i < workflowSteps.length - 1 && (
-              <div className={`w-12 h-px ${
-                step.state === 'done' ? 'bg-emerald-500/40' : 'bg-white/8'
-              }`} />
+              <div style={{
+                width: '48px', height: '1px',
+                background: step.state === 'done' ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.08)',
+                marginTop: '-18px',
+              }} />
             )}
           </div>
         ))}
@@ -252,7 +281,7 @@ export function ClinicalWorkstation({
           style={{ width: '320px', flexShrink: 0, height: '100%', overflow: 'hidden', background: 'rgba(10,11,20,0.95)' }}
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
-            <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest">
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
               Specimen Queue
             </span>
             <div className="flex items-center gap-1">
@@ -345,7 +374,7 @@ export function ClinicalWorkstation({
           style={{ flex: 1, minWidth: 0, height: '100%', overflow: 'hidden', background: 'rgba(8,9,18,0.98)' }}
         >
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/8">
-            <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest">
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
               AI Cytology Model
             </span>
           </div>
@@ -392,7 +421,7 @@ export function ClinicalWorkstation({
           style={{ width: '360px', flexShrink: 0, height: '100%', overflow: 'hidden', background: 'rgba(10,11,20,0.95)' }}
         >
           <div className="px-4 py-2.5 border-b border-white/8">
-            <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest">
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
               AI Findings
             </span>
           </div>
@@ -564,12 +593,12 @@ export function ClinicalWorkstation({
               }`}
             >
               <div>
-                <div className="text-[10px] font-semibold text-white/30 uppercase tracking-wider">
+                <div style={{ fontSize: '10px', fontWeight: 600, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   {label}
                 </div>
-                {sub && <div className="text-[10px] text-white/20">{sub}</div>}
+                {sub && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)' }}>{sub}</div>}
               </div>
-              <div className="text-[22px] font-bold text-white">{value}</div>
+              <div style={{ fontSize: '24px', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>{value}</div>
             </div>
           ))}
         </div>
