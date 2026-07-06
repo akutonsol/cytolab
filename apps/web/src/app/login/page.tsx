@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import {
   ArrowRight, CheckCircle2, Clock, Eye, EyeOff, HelpCircle, LineChart, List, Lock,
-  Microscope, ShieldCheck, User, Users,
+  ShieldCheck, User, Users,
 } from 'lucide-react';
 import { api, loadClaims } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -127,12 +127,12 @@ export default function LoginPage() {
       <div className="pointer-events-none absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-white/10 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-52 right-10 h-[560px] w-[560px] rounded-full bg-white/[0.07] blur-3xl" />
 
-      {/* Specimen vial — floats over the seam between panels with a slow Y-axis spin. */}
-      <div className="pointer-events-none absolute inset-0 z-20 hidden xl:block" style={{ perspective: '1200px' }}>
+      {/* Specimen vial — static, floating over the seam between panels. */}
+      <div className="pointer-events-none absolute inset-0 z-20 hidden xl:block">
         <img
           src="/specimen-tube-cut.png"
           alt="Blood specimen vial"
-          className="animate-vial absolute left-[48%] top-1/2 w-[180px] select-none drop-shadow-[0_12px_30px_rgba(0,0,0,0.30)]"
+          className="absolute left-[48%] top-1/2 w-[180px] -translate-x-1/2 -translate-y-1/2 select-none drop-shadow-[0_12px_30px_rgba(0,0,0,0.30)]"
         />
       </div>
 
@@ -140,7 +140,7 @@ export default function LoginPage() {
         {/* Top bar */}
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="grid h-12 w-12 place-items-center rounded-xl bg-white/15 text-white ring-1 ring-white/25"><Microscope size={24} /></span>
+            <img src="/cyto-icon-trim.png" alt="CYTOLAB" className="h-12 w-12 rounded-xl" />
             <div className="leading-tight">
               <div className="text-[20px] font-extrabold tracking-tight text-white">CYTOLAB</div>
               <div className="text-[12px] text-white/70">Cytology &amp; Pathology Laboratory System</div>
