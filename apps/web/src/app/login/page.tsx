@@ -29,13 +29,13 @@ const TRUST = [
   { Icon: Clock, label: '99.9% Uptime', desc: 'Reliable. Always.' },
 ];
 
-// Three tall translucent pills drifting behind the vial.
+// A wide central "tube" pill that frames the vial, flanked by two slimmer pills.
 function PillBackdrop() {
   return (
-    <div className="pointer-events-none absolute left-[52%] top-1/2 hidden -translate-x-1/2 -translate-y-1/2 gap-5 xl:flex" aria-hidden>
-      <div className="w-[120px] rounded-full bg-white/10" style={{ height: 500, marginTop: 50 }} />
-      <div className="w-[120px] rounded-full bg-white/10" style={{ height: 600 }} />
-      <div className="w-[120px] rounded-full bg-white/10" style={{ height: 450, marginTop: 100 }} />
+    <div className="pointer-events-none absolute left-[49%] top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-6 xl:flex" aria-hidden>
+      <div className="w-[88px] rounded-full bg-white/10" style={{ height: 520, marginTop: 40 }} />
+      <div className="w-[250px] rounded-full bg-white/10" style={{ height: 720 }} />
+      <div className="w-[88px] rounded-full bg-white/10" style={{ height: 480, marginTop: 90 }} />
     </div>
   );
 }
@@ -124,7 +124,7 @@ export default function LoginPage() {
         <img
           src="/specimen-tube.png"
           alt=""
-          className="absolute left-[55%] top-1/2 w-[360px] -translate-x-1/2 -translate-y-1/2 select-none mix-blend-screen"
+          className="absolute left-[49%] top-1/2 w-[420px] -translate-x-1/2 -translate-y-1/2 select-none mix-blend-screen"
         />
       </div>
 
