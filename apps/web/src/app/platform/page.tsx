@@ -6,7 +6,15 @@ export const metadata = {
 
 export default function PlatformPage() {
   return (
-    <main style={{ minHeight: '100vh', background: '#ffffff', color: '#111111', overflowX: 'hidden' }}>
+    <main
+      style={{
+        minHeight: '100vh',
+        // Soft, cool editorial backdrop (subtle depth vs. flat white).
+        background: 'linear-gradient(160deg, #FCFBFE 0%, #F1F1F6 55%, #ECECF2 100%)',
+        color: '#111111',
+        overflowX: 'hidden',
+      }}
+    >
       <EditorialHero />
 
       {/* Scroll room so the layered parallax reads. Quiet, editorial. */}

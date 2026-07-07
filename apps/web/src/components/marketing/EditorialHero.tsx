@@ -71,9 +71,11 @@ export function EditorialHero() {
               textTransform: 'uppercase',
               color: RED,
               whiteSpace: 'nowrap',
+              gap: 10,
             }}
           >
-            AI Pathology Platform • Enterprise
+            <span style={{ width: 7, height: 7, borderRadius: 999, background: RED, flexShrink: 0 }} />
+            Artificial Intelligence • Pathology Labs
           </span>
         </div>
 
@@ -100,9 +102,8 @@ export function EditorialHero() {
             className="hero-rise"
             style={{ animationDelay: '580ms', maxWidth: 520, fontSize: 22, lineHeight: 1.75, fontWeight: 400, color: '#6A7280', margin: 0 }}
           >
-            CYTOLAB unifies every stage of modern pathology with AI-powered screening, intelligent
-            workflows, and real-time clinical insights—allowing laboratories to diagnose faster,
-            review smarter, and deliver more confident outcomes.
+            CYTOLAB unifies every step of your workflow with AI-powered screening, intelligent
+            workflows, and real-time insights—so you can focus on what matters most: better outcomes.
           </p>
         </div>
 
@@ -119,14 +120,15 @@ export function EditorialHero() {
                 height: 56,
                 padding: '0 32px',
                 borderRadius: 999,
-                background: RED,
+                background: 'linear-gradient(180deg, #E5423C 0%, #C7291F 100%)',
                 color: '#ffffff',
                 fontWeight: 600,
                 fontSize: 16,
                 textDecoration: 'none',
+                boxShadow: '0 10px 26px rgba(199,41,31,.30), inset 0 1px 0 rgba(255,255,255,.28)',
               }}
             >
-              Explore the platform
+              Request Demo
               <ArrowRight size={18} strokeWidth={2.4} />
             </a>
 
