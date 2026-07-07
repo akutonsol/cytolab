@@ -41,6 +41,10 @@ export default function HeroVial() {
     mount.appendChild(canvas);
 
     const scene = new THREE.Scene();
+    // Atmospheric haze — ties every element into ONE volume of air. Far cells,
+    // dust and the DNA helix fade into the page bg; the near vial stays crisp.
+    // This is what turns "separate floating assets" into a single scene.
+    scene.fog = new THREE.Fog(0xf2f1f9, 6.6, 12.5);
 
     const camera = new THREE.PerspectiveCamera(32, W / H, 0.1, 100);
     camera.position.set(0, 0.0, 6.2);
@@ -181,7 +185,11 @@ export default function HeroVial() {
           float dist = length(vUv - 0.5) * 2.0;
           vec3 col = mix(vec3(0.5,0.02,0.05), vec3(0.28,0.0,0.03), dist);
           col += pow(1.0 - abs(vN.z), 2.0) * vec3(0.5,0.15,0.18);
+          // meniscus — bright concave ring where the blood clings to the glass
+          float meniscus = smoothstep(0.82, 0.96, dist) * (1.0 - smoothstep(0.96, 1.0, dist));
+          col += meniscus * vec3(0.62, 0.22, 0.26);
           float alpha = (1.0 - smoothstep(0.8, 1.0, dist)) * 0.94;
+          alpha = min(1.0, alpha + meniscus * 0.4);
           gl_FragColor = vec4(col, alpha);
         }`,
     });
@@ -311,7 +319,7 @@ export default function HeroVial() {
     cellGroup.add(membrane);
     // Soft volumetric glow shell (additive back-side)
     const cellGlow = new THREE.Mesh(new THREE.SphereGeometry(1.5, 32, 32), new THREE.MeshBasicMaterial({
-      color: 0xcf8fe0, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.BackSide,
+      color: 0xcf8fe0, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.BackSide, fog: false,
     }));
     cellGroup.add(cellGlow);
     // Soft lobed purple nucleus with internal glow
@@ -384,26 +392,32 @@ export default function HeroVial() {
     rippleMesh.renderOrder = 0;
     scene.add(rippleMesh);
 
-    interface RippleRing { line: THREE.Line; base: number; offset: number }
-    const ringData = [
-      { r: 0.18, opacity: 0.45 }, { r: 0.36, opacity: 0.37 }, { r: 0.58, opacity: 0.3 },
-      { r: 0.82, opacity: 0.23 }, { r: 1.08, opacity: 0.15 }, { r: 1.38, opacity: 0.09 }, { r: 1.7, opacity: 0.05 },
-    ];
-    const rings: RippleRing[] = ringData.map(({ r, opacity }, i) => {
-      const points: THREE.Vector3[] = [];
-      for (let j = 0; j <= 180; j++) {
-        const a = (j / 180) * Math.PI * 2;
-        points.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r * 0.42, 0));
-      }
-      const geo = new THREE.BufferGeometry().setFromPoints(points);
-      const mat = new THREE.LineBasicMaterial({ color: i < 3 ? 0xffc0d0 : 0xffffff, transparent: true, opacity: opacity * 0.7, blending: THREE.AdditiveBlending, depthWrite: false });
-      const line = new THREE.Line(geo, mat);
-      line.rotation.x = -Math.PI * 0.46;
-      line.position.set(-0.2, -1.22, 0.0);
-      line.renderOrder = 1;
-      scene.add(line);
-      return { line, base: opacity, offset: i / ringData.length };
-    });
+    // ── LUMINOUS ENERGY RINGS (soft blurred additive glow, not crisp lines) ──
+    // A radial "soft donut" gradient — bright feathered band, transparent core+edge.
+    const ringCanvas = document.createElement('canvas'); ringCanvas.width = ringCanvas.height = 128;
+    const rgc = ringCanvas.getContext('2d')!;
+    const rg = rgc.createRadialGradient(64, 64, 0, 64, 64, 64);
+    rg.addColorStop(0.0, 'rgba(255,255,255,0)');
+    rg.addColorStop(0.5, 'rgba(255,196,214,0)');
+    rg.addColorStop(0.74, 'rgba(255,176,200,0.55)');
+    rg.addColorStop(0.88, 'rgba(255,255,255,0.85)');
+    rg.addColorStop(0.96, 'rgba(255,208,222,0.35)');
+    rg.addColorStop(1.0, 'rgba(255,255,255,0)');
+    rgc.fillStyle = rg; rgc.fillRect(0, 0, 128, 128);
+    const ringTex = new THREE.CanvasTexture(ringCanvas);
+    interface EnergyRing { mesh: THREE.Mesh; offset: number }
+    const rings: EnergyRing[] = [];
+    for (let i = 0; i < 4; i++) {
+      const mesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(1, 1),
+        new THREE.MeshBasicMaterial({ map: ringTex, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }),
+      );
+      mesh.rotation.x = -Math.PI * 0.46;
+      mesh.position.set(-0.2, -1.22, 0.01);
+      mesh.renderOrder = 1;
+      scene.add(mesh);
+      rings.push({ mesh, offset: i / 4 });
+    }
 
     const glowMat = new THREE.ShaderMaterial({
       transparent: true, depthWrite: false,
@@ -468,7 +482,7 @@ export default function HeroVial() {
     const bgParticles = new THREE.Points(bgGeo, new THREE.PointsMaterial({ map: spriteTex, size: 0.16, transparent: true, opacity: 0.42, depthWrite: false, sizeAttenuation: true, vertexColors: true }));
     scene.add(bgParticles);
 
-    const bloom = new THREE.Mesh(new THREE.PlaneGeometry(7, 7), new THREE.MeshBasicMaterial({ map: spriteTex, color: 0xff9fb5, transparent: true, opacity: 0.16, depthWrite: false, blending: THREE.AdditiveBlending }));
+    const bloom = new THREE.Mesh(new THREE.PlaneGeometry(7, 7), new THREE.MeshBasicMaterial({ map: spriteTex, color: 0xff9fb5, transparent: true, opacity: 0.16, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
     bloom.position.set(0.1, -0.1, -1.6); scene.add(bloom);
 
     // Faint DNA double helix behind the scene
@@ -514,14 +528,21 @@ export default function HeroVial() {
       raf = requestAnimationFrame(animate);
       const t = clock.getElapsedTime();
 
-      // Vial — suspended in fluid: weightless 8s float loop, no spin.
-      // Bounded tiny translation + tiny rotation; label always faces front.
-      const L8 = (Math.PI * 2) / 8;
-      vialGroup.rotation.y = Math.sin(t * L8) * 0.045;
-      vialGroup.rotation.x = Math.sin(t * L8 * 0.5) * 0.018;
-      vialGroup.rotation.z = 0.34 + Math.sin(t * L8 * 0.7) * 0.02;
-      vialGroup.position.y = -0.15 + Math.sin(t * L8) * 0.03;
-      vialGroup.position.x = -0.2 + Math.cos(t * L8 * 0.6) * 0.015;
+      // Vial — suspended in fluid: weightless ~11s float, no spin. Vertical
+      // float dominant; rotation kept under 1° so it never reads as "spinning".
+      const L11 = (Math.PI * 2) / 11;
+      vialGroup.rotation.y = Math.sin(t * L11) * 0.014;        // ~0.8°
+      vialGroup.rotation.x = Math.sin(t * L11 * 0.5) * 0.008;  // ~0.45°
+      vialGroup.rotation.z = 0.34 + Math.sin(t * L11 * 0.7) * 0.010;
+      vialGroup.position.y = -0.15 + Math.sin(t * L11) * 0.05; // gentle vertical rise/fall
+      vialGroup.position.x = -0.2 + Math.cos(t * L11 * 0.6) * 0.010;
+
+      // Contact shadow tracks the float — grows softer/larger as the vial lifts.
+      const lift = vialGroup.position.y + 0.15; // deviation from rest
+      contactShadow.position.x = vialGroup.position.x;
+      const csScale = 1 + lift * 1.1;
+      contactShadow.scale.set(csScale, csScale, 1);
+      (contactShadow.material as THREE.MeshBasicMaterial).opacity = 0.9 - lift * 2.0;
 
       // Blood inertia — very subtle
       const slosh = Math.sin(vialGroup.rotation.y) * 0.008;
@@ -568,9 +589,10 @@ export default function HeroVial() {
       shimmerMat.uniforms.uTime.value = t;
       rippleMesh.scale.setScalar(1 + Math.sin(t * 0.5) * 0.05); // slow holographic pulse
       for (const rr of rings) {
-        const p = (t * 0.52 + rr.offset) % 1.0;
-        rr.line.scale.setScalar(0.55 + p * 1.6);
-        (rr.line.material as THREE.LineBasicMaterial).opacity = rr.base * (1 - p);
+        const p = (t * 0.2 + rr.offset) % 1.0;
+        const s = 0.5 + p * 3.1; // expand outward
+        rr.mesh.scale.set(s, s * 0.42, 1); // squash into a ground ellipse
+        (rr.mesh.material as THREE.MeshBasicMaterial).opacity = Math.sin(p * Math.PI) * 0.5; // bloom in, fade out
       }
 
       const bp = bgGeo.getAttribute('position') as THREE.BufferAttribute;
@@ -599,7 +621,7 @@ export default function HeroVial() {
         if (Array.isArray(mat)) mat.forEach((x) => x.dispose());
         else if (mat) mat.dispose();
       });
-      labelTex.dispose(); spriteTex.dispose(); envRT?.dispose(); pmrem.dispose(); renderer.dispose();
+      labelTex.dispose(); spriteTex.dispose(); ringTex.dispose(); shadowTex.dispose(); envRT?.dispose(); pmrem.dispose(); renderer.dispose();
       if (mount.contains(canvas)) mount.removeChild(canvas);
     };
   }, []);
