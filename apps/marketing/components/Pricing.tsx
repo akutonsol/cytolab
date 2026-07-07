@@ -67,7 +67,7 @@ export default function Pricing() {
                     </div>
                   ))}
                 </div>
-                <button style={{ marginTop: '2.5rem', width: '100%',
+                <button className="mag-btn" style={{ marginTop: '2.5rem', width: '100%',
                   background: t.featured ? '#09090E' : '#09090E', color: '#F0EFE9', border: 'none',
                   padding: '13px', borderRadius: '2px', fontFamily: 'var(--font-mono)',
                   fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.07em',

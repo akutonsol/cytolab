@@ -85,11 +85,11 @@ export default function CTA() {
           specimens, reduce turnaround time, and improve diagnostic confidence.
         </p>
         <div style={{ display: 'flex', gap: '10px', marginBottom: '3rem' }}>
-          <button style={{ background: '#09090E', color: '#F0EFE9', border: 'none',
+          <button className="mag-btn" style={{ background: '#09090E', color: '#F0EFE9', border: 'none',
             padding: '14px 30px', borderRadius: '2px', fontFamily: 'var(--font-mono)',
             fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em',
             textTransform: 'uppercase', cursor: 'pointer' }}>Request demo →</button>
-          <button style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.35)',
+          <button className="mag-btn" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.35)',
             color: '#fff', padding: '14px 30px', borderRadius: '2px', fontFamily: 'var(--font-mono)',
             fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em',
             textTransform: 'uppercase', cursor: 'pointer' }}>Schedule consultation</button>

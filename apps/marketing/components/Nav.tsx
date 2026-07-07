@@ -40,6 +40,7 @@ export default function Nav() {
         ))}
       </div>
       <button
+        className="mag-btn"
         style={{ background: '#09090E', color: '#F0EFE9', border: 'none',
           padding: '8px 18px', borderRadius: '2px',
           fontFamily: 'var(--font-mono)', fontSize: '0.68rem', fontWeight: 700,

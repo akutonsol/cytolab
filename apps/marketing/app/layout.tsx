@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { DM_Serif_Display, Inter, Space_Mono } from 'next/font/google'
 import LenisProvider from '@/components/LenisProvider'
+import MotionLayer from '@/components/MotionLayer'
 import './globals.css'
 
 const dmSerif = DM_Serif_Display({
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${dmSerif.variable} ${inter.variable} ${spaceMono.variable}`}>
       <body>
+        <MotionLayer />
         <LenisProvider>{children}</LenisProvider>
       </body>
     </html>

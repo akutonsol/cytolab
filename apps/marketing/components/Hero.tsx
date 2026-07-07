@@ -143,11 +143,11 @@ export default function Hero() {
             billing, workforce, and full EMR interoperability.
           </p>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '3.5rem' }}>
-            <button style={{ background: '#09090E', color: '#F0EFE9', border: 'none',
+            <button className="mag-btn" style={{ background: '#09090E', color: '#F0EFE9', border: 'none',
               padding: '13px 26px', borderRadius: '2px', fontFamily: 'var(--font-mono)',
               fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em',
               textTransform: 'uppercase', cursor: 'pointer' }}>Request demo →</button>
-            <button style={{ background: 'transparent', border: '1px solid rgba(9,9,14,0.07)',
+            <button className="mag-btn" style={{ background: 'transparent', border: '1px solid rgba(9,9,14,0.07)',
               color: '#09090E', padding: '13px 26px', borderRadius: '2px',
               fontSize: '0.72rem', cursor: 'pointer' }}>Watch product tour</button>
           </div>
