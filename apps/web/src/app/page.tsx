@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -10,13 +9,16 @@ import {
   FlaskConical, Cog, BrainCircuit, Eye, FileText,
   Sparkles, Zap, BarChart3, ScanSearch,
   Target, Clock, ShieldCheck,
-  Play, ArrowRight, ChevronRight, Check, TrendingUp, TrendingDown,
+  Play, ArrowRight, ChevronRight, Check,
 } from 'lucide-react';
 
 const HeroVial = dynamic(() => import('@/components/landing/HeroVial'), {
   ssr: false,
   loading: () => <div style={{ width: 600, height: 700 }} />,
 });
+
+// Floating live AI-telemetry panels overlaying the hero vial (canvas + parallax).
+const HeroStatCards = dynamic(() => import('@/components/landing/HeroStatCards'), { ssr: false });
 
 const RED = '#E63946';
 const INK = '#0a0b1a';
@@ -55,12 +57,6 @@ export default function LandingPage() {
   useEffect(() => {
     if (hydrated && isAuthed) router.replace('/dashboard');
   }, [hydrated, isAuthed, router]);
-
-  const heroStats: StatCard[] = [
-    { label: 'AI Confidence', value: '98.4%', trend: '2.6% vs last week', up: true },
-    { label: 'Specimens Processed', value: '12.8M', trend: '18% vs last week', up: true },
-    { label: 'Avg Turnaround Time', value: '18.4hrs', trend: '22% vs last week', up: false },
-  ];
 
   const pipeline: PipelineStep[] = [
     { Icon: FlaskConical, label: 'Collect', desc: 'Seamless specimen intake and tracking' },
@@ -131,11 +127,18 @@ export default function LandingPage() {
         borderBottom: '1px solid rgba(0,0,0,0.06)', padding: '0 48px', height: 64,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 32, height: 32, background: RED, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ color: '#fff', fontSize: 12, fontWeight: 900 }}>CY</span>
-          </div>
-          <span style={{ fontWeight: 900, fontSize: 16, letterSpacing: '0.05em' }}>CYTOLAB</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Cell-cluster mark (ring of dots + nucleus) to match the brand logo. */}
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden>
+            {Array.from({ length: 8 }).map((_, i) => {
+              const a = (i / 8) * Math.PI * 2;
+              return <circle key={i} cx={16 + 9 * Math.cos(a)} cy={16 + 9 * Math.sin(a)} r={2.5} fill={RED} />;
+            })}
+            <circle cx="16" cy="16" r="3" fill={RED} />
+            <circle cx="11.5" cy="12.5" r="1.7" fill={RED} opacity={0.75} />
+            <circle cx="20.5" cy="19.5" r="1.7" fill={RED} opacity={0.75} />
+          </svg>
+          <span style={{ fontWeight: 900, fontSize: 18, letterSpacing: '0.02em' }}>CYTOLAB</span>
         </div>
         <div style={{ display: 'flex', gap: 32, fontSize: 14 }}>
           {['Platform', 'Solutions', 'Resources', 'Pricing', 'Compliance', 'Support'].map((item, i) => (
@@ -146,9 +149,8 @@ export default function LandingPage() {
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <Link href="/login" style={{ color: '#374151', fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>Sign in</Link>
           <a href="#demo" style={{
-            background: RED, color: '#fff', padding: '10px 24px', borderRadius: 8,
+            background: RED, color: '#fff', padding: '11px 26px', borderRadius: 10,
             fontWeight: 700, fontSize: 14, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8,
           }}>Request Demo <ArrowRight size={16} /></a>
         </div>
@@ -157,7 +159,7 @@ export default function LandingPage() {
       {/* HERO */}
       <section id="platform" style={{
         minHeight: '100vh', paddingTop: 64,
-        background: 'linear-gradient(135deg, #F8F8FA 0%, #F0F0F8 50%, #E8E8F5 100%)',
+        background: 'radial-gradient(circle at 62% 48%, #ffffff 0%, #f6f7fb 55%, #eceef4 100%)',
         display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', overflow: 'hidden', position: 'relative',
       }}>
         <motion.div
@@ -198,20 +200,8 @@ export default function LandingPage() {
           <div style={{ width: 600, height: 700, position: 'relative', zIndex: 2 }}>
             <HeroVial />
           </div>
-          <div style={{ position: 'absolute', top: '10%', right: -20, width: 200, zIndex: 3 }}>
-            {heroStats.map(({ label, value, trend, up }) => (
-              <div key={label} style={{
-                background: '#fff', borderRadius: 16, padding: 16, marginBottom: 12,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)',
-              }}>
-                <div style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>{label}</div>
-                <div style={{ fontSize: 28, fontWeight: 900, color: INK, lineHeight: 1 }}>{value}</div>
-                <div style={{ fontSize: 11, color: up ? GREEN : RED, marginTop: 4, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {up ? <TrendingUp size={12} /> : <TrendingDown size={12} />}{trend}
-                </div>
-                <div style={{ height: 32, marginTop: 8, background: 'linear-gradient(to right, rgba(230,57,70,0.1), rgba(230,57,70,0.05))', borderRadius: 4 }} />
-              </div>
-            ))}
+          <div style={{ position: 'absolute', top: '50%', right: 32, transform: 'translateY(-50%)', zIndex: 3 }}>
+            <HeroStatCards />
           </div>
         </div>
       </section>
