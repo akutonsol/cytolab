@@ -324,7 +324,7 @@ const CSS = `
   /* RIGHT */
   .wf-right { position: relative; }
   .wf-rail-wrap { position: relative; padding: 40px 0; }
-  .wf-rail { position: absolute; top: 40px; left: 9%; right: 9%; height: 2px; z-index: 0; }
+  .wf-rail { position: absolute; top: 90px; left: 9%; right: 9%; height: 2px; z-index: 0; }
   .wf-rail-base { position: absolute; inset: 0; border-radius: 2px; background: linear-gradient(90deg, rgba(255,255,255,.05), rgba(255,255,255,.18), rgba(255,255,255,.05)); }
   .wf-rail-fill { position: absolute; inset: 0; transform-origin: left center; border-radius: 2px;
     background: linear-gradient(90deg, rgba(230,57,70,0), rgba(230,57,70,.75) 45%, rgba(139,92,246,.75) 78%, rgba(139,92,246,0));
@@ -405,8 +405,9 @@ const CSS = `
     .wf { padding: 100px 28px 90px; }
     .wf-inner { grid-template-columns: 1fr; gap: 56px; }
     .wf-title { font-size: 52px; }
-    .wf-rail { left: 7%; right: 7%; }
+    .wf-rail { top: 79px; left: 7%; right: 7%; }
     .wf-circle { width: 78px; height: 78px; }
+    .wf-node.is-ai { margin-top: -10px; }
     .wf-node.is-ai .wf-circle { width: 98px; height: 98px; }
     .wf-node-bullets, .wf-card { display: none; }
   }
