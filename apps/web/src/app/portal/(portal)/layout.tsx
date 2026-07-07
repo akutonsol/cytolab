@@ -12,6 +12,7 @@ import { PortalLogo } from '@/lib/portal-ui';
 const NAV = [
   { label: 'Dashboard', href: '/portal' },
   { label: 'My Records', href: '/portal/records' },
+  { label: 'Reports', href: '/portal/reports' },
   { label: 'Requisitions', href: '/portal/requisitions' },
   { label: 'Messages', href: '/portal/messages' },
 ];
@@ -29,6 +30,15 @@ export default function PortalAppLayout({ children }: { children: React.ReactNod
     queryFn: () => portalApi.get('/portal/auth/me').then((r) => r.data),
     enabled: isAuthed,
   });
+
+  // Unread badge on Messages: threads the lab is actively handling / has replied to.
+  const { data: crData } = useQuery({
+    queryKey: ['portal-cr-unread'],
+    queryFn: () => portalApi.get('/portal/change-requests', { params: { pageSize: 50 } }).then((r) => r.data),
+    enabled: isAuthed,
+    refetchInterval: 30_000,
+  });
+  const unread = (crData?.data ?? []).filter((t: any) => t.status === 'InReview').length;
 
   if (!hydrated || !isAuthed) return null;
 
@@ -52,6 +62,9 @@ export default function PortalAppLayout({ children }: { children: React.ReactNod
               <Link key={n.href} href={n.href}
                 className={`relative px-4 py-[19px] text-[14px] font-semibold transition-colors ${on ? 'text-[#4F46E5]' : 'text-[#64748B] hover:text-[#0F172A]'}`}>
                 {n.label}
+                {n.href === '/portal/messages' && unread > 0 && (
+                  <span className="ml-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#E63946] px-1 text-[10px] font-bold text-white align-middle">{unread}</span>
+                )}
                 {on && <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-[#4F46E5]" />}
               </Link>
             );
@@ -88,7 +101,12 @@ export default function PortalAppLayout({ children }: { children: React.ReactNod
         {NAV.map((n) => {
           const on = isActive(n.href);
           return (
-            <Link key={n.href} href={n.href} className={`whitespace-nowrap px-3 py-3 text-[13px] font-semibold ${on ? 'text-[#4F46E5]' : 'text-[#64748B]'}`}>{n.label}</Link>
+            <Link key={n.href} href={n.href} className={`whitespace-nowrap px-3 py-3 text-[13px] font-semibold ${on ? 'text-[#4F46E5]' : 'text-[#64748B]'}`}>
+              {n.label}
+              {n.href === '/portal/messages' && unread > 0 && (
+                <span className="ml-1 inline-flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-[#E63946] px-1 text-[9px] font-bold text-white align-middle">{unread}</span>
+              )}
+            </Link>
           );
         })}
       </nav>

@@ -1,9 +1,22 @@
 'use client';
+import { Fragment, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ClipboardList, Plus, Eye, Download } from 'lucide-react';
+import { ClipboardList, Plus, Eye, Download, Check, ChevronDown } from 'lucide-react';
 import { portalApi } from '@/lib/portal-api';
 import { fmtDate } from '@/lib/portal-ui';
+
+// 4-step lifecycle derived from batch status → done | active | pending.
+function batchTimeline(status: string, createdAt: string) {
+  const past = ['SUBMITTED', 'PAID', 'PROCESSING', 'COMPLETED'].includes(status);
+  const done = (ok: boolean): 'done' | 'pending' => (ok ? 'done' : 'pending');
+  return [
+    { label: 'Created', date: fmtDate(createdAt), status: 'done' as const },
+    { label: 'Submitted', date: past ? fmtDate(createdAt) : 'Pending', status: done(past) },
+    { label: 'Processing', date: status === 'PROCESSING' ? 'In progress' : status === 'COMPLETED' ? 'Done' : 'Pending', status: (status === 'PROCESSING' ? 'active' : done(status === 'COMPLETED')) as 'done' | 'active' | 'pending' },
+    { label: 'Completed', date: status === 'COMPLETED' ? 'Done' : 'Pending', status: done(status === 'COMPLETED') },
+  ];
+}
 
 interface BatchRow {
   id: string;
@@ -41,6 +54,7 @@ async function downloadManifest(id: string, batchNumber: string) {
 export default function PortalRequisitionsPage() {
   const router = useRouter();
   const qc = useQueryClient();
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const { data: batches, isLoading } = useQuery({
     queryKey: ['portal-batches'],
@@ -89,43 +103,84 @@ export default function PortalRequisitionsPage() {
             )}
             {!isLoading && (batches?.length ?? 0) === 0 && (
               <tr>
-                <td colSpan={6} className="px-5 py-12 text-center text-gray-400">
-                  <ClipboardList size={28} className="mx-auto mb-2 text-gray-300" />
-                  No batches yet. Create one to get started.
-                </td>
-              </tr>
-            )}
-            {batches?.map((b) => (
-              <tr key={b.id} className="border-b border-[#F1F4F7] last:border-0 hover:bg-[#F8FAFC]">
-                <td className="px-5 py-4 font-semibold text-gray-900">{b.batchNumber}</td>
-                <td className="px-5 py-4 text-gray-500">{fmtDate(b.createdAt)}</td>
-                <td className="px-5 py-4 text-gray-700">{b.totalForms}</td>
-                <td className="px-5 py-4 text-gray-700">{money(b.totalAmountCents)}</td>
-                <td className="px-5 py-4">
-                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${BATCH_BADGE[b.status] ?? 'bg-gray-100 text-gray-600'}`}>
-                    {b.status.replace('_', ' ')}
-                  </span>
-                </td>
-                <td className="px-5 py-4">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => router.push(`/portal/requisitions/${b.id}`)}
-                      className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                    >
-                      <Eye size={13} /> View
+                <td colSpan={6} className="px-10 py-16">
+                  <div className="flex flex-col items-center gap-2 text-center">
+                    <ClipboardList size={40} className="text-[#CBD5E1]" />
+                    <div className="mt-2 text-[18px] font-semibold text-[#0a0b1a]">No requisitions yet</div>
+                    <div className="text-[14px] text-[#64748b]">Submit your first batch of cytology specimens.</div>
+                    <button onClick={() => create.mutate()} disabled={create.isPending}
+                      className="mt-4 rounded-[10px] bg-[#4F46E5] px-6 py-3 text-[14px] font-semibold text-white hover:brightness-110 disabled:opacity-60">
+                      + New Requisition
                     </button>
-                    {['SUBMITTED', 'PROCESSING', 'COMPLETED'].includes(b.status) && (
-                      <button
-                        onClick={() => downloadManifest(b.id, b.batchNumber)}
-                        className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                      >
-                        <Download size={13} /> Manifest
-                      </button>
-                    )}
                   </div>
                 </td>
               </tr>
-            ))}
+            )}
+            {batches?.map((b) => {
+              const open = expanded === b.id;
+              return (
+              <Fragment key={b.id}>
+                <tr onClick={() => setExpanded(open ? null : b.id)}
+                  className="cursor-pointer border-b border-[#F1F4F7] last:border-0 hover:bg-[#F8FAFC]">
+                  <td className="px-5 py-4 font-semibold text-gray-900">
+                    <span className="inline-flex items-center gap-2">
+                      <ChevronDown size={15} className={`text-[#94a3b8] transition-transform ${open ? 'rotate-180' : ''}`} />
+                      {b.batchNumber}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 text-gray-500">{fmtDate(b.createdAt)}</td>
+                  <td className="px-5 py-4 text-gray-700">{b.totalForms}</td>
+                  <td className="px-5 py-4 text-gray-700">{money(b.totalAmountCents)}</td>
+                  <td className="px-5 py-4">
+                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${BATCH_BADGE[b.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                      {b.status.replace('_', ' ')}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); router.push(`/portal/requisitions/${b.id}`); }}
+                        className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                      >
+                        <Eye size={13} /> View
+                      </button>
+                      {['SUBMITTED', 'PROCESSING', 'COMPLETED'].includes(b.status) && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); downloadManifest(b.id, b.batchNumber); }}
+                          className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                        >
+                          <Download size={13} /> Manifest
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+                {open && (
+                  <tr className="border-b border-[#F1F4F7] bg-[#FAFBFD]">
+                    <td colSpan={6} className="px-6 py-6">
+                      <div className="flex items-start justify-between">
+                        {batchTimeline(b.status, b.createdAt).map((step, i, arr) => {
+                          const isDone = step.status === 'done', isActive = step.status === 'active';
+                          return (
+                            <div key={step.label} className="flex flex-1 items-start">
+                              <div className="flex flex-1 flex-col items-center text-center">
+                                <span className={`grid h-9 w-9 place-items-center rounded-full text-[13px] font-bold ${isDone ? 'bg-[#4F46E5] text-white' : isActive ? 'bg-[#4F46E5] text-white ring-4 ring-[#4F46E5]/15' : 'border-2 border-[#E5E7EB] bg-white text-[#94a3b8]'}`}>
+                                  {isDone ? <Check size={16} strokeWidth={3} /> : i + 1}
+                                </span>
+                                <div className={`mt-2 text-[12px] font-semibold ${isActive || isDone ? 'text-[#0a0b1a]' : 'text-[#94a3b8]'}`}>{step.label}</div>
+                                <div className="text-[11px] text-[#94a3b8]">{step.date}</div>
+                              </div>
+                              {i < arr.length - 1 && <div className={`mt-4 h-0.5 flex-1 ${isDone ? 'bg-[#4F46E5]' : 'bg-[#E5E7EB]'}`} />}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>
