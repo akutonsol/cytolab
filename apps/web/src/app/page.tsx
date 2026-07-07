@@ -735,77 +735,80 @@ export default function LandingPage() {
       <LivingScienceSection />
 
       {/* SECTION C — TRUSTED BY (logo wall) */}
-      <section style={{ padding: '56px 40px 52px', background: 'white' }}>
-        <div style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', color: '#9797ba', marginBottom: 44, textTransform: 'uppercase' }}>
+      <section style={{ padding: '84px 56px 64px', background: 'white' }}>
+        <div style={{ textAlign: 'center', fontSize: 12.5, fontWeight: 700, letterSpacing: '0.2em', color: '#8f8fb8', marginBottom: 62, textTransform: 'uppercase' }}>
           Trusted by Leading Labs and Health Systems
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 24, alignItems: 'center', maxWidth: 1240, margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 16, alignItems: 'center', maxWidth: 1360, margin: '0 auto' }}>
           {[
             {
               a: 'MAYO', b: 'CLINIC', icon: (
-                <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
-                  <rect x="8" y="5" width="24" height="30" rx="7" stroke="#4b4b6b" strokeWidth="1.6" />
-                  <circle cx="20" cy="15" r="4.4" fill="#4b4b6b" />
-                  <circle cx="14" cy="24" r="3.8" fill="#4b4b6b" opacity="0.72" />
-                  <circle cx="26" cy="24" r="3.8" fill="#4b4b6b" opacity="0.72" />
+                <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+                  <g fill="#464660">
+                    <path transform="translate(22,15) scale(0.95)" d="M0,-11 C4,-9 6,-9 8,-9 L8,-3 C8,3 4,7 0,9 C-4,7 -8,3 -8,-3 L-8,-9 C-6,-9 -4,-9 0,-11 Z" />
+                    <path transform="translate(13.5,26) scale(0.7)" opacity="0.62" d="M0,-11 C4,-9 6,-9 8,-9 L8,-3 C8,3 4,7 0,9 C-4,7 -8,3 -8,-3 L-8,-9 C-6,-9 -4,-9 0,-11 Z" />
+                    <path transform="translate(30.5,26) scale(0.7)" opacity="0.62" d="M0,-11 C4,-9 6,-9 8,-9 L8,-3 C8,3 4,7 0,9 C-4,7 -8,3 -8,-3 L-8,-9 C-6,-9 -4,-9 0,-11 Z" />
+                  </g>
                 </svg>
               ),
             },
             {
               a: 'Labcorp', big: true, icon: (
-                <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
-                  <circle cx="20" cy="20" r="13" stroke="#4b4b6b" strokeWidth="1.6" />
-                  <ellipse cx="20" cy="20" rx="5.5" ry="13" stroke="#4b4b6b" strokeWidth="1.3" />
-                  <line x1="7" y1="20" x2="33" y2="20" stroke="#4b4b6b" strokeWidth="1.3" />
-                  <line x1="10" y1="12.5" x2="30" y2="12.5" stroke="#4b4b6b" strokeWidth="1" opacity="0.55" />
-                  <line x1="10" y1="27.5" x2="30" y2="27.5" stroke="#4b4b6b" strokeWidth="1" opacity="0.55" />
+                <svg width="42" height="42" viewBox="0 0 44 44" fill="none">
+                  <circle cx="22" cy="22" r="15" fill="#464660" opacity="0.1" />
+                  <circle cx="22" cy="22" r="15" stroke="#464660" strokeWidth="1.7" />
+                  <ellipse cx="22" cy="22" rx="6.4" ry="15" stroke="#464660" strokeWidth="1.4" />
+                  <line x1="7" y1="22" x2="37" y2="22" stroke="#464660" strokeWidth="1.4" />
+                  <line x1="10.5" y1="13.5" x2="33.5" y2="13.5" stroke="#464660" strokeWidth="1.1" opacity="0.55" />
+                  <line x1="10.5" y1="30.5" x2="33.5" y2="30.5" stroke="#464660" strokeWidth="1.1" opacity="0.55" />
                 </svg>
               ),
             },
             {
               a: 'Quest', b: 'Diagnostics', icon: (
-                <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
-                  <path d="M31 20a11 11 0 1 0-5.5 9.5" stroke="#4b4b6b" strokeWidth="2.4" strokeLinecap="round" />
-                  <circle cx="20" cy="20" r="4.4" fill="#4b4b6b" />
+                <svg width="42" height="42" viewBox="0 0 44 44" fill="none">
+                  <circle cx="22" cy="22" r="15" fill="#464660" />
+                  <path d="M29 15a9.5 9.5 0 1 0 1 13" stroke="#fff" strokeWidth="3" strokeLinecap="round" fill="none" />
+                  <circle cx="22" cy="22" r="3.6" fill="#fff" />
                 </svg>
               ),
             },
             {
               a: 'Cleveland', b: 'Clinic', icon: (
-                <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
-                  <rect x="8" y="8" width="10" height="10" rx="1.5" fill="#4b4b6b" />
-                  <rect x="22" y="8" width="10" height="10" rx="1.5" stroke="#4b4b6b" strokeWidth="2" />
-                  <rect x="8" y="22" width="10" height="10" rx="1.5" stroke="#4b4b6b" strokeWidth="2" />
-                  <rect x="22" y="22" width="10" height="10" rx="1.5" fill="#4b4b6b" />
+                <svg width="40" height="40" viewBox="0 0 44 44" fill="none">
+                  <path d="M11 11h11v5.5h-5.5v11H22V33H11z" fill="#464660" />
+                  <path d="M33 11H22v5.5h5.5v11H22V33h11z" fill="#464660" />
                 </svg>
               ),
             },
             {
               a: 'Sonic', b: 'Healthcare', icon: (
-                <svg width="34" height="34" viewBox="0 0 40 40" fill="none">
-                  <circle cx="20" cy="20" r="13" stroke="#4b4b6b" strokeWidth="1.3" opacity="0.45" />
-                  <path d="M15 9c0 6 10 6 10 11s-10 5-10 11" stroke="#4b4b6b" strokeWidth="1.8" strokeLinecap="round" />
-                  <path d="M25 9c0 6-10 6-10 11s10 5 10 11" stroke="#4b4b6b" strokeWidth="1.8" strokeLinecap="round" />
-                  <line x1="16" y1="14" x2="24" y2="14" stroke="#4b4b6b" strokeWidth="1.2" />
-                  <line x1="16" y1="26" x2="24" y2="26" stroke="#4b4b6b" strokeWidth="1.2" />
+                <svg width="42" height="42" viewBox="0 0 44 44" fill="none">
+                  <circle cx="22" cy="22" r="15" stroke="#464660" strokeWidth="1.5" opacity="0.4" />
+                  <path d="M16 10c0 7 12 7 12 12s-12 5-12 12" stroke="#464660" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M28 10c0 7-12 7-12 12s12 5 12 12" stroke="#464660" strokeWidth="2" strokeLinecap="round" />
+                  <line x1="17" y1="15" x2="27" y2="15" stroke="#464660" strokeWidth="1.4" />
+                  <line x1="18" y1="22" x2="26" y2="22" stroke="#464660" strokeWidth="1.4" opacity="0.6" />
+                  <line x1="17" y1="29" x2="27" y2="29" stroke="#464660" strokeWidth="1.4" />
                 </svg>
               ),
             },
             {
               a: 'agilon', b: 'health', icon: (
-                <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
+                <svg width="40" height="40" viewBox="0 0 44 44" fill="none">
                   {[0, 45, 90, 135].map((deg) => (
-                    <line key={deg} x1="20" y1="8" x2="20" y2="32" stroke="#4b4b6b" strokeWidth="2.4" strokeLinecap="round" transform={`rotate(${deg} 20 20)`} />
+                    <line key={deg} x1="22" y1="8" x2="22" y2="36" stroke="#464660" strokeWidth="2.8" strokeLinecap="round" transform={`rotate(${deg} 22 22)`} />
                   ))}
+                  <circle cx="22" cy="22" r="2.6" fill="#464660" />
                 </svg>
               ),
             },
           ].map((logo, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 13 }}>
               {logo.icon}
-              <div style={{ lineHeight: 1.08 }}>
-                <div style={{ fontSize: logo.big ? 22 : 15.5, fontWeight: 800, color: '#3d3d5a', letterSpacing: logo.big ? '-0.01em' : '0.02em' }}>{logo.a}</div>
-                {logo.b && <div style={{ fontSize: 12.5, fontWeight: 600, color: '#8b8ba8', marginTop: 1 }}>{logo.b}</div>}
+              <div style={{ lineHeight: 1.1 }}>
+                <div style={{ fontSize: logo.big ? 25 : 17.5, fontWeight: 800, color: '#33334d', letterSpacing: logo.big ? '-0.01em' : '0.01em' }}>{logo.a}</div>
+                {logo.b && <div style={{ fontSize: 13.5, fontWeight: 600, color: '#9090ac', marginTop: 2 }}>{logo.b}</div>}
               </div>
             </div>
           ))}
@@ -813,10 +816,19 @@ export default function LandingPage() {
       </section>
 
       {/* SECTION D — STATS BAR */}
-      <section style={{ padding: '20px 40px 80px', background: 'white' }}>
+      <section style={{ padding: '24px 56px 100px', background: 'white' }}>
+        {/* Shared violet→magenta gradient for the stat icons */}
+        <svg width={0} height={0} style={{ position: 'absolute' }} aria-hidden>
+          <defs>
+            <linearGradient id="statIcon" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="24">
+              <stop offset="0%" stopColor="#8b5cf6" />
+              <stop offset="100%" stopColor="#d946ef" />
+            </linearGradient>
+          </defs>
+        </svg>
         <div style={{
-          maxWidth: 1240, margin: '0 auto', background: '#faf9ff', border: '1px solid #e9e7f5',
-          borderRadius: 24, boxShadow: '0 10px 34px rgba(80,60,160,0.05)', padding: '26px 12px',
+          maxWidth: 1360, margin: '0 auto', background: '#faf9ff', border: '1px solid #eae7f6',
+          borderRadius: 28, boxShadow: '0 16px 48px rgba(80,60,160,0.07)', padding: '38px 16px',
           display: 'grid', gridTemplateColumns: 'repeat(5,1fr)',
         }}>
           {[
@@ -826,13 +838,13 @@ export default function LandingPage() {
             { Icon: Share2, value: '40%', label: 'Faster turnaround' },
             { Icon: BarChart3, value: '70%', label: 'Workload reduction' },
           ].map((stat, i) => (
-            <div key={stat.label} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '4px 26px', borderLeft: i > 0 ? '1px solid #edeaf7' : 'none' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg, rgba(139,92,246,0.16), rgba(124,58,237,0.09))', border: '1px solid rgba(139,92,246,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <stat.Icon size={22} color="#7c3aed" strokeWidth={2} />
+            <div key={stat.label} style={{ display: 'flex', alignItems: 'center', gap: 17, padding: '6px 32px', borderLeft: i > 0 ? '1px solid #ede9f8' : 'none' }}>
+              <div style={{ width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg, rgba(139,92,246,0.18), rgba(217,70,239,0.10))', border: '1px solid rgba(139,92,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <stat.Icon size={26} color="url(#statIcon)" strokeWidth={2} />
               </div>
               <div>
-                <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: '-0.02em', color: '#0a0b1a', lineHeight: 1 }}>{stat.value}</div>
-                <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>{stat.label}</div>
+                <div style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.02em', color: '#0a0b1a', lineHeight: 1 }}>{stat.value}</div>
+                <div style={{ fontSize: 14, color: '#64748b', marginTop: 5 }}>{stat.label}</div>
               </div>
             </div>
           ))}
