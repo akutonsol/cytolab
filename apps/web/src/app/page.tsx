@@ -59,10 +59,11 @@ type Plan = {
   features: string[]; cta: string; highlighted: boolean; badge?: string;
 };
 
-// AI-Screening microscopy — a translucent H&E-stained cytology cell (rim-lit
-// membrane, wispy cytoplasm, deep off-centre nucleus + nucleolus, inner-rim
-// shadow). Duration is derived from cx so it stays stable across re-renders.
+// AI-Screening microscopy — a FLAT H&E-stained cytology cell: near-invisible
+// membrane ring, cloudy cytoplasm, and a flat embedded nucleus (no 3D-ball look).
+// Duration is derived from cx so it stays stable across re-renders.
 function renderCell(cx: number, cy: number, r: number, blur: number, delay: string, variant: 'normal' | 'large' | 'small' = 'normal') {
+  const animDur = 3.5 + (cx % 4) * 0.6;
   return (
     <div key={`cell-${cx}-${cy}`} style={{
       position: 'absolute',
@@ -71,52 +72,53 @@ function renderCell(cx: number, cy: number, r: number, blur: number, delay: stri
       transform: 'translate(-50%, -50%)',
       borderRadius: '50%',
       filter: blur > 0 ? `blur(${blur}px)` : 'none',
-      animation: `float-cell ${3.5 + (cx % 3) * 0.7}s ease-in-out ${delay} infinite`,
+      animation: `float-cell ${animDur}s ease-in-out ${delay} infinite`,
       zIndex: blur > 0 ? 1 : variant === 'large' ? 4 : 2,
       overflow: 'hidden',
-      background: `radial-gradient(circle at 50% 50%, rgba(200, 175, 240, 0.0) 0%, rgba(185, 155, 230, 0.08) 55%, rgba(160, 120, 220, 0.28) 72%, rgba(140, 95, 210, 0.52) 84%, rgba(120, 70, 195, 0.72) 92%, rgba(100, 50, 180, 0.85) 97%, rgba(90, 40, 170, 0.90) 100%)`,
-      boxShadow: blur === 0 ? `0 4px 20px rgba(100, 50, 200, 0.22), 0 1px 6px rgba(0, 0, 0, 0.12), inset 0 0 ${r * 0.6}px rgba(180, 140, 255, 0.12)` : 'none',
+      // Membrane — thin translucent ring, transparent centre
+      background: `radial-gradient(circle at 50% 50%, transparent 0%, transparent 74%, rgba(160, 120, 215, 0.15) 80%, rgba(140, 100, 200, 0.35) 87%, rgba(120, 80, 185, 0.55) 93%, rgba(105, 65, 175, 0.70) 97%, rgba(95, 55, 165, 0.78) 100%)`,
+      boxShadow: blur === 0 ? `0 3px 14px rgba(100, 60, 190, 0.18), 0 1px 5px rgba(0, 0, 0, 0.10)` : 'none',
     }}>
-      {/* Cytoplasm texture wisps */}
+      {/* Cytoplasm fill — cloudy watercolour stain */}
       <div style={{
-        position: 'absolute', inset: `${r * 0.04}px`, borderRadius: '50%',
-        background: `radial-gradient(ellipse 70% 55% at 35% 30%, rgba(195, 160, 240, 0.35) 0%, transparent 65%), radial-gradient(ellipse 55% 70% at 65% 65%, rgba(170, 130, 230, 0.30) 0%, transparent 60%), radial-gradient(ellipse 45% 40% at 20% 70%, rgba(185, 145, 235, 0.25) 0%, transparent 55%), radial-gradient(ellipse 40% 50% at 75% 25%, rgba(175, 135, 230, 0.28) 0%, transparent 50%), radial-gradient(ellipse 60% 45% at 50% 80%, rgba(160, 120, 220, 0.22) 0%, transparent 55%), radial-gradient(circle at 50% 50%, rgba(210, 185, 248, 0.15) 0%, rgba(175, 140, 235, 0.25) 45%, rgba(145, 105, 215, 0.20) 100%)`,
+        position: 'absolute', inset: `${r * 0.06}px`, borderRadius: '50%',
+        background: `radial-gradient(ellipse 80% 60% at 30% 25%, rgba(205, 175, 245, 0.55) 0%, transparent 55%), radial-gradient(ellipse 65% 80% at 70% 70%, rgba(190, 155, 238, 0.50) 0%, transparent 55%), radial-gradient(ellipse 50% 45% at 15% 65%, rgba(195, 160, 240, 0.45) 0%, transparent 50%), radial-gradient(ellipse 45% 55% at 80% 20%, rgba(200, 168, 242, 0.48) 0%, transparent 48%), radial-gradient(ellipse 70% 65% at 55% 45%, rgba(182, 148, 232, 0.40) 0%, transparent 60%), radial-gradient(ellipse 55% 40% at 40% 80%, rgba(188, 152, 235, 0.42) 0%, transparent 52%), radial-gradient(circle at 50% 50%, rgba(215, 192, 250, 0.30) 0%, rgba(175, 138, 228, 0.50) 50%, rgba(150, 108, 212, 0.35) 100%)`,
       }} />
-      {/* Specular highlight (top-left) */}
+      {/* Cytoplasm darker patches */}
       <div style={{
-        position: 'absolute', top: '8%', left: '14%', width: `${r * 0.55}px`, height: `${r * 0.38}px`, borderRadius: '50%',
-        background: `radial-gradient(ellipse, rgba(255, 255, 255, 0.55) 0%, rgba(240, 225, 255, 0.25) 50%, transparent 100%)`,
-        transform: 'rotate(-30deg)', filter: 'blur(2px)',
+        position: 'absolute', inset: `${r * 0.12}px`, borderRadius: '50%',
+        background: `radial-gradient(ellipse 40% 30% at 22% 40%, rgba(130, 90, 195, 0.22) 0%, transparent 100%), radial-gradient(ellipse 35% 45% at 72% 30%, rgba(135, 95, 200, 0.20) 0%, transparent 100%), radial-gradient(ellipse 45% 35% at 60% 75%, rgba(125, 85, 190, 0.18) 0%, transparent 100%), radial-gradient(ellipse 30% 40% at 35% 72%, rgba(140, 100, 205, 0.20) 0%, transparent 100%)`,
       }} />
-      {/* Secondary soft highlight (bottom-right) */}
+      {/* Nucleus — flat embedded blob (inset shadow only, no outer shadow) */}
       <div style={{
-        position: 'absolute', bottom: '12%', right: '10%', width: `${r * 0.3}px`, height: `${r * 0.2}px`, borderRadius: '50%',
-        background: `radial-gradient(ellipse, rgba(255, 255, 255, 0.18) 0%, transparent 100%)`, filter: 'blur(3px)',
-      }} />
-      {/* Nucleus */}
-      <div style={{
-        position: 'absolute', width: `${r * 0.88}px`, height: `${r * 0.88}px`, top: '50%', left: '50%',
-        transform: 'translate(-44%, -44%)', borderRadius: '50%',
-        background: `radial-gradient(circle at 38% 35%, rgba(95, 45, 175, 0.75) 0%, rgba(65, 22, 140, 0.88) 35%, rgba(42, 8, 105, 0.94) 65%, rgba(28, 2, 72, 0.98) 88%, rgba(18, 0, 48, 1.00) 100%)`,
-        boxShadow: `inset -3px -3px 8px rgba(0, 0, 0, 0.45), inset 2px 2px 6px rgba(130, 80, 220, 0.20), 0 2px 12px rgba(30, 0, 80, 0.35)`,
+        position: 'absolute', width: `${r * 1.05}px`, height: `${r * 1.05}px`, top: '50%', left: '50%',
+        transform: 'translate(-46%, -46%)', borderRadius: '50%',
+        background: `radial-gradient(circle at 42% 38%, rgba(72, 30, 145, 0.92) 0%, rgba(55, 18, 118, 0.96) 30%, rgba(40, 8, 92, 0.98) 60%, rgba(28, 2, 68, 1.00) 80%, rgba(20, 0, 50, 1.00) 100%)`,
+        boxShadow: `inset -2px -3px 8px rgba(0, 0, 0, 0.30), inset 1px 1px 4px rgba(120, 70, 200, 0.15)`,
       }}>
-        {/* Nucleus specular */}
+        {/* Nucleus subtle highlight */}
         <div style={{
-          position: 'absolute', top: '12%', left: '16%', width: `${r * 0.28}px`, height: `${r * 0.18}px`, borderRadius: '50%',
-          background: `radial-gradient(ellipse, rgba(170, 130, 255, 0.35) 0%, transparent 100%)`, transform: 'rotate(-20deg)', filter: 'blur(1px)',
+          position: 'absolute', top: '14%', left: '18%', width: `${r * 0.32}px`, height: `${r * 0.20}px`, borderRadius: '50%',
+          background: `radial-gradient(ellipse, rgba(155, 115, 240, 0.30) 0%, transparent 100%)`, transform: 'rotate(-25deg)',
         }} />
-        {/* Nucleolus */}
+        {/* Nucleolus — subtle dot */}
         {variant !== 'small' && (
           <div style={{
-            position: 'absolute', width: `${r * 0.14}px`, height: `${r * 0.14}px`, top: '28%', left: '32%', borderRadius: '50%',
-            background: `radial-gradient(circle, rgba(200, 165, 255, 0.80) 0%, rgba(155, 110, 230, 0.50) 60%, transparent 100%)`, filter: 'blur(0.5px)',
+            position: 'absolute', width: `${r * 0.16}px`, height: `${r * 0.16}px`, top: '30%', left: '30%', borderRadius: '50%',
+            background: `radial-gradient(circle, rgba(110, 65, 185, 0.75) 0%, rgba(80, 40, 155, 0.60) 60%, transparent 100%)`,
           }} />
         )}
       </div>
-      {/* Inner rim shadow */}
+      {/* Membrane inner shadow */}
       <div style={{
         position: 'absolute', inset: 0, borderRadius: '50%', pointerEvents: 'none',
-        background: `radial-gradient(circle at 50% 50%, transparent 0%, transparent 58%, rgba(60, 20, 120, 0.08) 72%, rgba(40, 10, 90, 0.18) 84%, rgba(20, 4, 60, 0.28) 94%, rgba(10, 2, 40, 0.35) 100%)`,
+        background: `radial-gradient(circle at 50% 50%, transparent 0%, transparent 65%, rgba(80, 40, 150, 0.05) 75%, rgba(60, 25, 120, 0.12) 85%, rgba(40, 12, 90, 0.22) 93%, rgba(25, 5, 65, 0.30) 100%)`,
+      }} />
+      {/* Top gloss — faint wet sheen */}
+      <div style={{
+        position: 'absolute', top: '5%', left: '10%', width: `${r * 0.65}px`, height: `${r * 0.32}px`, borderRadius: '50%',
+        background: `radial-gradient(ellipse, rgba(255, 255, 255, 0.28) 0%, rgba(235, 220, 255, 0.12) 55%, transparent 100%)`,
+        transform: 'rotate(-35deg)', filter: `blur(${r * 0.04}px)`,
       }} />
     </div>
   );
@@ -559,7 +561,7 @@ export default function LandingPage() {
           }}>
 
             {/* ── COL 1: MICROSCOPY SLIDE ── */}
-            <div style={{ position: 'relative', background: 'radial-gradient(ellipse 60% 40% at 25% 35%, rgba(210, 190, 250, 0.35) 0%, transparent 65%), radial-gradient(ellipse 50% 55% at 75% 65%, rgba(195, 170, 245, 0.28) 0%, transparent 60%), radial-gradient(ellipse 70% 50% at 50% 50%, rgba(230, 215, 255, 0.20) 0%, transparent 80%), linear-gradient(150deg, #f8f4fe 0%, #f2eafc 30%, #ede2fa 60%, #f0eafb 100%)', overflow: 'hidden', minHeight: '580px' }}>
+            <div style={{ position: 'relative', background: 'radial-gradient(ellipse 55% 45% at 30% 30%, rgba(220, 205, 255, 0.30) 0%, transparent 65%), radial-gradient(ellipse 45% 55% at 70% 70%, rgba(210, 192, 250, 0.25) 0%, transparent 60%), linear-gradient(145deg, #faf8ff 0%, #f5f0fd 25%, #f0eafa 50%, #f5f0fd 75%, #faf8ff 100%)', overflow: 'hidden', minHeight: '580px' }}>
               {/* Slide stain texture */}
               <div style={{
                 position: 'absolute', inset: 0, pointerEvents: 'none',
