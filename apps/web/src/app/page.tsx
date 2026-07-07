@@ -72,10 +72,16 @@ export default function LandingPage() {
   // Live-ticking counters for the Live Workflow stat cards.
   const [activeCases, setActiveCases] = useState(4281);
   const [inAnalysis, setInAnalysis] = useState(1247);
+  const [cellsAnalyzed, setCellsAnalyzed] = useState(14223);
+  const [scanProgress, setScanProgress] = useState(76);
   useEffect(() => {
     const a = setInterval(() => { if (Math.random() > 0.4) setActiveCases((p) => p + 1); }, 5000);
     const b = setInterval(() => { setInAnalysis((p) => p + Math.floor(Math.random() * 3)); }, 3000);
-    return () => { clearInterval(a); clearInterval(b); };
+    const c = setInterval(() => {
+      setCellsAnalyzed((p) => p + Math.floor(Math.random() * 8 + 2));
+      setScanProgress((p) => (p >= 99 ? 76 : p + Math.random() * 0.3));
+    }, 1200);
+    return () => { clearInterval(a); clearInterval(b); clearInterval(c); };
   }, []);
 
   const features: Feature[] = [
@@ -260,6 +266,9 @@ export default function LandingPage() {
           @keyframes scanner-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
           @keyframes donut-draw { from { stroke-dashoffset: 188.5; } to { stroke-dashoffset: 0; } }
           @keyframes warn-pulse { 0%, 100% { opacity: 1; filter: drop-shadow(0 0 3px rgba(230,57,70,0.7)); } 50% { opacity: 0.55; filter: drop-shadow(0 0 8px rgba(230,57,70,0.9)); } }
+          @keyframes scan-line { 0% { top: 5%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 92%; opacity: 0; } }
+          @keyframes badge-pulse { 0%, 100% { box-shadow: 0 4px 16px rgba(230,57,70,0.4); } 50% { box-shadow: 0 4px 28px rgba(230,57,70,0.75); } }
+          @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
         ` }} />
         {/* Top purple atmospheric glow */}
         <div style={{
@@ -458,102 +467,143 @@ export default function LandingPage() {
             </button>
           </div>
 
-          {/* Right column — microscopy viewer + analysis + findings */}
-          <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', borderRadius: '20px', overflow: 'hidden', border: '1px solid #e5e7eb', minHeight: '420px' }}>
+          {/* Right column — 3-panel: microscopy slide / analysis / findings */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0',
+            borderRadius: '20px', overflow: 'hidden', border: '1px solid #e5e7eb',
+            minHeight: '480px', boxShadow: '0 20px 60px rgba(0,0,0,0.08)',
+          }}>
 
-            {/* LEFT: Microscopy image */}
-            <div style={{ position: 'relative', background: '#f0eef8', overflow: 'hidden' }}>
-              {/* Atypical Cell Detected badge */}
-              <div style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', background: '#E63946', color: 'white', borderRadius: '20px', padding: '4px 14px', fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap', zIndex: 10 }}>
-                ● Atypical Cell Detected
-              </div>
+            {/* ── COL 1: MICROSCOPY SLIDE ── */}
+            <div style={{ position: 'relative', background: '#f0ecf8', overflow: 'hidden', minHeight: '480px' }}>
+              {/* Slide stain texture */}
+              <div style={{
+                position: 'absolute', inset: 0, pointerEvents: 'none',
+                background: 'radial-gradient(ellipse 40% 30% at 20% 30%, rgba(147,112,219,0.25) 0%, transparent 70%), radial-gradient(ellipse 50% 40% at 70% 60%, rgba(138,43,226,0.20) 0%, transparent 70%), radial-gradient(ellipse 60% 50% at 50% 50%, rgba(221,210,243,0.40) 0%, transparent 80%), linear-gradient(135deg, #f5f0fc 0%, #ede4f8 50%, #f0ecf8 100%)',
+              }} />
 
-              {/* CSS microscopy cells */}
-              {[
-                { s: 160, t: '5%', l: '5%', c: 'rgba(109,40,217,0.45)', n: 'rgba(80,20,180,0.7)' },
-                { s: 140, t: '15%', l: '45%', c: 'rgba(124,58,237,0.40)', n: 'rgba(90,25,190,0.65)' },
-                { s: 120, t: '50%', l: '10%', c: 'rgba(139,92,246,0.38)', n: 'rgba(100,30,200,0.6)' },
-                { s: 150, t: '45%', l: '50%', c: 'rgba(109,40,217,0.42)', n: 'rgba(80,20,180,0.68)' },
-                { s: 100, t: '70%', l: '30%', c: 'rgba(124,58,237,0.35)', n: 'rgba(90,25,190,0.58)' },
-                { s: 110, t: '60%', l: '68%', c: 'rgba(139,92,246,0.40)', n: 'rgba(100,30,200,0.62)' },
-                { s: 90, t: '25%', l: '75%', c: 'rgba(109,40,217,0.32)', n: 'rgba(80,20,180,0.55)' },
-              ].map((cell, i) => (
+              {/* Dense cell field */}
+              {([
+                [12, 8, 52, 0.55, true, 18], [38, 5, 44, 0.48, true, 15], [68, 10, 38, 0.52, true, 13],
+                [85, 8, 46, 0.44, true, 16], [5, 28, 40, 0.50, true, 14], [25, 22, 60, 0.60, true, 22],
+                [55, 18, 48, 0.56, true, 17], [78, 25, 35, 0.45, true, 12], [95, 20, 42, 0.50, true, 15],
+                [15, 48, 38, 0.48, true, 13], [40, 42, 55, 0.58, true, 20], [65, 45, 42, 0.52, true, 15],
+                [88, 42, 50, 0.55, true, 18], [8, 65, 46, 0.50, true, 16], [30, 62, 40, 0.45, true, 14],
+                [58, 60, 65, 0.62, true, 24], [82, 65, 38, 0.48, true, 13], [20, 80, 44, 0.52, true, 15],
+                [48, 78, 50, 0.55, true, 18], [72, 80, 42, 0.50, true, 15], [90, 78, 36, 0.44, true, 12],
+                [35, 90, 38, 0.48, true, 13], [62, 92, 46, 0.52, true, 16],
+                [50, 35, 22, 0.35, false, 0], [75, 35, 18, 0.30, false, 0], [10, 40, 20, 0.32, false, 0],
+                [92, 55, 16, 0.28, false, 0], [22, 55, 24, 0.36, false, 0],
+              ] as [number, number, number, number, boolean, number][]).map(([cx, cy, r, op, hasNuc, nucR], i) => (
                 <div key={i} style={{
-                  position: 'absolute', width: `${cell.s}px`, height: `${cell.s}px`, top: cell.t, left: cell.l, borderRadius: '50%',
-                  background: `radial-gradient(circle at 35% 35%, ${cell.c.replace(/[\d.]+\)/, '0.6)')}, ${cell.c})`,
-                  boxShadow: 'inset -8px -8px 20px rgba(0,0,0,0.2), inset 4px 4px 12px rgba(255,255,255,0.15)',
+                  position: 'absolute', left: `${cx}%`, top: `${cy}%`,
+                  width: `${r * 2}px`, height: `${r * 2}px`, transform: 'translate(-50%, -50%)', borderRadius: '50%',
+                  background: `radial-gradient(circle at 35% 35%, rgba(180,140,230,${op + 0.1}) 0%, rgba(138,90,210,${op}) 40%, rgba(100,50,180,${op - 0.05}) 100%)`,
+                  boxShadow: `inset -${r * 0.15}px -${r * 0.15}px ${r * 0.3}px rgba(60,0,120,0.3), inset ${r * 0.08}px ${r * 0.08}px ${r * 0.2}px rgba(220,200,255,0.2)`,
                 }}>
-                  <div style={{
-                    position: 'absolute', width: `${cell.s * 0.38}px`, height: `${cell.s * 0.38}px`, top: '50%', left: '50%',
-                    transform: 'translate(-40%, -40%)', borderRadius: '50%', background: cell.n,
-                    boxShadow: 'inset -3px -3px 8px rgba(0,0,0,0.3)',
-                  }} />
+                  {hasNuc && (
+                    <div style={{
+                      position: 'absolute', width: `${nucR * 2}px`, height: `${nucR * 2}px`, top: '50%', left: '50%',
+                      transform: 'translate(-40%, -40%)', borderRadius: '50%',
+                      background: 'radial-gradient(circle at 40% 40%, rgba(80,20,150,0.85) 0%, rgba(60,10,120,0.92) 100%)',
+                      boxShadow: 'inset -2px -2px 4px rgba(0,0,0,0.4)',
+                    }} />
+                  )}
                 </div>
               ))}
 
-              {/* AI Detection box with corner markers */}
-              <div style={{ position: 'absolute', top: '42%', left: '22%', width: '120px', height: '120px', border: '2px solid #E63946', borderRadius: '6px', boxShadow: '0 0 12px rgba(230,57,70,0.3)' }}>
+              {/* Primary AI detection box */}
+              <div style={{ position: 'absolute', top: '28%', left: '28%', width: '44%', height: '38%', border: '2px solid #E63946', borderRadius: '4px', zIndex: 10 }}>
                 <div style={{ position: 'absolute', top: -2, left: -2, width: 12, height: 12, borderTop: '3px solid #E63946', borderLeft: '3px solid #E63946' }} />
                 <div style={{ position: 'absolute', top: -2, right: -2, width: 12, height: 12, borderTop: '3px solid #E63946', borderRight: '3px solid #E63946' }} />
                 <div style={{ position: 'absolute', bottom: -2, left: -2, width: 12, height: 12, borderBottom: '3px solid #E63946', borderLeft: '3px solid #E63946' }} />
                 <div style={{ position: 'absolute', bottom: -2, right: -2, width: 12, height: 12, borderBottom: '3px solid #E63946', borderRight: '3px solid #E63946' }} />
+                <div style={{ position: 'absolute', left: 0, right: 0, height: '2px', top: '50%', background: 'linear-gradient(90deg, transparent, rgba(230,57,70,0.8), transparent)', animation: 'scan-line 2s ease-in-out infinite' }} />
+              </div>
+
+              {/* Secondary scan box (teal) */}
+              <div style={{ position: 'absolute', top: '62%', left: '8%', width: '28%', height: '24%', border: '1.5px dashed rgba(56,189,248,0.7)', borderRadius: '4px', zIndex: 10, boxShadow: '0 0 8px rgba(56,189,248,0.2)' }}>
+                <div style={{ position: 'absolute', top: -8, left: 8, background: 'rgba(56,189,248,0.9)', borderRadius: '10px', padding: '2px 8px', fontSize: 9, color: 'white', fontWeight: 600, whiteSpace: 'nowrap' }}>● Monitoring</div>
+              </div>
+
+              {/* Atypical cell badge */}
+              <div style={{ position: 'absolute', top: '22%', left: '50%', transform: 'translateX(-50%)', background: '#E63946', color: 'white', borderRadius: '20px', padding: '5px 14px', fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap', zIndex: 20, boxShadow: '0 4px 16px rgba(230,57,70,0.4)', display: 'flex', alignItems: 'center', gap: 5, animation: 'badge-pulse 2s ease-in-out infinite' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'white', display: 'inline-block', animation: 'live-blink 1s ease-in-out infinite' }} />
+                Atypical Cell Detected
               </div>
             </div>
 
-            {/* RIGHT SIDE: dark analysis + white findings */}
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {/* Dark Analysis Card */}
-              <div style={{ background: '#1a1a2e', padding: '24px', flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginBottom: '16px' }}>Analysis Progress</div>
-                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '6px' }}>Scanning cells...</div>
-                <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '4px', height: '4px', marginBottom: '4px' }}>
-                  <div style={{ width: '76%', height: '100%', borderRadius: '4px', background: 'linear-gradient(90deg,#E63946,#ff6b8a)' }} />
+            {/* ── COL 2: ANALYSIS PROGRESS ── */}
+            <div style={{ background: 'linear-gradient(160deg, #1e1535 0%, #16102a 50%, #1a1228 100%)', padding: '28px 24px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: -40, left: '50%', transform: 'translateX(-50%)', width: 200, height: 100, background: 'radial-gradient(ellipse, rgba(139,92,246,0.3) 0%, transparent 70%)', pointerEvents: 'none' }} />
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'white', marginBottom: 20, position: 'relative' }}>Analysis Progress</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>Scanning cells...</div>
+              <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 6, height: 6, overflow: 'hidden', marginBottom: 6, position: 'relative' }}>
+                <div style={{ width: `${scanProgress}%`, height: '100%', borderRadius: 6, background: 'linear-gradient(90deg, #7c3aed, #a78bfa)', transition: 'width 0.8s ease', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
                 </div>
-                <div style={{ fontSize: '12px', color: 'white', fontWeight: 600, textAlign: 'right', marginBottom: '20px' }}>76%</div>
-                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '2px' }}>Cells Analyzed</div>
-                <div style={{ fontSize: '32px', fontWeight: 800, color: 'white', lineHeight: 1, marginBottom: '16px' }}>14,223</div>
-                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '6px' }}>AI Confidence</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                  <span style={{ fontSize: '28px', fontWeight: 800, color: 'white' }}>98.4%</span>
-                  <span style={{ background: 'rgba(34,197,94,0.2)', color: '#22c55e', borderRadius: '20px', padding: '3px 10px', fontSize: '11px', fontWeight: 600 }}>High Confidence</span>
-                </div>
-                {/* Green sparkline */}
-                <svg width="100%" height="36" viewBox="0 0 200 36">
+              </div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', textAlign: 'right', marginBottom: 24 }}>{Math.round(scanProgress)}%</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginBottom: 4 }}>Cells Analyzed</div>
+              <div style={{ fontSize: 34, fontWeight: 800, color: 'white', lineHeight: 1, marginBottom: 20, fontVariantNumeric: 'tabular-nums' }}>{cellsAnalyzed.toLocaleString()}</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginBottom: 8 }}>AI Confidence</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                <span style={{ fontSize: 30, fontWeight: 800, color: 'white' }}>98.4%</span>
+                <span style={{ background: 'rgba(34,197,94,0.18)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 600 }}>High Confidence</span>
+              </div>
+              <div style={{ marginTop: 'auto' }}>
+                <svg width="100%" height="60" viewBox="0 0 200 60" preserveAspectRatio="none">
                   <defs>
-                    <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" />
+                    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#22c55e" stopOpacity="0.4" />
                       <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
                     </linearGradient>
                   </defs>
-                  <polygon points="0,28 20,24 40,26 60,20 80,22 100,16 120,18 140,12 160,15 180,10 200,8 200,36 0,36" fill="url(#sparkGrad)" />
-                  <polyline points="0,28 20,24 40,26 60,20 80,22 100,16 120,18 140,12 160,15 180,10 200,8" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" />
-                  {[[0, 28], [60, 20], [120, 18], [180, 10], [200, 8]].map(([x, y], i) => (
-                    <circle key={i} cx={x} cy={y} r="3" fill="#22c55e" />
+                  <polygon points="0,55 16,50 32,42 48,45 64,35 80,38 96,28 112,32 128,22 144,26 160,18 176,22 200,14 200,60 0,60" fill="url(#areaGrad)" />
+                  <polyline points="0,55 16,50 32,42 48,45 64,35 80,38 96,28 112,32 128,22 144,26 160,18 176,22 200,14" fill="none" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  {([[0, 55, '#22c55e'], [32, 42, '#22c55e'], [64, 35, '#DB2777'], [96, 28, '#22c55e'], [128, 22, '#8b5cf6'], [160, 18, '#22c55e'], [200, 14, '#22c55e']] as [number, number, string][]).map(([x, y, c], i) => (
+                    <circle key={i} cx={x} cy={y} r="3.5" fill={c} style={{ filter: `drop-shadow(0 0 3px ${c})` }} />
                   ))}
+                  {/* Animated scan dot travelling the line */}
+                  <circle r="4" fill="#22c55e" opacity="0.9">
+                    <animateMotion dur="4s" repeatCount="indefinite" rotate="auto">
+                      <mpath href="#sparkPath" />
+                    </animateMotion>
+                  </circle>
+                  <path id="sparkPath" d="M0,55 L16,50 L32,42 L48,45 L64,35 L80,38 L96,28 L112,32 L128,22 L144,26 L160,18 L176,22 L200,14" fill="none" stroke="none" />
                 </svg>
               </div>
+            </div>
 
-              {/* White Top Findings Card */}
-              <div style={{ background: 'white', padding: '24px', borderTop: '1px solid #e5e7eb' }}>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#0a0b1a', marginBottom: '16px' }}>Top Findings</div>
+            {/* ── COL 3: TOP FINDINGS ── */}
+            <div style={{ background: 'white', padding: '28px 24px', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#0a0b1a', marginBottom: 24 }}>Top Findings</div>
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                 {[
-                  { label: 'Atypical Squamous Cells', count: 18, color: '#E63946' },
-                  { label: 'LSIL', count: 12, color: '#DB2777' },
-                  { label: 'HSIL', count: 5, color: '#8b5cf6' },
-                  { label: 'Negative', count: 1247, color: '#22c55e' },
+                  { label: 'Atypical Squamous Cells', count: 18, color: '#E63946', pct: 1.4 },
+                  { label: 'LSIL', count: 12, color: '#DB2777', pct: 0.96 },
+                  { label: 'HSIL', count: 5, color: '#8b5cf6', pct: 0.40 },
+                  { label: 'Negative', count: 1247, color: '#22c55e', pct: 100 },
                 ].map((row, i, arr) => (
-                  <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                    <span style={{ fontSize: '13px', color: '#374151', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ color: row.color, fontSize: '9px' }}>●</span>
-                      {row.label}
-                    </span>
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#0a0b1a' }}>{row.count.toLocaleString()}</span>
+                  <div key={row.label} style={{ padding: '14px 0', borderBottom: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <span style={{ fontSize: 13, color: '#374151', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ width: 9, height: 9, borderRadius: '50%', background: row.color, boxShadow: `0 0 6px ${row.color}66`, flexShrink: 0, display: 'inline-block' }} />
+                        {row.label}
+                      </span>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: '#0a0b1a' }}>{row.count.toLocaleString()}</span>
+                    </div>
+                    <div style={{ height: 3, background: '#f1f5f9', borderRadius: 2, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', borderRadius: 2, background: row.color, opacity: 0.7, width: `${Math.min(row.pct * 2, 100)}%`, maxWidth: '100%', transition: 'width 1s ease' }} />
+                    </div>
                   </div>
                 ))}
-                <button style={{ width: '100%', marginTop: '14px', padding: '10px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white', fontSize: '13px', color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 500 }}>
-                  View Full Results →
-                </button>
               </div>
+              <button style={{ marginTop: 20, width: '100%', padding: '12px', border: '1.5px solid #e5e7eb', borderRadius: 10, background: 'white', fontSize: 14, color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontWeight: 500, transition: 'all 0.2s ease' }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#E63946'; e.currentTarget.style.color = '#E63946'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = '#374151'; }}>
+                View Full Results →
+              </button>
             </div>
           </div>
         </div>
