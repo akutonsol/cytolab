@@ -12,7 +12,7 @@ import {
   Play, ArrowRight, ChevronRight, Check,
 } from 'lucide-react';
 
-import { WorkflowSection } from '@/components/marketing/WorkflowSection';
+import { WorkflowPipeline } from '@/components/landing/WorkflowPipeline';
 
 const HeroVial = dynamic(() => import('@/components/landing/HeroVial'), {
   ssr: false,
@@ -207,6 +207,21 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* WORKFLOW TITLE — white background, above the dark card */}
+      <section style={{ background: '#fff', padding: '84px 88px 40px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: 20 }}>
+            One system. End to end.
+          </div>
+          <h2 style={{ fontSize: 60, fontWeight: 800, lineHeight: 1.04, letterSpacing: '-0.03em', color: INK, margin: 0, maxWidth: 720 }}>
+            Built for the way pathology labs <em style={{ fontStyle: 'italic', color: RED }}>work.</em>
+          </h2>
+          <p style={{ fontSize: 17, lineHeight: 1.7, color: '#64748b', maxWidth: 560, marginTop: 24 }}>
+            From specimen collection to AI-powered diagnosis and structured reporting, CYTOLAB connects every step into one intelligent workflow.
+          </p>
+        </div>
+      </section>
+
       {/* SECTION A — LIVE WORKFLOW PIPELINE (dark rounded card) */}
       <section style={{
         margin: '0 40px 0 40px',
@@ -245,67 +260,9 @@ export default function LandingPage() {
           </button>
         </div>
 
-        {/* Pipeline steps */}
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'flex-start', marginBottom: '40px' }}>
-          {[
-            { n: 1, label: 'Collect', sub: 'Sample received', time: '2 min ago', s: 'done' },
-            { n: 2, label: 'Process', sub: 'Slide prepared', time: '4 min ago', s: 'done' },
-            { n: 3, label: 'AI Analyze', sub: 'Analyzing cells', time: 'In progress', s: 'active' },
-            { n: 4, label: 'Review', sub: 'Pathologist review', time: 'Pending', s: 'pending' },
-            { n: 5, label: 'Report', sub: 'Report generated', time: 'Pending', s: 'pending' },
-          ].map((step, i, arr) => {
-            const lineRed = i <= 1;
-            const lineColor = lineRed ? '#E63946' : 'rgba(255,255,255,0.18)';
-            const arrowColor = lineRed ? '#E63946' : 'rgba(255,255,255,0.3)';
-            return (
-              <div key={step.n} style={{ flex: i < arr.length - 1 ? 1 : 'none', minWidth: 0 }}>
-                {/* circle + arrow connector */}
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ position: 'relative', flexShrink: 0 }}>
-                    {step.s === 'active' ? (
-                      <div style={{
-                        width: '42px', height: '42px', borderRadius: '50%', background: '#12101c',
-                        border: '2px solid #E63946', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '16px', fontWeight: 800, color: 'white',
-                        boxShadow: '0 0 0 4px rgba(230,57,70,0.18), 0 0 22px rgba(230,57,70,0.55)',
-                      }}>{step.n}</div>
-                    ) : step.s === 'done' ? (
-                      <div style={{
-                        width: '42px', height: '42px', borderRadius: '50%', background: '#0a0812',
-                        border: '1px solid rgba(255,255,255,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '16px', fontWeight: 800, color: 'white',
-                      }}>{step.n}</div>
-                    ) : (
-                      <div style={{
-                        width: '42px', height: '42px', borderRadius: '50%', background: 'transparent',
-                        border: '1.5px solid rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '16px', fontWeight: 800, color: 'rgba(255,255,255,0.35)',
-                      }}>{step.n}</div>
-                    )}
-                    {step.s === 'done' && step.n === 1 && (
-                      <div style={{
-                        position: 'absolute', top: '-3px', right: '-3px', width: '18px', height: '18px', borderRadius: '50%',
-                        background: '#E63946', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '10px', color: 'white', fontWeight: 700, border: '2px solid #0b0812',
-                      }}>✓</div>
-                    )}
-                  </div>
-                  {i < arr.length - 1 && (
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', margin: '0 8px' }}>
-                      <div style={{ flex: 1, height: '2px', background: lineColor }} />
-                      <div style={{ width: 0, height: 0, borderTop: '4px solid transparent', borderBottom: '4px solid transparent', borderLeft: `7px solid ${arrowColor}`, marginLeft: '-1px' }} />
-                    </div>
-                  )}
-                </div>
-                {/* left-aligned labels */}
-                <div style={{ marginTop: '14px' }}>
-                  <div style={{ fontSize: '15px', fontWeight: 700, color: 'white' }}>{step.label}</div>
-                  <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '3px' }}>{step.sub}</div>
-                  <div style={{ fontSize: '12px', marginTop: '3px', color: step.s === 'active' ? '#E63946' : step.s === 'done' ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.3)' }}>{step.time}</div>
-                </div>
-              </div>
-            );
-          })}
+        {/* Pipeline — animated glowing-node workflow */}
+        <div style={{ position: 'relative', zIndex: 1, marginBottom: '36px' }}>
+          <WorkflowPipeline />
         </div>
 
         {/* Stats cards row */}
@@ -587,9 +544,6 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
-
-      {/* WORKFLOW — interactive animated pipeline */}
-      <WorkflowSection />
 
       {/* PRODUCT PREVIEW */}
       {/* INTERACTIVE PLATFORM SHOWCASE (replaces the old feature grid + stats bar) */}
