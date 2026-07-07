@@ -464,8 +464,55 @@ export default function HeroVial() {
     }));
     scene.add(bgParticles);
 
+    // ── Biological cell centrepiece (icosahedron wireframe + nucleus + dots) ──
+    interface CellDot { mesh: THREE.Mesh; origin: THREE.Vector3; offset: number }
+    interface BioCell { group: THREE.Group; core: THREE.Mesh; inner: THREE.Mesh; dots: CellDot[] }
+    const makeCell = (wireOpacity: number, innerOpacity: number, dotCount: number, dotColor: number): BioCell => {
+      const group = new THREE.Group();
+      const core = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(0.52, 3),
+        new THREE.MeshPhongMaterial({ color: 0xff6b8a, emissive: 0x3d0010, specular: 0xff9ab0, shininess: 80, transparent: true, opacity: wireOpacity, wireframe: true }),
+      );
+      group.add(core);
+      const inner = new THREE.Mesh(
+        new THREE.SphereGeometry(0.34, 32, 32),
+        new THREE.MeshBasicMaterial({ color: 0xd4216e, transparent: true, opacity: innerOpacity }),
+      );
+      group.add(inner);
+      const membrane = new THREE.Mesh(
+        new THREE.SphereGeometry(0.44, 32, 32),
+        new THREE.MeshPhysicalMaterial({ color: 0xffd6e8, transparent: true, opacity: 0.12, roughness: 0.0, transmission: 0.8, side: THREE.DoubleSide }),
+      );
+      group.add(membrane);
+      const dotGeo = new THREE.SphereGeometry(0.007, 6, 6);
+      const dots: CellDot[] = [];
+      for (let i = 0; i < dotCount; i++) {
+        const radius = 0.68 + Math.random() * 0.55;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(Math.random() * 2 - 1);
+        const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: dotColor, transparent: true, opacity: 0.3 + Math.random() * 0.5 }));
+        dot.position.set(radius * Math.sin(phi) * Math.cos(theta), radius * Math.sin(phi) * Math.sin(theta), radius * Math.cos(phi));
+        group.add(dot);
+        dots.push({ mesh: dot, origin: dot.position.clone(), offset: Math.random() * 100 });
+      }
+      return { group, core, inner, dots };
+    };
+
+    const cell1 = makeCell(0.45, 0.28, 60, 0xff8fab); // left of tube, mid-depth
+    cell1.group.position.set(-1.05, 0.0, -0.2);
+    scene.add(cell1.group);
+
+    const cell2 = makeCell(0.25, 0.15, 30, 0xd4a0b5); // smaller, behind tube
+    cell2.group.position.set(0.9, -0.55, -0.8);
+    cell2.group.scale.setScalar(0.55);
+    scene.add(cell2.group);
+
+    const cellLight = new THREE.PointLight(0xff4080, 0.7, 3.5); // soft pink breathing glow
+    cellLight.position.set(-1.05, 0.0, 0.5);
+    scene.add(cellLight);
+
     // ── Mouse parallax ───────────────────────────────────────
-    let mouseX = 0, mouseY = 0, rotX = 0, rotY = 0;
+    let mouseX = 0, mouseY = 0, rotX = 0, rotY = 0, mxs = 0, mys = 0;
     const onMouse = (e: MouseEvent) => {
       mouseX = (e.clientX / window.innerWidth) * 2 - 1;
       mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -548,6 +595,36 @@ export default function HeroVial() {
         bp.setY(i, y);
       }
       bp.needsUpdate = true;
+
+      // ── Biological cells ──
+      mxs += (mouseX - mxs) * 0.05;
+      mys += (mouseY - mys) * 0.05;
+      cell1.group.rotation.y += 0.0012;
+      cell1.group.rotation.x += 0.0007;
+      const cellPulse = 1 + Math.sin(t * 1.4) * 0.06;
+      cell1.core.scale.setScalar(cellPulse);
+      cell1.inner.scale.setScalar(cellPulse * 0.88);
+      cell1.group.position.x = -1.05 + Math.cos(t * 0.3) * 0.04 + mxs * 0.12;
+      cell1.group.position.y = Math.sin(t * 0.45) * 0.08 + mys * 0.08;
+      for (const d of cell1.dots) {
+        d.mesh.position.set(
+          d.origin.x + Math.sin(t + d.offset) * 0.06,
+          d.origin.y + Math.cos(t + d.offset) * 0.06,
+          d.origin.z + Math.sin(t * 0.5 + d.offset) * 0.06,
+        );
+      }
+      cell2.group.rotation.y -= 0.0009;
+      cell2.group.rotation.x += 0.0005;
+      cell2.group.position.x = 0.9 + mxs * 0.04;
+      cell2.group.position.y = -0.55 + Math.sin(t * 0.38 + 1.2) * 0.05 + mys * 0.03;
+      for (const d of cell2.dots) {
+        d.mesh.position.set(
+          d.origin.x + Math.sin(t + d.offset) * 0.06,
+          d.origin.y + Math.cos(t + d.offset) * 0.06,
+          d.origin.z + Math.sin(t * 0.5 + d.offset) * 0.06,
+        );
+      }
+      cellLight.intensity = 0.5 + Math.sin(t * 1.4) * 0.25;
 
       camera.position.z = 7.3 - Math.sin(t * 0.08) * 0.15;
       camera.position.x += (mouseX * 0.12 - camera.position.x) * 0.03;
