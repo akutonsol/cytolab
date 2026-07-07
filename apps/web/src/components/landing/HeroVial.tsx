@@ -37,8 +37,8 @@ export default function HeroVial() {
 
     const scene = new THREE.Scene();
 
-    const camera = new THREE.PerspectiveCamera(28, W / H, 0.1, 100);
-    camera.position.set(0, 0, 5.5);
+    const camera = new THREE.PerspectiveCamera(30, W / H, 0.1, 100);
+    camera.position.set(0, 0.05, 5.8);
     camera.lookAt(0, 0, 0);
 
     // ── IBL environment (Fresnel + HDR reflections on the glass) ──
@@ -203,7 +203,7 @@ export default function HeroVial() {
     // ── VIAL TRANSFORM (unchanged) ───────────────────────────
     vialGroup.scale.setScalar(1.45);
     vialGroup.rotation.z = 0.21;
-    vialGroup.position.set(0.18, 0.05, 0.0);
+    vialGroup.position.set(0.0, -0.05, 0.0);
 
     // ── PURPLE WHITE-BLOOD CELLS (bigger, glossy, glowing) ────
     const makeWBC = (outerR: number, nucleusR: number, op: number) => {
@@ -326,7 +326,7 @@ export default function HeroVial() {
     });
     const rippleMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 1.8, 180, 80), rippleMat);
     rippleMesh.rotation.x = -Math.PI * 0.46;
-    rippleMesh.position.set(0.18, -1.10, 0.0);
+    rippleMesh.position.set(0.0, -1.18, 0.0);
     rippleMesh.renderOrder = 0;
     scene.add(rippleMesh);
 
@@ -345,7 +345,7 @@ export default function HeroVial() {
       const mat = new THREE.LineBasicMaterial({ color: i < 3 ? 0xc8102e : 0xd4a0b0, transparent: true, opacity });
       const line = new THREE.Line(geo, mat);
       line.rotation.x = -Math.PI * 0.46;
-      line.position.set(0.18, -1.095, 0.0);
+      line.position.set(0.0, -1.165, 0.0);
       line.renderOrder = 1;
       scene.add(line);
       return { line, base: opacity, offset: i / ringData.length };
@@ -367,7 +367,7 @@ export default function HeroVial() {
     });
     const glowDisc = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.5), glowMat);
     glowDisc.rotation.x = -Math.PI * 0.46;
-    glowDisc.position.set(0.18, -1.085, 0.02);
+    glowDisc.position.set(0.0, -1.155, 0.02);
     glowDisc.renderOrder = 2;
     scene.add(glowDisc);
 
@@ -391,7 +391,7 @@ export default function HeroVial() {
     });
     const shimmerPlane = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.4), shimmerMat);
     shimmerPlane.rotation.x = -Math.PI * 0.46;
-    shimmerPlane.position.set(0.18, -1.08, 0.04);
+    shimmerPlane.position.set(0.0, -1.145, 0.04);
     shimmerPlane.renderOrder = 3;
     scene.add(shimmerPlane);
 
@@ -455,8 +455,8 @@ export default function HeroVial() {
       // Vial — slow hover + ±3° breathing sway (z stays the anchor tilt)
       vialGroup.rotation.y = Math.sin(t * LOOP) * 0.04;
       vialGroup.rotation.z = 0.21 + Math.sin(t * 0.5) * 0.052; // ±3°
-      vialGroup.position.y = 0.05 + Math.sin(t * 0.48) * 0.05;
-      vialGroup.position.x = 0.18 + Math.cos(t * 0.31) * 0.016;
+      vialGroup.position.y = -0.05 + Math.sin(t * 0.48) * 0.055;
+      vialGroup.position.x = 0.0 + Math.cos(t * 0.31) * 0.018;
 
       // Blood slosh
       const slosh = Math.sin(t * 0.9) * 0.006 + Math.sin(t * LOOP) * 0.004;
@@ -466,7 +466,7 @@ export default function HeroVial() {
 
       // Camera parallax
       cox += (mtx - cox) * 0.04; coy += (mty - coy) * 0.04;
-      camera.position.x = cox; camera.position.y = 0.1 + coy;
+      camera.position.x = cox; camera.position.y = 0.05 + coy;
 
       // Light sweep across the glass every 8s
       sweep.position.x = Math.sin(t * LOOP) * 2.6;

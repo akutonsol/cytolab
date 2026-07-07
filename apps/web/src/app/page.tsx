@@ -22,6 +22,12 @@ const HeroVial = dynamic(() => import('@/components/landing/HeroVial'), {
 // Floating live AI-telemetry panels overlaying the hero vial (canvas + parallax).
 const HeroStatCards = dynamic(() => import('@/components/landing/HeroStatCards'), { ssr: false });
 
+// Interactive product showcase — editorial + feature nav + morphing live dashboard.
+const PlatformShowcase = dynamic(() => import('@/components/landing/PlatformShowcase'), { ssr: false });
+
+// Living biological microscopy scene filling the right of the CTA section.
+const CtaBioScene = dynamic(() => import('@/components/landing/CtaBioScene'), { ssr: false });
+
 const RED = '#E63946';
 const INK = '#0a0b1a';
 const GREEN = '#10B981';
@@ -152,13 +158,13 @@ export default function LandingPage() {
 
       {/* HERO */}
       <section id="platform" style={{
-        minHeight: '100vh', paddingTop: 78,
+        width: '100vw', minHeight: '100vh', marginLeft: 'calc(-50vw + 50%)', paddingTop: 78,
         background: 'radial-gradient(circle at 62% 48%, #ffffff 0%, #f6f7fb 55%, #eceef4 100%)',
-        display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', overflow: 'hidden', position: 'relative',
+        display: 'flex', alignItems: 'center', overflow: 'hidden', position: 'relative',
       }}>
         <motion.div
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: 'easeOut' }}
-          style={{ padding: '80px 64px' }}
+          style={{ padding: '80px 0 80px 6vw', position: 'relative', zIndex: 2, maxWidth: 620 }}
         >
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -166,13 +172,13 @@ export default function LandingPage() {
             borderRadius: 20, padding: '6px 14px', marginBottom: 24,
           }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: RED }} />
-            <span style={{ fontSize: 12, color: RED, fontWeight: 600, letterSpacing: '0.04em' }}>ARTIFICIAL INTELLIGENCE · PATHOLOGY</span>
+            <span style={{ fontSize: 11, color: RED, fontWeight: 600, letterSpacing: '0.12em' }}>ARTIFICIAL INTELLIGENCE · PATHOLOGY</span>
           </div>
-          <h1 style={{ fontSize: 64, fontWeight: 900, lineHeight: 1.05, color: INK, margin: '0 0 16px', letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: 72, fontWeight: 800, lineHeight: 1.05, color: INK, margin: '0 0 16px', letterSpacing: '-0.025em' }}>
             Unified pathology.<br />One platform.<br />
             <em style={{ color: RED, fontStyle: 'italic' }}>Cellular level.</em>
           </h1>
-          <p style={{ fontSize: 16, color: '#6B7280', lineHeight: 1.7, maxWidth: 400, marginBottom: 32 }}>
+          <p style={{ fontSize: 17, fontWeight: 400, color: '#4a4a5a', lineHeight: 1.65, maxWidth: 420, marginBottom: 32 }}>
             CYTOLAB unifies every step of your workflow with AI-powered screening, intelligent workflows, and real-time
             insights — so you can focus on what matters most: better outcomes.
           </p>
@@ -190,8 +196,9 @@ export default function LandingPage() {
           </div>
         </motion.div>
 
-        <div style={{ position: 'relative', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: 600, height: 700, position: 'relative', zIndex: 2 }}>
+        {/* Right canvas — bleeds to the right edge of the viewport */}
+        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '60vw', zIndex: 1 }}>
+          <div style={{ width: '100%', height: '100%', position: 'relative', zIndex: 2 }}>
             <HeroVial />
           </div>
           <div style={{ position: 'absolute', top: '50%', right: 32, transform: 'translateY(-50%)', zIndex: 3 }}>
@@ -218,108 +225,9 @@ export default function LandingPage() {
       <WorkflowSection />
 
       {/* PRODUCT PREVIEW */}
-      <section id="resources" style={{ background: '#fff', padding: '80px 64px' }}>
-        <Reveal>
-          <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 64, alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 16 }}>SMARTER INSIGHTS. REAL RESULTS.</div>
-              <h2 style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.1, margin: '0 0 24px' }}>
-                Everything you need. All in <em style={{ color: RED, fontStyle: 'italic' }}>one platform.</em>
-              </h2>
-              <p style={{ color: '#6B7280', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
-                Advanced AI. Real-time data. Intuitive tools. Designed for pathologists and built for performance.
-              </p>
-              {features.map(({ Icon, label, desc, badge }) => (
-                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 0', borderBottom: '1px solid #F3F4F6', cursor: 'pointer' }}>
-                  <div style={{ width: 40, height: 40, background: 'rgba(230,57,70,0.08)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Icon size={18} color={RED} strokeWidth={2} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontWeight: 700, fontSize: 14, color: INK }}>{label}</span>
-                      {badge && <span style={{ fontSize: 10, background: RED, color: '#fff', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>{badge}</span>}
-                    </div>
-                    <div style={{ fontSize: 13, color: '#9CA3AF' }}>{desc}</div>
-                  </div>
-                  <ChevronRight size={18} color="#D1D5DB" />
-                </div>
-              ))}
-              <a href="#features" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: RED, fontWeight: 600, fontSize: 14, textDecoration: 'none', marginTop: 24 }}>
-                Explore all features <ArrowRight size={14} />
-              </a>
-            </div>
-
-            <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #E5E7EB', overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,0.12)' }}>
-              <div style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 20, height: 20, background: RED, borderRadius: 4 }} />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>CYTOLAB</span>
-                </div>
-                <div style={{ fontSize: 11, color: '#9CA3AF' }}>This Week ▾</div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderBottom: '1px solid #F3F4F6', padding: '16px 20px' }}>
-                {kpis.map(({ label, value, trend, up }) => (
-                  <div key={label} style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 10, color: '#9CA3AF', marginBottom: 4 }}>{label}</div>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: INK }}>{value}</div>
-                    <div style={{ fontSize: 10, color: up ? GREEN : RED, fontWeight: 600 }}>{up ? '↑' : '↓'} {trend}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, padding: '16px 20px' }}>
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', marginBottom: 12 }}>AI Screening Overview</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <div style={{ width: 80, height: 80, borderRadius: '50%', background: `conic-gradient(${RED} 0% 42%, ${INDIGO} 42% 68%, #9CA3AF 68% 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <div style={{ width: 55, height: 55, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: 13, fontWeight: 900, color: INK }}>98.4%</span>
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 11 }}>
-                      {([['High Confidence', RED], ['Medium Confidence', INDIGO], ['Low Confidence', '#9CA3AF']] as [string, string][]).map(([lbl, c]) => (
-                        <div key={lbl} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-                          <div style={{ width: 8, height: 8, borderRadius: 2, background: c }} />
-                          <span style={{ color: '#374151' }}>{lbl}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', marginBottom: 8 }}>Recent Records</div>
-                  {recentRecords.map(({ id, type, status, color }) => (
-                    <div key={id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #F9FAFB' }}>
-                      <div>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: '#374151' }}>{id}</div>
-                        <div style={{ fontSize: 10, color: '#9CA3AF' }}>{type}</div>
-                      </div>
-                      <span style={{ fontSize: 9, fontWeight: 700, color, background: `${color}15`, padding: '2px 6px', borderRadius: 4 }}>{status}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </Reveal>
-      </section>
-
-      {/* STATS BAR */}
-      <section style={{ background: '#F8F8FA', padding: 64, borderTop: '1px solid #E5E7EB', borderBottom: '1px solid #E5E7EB' }}>
-        <Reveal>
-          <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 32 }}>
-            {bigStats.map(({ Icon, value, label }) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <div style={{ width: 48, height: 48, background: 'rgba(230,57,70,0.08)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Icon size={20} color={RED} strokeWidth={2} />
-                </div>
-                <div>
-                  <div style={{ fontSize: 36, fontWeight: 900, color: INK, lineHeight: 1 }}>{value}</div>
-                  <div style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>{label}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Reveal>
+      {/* INTERACTIVE PLATFORM SHOWCASE (replaces the old feature grid + stats bar) */}
+      <section id="resources">
+        <PlatformShowcase />
       </section>
 
       {/* PRICING */}
@@ -367,31 +275,55 @@ export default function LandingPage() {
       </section>
 
       {/* FOOTER CTA (red) */}
-      <section id="demo" style={{ background: `linear-gradient(135deg, #C41E3A 0%, ${RED} 50%, #B71C1C 100%)`, padding: '80px 64px', position: 'relative', overflow: 'hidden' }}>
+      <section id="demo" style={{ background: 'linear-gradient(135deg, #8B0000 0%, #C1121F 35%, #9B1020 65%, #7A0015 100%)', padding: '80px 64px', position: 'relative', overflow: 'hidden' }}>
+        <style>{`@keyframes badgePulse { 0%,100%{opacity:.55} 50%{opacity:1} }`}</style>
+
+        {/* Volumetric overlay layers */}
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 80% at 80% 50%, rgba(255,60,80,0.25) 0%, transparent 60%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 40% 60% at 20% 50%, rgba(80,0,10,0.4) 0%, transparent 55%)', pointerEvents: 'none' }} />
+
         {footerCells.map((cell, i) => (
           <div key={i} style={{ position: 'absolute', width: cell.size, height: cell.size, borderRadius: '50%', background: 'rgba(255,255,255,0.3)', top: cell.top, right: cell.right, bottom: cell.bottom, opacity: cell.opacity }} />
         ))}
+
+        {/* Living biological microscopy scene — fills the right 40% */}
+        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '42%', minHeight: 380, zIndex: 0, pointerEvents: 'none' }}>
+          <CtaBioScene />
+        </div>
+
         <Reveal>
           <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center', position: 'relative', zIndex: 1 }}>
             <div>
-              <h2 style={{ fontSize: 52, fontWeight: 900, color: '#fff', lineHeight: 1.1, margin: '0 0 16px' }}>
+              <h2 style={{ fontSize: 52, fontWeight: 900, color: '#fff', lineHeight: 1.1, letterSpacing: '-0.02em', textTransform: 'uppercase', margin: '0 0 16px' }}>
                 The arterial operating system your pathology lab deserves.
               </h2>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15, marginBottom: 32 }}>Join 500+ labs transforming diagnostic excellence with CYTOLAB.</p>
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 15, letterSpacing: '0.01em', lineHeight: 1.6, marginBottom: 32 }}>Join 500+ labs transforming diagnostic excellence with CYTOLAB.</p>
               <div style={{ display: 'flex', gap: 12 }}>
-                <a href="#demo" style={{ background: '#fff', color: RED, padding: '14px 28px', borderRadius: 10, fontWeight: 700, fontSize: 14, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <a
+                  href="#demo"
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 34px rgba(0,0,0,0.28), 0 2px 6px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.9)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.15), 0 1px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8)'; }}
+                  style={{ background: 'rgba(255,255,255,0.95)', color: '#BF0D23', padding: '14px 28px', borderRadius: 50, fontWeight: 700, fontSize: 14, letterSpacing: '0.01em', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid rgba(255,255,255,0.3)', boxShadow: '0 4px 24px rgba(0,0,0,0.15), 0 1px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8)', backdropFilter: 'blur(8px)', transition: 'all 0.25s ease' }}
+                >
                   Schedule Live Demo <ArrowRight size={16} />
                 </a>
-                <a href="#support" style={{ background: 'transparent', color: '#fff', padding: '14px 28px', borderRadius: 10, fontWeight: 700, fontSize: 14, textDecoration: 'none', border: '2px solid rgba(255,255,255,0.4)' }}>Contact Sales</a>
+                <a
+                  href="#support"
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+                  style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', padding: '14px 28px', borderRadius: 50, fontWeight: 700, fontSize: 14, letterSpacing: '0.01em', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.35)', backdropFilter: 'blur(8px)', transition: 'all 0.25s ease' }}
+                >
+                  Contact Sales
+                </a>
               </div>
             </div>
-            <div id="compliance" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div id="compliance" style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
               {['HIPAA COMPLIANT', 'SOC 2 TYPE II CERTIFIED', 'ENTERPRISE READY'].map((item) => (
-                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Check size={14} color="#fff" strokeWidth={3} />
-                  </div>
-                  <span style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600, fontSize: 14, letterSpacing: '0.05em' }}>{item}</span>
+                <div key={item} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.20)', borderRadius: 40, padding: '8px 16px', backdropFilter: 'blur(8px)', boxShadow: '0 2px 12px rgba(0,0,0,0.1)' }}>
+                  <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(255,255,255,0.18)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 10px rgba(255,255,255,0.5)', animation: 'badgePulse 2.4s ease-in-out infinite' }}>
+                    <Check size={12} color="#fff" strokeWidth={3} />
+                  </span>
+                  <span style={{ color: '#fff', fontWeight: 600, fontSize: 12, letterSpacing: '0.08em' }}>{item}</span>
                 </div>
               ))}
             </div>
