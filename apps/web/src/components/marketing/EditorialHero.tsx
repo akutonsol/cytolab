@@ -83,13 +83,13 @@ export function EditorialHero() {
         <div style={{ ...drift(0.05), marginTop: 40 }}>
           <h1
             className="hero-headline"
-            style={{ fontWeight: 650, lineHeight: 0.96, letterSpacing: '-.05em', color: '#111111', maxWidth: 640, margin: 0 }}
+            style={{ fontWeight: 700, lineHeight: 0.96, letterSpacing: '-.05em', color: '#111111', maxWidth: 640, margin: 0 }}
           >
             <span className="hero-rise" style={{ display: 'block', animationDelay: '220ms' }}>Unified pathology.</span>
             <span className="hero-rise" style={{ display: 'block', animationDelay: '340ms' }}>One platform.</span>
             <span
               className="hero-rise"
-              style={{ display: 'block', animationDelay: '460ms', fontStyle: 'italic', fontWeight: 500, color: RED }}
+              style={{ display: 'block', animationDelay: '460ms', fontStyle: 'italic', fontWeight: 600, color: RED }}
             >
               Cellular level.
             </span>
