@@ -1,17 +1,18 @@
 'use client'
 import { useEffect, useRef } from 'react'
+import SectionReveal from './SectionReveal'
 
-const MODULES: [string, string, string][] = [
-  ['01', 'AI Cytology Screening', 'CYTO AI · Bethesda 2014'],
-  ['02', 'Specimen Management', 'Chain of custody'],
-  ['03', 'Analytics and Reporting', 'Real-time TAT + QC'],
-  ['04', 'EMR Interoperability', 'HL7 v2.5 · FHIR R4'],
-  ['05', 'Workforce Management', 'Scheduling · payroll'],
-  ['06', 'Integrated Billing', 'Charge capture'],
-  ['07', 'Quality Assurance', 'CAP-ready audits'],
-  ['08', 'Inventory and Reagents', 'Lot tracking'],
-  ['09', 'Patient Management', 'Demographics · history'],
-  ['10', 'Enterprise Security', 'Argon2id · MFA · SSO'],
+const modules = [
+  { n: '01', name: 'AI Cytology Screening', tag: 'AI CORE', tagColor: '#4F46E5' },
+  { n: '02', name: 'Specimen Management', tag: 'CORE', tagColor: '#3f97ef' },
+  { n: '03', name: 'Analytics and Reporting', tag: 'CORE', tagColor: '#3f97ef' },
+  { n: '04', name: 'EMR Interoperability', tag: 'ENTERPRISE', tagColor: 'rgba(9,9,14,0.28)' },
+  { n: '05', name: 'Integrated Billing', tag: 'CORE', tagColor: '#3f97ef' },
+  { n: '06', name: 'Workforce Management', tag: 'CORE', tagColor: '#3f97ef' },
+  { n: '07', name: 'Quality Assurance', tag: 'CORE', tagColor: '#3f97ef' },
+  { n: '08', name: 'Inventory and Reagents', tag: 'CORE', tagColor: '#3f97ef' },
+  { n: '09', name: 'Patient Management', tag: 'CORE', tagColor: '#3f97ef' },
+  { n: '10', name: 'Enterprise Security', tag: 'ENTERPRISE', tagColor: 'rgba(9,9,14,0.28)' },
 ]
 
 export default function Modules() {
@@ -31,42 +32,57 @@ export default function Modules() {
     return () => obs.disconnect()
   }, [])
 
+  const sTag = (label: string) => (
+    <div style={{
+      fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
+      letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.22)',
+      display: 'flex', alignItems: 'center', gap: '9px',
+    }}>
+      <span style={{ width: 18, height: 1, background: 'rgba(9,9,14,0.18)', display: 'inline-block' }} />
+      {label}
+    </div>
+  )
+
   return (
-    <section id="modules" style={{ borderBottom: '1px solid rgba(9,9,14,0.07)', position: 'relative' }}>
+    <section id="platform" style={{ borderBottom: '1px solid rgba(9,9,14,0.07)', position: 'relative' }}>
       <div className="section-counter" aria-hidden="true">05</div>
-      <div style={{ padding: '5rem 2.5rem 3rem', position: 'relative' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
-          letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.22)',
-          display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '2.5rem' }}>
-          <span style={{ width: 18, height: 1, background: 'rgba(9,9,14,0.18)', display: 'inline-block' }} />
-          04 · Modules
+      <SectionReveal>
+        <div style={{
+          padding: '5rem 2.5rem 3.5rem', borderBottom: '1px solid rgba(9,9,14,0.07)',
+          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem', alignItems: 'end',
+        }}>
+          <div>
+            <div style={{ marginBottom: '1.5rem' }}>{sTag('04 · Platform')}</div>
+            <div style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(4rem, 7vw, 7rem)', lineHeight: 0.88, letterSpacing: '-0.04em' }}>
+              Ten modules.<br />
+              <span style={{ color: 'transparent', WebkitTextStroke: '1px rgba(9,9,14,0.13)' }}>One</span>{' '}
+              <span style={{ color: '#4F46E5', fontStyle: 'italic' }}>operating</span><br />
+              <span style={{ color: 'transparent', WebkitTextStroke: '1px rgba(9,9,14,0.13)' }}>system.</span>
+            </div>
+          </div>
+          <div style={{ alignSelf: 'end' }}>
+            <p style={{ fontSize: '0.82rem', color: 'rgba(9,9,14,0.32)', lineHeight: 1.7, maxWidth: '280px', fontWeight: 300 }}>
+              One unified platform replacing every disconnected tool your lab runs today.
+            </p>
+          </div>
         </div>
-        <div style={{ lineHeight: 0.9 }}>
-          <span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(3rem,6vw,5.5rem)',
-            letterSpacing: '-0.03em', color: '#09090E' }}>Ten modules. </span>
-          <span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(3rem,6vw,5.5rem)',
-            letterSpacing: '-0.03em', color: 'transparent', WebkitTextStroke: '1.5px rgba(9,9,14,0.14)' }}>One </span>
-          <span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(3rem,6vw,5.5rem)',
-            letterSpacing: '-0.03em', color: '#4F46E5', fontStyle: 'italic' }}>operating </span>
-          <span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(3rem,6vw,5.5rem)',
-            letterSpacing: '-0.03em', color: 'transparent', WebkitTextStroke: '1.5px rgba(9,9,14,0.14)' }}>system.</span>
-        </div>
-      </div>
+      </SectionReveal>
+
       <div ref={rowsRef}>
-        {MODULES.map(([n, name, tag]) => (
+        {modules.map(({ n, name, tag, tagColor }) => (
           <div
-            key={n}
+            key={name}
             className="mod-row-item"
-            style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto', alignItems: 'center',
-              gap: '1.5rem', padding: '1.4rem 2.5rem', borderTop: '1px solid rgba(9,9,14,0.07)',
-              cursor: 'default', position: 'relative' }}
+            style={{
+              display: 'grid', gridTemplateColumns: '56px 1fr 90px',
+              alignItems: 'center', padding: '1.2rem 2.5rem',
+              borderBottom: '1px solid rgba(9,9,14,0.04)',
+              cursor: 'pointer', position: 'relative',
+            }}
           >
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', fontWeight: 700,
-              letterSpacing: '0.06em', color: 'rgba(9,9,14,0.3)' }}>{n}</span>
-            <span className="mod-row-name" style={{ fontFamily: 'var(--font-serif)',
-              fontSize: 'clamp(1.3rem,2.2vw,1.9rem)', color: '#09090E' }}>{name}</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', fontWeight: 600,
-              letterSpacing: '0.05em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.3)' }}>{tag}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700, color: 'rgba(9,9,14,0.18)' }}>{n}</span>
+            <span className="mod-row-name" style={{ fontSize: '0.9rem', fontWeight: 600, color: '#09090E' }}>{name}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.07em', textAlign: 'right', color: tagColor }}>{tag}</span>
           </div>
         ))}
       </div>

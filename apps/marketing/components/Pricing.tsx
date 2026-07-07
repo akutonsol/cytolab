@@ -1,82 +1,87 @@
 import SectionReveal from './SectionReveal'
 
-const TIERS = [
+const plans = [
   {
-    name: 'Community Labs',
-    tag: 'Single site',
-    features: ['Full specimen workflow', 'Bethesda 2014 reporting', 'Patient management', 'Standard analytics', 'Email support'],
-    featured: false,
+    tier: 'Independent Labs', name: 'Community Labs', featured: false,
+    features: ['Full specimen workflow', 'Bethesda TBS 2014 reporting', 'Patient management', 'Basic analytics', 'Email support'],
   },
   {
-    name: 'Regional Labs',
-    tag: 'Multi-site',
-    features: ['Everything in Community', 'CYTO AI screening', 'HL7 / FHIR interoperability', 'Billing + workforce', 'Priority support'],
-    featured: true,
+    tier: 'Regional Labs', name: 'Regional Labs', featured: true,
+    features: ['Everything in Community', 'CYTO AI screening', 'WSI digital slide viewer', 'HL7 / FHIR R4 integrations', 'Workforce and payroll', 'Priority support'],
   },
   {
-    name: 'Enterprise Health Systems',
-    tag: 'Networks',
-    features: ['Everything in Regional', 'Multi-tenant administration', 'Custom integrations', 'Dedicated success manager', 'SLA guarantee', 'Dedicated success team'],
-    featured: false,
+    tier: 'Health Systems', name: 'Enterprise Health Systems', featured: false,
+    features: ['Everything in Regional', 'Multi-lab tenancy', 'Custom AI model training', 'Dedicated infrastructure', 'SLA guarantee', 'Dedicated success team'],
   },
 ]
 
 export default function Pricing() {
+  const sTag = (label: string) => (
+    <div style={{
+      fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
+      letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.22)',
+      display: 'flex', alignItems: 'center', gap: '9px',
+    }}>
+      <span style={{ width: 18, height: 1, background: 'rgba(9,9,14,0.18)', display: 'inline-block' }} />
+      {label}
+    </div>
+  )
+
   return (
     <section id="pricing" style={{ borderBottom: '1px solid rgba(9,9,14,0.07)', position: 'relative' }}>
       <div className="section-counter" aria-hidden="true">07</div>
-      <div style={{ padding: '5rem 2.5rem 3rem', position: 'relative' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
-          letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.22)',
-          display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '2.5rem' }}>
-          <span style={{ width: 18, height: 1, background: 'rgba(9,9,14,0.18)', display: 'inline-block' }} />
-          06 · Pricing
-        </div>
-        <div style={{ lineHeight: 0.9 }}>
-          <div><span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(3rem,6vw,5.5rem)',
-            letterSpacing: '-0.03em', color: '#09090E' }}>Built for every</span></div>
-          <div>
-            <span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(3rem,6vw,5.5rem)',
-              letterSpacing: '-0.03em', color: 'transparent', WebkitTextStroke: '1.5px rgba(9,9,14,0.14)' }}>scale of </span>
-            <span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(3rem,6vw,5.5rem)',
-              letterSpacing: '-0.03em', color: '#4F46E5', fontStyle: 'italic' }}>laboratory.</span>
+      <SectionReveal>
+        <div style={{ padding: '5rem 2.5rem 3.5rem', borderBottom: '1px solid rgba(9,9,14,0.07)' }}>
+          <div style={{ marginBottom: '1.5rem' }}>{sTag('06 · Plans')}</div>
+          <div style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(4rem, 7vw, 7rem)', lineHeight: 0.88, letterSpacing: '-0.04em' }}>
+            Built for every<br />
+            <span style={{ color: 'transparent', WebkitTextStroke: '2px rgba(9,9,14,0.2)' }}>scale of</span>{' '}
+            <span style={{ color: '#4F46E5', fontStyle: 'italic' }}>laboratory.</span>
           </div>
         </div>
-      </div>
+      </SectionReveal>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-        borderTop: '1px solid rgba(9,9,14,0.07)' }}>
-        {TIERS.map((t, i) => {
-          const fg = t.featured ? '#fff' : '#09090E'
-          const muted = t.featured ? 'rgba(255,255,255,0.55)' : 'rgba(9,9,14,0.4)'
-          return (
-            <SectionReveal key={t.name} delay={0.06 * i}>
-              <div style={{ background: t.featured ? '#4F46E5' : 'transparent',
-                borderRight: i < 2 ? '1px solid rgba(9,9,14,0.07)' : 'none',
-                padding: '3rem 2rem 3.5rem', minHeight: '100%',
-                display: 'flex', flexDirection: 'column' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
-                  letterSpacing: '0.12em', textTransform: 'uppercase', color: muted,
-                  marginBottom: '1rem' }}>{t.tag}</div>
-                <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.9rem', lineHeight: 1.05,
-                  color: fg, marginBottom: '2rem' }}>{t.name}</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
-                  {t.features.map((f) => (
-                    <div key={f} style={{ display: 'flex', gap: '11px', fontSize: '0.82rem',
-                      color: t.featured ? 'rgba(255,255,255,0.85)' : 'rgba(9,9,14,0.75)' }}>
-                      <span style={{ color: t.featured ? 'rgba(255,255,255,0.5)' : '#4F46E5', flexShrink: 0 }}>→</span>{f}
-                    </div>
-                  ))}
-                </div>
-                <button className="mag-btn" style={{ marginTop: '2.5rem', width: '100%',
-                  background: t.featured ? '#09090E' : '#09090E', color: '#F0EFE9', border: 'none',
-                  padding: '13px', borderRadius: '2px', fontFamily: 'var(--font-mono)',
-                  fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.07em',
-                  textTransform: 'uppercase', cursor: 'pointer' }}>Request demo</button>
-              </div>
-            </SectionReveal>
-          )
-        })}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+        {plans.map(({ tier, name, featured, features }, i) => (
+          <SectionReveal key={name} delay={i * 0.1}>
+            <div style={{
+              padding: '3rem 2.5rem',
+              borderRight: i < 2 ? '1px solid rgba(9,9,14,0.07)' : 'none',
+              background: featured ? '#4F46E5' : 'transparent',
+              height: '100%',
+            }}>
+              <div style={{
+                fontFamily: 'var(--font-mono)', fontSize: '0.52rem', fontWeight: 700,
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                color: featured ? 'rgba(255,255,255,0.4)' : 'rgba(9,9,14,0.3)',
+                marginBottom: '0.6rem',
+              }}>{tier}</div>
+              <div style={{
+                fontFamily: 'var(--font-serif)', fontSize: '2.2rem',
+                color: featured ? '#fff' : '#09090E', lineHeight: 1.0, marginBottom: '2rem',
+              }}>{name}</div>
+              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '7px', marginBottom: '2.5rem' }}>
+                {features.map(f => (
+                  <li key={f} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', fontSize: '0.75rem', color: featured ? 'rgba(255,255,255,0.65)' : 'rgba(9,9,14,0.45)' }}>
+                    <span style={{ width: 3, height: 3, background: featured ? 'rgba(255,255,255,0.45)' : '#4F46E5', borderRadius: '50%', flexShrink: 0, marginTop: '6px' }} />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                className="mag-btn"
+                style={{
+                  width: '100%', padding: '11px', borderRadius: '2px',
+                  fontFamily: 'var(--font-mono)', fontSize: '0.7rem', fontWeight: 700,
+                  letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer',
+                  background: featured ? '#fff' : '#09090E',
+                  border: 'none',
+                  color: featured ? '#4F46E5' : '#F0EFE9',
+                }}
+              >Request demo &rarr;</button>
+            </div>
+          </SectionReveal>
+        ))}
       </div>
     </section>
   )

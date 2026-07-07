@@ -2,31 +2,25 @@
 import { useEffect, useRef } from 'react'
 import SectionReveal from './SectionReveal'
 
-const STEPS: [string, string][] = [
-  ['01', 'Full-slide AI scan'],
-  ['02', 'Abnormal cell clustering'],
-  ['03', 'Explainable heatmap + confidence score'],
-  ['04', 'Urgency-based routing'],
-  ['05', 'Live EMR delivery — HL7/FHIR under 2s'],
+const steps = [
+  'Full-slide AI scan',
+  'Abnormal cell clustering',
+  'Explainable heatmap + confidence score',
+  'Urgency-based routing',
+  'Live EMR delivery — HL7/FHIR · under 2s',
 ]
 
-const CARDS: [string, string, string][] = [
-  ['97%', 'HSIL detection accuracy', 'ink'],
-  ['91%', 'Reduction in manual review', 'blue'],
-  ['~0.8s', 'Per-slide inference time', 'ink'],
-]
-
-const HEADLINE: [string, string][] = [
-  ['Your new', 'solid'],
-  ['digital', 'ghost'],
-  ['cytotechnologist.', 'blue'],
+const outcomes = [
+  { tag: 'Detection accuracy', value: '97%', blue: false },
+  { tag: 'Review time saved', value: '91%', blue: true },
+  { tag: 'Per-slide speed', value: '~0.8s', blue: false },
 ]
 
 export default function AISection() {
-  const secRef = useRef<HTMLElement>(null)
+  const tickerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const el = secRef.current
+    const el = tickerRef.current
     if (!el) return
     const words = el.querySelectorAll<HTMLElement>('.word-rise-inner')
     const obs = new IntersectionObserver(([entry]) => {
@@ -39,65 +33,76 @@ export default function AISection() {
     return () => obs.disconnect()
   }, [])
 
+  const sTag = (label: string) => (
+    <div style={{
+      fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
+      letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.22)',
+      display: 'flex', alignItems: 'center', gap: '9px',
+    }}>
+      <span style={{ width: 18, height: 1, background: 'rgba(9,9,14,0.18)', display: 'inline-block' }} />
+      {label}
+    </div>
+  )
+
   return (
-    <section ref={secRef} id="cyto-ai" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr',
-      borderBottom: '1px solid rgba(9,9,14,0.07)', position: 'relative' }}>
+    <section id="cyto-ai" style={{ borderBottom: '1px solid rgba(9,9,14,0.07)', overflow: 'hidden', position: 'relative' }}>
       <div className="section-counter" aria-hidden="true">04</div>
-      {/* LEFT — bone */}
-      <div style={{ background: '#F0EFE9', padding: '5rem 3rem 5rem 2.5rem',
-        borderRight: '1px solid rgba(9,9,14,0.07)', position: 'relative' }}>
-        <SectionReveal direction="left">
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
-            letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.22)',
-            display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '2.5rem' }}>
-            <span style={{ width: 18, height: 1, background: 'rgba(9,9,14,0.18)', display: 'inline-block' }} />
-            03 · CYTO AI
-          </div>
-          <div style={{ lineHeight: 0.9, marginBottom: '3rem' }}>
-            {HEADLINE.map(([text, tone]) => (
-              <div key={text}>
-                <span className="word-rise" style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom' }}>
-                  <span className="word-rise-inner" style={{
-                    display: 'inline-block',
-                    fontFamily: 'var(--font-serif)',
-                    fontSize: 'clamp(2.6rem,4.5vw,4.5rem)',
-                    letterSpacing: '-0.03em',
-                    color: tone === 'blue' ? '#4F46E5' : tone === 'ghost' ? 'transparent' : '#09090E',
-                    WebkitTextStroke: tone === 'ghost' ? '1.5px rgba(9,9,14,0.16)' : undefined,
-                    fontStyle: tone === 'blue' ? 'italic' : 'normal',
-                  }}>{text}</span>
-                </span>
-              </div>
+
+      <div ref={tickerRef} style={{ padding: '5rem 2.5rem 0' }}>
+        <div style={{ marginBottom: '2.5rem' }}>{sTag('03 · CYTO AI')}</div>
+        {[
+          [{ text: 'Your new', ghost: false, blue: false }],
+          [{ text: 'digital', ghost: true, blue: false }],
+          [{ text: 'cytotechnologist.', ghost: false, blue: true }],
+        ].map((line, li) => (
+          <div key={li} style={{ display: 'block', lineHeight: 0.88, marginBottom: '0.25rem' }}>
+            {line.map(({ text, ghost, blue }, wi) => (
+              <span key={wi} className="word-rise" style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom' }}>
+                <span className="word-rise-inner" style={{
+                  display: 'inline-block',
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: 'clamp(4.5rem, 11vw, 11rem)',
+                  letterSpacing: '-0.04em',
+                  color: ghost ? 'transparent' : blue ? '#4F46E5' : '#09090E',
+                  WebkitTextStroke: ghost ? '2px rgba(9,9,14,0.2)' : undefined,
+                  fontStyle: blue ? 'italic' : 'normal',
+                }}>{text}</span>
+              </span>
             ))}
           </div>
-          <div>
-            {STEPS.map(([n, title]) => (
-              <div key={n} style={{ display: 'flex', alignItems: 'center', gap: '16px',
-                padding: '15px 0', borderTop: '1px solid rgba(9,9,14,0.07)' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', fontWeight: 700,
-                  color: '#4F46E5', letterSpacing: '0.06em' }}>{n}</span>
-                <span style={{ fontSize: '0.92rem', fontWeight: 500, color: '#09090E' }}>{title}</span>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid rgba(9,9,14,0.07)', marginTop: '3.5rem' }}>
+        <SectionReveal direction="left">
+          <div style={{ padding: '3.5rem 3rem 4.5rem 2.5rem', borderRight: '1px solid rgba(9,9,14,0.07)' }}>
+            <div style={{ marginBottom: '2rem' }}>{sTag('How it works')}</div>
+            {steps.map((step, i) => (
+              <div key={step} style={{
+                display: 'flex', gap: '1.5rem', padding: '1.1rem 0',
+                borderBottom: '1px solid rgba(9,9,14,0.04)', alignItems: 'center',
+                borderTop: i === 0 ? '1px solid rgba(9,9,14,0.04)' : 'none',
+              }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700, color: 'rgba(9,9,14,0.2)', minWidth: '22px', letterSpacing: '0.05em' }}>0{i + 1}</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#09090E' }}>{step}</span>
               </div>
             ))}
           </div>
         </SectionReveal>
-      </div>
 
-      {/* RIGHT — bg2, white cards */}
-      <div style={{ background: '#E8E7E1', padding: '5rem 2.5rem', display: 'flex',
-        flexDirection: 'column', justifyContent: 'center', gap: '1px' }}>
-        {CARDS.map(([num, label, tone], i) => (
-          <SectionReveal key={label} delay={0.06 * i} direction="right">
-            <div style={{ background: '#F7F6F1', padding: '2rem 2.25rem', display: 'flex',
-              alignItems: 'baseline', justifyContent: 'space-between', gap: '1.5rem' }}>
-              <div style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.6rem,4vw,3.6rem)',
-                lineHeight: 0.9, color: tone === 'blue' ? '#4F46E5' : '#09090E' }}>{num}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', fontWeight: 600,
-                letterSpacing: '0.05em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.38)',
-                textAlign: 'right', maxWidth: '160px' }}>{label}</div>
+        <SectionReveal direction="right">
+          <div style={{ padding: '3.5rem 2.5rem 4.5rem 3rem', background: '#E8E7E1' }}>
+            <div style={{ marginBottom: '2rem' }}>{sTag('Outcomes')}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {outcomes.map(({ tag, value, blue }) => (
+                <div key={tag} style={{ background: '#fff', border: '1px solid rgba(9,9,14,0.07)', borderRadius: '2px', padding: '1.75rem' }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.25)', marginBottom: '0.5rem' }}>{tag}</div>
+                  <div style={{ fontFamily: 'var(--font-serif)', fontSize: '3.5rem', lineHeight: 0.88, color: blue ? '#4F46E5' : '#09090E' }}>{value}</div>
+                </div>
+              ))}
             </div>
-          </SectionReveal>
-        ))}
+          </div>
+        </SectionReveal>
       </div>
     </section>
   )

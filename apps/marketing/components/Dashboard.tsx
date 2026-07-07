@@ -1,154 +1,138 @@
 'use client'
 import { useEffect, useRef } from 'react'
+import SectionReveal from './SectionReveal'
 
-const NAV = ['AI Queue', 'Specimens', 'Reporting', 'Analytics', 'Billing', 'Workforce', 'QA']
-const KPIS: [string, string, string][] = [
-  ['147', 'In Queue', '↑ 12 today'],
-  ['89', 'AI Screened', '84% conf.'],
-  ['23', 'Flagged', '↑ urgent'],
-  ['18h', 'Avg TAT', '↓ 54h'],
+const navItems = ['AI Queue', 'Specimens', 'Patients', 'Analytics', 'Reports', 'Billing', 'Workforce', 'Settings']
+const findings = [
+  { id: 'SP-2026-0842', result: 'HSIL', conf: '97%', color: '#f87171', bg: 'rgba(239,68,68,0.1)' },
+  { id: 'SP-2026-0839', result: 'ASC-US', conf: '88%', color: '#3f97ef', bg: 'rgba(63,151,239,0.1)' },
+  { id: 'SP-2026-0836', result: 'NILM', conf: '99%', color: '#4ade80', bg: 'rgba(74,222,128,0.1)' },
+  { id: 'SP-2026-0833', result: 'ASC-H', conf: '92%', color: '#60a5fa', bg: 'rgba(63,151,239,0.1)' },
 ]
-const FINDINGS: [string, string, string, string][] = [
-  ['DM26-03-014', 'Cervical', 'ASC-US', '84%'],
-  ['DM26-10-085', 'Breast FNA', 'Atypical', '77%'],
-  ['DM26-05-715', 'Urine', 'Negative', '96%'],
-  ['DM26-01-723', 'Thyroid FNA', 'HSIL', '91%'],
-  ['DM26-02-330', 'Cervical', 'Negative', '98%'],
-]
-const ACC: [string, number][] = [
-  ['HSIL / ASC-H', 97], ['LSIL', 94], ['ASC-US', 91], ['Negative (NILM)', 98], ['Specimen adequacy', 99],
+const accuracy = [
+  { label: 'NILM', pct: 99, color: '#4ade80' },
+  { label: 'HSIL', pct: 97, color: '#4F46E5' },
+  { label: 'ASC-US', pct: 88, color: '#3f97ef' },
+  { label: 'Carcinoma', pct: 94, color: '#f87171' },
 ]
 
-function Bars() {
-  const wrap = useRef<HTMLDivElement>(null)
+export default function Dashboard() {
+  const barRefs = useRef<(HTMLDivElement | null)[]>([])
+  const animated = useRef(false)
+
   useEffect(() => {
-    const el = wrap.current; if (!el) return
-    const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) {
-        el.querySelectorAll<HTMLElement>('[data-bar]').forEach((b) => { b.style.width = b.dataset.bar! })
+    const container = document.getElementById('dash-section')
+    if (!container) return
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !animated.current) {
+        animated.current = true
+        barRefs.current.forEach((bar, i) => {
+          if (bar) setTimeout(() => { bar.style.width = bar.dataset.w + '%' }, 300 + i * 120)
+        })
         obs.disconnect()
       }
     }, { threshold: 0.3 })
-    obs.observe(el)
+    obs.observe(container)
     return () => obs.disconnect()
   }, [])
-  return (
-    <div ref={wrap} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-      {ACC.map(([label, v]) => (
-        <div key={label}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '7px' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', fontWeight: 600,
-              letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.4)' }}>{label}</span>
-            <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.1rem', color: '#F0EFE9' }}>{v}%</span>
-          </div>
-          <div style={{ height: 3, background: 'rgba(240,239,233,0.08)', borderRadius: '2px', overflow: 'hidden' }}>
-            <div data-bar={`${v}%`} style={{ height: '100%', width: 0, background: '#4F46E5',
-              borderRadius: '2px', transition: 'width 1.4s cubic-bezier(0.16,1,0.3,1)' }} />
-          </div>
-        </div>
-      ))}
+
+  const sTagInv = (label: string) => (
+    <div style={{
+      fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
+      letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.22)',
+      display: 'flex', alignItems: 'center', gap: '9px',
+    }}>
+      <span style={{ width: 18, height: 1, background: 'rgba(240,239,233,0.18)', display: 'inline-block' }} />
+      {label}
     </div>
   )
-}
 
-export default function Dashboard() {
   return (
-    <section style={{ background: '#09090E', color: '#F0EFE9', position: 'relative', overflow: 'hidden',
-      borderBottom: '1px solid rgba(9,9,14,0.07)' }}>
-      <div className="section-counter" aria-hidden="true" style={{ color: 'rgba(240,239,233,0.025)' }}>03</div>
-      <div style={{ position: 'absolute', inset: 0,
-        backgroundImage: 'linear-gradient(rgba(240,239,233,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(240,239,233,0.02) 1px,transparent 1px)',
-        backgroundSize: '48px 48px', pointerEvents: 'none' }} />
-
-      {/* Header */}
-      <div style={{ padding: '5rem 2.5rem 3rem', position: 'relative' }}>
-        <div style={{ position: 'absolute', right: '2.5rem', top: '2rem', fontFamily: 'var(--font-serif)',
-          fontSize: '20vw', lineHeight: 1, color: 'rgba(240,239,233,0.02)', fontStyle: 'italic',
-          pointerEvents: 'none', userSelect: 'none', whiteSpace: 'nowrap' }}>Workspace</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
-          letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.25)',
-          display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '2rem', position: 'relative' }}>
-          <span style={{ width: 18, height: 1, background: 'rgba(240,239,233,0.2)', display: 'inline-block' }} />
-          02 · The Platform
-        </div>
-        <div style={{ position: 'relative', lineHeight: 0.9 }}>
-          <span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(3rem,6vw,5.5rem)',
-            letterSpacing: '-0.03em', color: '#F0EFE9' }}>One workspace. </span>
-          <span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(3rem,6vw,5.5rem)',
-            letterSpacing: '-0.03em', color: 'transparent', WebkitTextStroke: '1.5px rgba(240,239,233,0.16)',
-            fontStyle: 'italic' }}>Every workflow.</span>
-        </div>
-      </div>
-
-      {/* App frame */}
-      <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '180px 1fr',
-        borderTop: '1px solid rgba(240,239,233,0.07)' }}>
-        {/* Sidebar */}
-        <div style={{ borderRight: '1px solid rgba(240,239,233,0.07)', padding: '1.75rem 1.25rem' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
-            letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.25)',
-            marginBottom: '1.25rem' }}>Modules</div>
-          {NAV.map((item, i) => (
-            <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '9px 0',
-              fontFamily: 'var(--font-mono)', fontSize: '0.68rem', fontWeight: i === 0 ? 700 : 500,
-              color: i === 0 ? '#F0EFE9' : 'rgba(240,239,233,0.35)' }}>
-              <span style={{ width: 5, height: 5, borderRadius: '2px',
-                background: i === 0 ? '#4F46E5' : 'rgba(240,239,233,0.15)' }} />
-              {item}
+    <section id="dash-section" style={{ background: '#09090E', borderBottom: '1px solid rgba(240,239,233,0.04)', position: 'relative' }}>
+      <div className="section-counter" aria-hidden="true" style={{ color: 'rgba(240,239,233,0.04)' }}>03</div>
+      <SectionReveal>
+        <div style={{
+          padding: '5rem 2.5rem 3rem', display: 'grid', gridTemplateColumns: '1fr 1fr',
+          alignItems: 'end', borderBottom: '1px solid rgba(240,239,233,0.04)', position: 'relative',
+        }}>
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+            fontFamily: 'var(--font-serif)', fontSize: '28vw', color: 'rgba(240,239,233,0.028)',
+            whiteSpace: 'nowrap', pointerEvents: 'none', fontStyle: 'italic',
+            letterSpacing: '-0.04em', userSelect: 'none',
+          }}>Workspace</div>
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <div style={{ marginBottom: '1.5rem' }}>{sTagInv('02 · Platform')}</div>
+            <div style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(4rem, 7vw, 7rem)', color: '#fff', lineHeight: 0.88, letterSpacing: '-0.03em' }}>
+              One workspace.<br />
+              <em style={{ fontStyle: 'italic', color: 'rgba(240,239,233,0.18)' }}>Every workflow.</em>
             </div>
-          ))}
+          </div>
+          <div style={{ textAlign: 'right', position: 'relative', zIndex: 2 }}>
+            <p style={{ fontSize: '0.78rem', color: 'rgba(240,239,233,0.2)', lineHeight: 1.7, maxWidth: '250px', marginLeft: 'auto', fontWeight: 300 }}>
+              Built for speed, diagnostic clarity, and zero friction.
+            </p>
+          </div>
         </div>
 
-        {/* Main */}
-        <div style={{ padding: '1.75rem 2rem 3rem' }}>
-          {/* KPI grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 0,
-            border: '1px solid rgba(240,239,233,0.07)', marginBottom: '2rem' }}>
-            {KPIS.map(([v, label, delta], i) => (
-              <div key={label} style={{ padding: '1.5rem 1.25rem',
-                borderRight: i < 3 ? '1px solid rgba(240,239,233,0.07)' : 'none' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 600,
-                  letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.3)',
-                  marginBottom: '0.75rem' }}>{label}</div>
-                <div style={{ fontFamily: 'var(--font-serif)', fontSize: '2.6rem', lineHeight: 0.9,
-                  color: '#F0EFE9', marginBottom: '0.4rem' }}>{v}</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.58rem', color: '#3f97ef' }}>{delta}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr' }}>
+          <div style={{ borderRight: '1px solid rgba(240,239,233,0.04)', padding: '1.25rem 0' }}>
+            {navItems.map((item, i) => (
+              <div key={item} style={{
+                display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 1.25rem',
+                fontSize: '0.68rem', fontWeight: 500,
+                color: i === 0 ? '#fff' : 'rgba(240,239,233,0.2)',
+                background: i === 0 ? 'rgba(240,239,233,0.03)' : 'transparent',
+                letterSpacing: '0.01em',
+              }}>
+                <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
+                {item}
               </div>
             ))}
           </div>
 
-          {/* Two panels */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 0,
-            border: '1px solid rgba(240,239,233,0.07)' }}>
-            {/* Findings */}
-            <div style={{ padding: '1.5rem 1.5rem 1.75rem', borderRight: '1px solid rgba(240,239,233,0.07)' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
-                letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.3)',
-                marginBottom: '1.25rem' }}>AI Findings · Live</div>
-              {FINDINGS.map(([id, kind, dx, conf]) => {
-                const urgent = dx === 'HSIL' || dx === 'Atypical'
-                return (
-                  <div key={id} style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr auto',
-                    alignItems: 'center', gap: '10px', padding: '11px 0',
-                    borderTop: '1px solid rgba(240,239,233,0.05)', fontFamily: 'var(--font-mono)', fontSize: '0.66rem' }}>
-                    <span style={{ color: '#F0EFE9', fontWeight: 600 }}>{id}</span>
-                    <span style={{ color: 'rgba(240,239,233,0.4)' }}>{kind}</span>
-                    <span style={{ color: urgent ? '#f87171' : 'rgba(240,239,233,0.6)', fontWeight: 700 }}>{dx}</span>
-                    <span style={{ color: '#4F46E5', fontWeight: 700, textAlign: 'right' }}>{conf}</span>
-                  </div>
-                )
-              })}
+          <div style={{ padding: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px', marginBottom: '10px' }}>
+              {[['Queue','147','↑12 today','#3f97ef'],['Screened','89','84% conf.','#3f97ef'],['Pending','23','4 high risk','#3f97ef'],['Avg TAT','18h','↓54h faster','#3f97ef']].map(([l,v,d,dc]) => (
+                <div key={l} style={{ background: 'rgba(240,239,233,0.025)', border: '1px solid rgba(240,239,233,0.05)', borderRadius: '2px', padding: '1.1rem' }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.18)', marginBottom: '4px' }}>{l}</div>
+                  <div style={{ fontFamily: 'var(--font-serif)', fontSize: '2.2rem', color: 'rgba(240,239,233,0.9)', lineHeight: 1 }}>{v}</div>
+                  <div style={{ fontSize: '0.6rem', color: dc, marginTop: '2px' }}>{d}</div>
+                </div>
+              ))}
             </div>
-            {/* Accuracy bars */}
-            <div style={{ padding: '1.5rem 1.5rem 1.75rem' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
-                letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.3)',
-                marginBottom: '1.5rem' }}>CYTO AI Accuracy</div>
-              <Bars />
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '8px' }}>
+              <div style={{ background: 'rgba(240,239,233,0.025)', border: '1px solid rgba(240,239,233,0.05)', borderRadius: '2px', padding: '1.1rem' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.18)', marginBottom: '10px' }}>AI Findings</div>
+                {findings.map(f => (
+                  <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: '1px solid rgba(240,239,233,0.03)', fontSize: '0.68rem', color: 'rgba(240,239,233,0.35)' }}>
+                    <span style={{ minWidth: '100px', fontSize: '0.65rem' }}>{f.id}</span>
+                    <span style={{ padding: '2px 6px', borderRadius: '1px', fontSize: '0.58rem', fontWeight: 700, background: f.bg, color: f.color }}>{f.result}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: '0.62rem' }}>{f.conf}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ background: 'rgba(240,239,233,0.025)', border: '1px solid rgba(240,239,233,0.05)', borderRadius: '2px', padding: '1.1rem' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.18)', marginBottom: '10px' }}>CYTO AI</div>
+                {accuracy.map((a, i) => (
+                  <div key={a.label} style={{ marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', color: 'rgba(240,239,233,0.2)', marginBottom: '3px' }}>
+                      <span>{a.label}</span><span>{a.pct}%</span>
+                    </div>
+                    <div style={{ height: '2px', background: 'rgba(240,239,233,0.05)', borderRadius: '1px' }}>
+                      <div
+                        ref={el => { barRefs.current[i] = el }}
+                        data-w={a.pct}
+                        style={{ height: '100%', background: a.color, borderRadius: '1px', width: '0%', transition: 'width 1.3s ease' }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </SectionReveal>
     </section>
   )
 }
