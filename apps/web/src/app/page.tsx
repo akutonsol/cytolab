@@ -209,14 +209,24 @@ export default function LandingPage() {
 
       {/* SECTION A — LIVE WORKFLOW PIPELINE (dark rounded card) */}
       <section style={{
-        margin: '80px 40px 80px 40px',
-        background: '#0f0f1a',
+        margin: '0 40px 0 40px',
+        background: '#0d0d1a',
         borderRadius: '24px',
-        padding: '48px 56px',
+        padding: '32px 48px 40px 48px',
         border: '1px solid rgba(255,255,255,0.08)',
+        position: 'relative',
+        overflow: 'hidden',
       }}>
+        {/* Purple top glow */}
+        <div style={{
+          position: 'absolute', top: '-60px', left: '50%', transform: 'translateX(-50%)',
+          width: '600px', height: '160px',
+          background: 'radial-gradient(ellipse, rgba(139,92,246,0.35) 0%, rgba(109,40,217,0.15) 40%, transparent 70%)',
+          pointerEvents: 'none', zIndex: 0,
+        }} />
+
         {/* Header row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>
               Live Workflow
@@ -231,7 +241,7 @@ export default function LandingPage() {
         </div>
 
         {/* Pipeline steps */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '40px' }}>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'flex-start', marginBottom: '40px' }}>
           {[
             { n: 1, label: 'Collect', sub: 'Sample received', time: '2 min ago', s: 'done' },
             { n: 2, label: 'Process', sub: 'Slide prepared', time: '4 min ago', s: 'done' },
@@ -241,57 +251,106 @@ export default function LandingPage() {
           ].map((step, i, arr) => (
             <div key={step.n} style={{ display: 'flex', alignItems: 'flex-start', flex: i < arr.length - 1 ? 1 : 'none' }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '80px' }}>
-                <div style={{
-                  width: '48px', height: '48px', borderRadius: '50%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '16px', fontWeight: 700,
-                  background: step.s === 'done' ? 'rgba(230,57,70,0.15)' : 'transparent',
-                  border: step.s === 'done' ? '2px solid #22c55e' : step.s === 'active' ? '2px solid #E63946' : '2px solid rgba(255,255,255,0.2)',
-                  color: step.s === 'done' ? '#22c55e' : step.s === 'active' ? '#E63946' : 'rgba(255,255,255,0.3)',
-                  boxShadow: step.s === 'active' ? '0 0 20px rgba(230,57,70,0.35)' : 'none',
-                }}>
-                  {step.s === 'done' && step.n === 1 ? '✓' : step.n}
+                <div style={{ position: 'relative' }}>
+                  {step.s === 'active' ? (
+                    <div style={{
+                      width: '52px', height: '52px', borderRadius: '50%', background: 'transparent',
+                      border: '2px solid #E63946', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '18px', fontWeight: 800, color: '#E63946',
+                      boxShadow: '0 0 0 4px rgba(230,57,70,0.15), 0 0 20px rgba(230,57,70,0.3)',
+                    }}>{step.n}</div>
+                  ) : step.s === 'done' ? (
+                    <div style={{
+                      width: '52px', height: '52px', borderRadius: '50%', background: '#1a1a2e',
+                      border: step.n === 1 ? '2px solid rgba(255,255,255,0.2)' : '2px solid rgba(255,255,255,0.25)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '18px', fontWeight: 800, color: step.n === 1 ? 'white' : 'rgba(255,255,255,0.8)',
+                    }}>{step.n}</div>
+                  ) : (
+                    <div style={{
+                      width: '52px', height: '52px', borderRadius: '50%', background: 'transparent',
+                      border: '2px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '18px', fontWeight: 800, color: 'rgba(255,255,255,0.25)',
+                    }}>{step.n}</div>
+                  )}
+                  {step.s === 'done' && step.n === 1 && (
+                    <div style={{
+                      position: 'absolute', bottom: '-2px', right: '-2px', width: '20px', height: '20px', borderRadius: '50%',
+                      background: '#E63946', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '11px', color: 'white', fontWeight: 700, border: '2px solid #0d0d1a',
+                    }}>✓</div>
+                  )}
                 </div>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: 'white', marginTop: '10px', textAlign: 'center' }}>{step.label}</div>
-                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginTop: '3px', textAlign: 'center' }}>{step.sub}</div>
+                <div style={{ fontSize: '14px', fontWeight: 700, color: 'white', marginTop: '12px', textAlign: 'center' }}>{step.label}</div>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '2px', textAlign: 'center' }}>{step.sub}</div>
                 <div style={{ fontSize: '11px', marginTop: '3px', textAlign: 'center', color: step.s === 'done' ? '#22c55e' : step.s === 'active' ? '#E63946' : 'rgba(255,255,255,0.25)' }}>{step.time}</div>
               </div>
               {i < arr.length - 1 && (
-                <div style={{ height: '2px', flex: 1, marginTop: '23px', marginLeft: '4px', marginRight: '4px', background: i < 2 ? '#E63946' : 'rgba(255,255,255,0.12)' }} />
+                <div style={{
+                  height: '2px', flex: 1, marginTop: '26px', marginLeft: '4px', marginRight: '4px',
+                  background: i === 0 ? 'linear-gradient(90deg, rgba(255,255,255,0.3), #E63946)' : i === 1 ? '#E63946' : 'rgba(255,255,255,0.1)',
+                }} />
               )}
             </div>
           ))}
         </div>
 
         {/* Stats cards row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '20px' }}>
+        <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '20px' }}>
           {/* Card 1 — Active Cases */}
-          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px' }}>
+          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', backdropFilter: 'blur(10px)' }}>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '8px' }}>Active Cases</div>
             <div style={{ fontSize: '36px', fontWeight: 800, color: 'white', lineHeight: 1 }}>4,281</div>
             <div style={{ fontSize: '12px', color: '#22c55e', marginTop: '4px' }}>+231 today</div>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', marginTop: '16px', height: '40px' }}>
-              {[20, 35, 25, 45, 30, 50, 40].map((h, i) => (
-                <div key={i} style={{ width: '8px', height: `${h}px`, background: '#E63946', borderRadius: '2px', alignSelf: 'flex-end' }} />
-              ))}
-            </div>
+            <svg width="120" height="52" viewBox="0 0 120 52" style={{ marginTop: '12px' }}>
+              {[18, 28, 22, 38, 26, 44, 35, 20, 42, 38, 28, 36].map((h, i) => {
+                const x = i * 10 + 1;
+                const y = 52 - h;
+                const isLast = i === 11;
+                return (
+                  <g key={i}>
+                    <defs>
+                      <linearGradient id={`bar${i}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={isLast ? '#ff6b8a' : '#E63946'} stopOpacity="0.9" />
+                        <stop offset="100%" stopColor="#E63946" stopOpacity="0.2" />
+                      </linearGradient>
+                    </defs>
+                    <rect x={x} y={y} width="7" height={h} rx="2" fill={`url(#bar${i})`} />
+                    <circle cx={x + 3.5} cy={y} r="3" fill={isLast ? '#ff6b8a' : '#E63946'} filter="url(#barGlow)" />
+                  </g>
+                );
+              })}
+              <defs>
+                <filter id="barGlow">
+                  <feGaussianBlur stdDeviation="2" result="blur" />
+                  <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                </filter>
+              </defs>
+            </svg>
           </div>
 
           {/* Card 2 — In Analysis */}
-          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px' }}>
+          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', backdropFilter: 'blur(10px)' }}>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '8px' }}>In Analysis</div>
             <div style={{ fontSize: '36px', fontWeight: 800, color: 'white', lineHeight: 1 }}>1,247</div>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>29% of total</div>
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
-              <svg width="64" height="64" viewBox="0 0 64 64">
-                <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="6" />
-                <circle cx="32" cy="32" r="26" fill="none" stroke="#E63946" strokeWidth="6" strokeDasharray={`${2 * Math.PI * 26 * 0.29} ${2 * Math.PI * 26}`} strokeLinecap="round" transform="rotate(-90 32 32)" />
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <svg width="80" height="80" viewBox="0 0 80 80" style={{ marginTop: '12px' }}>
+                <defs>
+                  <linearGradient id="donutGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#8b5cf6" />
+                    <stop offset="100%" stopColor="#E63946" />
+                  </linearGradient>
+                </defs>
+                <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="8" />
+                <circle cx="40" cy="40" r="30" fill="none" stroke="url(#donutGrad)" strokeWidth="8" strokeDasharray={`${2 * Math.PI * 30 * 0.29} ${2 * Math.PI * 30}`} strokeLinecap="round" transform="rotate(-90 40 40)" />
+                <text x="40" y="44" textAnchor="middle" fill="white" fontSize="13" fontWeight="700">29%</text>
               </svg>
             </div>
           </div>
 
           {/* Card 3 — High Priority */}
-          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', position: 'relative' }}>
+          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', position: 'relative', backdropFilter: 'blur(10px)' }}>
             <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
                 <path d="M12 3.5l8.5 15h-17z" stroke="#E63946" strokeWidth="2" strokeLinejoin="round" />
@@ -320,7 +379,7 @@ export default function LandingPage() {
           </div>
 
           {/* Card 4 — System Status */}
-          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px' }}>
+          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', backdropFilter: 'blur(10px)' }}>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '16px' }}>System Status</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {['AI Engine', 'Image Processing', 'Data Sync', 'Storage'].map((item) => (
@@ -337,7 +396,7 @@ export default function LandingPage() {
       </section>
 
       {/* SECTION B — AI SCREENING */}
-      <section style={{ padding: '100px 80px', background: 'white' }}>
+      <section style={{ padding: '72px 80px', marginTop: 0, background: 'white' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '38% 62%', gap: '80px', alignItems: 'center', maxWidth: '1280px', margin: '0 auto' }}>
           {/* Left column */}
           <div>
@@ -350,18 +409,16 @@ export default function LandingPage() {
             </p>
             <div style={{ marginTop: '28px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {[
-                'Deep learning models trained on 50M+ cells',
-                '99%+ accuracy on key abnormality detection',
-                'Continuous learning from expert feedback',
-                'CAP & CLIA validated workflows',
+                { text: 'Deep learning models trained on 50M+ cells', icon: <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" fill="#E63946" /> },
+                { text: '99%+ accuracy on key abnormality detection', icon: <><circle cx="12" cy="12" r="3" fill="#E63946" /><circle cx="12" cy="12" r="6" fill="none" stroke="#E63946" strokeWidth="1.5" /></> },
+                { text: 'Continuous learning from expert feedback', icon: <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" fill="#E63946" /> },
+                { text: 'CAP & CLIA validated workflows', icon: <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" fill="#E63946" /> },
               ].map((feat, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(230,57,70,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <path d="M2 7l3.5 3.5L12 3" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(230,57,70,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">{feat.icon}</svg>
                   </div>
-                  <span style={{ fontSize: '14px', color: '#374151', fontWeight: 500 }}>{feat}</span>
+                  <span style={{ fontSize: '14px', color: '#374151', fontWeight: 500 }}>{feat.text}</span>
                 </div>
               ))}
             </div>
@@ -370,70 +427,99 @@ export default function LandingPage() {
             </button>
           </div>
 
-          {/* Right column — microscopy viewer */}
-          <div style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid #e5e7eb', background: '#f8f9ff' }}>
-            {/* Slide view */}
-            <div style={{ position: 'relative', height: '280px', background: '#f0eef8', overflow: 'hidden' }}>
+          {/* Right column — microscopy viewer + analysis + findings */}
+          <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', borderRadius: '20px', overflow: 'hidden', border: '1px solid #e5e7eb', minHeight: '420px' }}>
+
+            {/* LEFT: Microscopy image */}
+            <div style={{ position: 'relative', background: '#f0eef8', overflow: 'hidden' }}>
+              {/* Atypical Cell Detected badge */}
+              <div style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', background: '#E63946', color: 'white', borderRadius: '20px', padding: '4px 14px', fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap', zIndex: 10 }}>
+                ● Atypical Cell Detected
+              </div>
+
+              {/* CSS microscopy cells */}
               {[
-                { size: 110, top: '18%', left: '14%', color: 'rgba(139,92,246,0.28)' },
-                { size: 85, top: '44%', left: '33%', color: 'rgba(109,40,217,0.22)' },
-                { size: 130, top: '8%', left: '54%', color: 'rgba(124,58,237,0.18)' },
-                { size: 90, top: '52%', left: '62%', color: 'rgba(139,92,246,0.25)' },
-                { size: 70, top: '28%', left: '76%', color: 'rgba(109,40,217,0.20)' },
-                { size: 65, top: '62%', left: '18%', color: 'rgba(124,58,237,0.16)' },
-                { size: 100, top: '12%', left: '84%', color: 'rgba(139,92,246,0.22)' },
+                { s: 160, t: '5%', l: '5%', c: 'rgba(109,40,217,0.45)', n: 'rgba(80,20,180,0.7)' },
+                { s: 140, t: '15%', l: '45%', c: 'rgba(124,58,237,0.40)', n: 'rgba(90,25,190,0.65)' },
+                { s: 120, t: '50%', l: '10%', c: 'rgba(139,92,246,0.38)', n: 'rgba(100,30,200,0.6)' },
+                { s: 150, t: '45%', l: '50%', c: 'rgba(109,40,217,0.42)', n: 'rgba(80,20,180,0.68)' },
+                { s: 100, t: '70%', l: '30%', c: 'rgba(124,58,237,0.35)', n: 'rgba(90,25,190,0.58)' },
+                { s: 110, t: '60%', l: '68%', c: 'rgba(139,92,246,0.40)', n: 'rgba(100,30,200,0.62)' },
+                { s: 90, t: '25%', l: '75%', c: 'rgba(109,40,217,0.32)', n: 'rgba(80,20,180,0.55)' },
               ].map((cell, i) => (
-                <div key={i} style={{ position: 'absolute', borderRadius: '50%', width: `${cell.size}px`, height: `${cell.size}px`, top: cell.top, left: cell.left, background: cell.color }}>
-                  <div style={{ position: 'absolute', width: `${cell.size * 0.4}px`, height: `${cell.size * 0.4}px`, top: '50%', left: '50%', transform: 'translate(-50%,-50%)', borderRadius: '50%', background: cell.color.replace(/[\d.]+\)$/, '0.55)') }} />
+                <div key={i} style={{
+                  position: 'absolute', width: `${cell.s}px`, height: `${cell.s}px`, top: cell.t, left: cell.l, borderRadius: '50%',
+                  background: `radial-gradient(circle at 35% 35%, ${cell.c.replace(/[\d.]+\)/, '0.6)')}, ${cell.c})`,
+                  boxShadow: 'inset -8px -8px 20px rgba(0,0,0,0.2), inset 4px 4px 12px rgba(255,255,255,0.15)',
+                }}>
+                  <div style={{
+                    position: 'absolute', width: `${cell.s * 0.38}px`, height: `${cell.s * 0.38}px`, top: '50%', left: '50%',
+                    transform: 'translate(-40%, -40%)', borderRadius: '50%', background: cell.n,
+                    boxShadow: 'inset -3px -3px 8px rgba(0,0,0,0.3)',
+                  }} />
                 </div>
               ))}
-              {/* AI detection box */}
-              <div style={{ position: 'absolute', top: '40%', left: '30%', width: '108px', height: '108px', border: '2px dashed #E63946', borderRadius: '8px' }}>
-                <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', background: '#E63946', color: 'white', whiteSpace: 'nowrap', borderRadius: '20px', padding: '3px 10px', fontSize: '11px', fontWeight: 600 }}>
-                  ● Atypical Cell Detected
-                </div>
+
+              {/* AI Detection box with corner markers */}
+              <div style={{ position: 'absolute', top: '42%', left: '22%', width: '120px', height: '120px', border: '2px solid #E63946', borderRadius: '6px', boxShadow: '0 0 12px rgba(230,57,70,0.3)' }}>
+                <div style={{ position: 'absolute', top: -2, left: -2, width: 12, height: 12, borderTop: '3px solid #E63946', borderLeft: '3px solid #E63946' }} />
+                <div style={{ position: 'absolute', top: -2, right: -2, width: 12, height: 12, borderTop: '3px solid #E63946', borderRight: '3px solid #E63946' }} />
+                <div style={{ position: 'absolute', bottom: -2, left: -2, width: 12, height: 12, borderBottom: '3px solid #E63946', borderLeft: '3px solid #E63946' }} />
+                <div style={{ position: 'absolute', bottom: -2, right: -2, width: 12, height: 12, borderBottom: '3px solid #E63946', borderRight: '3px solid #E63946' }} />
               </div>
             </div>
 
-            {/* Analysis panel */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', background: 'white', padding: '24px', gap: '24px', borderTop: '1px solid #e5e7eb' }}>
-              {/* Analysis Progress */}
-              <div>
-                <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, marginBottom: '14px' }}>Analysis Progress</div>
-                <div style={{ fontSize: '12px', color: '#374151', marginBottom: '6px' }}>Scanning cells...</div>
-                <div style={{ background: '#f1f5f9', borderRadius: '4px', height: '6px', overflow: 'hidden', marginBottom: '4px' }}>
+            {/* RIGHT SIDE: dark analysis + white findings */}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {/* Dark Analysis Card */}
+              <div style={{ background: '#1a1a2e', padding: '24px', flex: 1 }}>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginBottom: '16px' }}>Analysis Progress</div>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '6px' }}>Scanning cells...</div>
+                <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '4px', height: '4px', marginBottom: '4px' }}>
                   <div style={{ width: '76%', height: '100%', borderRadius: '4px', background: 'linear-gradient(90deg,#E63946,#ff6b8a)' }} />
                 </div>
-                <div style={{ fontSize: '12px', color: '#E63946', fontWeight: 600, textAlign: 'right', marginBottom: '16px' }}>76%</div>
-                <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '2px' }}>Cells Analyzed</div>
-                <div style={{ fontSize: '28px', fontWeight: 800, color: '#0a0b1a', lineHeight: 1, marginBottom: '12px' }}>14,223</div>
-                <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>AI Confidence</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '20px', fontWeight: 800, color: '#0a0b1a' }}>98.4%</span>
-                  <span style={{ background: 'rgba(34,197,94,0.1)', color: '#16a34a', borderRadius: '20px', padding: '2px 10px', fontSize: '11px', fontWeight: 600 }}>High Confidence</span>
+                <div style={{ fontSize: '12px', color: 'white', fontWeight: 600, textAlign: 'right', marginBottom: '20px' }}>76%</div>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '2px' }}>Cells Analyzed</div>
+                <div style={{ fontSize: '32px', fontWeight: 800, color: 'white', lineHeight: 1, marginBottom: '16px' }}>14,223</div>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '6px' }}>AI Confidence</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                  <span style={{ fontSize: '28px', fontWeight: 800, color: 'white' }}>98.4%</span>
+                  <span style={{ background: 'rgba(34,197,94,0.2)', color: '#22c55e', borderRadius: '20px', padding: '3px 10px', fontSize: '11px', fontWeight: 600 }}>High Confidence</span>
                 </div>
+                {/* Green sparkline */}
+                <svg width="100%" height="36" viewBox="0 0 200 36">
+                  <defs>
+                    <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" />
+                      <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <polygon points="0,28 20,24 40,26 60,20 80,22 100,16 120,18 140,12 160,15 180,10 200,8 200,36 0,36" fill="url(#sparkGrad)" />
+                  <polyline points="0,28 20,24 40,26 60,20 80,22 100,16 120,18 140,12 160,15 180,10 200,8" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" />
+                  {[[0, 28], [60, 20], [120, 18], [180, 10], [200, 8]].map(([x, y], i) => (
+                    <circle key={i} cx={x} cy={y} r="3" fill="#22c55e" />
+                  ))}
+                </svg>
               </div>
 
-              {/* Top Findings */}
-              <div>
-                <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, marginBottom: '14px' }}>Top Findings</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-                  {[
-                    { label: 'Atypical Squamous Cells', count: 18, color: '#E63946' },
-                    { label: 'LSIL', count: 12, color: '#DB2777' },
-                    { label: 'HSIL', count: 5, color: '#8b5cf6' },
-                    { label: 'Negative', count: 1247, color: '#22c55e' },
-                  ].map((row, i, arr) => (
-                    <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                      <span style={{ fontSize: '13px', color: '#374151', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ color: row.color, fontSize: '8px' }}>●</span>
-                        {row.label}
-                      </span>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#0a0b1a' }}>{row.count.toLocaleString()}</span>
-                    </div>
-                  ))}
-                </div>
-                <button style={{ width: '100%', marginTop: '16px', padding: '8px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white', fontSize: '13px', color: '#374151', cursor: 'pointer', textAlign: 'center' }}>
+              {/* White Top Findings Card */}
+              <div style={{ background: 'white', padding: '24px', borderTop: '1px solid #e5e7eb' }}>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#0a0b1a', marginBottom: '16px' }}>Top Findings</div>
+                {[
+                  { label: 'Atypical Squamous Cells', count: 18, color: '#E63946' },
+                  { label: 'LSIL', count: 12, color: '#DB2777' },
+                  { label: 'HSIL', count: 5, color: '#8b5cf6' },
+                  { label: 'Negative', count: 1247, color: '#22c55e' },
+                ].map((row, i, arr) => (
+                  <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                    <span style={{ fontSize: '13px', color: '#374151', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ color: row.color, fontSize: '9px' }}>●</span>
+                      {row.label}
+                    </span>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#0a0b1a' }}>{row.count.toLocaleString()}</span>
+                  </div>
+                ))}
+                <button style={{ width: '100%', marginTop: '14px', padding: '10px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white', fontSize: '13px', color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 500 }}>
                   View Full Results →
                 </button>
               </div>
