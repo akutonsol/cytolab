@@ -207,17 +207,281 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* TRUSTED BY */}
-      <section style={{ background: '#fff', padding: '32px 64px', borderBottom: '1px solid #F3F4F6' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 600, letterSpacing: '0.1em', textAlign: 'center', marginBottom: 24, textTransform: 'uppercase' }}>
-            Trusted by leading institutions
+      {/* SECTION A — LIVE WORKFLOW PIPELINE (dark rounded card) */}
+      <section style={{
+        margin: '80px 40px 80px 40px',
+        background: '#0f0f1a',
+        borderRadius: '24px',
+        padding: '48px 56px',
+        border: '1px solid rgba(255,255,255,0.08)',
+      }}>
+        {/* Header row */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>
+              Live Workflow
+            </span>
+            <span style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', borderRadius: '20px', padding: '3px 10px', fontSize: '11px', fontWeight: 600 }}>
+              ● LIVE
+            </span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.5 }}>
-            {['Mayo Clinic', 'Quest Diagnostics', 'LabCorp', 'ARUP Laboratories', 'Sonic Healthcare', 'Cleveland Clinic'].map((name) => (
-              <div key={name} style={{ fontSize: 14, fontWeight: 700, color: '#374151', letterSpacing: '0.02em' }}>{name}</div>
-            ))}
+          <button style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', cursor: 'pointer' }}>
+            View Full Pipeline →
+          </button>
+        </div>
+
+        {/* Pipeline steps */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '40px' }}>
+          {[
+            { n: 1, label: 'Collect', sub: 'Sample received', time: '2 min ago', s: 'done' },
+            { n: 2, label: 'Process', sub: 'Slide prepared', time: '4 min ago', s: 'done' },
+            { n: 3, label: 'AI Analyze', sub: 'Analyzing cells', time: 'In progress', s: 'active' },
+            { n: 4, label: 'Review', sub: 'Pathologist review', time: 'Pending', s: 'pending' },
+            { n: 5, label: 'Report', sub: 'Report generated', time: 'Pending', s: 'pending' },
+          ].map((step, i, arr) => (
+            <div key={step.n} style={{ display: 'flex', alignItems: 'flex-start', flex: i < arr.length - 1 ? 1 : 'none' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '80px' }}>
+                <div style={{
+                  width: '48px', height: '48px', borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '16px', fontWeight: 700,
+                  background: step.s === 'done' ? 'rgba(230,57,70,0.15)' : 'transparent',
+                  border: step.s === 'done' ? '2px solid #22c55e' : step.s === 'active' ? '2px solid #E63946' : '2px solid rgba(255,255,255,0.2)',
+                  color: step.s === 'done' ? '#22c55e' : step.s === 'active' ? '#E63946' : 'rgba(255,255,255,0.3)',
+                  boxShadow: step.s === 'active' ? '0 0 20px rgba(230,57,70,0.35)' : 'none',
+                }}>
+                  {step.s === 'done' && step.n === 1 ? '✓' : step.n}
+                </div>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: 'white', marginTop: '10px', textAlign: 'center' }}>{step.label}</div>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginTop: '3px', textAlign: 'center' }}>{step.sub}</div>
+                <div style={{ fontSize: '11px', marginTop: '3px', textAlign: 'center', color: step.s === 'done' ? '#22c55e' : step.s === 'active' ? '#E63946' : 'rgba(255,255,255,0.25)' }}>{step.time}</div>
+              </div>
+              {i < arr.length - 1 && (
+                <div style={{ height: '2px', flex: 1, marginTop: '23px', marginLeft: '4px', marginRight: '4px', background: i < 2 ? '#E63946' : 'rgba(255,255,255,0.12)' }} />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Stats cards row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '20px' }}>
+          {/* Card 1 — Active Cases */}
+          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px' }}>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '8px' }}>Active Cases</div>
+            <div style={{ fontSize: '36px', fontWeight: 800, color: 'white', lineHeight: 1 }}>4,281</div>
+            <div style={{ fontSize: '12px', color: '#22c55e', marginTop: '4px' }}>+231 today</div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', marginTop: '16px', height: '40px' }}>
+              {[20, 35, 25, 45, 30, 50, 40].map((h, i) => (
+                <div key={i} style={{ width: '8px', height: `${h}px`, background: '#E63946', borderRadius: '2px', alignSelf: 'flex-end' }} />
+              ))}
+            </div>
           </div>
+
+          {/* Card 2 — In Analysis */}
+          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px' }}>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '8px' }}>In Analysis</div>
+            <div style={{ fontSize: '36px', fontWeight: 800, color: 'white', lineHeight: 1 }}>1,247</div>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>29% of total</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+              <svg width="64" height="64" viewBox="0 0 64 64">
+                <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="6" />
+                <circle cx="32" cy="32" r="26" fill="none" stroke="#E63946" strokeWidth="6" strokeDasharray={`${2 * Math.PI * 26 * 0.29} ${2 * Math.PI * 26}`} strokeLinecap="round" transform="rotate(-90 32 32)" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Card 3 — High Priority */}
+          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M12 3.5l8.5 15h-17z" stroke="#E63946" strokeWidth="2" strokeLinejoin="round" />
+                <line x1="12" y1="10" x2="12" y2="14" stroke="#E63946" strokeWidth="2" strokeLinecap="round" />
+                <circle cx="12" cy="16.6" r="0.8" fill="#E63946" />
+              </svg>
+            </div>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '8px' }}>High Priority</div>
+            <div style={{ fontSize: '36px', fontWeight: 800, color: 'white', lineHeight: 1 }}>38</div>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>Requires review</div>
+            <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {[
+                { label: 'Atypical', count: 18, color: '#E63946' },
+                { label: 'Suspicious', count: 12, color: '#DB2777' },
+                { label: 'Critical', count: 8, color: '#ef4444' },
+              ].map((item) => (
+                <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ color: item.color, fontSize: '8px' }}>●</span>
+                    {item.label}
+                  </span>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'white' }}>{item.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Card 4 — System Status */}
+          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px' }}>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '16px' }}>System Status</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {['AI Engine', 'Image Processing', 'Data Sync', 'Storage'].map((item) => (
+                <div key={item} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)' }}>{item}</span>
+                  <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ fontSize: '7px' }}>●</span> Operational
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION B — AI SCREENING */}
+      <section style={{ padding: '100px 80px', background: 'white' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '38% 62%', gap: '80px', alignItems: 'center', maxWidth: '1280px', margin: '0 auto' }}>
+          {/* Left column */}
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', color: '#E63946', textTransform: 'uppercase', marginBottom: '16px' }}>AI Screening</div>
+            <h2 style={{ fontSize: '44px', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.02em', color: '#0a0b1a', margin: 0 }}>
+              Smarter screening.<br />Stronger outcomes.
+            </h2>
+            <p style={{ fontSize: '16px', color: '#64748b', lineHeight: 1.65, marginTop: '20px', maxWidth: '380px' }}>
+              Our AI models analyze millions of cells in seconds, prioritizing what matters most and reducing routine workload by up to 70%.
+            </p>
+            <div style={{ marginTop: '28px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {[
+                'Deep learning models trained on 50M+ cells',
+                '99%+ accuracy on key abnormality detection',
+                'Continuous learning from expert feedback',
+                'CAP & CLIA validated workflows',
+              ].map((feat, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(230,57,70,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M2 7l3.5 3.5L12 3" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                  <span style={{ fontSize: '14px', color: '#374151', fontWeight: 500 }}>{feat}</span>
+                </div>
+              ))}
+            </div>
+            <button style={{ marginTop: '32px', display: 'inline-flex', alignItems: 'center', gap: '6px', border: '1.5px solid #E63946', color: '#E63946', background: 'transparent', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+              Explore AI Screening →
+            </button>
+          </div>
+
+          {/* Right column — microscopy viewer */}
+          <div style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid #e5e7eb', background: '#f8f9ff' }}>
+            {/* Slide view */}
+            <div style={{ position: 'relative', height: '280px', background: '#f0eef8', overflow: 'hidden' }}>
+              {[
+                { size: 110, top: '18%', left: '14%', color: 'rgba(139,92,246,0.28)' },
+                { size: 85, top: '44%', left: '33%', color: 'rgba(109,40,217,0.22)' },
+                { size: 130, top: '8%', left: '54%', color: 'rgba(124,58,237,0.18)' },
+                { size: 90, top: '52%', left: '62%', color: 'rgba(139,92,246,0.25)' },
+                { size: 70, top: '28%', left: '76%', color: 'rgba(109,40,217,0.20)' },
+                { size: 65, top: '62%', left: '18%', color: 'rgba(124,58,237,0.16)' },
+                { size: 100, top: '12%', left: '84%', color: 'rgba(139,92,246,0.22)' },
+              ].map((cell, i) => (
+                <div key={i} style={{ position: 'absolute', borderRadius: '50%', width: `${cell.size}px`, height: `${cell.size}px`, top: cell.top, left: cell.left, background: cell.color }}>
+                  <div style={{ position: 'absolute', width: `${cell.size * 0.4}px`, height: `${cell.size * 0.4}px`, top: '50%', left: '50%', transform: 'translate(-50%,-50%)', borderRadius: '50%', background: cell.color.replace(/[\d.]+\)$/, '0.55)') }} />
+                </div>
+              ))}
+              {/* AI detection box */}
+              <div style={{ position: 'absolute', top: '40%', left: '30%', width: '108px', height: '108px', border: '2px dashed #E63946', borderRadius: '8px' }}>
+                <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', background: '#E63946', color: 'white', whiteSpace: 'nowrap', borderRadius: '20px', padding: '3px 10px', fontSize: '11px', fontWeight: 600 }}>
+                  ● Atypical Cell Detected
+                </div>
+              </div>
+            </div>
+
+            {/* Analysis panel */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', background: 'white', padding: '24px', gap: '24px', borderTop: '1px solid #e5e7eb' }}>
+              {/* Analysis Progress */}
+              <div>
+                <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, marginBottom: '14px' }}>Analysis Progress</div>
+                <div style={{ fontSize: '12px', color: '#374151', marginBottom: '6px' }}>Scanning cells...</div>
+                <div style={{ background: '#f1f5f9', borderRadius: '4px', height: '6px', overflow: 'hidden', marginBottom: '4px' }}>
+                  <div style={{ width: '76%', height: '100%', borderRadius: '4px', background: 'linear-gradient(90deg,#E63946,#ff6b8a)' }} />
+                </div>
+                <div style={{ fontSize: '12px', color: '#E63946', fontWeight: 600, textAlign: 'right', marginBottom: '16px' }}>76%</div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '2px' }}>Cells Analyzed</div>
+                <div style={{ fontSize: '28px', fontWeight: 800, color: '#0a0b1a', lineHeight: 1, marginBottom: '12px' }}>14,223</div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>AI Confidence</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '20px', fontWeight: 800, color: '#0a0b1a' }}>98.4%</span>
+                  <span style={{ background: 'rgba(34,197,94,0.1)', color: '#16a34a', borderRadius: '20px', padding: '2px 10px', fontSize: '11px', fontWeight: 600 }}>High Confidence</span>
+                </div>
+              </div>
+
+              {/* Top Findings */}
+              <div>
+                <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, marginBottom: '14px' }}>Top Findings</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                  {[
+                    { label: 'Atypical Squamous Cells', count: 18, color: '#E63946' },
+                    { label: 'LSIL', count: 12, color: '#DB2777' },
+                    { label: 'HSIL', count: 5, color: '#8b5cf6' },
+                    { label: 'Negative', count: 1247, color: '#22c55e' },
+                  ].map((row, i, arr) => (
+                    <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                      <span style={{ fontSize: '13px', color: '#374151', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ color: row.color, fontSize: '8px' }}>●</span>
+                        {row.label}
+                      </span>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#0a0b1a' }}>{row.count.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+                <button style={{ width: '100%', marginTop: '16px', padding: '8px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white', fontSize: '13px', color: '#374151', cursor: 'pointer', textAlign: 'center' }}>
+                  View Full Results →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION C — TRUSTED BY (logos, replaces the old trusted-by strip) */}
+      <section style={{ padding: '60px 80px', background: 'white', borderTop: '1px solid #f1f5f9' }}>
+        <div style={{ textAlign: 'center', fontSize: '11px', fontWeight: 600, letterSpacing: '0.15em', color: '#94a3b8', marginBottom: '48px', textTransform: 'uppercase' }}>
+          Trusted by Leading Labs and Health Systems
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: '48px', alignItems: 'center', maxWidth: '1100px', margin: '0 auto' }}>
+          {[
+            { name: 'MAYO CLINIC', icon: '✚' },
+            { name: 'Labcorp', icon: '◎' },
+            { name: 'Quest Diagnostics', icon: '◉' },
+            { name: 'Cleveland Clinic', icon: '⊞' },
+            { name: 'Sonic Healthcare', icon: '◈' },
+            { name: 'agilon health', icon: '✦' },
+          ].map((logo) => (
+            <div key={logo.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#94a3b8', fontSize: '14px', fontWeight: 700, opacity: 0.65 }}>
+              <span style={{ fontSize: '20px' }}>{logo.icon}</span>
+              {logo.name}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* SECTION D — STATS BAR */}
+      <section style={{ padding: '72px 80px', background: '#f8f9ff', borderTop: '1px solid #e5e7eb' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '40px', maxWidth: '1100px', margin: '0 auto' }}>
+          {[
+            { Icon: ScanSearch, value: '500M+', label: 'Cells analyzed' },
+            { Icon: FlaskConical, value: '2,500+', label: 'Labs worldwide' },
+            { Icon: ShieldCheck, value: '99.9%', label: 'System uptime' },
+            { Icon: Zap, value: '40%', label: 'Faster turnaround' },
+            { Icon: BarChart3, value: '70%', label: 'Workload reduction' },
+          ].map((stat) => (
+            <div key={stat.label} style={{ textAlign: 'center' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'white', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <stat.Icon size={20} color={INK} strokeWidth={2} />
+              </div>
+              <div style={{ fontSize: '40px', fontWeight: 800, letterSpacing: '-0.02em', color: '#0a0b1a', lineHeight: 1 }}>{stat.value}</div>
+              <div style={{ fontSize: '14px', color: '#64748b', marginTop: '6px' }}>{stat.label}</div>
+            </div>
+          ))}
         </div>
       </section>
 
