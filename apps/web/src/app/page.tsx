@@ -1,8 +1,11 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/lib/auth';
 import {
   FlaskConical, Cog, BrainCircuit, Eye, FileText,
   Sparkles, Zap, BarChart3, ScanSearch,
@@ -44,6 +47,15 @@ type Plan = {
 };
 
 export default function LandingPage() {
+  // Bounce authenticated users straight to the app. Wait for the persisted
+  // auth store to hydrate before deciding, so anonymous visitors still see
+  // the landing page.
+  const router = useRouter();
+  const { isAuthed, hydrated } = useAuth();
+  useEffect(() => {
+    if (hydrated && isAuthed) router.replace('/dashboard');
+  }, [hydrated, isAuthed, router]);
+
   const heroCells: Cell[] = [
     { size: 60, top: '15%', left: '5%', opacity: 0.6 },
     { size: 40, top: '25%', right: '10%', opacity: 0.4 },
