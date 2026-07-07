@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/auth';
 import {
   FlaskConical, Cog, BrainCircuit, Eye, FileText,
   Sparkles, Zap, BarChart3, ScanSearch,
-  Target, Clock, ShieldCheck,
+  Target, Clock, ShieldCheck, Share2,
   Play, ArrowRight, ChevronRight, Check,
 } from 'lucide-react';
 
@@ -734,44 +734,106 @@ export default function LandingPage() {
       {/* LIVING SCIENCE — Three.js organism scene */}
       <LivingScienceSection />
 
-      {/* SECTION C — TRUSTED BY (logos, replaces the old trusted-by strip) */}
-      <section style={{ padding: '60px 80px', background: 'white', borderTop: '1px solid #f1f5f9' }}>
-        <div style={{ textAlign: 'center', fontSize: '11px', fontWeight: 600, letterSpacing: '0.15em', color: '#94a3b8', marginBottom: '48px', textTransform: 'uppercase' }}>
+      {/* SECTION C — TRUSTED BY (logo wall) */}
+      <section style={{ padding: '56px 40px 52px', background: 'white' }}>
+        <div style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', color: '#9797ba', marginBottom: 44, textTransform: 'uppercase' }}>
           Trusted by Leading Labs and Health Systems
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: '48px', alignItems: 'center', maxWidth: '1100px', margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 24, alignItems: 'center', maxWidth: 1240, margin: '0 auto' }}>
           {[
-            { name: 'MAYO CLINIC', icon: '✚' },
-            { name: 'Labcorp', icon: '◎' },
-            { name: 'Quest Diagnostics', icon: '◉' },
-            { name: 'Cleveland Clinic', icon: '⊞' },
-            { name: 'Sonic Healthcare', icon: '◈' },
-            { name: 'agilon health', icon: '✦' },
-          ].map((logo) => (
-            <div key={logo.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#94a3b8', fontSize: '14px', fontWeight: 700, opacity: 0.65 }}>
-              <span style={{ fontSize: '20px' }}>{logo.icon}</span>
-              {logo.name}
+            {
+              a: 'MAYO', b: 'CLINIC', icon: (
+                <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+                  <rect x="8" y="5" width="24" height="30" rx="7" stroke="#4b4b6b" strokeWidth="1.6" />
+                  <circle cx="20" cy="15" r="4.4" fill="#4b4b6b" />
+                  <circle cx="14" cy="24" r="3.8" fill="#4b4b6b" opacity="0.72" />
+                  <circle cx="26" cy="24" r="3.8" fill="#4b4b6b" opacity="0.72" />
+                </svg>
+              ),
+            },
+            {
+              a: 'Labcorp', big: true, icon: (
+                <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+                  <circle cx="20" cy="20" r="13" stroke="#4b4b6b" strokeWidth="1.6" />
+                  <ellipse cx="20" cy="20" rx="5.5" ry="13" stroke="#4b4b6b" strokeWidth="1.3" />
+                  <line x1="7" y1="20" x2="33" y2="20" stroke="#4b4b6b" strokeWidth="1.3" />
+                  <line x1="10" y1="12.5" x2="30" y2="12.5" stroke="#4b4b6b" strokeWidth="1" opacity="0.55" />
+                  <line x1="10" y1="27.5" x2="30" y2="27.5" stroke="#4b4b6b" strokeWidth="1" opacity="0.55" />
+                </svg>
+              ),
+            },
+            {
+              a: 'Quest', b: 'Diagnostics', icon: (
+                <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+                  <path d="M31 20a11 11 0 1 0-5.5 9.5" stroke="#4b4b6b" strokeWidth="2.4" strokeLinecap="round" />
+                  <circle cx="20" cy="20" r="4.4" fill="#4b4b6b" />
+                </svg>
+              ),
+            },
+            {
+              a: 'Cleveland', b: 'Clinic', icon: (
+                <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
+                  <rect x="8" y="8" width="10" height="10" rx="1.5" fill="#4b4b6b" />
+                  <rect x="22" y="8" width="10" height="10" rx="1.5" stroke="#4b4b6b" strokeWidth="2" />
+                  <rect x="8" y="22" width="10" height="10" rx="1.5" stroke="#4b4b6b" strokeWidth="2" />
+                  <rect x="22" y="22" width="10" height="10" rx="1.5" fill="#4b4b6b" />
+                </svg>
+              ),
+            },
+            {
+              a: 'Sonic', b: 'Healthcare', icon: (
+                <svg width="34" height="34" viewBox="0 0 40 40" fill="none">
+                  <circle cx="20" cy="20" r="13" stroke="#4b4b6b" strokeWidth="1.3" opacity="0.45" />
+                  <path d="M15 9c0 6 10 6 10 11s-10 5-10 11" stroke="#4b4b6b" strokeWidth="1.8" strokeLinecap="round" />
+                  <path d="M25 9c0 6-10 6-10 11s10 5 10 11" stroke="#4b4b6b" strokeWidth="1.8" strokeLinecap="round" />
+                  <line x1="16" y1="14" x2="24" y2="14" stroke="#4b4b6b" strokeWidth="1.2" />
+                  <line x1="16" y1="26" x2="24" y2="26" stroke="#4b4b6b" strokeWidth="1.2" />
+                </svg>
+              ),
+            },
+            {
+              a: 'agilon', b: 'health', icon: (
+                <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
+                  {[0, 45, 90, 135].map((deg) => (
+                    <line key={deg} x1="20" y1="8" x2="20" y2="32" stroke="#4b4b6b" strokeWidth="2.4" strokeLinecap="round" transform={`rotate(${deg} 20 20)`} />
+                  ))}
+                </svg>
+              ),
+            },
+          ].map((logo, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+              {logo.icon}
+              <div style={{ lineHeight: 1.08 }}>
+                <div style={{ fontSize: logo.big ? 22 : 15.5, fontWeight: 800, color: '#3d3d5a', letterSpacing: logo.big ? '-0.01em' : '0.02em' }}>{logo.a}</div>
+                {logo.b && <div style={{ fontSize: 12.5, fontWeight: 600, color: '#8b8ba8', marginTop: 1 }}>{logo.b}</div>}
+              </div>
             </div>
           ))}
         </div>
       </section>
 
       {/* SECTION D — STATS BAR */}
-      <section style={{ padding: '72px 80px', background: '#f8f9ff', borderTop: '1px solid #e5e7eb' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '40px', maxWidth: '1100px', margin: '0 auto' }}>
+      <section style={{ padding: '20px 40px 80px', background: 'white' }}>
+        <div style={{
+          maxWidth: 1240, margin: '0 auto', background: '#faf9ff', border: '1px solid #e9e7f5',
+          borderRadius: 24, boxShadow: '0 10px 34px rgba(80,60,160,0.05)', padding: '26px 12px',
+          display: 'grid', gridTemplateColumns: 'repeat(5,1fr)',
+        }}>
           {[
-            { Icon: ScanSearch, value: '500M+', label: 'Cells analyzed' },
+            { Icon: Cog, value: '500M+', label: 'Cells analyzed' },
             { Icon: FlaskConical, value: '2,500+', label: 'Labs worldwide' },
             { Icon: ShieldCheck, value: '99.9%', label: 'System uptime' },
-            { Icon: Zap, value: '40%', label: 'Faster turnaround' },
+            { Icon: Share2, value: '40%', label: 'Faster turnaround' },
             { Icon: BarChart3, value: '70%', label: 'Workload reduction' },
-          ].map((stat) => (
-            <div key={stat.label} style={{ textAlign: 'center' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'white', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <stat.Icon size={20} color={INK} strokeWidth={2} />
+          ].map((stat, i) => (
+            <div key={stat.label} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '4px 26px', borderLeft: i > 0 ? '1px solid #edeaf7' : 'none' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg, rgba(139,92,246,0.16), rgba(124,58,237,0.09))', border: '1px solid rgba(139,92,246,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <stat.Icon size={22} color="#7c3aed" strokeWidth={2} />
               </div>
-              <div style={{ fontSize: '40px', fontWeight: 800, letterSpacing: '-0.02em', color: '#0a0b1a', lineHeight: 1 }}>{stat.value}</div>
-              <div style={{ fontSize: '14px', color: '#64748b', marginTop: '6px' }}>{stat.label}</div>
+              <div>
+                <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: '-0.02em', color: '#0a0b1a', lineHeight: 1 }}>{stat.value}</div>
+                <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>{stat.label}</div>
+              </div>
             </div>
           ))}
         </div>
