@@ -25,8 +25,8 @@ export default function LivingScienceScene() {
 
     // ── SCENE & CAMERA ──
     const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera(52, W / H, 0.1, 100)
-    camera.position.set(0.2, 0.3, 6.5)
+    const camera = new THREE.PerspectiveCamera(65, W / H, 0.1, 100)
+    camera.position.set(0.2, 0.1, 4.2)
 
     // ── CLOCK ──
     const clock = new THREE.Clock()
@@ -134,6 +134,7 @@ export default function LivingScienceScene() {
 
     const organism = new THREE.Group()
     scene.add(organism)
+    organism.scale.setScalar(1.55)
 
     // Main large cell — center
     const mainCell = makeCell(
@@ -148,13 +149,13 @@ export default function LivingScienceScene() {
 
     // Satellite cells — dark purple membranes, warm inner glows
     const satellites = [
-      { r: 0.55, pos: [-1.4, 0.6, 0.3] as [number,number,number],  c: 0x2D1535, e: 0x5B2060, o: 0.70, n: 0xCC44AA },
-      { r: 0.42, pos: [-0.8, -0.9, 0.5] as [number,number,number], c: 0x351520, e: 0x602040, o: 0.60, n: 0xFF4422 },
-      { r: 0.35, pos: [1.2, -0.7, 0.2] as [number,number,number],  c: 0x2A1530, e: 0x4B2055, o: 0.55, n: 0xAA44CC },
-      { r: 0.28, pos: [1.5, 0.5, -0.3] as [number,number,number],  c: 0x351825, e: 0x602845, o: 0.50, n: 0xFF5533 },
-      { r: 0.22, pos: [-0.3, 1.3, 0.4] as [number,number,number],  c: 0x2D1530, e: 0x502055, o: 0.45, n: 0xCC3399 },
-      { r: 0.18, pos: [0.6, 1.1, -0.2] as [number,number,number],  c: 0x351520, e: 0x602035, o: 0.42, n: 0xFF4422 },
-      { r: 0.45, pos: [-1.8, -0.2, -0.4] as [number,number,number],c: 0x2A1535, e: 0x4B2060, o: 0.48, n: 0xBB44BB },
+      { r: 0.55, pos: [-2.0, 0.9, 0.4] as [number,number,number],  c: 0x2D1535, e: 0x5B2060, o: 0.70, n: 0xCC44AA },
+      { r: 0.42, pos: [-1.2, -1.4, 0.6] as [number,number,number], c: 0x351520, e: 0x602040, o: 0.60, n: 0xFF4422 },
+      { r: 0.35, pos: [1.8, -1.0, 0.3] as [number,number,number],  c: 0x2A1530, e: 0x4B2055, o: 0.55, n: 0xAA44CC },
+      { r: 0.28, pos: [2.2, 0.7, -0.4] as [number,number,number],  c: 0x351825, e: 0x602845, o: 0.50, n: 0xFF5533 },
+      { r: 0.22, pos: [-0.4, 1.8, 0.5] as [number,number,number],  c: 0x2D1530, e: 0x502055, o: 0.45, n: 0xCC3399 },
+      { r: 0.18, pos: [0.9, 1.6, -0.3] as [number,number,number],  c: 0x351520, e: 0x602035, o: 0.42, n: 0xFF4422 },
+      { r: 0.45, pos: [-2.4, -0.4, -0.5] as [number,number,number],c: 0x2A1535, e: 0x4B2060, o: 0.48, n: 0xBB44BB },
     ]
     const satCells = satellites.map(s => {
       const cell = makeCell(s.r, s.pos, s.c, s.e, s.o, s.n)
@@ -200,18 +201,18 @@ export default function LivingScienceScene() {
     }
 
     const mainPos = new THREE.Vector3(0.3, 0.2, 0)
-    scene.add(makeTendril(mainPos, new THREE.Vector3(...satellites[0].pos), 0xFF6633, 0.5))
-    scene.add(makeTendril(mainPos, new THREE.Vector3(...satellites[1].pos), 0xFF4422, 0.45))
-    scene.add(makeTendril(mainPos, new THREE.Vector3(...satellites[2].pos), 0xCC44AA, 0.42))
-    scene.add(makeTendril(mainPos, new THREE.Vector3(...satellites[3].pos), 0xFF5533, 0.38))
-    scene.add(makeTendril(mainPos, new THREE.Vector3(...satellites[4].pos), 0xCC3399, 0.35))
-    scene.add(makeTendril(mainPos, new THREE.Vector3(...satellites[5].pos), 0xFF4422, 0.32))
-    scene.add(makeTendril(mainPos, new THREE.Vector3(...satellites[6].pos), 0xBB44BB, 0.40))
+    organism.add(makeTendril(mainPos, new THREE.Vector3(...satellites[0].pos), 0xFF6633, 0.5))
+    organism.add(makeTendril(mainPos, new THREE.Vector3(...satellites[1].pos), 0xFF4422, 0.45))
+    organism.add(makeTendril(mainPos, new THREE.Vector3(...satellites[2].pos), 0xCC44AA, 0.42))
+    organism.add(makeTendril(mainPos, new THREE.Vector3(...satellites[3].pos), 0xFF5533, 0.38))
+    organism.add(makeTendril(mainPos, new THREE.Vector3(...satellites[4].pos), 0xCC3399, 0.35))
+    organism.add(makeTendril(mainPos, new THREE.Vector3(...satellites[5].pos), 0xFF4422, 0.32))
+    organism.add(makeTendril(mainPos, new THREE.Vector3(...satellites[6].pos), 0xBB44BB, 0.40))
     // Inter-satellite connections
-    scene.add(makeTendril(
+    organism.add(makeTendril(
       new THREE.Vector3(...satellites[0].pos),
       new THREE.Vector3(...satellites[4].pos), 0xAA3399, 0.28))
-    scene.add(makeTendril(
+    organism.add(makeTendril(
       new THREE.Vector3(...satellites[2].pos),
       new THREE.Vector3(...satellites[3].pos), 0xFF4422, 0.25))
 
@@ -285,7 +286,7 @@ export default function LivingScienceScene() {
     })
     const orbitPoints = new THREE.Points(orbitGeo, orbitMat)
     orbitPoints.position.set(0.3, 0.2, 0)
-    scene.add(orbitPoints)
+    organism.add(orbitPoints)
 
     // ── LIGHTING ──
     // Very dim ambient — almost nothing
@@ -375,7 +376,7 @@ export default function LivingScienceScene() {
 
       // Camera slow drift for cinematic feel
       camera.position.x = 0.2 + Math.sin(t * 0.08) * 0.15
-      camera.position.y = 0.3 + Math.cos(t * 0.06) * 0.10
+      camera.position.y = 0.1 + Math.cos(t * 0.06) * 0.10
       camera.lookAt(0.3, 0.2, 0)
 
       renderer.render(scene, camera)

@@ -12,7 +12,7 @@ export default function LivingScienceSection() {
       background: '#0d0508',
       position: 'relative',
       overflow: 'hidden',
-      minHeight: '100vh',
+      minHeight: '110vh',
       marginTop: 0,
       paddingTop: 0,
       display: 'flex',
@@ -29,7 +29,7 @@ export default function LivingScienceSection() {
       <div style={{
         position: 'relative',
         flex: 1,
-        minHeight: '580px',
+        minHeight: '680px',
         display: 'grid',
         gridTemplateColumns: '42% 1fr',
       }}>
