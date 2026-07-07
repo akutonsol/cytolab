@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -68,6 +68,15 @@ export default function LandingPage() {
   useEffect(() => {
     if (hydrated && isAuthed) router.replace('/dashboard');
   }, [hydrated, isAuthed, router]);
+
+  // Live-ticking counters for the Live Workflow stat cards.
+  const [activeCases, setActiveCases] = useState(4281);
+  const [inAnalysis, setInAnalysis] = useState(1247);
+  useEffect(() => {
+    const a = setInterval(() => { if (Math.random() > 0.4) setActiveCases((p) => p + 1); }, 5000);
+    const b = setInterval(() => { setInAnalysis((p) => p + Math.floor(Math.random() * 3)); }, 3000);
+    return () => { clearInterval(a); clearInterval(b); };
+  }, []);
 
   const features: Feature[] = [
     { Icon: Sparkles, label: 'AI-Powered Screening', desc: 'High accuracy. Faster results.' },
@@ -235,7 +244,23 @@ export default function LandingPage() {
         position: 'relative',
         overflow: 'hidden',
       }}>
-        <style dangerouslySetInnerHTML={{ __html: `@keyframes live-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } } .live-dot { display: inline-block; animation: live-blink 1.5s ease-in-out infinite; }` }} />
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes live-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+          .live-dot { display: inline-block; animation: live-blink 1.5s ease-in-out infinite; }
+          @keyframes bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+          @keyframes count-tick {
+            0% { opacity: 1; transform: translateY(0); }
+            50% { opacity: 0; transform: translateY(-4px); }
+            51% { opacity: 0; transform: translateY(4px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes ping-ripple { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(2.8); opacity: 0; } }
+          @keyframes row-sweep { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+          @keyframes heartbeat { 0%, 100% { transform: scale(1); } 14% { transform: scale(1.015); } 28% { transform: scale(1); } 42% { transform: scale(1.01); } 56% { transform: scale(1); } }
+          @keyframes scanner-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+          @keyframes donut-draw { from { stroke-dashoffset: 188.5; } to { stroke-dashoffset: 0; } }
+          @keyframes warn-pulse { 0%, 100% { opacity: 1; filter: drop-shadow(0 0 3px rgba(230,57,70,0.7)); } 50% { opacity: 0.55; filter: drop-shadow(0 0 8px rgba(230,57,70,0.9)); } }
+        ` }} />
         {/* Top purple atmospheric glow */}
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, height: '200px',
@@ -276,9 +301,13 @@ export default function LandingPage() {
         {/* Stats cards row */}
         <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '20px' }}>
           {/* Card 1 — Active Cases */}
-          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', backdropFilter: 'blur(10px)' }}>
+          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', backdropFilter: 'blur(10px)', animation: 'heartbeat 4s ease-in-out infinite' }}>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '8px' }}>Active Cases</div>
-            <div style={{ fontSize: '36px', fontWeight: 800, color: 'white', lineHeight: 1 }}>4,281</div>
+            <div style={{ lineHeight: 1 }}>
+              <span key={activeCases} style={{ display: 'inline-block', animation: 'count-tick 0.3s ease', fontSize: 36, fontWeight: 800, color: 'white' }}>
+                {activeCases.toLocaleString()}
+              </span>
+            </div>
             <div style={{ fontSize: '12px', color: '#22c55e', marginTop: '4px' }}>+231 today</div>
             <svg width="140" height="52" viewBox="0 0 140 52" style={{ marginTop: 12 }}>
               {[12, 20, 16, 32, 22, 38, 28, 14, 35, 30, 20, 28].map((h, i) => {
@@ -288,7 +317,7 @@ export default function LandingPage() {
                 const color = isActive ? '#E63946' : '#8B5CF6';
                 const dimColor = isActive ? '#E63946' : 'rgba(139,92,246,0.4)';
                 return (
-                  <g key={i}>
+                  <g key={i} style={{ transformBox: 'fill-box', transformOrigin: 'bottom', animation: `bar-grow 0.6s ease ${i * 0.05}s both` }}>
                     <line x1={x + 3} y1={y + 5} x2={x + 3} y2={52} stroke={dimColor} strokeWidth="2" strokeLinecap="round" />
                     <circle cx={x + 3} cy={y + 3} r="3.5" fill={color} />
                   </g>
@@ -301,7 +330,11 @@ export default function LandingPage() {
           <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', backdropFilter: 'blur(10px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '8px' }}>In Analysis</div>
-              <div style={{ fontSize: '36px', fontWeight: 800, color: 'white', lineHeight: 1 }}>1,247</div>
+              <div style={{ lineHeight: 1 }}>
+                <span key={inAnalysis} style={{ display: 'inline-block', animation: 'count-tick 0.3s ease', fontSize: 36, fontWeight: 800, color: 'white' }}>
+                  {inAnalysis.toLocaleString()}
+                </span>
+              </div>
               <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>29% of total</div>
             </div>
             <svg width="80" height="80" viewBox="0 0 80 80" style={{ flexShrink: 0 }}>
@@ -313,7 +346,12 @@ export default function LandingPage() {
                 </linearGradient>
               </defs>
               <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="9" />
-              <circle cx="40" cy="40" r="30" fill="none" stroke="url(#donutGrad2)" strokeWidth="9" strokeDasharray={`${2 * Math.PI * 30 * 0.29} ${2 * Math.PI * 30}`} strokeLinecap="round" transform="rotate(-90 40 40)" />
+              <circle cx="40" cy="40" r="30" fill="none" stroke="url(#donutGrad2)" strokeWidth="9" strokeDasharray={`${2 * Math.PI * 30 * 0.29} ${2 * Math.PI * 30}`} strokeLinecap="round" transform="rotate(-90 40 40)" style={{ animation: 'donut-draw 1.5s ease-out forwards', strokeDashoffset: 2 * Math.PI * 30 }} />
+              {/* Rotating scanner line */}
+              <g style={{ transformBox: 'view-box', transformOrigin: '40px 40px', animation: 'scanner-rotate 3s linear infinite' }}>
+                <line x1="40" y1="40" x2="40" y2="12" stroke="rgba(139,92,246,0.4)" strokeWidth="1.5" strokeLinecap="round" />
+                <circle cx="40" cy="12" r="2.5" fill="#8b5cf6" opacity="0.7" />
+              </g>
               <text x="40" y="37" textAnchor="middle" fill="white" fontSize="12" fontWeight="800">29%</text>
               <text x="40" y="50" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="8">of total</text>
             </svg>
@@ -321,7 +359,7 @@ export default function LandingPage() {
 
           {/* Card 3 — High Priority */}
           <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', position: 'relative', backdropFilter: 'blur(10px)' }}>
-            <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
+            <div style={{ position: 'absolute', top: '16px', right: '16px', animation: 'warn-pulse 2s ease-in-out infinite' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
                 <path d="M12 3.5l8.5 15h-17z" stroke="#E63946" strokeWidth="2" strokeLinejoin="round" />
                 <line x1="12" y1="10" x2="12" y2="14" stroke="#E63946" strokeWidth="2" strokeLinecap="round" />
@@ -331,18 +369,27 @@ export default function LandingPage() {
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '8px' }}>High Priority</div>
             <div style={{ fontSize: '36px', fontWeight: 800, color: 'white', lineHeight: 1 }}>38</div>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>Requires review</div>
-            <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
               {[
-                { label: 'Atypical', count: 18, color: '#E63946' },
-                { label: 'Suspicious', count: 12, color: '#DB2777' },
-                { label: 'Critical', count: 8, color: '#ef4444' },
+                { label: 'Atypical', count: 18, color: '#E63946', delay: '0s' },
+                { label: 'Suspicious', count: 12, color: '#DB2777', delay: '0.15s' },
+                { label: 'Critical', count: 8, color: '#ef4444', delay: '0.3s' },
               ].map((item) => (
-                <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: '7px' }}>
-                    <span style={{ color: item.color, fontSize: '9px' }}>●</span>
+                <div key={item.label} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '4px 8px', borderRadius: 6,
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.05) 50%, transparent 100%)',
+                  backgroundSize: '200% 100%',
+                  animation: `row-sweep 3s ease-in-out ${item.delay} infinite`,
+                }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
+                    <span style={{ position: 'relative', width: 9, height: 9, flexShrink: 0, display: 'inline-block' }}>
+                      <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: item.color, animation: 'ping-ripple 2s ease-out infinite', animationDelay: item.delay }} />
+                      <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: item.color, boxShadow: `0 0 6px ${item.color}` }} />
+                    </span>
                     {item.label}
                   </span>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'white' }}>{item.count}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'white' }}>{item.count}</span>
                 </div>
               ))}
             </div>
@@ -351,16 +398,27 @@ export default function LandingPage() {
           {/* Card 4 — System Status */}
           <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', backdropFilter: 'blur(10px)' }}>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '16px' }}>System Status</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {['AI Engine', 'Image Processing', 'Data Sync', 'Storage'].map((item) => (
-                <div key={item} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-                    <span style={{ width: '13px', height: '13px', borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.3)', flexShrink: 0 }} />
-                    <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>{item}</span>
-                  </span>
-                  <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <span style={{ fontSize: '7px', filter: 'drop-shadow(0 0 4px rgba(34,197,94,0.6))' }}>●</span> Operational
-                  </span>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {[
+                { label: 'AI Engine', pingDelay: 0 },
+                { label: 'Image Processing', pingDelay: 0.5 },
+                { label: 'Data Sync', pingDelay: 1.0 },
+                { label: 'Storage', pingDelay: 1.5 },
+              ].map((item, i) => (
+                <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 14, height: 14, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'rgba(255,255,255,0.3)' }} />
+                    </div>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)' }}>{item.label}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ position: 'relative', width: 10, height: 10 }}>
+                      <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#22c55e', opacity: 0, animation: `ping-ripple 2s ease-out ${item.pingDelay}s infinite` }} />
+                      <div style={{ position: 'absolute', inset: '15%', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 6px rgba(34,197,94,0.8), 0 0 12px rgba(34,197,94,0.4)' }} />
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#22c55e', letterSpacing: '0.02em' }}>Operational</span>
+                  </div>
                 </div>
               ))}
             </div>
