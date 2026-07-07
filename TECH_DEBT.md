@@ -70,6 +70,23 @@ configuration file." So the "lint passing" gate is currently unmeetable.
   land as its own PR, not mixed into feature work.
 - **Size:** M
 
+### TD-009 · `@cytolab/animations` only partially consumed
+Phase 3 created the package and wired the shared `EASE` constant into the live
+marketing sections. The other primitives (`DURATION`, `fadeInUp`, `scrollReveal`,
+`floatAnimate/Transition`, `createTimeline`, `IN_VIEW_ONCE`) are defined but not yet
+adopted — sections still declare local variants/floats.
+- **Impact:** low — duplication persists; single source of truth exists for new work.
+- **Fix:** migrate variants/floats to the package opportunistically when a section is
+  next touched; verify each with a screenshot + zero-orange (behavior must stay identical).
+- **Size:** M
+
+### TD-010 · `WorkflowSection.tsx` is orphaned
+No longer rendered on the landing (superseded by the redesigned `PlatformShowcase`).
+It still compiles and now imports the shared `EASE`, but nothing mounts it.
+- **Impact:** trivial — dead component.
+- **Fix:** remove it, or fold any still-wanted pieces into `PlatformShowcase`.
+- **Size:** S
+
 ---
 
 ## Resolved

@@ -8,8 +8,9 @@ import {
   Microscope, Clock, Building2, Activity, Sparkles, ChevronDown, Sun, Crosshair,
 } from 'lucide-react';
 
+import { EASE } from '@cytolab/animations';
+
 const RED = '#E63946';
-const EASE = [0.22, 0.8, 0.2, 1] as const;
 
 // Decorative biological field behind the dashboard — purple cell clusters + RBCs.
 const BIO = [

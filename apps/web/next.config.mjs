@@ -9,6 +9,8 @@ const isProd = process.env.NODE_ENV === 'production';
 
 const nextConfig = {
   distDir: isProd ? '.next-prod' : '.next',
+  // Transpile workspace packages that ship raw TypeScript.
+  transpilePackages: ['@cytolab/animations', '@cytolab/types', '@cytolab/config'],
   async rewrites() {
     return [
       {

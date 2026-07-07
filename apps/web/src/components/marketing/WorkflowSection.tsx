@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useInView, useAnimationFrame } from 'framer-motion';
 import { TestTube2, ScanLine, BrainCircuit, ClipboardCheck, FileCheck2, ArrowRight, Play } from 'lucide-react';
 
+import { EASE } from '@cytolab/animations';
+
 const RED = '#E63946';
-const EASE = [0.22, 0.8, 0.2, 1] as const;
 
 type Stage = {
   key: string; title: string; lead: string; Icon: typeof TestTube2; active?: boolean;
