@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "description": "Cytolab LIMS — rebuild (NestJS modular monolith + Next.js)",
+  "packageManager": "npm@11.12.1",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -10,11 +11,18 @@
   "scripts": {
     "dev:api": "npm run start:dev --workspace=apps/api",
     "dev:web": "npm run dev --workspace=apps/web",
-    "build": "npm run build --workspaces --if-present",
+    "build": "turbo run build",
+    "build:npm": "npm run build --workspaces --if-present",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
     "db:migrate": "npm run prisma:migrate --workspace=apps/api",
     "db:studio": "npm run prisma:studio --workspace=apps/api"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "turbo": "^2.10.4"
   }
 }
