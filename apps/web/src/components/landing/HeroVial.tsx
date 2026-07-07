@@ -41,10 +41,11 @@ export default function HeroVial() {
     mount.appendChild(canvas);
 
     const scene = new THREE.Scene();
-    // FIX 1 — telephoto framing so the full tube is large + dominant
-    const camera = new THREE.PerspectiveCamera(22, W / H, 0.1, 100);
-    camera.position.set(0, 0.05, 7.3);
-    camera.lookAt(0.5, 0.05, 0);
+    // fov 28; z tuned to 8.0 (not the requested 4.0, which cuts off the tube +
+    // side cells) so the full scaled tube AND the scattered cells stay in frame.
+    const camera = new THREE.PerspectiveCamera(28, W / H, 0.1, 100);
+    camera.position.set(0, 0.15, 8.0);
+    camera.lookAt(0.15, 0.1, 0);
 
     const pmrem = new THREE.PMREMGenerator(renderer);
     let envRT: THREE.WebGLRenderTarget | null = null;
@@ -78,6 +79,26 @@ export default function HeroVial() {
     glow.position.set(0.15, 0.05, -1.8);
     scene.add(glow);
 
+    // FIX 7 — soft radial background glow behind the tube
+    const bgGlow = new THREE.Mesh(
+      new THREE.PlaneGeometry(5, 5),
+      new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+        fragmentShader: `
+          varying vec2 vUv;
+          void main(){
+            float dist = length(vUv - vec2(0.55, 0.5));
+            float glow = pow(1.0 - smoothstep(0.0, 0.52, dist), 2.2);
+            gl_FragColor = vec4(vec3(0.98, 0.94, 0.95), glow * 0.18);
+          }`,
+      }),
+    );
+    bgGlow.position.set(0.2, 0.0, -2.5);
+    bgGlow.renderOrder = -1;
+    scene.add(bgGlow);
+
     // ── Softbox lighting rig ─────────────────────────────────
     RectAreaLightUniformsLib.init();
     scene.add(new THREE.AmbientLight(0xfff5f5, 0.5));
@@ -110,10 +131,11 @@ export default function HeroVial() {
     const bodyH = 1.1;
     const bodyTop = bodyH / 2; // +0.55
     const bodyBottom = -bodyH / 2; // -0.55
-    const rippleY = -0.95; // pool sits below the hovering tube (FIX 5/6)
+    const rippleY = -1.12; // pool below the enlarged tube (FIX 6)
+    const rippleX = -0.15; // under the tube (shifted left to clear the KPI cards)
 
     const vialGroup = new THREE.Group();
-    vialGroup.scale.setScalar(1.25); // POLISH 1 — make the vial the hero (~25% larger)
+    vialGroup.scale.setScalar(1.5); // dominant hero vial
     scene.add(vialGroup);
 
     // FIX 2 — clear glass that reveals the blood inside
@@ -138,20 +160,20 @@ export default function HeroVial() {
       envMapIntensity: 3.5,
     });
     const body = new THREE.Mesh(new THREE.CylinderGeometry(R, R, bodyH, 96, 1, true), glassMat);
-    body.renderOrder = 1;
+    body.renderOrder = 2;
     vialGroup.add(body);
     const dome = new THREE.Mesh(new THREE.SphereGeometry(R, 96, 48, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), glassMat);
     dome.position.y = bodyBottom;
-    dome.renderOrder = 1;
+    dome.renderOrder = 2;
     vialGroup.add(dome);
     // shoulder taper → neck (cap seats on the neck)
     const shoulder = new THREE.Mesh(new THREE.CylinderGeometry(0.15, R, 0.14, 96), glassMat);
     shoulder.position.y = bodyTop + 0.07;
-    shoulder.renderOrder = 1;
+    shoulder.renderOrder = 2;
     vialGroup.add(shoulder);
     const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.1, 96, 1, true), glassMat);
     neck.position.y = bodyTop + 0.19;
-    neck.renderOrder = 1;
+    neck.renderOrder = 2;
     vialGroup.add(neck);
     const neckTopY = bodyTop + 0.24;
 
@@ -255,7 +277,7 @@ export default function HeroVial() {
       color: 0x7a000e, metalness: 0.12, roughness: 0.12, transmission: 0.1, thickness: 1.1, ior: 1.38,
       attenuationColor: new THREE.Color(0x4a0006), attenuationDistance: 0.4,
       sheen: 0.5, sheenColor: new THREE.Color(0xb51a2a), sheenRoughness: 0.4,
-      emissive: 0x33000a, emissiveIntensity: 0.5, transparent: true, opacity: 0.99,
+      emissive: 0x33000a, emissiveIntensity: 0.5, transparent: false, opacity: 1.0,
     });
     const bloodColumn = new THREE.Mesh(new THREE.CylinderGeometry(bloodR, bloodR, bloodH, 64), bloodMat);
     bloodColumn.position.y = bodyBottom + bloodH / 2;
@@ -342,8 +364,9 @@ export default function HeroVial() {
       `,
     });
     const rippleMesh = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 3.5, 128, 128), rippleMat);
-    rippleMesh.rotation.x = -Math.PI * 0.48;
-    rippleMesh.position.set(0.1, rippleY, 0);
+    rippleMesh.rotation.x = -Math.PI * 0.47; // very flat perspective
+    rippleMesh.scale.setScalar(1.4); // wider pool
+    rippleMesh.position.set(rippleX, rippleY, 0);
     scene.add(rippleMesh);
 
     const glowDiscMat = new THREE.ShaderMaterial({
@@ -354,12 +377,13 @@ export default function HeroVial() {
         uniform vec3 uColor; varying vec2 vUv;
         void main(){
           float d = length(vUv - 0.5) * 2.0;
-          gl_FragColor = vec4(uColor, (1.0 - smoothstep(0.0, 1.0, d)) * 0.25);
+          gl_FragColor = vec4(uColor, (1.0 - smoothstep(0.0, 1.0, d)) * 0.22);
         }`,
     });
     const glowDisc = new THREE.Mesh(new THREE.CircleGeometry(0.5, 64), glowDiscMat);
     glowDisc.rotation.x = -Math.PI / 2;
-    glowDisc.position.set(0.1, rippleY - 0.01, 0);
+    glowDisc.scale.setScalar(1.5);
+    glowDisc.position.set(rippleX, rippleY - 0.01, 0);
     scene.add(glowDisc);
 
     // POLISH 6 — concentric "liquid energy" rings expanding forever
@@ -367,39 +391,45 @@ export default function HeroVial() {
     const rRings: RRing[] = [];
     for (let i = 0; i < 4; i++) {
       const mat = new THREE.MeshBasicMaterial({ color: 0xe63946, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false });
-      const mesh = new THREE.Mesh(new THREE.RingGeometry(0.24, 0.26, 128), mat);
-      mesh.rotation.x = -Math.PI * 0.48;
-      mesh.position.set(0.1, rippleY + 0.006, 0);
+      const mesh = new THREE.Mesh(new THREE.RingGeometry(0.336, 0.364, 128), mat);
+      mesh.rotation.x = -Math.PI * 0.47;
+      mesh.position.set(rippleX, rippleY + 0.006, 0);
       scene.add(mesh);
       rRings.push({ mesh, mat, offset: i / 4 });
     }
 
     // ── Orbital biconcave RBCs (scene root) ──────────────────
     interface Cell {
-      mesh: THREE.Mesh; mat: THREE.MeshPhysicalMaterial; baseOpacity: number; baseScale: number;
+      mesh: THREE.Mesh; mat: THREE.MeshPhysicalMaterial; baseOpacity: number; baseScale: number; base: THREE.Vector3;
       a: number; b: number; incl: number; yaw0: number; precess: number;
       phase: number; speed: number; bob: number; bobSpeed: number; spin: THREE.Vector3;
     }
     const cells: Cell[] = [];
     const rbcGeo = new THREE.SphereGeometry(1, 24, 14);
-    for (let i = 0; i < 30; i++) {
-      const rad = rnd(0.55, 1.9);
+    // 3 zones around the tube (left / right+above / below), flat biconcave discs
+    const rbcZones: [number, number, number][] = [
+      [-0.6, 0.3, 0.3], [-0.8, -0.2, 0.1], [-0.5, 0.6, -0.1], [-1.0, 0.1, 0.2],
+      [0.65, 0.4, 0.2], [0.9, 0.1, -0.1], [0.5, -0.3, 0.3], [1.1, -0.5, 0.1], [0.7, 0.7, 0.0],
+      [0.2, -0.9, 0.2], [-0.3, -1.0, 0.0], [0.5, -0.8, -0.2],
+    ];
+    for (const [bx, by, bz] of rbcZones) {
       const mat = new THREE.MeshPhysicalMaterial({
         color: 0xc1121f, roughness: 0.26, metalness: 0, clearcoat: 0.4, clearcoatRoughness: 0.3,
         sheen: 0.5, sheenColor: new THREE.Color(0xff5a66), emissive: 0x3a040a, emissiveIntensity: 0.3,
         transmission: 0.3, thickness: 0.08, transparent: true, opacity: 0.9, side: THREE.DoubleSide,
       });
       const disc = new THREE.Mesh(rbcGeo, mat);
-      const s = rnd(0.055, 0.09);
-      disc.scale.set(s, s, s * 0.32);
+      const s = bz > 0.1 ? rnd(0.16, 0.18) : 0.13; // frontmost larger, background smaller
+      disc.scale.set(s, s, s * 0.22); // flat disc
       disc.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
       scene.add(disc);
+      const orbitR = rnd(0.15, 0.35); // tight orbit near the tube
       cells.push({
-        mesh: disc, mat, baseOpacity: 0.9, baseScale: s,
-        a: rad, b: rad * rnd(0.55, 0.9), incl: rnd(-0.5, 0.5), yaw0: Math.random() * Math.PI * 2,
+        mesh: disc, mat, baseOpacity: 0.9, baseScale: s, base: new THREE.Vector3(bx, by, bz),
+        a: orbitR, b: orbitR * rnd(0.6, 1), incl: rnd(-0.5, 0.5), yaw0: Math.random() * Math.PI * 2,
         precess: rnd(-0.02, 0.02), phase: Math.random() * Math.PI * 2,
-        speed: rnd(0.03, 0.1) * (Math.random() < 0.5 ? 1 : -1),
-        bob: rnd(0.05, 0.25), bobSpeed: rnd(0.15, 0.5),
+        speed: rnd(0.05, 0.15) * (Math.random() < 0.5 ? 1 : -1),
+        bob: rnd(0.02, 0.06), bobSpeed: rnd(0.15, 0.5),
         spin: new THREE.Vector3(rnd(0.002, 0.006), rnd(0.002, 0.006), rnd(0.001, 0.004)),
       });
     }
@@ -407,30 +437,31 @@ export default function HeroVial() {
     // ── FIX 4 — individually-scattered purple-nucleus WBCs ───
     interface Wbc { group: THREE.Group; bx: number; by: number; bz: number; floatSpeed: number; phase: number; amp: number; spin: number }
     const wbcs: Wbc[] = [];
-    const wbcPositions: [number, number, number, number][] = [
-      [-1.2, 0.1, 0.3, 1.15],
-      [-0.7, -0.6, -0.4, 0.85],
-      [0.9, 0.5, 0.2, 1.0],
-      [-1.5, 0.7, -0.2, 0.75],
-      [0.5, -0.9, 0.1, 0.95],
+    // [x, y, z, scale, outerRadius, nucleusRadius, opacity]
+    const wbcDefs: [number, number, number, number, number, number, number][] = [
+      [-1.35, 0.15, 0.25, 1.0, 0.16, 0.09, 0.55], // large hero WBC, left
+      [1.15, -0.15, -0.15, 0.7, 0.11, 0.06, 0.45], // medium, right mid
+      [-0.9, -0.75, -0.3, 0.55, 0.09, 0.05, 0.4], // small, lower left
+      [0.7, -0.85, 0.1, 0.65, 0.1, 0.055, 0.42], // medium, lower right
+      [-1.6, 0.7, -0.5, 0.4, 0.09, 0.05, 0.28], // tiny, upper-left background
     ];
-    for (const [bx, by, bz, sc] of wbcPositions) {
+    for (const [bx, by, bz, sc, outerR, nucR, op] of wbcDefs) {
       const g = new THREE.Group();
       const outer = new THREE.Mesh(
-        new THREE.SphereGeometry(0.09, 32, 32),
+        new THREE.SphereGeometry(outerR, 32, 32),
         new THREE.MeshPhysicalMaterial({
-          color: 0xe8d5ff, transparent: true, opacity: 0.4, transmission: 0.85, thickness: 0.25,
+          color: 0xe8d5ff, transparent: true, opacity: op, transmission: 0.75, thickness: 0.25,
           roughness: 0.0, ior: 1.36, clearcoat: 1, clearcoatRoughness: 0, iridescence: 0.35,
           iridescenceIOR: 1.3, envMapIntensity: 2.6, sheen: 0.5, sheenColor: new THREE.Color(0xd9c2ff),
         }),
       );
       g.add(outer);
       const nucleus = new THREE.Mesh(
-        new THREE.SphereGeometry(0.052, 16, 16),
+        new THREE.SphereGeometry(nucR, 16, 16),
         new THREE.MeshPhysicalMaterial({
           color: 0x6b21a8, transparent: true, opacity: 0.8, transmission: 0.45, thickness: 0.3, roughness: 0.25,
           attenuationColor: new THREE.Color(0x7c2fb8), attenuationDistance: 0.4,
-          emissive: 0x3a0f60, emissiveIntensity: 0.55, // soft internal glow / subsurface feel
+          emissive: 0x3a0f60, emissiveIntensity: 0.55,
         }),
       );
       nucleus.position.y = 0.01;
@@ -438,7 +469,7 @@ export default function HeroVial() {
       g.scale.setScalar(sc);
       g.position.set(bx, by, bz);
       scene.add(g);
-      wbcs.push({ group: g, bx, by, bz, floatSpeed: rnd(0.25, 0.6), phase: Math.random() * Math.PI * 2, amp: rnd(0.06, 0.14), spin: rnd(0.002, 0.005) });
+      wbcs.push({ group: g, bx, by, bz, floatSpeed: rnd(0.25, 0.6), phase: Math.random() * Math.PI * 2, amp: rnd(0.05, 0.1), spin: rnd(0.002, 0.005) });
     }
 
     // ── Soft pink bokeh particles ────────────────────────────
@@ -498,17 +529,18 @@ export default function HeroVial() {
       return { group, core, inner, dots };
     };
 
-    const cell1 = makeCell(0.45, 0.28, 60, 0xff8fab); // left of tube, mid-depth
-    cell1.group.position.set(-1.05, 0.0, -0.2);
+    const cell1 = makeCell(0.45, 0.28, 60, 0xff8fab); // internal structure of the large left WBC
+    cell1.group.position.set(-1.35, 0.15, 0.25);
+    cell1.group.scale.setScalar(0.38);
     scene.add(cell1.group);
 
-    const cell2 = makeCell(0.25, 0.15, 30, 0xd4a0b5); // smaller, behind tube
-    cell2.group.position.set(0.9, -0.55, -0.8);
-    cell2.group.scale.setScalar(0.55);
+    const cell2 = makeCell(0.25, 0.15, 30, 0xd4a0b5); // inside the lower-right WBC
+    cell2.group.position.set(0.7, -0.85, 0.1);
+    cell2.group.scale.setScalar(0.22);
     scene.add(cell2.group);
 
     const cellLight = new THREE.PointLight(0xff4080, 0.7, 3.5); // soft pink breathing glow
-    cellLight.position.set(-1.05, 0.0, 0.5);
+    cellLight.position.set(-1.35, 0.15, 0.5);
     scene.add(cellLight);
 
     // ── Mouse parallax ───────────────────────────────────────
@@ -522,7 +554,7 @@ export default function HeroVial() {
     // ── Animation ────────────────────────────────────────────
     const clock = new THREE.Clock();
     let raf = 0;
-    const tilt = 0.18; // FIX 6
+    const tilt = 0.26; // ~15° tilt
     let sloshVel = 0, lastRotY = 0;
 
     const animate = () => {
@@ -536,8 +568,8 @@ export default function HeroVial() {
       rotY += (mouseX * 0.12 - rotY) * 0.05;
       vialGroup.rotation.x = rotX;
       vialGroup.rotation.z = tilt + rotY * 0.5 + Math.sin(t * 0.4) * 0.008;
-      vialGroup.position.y = Math.sin(t * loop) * 0.03; // float ~8px, 8s loop
-      vialGroup.position.x = 0.1 + Math.sin(t * 0.28) * 0.012; // FIX 6 slight right offset
+      vialGroup.position.y = 0.05 + Math.sin(t * loop) * 0.03; // float ~8px, 8s loop
+      vialGroup.position.x = -0.15 + Math.sin(t * 0.28) * 0.012; // left of the KPI cards
 
       const dRot = vialGroup.rotation.y - lastRotY;
       lastRotY = vialGroup.rotation.y;
@@ -563,15 +595,17 @@ export default function HeroVial() {
         const ly = Math.sin(t * c.bobSpeed + c.phase) * c.bob;
         const cy1 = ly * Math.cos(c.incl) - lz * Math.sin(c.incl);
         const cz1 = ly * Math.sin(c.incl) + lz * Math.cos(c.incl);
-        const pz = -lx * Math.sin(yaw) + cz1 * Math.cos(yaw);
-        c.mesh.position.set(lx * Math.cos(yaw) + cz1 * Math.sin(yaw), cy1 + 0.1, pz);
+        const ox = lx * Math.cos(yaw) + cz1 * Math.sin(yaw);
+        const oz = -lx * Math.sin(yaw) + cz1 * Math.cos(yaw);
+        const pz = c.base.z + oz;
+        c.mesh.position.set(c.base.x + ox, c.base.y + cy1, pz);
         c.mesh.rotation.x += c.spin.x;
         c.mesh.rotation.y += c.spin.y;
         c.mesh.rotation.z += c.spin.z;
         const depth = Math.max(0, Math.min(1, (pz + 1.2) / 2.0));
-        c.mat.opacity = c.baseOpacity * (0.35 + depth * 0.65);
-        const ds = c.baseScale * (0.75 + depth * 0.4);
-        c.mesh.scale.set(ds, ds, c.baseScale * 0.32);
+        c.mat.opacity = c.baseOpacity * (0.45 + depth * 0.55);
+        const ds = c.baseScale * (0.85 + depth * 0.25);
+        c.mesh.scale.set(ds, ds, c.baseScale * 0.22);
       }
 
       // FIX 4 — WBCs float independently in place (no clustering)
@@ -604,8 +638,8 @@ export default function HeroVial() {
       const cellPulse = 1 + Math.sin(t * 1.4) * 0.06;
       cell1.core.scale.setScalar(cellPulse);
       cell1.inner.scale.setScalar(cellPulse * 0.88);
-      cell1.group.position.x = -1.05 + Math.cos(t * 0.3) * 0.04 + mxs * 0.12;
-      cell1.group.position.y = Math.sin(t * 0.45) * 0.08 + mys * 0.08;
+      cell1.group.position.x = -1.35 + Math.cos(t * 0.3) * 0.03 + mxs * 0.12;
+      cell1.group.position.y = 0.15 + Math.sin(t * 0.45) * 0.05 + mys * 0.08;
       for (const d of cell1.dots) {
         d.mesh.position.set(
           d.origin.x + Math.sin(t + d.offset) * 0.06,
@@ -615,8 +649,8 @@ export default function HeroVial() {
       }
       cell2.group.rotation.y -= 0.0009;
       cell2.group.rotation.x += 0.0005;
-      cell2.group.position.x = 0.9 + mxs * 0.04;
-      cell2.group.position.y = -0.55 + Math.sin(t * 0.38 + 1.2) * 0.05 + mys * 0.03;
+      cell2.group.position.x = 0.7 + mxs * 0.04;
+      cell2.group.position.y = -0.85 + Math.sin(t * 0.38 + 1.2) * 0.04 + mys * 0.03;
       for (const d of cell2.dots) {
         d.mesh.position.set(
           d.origin.x + Math.sin(t + d.offset) * 0.06,
@@ -626,10 +660,10 @@ export default function HeroVial() {
       }
       cellLight.intensity = 0.5 + Math.sin(t * 1.4) * 0.25;
 
-      camera.position.z = 7.3 - Math.sin(t * 0.08) * 0.15;
+      camera.position.z = 8.0 - Math.sin(t * 0.08) * 0.15;
       camera.position.x += (mouseX * 0.12 - camera.position.x) * 0.03;
-      camera.position.y += (0.05 + mouseY * 0.05 - camera.position.y) * 0.03;
-      camera.lookAt(0.5, 0.05, 0);
+      camera.position.y += (0.15 + mouseY * 0.05 - camera.position.y) * 0.03;
+      camera.lookAt(0.15, 0.1, 0);
 
       renderer.render(scene, camera);
     };
