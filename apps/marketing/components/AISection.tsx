@@ -1,71 +1,69 @@
 import SectionReveal from './SectionReveal'
 
-const EVIDENCE: [string, number][] = [
-  ['Nuclear enlargement', 94], ['Hyperchromasia', 87], ['Dense clustering', 81], ['Irregular chromatin', 73],
+const STEPS: [string, string][] = [
+  ['01', 'Full-slide AI scan'],
+  ['02', 'Abnormal cell clustering'],
+  ['03', 'Explainable heatmap + confidence score'],
+  ['04', 'Urgency-based routing'],
+  ['05', 'Live EMR delivery — HL7/FHIR under 2s'],
 ]
-const FEATURES = [
-  'FDA-validated screening model',
-  'Bethesda 2014 classification',
-  'Explainable, evidence-linked findings',
-  'Human-in-the-loop authorization',
+
+const CARDS: [string, string, string][] = [
+  ['97%', 'HSIL detection accuracy', 'ink'],
+  ['91%', 'Reduction in manual review', 'blue'],
+  ['~0.8s', 'Per-slide inference time', 'ink'],
 ]
 
 export default function AISection() {
   return (
-    <section className="px-[6vw] py-[120px] lg:px-8" style={{ background: 'var(--bg2)' }}>
-      <div className="mx-auto grid max-w-[1240px] items-center gap-16 lg:grid-cols-2">
-        <div>
-          <SectionReveal>
-            <span className="font-mono text-[12px] uppercase tracking-[0.24em] text-blue">CYTO AI</span>
-          </SectionReveal>
-          <SectionReveal delay={0.05}>
-            <h2 className="mt-5 font-serif text-[clamp(32px,5vw,60px)] leading-[1.02]">AI that screens, explains, and defers to you.</h2>
-          </SectionReveal>
-          <SectionReveal delay={0.1}>
-            <p className="mt-6 font-sans text-[18px] leading-relaxed text-ink/65">
-              CYTO AI pre-screens every slide, classifies against the Bethesda System, and surfaces its evidence with a
-              confidence score — pathologists stay in control, authorizing every result.
-            </p>
-          </SectionReveal>
-          <SectionReveal delay={0.15}>
-            <ul className="mt-8 space-y-3">
-              {FEATURES.map((f) => (
-                <li key={f} className="flex items-center gap-3 font-sans text-[15px] text-ink/80">
-                  <span className="grid h-5 w-5 place-items-center rounded-full text-bg" style={{ background: 'var(--blue)' }}>
-                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.5l2.5 2.5 4.5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                  </span>
-                  {f}
-                </li>
-              ))}
-            </ul>
-          </SectionReveal>
-        </div>
-
-        <SectionReveal delay={0.1} direction="right">
-          <div className="rounded-2xl border bg-white p-6 shadow-[0_40px_80px_-40px_rgba(9,9,14,0.3)]" style={{ borderColor: 'rgba(9,9,14,0.1)' }}>
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[11px] uppercase tracking-wide text-ink/45">AI Findings · DM26-03-014</span>
-              <span className="rounded-full px-2 py-0.5 font-mono text-[10px] font-bold text-bg" style={{ background: 'var(--blue)' }}>84% conf</span>
-            </div>
-            <div className="mt-5 rounded-xl p-4" style={{ background: '#EEF0FB' }}>
-              <div className="font-sans text-[13px] font-semibold text-ink">Atypical squamous cells (ASC-US)</div>
-              <div className="font-sans text-[12px] text-ink/55">Recommend cytotechnologist review</div>
-            </div>
-            <div className="mt-5 space-y-3">
-              {EVIDENCE.map(([l, v]) => (
-                <div key={l}>
-                  <div className="flex items-center justify-between font-sans text-[12px]">
-                    <span className="text-ink/70">{l}</span>
-                    <span className="font-semibold text-ink">{v}%</span>
-                  </div>
-                  <div className="mt-1 h-1.5 overflow-hidden rounded-full" style={{ background: '#E4E3DD' }}>
-                    <div className="h-full rounded-full" style={{ width: `${v}%`, background: 'var(--blue)' }} />
-                  </div>
-                </div>
-              ))}
-            </div>
+    <section id="cyto-ai" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr',
+      borderBottom: '1px solid rgba(9,9,14,0.07)' }}>
+      {/* LEFT — bone */}
+      <div style={{ background: '#F0EFE9', padding: '5rem 3rem 5rem 2.5rem',
+        borderRight: '1px solid rgba(9,9,14,0.07)' }}>
+        <SectionReveal direction="left">
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
+            letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.22)',
+            display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '2.5rem' }}>
+            <span style={{ width: 18, height: 1, background: 'rgba(9,9,14,0.18)', display: 'inline-block' }} />
+            03 · CYTO AI
+          </div>
+          <div style={{ lineHeight: 0.9, marginBottom: '3rem' }}>
+            <div><span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.6rem,4.5vw,4.5rem)',
+              letterSpacing: '-0.03em', color: '#09090E' }}>Your new</span></div>
+            <div><span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.6rem,4.5vw,4.5rem)',
+              letterSpacing: '-0.03em', color: 'transparent', WebkitTextStroke: '1.5px rgba(9,9,14,0.16)' }}>digital</span></div>
+            <div><span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.6rem,4.5vw,4.5rem)',
+              letterSpacing: '-0.03em', color: '#4F46E5', fontStyle: 'italic' }}>cytotechnologist.</span></div>
+          </div>
+          <div>
+            {STEPS.map(([n, title]) => (
+              <div key={n} style={{ display: 'flex', alignItems: 'center', gap: '16px',
+                padding: '15px 0', borderTop: '1px solid rgba(9,9,14,0.07)' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', fontWeight: 700,
+                  color: '#4F46E5', letterSpacing: '0.06em' }}>{n}</span>
+                <span style={{ fontSize: '0.92rem', fontWeight: 500, color: '#09090E' }}>{title}</span>
+              </div>
+            ))}
           </div>
         </SectionReveal>
+      </div>
+
+      {/* RIGHT — bg2, white cards */}
+      <div style={{ background: '#E8E7E1', padding: '5rem 2.5rem', display: 'flex',
+        flexDirection: 'column', justifyContent: 'center', gap: '1px' }}>
+        {CARDS.map(([num, label, tone], i) => (
+          <SectionReveal key={label} delay={0.06 * i} direction="right">
+            <div style={{ background: '#F7F6F1', padding: '2rem 2.25rem', display: 'flex',
+              alignItems: 'baseline', justifyContent: 'space-between', gap: '1.5rem' }}>
+              <div style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.6rem,4vw,3.6rem)',
+                lineHeight: 0.9, color: tone === 'blue' ? '#4F46E5' : '#09090E' }}>{num}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', fontWeight: 600,
+                letterSpacing: '0.05em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.38)',
+                textAlign: 'right', maxWidth: '160px' }}>{label}</div>
+            </div>
+          </SectionReveal>
+        ))}
       </div>
     </section>
   )

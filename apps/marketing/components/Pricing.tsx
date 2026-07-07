@@ -2,83 +2,80 @@ import SectionReveal from './SectionReveal'
 
 const TIERS = [
   {
-    name: 'Clinic',
-    price: 'Contact',
-    blurb: 'For single-site clinics moving off paper.',
-    features: ['Specimen management', 'Result sheets & authorization', 'Client portal', 'Standard reports', 'Email support'],
+    name: 'Community Labs',
+    tag: 'Single site',
+    features: ['Full specimen workflow', 'Bethesda 2014 reporting', 'Patient management', 'Standard analytics', 'Email support'],
     featured: false,
   },
   {
-    name: 'Laboratory',
-    price: 'Contact',
-    blurb: 'For growing labs that need AI and analytics.',
-    features: ['Everything in Clinic', 'CYTO AI screening', 'Turnaround & QC analytics', 'Billing & payments', 'EMR / FHIR interoperability', 'Priority support'],
+    name: 'Regional Labs',
+    tag: 'Multi-site',
+    features: ['Everything in Community', 'CYTO AI screening', 'HL7 / FHIR interoperability', 'Billing + workforce', 'Priority support'],
     featured: true,
   },
   {
-    name: 'Enterprise',
-    price: 'Custom',
-    blurb: 'For multi-site networks and health systems.',
-    features: ['Everything in Laboratory', 'Multi-tenant administration', 'Dedicated success manager', 'Custom integrations', 'SSO & advanced audit', '99.9% uptime SLA'],
+    name: 'Enterprise Health Systems',
+    tag: 'Networks',
+    features: ['Everything in Regional', 'Multi-tenant administration', 'Custom integrations', 'Dedicated success manager', 'SLA guarantee', 'Dedicated success team'],
     featured: false,
   },
 ]
 
 export default function Pricing() {
   return (
-    <section id="pricing" className="px-[6vw] py-[120px] lg:px-8">
-      <div className="mx-auto max-w-[1240px]">
-        <SectionReveal>
-          <span className="font-mono text-[12px] uppercase tracking-[0.24em] text-blue">Pricing</span>
-        </SectionReveal>
-        <SectionReveal delay={0.05}>
-          <h2 className="mt-5 max-w-[18ch] font-serif text-[clamp(32px,5vw,64px)] leading-[1.02]">Scales with your lab.</h2>
-        </SectionReveal>
+    <section id="pricing" style={{ borderBottom: '1px solid rgba(9,9,14,0.07)' }}>
+      <div style={{ padding: '5rem 2.5rem 3rem' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
+          letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.22)',
+          display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '2.5rem' }}>
+          <span style={{ width: 18, height: 1, background: 'rgba(9,9,14,0.18)', display: 'inline-block' }} />
+          06 · Pricing
+        </div>
+        <div style={{ lineHeight: 0.9 }}>
+          <div><span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(3rem,6vw,5.5rem)',
+            letterSpacing: '-0.03em', color: '#09090E' }}>Built for every</span></div>
+          <div>
+            <span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(3rem,6vw,5.5rem)',
+              letterSpacing: '-0.03em', color: 'transparent', WebkitTextStroke: '1.5px rgba(9,9,14,0.14)' }}>scale of </span>
+            <span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(3rem,6vw,5.5rem)',
+              letterSpacing: '-0.03em', color: '#4F46E5', fontStyle: 'italic' }}>laboratory.</span>
+          </div>
+        </div>
+      </div>
 
-        <div className="mt-16 grid gap-6 lg:grid-cols-3">
-          {TIERS.map((t, i) => (
-            <SectionReveal key={t.name} delay={0.05 * i}>
-              <div
-                className="flex h-full flex-col rounded-2xl border p-8"
-                style={
-                  t.featured
-                    ? { background: 'var(--ink)', borderColor: 'var(--ink)' }
-                    : { background: 'var(--bg)', borderColor: 'rgba(9,9,14,0.12)' }
-                }
-              >
-                <div className="flex items-center justify-between">
-                  <h3 className="font-serif text-[26px]" style={{ color: t.featured ? 'var(--bg)' : 'var(--ink)' }}>{t.name}</h3>
-                  {t.featured && (
-                    <span className="rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide text-bg" style={{ background: 'var(--blue)' }}>Popular</span>
-                  )}
-                </div>
-                <div className="mt-4 font-serif text-[40px] leading-none" style={{ color: t.featured ? 'var(--bg)' : 'var(--ink)' }}>{t.price}</div>
-                <p className="mt-3 font-sans text-[14px]" style={{ color: t.featured ? 'rgba(240,239,233,0.6)' : 'rgba(9,9,14,0.6)' }}>{t.blurb}</p>
-                <ul className="mt-7 space-y-3">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+        borderTop: '1px solid rgba(9,9,14,0.07)' }}>
+        {TIERS.map((t, i) => {
+          const fg = t.featured ? '#fff' : '#09090E'
+          const muted = t.featured ? 'rgba(255,255,255,0.55)' : 'rgba(9,9,14,0.4)'
+          return (
+            <SectionReveal key={t.name} delay={0.06 * i}>
+              <div style={{ background: t.featured ? '#4F46E5' : 'transparent',
+                borderRight: i < 2 ? '1px solid rgba(9,9,14,0.07)' : 'none',
+                padding: '3rem 2rem 3.5rem', minHeight: '100%',
+                display: 'flex', flexDirection: 'column' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
+                  letterSpacing: '0.12em', textTransform: 'uppercase', color: muted,
+                  marginBottom: '1rem' }}>{t.tag}</div>
+                <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.9rem', lineHeight: 1.05,
+                  color: fg, marginBottom: '2rem' }}>{t.name}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
                   {t.features.map((f) => (
-                    <li key={f} className="flex items-start gap-3 font-sans text-[14px]" style={{ color: t.featured ? 'rgba(240,239,233,0.85)' : 'rgba(9,9,14,0.8)' }}>
-                      <svg className="mt-0.5 shrink-0" width="14" height="14" viewBox="0 0 12 12" fill="none" style={{ color: t.featured ? 'var(--blue2)' : 'var(--blue)' }}>
-                        <path d="M2.5 6.5l2.5 2.5 4.5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      {f}
-                    </li>
+                    <div key={f} style={{ display: 'flex', gap: '11px', fontSize: '0.82rem',
+                      color: t.featured ? 'rgba(255,255,255,0.85)' : 'rgba(9,9,14,0.75)' }}>
+                      <span style={{ color: t.featured ? 'rgba(255,255,255,0.5)' : '#4F46E5', flexShrink: 0 }}>→</span>{f}
+                    </div>
                   ))}
-                </ul>
-                <a
-                  href="#cta"
-                  className="mt-8 inline-flex items-center justify-center rounded-full px-6 py-3 font-sans text-[14px] font-semibold transition-opacity hover:opacity-90"
-                  style={
-                    t.featured
-                      ? { background: 'var(--blue)', color: '#fff' }
-                      : { background: 'var(--ink)', color: 'var(--bg)' }
-                  }
-                >
-                  Request a demo
-                </a>
+                </div>
+                <button style={{ marginTop: '2.5rem', width: '100%',
+                  background: t.featured ? '#09090E' : '#09090E', color: '#F0EFE9', border: 'none',
+                  padding: '13px', borderRadius: '2px', fontFamily: 'var(--font-mono)',
+                  fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.07em',
+                  textTransform: 'uppercase', cursor: 'pointer' }}>Request demo</button>
               </div>
             </SectionReveal>
-          ))}
-        </div>
+          )
+        })}
       </div>
     </section>
   )
