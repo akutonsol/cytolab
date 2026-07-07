@@ -92,10 +92,11 @@ export default function HeroVial() {
 
     // ── Materials ────────────────────────────────────────────
     const glassMat = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff, transparent: true, opacity: 0.06, roughness: 0.02, metalness: 0.0,
-      transmission: 0.98, thickness: 0.5, ior: 1.52, reflectivity: 0.98, clearcoat: 1.0,
-      clearcoatRoughness: 0.0, iridescence: 0.08, iridescenceIOR: 1.3, envMapIntensity: 3.2,
-      side: THREE.DoubleSide, depthWrite: false, attenuationColor: new THREE.Color(0xf0f4ff), attenuationDistance: 4,
+      color: 0xffffff, transparent: true, opacity: 0.13, roughness: 0.025, metalness: 0.0,
+      transmission: 0.98, thickness: 0.6, ior: 1.52, reflectivity: 0.98, specularIntensity: 1.0,
+      specularColor: new THREE.Color(0xffffff), clearcoat: 1.0,
+      clearcoatRoughness: 0.045, iridescence: 0.15, iridescenceIOR: 1.3, envMapIntensity: 3.7,
+      side: THREE.DoubleSide, depthWrite: false, attenuationColor: new THREE.Color(0xeef2ff), attenuationDistance: 3.4,
     });
     const glassMatBack = glassMat.clone();
     glassMatBack.side = THREE.BackSide;
@@ -104,10 +105,11 @@ export default function HeroVial() {
     const capRidgeMat = new THREE.MeshPhysicalMaterial({ color: 0x8b0008, roughness: 0.55, metalness: 0.0, envMapIntensity: 1.2 });
     // Physical blood — subsurface-ish attenuation, sheen, faint transmission
     const bloodMat = new THREE.MeshPhysicalMaterial({
-      color: 0x5c0008, emissive: 0x1a0000, emissiveIntensity: 0.35, roughness: 0.14, metalness: 0.08,
-      transmission: 0.22, thickness: 1.3, ior: 1.38, attenuationColor: new THREE.Color(0x35000a),
-      attenuationDistance: 0.3, sheen: 0.6, sheenColor: new THREE.Color(0x8a1424), sheenRoughness: 0.4,
-      transparent: true, opacity: 0.98, envMapIntensity: 0.8,
+      color: 0x66000b, emissive: 0x220000, emissiveIntensity: 0.45, roughness: 0.1, metalness: 0.1,
+      transmission: 0.24, thickness: 1.4, ior: 1.38, clearcoat: 0.5, clearcoatRoughness: 0.22,
+      attenuationColor: new THREE.Color(0x30000a), attenuationDistance: 0.28,
+      sheen: 0.65, sheenColor: new THREE.Color(0x9a1626), sheenRoughness: 0.38,
+      transparent: true, opacity: 0.99, envMapIntensity: 1.0,
     });
 
     // ── VIAL (exact geometry/positions preserved) ────────────
@@ -207,7 +209,7 @@ export default function HeroVial() {
     g.restore();
     const labelTex = new THREE.CanvasTexture(lc);
     labelTex.anisotropy = 8; labelTex.colorSpace = THREE.SRGBColorSpace;
-    labelTex.wrapS = THREE.RepeatWrapping; labelTex.repeat.x = -1; labelTex.offset.x = 1;
+    labelTex.wrapS = THREE.RepeatWrapping; labelTex.repeat.x = 1; labelTex.offset.x = 0;
     const label = new THREE.Mesh(
       new THREE.CylinderGeometry(0.2115, 0.2115, 0.62, SEG, 1, true, -1.25, 2.5),
       new THREE.MeshStandardMaterial({ map: labelTex, roughness: 0.72, side: THREE.FrontSide, envMapIntensity: 0.4 }),
@@ -444,7 +446,8 @@ export default function HeroVial() {
     const keyLight = new THREE.DirectionalLight(0xffffff, 2.6); keyLight.position.set(4, 5, 5); scene.add(keyLight);
     const warmFill = new THREE.DirectionalLight(0xffe6d2, 1.2); warmFill.position.set(-4, 2, 3); scene.add(warmFill);
     const redUnder = new THREE.PointLight(0xff1a2e, 0.7, 5); redUnder.position.set(0, -1.5, 1.2); scene.add(redUnder);
-    const purpleRim = new THREE.DirectionalLight(0x9b6bff, 0.9); purpleRim.position.set(-2.5, -0.5, -3.5); scene.add(purpleRim);
+    const purpleRim = new THREE.DirectionalLight(0x9b6bff, 1.15); purpleRim.position.set(-2.5, -0.5, -3.5); scene.add(purpleRim);
+    const glassRim = new THREE.DirectionalLight(0xffffff, 0.9); glassRim.position.set(2.5, 0.5, -3.0); scene.add(glassRim); // back rim to define glass edges
     const topLight = new THREE.PointLight(0xffffff, 0.9, 4); topLight.position.set(0, 2.5, 2); scene.add(topLight);
     const cellLight = new THREE.PointLight(0xff4080, 0.5, 3); cellLight.position.set(-1.25, 0.12, 0.8); scene.add(cellLight);
     const sweep = new THREE.PointLight(0xffffff, 0.0, 6); sweep.position.set(0, 0.6, 2.4); scene.add(sweep); // light sweep across the glass
