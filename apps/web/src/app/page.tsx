@@ -59,6 +59,39 @@ type Plan = {
   features: string[]; cta: string; highlighted: boolean; badge?: string;
 };
 
+// AI-Screening microscopy — a glass-sphere cell (specular highlight + nucleus).
+// Duration is derived from position so it stays stable across re-renders
+// (the page re-renders on each live-counter tick).
+function renderCell(cx: number, cy: number, r: number, blur: number, opacity: number, floatDelay: string, isLarge: boolean, key: number) {
+  const dur = 3 + (((cx * 13 + cy * 7) % 20) / 10);
+  return (
+    <div key={key} style={{
+      position: 'absolute', left: `${cx}%`, top: `${cy}%`,
+      width: r * 2, height: r * 2, transform: 'translate(-50%, -50%)', borderRadius: '50%',
+      opacity, filter: blur > 0 ? `blur(${blur}px)` : 'none',
+      animation: `float-cell ${dur}s ease-in-out ${floatDelay} infinite`,
+      zIndex: isLarge ? 3 : blur > 0 ? 1 : 2,
+      background: 'radial-gradient(circle at 32% 28%, rgba(220,200,255,0.85) 0%, rgba(160,100,240,0.75) 25%, rgba(100,50,200,0.85) 55%, rgba(70,20,160,0.95) 100%)',
+      boxShadow: `inset ${r * 0.25}px ${r * 0.2}px ${r * 0.35}px rgba(255,255,255,0.55), inset -${r * 0.15}px -${r * 0.15}px ${r * 0.3}px rgba(80,20,180,0.4), inset ${r * 0.05}px ${r * 0.05}px ${r * 0.5}px rgba(180,120,255,0.3), 0 ${r * 0.2}px ${r * 0.6}px rgba(80,20,180,0.35), 0 ${r * 0.05}px ${r * 0.15}px rgba(0,0,0,0.2)`,
+    }}>
+      <div style={{ position: 'absolute', top: '12%', left: '18%', width: r * 0.45, height: r * 0.3, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(255,255,255,0.75) 0%, transparent 100%)', transform: 'rotate(-30deg)' }} />
+      <div style={{ position: 'absolute', width: r * 0.52, height: r * 0.52, top: '50%', left: '50%', transform: 'translate(-38%, -38%)', borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, rgba(80,20,150,0.9) 0%, rgba(40,5,100,0.95) 60%, rgba(20,0,60,1) 100%)', boxShadow: 'inset 3px 3px 6px rgba(140,80,255,0.3), inset -2px -2px 4px rgba(0,0,0,0.5)' }} />
+    </div>
+  );
+}
+
+// [cx%, cy%, radius, blur, opacity, floatDelay, isLarge]
+const SCREEN_CELLS: [number, number, number, number, number, string, boolean][] = [
+  [15, 5, 38, 2.5, 0.7, '0s', false], [50, 2, 32, 2.0, 0.6, '0.5s', false], [80, 8, 42, 2.5, 0.7, '1.0s', false],
+  [95, 18, 36, 2.0, 0.6, '1.5s', false], [5, 20, 34, 2.0, 0.6, '0.8s', false], [88, 40, 40, 2.5, 0.65, '1.2s', false],
+  [10, 75, 36, 2.0, 0.6, '0.3s', false], [92, 72, 38, 2.5, 0.65, '1.8s', false],
+  [30, 12, 50, 0.8, 0.85, '0.4s', false], [70, 15, 44, 0.8, 0.80, '1.1s', false], [20, 38, 46, 0.8, 0.82, '0.7s', false],
+  [75, 42, 52, 0.5, 0.85, '1.4s', false], [42, 70, 48, 0.8, 0.80, '0.9s', false], [72, 72, 44, 0.8, 0.82, '1.6s', false],
+  [18, 60, 42, 0.8, 0.80, '1.3s', false],
+  [38, 28, 68, 0, 0.95, '0.2s', true], [18, 82, 58, 0, 0.92, '0.6s', false], [72, 22, 62, 0, 0.93, '1.0s', false],
+  [58, 65, 56, 0, 0.90, '1.5s', false], [84, 62, 60, 0, 0.92, '0.4s', false], [48, 48, 50, 0, 0.88, '1.2s', false],
+];
+
 export default function LandingPage() {
   // Bounce authenticated users straight to the app. Wait for the persisted
   // auth store to hydrate before deciding, so anonymous visitors still see
@@ -269,6 +302,10 @@ export default function LandingPage() {
           @keyframes scan-line { 0% { top: 5%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 92%; opacity: 0; } }
           @keyframes badge-pulse { 0%, 100% { box-shadow: 0 4px 16px rgba(230,57,70,0.4); } 50% { box-shadow: 0 4px 28px rgba(230,57,70,0.75); } }
           @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+          @keyframes float-cell { 0%, 100% { transform: translate(-50%, -50%) translateY(0px); } 50% { transform: translate(-50%, -50%) translateY(-6px); } }
+          @keyframes scan-sweep { 0% { top: 4%; opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { top: 93%; opacity: 0; } }
+          @keyframes corner-flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+          @keyframes live-ping { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2.2); opacity: 0; } }
         ` }} />
         {/* Top purple atmospheric glow */}
         <div style={{
@@ -447,18 +484,21 @@ export default function LandingPage() {
             <p style={{ fontSize: '16px', color: '#64748b', lineHeight: 1.65, marginTop: '20px', maxWidth: '380px' }}>
               Our AI models analyze millions of cells in seconds, prioritizing what matters most and reducing routine workload by up to 70%.
             </p>
-            <div style={{ marginTop: '28px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column' }}>
               {[
-                { text: 'Deep learning models trained on 50M+ cells', icon: <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" fill="#E63946" /> },
-                { text: '99%+ accuracy on key abnormality detection', icon: <><circle cx="12" cy="12" r="3" fill="#E63946" /><circle cx="12" cy="12" r="6" fill="none" stroke="#E63946" strokeWidth="1.5" /></> },
-                { text: 'Continuous learning from expert feedback', icon: <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" fill="#E63946" /> },
-                { text: 'CAP & CLIA validated workflows', icon: <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" fill="#E63946" /> },
+                { title: 'Deep learning models trained on 50M+ cells', sub: "Built on the world's largest curated datasets", icon: <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" fill="#E63946" /> },
+                { title: '99%+ accuracy on key abnormality detection', sub: 'Proven performance across diverse populations', icon: <><circle cx="12" cy="12" r="3" fill="#E63946" /><circle cx="12" cy="12" r="6" fill="none" stroke="#E63946" strokeWidth="1.5" /></> },
+                { title: 'Continuous learning from expert feedback', sub: 'Models improve with every case reviewed', icon: <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" fill="#E63946" /> },
+                { title: 'CAP & CLIA validated workflows', sub: 'Enterprise-grade accuracy and compliance', icon: <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" fill="#E63946" /> },
               ].map((feat, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(230,57,70,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginTop: 18 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(230,57,70,0.08)', border: '1px solid rgba(230,57,70,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">{feat.icon}</svg>
                   </div>
-                  <span style={{ fontSize: '14px', color: '#374151', fontWeight: 500 }}>{feat.text}</span>
+                  <div>
+                    <div style={{ fontSize: 14, color: '#0a0b1a', fontWeight: 600, lineHeight: 1.3 }}>{feat.title}</div>
+                    <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 3, lineHeight: 1.4 }}>{feat.sub}</div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -482,61 +522,59 @@ export default function LandingPage() {
                 background: 'radial-gradient(ellipse 40% 30% at 20% 30%, rgba(147,112,219,0.25) 0%, transparent 70%), radial-gradient(ellipse 50% 40% at 70% 60%, rgba(138,43,226,0.20) 0%, transparent 70%), radial-gradient(ellipse 60% 50% at 50% 50%, rgba(221,210,243,0.40) 0%, transparent 80%), linear-gradient(135deg, #f5f0fc 0%, #ede4f8 50%, #f0ecf8 100%)',
               }} />
 
-              {/* Dense cell field */}
-              {([
-                [12, 8, 52, 0.55, true, 18], [38, 5, 44, 0.48, true, 15], [68, 10, 38, 0.52, true, 13],
-                [85, 8, 46, 0.44, true, 16], [5, 28, 40, 0.50, true, 14], [25, 22, 60, 0.60, true, 22],
-                [55, 18, 48, 0.56, true, 17], [78, 25, 35, 0.45, true, 12], [95, 20, 42, 0.50, true, 15],
-                [15, 48, 38, 0.48, true, 13], [40, 42, 55, 0.58, true, 20], [65, 45, 42, 0.52, true, 15],
-                [88, 42, 50, 0.55, true, 18], [8, 65, 46, 0.50, true, 16], [30, 62, 40, 0.45, true, 14],
-                [58, 60, 65, 0.62, true, 24], [82, 65, 38, 0.48, true, 13], [20, 80, 44, 0.52, true, 15],
-                [48, 78, 50, 0.55, true, 18], [72, 80, 42, 0.50, true, 15], [90, 78, 36, 0.44, true, 12],
-                [35, 90, 38, 0.48, true, 13], [62, 92, 46, 0.52, true, 16],
-                [50, 35, 22, 0.35, false, 0], [75, 35, 18, 0.30, false, 0], [10, 40, 20, 0.32, false, 0],
-                [92, 55, 16, 0.28, false, 0], [22, 55, 24, 0.36, false, 0],
-              ] as [number, number, number, number, boolean, number][]).map(([cx, cy, r, op, hasNuc, nucR], i) => (
-                <div key={i} style={{
-                  position: 'absolute', left: `${cx}%`, top: `${cy}%`,
-                  width: `${r * 2}px`, height: `${r * 2}px`, transform: 'translate(-50%, -50%)', borderRadius: '50%',
-                  background: `radial-gradient(circle at 35% 35%, rgba(180,140,230,${op + 0.1}) 0%, rgba(138,90,210,${op}) 40%, rgba(100,50,180,${op - 0.05}) 100%)`,
-                  boxShadow: `inset -${r * 0.15}px -${r * 0.15}px ${r * 0.3}px rgba(60,0,120,0.3), inset ${r * 0.08}px ${r * 0.08}px ${r * 0.2}px rgba(220,200,255,0.2)`,
-                }}>
-                  {hasNuc && (
-                    <div style={{
-                      position: 'absolute', width: `${nucR * 2}px`, height: `${nucR * 2}px`, top: '50%', left: '50%',
-                      transform: 'translate(-40%, -40%)', borderRadius: '50%',
-                      background: 'radial-gradient(circle at 40% 40%, rgba(80,20,150,0.85) 0%, rgba(60,10,120,0.92) 100%)',
-                      boxShadow: 'inset -2px -2px 4px rgba(0,0,0,0.4)',
-                    }} />
-                  )}
-                </div>
-              ))}
+              {/* Glass-sphere cell field */}
+              {SCREEN_CELLS.map(([cx, cy, r, blur, op, delay, large], i) => renderCell(cx, cy, r, blur, op, delay, large, i))}
 
               {/* Primary AI detection box */}
-              <div style={{ position: 'absolute', top: '28%', left: '28%', width: '44%', height: '38%', border: '2px solid #E63946', borderRadius: '4px', zIndex: 10 }}>
-                <div style={{ position: 'absolute', top: -2, left: -2, width: 12, height: 12, borderTop: '3px solid #E63946', borderLeft: '3px solid #E63946' }} />
-                <div style={{ position: 'absolute', top: -2, right: -2, width: 12, height: 12, borderTop: '3px solid #E63946', borderRight: '3px solid #E63946' }} />
-                <div style={{ position: 'absolute', bottom: -2, left: -2, width: 12, height: 12, borderBottom: '3px solid #E63946', borderLeft: '3px solid #E63946' }} />
-                <div style={{ position: 'absolute', bottom: -2, right: -2, width: 12, height: 12, borderBottom: '3px solid #E63946', borderRight: '3px solid #E63946' }} />
-                <div style={{ position: 'absolute', left: 0, right: 0, height: '2px', top: '50%', background: 'linear-gradient(90deg, transparent, rgba(230,57,70,0.8), transparent)', animation: 'scan-line 2s ease-in-out infinite' }} />
+              <div style={{ position: 'absolute', top: '16%', left: '19%', width: '42%', height: '44%', border: '2px solid #E63946', borderRadius: '4px', zIndex: 10, boxShadow: '0 0 16px rgba(230,57,70,0.25)' }}>
+                <div style={{ position: 'absolute', top: -2, left: -2, width: 14, height: 14, borderTop: '3px solid #E63946', borderLeft: '3px solid #E63946', animation: 'corner-flash 2s ease-in-out infinite' }} />
+                <div style={{ position: 'absolute', top: -2, right: -2, width: 14, height: 14, borderTop: '3px solid #E63946', borderRight: '3px solid #E63946', animation: 'corner-flash 2s ease-in-out 0.15s infinite' }} />
+                <div style={{ position: 'absolute', bottom: -2, left: -2, width: 14, height: 14, borderBottom: '3px solid #E63946', borderLeft: '3px solid #E63946', animation: 'corner-flash 2s ease-in-out 0.30s infinite' }} />
+                <div style={{ position: 'absolute', bottom: -2, right: -2, width: 14, height: 14, borderBottom: '3px solid #E63946', borderRight: '3px solid #E63946', animation: 'corner-flash 2s ease-in-out 0.45s infinite' }} />
+                <div style={{ position: 'absolute', left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, rgba(230,57,70,0.9), transparent)', boxShadow: '0 0 8px rgba(230,57,70,0.6)', animation: 'scan-sweep 2.5s ease-in-out infinite' }} />
               </div>
 
-              {/* Secondary scan box (teal) */}
-              <div style={{ position: 'absolute', top: '62%', left: '8%', width: '28%', height: '24%', border: '1.5px dashed rgba(56,189,248,0.7)', borderRadius: '4px', zIndex: 10, boxShadow: '0 0 8px rgba(56,189,248,0.2)' }}>
-                <div style={{ position: 'absolute', top: -8, left: 8, background: 'rgba(56,189,248,0.9)', borderRadius: '10px', padding: '2px 8px', fontSize: 9, color: 'white', fontWeight: 600, whiteSpace: 'nowrap' }}>● Monitoring</div>
-              </div>
-
-              {/* Atypical cell badge */}
-              <div style={{ position: 'absolute', top: '22%', left: '50%', transform: 'translateX(-50%)', background: '#E63946', color: 'white', borderRadius: '20px', padding: '5px 14px', fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap', zIndex: 20, boxShadow: '0 4px 16px rgba(230,57,70,0.4)', display: 'flex', alignItems: 'center', gap: 5, animation: 'badge-pulse 2s ease-in-out infinite' }}>
+              {/* Atypical badge */}
+              <div style={{ position: 'absolute', top: '11%', left: '50%', transform: 'translateX(-50%)', background: '#E63946', color: 'white', borderRadius: '20px', padding: '5px 14px', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', zIndex: 20, display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 4px 20px rgba(230,57,70,0.45)', animation: 'badge-pulse 2s ease-in-out infinite' }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'white', display: 'inline-block', animation: 'live-blink 1s ease-in-out infinite' }} />
                 Atypical Cell Detected
+              </div>
+
+              {/* Secondary cyan scan box */}
+              <div style={{ position: 'absolute', top: '55%', left: '8%', width: '32%', height: '28%', border: '1.5px dashed rgba(6,182,212,0.65)', borderRadius: '4px', zIndex: 10, boxShadow: '0 0 10px rgba(6,182,212,0.15)' }} />
+
+              {/* Monitoring badge (cyan) */}
+              <div style={{ position: 'absolute', top: '60%', left: '12%', background: 'rgba(6,182,212,0.92)', color: 'white', borderRadius: '20px', padding: '4px 12px', fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap', zIndex: 20, display: 'flex', alignItems: 'center', gap: 5, boxShadow: '0 2px 12px rgba(6,182,212,0.4)' }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'white', display: 'inline-block' }} />
+                Monitoring
+              </div>
+
+              {/* Bottom toolbar */}
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(8px)', borderTop: '1px solid rgba(0,0,0,0.08)', padding: '10px 16px', display: 'flex', justifyContent: 'space-around', zIndex: 20 }}>
+                {[{ icon: '⊕', label: 'Pan' }, { icon: '⌕', label: 'Zoom' }, { icon: '⊙', label: 'Enhance' }, { icon: '•••', label: 'More' }].map((tool) => (
+                  <button key={tool.label} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#374151', fontWeight: 500, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                    <span style={{ fontSize: 15, lineHeight: 1 }}>{tool.icon}</span>
+                    <span style={{ fontSize: 11 }}>{tool.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
 
             {/* ── COL 2: ANALYSIS PROGRESS ── */}
             <div style={{ background: 'linear-gradient(160deg, #1e1535 0%, #16102a 50%, #1a1228 100%)', padding: '28px 24px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: -40, left: '50%', transform: 'translateX(-50%)', width: 200, height: 100, background: 'radial-gradient(ellipse, rgba(139,92,246,0.3) 0%, transparent 70%)', pointerEvents: 'none' }} />
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'white', marginBottom: 20, position: 'relative' }}>Analysis Progress</div>
+              {/* Header + LIVE badge */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, position: 'relative' }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'white' }}>Analysis Progress</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 20, padding: '3px 10px' }}>
+                  <div style={{ position: 'relative', width: 8, height: 8 }}>
+                    <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#22c55e', animation: 'live-ping 1.5s ease-out infinite' }} />
+                    <div style={{ position: 'absolute', inset: '15%', borderRadius: '50%', background: '#22c55e' }} />
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#22c55e' }}>LIVE</span>
+                </div>
+              </div>
+
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>Scanning cells...</div>
               <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 6, height: 6, overflow: 'hidden', marginBottom: 6, position: 'relative' }}>
                 <div style={{ width: `${scanProgress}%`, height: '100%', borderRadius: 6, background: 'linear-gradient(90deg, #7c3aed, #a78bfa)', transition: 'width 0.8s ease', position: 'relative', overflow: 'hidden' }}>
@@ -544,34 +582,56 @@ export default function LandingPage() {
                 </div>
               </div>
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', textAlign: 'right', marginBottom: 24 }}>{Math.round(scanProgress)}%</div>
+
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginBottom: 4 }}>Cells Analyzed</div>
-              <div style={{ fontSize: 34, fontWeight: 800, color: 'white', lineHeight: 1, marginBottom: 20, fontVariantNumeric: 'tabular-nums' }}>{cellsAnalyzed.toLocaleString()}</div>
+              <div style={{ fontSize: 34, fontWeight: 800, color: 'white', lineHeight: 1, marginBottom: 4, fontVariantNumeric: 'tabular-nums' }}>{cellsAnalyzed.toLocaleString()}</div>
+              <div style={{ fontSize: 11, color: '#22c55e', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 4 }}>↑ 12% vs last 15 min</div>
+
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginBottom: 8 }}>AI Confidence</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
                 <span style={{ fontSize: 30, fontWeight: 800, color: 'white' }}>98.4%</span>
-                <span style={{ background: 'rgba(34,197,94,0.18)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 600 }}>High Confidence</span>
+                <span style={{ background: 'rgba(22,163,74,0.25)', border: '1px solid rgba(34,197,94,0.4)', color: '#22c55e', borderRadius: 20, padding: '4px 12px', fontSize: 11, fontWeight: 700, textAlign: 'center', lineHeight: 1.3 }}>High<br />Confidence</span>
               </div>
+
+              {/* Sparkline + time labels */}
               <div style={{ marginTop: 'auto' }}>
-                <svg width="100%" height="60" viewBox="0 0 200 60" preserveAspectRatio="none">
+                <svg width="100%" height="80" viewBox="0 0 220 80" preserveAspectRatio="none">
                   <defs>
-                    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#22c55e" stopOpacity="0.4" />
-                      <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
+                    <linearGradient id="areaGrad2" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#22c55e" stopOpacity="0.5" />
+                      <stop offset="100%" stopColor="#22c55e" stopOpacity="0.02" />
                     </linearGradient>
                   </defs>
-                  <polygon points="0,55 16,50 32,42 48,45 64,35 80,38 96,28 112,32 128,22 144,26 160,18 176,22 200,14 200,60 0,60" fill="url(#areaGrad)" />
-                  <polyline points="0,55 16,50 32,42 48,45 64,35 80,38 96,28 112,32 128,22 144,26 160,18 176,22 200,14" fill="none" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  {([[0, 55, '#22c55e'], [32, 42, '#22c55e'], [64, 35, '#DB2777'], [96, 28, '#22c55e'], [128, 22, '#8b5cf6'], [160, 18, '#22c55e'], [200, 14, '#22c55e']] as [number, number, string][]).map(([x, y, c], i) => (
-                    <circle key={i} cx={x} cy={y} r="3.5" fill={c} style={{ filter: `drop-shadow(0 0 3px ${c})` }} />
+                  {[20, 40, 60].map((y) => (<line key={y} x1="0" y1={y} x2="220" y2={y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />))}
+                  <polygon points="0,70 30,65 55,60 80,55 105,48 120,52 140,38 160,32 180,28 200,22 220,16 220,80 0,80" fill="url(#areaGrad2)" />
+                  <polyline points="0,70 30,65 55,60 80,55 105,48 120,52 140,38 160,32 180,28 200,22 220,16" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  {([[0, 70, '#22c55e'], [55, 60, '#22c55e'], [105, 48, '#DB2777'], [140, 38, '#8b5cf6'], [180, 28, '#22c55e'], [220, 16, '#22c55e']] as [number, number, string][]).map(([x, y, c], i) => (
+                    <circle key={i} cx={x} cy={y} r="3.5" fill={c} style={{ filter: `drop-shadow(0 0 4px ${c})` }} />
                   ))}
-                  {/* Animated scan dot travelling the line */}
-                  <circle r="4" fill="#22c55e" opacity="0.9">
-                    <animateMotion dur="4s" repeatCount="indefinite" rotate="auto">
-                      <mpath href="#sparkPath" />
-                    </animateMotion>
+                  <circle r="4.5" fill="#22c55e" opacity="0.9" style={{ filter: 'drop-shadow(0 0 6px #22c55e)' }}>
+                    <animateMotion dur="5s" repeatCount="indefinite"><mpath href="#chartPath2" /></animateMotion>
                   </circle>
-                  <path id="sparkPath" d="M0,55 L16,50 L32,42 L48,45 L64,35 L80,38 L96,28 L112,32 L128,22 L144,26 L160,18 L176,22 L200,14" fill="none" stroke="none" />
+                  <path id="chartPath2" d="M0,70 L30,65 L55,60 L80,55 L105,48 L120,52 L140,38 L160,32 L180,28 L200,22 L220,16" fill="none" stroke="none" />
                 </svg>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>
+                  <span>10:30</span><span>10:45</span><span>11:00</span><span>Now</span>
+                </div>
+              </div>
+
+              {/* AI Model footer */}
+              <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <BrainCircuit size={16} color="#a78bfa" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>Model: Cytolab AI v3.2</div>
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>Last updated: Today, 10:42 AM</div>
+                  </div>
+                </div>
+                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#22c55e' }}>
+                  <Check size={13} strokeWidth={3} />
+                </div>
               </div>
             </div>
 
@@ -580,22 +640,22 @@ export default function LandingPage() {
               <div style={{ fontSize: 15, fontWeight: 700, color: '#0a0b1a', marginBottom: 24 }}>Top Findings</div>
               <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                 {[
-                  { label: 'Atypical Squamous Cells', count: 18, color: '#E63946', pct: 1.4 },
-                  { label: 'LSIL', count: 12, color: '#DB2777', pct: 0.96 },
-                  { label: 'HSIL', count: 5, color: '#8b5cf6', pct: 0.40 },
-                  { label: 'Negative', count: 1247, color: '#22c55e', pct: 100 },
+                  { label: 'Atypical Squamous Cells', count: 18, color: '#E63946', spark: '0,12 20,10 40,13 60,8 80,9 100,6 120,7' },
+                  { label: 'LSIL', count: 12, color: '#DB2777', spark: '0,10 20,11 40,9 60,10 80,8 100,9 120,8' },
+                  { label: 'HSIL', count: 5, color: '#8b5cf6', spark: '0,11 20,9 40,12 60,8 80,10 100,7 120,9' },
+                  { label: 'Negative', count: 1247, color: '#22c55e', spark: '0,8 20,9 40,7 60,8 80,6 100,7 120,6' },
                 ].map((row, i, arr) => (
-                  <div key={row.label} style={{ padding: '14px 0', borderBottom: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <div key={row.label} style={{ padding: '16px 0', borderBottom: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <span style={{ fontSize: 13, color: '#374151', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ width: 9, height: 9, borderRadius: '50%', background: row.color, boxShadow: `0 0 6px ${row.color}66`, flexShrink: 0, display: 'inline-block' }} />
+                        <span style={{ width: 9, height: 9, borderRadius: '50%', background: row.color, flexShrink: 0, display: 'inline-block', boxShadow: `0 0 6px ${row.color}66` }} />
                         {row.label}
                       </span>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: '#0a0b1a' }}>{row.count.toLocaleString()}</span>
+                      <span style={{ fontSize: 15, fontWeight: 800, color: '#0a0b1a' }}>{row.count.toLocaleString()}</span>
                     </div>
-                    <div style={{ height: 3, background: '#f1f5f9', borderRadius: 2, overflow: 'hidden' }}>
-                      <div style={{ height: '100%', borderRadius: 2, background: row.color, opacity: 0.7, width: `${Math.min(row.pct * 2, 100)}%`, maxWidth: '100%', transition: 'width 1s ease' }} />
-                    </div>
+                    <svg width="100%" height="16" viewBox="0 0 120 16" preserveAspectRatio="none">
+                      <polyline points={row.spark} fill="none" stroke={row.color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
+                    </svg>
                   </div>
                 ))}
               </div>
