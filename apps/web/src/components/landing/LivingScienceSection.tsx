@@ -9,13 +9,21 @@ const LivingScienceScene = dynamic(
 export default function LivingScienceSection() {
   return (
     <section style={{
-      background: '#0a0008',
+      background: '#0d0508',
       position: 'relative',
       overflow: 'hidden',
       minHeight: '100vh',
+      marginTop: 0,
+      paddingTop: 0,
       display: 'flex',
       flexDirection: 'column',
     }}>
+
+      {/* Warm radial ambience */}
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
+        background: 'radial-gradient(ellipse 80% 70% at 55% 40%, rgba(80,20,10,0.5) 0%, rgba(40,5,20,0.3) 40%, transparent 70%)',
+      }} />
 
       {/* ── TOP HERO AREA ── */}
       <div style={{
@@ -28,7 +36,7 @@ export default function LivingScienceSection() {
 
         {/* Left: Editorial content */}
         <div style={{
-          padding: '72px 0 48px 72px',
+          padding: '80px 0 48px 72px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
@@ -206,7 +214,7 @@ export default function LivingScienceSection() {
         <div style={{
           position: 'absolute',
           right: '40px',
-          top: '60px',
+          top: '80px',
           display: 'flex',
           flexDirection: 'column',
           gap: '12px',
@@ -354,25 +362,27 @@ export default function LivingScienceSection() {
           {
             title: 'Live Sample Mapping',
             desc: 'Track cellular interactions and sample dynamics in real time with advanced imaging.',
-            bg: 'radial-gradient(circle at 30% 50%, rgba(180,40,100,0.35) 0%, transparent 60%)',
+            bg: 'radial-gradient(circle at 20% 60%, rgba(180,40,80,0.45) 0%, transparent 55%)',
             cellColors: ['#8B2252','#C1121F','#6B1A6B'],
           },
           {
             title: 'Pattern Analysis',
             desc: 'Detect structural patterns, anomalies, and behavioral trends with precision.',
-            bg: 'radial-gradient(circle at 50% 50%, rgba(139,92,246,0.3) 0%, transparent 60%)',
+            bg: 'radial-gradient(circle at 50% 60%, rgba(160,60,20,0.40) 0%, transparent 55%)',
             cellColors: ['#6B1A6B','#8b5cf6','#5B1A5B'],
           },
           {
             title: 'Microstructure Library',
             desc: 'Access a curated library of cellular structures and molecular formations.',
-            bg: 'radial-gradient(circle at 70% 50%, rgba(40,120,60,0.3) 0%, transparent 60%)',
+            bg: 'radial-gradient(circle at 80% 60%, rgba(20,120,60,0.40) 0%, transparent 55%)',
             cellColors: ['#1A6B3B','#22c55e','#2A8B4B'],
           },
         ].map((card, i) => (
           <div key={card.title} style={{
             position: 'relative',
             padding: '36px 40px',
+            background: 'rgba(255,255,255,0.02)',
+            borderTop: '1px solid rgba(255,255,255,0.06)',
             borderRight: i < 2 ? '1px solid rgba(255,255,255,0.06)' : 'none',
             display: 'flex',
             alignItems: 'flex-start',

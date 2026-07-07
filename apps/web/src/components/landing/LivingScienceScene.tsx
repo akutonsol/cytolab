@@ -25,8 +25,8 @@ export default function LivingScienceScene() {
 
     // ── SCENE & CAMERA ──
     const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 100)
-    camera.position.set(0, 0, 5.5)
+    const camera = new THREE.PerspectiveCamera(52, W / H, 0.1, 100)
+    camera.position.set(0.2, 0.3, 6.5)
 
     // ── CLOCK ──
     const clock = new THREE.Clock()
@@ -69,27 +69,28 @@ export default function LivingScienceScene() {
       }
       outerGeo.computeVertexNormals()
 
+      // Membrane — dark purple-brown, matte
       const outerMat = new THREE.MeshPhysicalMaterial({
         color,
         emissive,
-        emissiveIntensity: 0.25,
+        emissiveIntensity: 0.15,
         transparent: true,
         opacity,
-        roughness: 0.3,
+        roughness: 0.6,
         metalness: 0.0,
-        clearcoat: 0.8,
-        clearcoatRoughness: 0.2,
+        clearcoat: 0.4,
+        clearcoatRoughness: 0.5,
         side: THREE.DoubleSide,
       })
       g.add(new THREE.Mesh(outerGeo, outerMat))
 
-      // Inner glow sphere
+      // Inner glow sphere — warm orange-red glow
       const innerMat = new THREE.MeshPhysicalMaterial({
         color: nucleusColor,
-        emissive: nucleusColor,
-        emissiveIntensity: 0.8,
+        emissive: 0xFF6633,
+        emissiveIntensity: 1.8,
         transparent: true,
-        opacity: opacity * 0.6,
+        opacity: 0.65,
         roughness: 0.0,
       })
       g.add(new THREE.Mesh(
@@ -97,15 +98,19 @@ export default function LivingScienceScene() {
         innerMat
       ))
 
-      // Nucleus core
+      // Nucleus core — extremely bright amber
       const nucMat = new THREE.MeshBasicMaterial({
-        color: nucleusColor,
-        transparent: true,
-        opacity: 0.9,
+        color: 0xFF8844,
       })
       g.add(new THREE.Mesh(
         new THREE.SphereGeometry(radius * 0.28, 16, 16),
         nucMat
+      ))
+
+      // Honeycomb / faceted texture layer
+      g.add(new THREE.Mesh(
+        new THREE.IcosahedronGeometry(radius * 0.98, 1),
+        new THREE.MeshBasicMaterial({ color: 0xFF4422, wireframe: true, transparent: true, opacity: 0.08 })
       ))
 
       // Wireframe overlay
@@ -134,22 +139,22 @@ export default function LivingScienceScene() {
     const mainCell = makeCell(
       1.1,
       [0.3, 0.2, 0],
-      0x8B2252,  // deep rose
-      0xC1121F,  // red emissive
-      0.72,
-      0xFF4444   // bright red nucleus
+      0x3D1520,  // very dark purple-brown membrane
+      0x6B2030,  // deep wine emissive
+      0.82,
+      0xFF6633   // warm nucleus glow
     )
     organism.add(mainCell)
 
-    // Satellite cells
+    // Satellite cells — dark purple membranes, warm inner glows
     const satellites = [
-      { r: 0.55, pos: [-1.4, 0.6, 0.3] as [number,number,number],  c: 0x6B1A6B, e: 0x8B2D8B, o: 0.65, n: 0xC44DCC },
-      { r: 0.42, pos: [-0.8, -0.9, 0.5] as [number,number,number], c: 0x5B1A5B, e: 0x7B2D8B, o: 0.55, n: 0xA844BB },
-      { r: 0.35, pos: [1.2, -0.7, 0.2] as [number,number,number],  c: 0x7B2020, e: 0xAA3030, o: 0.50, n: 0xFF5555 },
-      { r: 0.28, pos: [1.5, 0.5, -0.3] as [number,number,number],  c: 0x5B1A4B, e: 0x8B2D7B, o: 0.45, n: 0xBB44AA },
-      { r: 0.22, pos: [-0.3, 1.3, 0.4] as [number,number,number],  c: 0x6B1A3B, e: 0x9B2D5B, o: 0.40, n: 0xDD4488 },
-      { r: 0.18, pos: [0.6, 1.1, -0.2] as [number,number,number],  c: 0x7B2040, e: 0xAA3060, o: 0.38, n: 0xFF4466 },
-      { r: 0.45, pos: [-1.8, -0.2, -0.4] as [number,number,number],c: 0x4B1A5B, e: 0x6B2D8B, o: 0.42, n: 0x9944CC },
+      { r: 0.55, pos: [-1.4, 0.6, 0.3] as [number,number,number],  c: 0x2D1535, e: 0x5B2060, o: 0.70, n: 0xCC44AA },
+      { r: 0.42, pos: [-0.8, -0.9, 0.5] as [number,number,number], c: 0x351520, e: 0x602040, o: 0.60, n: 0xFF4422 },
+      { r: 0.35, pos: [1.2, -0.7, 0.2] as [number,number,number],  c: 0x2A1530, e: 0x4B2055, o: 0.55, n: 0xAA44CC },
+      { r: 0.28, pos: [1.5, 0.5, -0.3] as [number,number,number],  c: 0x351825, e: 0x602845, o: 0.50, n: 0xFF5533 },
+      { r: 0.22, pos: [-0.3, 1.3, 0.4] as [number,number,number],  c: 0x2D1530, e: 0x502055, o: 0.45, n: 0xCC3399 },
+      { r: 0.18, pos: [0.6, 1.1, -0.2] as [number,number,number],  c: 0x351520, e: 0x602035, o: 0.42, n: 0xFF4422 },
+      { r: 0.45, pos: [-1.8, -0.2, -0.4] as [number,number,number],c: 0x2A1535, e: 0x4B2060, o: 0.48, n: 0xBB44BB },
     ]
     const satCells = satellites.map(s => {
       const cell = makeCell(s.r, s.pos, s.c, s.e, s.o, s.n)
@@ -158,53 +163,60 @@ export default function LivingScienceScene() {
     })
 
     // ── TENDRILS between cells ──
-    function makeTendril(from: THREE.Vector3, to: THREE.Vector3, color: number) {
-      const mid = new THREE.Vector3().addVectors(from, to).multiplyScalar(0.5)
-      mid.add(new THREE.Vector3(
-        (Math.random() - 0.5) * 0.8,
-        (Math.random() - 0.5) * 0.8,
-        (Math.random() - 0.5) * 0.4,
+    function makeTendril(
+      from: THREE.Vector3,
+      to: THREE.Vector3,
+      color: number,
+      opacity: number = 0.4
+    ) {
+      const mid1 = new THREE.Vector3().lerpVectors(from, to, 0.33)
+      const mid2 = new THREE.Vector3().lerpVectors(from, to, 0.66)
+      mid1.add(new THREE.Vector3(
+        (Math.random() - 0.5) * 0.6,
+        (Math.random() - 0.5) * 0.6,
+        (Math.random() - 0.5) * 0.3,
       ))
-      const curve = new THREE.QuadraticBezierCurve3(from, mid, to)
-      const points = curve.getPoints(40)
+      mid2.add(new THREE.Vector3(
+        (Math.random() - 0.5) * 0.5,
+        (Math.random() - 0.5) * 0.5,
+        (Math.random() - 0.5) * 0.2,
+      ))
+      const curve = new THREE.CatmullRomCurve3([from, mid1, mid2, to])
+      const points = curve.getPoints(60)
       const geo = new THREE.BufferGeometry().setFromPoints(points)
-      const mat = new THREE.LineBasicMaterial({
-        color,
-        transparent: true,
-        opacity: 0.25,
-      })
-      return new THREE.Line(geo, mat)
+
+      // Main tendril line
+      const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity })
+      const line = new THREE.Line(geo, mat)
+
+      // Glow tendril (thicker, more transparent)
+      const glowMat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: opacity * 0.3, linewidth: 2 })
+      const glowLine = new THREE.Line(geo.clone(), glowMat)
+
+      const group = new THREE.Group()
+      group.add(line)
+      group.add(glowLine)
+      return group
     }
 
     const mainPos = new THREE.Vector3(0.3, 0.2, 0)
-    satellites.forEach(s => {
-      const tendril = makeTendril(
-        mainPos,
-        new THREE.Vector3(...s.pos),
-        0xC1121F
-      )
-      scene.add(tendril)
-    })
-
-    // Connect some satellites to each other
+    scene.add(makeTendril(mainPos, new THREE.Vector3(...satellites[0].pos), 0xFF6633, 0.5))
+    scene.add(makeTendril(mainPos, new THREE.Vector3(...satellites[1].pos), 0xFF4422, 0.45))
+    scene.add(makeTendril(mainPos, new THREE.Vector3(...satellites[2].pos), 0xCC44AA, 0.42))
+    scene.add(makeTendril(mainPos, new THREE.Vector3(...satellites[3].pos), 0xFF5533, 0.38))
+    scene.add(makeTendril(mainPos, new THREE.Vector3(...satellites[4].pos), 0xCC3399, 0.35))
+    scene.add(makeTendril(mainPos, new THREE.Vector3(...satellites[5].pos), 0xFF4422, 0.32))
+    scene.add(makeTendril(mainPos, new THREE.Vector3(...satellites[6].pos), 0xBB44BB, 0.40))
+    // Inter-satellite connections
     scene.add(makeTendril(
       new THREE.Vector3(...satellites[0].pos),
-      new THREE.Vector3(...satellites[1].pos),
-      0x8B2D8B
-    ))
+      new THREE.Vector3(...satellites[4].pos), 0xAA3399, 0.28))
     scene.add(makeTendril(
       new THREE.Vector3(...satellites[2].pos),
-      new THREE.Vector3(...satellites[3].pos),
-      0xAA3030
-    ))
-    scene.add(makeTendril(
-      new THREE.Vector3(...satellites[4].pos),
-      new THREE.Vector3(...satellites[5].pos),
-      0x9B2D5B
-    ))
+      new THREE.Vector3(...satellites[3].pos), 0xFF4422, 0.25))
 
-    // ── PARTICLE FIELD ──
-    const particleCount = 300
+    // ── PARTICLE FIELD ── (warm amber, denser)
+    const particleCount = 500
     const pPositions = new Float32Array(particleCount * 3)
     const pData: { vy: number; phase: number }[] = []
     for (let i = 0; i < particleCount; i++) {
@@ -216,14 +228,34 @@ export default function LivingScienceScene() {
     const pGeo = new THREE.BufferGeometry()
     pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3))
     const pMat = new THREE.PointsMaterial({
-      color: 0xff4d66, // brand pink-red (was orange 0xff6644 — zero-orange rule)
-      size: 0.025,
+      color: 0xFF8833,     // warm amber
+      size: 0.018,
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.6,
       blending: THREE.AdditiveBlending,
+      sizeAttenuation: true,
     })
     const particles = new THREE.Points(pGeo, pMat)
     scene.add(particles)
+
+    // Second particle layer — smaller purple particles
+    const pCount2 = 200
+    const pPos2 = new Float32Array(pCount2 * 3)
+    for (let i = 0; i < pCount2; i++) {
+      pPos2[i * 3]     = (Math.random() - 0.5) * 6
+      pPos2[i * 3 + 1] = (Math.random() - 0.5) * 5
+      pPos2[i * 3 + 2] = (Math.random() - 0.5) * 3
+    }
+    const pGeo2 = new THREE.BufferGeometry()
+    pGeo2.setAttribute('position', new THREE.BufferAttribute(pPos2, 3))
+    const pMat2 = new THREE.PointsMaterial({
+      color: 0xAA44CC,
+      size: 0.012,
+      transparent: true,
+      opacity: 0.4,
+      blending: THREE.AdditiveBlending,
+    })
+    scene.add(new THREE.Points(pGeo2, pMat2))
 
     // ── ORBITAL RING PARTICLES around main cell ──
     const orbitCount = 80
@@ -245,10 +277,10 @@ export default function LivingScienceScene() {
     }
     orbitGeo.setAttribute('position', new THREE.BufferAttribute(orbitPos, 3))
     const orbitMat = new THREE.PointsMaterial({
-      color: 0xff4444,
-      size: 0.035,
+      color: 0xFF8833,
+      size: 0.04,
       transparent: true,
-      opacity: 0.7,
+      opacity: 0.8,
       blending: THREE.AdditiveBlending,
     })
     const orbitPoints = new THREE.Points(orbitGeo, orbitMat)
@@ -256,23 +288,33 @@ export default function LivingScienceScene() {
     scene.add(orbitPoints)
 
     // ── LIGHTING ──
-    scene.add(new THREE.AmbientLight(0x110008, 1.0))
+    // Very dim ambient — almost nothing
+    scene.add(new THREE.AmbientLight(0x0d0508, 0.8))
 
-    const keyLight = new THREE.PointLight(0xff2020, 4.0, 8)
-    keyLight.position.set(1, 1, 3)
+    // WARM AMBER KEY LIGHT — the "golden biology" look
+    const keyLight = new THREE.PointLight(0xFF8833, 6.0, 10)
+    keyLight.position.set(2.0, 1.5, 3.5)
     scene.add(keyLight)
 
-    const purpleLight = new THREE.PointLight(0x8B2D8B, 3.0, 7)
-    purpleLight.position.set(-2, 1, 2)
+    // ORANGE RIM LIGHT — from below-right
+    const rimLight = new THREE.PointLight(0xFF5522, 3.5, 8)
+    rimLight.position.set(2.5, -1.5, 1.5)
+    scene.add(rimLight)
+
+    // PURPLE FILL — from left
+    const purpleLight = new THREE.PointLight(0x8822AA, 4.0, 9)
+    purpleLight.position.set(-2.5, 1.0, 1.5)
     scene.add(purpleLight)
 
-    const fillLight = new THREE.PointLight(0xCC3333, 1.5, 6)
-    fillLight.position.set(0, -2, 1)
-    scene.add(fillLight)
+    // COOL BLUE BACK — rim from behind
+    const backLight = new THREE.PointLight(0x224488, 2.0, 7)
+    backLight.position.set(-1.0, 0.0, -3.0)
+    scene.add(backLight)
 
-    const rimLight = new THREE.PointLight(0xE63946, 1.0, 5) // brand red (was orange 0xFF6644)
-    rimLight.position.set(3, 0, -1)
-    scene.add(rimLight)
+    // NUCLEUS GLOW — point light at center of main cell
+    const nucleusLight = new THREE.PointLight(0xFF6633, 5.0, 4)
+    nucleusLight.position.set(0.3, 0.2, 0.5)
+    scene.add(nucleusLight)
 
     // ── ANIMATE ──
     function animate() {
@@ -282,20 +324,24 @@ export default function LivingScienceScene() {
       // Mouse tracking
       targetX += (mouseX - targetX) * 0.04
       targetY += (mouseY - targetY) * 0.04
-      organism.rotation.y = targetX * 0.5 + t * 0.06
-      organism.rotation.x = targetY * 0.3
 
-      // Main cell pulse
-      const pulse = 1 + Math.sin(t * 1.2) * 0.04
-      mainCell.scale.setScalar(pulse)
+      // Organism slow rotation — not uniform, slightly wobbly
+      organism.rotation.y = targetX * 0.5 + t * 0.055
+      organism.rotation.x = targetY * 0.3 + Math.sin(t * 0.15) * 0.05
+      organism.rotation.z = Math.sin(t * 0.12) * 0.03
 
-      // Satellite cell individual float
+      // Main cell irregular breathing (more organic than a single sine)
+      const breathe = Math.sin(t * 0.7) * 0.5 + Math.sin(t * 1.3) * 0.25 + Math.sin(t * 2.1) * 0.1
+      mainCell.scale.setScalar(1.0 + breathe * 0.04)
+
+      // Satellite cells — own breathing rhythms + drift
       satCells.forEach((cell, i) => {
-        cell.position.y = satellites[i].pos[1] + Math.sin(t * 0.5 + i * 1.1) * 0.08
-        cell.rotation.y += 0.004 + i * 0.001
-        cell.rotation.x += 0.002
-        const sp = 1 + Math.sin(t * 0.8 + i) * 0.03
-        cell.scale.setScalar(sp)
+        const phase = i * 0.8
+        const satBreathe = Math.sin(t * 0.5 + phase) * 0.4 + Math.sin(t * 1.1 + phase) * 0.2
+        cell.scale.setScalar(1.0 + satBreathe * 0.05)
+        cell.rotation.y += 0.003 + i * 0.0005
+        cell.rotation.z += 0.001 + i * 0.0003
+        cell.position.y = satellites[i].pos[1] + Math.sin(t * 0.4 + phase) * 0.12
       })
 
       // Orbit particles
@@ -318,8 +364,19 @@ export default function LivingScienceScene() {
       pGeo.attributes.position.needsUpdate = true
 
       // Lights breathe
-      keyLight.intensity = 3.5 + Math.sin(t * 1.2) * 0.8
-      purpleLight.intensity = 2.5 + Math.sin(t * 0.9 + 1) * 0.7
+      keyLight.intensity = 5.5 + Math.sin(t * 0.8) * 0.8
+      purpleLight.intensity = 3.5 + Math.sin(t * 0.6 + 1.0) * 0.8
+
+      // Nucleus light — heartbeat rhythm (double-pulse), follows main cell
+      const heartbeat = Math.sin(t * 3.0) * Math.sin(t * 3.0)
+      nucleusLight.intensity = 3.0 + heartbeat * 3.5
+      nucleusLight.position.x = 0.3 + Math.sin(t * 0.5) * 0.1
+      nucleusLight.position.y = 0.2 + Math.cos(t * 0.5) * 0.1
+
+      // Camera slow drift for cinematic feel
+      camera.position.x = 0.2 + Math.sin(t * 0.08) * 0.15
+      camera.position.y = 0.3 + Math.cos(t * 0.06) * 0.10
+      camera.lookAt(0.3, 0.2, 0)
 
       renderer.render(scene, camera)
     }
