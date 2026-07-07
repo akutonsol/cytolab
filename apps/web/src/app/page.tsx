@@ -158,8 +158,8 @@ export default function LandingPage() {
 
       {/* HERO */}
       <section id="platform" style={{
-        width: '100vw', minHeight: '100vh', marginLeft: 'calc(-50vw + 50%)', paddingTop: 78,
-        background: 'radial-gradient(circle at 62% 48%, #ffffff 0%, #f6f7fb 55%, #eceef4 100%)',
+        width: '100vw', minHeight: '100vh', marginLeft: 'calc(-50vw + 50%)', paddingTop: 80,
+        background: '#F8F8FA',
         display: 'flex', alignItems: 'center', overflow: 'hidden', position: 'relative',
       }}>
         <motion.div
