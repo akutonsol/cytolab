@@ -283,17 +283,117 @@ export default function HeroVial() {
       cellGroup.add(dot); cellDots.push({ mesh: dot, orig: dot.position.clone(), offset: Math.random() * 100 });
     }
 
-    // ── RIPPLE (refractive glow rings) ───────────────────────
-    interface Ring { mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial; offset: number }
-    const rippleRings: Ring[] = [];
-    [0.22, 0.42, 0.65, 0.9, 1.18, 1.48].forEach((r, i) => {
-      const mat = new THREE.MeshBasicMaterial({ color: i < 2 ? 0xd4213d : 0xc4a0b5, transparent: true, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending });
-      const ring = new THREE.Mesh(new THREE.RingGeometry(r - 0.012, r + 0.012, 128), mat);
-      ring.rotation.x = -Math.PI * 0.46; ring.position.set(0.18, -1.12, 0); scene.add(ring);
-      rippleRings.push({ mesh: ring, mat, offset: i / 6 });
+    // ── RIPPLE — shader water surface + ring overlays + glow + shimmer ──
+    const rippleMat = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, side: THREE.DoubleSide,
+      uniforms: { uTime: { value: 0 }, uColor1: { value: new THREE.Color(0xc8102e) }, uColor2: { value: new THREE.Color(0xf0d0d8) } },
+      vertexShader: `
+        uniform float uTime;
+        varying vec2 vUv;
+        varying float vElevation;
+        void main() {
+          vUv = uv;
+          vec3 pos = position;
+          float r = length(pos.xy * vec2(1.0, 2.2));
+          float w1 = sin(r * 5.5  - uTime * 2.8) * 0.028 / (r * 1.8 + 0.4);
+          float w2 = sin(r * 9.0  - uTime * 3.8) * 0.018 / (r * 2.2 + 0.6);
+          float w3 = sin(r * 13.5 - uTime * 5.0) * 0.010 / (r * 2.8 + 0.8);
+          float w4 = sin(r * 20.0 - uTime * 7.0) * 0.005 / (r * 3.5 + 1.0);
+          pos.z = w1 + w2 + w3 + w4;
+          vElevation = pos.z;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColor1;
+        uniform vec3 uColor2;
+        varying vec2 vUv;
+        varying float vElevation;
+        void main() {
+          vec2 uv2 = (vUv - 0.5) * vec2(1.0, 2.0);
+          float dist = length(uv2);
+          float fade = pow(1.0 - smoothstep(0.18, 0.92, dist), 1.4);
+          float highlight = smoothstep(0.012, 0.028, vElevation) * 0.7;
+          float shadow    = smoothstep(-0.028, -0.012, vElevation) * 0.3;
+          vec3 color = mix(uColor1 * 0.85, uColor2, highlight * 0.6);
+          color = mix(color, uColor1 * 0.6, shadow * 0.4);
+          float centerGlow = 1.0 - smoothstep(0.0, 0.22, dist);
+          color = mix(color, vec3(1.0, 0.85, 0.88), centerGlow * 0.5);
+          float alpha = fade * (0.55 + highlight * 0.35 + centerGlow * 0.15);
+          gl_FragColor = vec4(color, alpha);
+        }
+      `,
     });
-    const rippleGlow = new THREE.Mesh(new THREE.CircleGeometry(0.6, 64), new THREE.MeshBasicMaterial({ color: 0xff1a3a, transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false }));
-    rippleGlow.rotation.x = -Math.PI / 2; rippleGlow.position.set(0.18, -1.13, 0); scene.add(rippleGlow);
+    const rippleMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 1.8, 180, 80), rippleMat);
+    rippleMesh.rotation.x = -Math.PI * 0.46;
+    rippleMesh.position.set(0.18, -1.10, 0.0);
+    rippleMesh.renderOrder = 0;
+    scene.add(rippleMesh);
+
+    interface RippleRing { line: THREE.Line; base: number; offset: number }
+    const ringData = [
+      { r: 0.18, opacity: 0.75 }, { r: 0.36, opacity: 0.62 }, { r: 0.58, opacity: 0.5 },
+      { r: 0.82, opacity: 0.38 }, { r: 1.08, opacity: 0.26 }, { r: 1.38, opacity: 0.16 }, { r: 1.7, opacity: 0.08 },
+    ];
+    const rings: RippleRing[] = ringData.map(({ r, opacity }, i) => {
+      const points: THREE.Vector3[] = [];
+      for (let j = 0; j <= 180; j++) {
+        const a = (j / 180) * Math.PI * 2;
+        points.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r * 0.42, 0));
+      }
+      const geo = new THREE.BufferGeometry().setFromPoints(points);
+      const mat = new THREE.LineBasicMaterial({ color: i < 3 ? 0xc8102e : 0xd4a0b0, transparent: true, opacity });
+      const line = new THREE.Line(geo, mat);
+      line.rotation.x = -Math.PI * 0.46;
+      line.position.set(0.18, -1.095, 0.0);
+      line.renderOrder = 1;
+      scene.add(line);
+      return { line, base: opacity, offset: i / ringData.length };
+    });
+
+    const glowMat = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false,
+      vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+      fragmentShader: `
+        varying vec2 vUv;
+        void main() {
+          vec2 uv2 = (vUv - 0.5) * vec2(1.0, 2.2);
+          float d = length(uv2);
+          float g = pow(1.0 - smoothstep(0.0, 0.5, d), 3.0);
+          vec3 col = mix(vec3(1.0, 0.88, 0.90), vec3(0.75, 0.04, 0.12), d * 1.8);
+          gl_FragColor = vec4(col, g * 0.65);
+        }
+      `,
+    });
+    const glowDisc = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.5), glowMat);
+    glowDisc.rotation.x = -Math.PI * 0.46;
+    glowDisc.position.set(0.18, -1.085, 0.02);
+    glowDisc.renderOrder = 2;
+    scene.add(glowDisc);
+
+    const shimmerMat = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      uniforms: { uTime: { value: 0 } },
+      vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+      fragmentShader: `
+        uniform float uTime;
+        varying vec2 vUv;
+        void main() {
+          vec2 uv = vUv - 0.5;
+          float d = length(uv * vec2(1.0, 2.0));
+          float fade = 1.0 - smoothstep(0.1, 0.5, d);
+          float shimmer = sin(uv.x * 18.0 + uTime * 3.0) * 0.5 + 0.5;
+          shimmer *= sin(uv.y * 12.0 - uTime * 2.0) * 0.5 + 0.5;
+          shimmer = pow(shimmer, 6.0) * fade;
+          gl_FragColor = vec4(1.0, 0.9, 0.92, shimmer * 0.22);
+        }
+      `,
+    });
+    const shimmerPlane = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.4), shimmerMat);
+    shimmerPlane.rotation.x = -Math.PI * 0.46;
+    shimmerPlane.position.set(0.18, -1.08, 0.04);
+    shimmerPlane.renderOrder = 3;
+    scene.add(shimmerPlane);
 
     // ── BACKGROUND: bokeh, pink bloom, faint DNA helix ───────
     const sprite = document.createElement('canvas'); sprite.width = sprite.height = 64;
@@ -387,7 +487,13 @@ export default function HeroVial() {
       cellLight.intensity = 0.4 + Math.sin(t * 1.4) * 0.2;
       cellDots.forEach((d) => { d.mesh.position.x = d.orig.x + Math.sin(t + d.offset) * 0.06; d.mesh.position.y = d.orig.y + Math.cos(t + d.offset) * 0.06; });
 
-      rippleRings.forEach(({ mesh, mat, offset }, i) => { const p = (t * 0.5 + offset) % 1.0; mesh.scale.setScalar(0.5 + p * 1.9); mat.opacity = (1 - p) * (i < 2 ? 0.5 : 0.26); });
+      rippleMat.uniforms.uTime.value = t;
+      shimmerMat.uniforms.uTime.value = t;
+      for (const rr of rings) {
+        const p = (t * 0.52 + rr.offset) % 1.0;
+        rr.line.scale.setScalar(0.55 + p * 1.6);
+        (rr.line.material as THREE.LineBasicMaterial).opacity = rr.base * (1 - p);
+      }
 
       const bp = bgGeo.getAttribute('position') as THREE.BufferAttribute;
       for (let i = 0; i < pCount; i++) { let y = bp.getY(i) + 0.0012; if (y > 3.5) y = -3; bp.setY(i, y); }
