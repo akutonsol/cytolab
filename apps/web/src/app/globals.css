@@ -1260,3 +1260,59 @@ select option {
 @media (prefers-reduced-motion: reduce) {
   .ai-model-container { animation: none; }
 }
+
+/* ============================================================
+   Editorial hero (marketing) — /platform. Staggered entrance,
+   layered scroll parallax, premium button interactions.
+   ============================================================ */
+@keyframes heroRise {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hero-rise {
+  opacity: 0;
+  animation: heroRise 0.85s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  will-change: opacity, transform;
+}
+
+/* Headline dominates the hero; exact 82px on desktop, fluid below. */
+.hero-headline {
+  font-family: var(--font-display, 'Geist'), var(--font-inter), 'Inter', sans-serif;
+  font-size: 82px;
+}
+
+/* Premium interactions */
+.hero-primary {
+  transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1), box-shadow 0.28s ease;
+}
+.hero-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 50px rgba(229, 58, 52, 0.30);
+}
+.hero-play {
+  transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), box-shadow 0.35s ease;
+}
+.hero-watch:hover .hero-play {
+  transform: rotate(8deg);
+  box-shadow: 0 16px 42px rgba(17, 17, 17, 0.16);
+}
+
+/* Responsive: stack the two columns and relax the huge type / padding. */
+@media (max-width: 1180px) {
+  .hero-grid {
+    grid-template-columns: 1fr !important;
+    padding: 88px 40px 56px !important;
+    gap: 48px !important;
+  }
+  .hero-headline { font-size: clamp(48px, 9vw, 72px); }
+  .hero-vial { height: 520px !important; order: -1; }
+}
+@media (max-width: 560px) {
+  .hero-grid { padding: 64px 24px 40px !important; }
+  .hero-headline { font-size: clamp(40px, 12vw, 56px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-rise { animation: none; opacity: 1; }
+  .hero-primary, .hero-play { transition: none; }
+}
