@@ -124,12 +124,12 @@ export default function LandingPage() {
       <nav style={{
         position: 'fixed', top: 0, width: '100%', zIndex: 100,
         background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(0,0,0,0.06)', padding: '0 48px', height: 64,
+        borderBottom: '1px solid rgba(0,0,0,0.06)', padding: '0 48px', height: 78,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {/* Cell-cluster mark (ring of dots + nucleus) to match the brand logo. */}
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden>
+          <svg width="42" height="42" viewBox="0 0 32 32" fill="none" aria-hidden>
             {Array.from({ length: 8 }).map((_, i) => {
               const a = (i / 8) * Math.PI * 2;
               return <circle key={i} cx={16 + 9 * Math.cos(a)} cy={16 + 9 * Math.sin(a)} r={2.5} fill={RED} />;
@@ -138,27 +138,27 @@ export default function LandingPage() {
             <circle cx="11.5" cy="12.5" r="1.7" fill={RED} opacity={0.75} />
             <circle cx="20.5" cy="19.5" r="1.7" fill={RED} opacity={0.75} />
           </svg>
-          <span style={{ fontWeight: 900, fontSize: 18, letterSpacing: '0.02em' }}>CYTOLAB</span>
+          <span style={{ fontWeight: 900, fontSize: 25, letterSpacing: '0.02em' }}>CYTOLAB</span>
         </div>
-        <div style={{ display: 'flex', gap: 32, fontSize: 14 }}>
+        <div style={{ display: 'flex', gap: 38, fontSize: 17 }}>
           {['Platform', 'Solutions', 'Resources', 'Pricing', 'Compliance', 'Support'].map((item, i) => (
             <a key={item} href={`#${item.toLowerCase()}`} style={{
-              color: i === 0 ? RED : '#374151', fontWeight: i === 0 ? 600 : 400, textDecoration: 'none',
-              borderBottom: i === 0 ? `2px solid ${RED}` : 'none', paddingBottom: 2,
+              color: i === 0 ? RED : '#1F2937', fontWeight: i === 0 ? 700 : 600, textDecoration: 'none',
+              borderBottom: i === 0 ? `2.5px solid ${RED}` : 'none', paddingBottom: 4,
             }}>{item}</a>
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <a href="#demo" style={{
-            background: RED, color: '#fff', padding: '11px 26px', borderRadius: 10,
-            fontWeight: 700, fontSize: 14, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8,
-          }}>Request Demo <ArrowRight size={16} /></a>
+            background: RED, color: '#fff', padding: '13px 30px', borderRadius: 11,
+            fontWeight: 700, fontSize: 16, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8,
+          }}>Request Demo <ArrowRight size={18} /></a>
         </div>
       </nav>
 
       {/* HERO */}
       <section id="platform" style={{
-        minHeight: '100vh', paddingTop: 64,
+        minHeight: '100vh', paddingTop: 78,
         background: 'radial-gradient(circle at 62% 48%, #ffffff 0%, #f6f7fb 55%, #eceef4 100%)',
         display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', overflow: 'hidden', position: 'relative',
       }}>
