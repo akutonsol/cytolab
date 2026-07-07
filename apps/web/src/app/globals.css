@@ -1262,3 +1262,16 @@ select option {
 }
 
 
+
+/* ─────────────────────────────────────────────
+   Marketing landing page (/) — floating blood cells
+   ───────────────────────────────────────────── */
+@keyframes float0 { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-20px) rotate(5deg); } }
+@keyframes float1 { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-15px) rotate(-5deg); } }
+@keyframes float2 { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-25px) rotate(3deg); } }
+@keyframes float3 { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-10px) rotate(-3deg); } }
+@keyframes float4 { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-18px) rotate(7deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  [class^="mktg-float"], [class*=" mktg-float"] { animation: none !important; }
+}
