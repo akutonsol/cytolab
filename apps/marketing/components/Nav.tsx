@@ -19,21 +19,25 @@ export default function Nav() {
       borderBottom: '1px solid rgba(9,9,14,0.07)',
       transition: 'background 0.3s ease',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '9px',
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '9px',
         fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.85rem',
-        letterSpacing: '0.08em', color: '#09090E' }}>
-        <div style={{ width: 20, height: 20, background: '#4F46E5',
-          borderRadius: '2px', display: 'grid', placeItems: 'center',
-          fontSize: '8px', fontWeight: 900, color: '#fff' }}>C</div>
+        letterSpacing: '0.08em', color: '#09090E',
+      }}>
+        <div style={{
+          width: 20, height: 20, background: '#4F46E5', borderRadius: '2px',
+          display: 'grid', placeItems: 'center', fontSize: '8px', fontWeight: 900, color: '#fff',
+        }}>C</div>
         CYTOLAB
       </div>
       <div style={{ display: 'flex', gap: '2.5rem' }}>
         {['Platform', 'CYTO AI', 'Security', 'Pricing'].map(item => (
-          <a key={item} href={`#${item.toLowerCase().replace(' ','-')}`}
-            style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem',
-              fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-              color: 'rgba(9,9,14,0.32)', textDecoration: 'none',
-              transition: 'color 0.2s' }}
+          <a key={item} href={`#${item.toLowerCase().replace(' ', '-')}`}
+            style={{
+              fontFamily: 'var(--font-mono)', fontSize: '0.68rem', fontWeight: 700,
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              color: 'rgba(9,9,14,0.32)', textDecoration: 'none', transition: 'color 0.2s',
+            }}
             onMouseEnter={e => (e.currentTarget.style.color = '#09090E')}
             onMouseLeave={e => (e.currentTarget.style.color = 'rgba(9,9,14,0.32)')}
           >{item}</a>
@@ -41,11 +45,13 @@ export default function Nav() {
       </div>
       <button
         className="mag-btn"
-        style={{ background: '#09090E', color: '#F0EFE9', border: 'none',
+        style={{
+          background: '#09090E', color: '#F0EFE9', border: 'none',
           padding: '8px 18px', borderRadius: '2px',
           fontFamily: 'var(--font-mono)', fontSize: '0.68rem', fontWeight: 700,
           letterSpacing: '0.07em', textTransform: 'uppercase', cursor: 'pointer',
-          transition: 'background 0.2s' }}
+          transition: 'background 0.2s',
+        }}
         onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = '#4F46E5')}
         onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = '#09090E')}
       >Request demo</button>

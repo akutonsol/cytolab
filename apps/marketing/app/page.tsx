@@ -13,21 +13,19 @@ import Footer from '@/components/Footer'
 
 export default function Home() {
   return (
-    <>
+    <main>
       <Nav />
-      <main>
-        <Hero />
-        <Marquee />
-        <ProblemSection />
-        <Outcomes />
-        <Dashboard />
-        <AISection />
-        <Modules />
-        <Security />
-        <Pricing />
-        <CTA />
-      </main>
+      <Hero />
+      <Marquee />
+      <ProblemSection />
+      <Outcomes />
+      <Dashboard />
+      <AISection />
+      <Modules />
+      <Security />
+      <Pricing />
+      <CTA />
       <Footer />
-    </>
+    </main>
   )
 }
