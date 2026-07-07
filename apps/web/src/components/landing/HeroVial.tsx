@@ -100,6 +100,10 @@ export default function HeroVial() {
     const topAccent = new THREE.PointLight(0xffffff, 0.8, 4);
     topAccent.position.set(0, 2, 2);
     scene.add(topAccent);
+    // POLISH 7 — very faint purple ambient fill
+    const purpleAmbient = new THREE.PointLight(0x8b5cf6, 0.22, 9);
+    purpleAmbient.position.set(-1.8, 0.2, 1.2);
+    scene.add(purpleAmbient);
 
     // ── Tube geometry ────────────────────────────────────────
     const R = 0.185; // glass inner radius (FIX 2)
@@ -109,6 +113,7 @@ export default function HeroVial() {
     const rippleY = -0.95; // pool sits below the hovering tube (FIX 5/6)
 
     const vialGroup = new THREE.Group();
+    vialGroup.scale.setScalar(1.25); // POLISH 1 — make the vial the hero (~25% larger)
     scene.add(vialGroup);
 
     // FIX 2 — clear glass that reveals the blood inside
@@ -122,9 +127,10 @@ export default function HeroVial() {
       roughness: 0.0,
       metalness: 0.0,
       transmission: 0.9,
-      thickness: 0.3,
+      thickness: 0.55,
       ior: 1.52,
       reflectivity: 0.98,
+      specularIntensity: 1.0,
       clearcoat: 1.0,
       clearcoatRoughness: 0.0,
       side: THREE.DoubleSide,
@@ -200,17 +206,44 @@ export default function HeroVial() {
     lctx.font = '18px Inter, Arial, sans-serif';
     lctx.fillText('SPECIMEN ID: CYT-2026-0047', 0, 26);
     lctx.fillStyle = '#15151f';
-    for (let i = 0; i < 34; i++) lctx.fillRect(-110 + i * 6.4, 48, i % 5 === 0 ? 3 : 1.5, 40);
+    for (let i = 0; i < 26; i++) lctx.fillRect(-110 + i * 5, 48, i % 5 === 0 ? 3 : 1.5, 38);
+    // accession + human-readable barcode number
+    lctx.fillStyle = '#333';
+    lctx.font = '13px monospace';
+    lctx.textAlign = 'left';
+    lctx.fillText('ACC 2026-CYT-047-GYN', -110, 100);
+    // QR code (deterministic module grid)
+    const qx = 40, qy = 30, qs = 4;
+    lctx.fillStyle = '#15151f';
+    lctx.fillRect(qx - 2, qy - 2, qs * 9 + 4, qs * 9 + 4);
+    lctx.fillStyle = '#ffffff';
+    lctx.fillRect(qx, qy, qs * 9, qs * 9);
+    lctx.fillStyle = '#15151f';
+    for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+      const edge = r < 3 && c < 3, edge2 = r < 3 && c > 5, edge3 = r > 5 && c < 3;
+      const on = edge || edge2 || edge3 ? (r === 0 || c === 0 || r === 2 || c === 2 || r === 8 || c === 8) : (r * 7 + c * 3) % 3 === 0;
+      if (on) lctx.fillRect(qx + c * qs, qy + r * qs, qs, qs);
+    }
+    // tiny laboratory text
+    lctx.fillStyle = '#8a8a92';
+    lctx.font = '9px Inter, Arial, sans-serif';
+    lctx.textAlign = 'center';
+    lctx.fillText('EDTA · K2 · 4mL · STORE 2–8°C · CLIA #26D1234567', 0, -96);
     lctx.restore();
     const labelTex = new THREE.CanvasTexture(lcv);
     labelTex.anisotropy = 8;
     labelTex.colorSpace = THREE.SRGBColorSpace;
+    // Cylinder UV winds the texture mirrored around the arc — flip U so the
+    // CYTOLAB text reads correctly on the front face.
+    labelTex.wrapS = THREE.RepeatWrapping;
+    labelTex.repeat.x = -1;
+    labelTex.offset.x = 1;
     const label = new THREE.Mesh(
       new THREE.CylinderGeometry(R + 0.004, R + 0.004, 0.72, 96, 1, true, -1.15, 2.3),
-      new THREE.MeshStandardMaterial({ map: labelTex, color: 0xffffff, roughness: 0.85, side: THREE.DoubleSide }),
+      new THREE.MeshStandardMaterial({ map: labelTex, color: 0xffffff, roughness: 0.85, side: THREE.FrontSide }),
     );
     label.position.y = 0.0;
-    label.renderOrder = 2; // FIX 2 — label on top
+    label.renderOrder = 2; // FIX 2 — label on top (front-facing arc only, no mirrored back)
     vialGroup.add(label);
 
     // ── Volumetric blood (behind the glass, renderOrder 0) ───
@@ -329,6 +362,18 @@ export default function HeroVial() {
     glowDisc.position.set(0.1, rippleY - 0.01, 0);
     scene.add(glowDisc);
 
+    // POLISH 6 — concentric "liquid energy" rings expanding forever
+    interface RRing { mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial; offset: number }
+    const rRings: RRing[] = [];
+    for (let i = 0; i < 4; i++) {
+      const mat = new THREE.MeshBasicMaterial({ color: 0xe63946, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false });
+      const mesh = new THREE.Mesh(new THREE.RingGeometry(0.24, 0.26, 128), mat);
+      mesh.rotation.x = -Math.PI * 0.48;
+      mesh.position.set(0.1, rippleY + 0.006, 0);
+      scene.add(mesh);
+      rRings.push({ mesh, mat, offset: i / 4 });
+    }
+
     // ── Orbital biconcave RBCs (scene root) ──────────────────
     interface Cell {
       mesh: THREE.Mesh; mat: THREE.MeshPhysicalMaterial; baseOpacity: number; baseScale: number;
@@ -373,12 +418,20 @@ export default function HeroVial() {
       const g = new THREE.Group();
       const outer = new THREE.Mesh(
         new THREE.SphereGeometry(0.09, 32, 32),
-        new THREE.MeshPhysicalMaterial({ color: 0xe8d5ff, transparent: true, opacity: 0.45, transmission: 0.75, thickness: 0.2, roughness: 0.0, ior: 1.36 }),
+        new THREE.MeshPhysicalMaterial({
+          color: 0xe8d5ff, transparent: true, opacity: 0.4, transmission: 0.85, thickness: 0.25,
+          roughness: 0.0, ior: 1.36, clearcoat: 1, clearcoatRoughness: 0, iridescence: 0.35,
+          iridescenceIOR: 1.3, envMapIntensity: 2.6, sheen: 0.5, sheenColor: new THREE.Color(0xd9c2ff),
+        }),
       );
       g.add(outer);
       const nucleus = new THREE.Mesh(
         new THREE.SphereGeometry(0.052, 16, 16),
-        new THREE.MeshPhysicalMaterial({ color: 0x6b21a8, transparent: true, opacity: 0.75, transmission: 0.2, roughness: 0.2 }),
+        new THREE.MeshPhysicalMaterial({
+          color: 0x6b21a8, transparent: true, opacity: 0.8, transmission: 0.45, thickness: 0.3, roughness: 0.25,
+          attenuationColor: new THREE.Color(0x7c2fb8), attenuationDistance: 0.4,
+          emissive: 0x3a0f60, emissiveIntensity: 0.55, // soft internal glow / subsurface feel
+        }),
       );
       nucleus.position.y = 0.01;
       g.add(nucleus);
@@ -429,12 +482,14 @@ export default function HeroVial() {
       raf = requestAnimationFrame(animate);
       const t = clock.getElapsedTime();
 
-      vialGroup.rotation.y += 0.0032;
+      // POLISH 8 — gentle ±2° sway on an 8s loop (keeps the label facing front)
+      const loop = (Math.PI * 2) / 8;
+      vialGroup.rotation.y = Math.sin(t * loop) * 0.035;
       rotX += (mouseY * 0.08 - rotX) * 0.05;
       rotY += (mouseX * 0.12 - rotY) * 0.05;
       vialGroup.rotation.x = rotX;
       vialGroup.rotation.z = tilt + rotY * 0.5 + Math.sin(t * 0.4) * 0.008;
-      vialGroup.position.y = Math.sin(t * 0.5) * 0.04;
+      vialGroup.position.y = Math.sin(t * loop) * 0.03; // float ~8px, 8s loop
       vialGroup.position.x = 0.1 + Math.sin(t * 0.28) * 0.012; // FIX 6 slight right offset
 
       const dRot = vialGroup.rotation.y - lastRotY;
@@ -480,6 +535,11 @@ export default function HeroVial() {
       }
 
       rippleMat.uniforms.uTime.value = t;
+      for (const rr of rRings) {
+        const phase = (t * 0.28 + rr.offset) % 1.0;
+        rr.mesh.scale.setScalar(1 + phase * 4.2);   // expand outward
+        rr.mat.opacity = (1 - phase) * phase * 1.4 * 0.5; // fade in then out
+      }
 
       const bp = bgGeo.getAttribute('position') as THREE.BufferAttribute;
       for (let i = 0; i < pCount; i++) {
