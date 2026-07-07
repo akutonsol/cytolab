@@ -28,6 +28,9 @@ const PlatformShowcase = dynamic(() => import('@/components/landing/PlatformShow
 // Living biological microscopy scene filling the right of the CTA section.
 const CtaBioScene = dynamic(() => import('@/components/landing/CtaBioScene'), { ssr: false });
 
+// "Living Science" — Three.js organism + editorial + feature cards.
+const LivingScienceSection = dynamic(() => import('@/components/landing/LivingScienceSection'), { ssr: false });
+
 const RED = '#E63946';
 const INK = '#0a0b1a';
 const GREEN = '#10B981';
@@ -501,6 +504,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* LIVING SCIENCE — Three.js organism scene */}
+      <LivingScienceSection />
 
       {/* SECTION C — TRUSTED BY (logos, replaces the old trusted-by strip) */}
       <section style={{ padding: '60px 80px', background: 'white', borderTop: '1px solid #f1f5f9' }}>
