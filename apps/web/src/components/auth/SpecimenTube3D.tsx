@@ -147,18 +147,18 @@ function BloodLiquid({ mousePos }: {
       {/* Blood body — rigid */}
       <mesh position={[0, -0.3, 0]}>
         <cylinderGeometry args={[0.172, 0.172, 1.6, 64]} />
-        <meshPhysicalMaterial color="#3d0000" roughness={0.05} metalness={0.15} envMapIntensity={1.5} />
+        <meshPhysicalMaterial color="#8b0000" roughness={0.05} metalness={0.15} envMapIntensity={1.5} />
       </mesh>
       {/* Rounded bottom — rigid */}
       <mesh position={[0, -1.1, 0]}>
         <sphereGeometry args={[0.172, 64, 64, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshPhysicalMaterial color="#3d0000" roughness={0.05} metalness={0.15} />
+        <meshPhysicalMaterial color="#8b0000" roughness={0.05} metalness={0.15} />
       </mesh>
 
       {/* Rippling meniscus — glossy, reflective liquid surface */}
       <mesh ref={surfaceRef} geometry={surfaceGeom} position={[0, SURFACE_Y, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <meshPhysicalMaterial
-          color="#2a0000"
+          color="#6b0000"
           roughness={0.02}
           metalness={0.35}
           clearcoat={1}
@@ -179,7 +179,7 @@ function BloodLiquid({ mousePos }: {
         {DROPS.map((d, i) => (
           <mesh key={i} position={[0, SURFACE_Y, 0]}>
             <sphereGeometry args={[d.size, 20, 20]} />
-            <meshPhysicalMaterial color="#4a0000" roughness={0.04} metalness={0.2} clearcoat={1} envMapIntensity={2} />
+            <meshPhysicalMaterial color="#a00000" roughness={0.04} metalness={0.2} clearcoat={1} envMapIntensity={2} />
           </mesh>
         ))}
       </group>
