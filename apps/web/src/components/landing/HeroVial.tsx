@@ -112,6 +112,22 @@ export default function HeroVial() {
       transparent: true, opacity: 0.99, envMapIntensity: 1.0,
     });
 
+    // ── SOFT CONTACT SHADOW (radial gradient blob under the vial) ──
+    const shadowCanvas = document.createElement('canvas'); shadowCanvas.width = 256; shadowCanvas.height = 256;
+    const sctx = shadowCanvas.getContext('2d')!;
+    const sgrad = sctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    sgrad.addColorStop(0, 'rgba(40,20,55,0.34)'); sgrad.addColorStop(0.45, 'rgba(40,20,55,0.16)'); sgrad.addColorStop(1, 'rgba(40,20,55,0)');
+    sctx.fillStyle = sgrad; sctx.fillRect(0, 0, 256, 256);
+    const shadowTex = new THREE.CanvasTexture(shadowCanvas);
+    const contactShadow = new THREE.Mesh(
+      new THREE.PlaneGeometry(3.4, 1.5),
+      new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, opacity: 0.9, depthWrite: false })
+    );
+    contactShadow.rotation.x = -Math.PI * 0.5;
+    contactShadow.position.set(-0.2, -1.32, 0.0);
+    contactShadow.renderOrder = -1;
+    scene.add(contactShadow);
+
     // ── VIAL (exact geometry/positions preserved) ────────────
     const vialGroup = new THREE.Group();
     scene.add(vialGroup);
@@ -286,16 +302,37 @@ export default function HeroVial() {
     // ── ICOSAHEDRON CELL (inside large WBC) ──────────────────
     const cellGroup = new THREE.Group();
     cellGroup.position.set(-1.25, 0.12, 0.3); cellGroup.scale.setScalar(0.3); scene.add(cellGroup);
-    const coreIco = new THREE.Mesh(new THREE.IcosahedronGeometry(1.4, 3), new THREE.MeshPhongMaterial({ color: 0xff6b8a, emissive: 0x3d0010, specular: 0xff9ab0, shininess: 80, transparent: true, opacity: 0.32, wireframe: true }));
-    cellGroup.add(coreIco);
-    const innerSphere = new THREE.Mesh(new THREE.SphereGeometry(0.9, 32, 32), new THREE.MeshBasicMaterial({ color: 0xd4216e, transparent: true, opacity: 0.18 }));
-    cellGroup.add(innerSphere);
+    // Translucent glass membrane
+    const membrane = new THREE.Mesh(new THREE.SphereGeometry(1.25, 48, 48), new THREE.MeshPhysicalMaterial({
+      color: 0xf1d8ff, transparent: true, opacity: 0.26, roughness: 0.0, transmission: 0.9, thickness: 0.5,
+      ior: 1.36, clearcoat: 1, clearcoatRoughness: 0, iridescence: 0.42, iridescenceIOR: 1.3,
+      envMapIntensity: 2.3, sheen: 0.7, sheenColor: new THREE.Color(0xe0c0ff), side: THREE.DoubleSide,
+    }));
+    cellGroup.add(membrane);
+    // Soft volumetric glow shell (additive back-side)
+    const cellGlow = new THREE.Mesh(new THREE.SphereGeometry(1.5, 32, 32), new THREE.MeshBasicMaterial({
+      color: 0xcf8fe0, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.BackSide,
+    }));
+    cellGroup.add(cellGlow);
+    // Soft lobed purple nucleus with internal glow
+    const nucleus = new THREE.Group();
+    for (let k = 0; k < 4; k++) {
+      const lobe = new THREE.Mesh(new THREE.SphereGeometry(0.5 * (0.7 + Math.random() * 0.5), 24, 24), new THREE.MeshPhysicalMaterial({
+        color: 0x8a3fc0, emissive: 0x3c1068, emissiveIntensity: 0.85, roughness: 0.35, transmission: 0.28,
+        transparent: true, opacity: 0.9, attenuationColor: new THREE.Color(0x9a4fd0), attenuationDistance: 0.5,
+      }));
+      lobe.position.set((Math.random() - 0.5) * 0.5, (Math.random() - 0.5) * 0.5, (Math.random() - 0.5) * 0.5);
+      nucleus.add(lobe);
+    }
+    cellGroup.add(nucleus);
+    // Internal particles suspended inside the membrane
     interface Dot { mesh: THREE.Mesh; orig: THREE.Vector3; offset: number }
     const cellDots: Dot[] = [];
-    const dotGeo = new THREE.SphereGeometry(0.025, 6, 6);
-    for (let i = 0; i < 40; i++) {
-      const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0xff8fab, transparent: true, opacity: 0.4 + Math.random() * 0.4 }));
-      const radius = 1.8 + Math.random() * 0.8, theta = Math.random() * Math.PI * 2, phi = Math.acos(Math.random() * 2 - 1);
+    const dotGeo = new THREE.SphereGeometry(0.028, 6, 6);
+    const dotCols = [0xffffff, 0xffc0d8, 0xd9b0ff];
+    for (let i = 0; i < 26; i++) {
+      const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: dotCols[i % 3], transparent: true, opacity: 0.4 + Math.random() * 0.4 }));
+      const radius = 0.4 + Math.random() * 0.72, theta = Math.random() * Math.PI * 2, phi = Math.acos(Math.random() * 2 - 1);
       dot.position.set(radius * Math.sin(phi) * Math.cos(theta), radius * Math.sin(phi) * Math.sin(theta), radius * Math.cos(phi));
       cellGroup.add(dot); cellDots.push({ mesh: dot, orig: dot.position.clone(), offset: Math.random() * 100 });
     }
@@ -359,7 +396,7 @@ export default function HeroVial() {
         points.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r * 0.42, 0));
       }
       const geo = new THREE.BufferGeometry().setFromPoints(points);
-      const mat = new THREE.LineBasicMaterial({ color: i < 3 ? 0xffc0d0 : 0xffffff, transparent: true, opacity });
+      const mat = new THREE.LineBasicMaterial({ color: i < 3 ? 0xffc0d0 : 0xffffff, transparent: true, opacity: opacity * 0.7, blending: THREE.AdditiveBlending, depthWrite: false });
       const line = new THREE.Line(geo, mat);
       line.rotation.x = -Math.PI * 0.46;
       line.position.set(-0.2, -1.22, 0.0);
@@ -419,10 +456,16 @@ export default function HeroVial() {
     sg.addColorStop(0, 'rgba(255,255,255,0.9)'); sg.addColorStop(0.4, 'rgba(255,214,224,0.5)'); sg.addColorStop(1, 'rgba(255,214,224,0)');
     sx.fillStyle = sg; sx.fillRect(0, 0, 64, 64);
     const spriteTex = new THREE.CanvasTexture(sprite);
-    const pCount = 130; const pPos = new Float32Array(pCount * 3);
-    for (let i = 0; i < pCount; i++) { pPos[i * 3] = rnd(-3.2, 3.2); pPos[i * 3 + 1] = rnd(-3, 3.5); pPos[i * 3 + 2] = rnd(-2.6, -0.4); }
-    const bgGeo = new THREE.BufferGeometry(); bgGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-    const bgParticles = new THREE.Points(bgGeo, new THREE.PointsMaterial({ map: spriteTex, size: 0.32, transparent: true, opacity: 0.5, depthWrite: false, sizeAttenuation: true }));
+    const pCount = 360; const pPos = new Float32Array(pCount * 3); const pCol = new Float32Array(pCount * 3);
+    const dustCols = [new THREE.Color(0xffffff), new THREE.Color(0xffc0d8), new THREE.Color(0xd6b0ff)];
+    for (let i = 0; i < pCount; i++) {
+      pPos[i * 3] = rnd(-3.4, 3.4); pPos[i * 3 + 1] = rnd(-3, 3.5); pPos[i * 3 + 2] = rnd(-2.8, 0.7);
+      const c = dustCols[i % 3]; pCol[i * 3] = c.r; pCol[i * 3 + 1] = c.g; pCol[i * 3 + 2] = c.b;
+    }
+    const bgGeo = new THREE.BufferGeometry();
+    bgGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+    bgGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+    const bgParticles = new THREE.Points(bgGeo, new THREE.PointsMaterial({ map: spriteTex, size: 0.16, transparent: true, opacity: 0.42, depthWrite: false, sizeAttenuation: true, vertexColors: true }));
     scene.add(bgParticles);
 
     const bloom = new THREE.Mesh(new THREE.PlaneGeometry(7, 7), new THREE.MeshBasicMaterial({ map: spriteTex, color: 0xff9fb5, transparent: true, opacity: 0.16, depthWrite: false, blending: THREE.AdditiveBlending }));
@@ -471,11 +514,14 @@ export default function HeroVial() {
       raf = requestAnimationFrame(animate);
       const t = clock.getElapsedTime();
 
-      // Vial — extremely subtle float, slow y-spin only (no bounce, no x/z sway)
-      vialGroup.rotation.y += 0.0025;
-      vialGroup.rotation.z = 0.34;
-      vialGroup.position.y = -0.15 + Math.sin(t * 0.35) * 0.022;
-      vialGroup.position.x = -0.2 + Math.cos(t * 0.22) * 0.008;
+      // Vial — suspended in fluid: weightless 8s float loop, no spin.
+      // Bounded tiny translation + tiny rotation; label always faces front.
+      const L8 = (Math.PI * 2) / 8;
+      vialGroup.rotation.y = Math.sin(t * L8) * 0.045;
+      vialGroup.rotation.x = Math.sin(t * L8 * 0.5) * 0.018;
+      vialGroup.rotation.z = 0.34 + Math.sin(t * L8 * 0.7) * 0.02;
+      vialGroup.position.y = -0.15 + Math.sin(t * L8) * 0.03;
+      vialGroup.position.x = -0.2 + Math.cos(t * L8 * 0.6) * 0.015;
 
       // Blood inertia — very subtle
       const slosh = Math.sin(vialGroup.rotation.y) * 0.008;
@@ -512,8 +558,8 @@ export default function HeroVial() {
         r.mesh.scale.set(ds, ds, r.baseScale * 0.24);
       }
 
-      cellGroup.rotation.y += 0.0012; cellGroup.rotation.x += 0.0007;
-      const cp = 1 + Math.sin(t * 1.4) * 0.055; coreIco.scale.setScalar(cp); innerSphere.scale.setScalar(cp * 0.88);
+      cellGroup.rotation.y += 0.0008; cellGroup.rotation.x += 0.0005;
+      const cp = 1 + Math.sin(t * 1.0) * 0.04; membrane.scale.setScalar(cp); cellGlow.scale.setScalar(cp * 1.02); nucleus.scale.setScalar(0.92 + Math.sin(t * 0.8) * 0.05);
       cellGroup.position.y = 0.12 + Math.sin(t * 0.42) * 0.07;
       cellLight.intensity = 0.4 + Math.sin(t * 1.4) * 0.2;
       cellDots.forEach((d) => { d.mesh.position.x = d.orig.x + Math.sin(t + d.offset) * 0.06; d.mesh.position.y = d.orig.y + Math.cos(t + d.offset) * 0.06; });
