@@ -735,15 +735,15 @@ export default function LandingPage() {
       <LivingScienceSection />
 
       {/* SECTION C — TRUSTED BY (logo wall) */}
-      <section style={{ padding: '84px 56px 64px', background: 'white' }}>
-        <div style={{ textAlign: 'center', fontSize: 12.5, fontWeight: 700, letterSpacing: '0.2em', color: '#8f8fb8', marginBottom: 62, textTransform: 'uppercase' }}>
+      <section style={{ padding: '76px 32px 58px', background: 'white' }}>
+        <div style={{ textAlign: 'center', fontSize: 13, fontWeight: 700, letterSpacing: '0.2em', color: '#8f8fb8', marginBottom: 62, textTransform: 'uppercase' }}>
           Trusted by Leading Labs and Health Systems
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 16, alignItems: 'center', maxWidth: 1360, margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 20, alignItems: 'center', maxWidth: 1780, margin: '0 auto' }}>
           {[
             {
               a: 'MAYO', b: 'CLINIC', icon: (
-                <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+                <svg width="54" height="54" viewBox="0 0 44 44" fill="none">
                   <g fill="#464660">
                     <path transform="translate(22,15) scale(0.95)" d="M0,-11 C4,-9 6,-9 8,-9 L8,-3 C8,3 4,7 0,9 C-4,7 -8,3 -8,-3 L-8,-9 C-6,-9 -4,-9 0,-11 Z" />
                     <path transform="translate(13.5,26) scale(0.7)" opacity="0.62" d="M0,-11 C4,-9 6,-9 8,-9 L8,-3 C8,3 4,7 0,9 C-4,7 -8,3 -8,-3 L-8,-9 C-6,-9 -4,-9 0,-11 Z" />
@@ -754,7 +754,7 @@ export default function LandingPage() {
             },
             {
               a: 'Labcorp', big: true, icon: (
-                <svg width="42" height="42" viewBox="0 0 44 44" fill="none">
+                <svg width="52" height="52" viewBox="0 0 44 44" fill="none">
                   <circle cx="22" cy="22" r="15" fill="#464660" opacity="0.1" />
                   <circle cx="22" cy="22" r="15" stroke="#464660" strokeWidth="1.7" />
                   <ellipse cx="22" cy="22" rx="6.4" ry="15" stroke="#464660" strokeWidth="1.4" />
@@ -766,7 +766,7 @@ export default function LandingPage() {
             },
             {
               a: 'Quest', b: 'Diagnostics', icon: (
-                <svg width="42" height="42" viewBox="0 0 44 44" fill="none">
+                <svg width="52" height="52" viewBox="0 0 44 44" fill="none">
                   <circle cx="22" cy="22" r="15" fill="#464660" />
                   <path d="M29 15a9.5 9.5 0 1 0 1 13" stroke="#fff" strokeWidth="3" strokeLinecap="round" fill="none" />
                   <circle cx="22" cy="22" r="3.6" fill="#fff" />
@@ -775,7 +775,7 @@ export default function LandingPage() {
             },
             {
               a: 'Cleveland', b: 'Clinic', icon: (
-                <svg width="40" height="40" viewBox="0 0 44 44" fill="none">
+                <svg width="50" height="50" viewBox="0 0 44 44" fill="none">
                   <path d="M11 11h11v5.5h-5.5v11H22V33H11z" fill="#464660" />
                   <path d="M33 11H22v5.5h5.5v11H22V33h11z" fill="#464660" />
                 </svg>
@@ -783,7 +783,7 @@ export default function LandingPage() {
             },
             {
               a: 'Sonic', b: 'Healthcare', icon: (
-                <svg width="42" height="42" viewBox="0 0 44 44" fill="none">
+                <svg width="52" height="52" viewBox="0 0 44 44" fill="none">
                   <circle cx="22" cy="22" r="15" stroke="#464660" strokeWidth="1.5" opacity="0.4" />
                   <path d="M16 10c0 7 12 7 12 12s-12 5-12 12" stroke="#464660" strokeWidth="2" strokeLinecap="round" />
                   <path d="M28 10c0 7-12 7-12 12s12 5 12 12" stroke="#464660" strokeWidth="2" strokeLinecap="round" />
@@ -795,7 +795,7 @@ export default function LandingPage() {
             },
             {
               a: 'agilon', b: 'health', icon: (
-                <svg width="40" height="40" viewBox="0 0 44 44" fill="none">
+                <svg width="50" height="50" viewBox="0 0 44 44" fill="none">
                   {[0, 45, 90, 135].map((deg) => (
                     <line key={deg} x1="22" y1="8" x2="22" y2="36" stroke="#464660" strokeWidth="2.8" strokeLinecap="round" transform={`rotate(${deg} 22 22)`} />
                   ))}
@@ -804,11 +804,11 @@ export default function LandingPage() {
               ),
             },
           ].map((logo, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 13 }}>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
               {logo.icon}
               <div style={{ lineHeight: 1.1 }}>
-                <div style={{ fontSize: logo.big ? 25 : 17.5, fontWeight: 800, color: '#33334d', letterSpacing: logo.big ? '-0.01em' : '0.01em' }}>{logo.a}</div>
-                {logo.b && <div style={{ fontSize: 13.5, fontWeight: 600, color: '#9090ac', marginTop: 2 }}>{logo.b}</div>}
+                <div style={{ fontSize: logo.big ? 30 : 20.5, fontWeight: 800, color: '#33334d', letterSpacing: logo.big ? '-0.01em' : '0.01em' }}>{logo.a}</div>
+                {logo.b && <div style={{ fontSize: 15.5, fontWeight: 600, color: '#9090ac', marginTop: 2 }}>{logo.b}</div>}
               </div>
             </div>
           ))}
@@ -816,7 +816,7 @@ export default function LandingPage() {
       </section>
 
       {/* SECTION D — STATS BAR */}
-      <section style={{ padding: '24px 56px 100px', background: 'white' }}>
+      <section style={{ padding: '24px 32px 96px', background: 'white' }}>
         {/* Shared violet→magenta gradient for the stat icons */}
         <svg width={0} height={0} style={{ position: 'absolute' }} aria-hidden>
           <defs>
@@ -827,8 +827,8 @@ export default function LandingPage() {
           </defs>
         </svg>
         <div style={{
-          maxWidth: 1360, margin: '0 auto', background: '#faf9ff', border: '1px solid #eae7f6',
-          borderRadius: 28, boxShadow: '0 16px 48px rgba(80,60,160,0.07)', padding: '38px 16px',
+          maxWidth: 1780, margin: '0 auto', background: '#faf9ff', border: '1px solid #eae7f6',
+          borderRadius: 30, boxShadow: '0 18px 52px rgba(80,60,160,0.07)', padding: '46px 24px',
           display: 'grid', gridTemplateColumns: 'repeat(5,1fr)',
         }}>
           {[
@@ -838,13 +838,13 @@ export default function LandingPage() {
             { Icon: Share2, value: '40%', label: 'Faster turnaround' },
             { Icon: BarChart3, value: '70%', label: 'Workload reduction' },
           ].map((stat, i) => (
-            <div key={stat.label} style={{ display: 'flex', alignItems: 'center', gap: 17, padding: '6px 32px', borderLeft: i > 0 ? '1px solid #ede9f8' : 'none' }}>
-              <div style={{ width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg, rgba(139,92,246,0.18), rgba(217,70,239,0.10))', border: '1px solid rgba(139,92,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <stat.Icon size={26} color="url(#statIcon)" strokeWidth={2} />
+            <div key={stat.label} style={{ display: 'flex', alignItems: 'center', gap: 20, padding: '8px 44px', borderLeft: i > 0 ? '1px solid #ede9f8' : 'none' }}>
+              <div style={{ width: 66, height: 66, borderRadius: 19, background: 'linear-gradient(135deg, rgba(139,92,246,0.18), rgba(217,70,239,0.10))', border: '1px solid rgba(139,92,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <stat.Icon size={31} color="url(#statIcon)" strokeWidth={2} />
               </div>
               <div>
-                <div style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.02em', color: '#0a0b1a', lineHeight: 1 }}>{stat.value}</div>
-                <div style={{ fontSize: 14, color: '#64748b', marginTop: 5 }}>{stat.label}</div>
+                <div style={{ fontSize: 38, fontWeight: 800, letterSpacing: '-0.02em', color: '#0a0b1a', lineHeight: 1 }}>{stat.value}</div>
+                <div style={{ fontSize: 15, color: '#64748b', marginTop: 6 }}>{stat.label}</div>
               </div>
             </div>
           ))}
