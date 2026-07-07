@@ -228,20 +228,25 @@ export default function LandingPage() {
       {/* SECTION A — LIVE WORKFLOW PIPELINE (dark rounded card) */}
       <section style={{
         margin: '0 40px 0 40px',
-        background: '#0b0812',
+        background: 'linear-gradient(180deg, #0d0d1a 0%, #0f0818 50%, #0d0d1a 100%)',
         borderRadius: '24px',
         padding: '32px 48px 40px 48px',
         border: '1px solid rgba(255,255,255,0.08)',
         position: 'relative',
         overflow: 'hidden',
       }}>
-        {/* Colorful nebula glow — pink centre, purple left, red right */}
+        <style dangerouslySetInnerHTML={{ __html: `@keyframes live-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } } .live-dot { display: inline-block; animation: live-blink 1.5s ease-in-out infinite; }` }} />
+        {/* Top purple atmospheric glow */}
         <div style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
-          background:
-            'radial-gradient(ellipse 50% 52% at 50% -4%, rgba(236,72,153,0.55) 0%, transparent 72%),'
-            + 'radial-gradient(ellipse 46% 58% at 6% -2%, rgba(139,92,246,0.45) 0%, transparent 64%),'
-            + 'radial-gradient(ellipse 50% 62% at 94% -6%, rgba(230,57,70,0.48) 0%, transparent 64%)',
+          position: 'absolute', top: 0, left: 0, right: 0, height: '200px',
+          background: 'radial-gradient(ellipse 70% 100% at 50% 0%, rgba(100,20,120,0.45) 0%, rgba(60,10,80,0.2) 50%, transparent 100%)',
+          pointerEvents: 'none', zIndex: 0,
+        }} />
+        {/* Bottom fade */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px',
+          background: 'linear-gradient(0deg, rgba(10,10,20,0.6), transparent)',
+          pointerEvents: 'none', zIndex: 0,
         }} />
 
         {/* Header row */}
@@ -251,7 +256,7 @@ export default function LandingPage() {
               Live Workflow
             </span>
             <span style={{ background: 'rgba(230,57,70,0.15)', color: '#E63946', borderRadius: '20px', padding: '3px 10px', fontSize: '11px', fontWeight: 600 }}>
-              ● LIVE
+              <span className="live-dot">●</span> LIVE
             </span>
           </div>
           <button style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
@@ -275,29 +280,17 @@ export default function LandingPage() {
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '8px' }}>Active Cases</div>
             <div style={{ fontSize: '36px', fontWeight: 800, color: 'white', lineHeight: 1 }}>4,281</div>
             <div style={{ fontSize: '12px', color: '#22c55e', marginTop: '4px' }}>+231 today</div>
-            <svg width="150" height="62" viewBox="0 0 150 62" style={{ marginTop: '14px' }}>
-              <defs>
-                <filter id="stemGlow"><feGaussianBlur stdDeviation="1.6" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
-                {[7, 11, 9, 17, 14, 23, 19, 30, 26, 41, 34, 54].map((h, i) => {
-                  const t = i / 11;
-                  const col = `rgb(${Math.round(139 + (230 - 139) * t)},${Math.round(92 + (57 - 92) * t)},${Math.round(246 + (70 - 246) * t)})`;
-                  return (
-                    <linearGradient key={i} id={`stem${i}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={col} stopOpacity="0.95" />
-                      <stop offset="100%" stopColor={col} stopOpacity="0.05" />
-                    </linearGradient>
-                  );
-                })}
-              </defs>
-              {[7, 11, 9, 17, 14, 23, 19, 30, 26, 41, 34, 54].map((h, i) => {
-                const t = i / 11;
-                const col = `rgb(${Math.round(139 + (230 - 139) * t)},${Math.round(92 + (57 - 92) * t)},${Math.round(246 + (70 - 246) * t)})`;
-                const x = i * 12 + 6;
-                const y = 60 - h;
+            <svg width="140" height="52" viewBox="0 0 140 52" style={{ marginTop: 12 }}>
+              {[12, 20, 16, 32, 22, 38, 28, 14, 35, 30, 20, 28].map((h, i) => {
+                const x = i * 12 + 4;
+                const y = 52 - h;
+                const isActive = i >= 9;
+                const color = isActive ? '#E63946' : '#8B5CF6';
+                const dimColor = isActive ? '#E63946' : 'rgba(139,92,246,0.4)';
                 return (
                   <g key={i}>
-                    <rect x={x - 1} y={y} width="2" height={h} rx="1" fill={`url(#stem${i})`} />
-                    <circle cx={x} cy={y} r="2.6" fill={col} filter="url(#stemGlow)" />
+                    <line x1={x + 3} y1={y + 5} x2={x + 3} y2={52} stroke={dimColor} strokeWidth="2" strokeLinecap="round" />
+                    <circle cx={x + 3} cy={y + 3} r="3.5" fill={color} />
                   </g>
                 );
               })}
@@ -311,15 +304,18 @@ export default function LandingPage() {
               <div style={{ fontSize: '36px', fontWeight: 800, color: 'white', lineHeight: 1 }}>1,247</div>
               <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>29% of total</div>
             </div>
-            <svg width="104" height="104" viewBox="0 0 104 104" style={{ flexShrink: 0 }}>
+            <svg width="80" height="80" viewBox="0 0 80 80" style={{ flexShrink: 0 }}>
               <defs>
-                <linearGradient id="donutGrad" x1="0" y1="1" x2="1" y2="0">
+                <linearGradient id="donutGrad2" x1="0" y1="0" x2="1" y2="1">
                   <stop offset="0%" stopColor="#8b5cf6" />
-                  <stop offset="100%" stopColor="#E63946" />
+                  <stop offset="50%" stopColor="#E63946" />
+                  <stop offset="100%" stopColor="#f472b6" />
                 </linearGradient>
               </defs>
-              <circle cx="52" cy="52" r="42" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="12" />
-              <circle cx="52" cy="52" r="42" fill="none" stroke="url(#donutGrad)" strokeWidth="12" strokeDasharray={`${2 * Math.PI * 42 * 0.74} ${2 * Math.PI * 42}`} strokeLinecap="round" transform="rotate(125 52 52)" />
+              <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="9" />
+              <circle cx="40" cy="40" r="30" fill="none" stroke="url(#donutGrad2)" strokeWidth="9" strokeDasharray={`${2 * Math.PI * 30 * 0.29} ${2 * Math.PI * 30}`} strokeLinecap="round" transform="rotate(-90 40 40)" />
+              <text x="40" y="37" textAnchor="middle" fill="white" fontSize="12" fontWeight="800">29%</text>
+              <text x="40" y="50" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="8">of total</text>
             </svg>
           </div>
 
@@ -337,13 +333,13 @@ export default function LandingPage() {
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>Requires review</div>
             <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {[
-                { label: 'Atypical', count: 18, color: '#8b5cf6' },
+                { label: 'Atypical', count: 18, color: '#E63946' },
                 { label: 'Suspicious', count: 12, color: '#DB2777' },
                 { label: 'Critical', count: 8, color: '#ef4444' },
               ].map((item) => (
                 <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ color: item.color, fontSize: '8px' }}>●</span>
+                  <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: '7px' }}>
+                    <span style={{ color: item.color, fontSize: '9px' }}>●</span>
                     {item.label}
                   </span>
                   <span style={{ fontSize: '12px', fontWeight: 600, color: 'white' }}>{item.count}</span>
@@ -363,7 +359,7 @@ export default function LandingPage() {
                     <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>{item}</span>
                   </span>
                   <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <span style={{ fontSize: '7px' }}>●</span> Operational
+                    <span style={{ fontSize: '7px', filter: 'drop-shadow(0 0 4px rgba(34,197,94,0.6))' }}>●</span> Operational
                   </span>
                 </div>
               ))}
