@@ -210,19 +210,20 @@ export default function LandingPage() {
       {/* SECTION A — LIVE WORKFLOW PIPELINE (dark rounded card) */}
       <section style={{
         margin: '0 40px 0 40px',
-        background: '#0d0d1a',
+        background: '#0b0812',
         borderRadius: '24px',
         padding: '32px 48px 40px 48px',
         border: '1px solid rgba(255,255,255,0.08)',
         position: 'relative',
         overflow: 'hidden',
       }}>
-        {/* Purple top glow */}
+        {/* Colorful nebula glow — pink centre, purple left, red right */}
         <div style={{
-          position: 'absolute', top: '-60px', left: '50%', transform: 'translateX(-50%)',
-          width: '600px', height: '160px',
-          background: 'radial-gradient(ellipse, rgba(139,92,246,0.35) 0%, rgba(109,40,217,0.15) 40%, transparent 70%)',
-          pointerEvents: 'none', zIndex: 0,
+          position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
+          background:
+            'radial-gradient(ellipse 50% 52% at 50% -4%, rgba(236,72,153,0.55) 0%, transparent 72%),'
+            + 'radial-gradient(ellipse 46% 58% at 6% -2%, rgba(139,92,246,0.45) 0%, transparent 64%),'
+            + 'radial-gradient(ellipse 50% 62% at 94% -6%, rgba(230,57,70,0.48) 0%, transparent 64%)',
         }} />
 
         {/* Header row */}
@@ -231,12 +232,16 @@ export default function LandingPage() {
             <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>
               Live Workflow
             </span>
-            <span style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', borderRadius: '20px', padding: '3px 10px', fontSize: '11px', fontWeight: 600 }}>
+            <span style={{ background: 'rgba(230,57,70,0.15)', color: '#E63946', borderRadius: '20px', padding: '3px 10px', fontSize: '11px', fontWeight: 600 }}>
               ● LIVE
             </span>
           </div>
-          <button style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', cursor: 'pointer' }}>
-            View Full Pipeline →
+          <button style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+            </svg>
+            View Full Pipeline
+            <ChevronRight size={14} />
           </button>
         </div>
 
@@ -248,51 +253,59 @@ export default function LandingPage() {
             { n: 3, label: 'AI Analyze', sub: 'Analyzing cells', time: 'In progress', s: 'active' },
             { n: 4, label: 'Review', sub: 'Pathologist review', time: 'Pending', s: 'pending' },
             { n: 5, label: 'Report', sub: 'Report generated', time: 'Pending', s: 'pending' },
-          ].map((step, i, arr) => (
-            <div key={step.n} style={{ display: 'flex', alignItems: 'flex-start', flex: i < arr.length - 1 ? 1 : 'none' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '80px' }}>
-                <div style={{ position: 'relative' }}>
-                  {step.s === 'active' ? (
-                    <div style={{
-                      width: '52px', height: '52px', borderRadius: '50%', background: 'transparent',
-                      border: '2px solid #E63946', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '18px', fontWeight: 800, color: '#E63946',
-                      boxShadow: '0 0 0 4px rgba(230,57,70,0.15), 0 0 20px rgba(230,57,70,0.3)',
-                    }}>{step.n}</div>
-                  ) : step.s === 'done' ? (
-                    <div style={{
-                      width: '52px', height: '52px', borderRadius: '50%', background: '#1a1a2e',
-                      border: step.n === 1 ? '2px solid rgba(255,255,255,0.2)' : '2px solid rgba(255,255,255,0.25)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '18px', fontWeight: 800, color: step.n === 1 ? 'white' : 'rgba(255,255,255,0.8)',
-                    }}>{step.n}</div>
-                  ) : (
-                    <div style={{
-                      width: '52px', height: '52px', borderRadius: '50%', background: 'transparent',
-                      border: '2px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '18px', fontWeight: 800, color: 'rgba(255,255,255,0.25)',
-                    }}>{step.n}</div>
-                  )}
-                  {step.s === 'done' && step.n === 1 && (
-                    <div style={{
-                      position: 'absolute', bottom: '-2px', right: '-2px', width: '20px', height: '20px', borderRadius: '50%',
-                      background: '#E63946', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '11px', color: 'white', fontWeight: 700, border: '2px solid #0d0d1a',
-                    }}>✓</div>
+          ].map((step, i, arr) => {
+            const lineRed = i <= 1;
+            const lineColor = lineRed ? '#E63946' : 'rgba(255,255,255,0.18)';
+            const arrowColor = lineRed ? '#E63946' : 'rgba(255,255,255,0.3)';
+            return (
+              <div key={step.n} style={{ flex: i < arr.length - 1 ? 1 : 'none', minWidth: 0 }}>
+                {/* circle + arrow connector */}
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
+                    {step.s === 'active' ? (
+                      <div style={{
+                        width: '42px', height: '42px', borderRadius: '50%', background: '#12101c',
+                        border: '2px solid #E63946', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '16px', fontWeight: 800, color: 'white',
+                        boxShadow: '0 0 0 4px rgba(230,57,70,0.18), 0 0 22px rgba(230,57,70,0.55)',
+                      }}>{step.n}</div>
+                    ) : step.s === 'done' ? (
+                      <div style={{
+                        width: '42px', height: '42px', borderRadius: '50%', background: '#0a0812',
+                        border: '1px solid rgba(255,255,255,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '16px', fontWeight: 800, color: 'white',
+                      }}>{step.n}</div>
+                    ) : (
+                      <div style={{
+                        width: '42px', height: '42px', borderRadius: '50%', background: 'transparent',
+                        border: '1.5px solid rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '16px', fontWeight: 800, color: 'rgba(255,255,255,0.35)',
+                      }}>{step.n}</div>
+                    )}
+                    {step.s === 'done' && step.n === 1 && (
+                      <div style={{
+                        position: 'absolute', top: '-3px', right: '-3px', width: '18px', height: '18px', borderRadius: '50%',
+                        background: '#E63946', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '10px', color: 'white', fontWeight: 700, border: '2px solid #0b0812',
+                      }}>✓</div>
+                    )}
+                  </div>
+                  {i < arr.length - 1 && (
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', margin: '0 8px' }}>
+                      <div style={{ flex: 1, height: '2px', background: lineColor }} />
+                      <div style={{ width: 0, height: 0, borderTop: '4px solid transparent', borderBottom: '4px solid transparent', borderLeft: `7px solid ${arrowColor}`, marginLeft: '-1px' }} />
+                    </div>
                   )}
                 </div>
-                <div style={{ fontSize: '14px', fontWeight: 700, color: 'white', marginTop: '12px', textAlign: 'center' }}>{step.label}</div>
-                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '2px', textAlign: 'center' }}>{step.sub}</div>
-                <div style={{ fontSize: '11px', marginTop: '3px', textAlign: 'center', color: step.s === 'done' ? '#22c55e' : step.s === 'active' ? '#E63946' : 'rgba(255,255,255,0.25)' }}>{step.time}</div>
+                {/* left-aligned labels */}
+                <div style={{ marginTop: '14px' }}>
+                  <div style={{ fontSize: '15px', fontWeight: 700, color: 'white' }}>{step.label}</div>
+                  <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '3px' }}>{step.sub}</div>
+                  <div style={{ fontSize: '12px', marginTop: '3px', color: step.s === 'active' ? '#E63946' : step.s === 'done' ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.3)' }}>{step.time}</div>
+                </div>
               </div>
-              {i < arr.length - 1 && (
-                <div style={{
-                  height: '2px', flex: 1, marginTop: '26px', marginLeft: '4px', marginRight: '4px',
-                  background: i === 0 ? 'linear-gradient(90deg, rgba(255,255,255,0.3), #E63946)' : i === 1 ? '#E63946' : 'rgba(255,255,255,0.1)',
-                }} />
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Stats cards row */}
@@ -302,51 +315,52 @@ export default function LandingPage() {
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '8px' }}>Active Cases</div>
             <div style={{ fontSize: '36px', fontWeight: 800, color: 'white', lineHeight: 1 }}>4,281</div>
             <div style={{ fontSize: '12px', color: '#22c55e', marginTop: '4px' }}>+231 today</div>
-            <svg width="120" height="52" viewBox="0 0 120 52" style={{ marginTop: '12px' }}>
-              {[18, 28, 22, 38, 26, 44, 35, 20, 42, 38, 28, 36].map((h, i) => {
-                const x = i * 10 + 1;
-                const y = 52 - h;
-                const isLast = i === 11;
+            <svg width="150" height="62" viewBox="0 0 150 62" style={{ marginTop: '14px' }}>
+              <defs>
+                <filter id="stemGlow"><feGaussianBlur stdDeviation="1.6" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+                {[7, 11, 9, 17, 14, 23, 19, 30, 26, 41, 34, 54].map((h, i) => {
+                  const t = i / 11;
+                  const col = `rgb(${Math.round(139 + (230 - 139) * t)},${Math.round(92 + (57 - 92) * t)},${Math.round(246 + (70 - 246) * t)})`;
+                  return (
+                    <linearGradient key={i} id={`stem${i}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={col} stopOpacity="0.95" />
+                      <stop offset="100%" stopColor={col} stopOpacity="0.05" />
+                    </linearGradient>
+                  );
+                })}
+              </defs>
+              {[7, 11, 9, 17, 14, 23, 19, 30, 26, 41, 34, 54].map((h, i) => {
+                const t = i / 11;
+                const col = `rgb(${Math.round(139 + (230 - 139) * t)},${Math.round(92 + (57 - 92) * t)},${Math.round(246 + (70 - 246) * t)})`;
+                const x = i * 12 + 6;
+                const y = 60 - h;
                 return (
                   <g key={i}>
-                    <defs>
-                      <linearGradient id={`bar${i}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={isLast ? '#ff6b8a' : '#E63946'} stopOpacity="0.9" />
-                        <stop offset="100%" stopColor="#E63946" stopOpacity="0.2" />
-                      </linearGradient>
-                    </defs>
-                    <rect x={x} y={y} width="7" height={h} rx="2" fill={`url(#bar${i})`} />
-                    <circle cx={x + 3.5} cy={y} r="3" fill={isLast ? '#ff6b8a' : '#E63946'} filter="url(#barGlow)" />
+                    <rect x={x - 1} y={y} width="2" height={h} rx="1" fill={`url(#stem${i})`} />
+                    <circle cx={x} cy={y} r="2.6" fill={col} filter="url(#stemGlow)" />
                   </g>
                 );
               })}
-              <defs>
-                <filter id="barGlow">
-                  <feGaussianBlur stdDeviation="2" result="blur" />
-                  <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                </filter>
-              </defs>
             </svg>
           </div>
 
           {/* Card 2 — In Analysis */}
-          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', backdropFilter: 'blur(10px)' }}>
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '8px' }}>In Analysis</div>
-            <div style={{ fontSize: '36px', fontWeight: 800, color: 'white', lineHeight: 1 }}>1,247</div>
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>29% of total</div>
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <svg width="80" height="80" viewBox="0 0 80 80" style={{ marginTop: '12px' }}>
-                <defs>
-                  <linearGradient id="donutGrad" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor="#8b5cf6" />
-                    <stop offset="100%" stopColor="#E63946" />
-                  </linearGradient>
-                </defs>
-                <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="8" />
-                <circle cx="40" cy="40" r="30" fill="none" stroke="url(#donutGrad)" strokeWidth="8" strokeDasharray={`${2 * Math.PI * 30 * 0.29} ${2 * Math.PI * 30}`} strokeLinecap="round" transform="rotate(-90 40 40)" />
-                <text x="40" y="44" textAnchor="middle" fill="white" fontSize="13" fontWeight="700">29%</text>
-              </svg>
+          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', backdropFilter: 'blur(10px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '8px' }}>In Analysis</div>
+              <div style={{ fontSize: '36px', fontWeight: 800, color: 'white', lineHeight: 1 }}>1,247</div>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>29% of total</div>
             </div>
+            <svg width="104" height="104" viewBox="0 0 104 104" style={{ flexShrink: 0 }}>
+              <defs>
+                <linearGradient id="donutGrad" x1="0" y1="1" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#8b5cf6" />
+                  <stop offset="100%" stopColor="#E63946" />
+                </linearGradient>
+              </defs>
+              <circle cx="52" cy="52" r="42" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="12" />
+              <circle cx="52" cy="52" r="42" fill="none" stroke="url(#donutGrad)" strokeWidth="12" strokeDasharray={`${2 * Math.PI * 42 * 0.74} ${2 * Math.PI * 42}`} strokeLinecap="round" transform="rotate(125 52 52)" />
+            </svg>
           </div>
 
           {/* Card 3 — High Priority */}
@@ -363,7 +377,7 @@ export default function LandingPage() {
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>Requires review</div>
             <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {[
-                { label: 'Atypical', count: 18, color: '#E63946' },
+                { label: 'Atypical', count: 18, color: '#8b5cf6' },
                 { label: 'Suspicious', count: 12, color: '#DB2777' },
                 { label: 'Critical', count: 8, color: '#ef4444' },
               ].map((item) => (
@@ -384,8 +398,11 @@ export default function LandingPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {['AI Engine', 'Image Processing', 'Data Sync', 'Storage'].map((item) => (
                 <div key={item} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)' }}>{item}</span>
-                  <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                    <span style={{ width: '13px', height: '13px', borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.3)', flexShrink: 0 }} />
+                    <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>{item}</span>
+                  </span>
+                  <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <span style={{ fontSize: '7px' }}>●</span> Operational
                   </span>
                 </div>
