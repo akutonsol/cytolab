@@ -158,8 +158,8 @@ export default function LandingPage() {
 
       {/* HERO */}
       <section id="platform" style={{
-        width: '100vw', minHeight: '100vh', marginLeft: 'calc(-50vw + 50%)', paddingTop: 80,
-        background: '#F8F8FA',
+        width: '100vw', minHeight: '100vh', marginLeft: 'calc(-50vw + 50%)', marginTop: 0, paddingTop: 72,
+        background: '#F2F1F9',
         display: 'flex', alignItems: 'center', overflow: 'hidden', position: 'relative',
       }}>
         <motion.div
@@ -197,7 +197,7 @@ export default function LandingPage() {
         </motion.div>
 
         {/* Right canvas — bleeds to the right edge of the viewport */}
-        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '60vw', zIndex: 1 }}>
+        <div style={{ position: 'absolute', top: 72, right: 0, bottom: 0, width: '60vw', zIndex: 1 }}>
           <div style={{ width: '100%', height: '100%', position: 'relative', zIndex: 2 }}>
             <HeroVial />
           </div>

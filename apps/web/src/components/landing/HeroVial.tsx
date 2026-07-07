@@ -26,6 +26,8 @@ export default function HeroVial() {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
     renderer.setSize(W, H);
+    renderer.setClearColor(0xf2f1f9, 0); // transparent, matched to the page bg
+    mount.style.background = 'transparent';
     // NoToneMapping: ACES shifts the bright red cap toward orange (trips the
     // zero-orange rule once the full cap is visible); also renders the #F8F8FA
     // backdrop truer so it matches the page background exactly.
@@ -69,15 +71,24 @@ export default function HeroVial() {
           varying vec2 vUv;
           void main(){
             float d = length(vUv - vec2(0.52, 0.46));
-            vec3 warm = vec3(0.9725, 0.9725, 0.9804);
-            vec3 edge = vec3(0.9725, 0.9725, 0.9804);
+            vec3 warm = vec3(0.9490, 0.9451, 0.9765);
+            vec3 edge = vec3(0.9490, 0.9451, 0.9765);
             gl_FragColor = vec4(mix(warm, edge, smoothstep(0.0, 0.75, d)), 1.0);
           }`,
       }),
     );
-    backdrop.position.z = -4;
+    backdrop.position.z = -3.5;
     backdrop.renderOrder = -10;
     scene.add(backdrop);
+
+    // Large flat scene backdrop so the whole frame matches the page bg
+    const sceneBg = new THREE.Mesh(
+      new THREE.PlaneGeometry(40, 40),
+      new THREE.MeshBasicMaterial({ color: 0xf2f1f9, depthWrite: false }),
+    );
+    sceneBg.position.z = -5;
+    sceneBg.renderOrder = -20;
+    scene.add(sceneBg);
 
     // ── Materials ────────────────────────────────────────────
     const glassMat = new THREE.MeshPhysicalMaterial({
@@ -322,21 +333,21 @@ export default function HeroVial() {
           color = mix(color, uColor1 * 0.6, shadow * 0.4);
           float centerGlow = 1.0 - smoothstep(0.0, 0.22, dist);
           color = mix(color, vec3(1.0, 0.85, 0.88), centerGlow * 0.5);
-          float alpha = fade * (0.55 + highlight * 0.35 + centerGlow * 0.15);
+          float alpha = fade * (0.28 + highlight * 0.18 + centerGlow * 0.08);
           gl_FragColor = vec4(color, alpha);
         }
       `,
     });
-    const rippleMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 1.8, 180, 80), rippleMat);
-    rippleMesh.rotation.x = -Math.PI * 0.46;
+    const rippleMesh = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 0.9, 180, 60), rippleMat);
+    rippleMesh.rotation.x = -Math.PI * 0.44;
     rippleMesh.position.set(0.0, -1.22, 0.0);
     rippleMesh.renderOrder = 0;
     scene.add(rippleMesh);
 
     interface RippleRing { line: THREE.Line; base: number; offset: number }
     const ringData = [
-      { r: 0.18, opacity: 0.75 }, { r: 0.36, opacity: 0.62 }, { r: 0.58, opacity: 0.5 },
-      { r: 0.82, opacity: 0.38 }, { r: 1.08, opacity: 0.26 }, { r: 1.38, opacity: 0.16 }, { r: 1.7, opacity: 0.08 },
+      { r: 0.18, opacity: 0.45 }, { r: 0.36, opacity: 0.37 }, { r: 0.58, opacity: 0.3 },
+      { r: 0.82, opacity: 0.23 }, { r: 1.08, opacity: 0.15 }, { r: 1.38, opacity: 0.09 }, { r: 1.7, opacity: 0.05 },
     ];
     const rings: RippleRing[] = ringData.map(({ r, opacity }, i) => {
       const points: THREE.Vector3[] = [];
@@ -364,7 +375,7 @@ export default function HeroVial() {
           float d = length(uv2);
           float g = pow(1.0 - smoothstep(0.0, 0.5, d), 3.0);
           vec3 col = mix(vec3(1.0, 0.88, 0.90), vec3(0.75, 0.04, 0.12), d * 1.8);
-          gl_FragColor = vec4(col, g * 0.65);
+          gl_FragColor = vec4(col, g * 0.30);
         }
       `,
     });
@@ -388,7 +399,7 @@ export default function HeroVial() {
           float shimmer = sin(uv.x * 18.0 + uTime * 3.0) * 0.5 + 0.5;
           shimmer *= sin(uv.y * 12.0 - uTime * 2.0) * 0.5 + 0.5;
           shimmer = pow(shimmer, 6.0) * fade;
-          gl_FragColor = vec4(1.0, 0.9, 0.92, shimmer * 0.22);
+          gl_FragColor = vec4(1.0, 0.9, 0.92, shimmer * 0.10);
         }
       `,
     });
@@ -455,16 +466,15 @@ export default function HeroVial() {
       raf = requestAnimationFrame(animate);
       const t = clock.getElapsedTime();
 
-      // Vial — slow hover + ±3° breathing sway (z stays the anchor tilt)
-      vialGroup.rotation.y = Math.sin(t * LOOP) * 0.04;
-      vialGroup.rotation.z = 0.21 + Math.sin(t * 0.5) * 0.052; // ±3°
-      vialGroup.position.y = -0.15 + Math.sin(t * 0.48) * 0.055;
-      vialGroup.position.x = 0.0 + Math.cos(t * 0.31) * 0.018;
+      // Vial — extremely subtle float, slow y-spin only (no bounce, no x/z sway)
+      vialGroup.rotation.y += 0.0025;
+      vialGroup.rotation.z = 0.21;
+      vialGroup.position.y = -0.15 + Math.sin(t * 0.35) * 0.022;
+      vialGroup.position.x = 0.0 + Math.cos(t * 0.22) * 0.008;
 
-      // Blood slosh
-      const slosh = Math.sin(t * 0.9) * 0.006 + Math.sin(t * LOOP) * 0.004;
+      // Blood inertia — very subtle
+      const slosh = Math.sin(vialGroup.rotation.y) * 0.008;
       bloodFill.position.x = slosh; bloodDome.position.x = slosh; bloodSurface.position.x = slosh;
-      bloodSurface.rotation.z = Math.sin(t * 0.9) * 0.03;
       surfMat.uniforms.uTime.value = t;
 
       // Camera parallax
