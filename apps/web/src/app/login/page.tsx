@@ -11,11 +11,13 @@ import dynamic from 'next/dynamic';
 import { api, loadClaims } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 
-// WebGL specimen tube — browser-only (Three.js needs the DOM/GPU), so SSR is off.
-const SpecimenTube3D = dynamic(
-  () => import('@/components/auth/SpecimenTube3D').then((m) => ({ default: m.SpecimenTube3D })),
-  { ssr: false, loading: () => <div style={{ width: '100%', height: '100%' }} /> },
-);
+// WebGL specimen vial — the same premium PBR render used on the landing hero.
+// Browser-only (Three.js needs the DOM/GPU), so SSR is off. `bare` skips the
+// light backdrop planes so it floats over the dark-blue login background.
+const HeroVial = dynamic(() => import('@/components/landing/HeroVial'), {
+  ssr: false,
+  loading: () => <div style={{ width: '100%', height: '100%' }} />,
+});
 
 interface LoginValues { email: string; password: string }
 interface MfaState {
@@ -127,10 +129,10 @@ export default function LoginPage() {
         <PillBackdrop />
       </div>
 
-      {/* Specimen tube — premium WebGL render (Three.js PBR glass + blood sim). */}
+      {/* Specimen vial — premium WebGL render (Three.js PBR glass + blood sim). */}
       <div className="pointer-events-none absolute inset-0 z-[5] hidden xl:block" aria-hidden>
-        <div className="absolute left-[49%] top-1/2 h-[720px] w-[340px] -translate-x-1/2 -translate-y-1/2">
-          <SpecimenTube3D />
+        <div className="absolute left-[49%] top-1/2 h-[760px] w-[560px] -translate-x-1/2 -translate-y-1/2">
+          <HeroVial bare />
         </div>
       </div>
 

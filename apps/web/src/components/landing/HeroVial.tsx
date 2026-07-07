@@ -12,7 +12,9 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
  * refractive ripple, cinematic lighting with a slow light-sweep, and a subtle
  * volumetric background (bokeh, pink bloom, a faint DNA helix).
  */
-export default function HeroVial() {
+// `bare` skips the light backdrop/scene-bg planes so the vial floats
+// transparently over any page background (e.g. the dark-blue login page).
+export default function HeroVial({ bare = false }: { bare?: boolean } = {}) {
   const mountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -83,7 +85,7 @@ export default function HeroVial() {
     );
     backdrop.position.z = -3.5;
     backdrop.renderOrder = -10;
-    scene.add(backdrop);
+    if (!bare) scene.add(backdrop);
 
     // Large flat scene backdrop so the whole frame matches the page bg
     const sceneBg = new THREE.Mesh(
@@ -92,7 +94,7 @@ export default function HeroVial() {
     );
     sceneBg.position.z = -5;
     sceneBg.renderOrder = -20;
-    scene.add(sceneBg);
+    if (!bare) scene.add(sceneBg);
 
     // ── Materials ────────────────────────────────────────────
     const glassMat = new THREE.MeshPhysicalMaterial({
@@ -624,7 +626,7 @@ export default function HeroVial() {
       labelTex.dispose(); spriteTex.dispose(); ringTex.dispose(); shadowTex.dispose(); envRT?.dispose(); pmrem.dispose(); renderer.dispose();
       if (mount.contains(canvas)) mount.removeChild(canvas);
     };
-  }, []);
+  }, [bare]);
 
   return <div ref={mountRef} style={{ width: '100%', height: '100%', position: 'relative' }} />;
 }
