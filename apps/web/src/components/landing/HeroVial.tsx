@@ -6,18 +6,13 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 
 /**
- * Hero product render matching the reference: a tall, thin, near-vertical blood
- * specimen test-tube dipping into a rippling water pool, on soft white with a
- * subtle red radial glow behind it. Real glass (transmission + Fresnel), a
- * ridged red screw cap, a white CYTOLAB label (logo + barcode), volumetric
- * crimson blood with a concave meniscus + bubbles, an orbital field of biconcave
- * RBCs and translucent purple-nucleus WBCs (depth-faded/scaled for a DOF feel),
- * concentric glossy ripple rings, soft pink bokeh, and interactive mouse
- * parallax.
+ * Hero product render: a large, dominant blood-specimen tube on soft white with
+ * a red radial glow behind it. Real glass (transmission) showing the crimson
+ * blood inside, a smooth red screw cap, a white CYTOLAB label, an orbital field
+ * of biconcave RBCs, individually-scattered purple-nucleus WBCs, a glossy water
+ * ripple beneath, soft pink bokeh, and interactive mouse parallax.
  *
- * Rendered on a TRANSPARENT canvas — no post-FX bloom/DOF (they wash a bright
- * white scene to haze); glow is faked with emissive/additive and depth with
- * per-cell opacity/scale, keeping the subject crisp.
+ * Direct-render on a TRANSPARENT canvas (no post-FX — they wash the white scene).
  */
 export default function HeroVial() {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -34,8 +29,10 @@ export default function HeroVial() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
     renderer.setSize(W, H);
     renderer.setClearColor(0x000000, 0);
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    // NoToneMapping: ACES Filmic shifts bright saturated reds toward orange
+    // (trips the zero-orange rule on the red cap + glossy cells). Keep reds true.
+    renderer.toneMapping = THREE.NoToneMapping;
+    renderer.toneMappingExposure = 1.0;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     const canvas = renderer.domElement;
     canvas.style.width = '100%';
@@ -44,11 +41,11 @@ export default function HeroVial() {
     mount.appendChild(canvas);
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(34, W / H, 0.1, 100);
-    camera.position.set(0, 0.12, 5.0);
-    camera.lookAt(0.85, 0.1, 0);
+    // FIX 1 — telephoto framing so the full tube is large + dominant
+    const camera = new THREE.PerspectiveCamera(22, W / H, 0.1, 100);
+    camera.position.set(0, 0.05, 7.3);
+    camera.lookAt(0.5, 0.05, 0);
 
-    // Environment for glass reflections
     const pmrem = new THREE.PMREMGenerator(renderer);
     let envRT: THREE.WebGLRenderTarget | null = null;
     try {
@@ -75,10 +72,10 @@ export default function HeroVial() {
     gx.fillRect(0, 0, 256, 256);
     const glowTex = new THREE.CanvasTexture(glowCanvas);
     const glow = new THREE.Mesh(
-      new THREE.PlaneGeometry(3.4, 4.2),
-      new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, opacity: 0.5, depthWrite: false }),
+      new THREE.PlaneGeometry(3.6, 4.6),
+      new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, opacity: 0.55, depthWrite: false }),
     );
-    glow.position.set(0.1, 0.05, -1.8);
+    glow.position.set(0.15, 0.05, -1.8);
     scene.add(glow);
 
     // ── Softbox lighting rig ─────────────────────────────────
@@ -104,55 +101,73 @@ export default function HeroVial() {
     topAccent.position.set(0, 2, 2);
     scene.add(topAccent);
 
-    // ── Tube geometry (tall + thin) ──────────────────────────
-    const R = 0.135;
-    const bodyH = 2.35;
-    const bodyTop = bodyH / 2;
-    const bodyBottom = -bodyH / 2;
-    const waterY = -1.12;
+    // ── Tube geometry ────────────────────────────────────────
+    const R = 0.185; // glass inner radius (FIX 2)
+    const bodyH = 1.1;
+    const bodyTop = bodyH / 2; // +0.55
+    const bodyBottom = -bodyH / 2; // -0.55
+    const rippleY = -0.95; // pool sits below the hovering tube (FIX 5/6)
 
     const vialGroup = new THREE.Group();
     scene.add(vialGroup);
 
+    // FIX 2 — clear glass that reveals the blood inside
     const glassMat = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff, metalness: 0, roughness: 0.04, transmission: 0.94, thickness: 0.45, ior: 1.5,
-      reflectivity: 0.92, clearcoat: 1.0, clearcoatRoughness: 0.03, iridescence: 0.12, iridescenceIOR: 1.3,
-      envMapIntensity: 2.6, transparent: true, opacity: 0.14, side: THREE.DoubleSide,
-      attenuationColor: new THREE.Color(0xeef4ff), attenuationDistance: 3.0,
+      color: new THREE.Color(0xffffff),
+      transparent: true,
+      // spec asked for 0.04, but transmission glass at 0.04 is invisible over a
+      // white bg (cap looks detached). 0.11 keeps the blood visible while the
+      // glass cylinder reads as a cohesive tube.
+      opacity: 0.11,
+      roughness: 0.0,
+      metalness: 0.0,
+      transmission: 0.9,
+      thickness: 0.3,
+      ior: 1.52,
+      reflectivity: 0.98,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.0,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      envMapIntensity: 3.5,
     });
     const body = new THREE.Mesh(new THREE.CylinderGeometry(R, R, bodyH, 96, 1, true), glassMat);
+    body.renderOrder = 1;
     vialGroup.add(body);
     const dome = new THREE.Mesh(new THREE.SphereGeometry(R, 96, 48, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), glassMat);
     dome.position.y = bodyBottom;
+    dome.renderOrder = 1;
     vialGroup.add(dome);
-    const rimRing = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.012, R + 0.012, 0.06, 96, 1, true), glassMat);
-    rimRing.position.y = bodyTop + 0.02;
-    vialGroup.add(rimRing);
-    const lip = new THREE.Mesh(new THREE.TorusGeometry(R + 0.012, 0.012, 16, 64), glassMat);
-    lip.rotation.x = Math.PI / 2;
-    lip.position.y = bodyTop + 0.05;
-    vialGroup.add(lip);
+    // shoulder taper → neck (cap seats on the neck)
+    const shoulder = new THREE.Mesh(new THREE.CylinderGeometry(0.15, R, 0.14, 96), glassMat);
+    shoulder.position.y = bodyTop + 0.07;
+    shoulder.renderOrder = 1;
+    vialGroup.add(shoulder);
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.1, 96, 1, true), glassMat);
+    neck.position.y = bodyTop + 0.19;
+    neck.renderOrder = 1;
+    vialGroup.add(neck);
+    const neckTopY = bodyTop + 0.24;
 
-    // Ridged screw cap
+    // FIX 3 — smooth red screw cap (no ridges), flush on the neck
     const capMat = new THREE.MeshPhysicalMaterial({
-      color: 0xbf0d23, roughness: 0.45, metalness: 0.05, clearcoat: 0.6, clearcoatRoughness: 0.25,
-      sheen: 0.4, sheenColor: new THREE.Color(0xff5a63), emissive: 0x24040a, emissiveIntensity: 0.25,
+      color: new THREE.Color(0xb8000e),
+      roughness: 0.4,
+      metalness: 0.05,
+      clearcoat: 0.8,
+      clearcoatRoughness: 0.15,
+      envMapIntensity: 2.0,
     });
     const capGroup = new THREE.Group();
-    const capBody = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.028, R + 0.028, 0.4, 64), capMat);
+    const capBody = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.2, 64, 1), capMat);
+    capBody.position.y = 0.1;
     capGroup.add(capBody);
-    const capTop = new THREE.Mesh(new THREE.SphereGeometry(R + 0.028, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2), capMat);
-    capTop.position.y = 0.2;
-    capTop.scale.y = 0.45;
-    capGroup.add(capTop);
-    for (let i = 0; i < 7; i++) {
-      const ridge = new THREE.Mesh(new THREE.TorusGeometry(R + 0.03, 0.008, 10, 48), capMat);
-      ridge.rotation.x = Math.PI / 2;
-      ridge.position.y = -0.16 + i * 0.052;
-      capGroup.add(ridge);
-    }
-    capGroup.position.y = bodyTop + 0.24;
+    const capDome = new THREE.Mesh(new THREE.SphereGeometry(0.16, 64, 32, 0, Math.PI * 2, 0, Math.PI * 0.5), capMat);
+    capDome.position.y = 0.2;
+    capGroup.add(capDome);
+    capGroup.position.y = neckTopY; // cap bottom flush at neck top
     vialGroup.add(capGroup);
+    const capTopY = neckTopY + 0.28;
 
     // ── Label (CYTOLAB + flower logo + barcode) ──────────────
     const lcv = document.createElement('canvas');
@@ -163,7 +178,7 @@ export default function HeroVial() {
     lctx.fillRect(0, 0, 512, 256);
     lctx.save();
     lctx.translate(256, 128);
-    lctx.rotate(-Math.PI / 2); // reads bottom→top on the tube
+    lctx.rotate(-Math.PI / 2);
     lctx.fillStyle = '#BF0D23';
     lctx.fillRect(-118, -108, 236, 6);
     lctx.fillStyle = '#15151f';
@@ -191,30 +206,34 @@ export default function HeroVial() {
     labelTex.anisotropy = 8;
     labelTex.colorSpace = THREE.SRGBColorSpace;
     const label = new THREE.Mesh(
-      new THREE.CylinderGeometry(R + 0.004, R + 0.004, 1.4, 96, 1, true, -1.15, 2.3),
+      new THREE.CylinderGeometry(R + 0.004, R + 0.004, 0.72, 96, 1, true, -1.15, 2.3),
       new THREE.MeshStandardMaterial({ map: labelTex, color: 0xffffff, roughness: 0.85, side: THREE.DoubleSide }),
     );
-    label.position.y = -0.02;
+    label.position.y = 0.0;
+    label.renderOrder = 2; // FIX 2 — label on top
     vialGroup.add(label);
 
-    // ── Volumetric blood (lower 42%) + concave meniscus ──────
+    // ── Volumetric blood (behind the glass, renderOrder 0) ───
     const fillFrac = 0.42;
     const bloodH = bodyH * fillFrac;
     const bloodTopY = bodyBottom + bloodH;
+    const bloodR = 0.172; // FIX 2 — just inside the glass
     const bloodMat = new THREE.MeshPhysicalMaterial({
       color: 0x7a000e, metalness: 0.12, roughness: 0.12, transmission: 0.1, thickness: 1.1, ior: 1.38,
       attenuationColor: new THREE.Color(0x4a0006), attenuationDistance: 0.4,
       sheen: 0.5, sheenColor: new THREE.Color(0xb51a2a), sheenRoughness: 0.4,
       emissive: 0x33000a, emissiveIntensity: 0.5, transparent: true, opacity: 0.99,
     });
-    const bloodColumn = new THREE.Mesh(new THREE.CylinderGeometry(R - 0.012, R - 0.012, bloodH, 64), bloodMat);
+    const bloodColumn = new THREE.Mesh(new THREE.CylinderGeometry(bloodR, bloodR, bloodH, 64), bloodMat);
     bloodColumn.position.y = bodyBottom + bloodH / 2;
+    bloodColumn.renderOrder = 0;
     vialGroup.add(bloodColumn);
     const bloodDome = new THREE.Mesh(
-      new THREE.SphereGeometry(R - 0.012, 64, 32, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
+      new THREE.SphereGeometry(bloodR, 64, 32, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
       bloodMat,
     );
     bloodDome.position.y = bodyBottom;
+    bloodDome.renderOrder = 0;
     vialGroup.add(bloodDome);
 
     const surfMat = new THREE.ShaderMaterial({
@@ -223,124 +242,150 @@ export default function HeroVial() {
         uniform float uTime; varying float vR; varying vec3 vN;
         void main(){
           vec3 p = position; float r = length(p.xy); vR = r;
-          p.z += (0.014 - r * r * 1.4) + sin(r * 30.0 - uTime * 2.2) * 0.0016;
+          p.z += (0.018 - r * r * 1.1) + sin(r * 26.0 - uTime * 2.2) * 0.002;
           vN = normalize(vec3(-p.x, -p.y, 1.4));
           gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
         }`,
       fragmentShader: `
         varying float vR; varying vec3 vN;
         void main(){
-          vec3 col = mix(vec3(0.62,0.06,0.11), vec3(0.34,0.01,0.05), smoothstep(0.0,0.123,vR));
+          vec3 col = mix(vec3(0.62,0.06,0.11), vec3(0.34,0.01,0.05), smoothstep(0.0,0.172,vR));
           col += pow(1.0 - abs(vN.z), 2.0) * vec3(0.55,0.16,0.20);
           gl_FragColor = vec4(col, 0.97);
         }`,
     });
-    const bloodSurface = new THREE.Mesh(new THREE.CircleGeometry(R - 0.012, 96), surfMat);
+    const bloodSurface = new THREE.Mesh(new THREE.CircleGeometry(bloodR, 96), surfMat);
     bloodSurface.rotation.x = -Math.PI / 2;
     bloodSurface.position.y = bloodTopY;
+    bloodSurface.renderOrder = 0;
     vialGroup.add(bloodSurface);
 
     interface Bubble { mesh: THREE.Mesh; speed: number; x: number }
     const bubbles: Bubble[] = [];
     const bubbleMat = new THREE.MeshPhysicalMaterial({ color: 0xff8890, roughness: 0.1, transmission: 0.6, thickness: 0.04, transparent: true, opacity: 0.5 });
     for (let i = 0; i < 9; i++) {
-      const m = new THREE.Mesh(new THREE.SphereGeometry(rnd(0.005, 0.013), 10, 8), bubbleMat);
-      const ang = Math.random() * Math.PI * 2, rad = rnd(0, 0.1);
+      const m = new THREE.Mesh(new THREE.SphereGeometry(rnd(0.006, 0.016), 10, 8), bubbleMat);
+      const ang = Math.random() * Math.PI * 2, rad = rnd(0, 0.13);
       const x = Math.cos(ang) * rad;
       m.position.set(x, rnd(bodyBottom, bloodTopY), Math.sin(ang) * rad);
       vialGroup.add(m);
       bubbles.push({ mesh: m, speed: rnd(0.03, 0.09), x });
     }
 
-    // ── Water pool: sheen + reflection + concentric rings ────
-    const poolMat = new THREE.ShaderMaterial({
-      transparent: true, depthWrite: false, side: THREE.DoubleSide, uniforms: { uTime: { value: 0 } },
+    // ── FIX 5 — glossy water ripple + glow disc ──────────────
+    const rippleMat = new THREE.ShaderMaterial({
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color(0xe63946) } },
+      vertexShader: `
+        uniform float uTime;
+        varying vec2 vUv;
+        varying float vWave;
+        void main() {
+          vUv = uv;
+          vec3 pos = position;
+          float r = length(pos.xy);
+          float wave1 = sin(r * 6.0 - uTime * 2.5) * 0.018 / (r * 2.0 + 0.5);
+          float wave2 = sin(r * 10.0 - uTime * 3.5) * 0.010 / (r * 2.0 + 0.8);
+          float wave3 = sin(r * 14.0 - uTime * 4.0) * 0.006 / (r * 2.0 + 1.0);
+          pos.z = wave1 + wave2 + wave3;
+          vWave = pos.z * 8.0 + 0.5;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColor;
+        varying vec2 vUv;
+        varying float vWave;
+        void main() {
+          float dist = length(vUv - 0.5) * 2.0;
+          float fade = 1.0 - smoothstep(0.3, 1.0, dist);
+          float highlight = smoothstep(0.3, 0.8, vWave) * 0.4;
+          vec3 color = mix(vec3(0.95, 0.92, 0.96), uColor, 0.12 + highlight * 0.1);
+          float alpha = fade * (0.35 + highlight * 0.3);
+          gl_FragColor = vec4(color, alpha);
+        }
+      `,
+    });
+    const rippleMesh = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 3.5, 128, 128), rippleMat);
+    rippleMesh.rotation.x = -Math.PI * 0.48;
+    rippleMesh.position.set(0.1, rippleY, 0);
+    scene.add(rippleMesh);
+
+    const glowDiscMat = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, side: THREE.DoubleSide,
+      uniforms: { uColor: { value: new THREE.Color(0xe63946) } },
       vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
       fragmentShader: `
-        varying vec2 vUv;
+        uniform vec3 uColor; varying vec2 vUv;
         void main(){
-          float r = length((vUv - 0.5) * 2.0);
-          if (r > 1.0) discard;
-          gl_FragColor = vec4(vec3(0.97,0.92,0.94), (1.0 - r) * 0.06);
+          float d = length(vUv - 0.5) * 2.0;
+          gl_FragColor = vec4(uColor, (1.0 - smoothstep(0.0, 1.0, d)) * 0.25);
         }`,
     });
-    const pool = new THREE.Mesh(new THREE.PlaneGeometry(5.0, 5.0), poolMat);
-    pool.rotation.x = -Math.PI / 2;
-    pool.position.y = waterY;
-    scene.add(pool);
-    const reflMat = new THREE.MeshBasicMaterial({ color: 0xd23a48, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false });
-    const refl = new THREE.Mesh(new THREE.CircleGeometry(0.32, 32), reflMat);
-    refl.rotation.x = -Math.PI / 2;
-    refl.position.y = waterY + 0.002;
-    scene.add(refl);
+    const glowDisc = new THREE.Mesh(new THREE.CircleGeometry(0.5, 64), glowDiscMat);
+    glowDisc.rotation.x = -Math.PI / 2;
+    glowDisc.position.set(0.1, rippleY - 0.01, 0);
+    scene.add(glowDisc);
 
-    interface Ring { mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial; offset: number }
-    const rings: Ring[] = [];
-    [0.18, 0.32, 0.5, 0.7, 0.92].forEach((rr, i) => {
-      const mat = new THREE.MeshBasicMaterial({ color: 0xe63946, transparent: true, opacity: 0.32, side: THREE.DoubleSide, depthWrite: false });
-      const mesh = new THREE.Mesh(new THREE.RingGeometry(rr - 0.01, rr + 0.01, 128), mat);
-      mesh.rotation.x = -Math.PI / 2;
-      mesh.position.y = waterY + 0.004;
-      scene.add(mesh);
-      rings.push({ mesh, mat, offset: i * 0.2 });
-    });
-
-    // ── Orbital cells (biconcave RBC + purple-nucleus WBC) ───
+    // ── Orbital biconcave RBCs (scene root) ──────────────────
     interface Cell {
-      obj: THREE.Object3D; mat?: THREE.MeshPhysicalMaterial; baseOpacity: number; baseScale: number;
+      mesh: THREE.Mesh; mat: THREE.MeshPhysicalMaterial; baseOpacity: number; baseScale: number;
       a: number; b: number; incl: number; yaw0: number; precess: number;
       phase: number; speed: number; bob: number; bobSpeed: number; spin: THREE.Vector3;
     }
     const cells: Cell[] = [];
     const rbcGeo = new THREE.SphereGeometry(1, 24, 14);
-    const orbitParams = (rad: number) => ({
-      a: rad, b: rad * rnd(0.55, 0.9), incl: rnd(-0.5, 0.5), yaw0: Math.random() * Math.PI * 2,
-      precess: rnd(-0.02, 0.02), phase: Math.random() * Math.PI * 2,
-      speed: rnd(0.03, 0.1) * (Math.random() < 0.5 ? 1 : -1),
-      bob: rnd(0.05, 0.25), bobSpeed: rnd(0.15, 0.5),
-      spin: new THREE.Vector3(rnd(0.002, 0.006), rnd(0.002, 0.006), rnd(0.001, 0.004)),
-    });
-
     for (let i = 0; i < 30; i++) {
-      const rad = rnd(0.5, 1.75);
+      const rad = rnd(0.55, 1.9);
       const mat = new THREE.MeshPhysicalMaterial({
         color: 0xc1121f, roughness: 0.26, metalness: 0, clearcoat: 0.4, clearcoatRoughness: 0.3,
         sheen: 0.5, sheenColor: new THREE.Color(0xff5a66), emissive: 0x3a040a, emissiveIntensity: 0.3,
-        transmission: 0.28, thickness: 0.08, transparent: true, opacity: 0.9, side: THREE.DoubleSide,
+        transmission: 0.3, thickness: 0.08, transparent: true, opacity: 0.9, side: THREE.DoubleSide,
       });
       const disc = new THREE.Mesh(rbcGeo, mat);
-      const s = rnd(0.05, 0.085);
+      const s = rnd(0.055, 0.09);
       disc.scale.set(s, s, s * 0.32);
       disc.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
       scene.add(disc);
-      cells.push({ obj: disc, mat, baseOpacity: 0.9, baseScale: s, ...orbitParams(rad) });
+      cells.push({
+        mesh: disc, mat, baseOpacity: 0.9, baseScale: s,
+        a: rad, b: rad * rnd(0.55, 0.9), incl: rnd(-0.5, 0.5), yaw0: Math.random() * Math.PI * 2,
+        precess: rnd(-0.02, 0.02), phase: Math.random() * Math.PI * 2,
+        speed: rnd(0.03, 0.1) * (Math.random() < 0.5 ? 1 : -1),
+        bob: rnd(0.05, 0.25), bobSpeed: rnd(0.15, 0.5),
+        spin: new THREE.Vector3(rnd(0.002, 0.006), rnd(0.002, 0.006), rnd(0.001, 0.004)),
+      });
     }
 
-    const membraneMat = new THREE.MeshPhysicalMaterial({
-      color: 0xd4b8ff, roughness: 0.0, metalness: 0, transmission: 0.7, thickness: 0.15, ior: 1.36,
-      transparent: true, opacity: 0.5, sheen: 0.6, sheenColor: new THREE.Color(0xe8dcff), envMapIntensity: 2,
-    });
-    const nucleusMat = new THREE.MeshPhysicalMaterial({
-      color: 0x6b3fa0, roughness: 0.5, metalness: 0, clearcoat: 0.2, transmission: 0.2, transparent: true, opacity: 0.85,
-      emissive: 0x241046, emissiveIntensity: 0.3,
-    });
-    const shellMat = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff, roughness: 0.02, metalness: 0, transmission: 0.96, thickness: 0.2, ior: 1.42,
-      clearcoat: 1, transparent: true, opacity: 0.2, side: THREE.DoubleSide, envMapIntensity: 2,
-    });
-    for (let i = 0; i < 5; i++) {
+    // ── FIX 4 — individually-scattered purple-nucleus WBCs ───
+    interface Wbc { group: THREE.Group; bx: number; by: number; bz: number; floatSpeed: number; phase: number; amp: number; spin: number }
+    const wbcs: Wbc[] = [];
+    const wbcPositions: [number, number, number, number][] = [
+      [-1.2, 0.1, 0.3, 1.15],
+      [-0.7, -0.6, -0.4, 0.85],
+      [0.9, 0.5, 0.2, 1.0],
+      [-1.5, 0.7, -0.2, 0.75],
+      [0.5, -0.9, 0.1, 0.95],
+    ];
+    for (const [bx, by, bz, sc] of wbcPositions) {
       const g = new THREE.Group();
-      const size = rnd(0.1, 0.16);
-      g.add(new THREE.Mesh(new THREE.SphereGeometry(size, 24, 18), membraneMat));
-      for (let k = 0; k < 4; k++) {
-        const lobe = new THREE.Mesh(new THREE.SphereGeometry(size * rnd(0.44, 0.62), 14, 10), nucleusMat);
-        lobe.position.set(rnd(-0.4, 0.4) * size, rnd(-0.4, 0.4) * size, rnd(-0.4, 0.4) * size);
-        g.add(lobe);
-      }
-      if (i < 3) g.add(new THREE.Mesh(new THREE.SphereGeometry(size * 1.45, 28, 20), shellMat));
+      const outer = new THREE.Mesh(
+        new THREE.SphereGeometry(0.09, 32, 32),
+        new THREE.MeshPhysicalMaterial({ color: 0xe8d5ff, transparent: true, opacity: 0.45, transmission: 0.75, thickness: 0.2, roughness: 0.0, ior: 1.36 }),
+      );
+      g.add(outer);
+      const nucleus = new THREE.Mesh(
+        new THREE.SphereGeometry(0.052, 16, 16),
+        new THREE.MeshPhysicalMaterial({ color: 0x6b21a8, transparent: true, opacity: 0.75, transmission: 0.2, roughness: 0.2 }),
+      );
+      nucleus.position.y = 0.01;
+      g.add(nucleus);
+      g.scale.setScalar(sc);
+      g.position.set(bx, by, bz);
       scene.add(g);
-      const rad = rnd(0.55, 1.6);
-      cells.push({ obj: g, baseOpacity: 1, baseScale: 1, ...orbitParams(rad), speed: rnd(0.02, 0.05) * (Math.random() < 0.5 ? 1 : -1) });
+      wbcs.push({ group: g, bx, by, bz, floatSpeed: rnd(0.25, 0.6), phase: Math.random() * Math.PI * 2, amp: rnd(0.06, 0.14), spin: rnd(0.002, 0.005) });
     }
 
     // ── Soft pink bokeh particles ────────────────────────────
@@ -362,7 +407,7 @@ export default function HeroVial() {
     const bgGeo = new THREE.BufferGeometry();
     bgGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
     const bgParticles = new THREE.Points(bgGeo, new THREE.PointsMaterial({
-      map: spriteTex, size: 0.3, transparent: true, opacity: 0.5, depthWrite: false, sizeAttenuation: true,
+      map: spriteTex, size: 0.34, transparent: true, opacity: 0.5, depthWrite: false, sizeAttenuation: true,
     }));
     scene.add(bgParticles);
 
@@ -377,7 +422,7 @@ export default function HeroVial() {
     // ── Animation ────────────────────────────────────────────
     const clock = new THREE.Clock();
     let raf = 0;
-    const tilt = (-8 * Math.PI) / 180;
+    const tilt = 0.18; // FIX 6
     let sloshVel = 0, lastRotY = 0;
 
     const animate = () => {
@@ -385,12 +430,12 @@ export default function HeroVial() {
       const t = clock.getElapsedTime();
 
       vialGroup.rotation.y += 0.0032;
-      rotX += (mouseY * 0.1 - rotX) * 0.05;
-      rotY += (mouseX * 0.14 - rotY) * 0.05;
+      rotX += (mouseY * 0.08 - rotX) * 0.05;
+      rotY += (mouseX * 0.12 - rotY) * 0.05;
       vialGroup.rotation.x = rotX;
       vialGroup.rotation.z = tilt + rotY * 0.5 + Math.sin(t * 0.4) * 0.008;
-      vialGroup.position.y = Math.sin(t * 0.5) * 0.045;
-      vialGroup.position.x = Math.sin(t * 0.28) * 0.012;
+      vialGroup.position.y = Math.sin(t * 0.5) * 0.04;
+      vialGroup.position.x = 0.1 + Math.sin(t * 0.28) * 0.012; // FIX 6 slight right offset
 
       const dRot = vialGroup.rotation.y - lastRotY;
       lastRotY = vialGroup.rotation.y;
@@ -405,7 +450,7 @@ export default function HeroVial() {
       for (const bub of bubbles) {
         bub.mesh.position.y += bub.speed * 0.01;
         bub.mesh.position.x = bub.x + slosh;
-        if (bub.mesh.position.y > bloodTopY - 0.008) bub.mesh.position.y = bodyBottom + 0.02;
+        if (bub.mesh.position.y > bloodTopY - 0.01) bub.mesh.position.y = bodyBottom + 0.02;
       }
 
       for (const c of cells) {
@@ -417,25 +462,24 @@ export default function HeroVial() {
         const cy1 = ly * Math.cos(c.incl) - lz * Math.sin(c.incl);
         const cz1 = ly * Math.sin(c.incl) + lz * Math.cos(c.incl);
         const pz = -lx * Math.sin(yaw) + cz1 * Math.cos(yaw);
-        c.obj.position.set(lx * Math.cos(yaw) + cz1 * Math.sin(yaw), cy1 + 0.1, pz);
-        c.obj.rotation.x += c.spin.x;
-        c.obj.rotation.y += c.spin.y;
-        c.obj.rotation.z += c.spin.z;
-        if (c.mat) {
-          const depth = Math.max(0, Math.min(1, (pz + 1.2) / 2.0));
-          c.mat.opacity = c.baseOpacity * (0.35 + depth * 0.65);
-          const ds = c.baseScale * (0.75 + depth * 0.4);
-          c.obj.scale.set(ds, ds, c.baseScale * 0.32);
-        }
+        c.mesh.position.set(lx * Math.cos(yaw) + cz1 * Math.sin(yaw), cy1 + 0.1, pz);
+        c.mesh.rotation.x += c.spin.x;
+        c.mesh.rotation.y += c.spin.y;
+        c.mesh.rotation.z += c.spin.z;
+        const depth = Math.max(0, Math.min(1, (pz + 1.2) / 2.0));
+        c.mat.opacity = c.baseOpacity * (0.35 + depth * 0.65);
+        const ds = c.baseScale * (0.75 + depth * 0.4);
+        c.mesh.scale.set(ds, ds, c.baseScale * 0.32);
       }
 
-      poolMat.uniforms.uTime.value = t;
-      reflMat.opacity = 0.14 + Math.sin(t * 1.1) * 0.04;
-      for (const r of rings) {
-        const phase = (t * 0.55 + r.offset) % 1.0;
-        r.mesh.scale.setScalar(0.6 + phase * 1.4);
-        r.mat.opacity = (1 - phase) * 0.34;
+      // FIX 4 — WBCs float independently in place (no clustering)
+      for (const w of wbcs) {
+        w.group.position.y = w.by + Math.sin(t * w.floatSpeed + w.phase) * w.amp;
+        w.group.position.x = w.bx + Math.cos(t * w.floatSpeed * 0.7 + w.phase) * w.amp * 0.4;
+        w.group.rotation.y += w.spin;
       }
+
+      rippleMat.uniforms.uTime.value = t;
 
       const bp = bgGeo.getAttribute('position') as THREE.BufferAttribute;
       for (let i = 0; i < pCount; i++) {
@@ -445,10 +489,10 @@ export default function HeroVial() {
       }
       bp.needsUpdate = true;
 
-      camera.position.z = 5.0 - Math.sin(t * 0.08) * 0.15;
-      camera.position.x += (mouseX * 0.1 - camera.position.x) * 0.03;
-      camera.position.y += (0.12 + mouseY * 0.06 - camera.position.y) * 0.03;
-      camera.lookAt(0.85, 0.1, 0);
+      camera.position.z = 7.3 - Math.sin(t * 0.08) * 0.15;
+      camera.position.x += (mouseX * 0.12 - camera.position.x) * 0.03;
+      camera.position.y += (0.05 + mouseY * 0.05 - camera.position.y) * 0.03;
+      camera.lookAt(0.5, 0.05, 0);
 
       renderer.render(scene, camera);
     };
