@@ -12,6 +12,8 @@ import {
   Play, ArrowRight, ChevronRight, Check,
 } from 'lucide-react';
 
+import { WorkflowSection } from '@/components/marketing/WorkflowSection';
+
 const HeroVial = dynamic(() => import('@/components/landing/HeroVial'), {
   ssr: false,
   loading: () => <div style={{ width: 600, height: 700 }} />,
@@ -57,14 +59,6 @@ export default function LandingPage() {
   useEffect(() => {
     if (hydrated && isAuthed) router.replace('/dashboard');
   }, [hydrated, isAuthed, router]);
-
-  const pipeline: PipelineStep[] = [
-    { Icon: FlaskConical, label: 'Collect', desc: 'Seamless specimen intake and tracking' },
-    { Icon: Cog, label: 'Process', desc: 'Automated preparation and digital imaging' },
-    { Icon: BrainCircuit, label: 'AI Analyze', desc: 'AI-powered screening with high accuracy', active: true },
-    { Icon: Eye, label: 'Review', desc: 'Pathologist review and quality control' },
-    { Icon: FileText, label: 'Report', desc: 'Structured reporting and delivery' },
-  ];
 
   const features: Feature[] = [
     { Icon: Sparkles, label: 'AI-Powered Screening', desc: 'High accuracy. Faster results.' },
@@ -220,46 +214,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* WORKFLOW PIPELINE (dark) */}
-      <section id="solutions" style={{ background: INK, padding: '80px 64px' }}>
-        <Reveal>
-          <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 64, alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: 11, color: RED, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>ONE SYSTEM. END TO END.</div>
-              <h2 style={{ fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1.1, margin: '0 0 16px' }}>
-                Built for the way pathology labs <em style={{ color: RED, fontStyle: 'italic' }}>work.</em>
-              </h2>
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15, lineHeight: 1.7 }}>
-                From collection to diagnosis, CYTOLAB connects every step in a seamless, intelligent workflow.
-              </p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0 }}>
-              {pipeline.map(({ Icon, label, desc, active }, i, arr) => (
-                <div key={label} style={{ display: 'flex', alignItems: 'flex-start', flex: 1 }}>
-                  <div style={{ flex: 1, textAlign: 'center' }}>
-                    <div style={{
-                      width: 64, height: 64, borderRadius: '50%',
-                      background: active ? RED : 'rgba(255,255,255,0.08)',
-                      border: `2px solid ${active ? RED : 'rgba(255,255,255,0.15)'}`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px',
-                      boxShadow: active ? '0 0 30px rgba(230,57,70,0.4)' : 'none',
-                    }}>
-                      <Icon size={24} color="#fff" strokeWidth={1.75} />
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: active ? RED : '#fff', marginBottom: 4 }}>{label}</div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4, padding: '0 6px' }}>{desc}</div>
-                  </div>
-                  {i < arr.length - 1 && (
-                    <div style={{ width: 32, height: 2, background: 'rgba(255,255,255,0.15)', flexShrink: 0, margin: '31px 4px 0', position: 'relative' }}>
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: RED, position: 'absolute', right: 0, top: -3 }} />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </Reveal>
-      </section>
+      {/* WORKFLOW — interactive animated pipeline */}
+      <WorkflowSection />
 
       {/* PRODUCT PREVIEW */}
       <section id="resources" style={{ background: '#fff', padding: '80px 64px' }}>
