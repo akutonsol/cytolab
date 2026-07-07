@@ -59,37 +59,57 @@ type Plan = {
   features: string[]; cta: string; highlighted: boolean; badge?: string;
 };
 
-// AI-Screening microscopy — a glass-sphere cell (specular highlight + nucleus).
-// Duration is derived from position so it stays stable across re-renders
-// (the page re-renders on each live-counter tick).
-function renderCell(cx: number, cy: number, r: number, blur: number, opacity: number, floatDelay: string, isLarge: boolean, key: number) {
-  const dur = 3 + (((cx * 13 + cy * 7) % 20) / 10);
+// AI-Screening microscopy — a flat H&E-stained cytology cell (membrane ring,
+// cytoplasm, dark nucleus + nucleolus). Duration is derived from position so it
+// stays stable across re-renders (the page re-renders on each live-counter tick).
+function renderCell(cx: number, cy: number, r: number, blur: number, delay: string, variant: 'normal' | 'large' | 'small' = 'normal') {
+  const nucR = r * (variant === 'large' ? 0.48 : 0.42);
+  const ringW = r * 0.12;
+  const dur = 3.5 + (((cx * 13 + cy * 7) % 20) / 10);
   return (
-    <div key={key} style={{
+    <div key={`${cx}-${cy}`} style={{
       position: 'absolute', left: `${cx}%`, top: `${cy}%`,
-      width: r * 2, height: r * 2, transform: 'translate(-50%, -50%)', borderRadius: '50%',
-      opacity, filter: blur > 0 ? `blur(${blur}px)` : 'none',
-      animation: `float-cell ${dur}s ease-in-out ${floatDelay} infinite`,
-      zIndex: isLarge ? 3 : blur > 0 ? 1 : 2,
-      background: 'radial-gradient(circle at 32% 28%, rgba(220,200,255,0.85) 0%, rgba(160,100,240,0.75) 25%, rgba(100,50,200,0.85) 55%, rgba(70,20,160,0.95) 100%)',
-      boxShadow: `inset ${r * 0.25}px ${r * 0.2}px ${r * 0.35}px rgba(255,255,255,0.55), inset -${r * 0.15}px -${r * 0.15}px ${r * 0.3}px rgba(80,20,180,0.4), inset ${r * 0.05}px ${r * 0.05}px ${r * 0.5}px rgba(180,120,255,0.3), 0 ${r * 0.2}px ${r * 0.6}px rgba(80,20,180,0.35), 0 ${r * 0.05}px ${r * 0.15}px rgba(0,0,0,0.2)`,
+      width: r * 2, height: r * 2, transform: 'translate(-50%,-50%)', borderRadius: '50%',
+      filter: blur > 0 ? `blur(${blur}px)` : 'none',
+      animation: `float-cell ${dur}s ease-in-out ${delay} infinite`,
+      zIndex: blur > 0 ? 1 : variant === 'large' ? 4 : 2,
+      background: `radial-gradient(circle, rgba(155,100,220,0.75) 0%, rgba(130,80,200,0.82) ${(1 - ringW / r) * 85}%, rgba(110,60,180,0.55) 88%, rgba(90,40,160,0.25) 94%, transparent 100%)`,
+      boxShadow: blur === 0 ? `0 2px 12px rgba(100,50,200,0.25), inset 0 0 ${r * 0.3}px rgba(180,130,255,0.15)` : 'none',
     }}>
-      <div style={{ position: 'absolute', top: '12%', left: '18%', width: r * 0.45, height: r * 0.3, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(255,255,255,0.75) 0%, transparent 100%)', transform: 'rotate(-30deg)' }} />
-      <div style={{ position: 'absolute', width: r * 0.52, height: r * 0.52, top: '50%', left: '50%', transform: 'translate(-38%, -38%)', borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, rgba(80,20,150,0.9) 0%, rgba(40,5,100,0.95) 60%, rgba(20,0,60,1) 100%)', boxShadow: 'inset 3px 3px 6px rgba(140,80,255,0.3), inset -2px -2px 4px rgba(0,0,0,0.5)' }} />
+      {/* Cytoplasm ring */}
+      <div style={{
+        position: 'absolute', inset: `${ringW * 0.8}px`, borderRadius: '50%',
+        background: 'radial-gradient(circle at 45% 40%, rgba(160,110,230,0.6) 0%, rgba(120,70,200,0.70) 50%, rgba(90,40,170,0.75) 100%)',
+      }} />
+      {/* Nucleus */}
+      <div style={{
+        position: 'absolute', width: `${nucR * 2}px`, height: `${nucR * 2}px`, top: '50%', left: '50%',
+        transform: 'translate(-42%,-42%)', borderRadius: '50%',
+        background: 'radial-gradient(circle at 38% 35%, rgba(60,20,120,0.88) 0%, rgba(35,5,80,0.95) 60%, rgba(20,0,50,1) 100%)',
+        boxShadow: 'inset -2px -2px 4px rgba(0,0,0,0.5), inset 1px 1px 3px rgba(140,80,255,0.2)',
+      }}>
+        {variant !== 'small' && (
+          <div style={{ position: 'absolute', width: `${nucR * 0.28}px`, height: `${nucR * 0.28}px`, top: '30%', left: '35%', borderRadius: '50%', background: 'rgba(180,120,255,0.65)' }} />
+        )}
+      </div>
+      {/* Membrane highlight arc */}
+      <div style={{ position: 'absolute', top: '8%', left: '12%', width: `${r * 0.6}px`, height: `${r * 0.35}px`, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(220,200,255,0.25) 0%, transparent 100%)', transform: 'rotate(-25deg)' }} />
     </div>
   );
 }
 
-// [cx%, cy%, radius, blur, opacity, floatDelay, isLarge]
-const SCREEN_CELLS: [number, number, number, number, number, string, boolean][] = [
-  [15, 5, 38, 2.5, 0.7, '0s', false], [50, 2, 32, 2.0, 0.6, '0.5s', false], [80, 8, 42, 2.5, 0.7, '1.0s', false],
-  [95, 18, 36, 2.0, 0.6, '1.5s', false], [5, 20, 34, 2.0, 0.6, '0.8s', false], [88, 40, 40, 2.5, 0.65, '1.2s', false],
-  [10, 75, 36, 2.0, 0.6, '0.3s', false], [92, 72, 38, 2.5, 0.65, '1.8s', false],
-  [30, 12, 50, 0.8, 0.85, '0.4s', false], [70, 15, 44, 0.8, 0.80, '1.1s', false], [20, 38, 46, 0.8, 0.82, '0.7s', false],
-  [75, 42, 52, 0.5, 0.85, '1.4s', false], [42, 70, 48, 0.8, 0.80, '0.9s', false], [72, 72, 44, 0.8, 0.82, '1.6s', false],
-  [18, 60, 42, 0.8, 0.80, '1.3s', false],
-  [38, 28, 68, 0, 0.95, '0.2s', true], [18, 82, 58, 0, 0.92, '0.6s', false], [72, 22, 62, 0, 0.93, '1.0s', false],
-  [58, 65, 56, 0, 0.90, '1.5s', false], [84, 62, 60, 0, 0.92, '0.4s', false], [48, 48, 50, 0, 0.88, '1.2s', false],
+// [cx%, cy%, r, blur, delay, variant] — dense + varied like a real slide
+const cellLayout: [number, number, number, number, string, ('normal' | 'large' | 'small')][] = [
+  [8, 4, 28, 1.8, '0.2s', 'small'], [38, 2, 24, 1.5, '0.8s', 'small'], [65, 3, 30, 1.8, '1.2s', 'small'],
+  [88, 6, 26, 1.5, '0.5s', 'small'], [92, 25, 28, 1.8, '1.5s', 'small'], [3, 30, 26, 1.5, '0.9s', 'small'],
+  [96, 55, 24, 1.8, '1.8s', 'small'], [5, 72, 28, 1.5, '0.4s', 'small'], [90, 78, 26, 1.8, '1.1s', 'small'],
+  [40, 95, 24, 1.5, '0.7s', 'small'],
+  [22, 12, 38, 0.6, '0.3s', 'normal'], [55, 10, 42, 0.6, '1.0s', 'normal'], [80, 15, 36, 0.6, '1.4s', 'normal'],
+  [12, 45, 40, 0.6, '0.6s', 'normal'], [78, 45, 44, 0.6, '1.7s', 'normal'], [35, 75, 38, 0.6, '0.8s', 'normal'],
+  [68, 72, 42, 0.6, '1.3s', 'normal'], [20, 82, 36, 0.6, '1.6s', 'normal'], [82, 82, 40, 0.6, '0.2s', 'normal'],
+  [32, 28, 56, 0, '0.4s', 'large'], [70, 25, 52, 0, '1.1s', 'large'], [18, 62, 50, 0, '0.7s', 'large'],
+  [60, 58, 54, 0, '1.5s', 'large'], [85, 60, 48, 0, '0.3s', 'normal'], [48, 45, 46, 0, '1.2s', 'normal'],
+  [25, 48, 42, 0, '0.9s', 'normal'],
 ];
 
 export default function LandingPage() {
@@ -473,8 +493,8 @@ export default function LandingPage() {
       </section>
 
       {/* SECTION B — AI SCREENING */}
-      <section style={{ padding: '72px 80px', marginTop: 0, background: 'white' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '38% 62%', gap: '80px', alignItems: 'center', maxWidth: '1280px', margin: '0 auto' }}>
+      <section style={{ padding: '80px 40px', marginTop: 0, background: '#f8f7ff' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '35% 65%', gap: '60px', alignItems: 'center' }}>
           {/* Left column */}
           <div>
             <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', color: '#E63946', textTransform: 'uppercase', marginBottom: '16px' }}>AI Screening</div>
@@ -509,24 +529,24 @@ export default function LandingPage() {
 
           {/* Right column — 3-panel: microscopy slide / analysis / findings */}
           <div style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0',
+            display: 'grid', gridTemplateColumns: '42% 32% 26%', gap: '0',
             borderRadius: '20px', overflow: 'hidden', border: '1px solid #e5e7eb',
-            minHeight: '480px', boxShadow: '0 20px 60px rgba(0,0,0,0.08)',
+            minHeight: '580px', boxShadow: '0 20px 60px rgba(0,0,0,0.08)',
           }}>
 
             {/* ── COL 1: MICROSCOPY SLIDE ── */}
-            <div style={{ position: 'relative', background: '#f0ecf8', overflow: 'hidden', minHeight: '480px' }}>
+            <div style={{ position: 'relative', background: 'linear-gradient(135deg, #f5f0fc 0%, #ede4f8 40%, #f0ecf8 100%)', overflow: 'hidden', minHeight: '580px' }}>
               {/* Slide stain texture */}
               <div style={{
                 position: 'absolute', inset: 0, pointerEvents: 'none',
                 background: 'radial-gradient(ellipse 40% 30% at 20% 30%, rgba(147,112,219,0.25) 0%, transparent 70%), radial-gradient(ellipse 50% 40% at 70% 60%, rgba(138,43,226,0.20) 0%, transparent 70%), radial-gradient(ellipse 60% 50% at 50% 50%, rgba(221,210,243,0.40) 0%, transparent 80%), linear-gradient(135deg, #f5f0fc 0%, #ede4f8 50%, #f0ecf8 100%)',
               }} />
 
-              {/* Glass-sphere cell field */}
-              {SCREEN_CELLS.map(([cx, cy, r, blur, op, delay, large], i) => renderCell(cx, cy, r, blur, op, delay, large, i))}
+              {/* Stained cytology cell field */}
+              {cellLayout.map(([cx, cy, r, blur, delay, variant]) => renderCell(cx, cy, r, blur, delay, variant))}
 
               {/* Primary AI detection box */}
-              <div style={{ position: 'absolute', top: '16%', left: '19%', width: '42%', height: '44%', border: '2px solid #E63946', borderRadius: '4px', zIndex: 10, boxShadow: '0 0 16px rgba(230,57,70,0.25)' }}>
+              <div style={{ position: 'absolute', top: '18%', left: '18%', width: '38%', height: '38%', border: '2px solid #E63946', borderRadius: '4px', zIndex: 10, boxShadow: '0 0 16px rgba(230,57,70,0.25)' }}>
                 <div style={{ position: 'absolute', top: -2, left: -2, width: 14, height: 14, borderTop: '3px solid #E63946', borderLeft: '3px solid #E63946', animation: 'corner-flash 2s ease-in-out infinite' }} />
                 <div style={{ position: 'absolute', top: -2, right: -2, width: 14, height: 14, borderTop: '3px solid #E63946', borderRight: '3px solid #E63946', animation: 'corner-flash 2s ease-in-out 0.15s infinite' }} />
                 <div style={{ position: 'absolute', bottom: -2, left: -2, width: 14, height: 14, borderBottom: '3px solid #E63946', borderLeft: '3px solid #E63946', animation: 'corner-flash 2s ease-in-out 0.30s infinite' }} />
@@ -535,16 +555,16 @@ export default function LandingPage() {
               </div>
 
               {/* Atypical badge */}
-              <div style={{ position: 'absolute', top: '11%', left: '50%', transform: 'translateX(-50%)', background: '#E63946', color: 'white', borderRadius: '20px', padding: '5px 14px', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', zIndex: 20, display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 4px 20px rgba(230,57,70,0.45)', animation: 'badge-pulse 2s ease-in-out infinite' }}>
+              <div style={{ position: 'absolute', top: '13%', left: '50%', transform: 'translateX(-50%)', background: '#E63946', color: 'white', borderRadius: '20px', padding: '5px 14px', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', zIndex: 20, display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 4px 20px rgba(230,57,70,0.45)', animation: 'badge-pulse 2s ease-in-out infinite' }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'white', display: 'inline-block', animation: 'live-blink 1s ease-in-out infinite' }} />
                 Atypical Cell Detected
               </div>
 
               {/* Secondary cyan scan box */}
-              <div style={{ position: 'absolute', top: '55%', left: '8%', width: '32%', height: '28%', border: '1.5px dashed rgba(6,182,212,0.65)', borderRadius: '4px', zIndex: 10, boxShadow: '0 0 10px rgba(6,182,212,0.15)' }} />
+              <div style={{ position: 'absolute', top: '58%', left: '6%', width: '36%', height: '26%', border: '1.5px dashed rgba(6,182,212,0.65)', borderRadius: '4px', zIndex: 10, boxShadow: '0 0 10px rgba(6,182,212,0.15)' }} />
 
               {/* Monitoring badge (cyan) */}
-              <div style={{ position: 'absolute', top: '60%', left: '12%', background: 'rgba(6,182,212,0.92)', color: 'white', borderRadius: '20px', padding: '4px 12px', fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap', zIndex: 20, display: 'flex', alignItems: 'center', gap: 5, boxShadow: '0 2px 12px rgba(6,182,212,0.4)' }}>
+              <div style={{ position: 'absolute', top: '55%', left: '8%', background: 'rgba(6,182,212,0.92)', color: 'white', borderRadius: '20px', padding: '4px 12px', fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap', zIndex: 20, display: 'flex', alignItems: 'center', gap: 5, boxShadow: '0 2px 12px rgba(6,182,212,0.4)' }}>
                 <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'white', display: 'inline-block' }} />
                 Monitoring
               </div>
@@ -575,16 +595,18 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>Scanning cells...</div>
-              <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 6, height: 6, overflow: 'hidden', marginBottom: 6, position: 'relative' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Scanning cells...</span>
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>{Math.round(scanProgress)}%</span>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 6, height: 6, overflow: 'hidden', marginBottom: 24, position: 'relative' }}>
                 <div style={{ width: `${scanProgress}%`, height: '100%', borderRadius: 6, background: 'linear-gradient(90deg, #7c3aed, #a78bfa)', transition: 'width 0.8s ease', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
                 </div>
               </div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', textAlign: 'right', marginBottom: 24 }}>{Math.round(scanProgress)}%</div>
 
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginBottom: 4 }}>Cells Analyzed</div>
-              <div style={{ fontSize: 34, fontWeight: 800, color: 'white', lineHeight: 1, marginBottom: 4, fontVariantNumeric: 'tabular-nums' }}>{cellsAnalyzed.toLocaleString()}</div>
+              <div style={{ fontSize: 38, fontWeight: 900, color: 'white', lineHeight: 1, marginBottom: 4, fontVariantNumeric: 'tabular-nums' }}>{cellsAnalyzed.toLocaleString()}</div>
               <div style={{ fontSize: 11, color: '#22c55e', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 4 }}>↑ 12% vs last 15 min</div>
 
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginBottom: 8 }}>AI Confidence</div>
@@ -626,7 +648,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>Model: Cytolab AI v3.2</div>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>Last updated: Today, 10:42 AM</div>
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 1, whiteSpace: 'nowrap' }}>Last updated: Today, 10:42 AM</div>
                   </div>
                 </div>
                 <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#22c55e' }}>
