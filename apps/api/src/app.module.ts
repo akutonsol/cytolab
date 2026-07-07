@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { LoggerModule } from 'nestjs-pino';
 import { LabContextMiddleware } from './common/tenancy/lab-context.middleware';
 import { TenancyModule } from './common/tenancy/tenancy.module';
 import { PrismaModule } from './database/prisma.module';
@@ -76,6 +77,19 @@ import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.mod
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    // Structured logging (Pino). Pretty in dev, JSON in prod. Request auto-logging
+    // is off to keep noise/behaviour close to the previous default logger; secrets
+    // are redacted so nothing sensitive is ever written to logs.
+    LoggerModule.forRoot({
+      pinoHttp: {
+        level: process.env.LOG_LEVEL ?? (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
+        autoLogging: false,
+        redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
+        transport: process.env.NODE_ENV !== 'production'
+          ? { target: 'pino-pretty', options: { singleLine: true, colorize: true } }
+          : undefined,
+      },
+    }),
     ScheduleModule.forRoot(),
     // Global default: 100 requests / minute / IP. Auth routes tighten this
     // per-handler via @Throttle (login/refresh: 5/min).

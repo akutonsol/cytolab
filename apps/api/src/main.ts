@@ -1,6 +1,8 @@
+import './instrument'; // Sentry — must load before any app module (no-op without SENTRY_DSN)
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { Logger } from 'nestjs-pino';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
@@ -48,7 +50,9 @@ function assertDatabaseSecurity(): void {
 async function bootstrap() {
   assertStrongSecrets();
   assertDatabaseSecurity();
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // Route Nest's logs through Pino (structured JSON in prod, pretty in dev).
+  app.useLogger(app.get(Logger));
 
   const prefix = process.env.API_PREFIX ?? 'api/v1';
   app.setGlobalPrefix(prefix);

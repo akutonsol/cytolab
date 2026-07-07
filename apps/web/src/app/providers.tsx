@@ -1,5 +1,6 @@
 'use client';
 
+import '@/lib/sentry.client'; // guarded Sentry init (no-op without DSN)
 import { useState } from 'react';
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 import { App as AntdApp, ConfigProvider, theme } from 'antd';
