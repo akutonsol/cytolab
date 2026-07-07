@@ -23,8 +23,9 @@ const TIERS = [
 
 export default function Pricing() {
   return (
-    <section id="pricing" style={{ borderBottom: '1px solid rgba(9,9,14,0.07)' }}>
-      <div style={{ padding: '5rem 2.5rem 3rem' }}>
+    <section id="pricing" style={{ borderBottom: '1px solid rgba(9,9,14,0.07)', position: 'relative' }}>
+      <div className="section-counter" aria-hidden="true">07</div>
+      <div style={{ padding: '5rem 2.5rem 3rem', position: 'relative' }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
           letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.22)',
           display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '2.5rem' }}>

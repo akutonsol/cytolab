@@ -56,7 +56,22 @@ export default function CTA() {
         borderRight: '1px solid rgba(255,255,255,0.12)', minHeight: '520px',
         display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
         <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.9 }} />
-        <div style={{ position: 'relative', lineHeight: 0.9 }}>
+        <div style={{
+          position: 'absolute',
+          bottom: '-0.15em',
+          left: '-0.05em',
+          fontFamily: 'var(--font-serif)',
+          fontSize: '28vw',
+          lineHeight: 0.8,
+          color: 'rgba(255,255,255,0.04)',
+          pointerEvents: 'none',
+          userSelect: 'none',
+          fontStyle: 'italic',
+          letterSpacing: '-0.05em',
+          zIndex: 1,
+          whiteSpace: 'nowrap',
+        }} aria-hidden="true">AI</div>
+        <div style={{ position: 'relative', zIndex: 2, lineHeight: 0.9 }}>
           <div><span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.8rem,5vw,5rem)',
             letterSpacing: '-0.03em', color: '#fff' }}>The </span>
             <span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.8rem,5vw,5rem)',

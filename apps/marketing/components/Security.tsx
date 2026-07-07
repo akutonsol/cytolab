@@ -1,3 +1,5 @@
+'use client'
+import { useEffect, useRef } from 'react'
 import SectionReveal from './SectionReveal'
 
 const CERTS: [string, string][] = [
@@ -17,12 +19,30 @@ const FEATURES = [
 ]
 
 export default function Security() {
+  const secRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const el = secRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        el.querySelectorAll<HTMLElement>('.underline-draw').forEach((u, i) => {
+          setTimeout(() => u.classList.add('drawn'), 300 + i * 180)
+        })
+        obs.disconnect()
+      }
+    }, { threshold: 0.2 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
   return (
-    <section id="security" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr',
+    <section ref={secRef} id="security" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr',
       borderBottom: '1px solid rgba(9,9,14,0.07)' }}>
       {/* LEFT — dark */}
       <div style={{ background: '#09090E', color: '#F0EFE9', padding: '5rem 3rem 5rem 2.5rem',
         position: 'relative', overflow: 'hidden' }}>
+        <div className="section-counter" aria-hidden="true" style={{ color: 'rgba(240,239,233,0.03)' }}>06</div>
         <div style={{ position: 'absolute', inset: 0,
           backgroundImage: 'linear-gradient(rgba(240,239,233,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(240,239,233,0.02) 1px,transparent 1px)',
           backgroundSize: '48px 48px', pointerEvents: 'none' }} />
@@ -47,7 +67,7 @@ export default function Security() {
               <div key={name} style={{ padding: '1.5rem',
                 borderRight: i % 2 === 0 ? '1px solid rgba(240,239,233,0.09)' : 'none',
                 borderTop: i > 1 ? '1px solid rgba(240,239,233,0.09)' : 'none' }}>
-                <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.6rem', color: '#F0EFE9',
+                <div className="underline-draw" style={{ fontFamily: 'var(--font-serif)', fontSize: '1.6rem', color: '#F0EFE9',
                   marginBottom: '0.3rem' }}>{name}</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.58rem', fontWeight: 600,
                   letterSpacing: '0.05em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.35)' }}>{sub}</div>

@@ -1,3 +1,5 @@
+'use client'
+import { useEffect, useRef } from 'react'
 import SectionReveal from './SectionReveal'
 
 const STEPS: [string, string][] = [
@@ -14,13 +16,36 @@ const CARDS: [string, string, string][] = [
   ['~0.8s', 'Per-slide inference time', 'ink'],
 ]
 
+const HEADLINE: [string, string][] = [
+  ['Your new', 'solid'],
+  ['digital', 'ghost'],
+  ['cytotechnologist.', 'blue'],
+]
+
 export default function AISection() {
+  const secRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const el = secRef.current
+    if (!el) return
+    const words = el.querySelectorAll<HTMLElement>('.word-rise-inner')
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        words.forEach((w, i) => setTimeout(() => w.classList.add('risen'), i * 90))
+        obs.disconnect()
+      }
+    }, { threshold: 0.15 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
   return (
-    <section id="cyto-ai" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr',
-      borderBottom: '1px solid rgba(9,9,14,0.07)' }}>
+    <section ref={secRef} id="cyto-ai" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr',
+      borderBottom: '1px solid rgba(9,9,14,0.07)', position: 'relative' }}>
+      <div className="section-counter" aria-hidden="true">04</div>
       {/* LEFT — bone */}
       <div style={{ background: '#F0EFE9', padding: '5rem 3rem 5rem 2.5rem',
-        borderRight: '1px solid rgba(9,9,14,0.07)' }}>
+        borderRight: '1px solid rgba(9,9,14,0.07)', position: 'relative' }}>
         <SectionReveal direction="left">
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
             letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.22)',
@@ -29,12 +54,21 @@ export default function AISection() {
             03 · CYTO AI
           </div>
           <div style={{ lineHeight: 0.9, marginBottom: '3rem' }}>
-            <div><span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.6rem,4.5vw,4.5rem)',
-              letterSpacing: '-0.03em', color: '#09090E' }}>Your new</span></div>
-            <div><span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.6rem,4.5vw,4.5rem)',
-              letterSpacing: '-0.03em', color: 'transparent', WebkitTextStroke: '1.5px rgba(9,9,14,0.16)' }}>digital</span></div>
-            <div><span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.6rem,4.5vw,4.5rem)',
-              letterSpacing: '-0.03em', color: '#4F46E5', fontStyle: 'italic' }}>cytotechnologist.</span></div>
+            {HEADLINE.map(([text, tone]) => (
+              <div key={text}>
+                <span className="word-rise" style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom' }}>
+                  <span className="word-rise-inner" style={{
+                    display: 'inline-block',
+                    fontFamily: 'var(--font-serif)',
+                    fontSize: 'clamp(2.6rem,4.5vw,4.5rem)',
+                    letterSpacing: '-0.03em',
+                    color: tone === 'blue' ? '#4F46E5' : tone === 'ghost' ? 'transparent' : '#09090E',
+                    WebkitTextStroke: tone === 'ghost' ? '1.5px rgba(9,9,14,0.16)' : undefined,
+                    fontStyle: tone === 'blue' ? 'italic' : 'normal',
+                  }}>{text}</span>
+                </span>
+              </div>
+            ))}
           </div>
           <div>
             {STEPS.map(([n, title]) => (

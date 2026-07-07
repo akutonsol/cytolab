@@ -5,8 +5,10 @@ import { useEffect } from 'react'
  * Global motion layer — additive only, touches no structure/color/layout.
  * - Cursor glow that trails the pointer (#cursor-glow, styled in globals.css)
  * - Magnetic pull on any `.mag-btn` within range
- * - Scroll-driven reveals: adds `.risen` to `.word-rise-inner`,
- *   `.drawn` to `.underline-draw`, `.num-slam` trigger to `[data-num-slam]`
+ *
+ * Scroll-driven reveals (word-rise, underline-draw, num-slam, stagger) are
+ * each owned by their own component so the per-section stagger timing is
+ * preserved — MotionLayer deliberately does not observe them here.
  */
 export default function MotionLayer() {
   useEffect(() => {
@@ -45,26 +47,7 @@ export default function MotionLayer() {
       window.addEventListener('pointermove', onMove, { passive: true })
     }
 
-    // ── Scroll reveals ───────────────────────────
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((en) => {
-          if (!en.isIntersecting) return
-          const el = en.target as HTMLElement
-          if (el.classList.contains('word-rise-inner')) el.classList.add('risen')
-          if (el.classList.contains('underline-draw')) el.classList.add('drawn')
-          if (el.hasAttribute('data-num-slam')) el.classList.add('num-slam')
-          io.unobserve(el)
-        })
-      },
-      { threshold: 0.2 }
-    )
-    document
-      .querySelectorAll('.word-rise-inner, .underline-draw, [data-num-slam]')
-      .forEach((el) => io.observe(el))
-
     return () => {
-      io.disconnect()
       if (onMove) window.removeEventListener('pointermove', onMove)
       if (glow) glow.remove()
     }

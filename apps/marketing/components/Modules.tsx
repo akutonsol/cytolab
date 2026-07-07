@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef } from 'react'
 
 const MODULES: [string, string, string][] = [
   ['01', 'AI Cytology Screening', 'CYTO AI · Bethesda 2014'],
@@ -14,32 +14,27 @@ const MODULES: [string, string, string][] = [
   ['10', 'Enterprise Security', 'Argon2id · MFA · SSO'],
 ]
 
-function Row({ n, name, tag }: { n: string; name: string; tag: string }) {
-  const [hover, setHover] = useState(false)
-  return (
-    <div
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto', alignItems: 'center',
-        gap: '1.5rem', padding: '1.4rem 2.5rem', borderTop: '1px solid rgba(9,9,14,0.07)',
-        borderLeft: `2px solid ${hover ? '#4F46E5' : 'transparent'}`,
-        background: hover ? 'rgba(79,70,229,0.03)' : 'transparent',
-        transition: 'all 0.25s ease', cursor: 'default' }}
-    >
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', fontWeight: 700,
-        letterSpacing: '0.06em', color: hover ? '#4F46E5' : 'rgba(9,9,14,0.3)', transition: 'color 0.25s' }}>{n}</span>
-      <span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(1.3rem,2.2vw,1.9rem)',
-        color: hover ? '#4F46E5' : '#09090E', transition: 'color 0.25s' }}>{name}</span>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', fontWeight: 600,
-        letterSpacing: '0.05em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.3)' }}>{tag}</span>
-    </div>
-  )
-}
-
 export default function Modules() {
+  const rowsRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = rowsRef.current
+    if (!el) return
+    el.classList.add('stagger-children')
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        el.classList.add('triggered')
+        obs.disconnect()
+      }
+    }, { threshold: 0.05 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
   return (
-    <section id="modules" style={{ borderBottom: '1px solid rgba(9,9,14,0.07)' }}>
-      <div style={{ padding: '5rem 2.5rem 3rem' }}>
+    <section id="modules" style={{ borderBottom: '1px solid rgba(9,9,14,0.07)', position: 'relative' }}>
+      <div className="section-counter" aria-hidden="true">05</div>
+      <div style={{ padding: '5rem 2.5rem 3rem', position: 'relative' }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
           letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.22)',
           display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '2.5rem' }}>
@@ -57,8 +52,23 @@ export default function Modules() {
             letterSpacing: '-0.03em', color: 'transparent', WebkitTextStroke: '1.5px rgba(9,9,14,0.14)' }}>system.</span>
         </div>
       </div>
-      <div>
-        {MODULES.map(([n, name, tag]) => <Row key={n} n={n} name={name} tag={tag} />)}
+      <div ref={rowsRef}>
+        {MODULES.map(([n, name, tag]) => (
+          <div
+            key={n}
+            className="mod-row-item"
+            style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto', alignItems: 'center',
+              gap: '1.5rem', padding: '1.4rem 2.5rem', borderTop: '1px solid rgba(9,9,14,0.07)',
+              cursor: 'default', position: 'relative' }}
+          >
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', fontWeight: 700,
+              letterSpacing: '0.06em', color: 'rgba(9,9,14,0.3)' }}>{n}</span>
+            <span className="mod-row-name" style={{ fontFamily: 'var(--font-serif)',
+              fontSize: 'clamp(1.3rem,2.2vw,1.9rem)', color: '#09090E' }}>{name}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', fontWeight: 600,
+              letterSpacing: '0.05em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.3)' }}>{tag}</span>
+          </div>
+        ))}
       </div>
     </section>
   )

@@ -20,7 +20,12 @@ function StatCell({ n, suffix, label, ghost, float }: typeof stats[0]) {
         const tick = (now: number) => {
           const p = Math.min((now-start)/dur, 1), ease = 1-Math.pow(1-p,3), val = n*ease
           el.textContent = (float ? val.toFixed(2) : Math.round(val)) + suffix
-          if (p < 1) requestAnimationFrame(tick)
+          if (p < 1) {
+            requestAnimationFrame(tick)
+          } else {
+            el.textContent = (float ? n.toFixed(2) : n) + suffix
+            el.classList.add('num-slam')
+          }
         }
         requestAnimationFrame(tick)
         obs.disconnect()
@@ -46,9 +51,26 @@ function StatCell({ n, suffix, label, ghost, float }: typeof stats[0]) {
 }
 
 export default function Outcomes() {
+  const gridRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = gridRef.current
+    if (!el) return
+    el.classList.add('stagger-children')
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        el.classList.add('triggered')
+        obs.disconnect()
+      }
+    }, { threshold: 0.1 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
-      borderBottom: '1px solid rgba(9,9,14,0.07)', background: '#F0EFE9' }}>
+    <div ref={gridRef} style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+      borderBottom: '1px solid rgba(9,9,14,0.07)', background: '#F0EFE9', position: 'relative' }}>
+      <div className="section-counter" aria-hidden="true">02</div>
       {stats.map((s, i) => (
         <div key={s.label} style={{ borderRight: i < 3 ? '1px solid rgba(9,9,14,0.07)' : 'none' }}>
           <StatCell {...s} />

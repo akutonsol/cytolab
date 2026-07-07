@@ -86,6 +86,23 @@ export default function Hero() {
     return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', resize) }
   }, [])
 
+  useEffect(() => {
+    const words = document.querySelectorAll<HTMLElement>('.hero-word-inner')
+    words.forEach((w, i) => {
+      setTimeout(() => w.classList.add('risen'), 200 + i * 130)
+    })
+    const kpis = document.querySelectorAll<HTMLElement>('.hero-kpi')
+    kpis.forEach((k, i) => {
+      k.style.opacity = '0'
+      k.style.transform = 'translateY(16px)'
+      k.style.transition = 'opacity 0.7s ease, transform 0.7s ease'
+      setTimeout(() => {
+        k.style.opacity = '1'
+        k.style.transform = 'none'
+      }, 900 + i * 120)
+    })
+  }, [])
+
   const liveData = [
     { label: 'Queue', value: '147', change: '↑12', changeColor: '#3f97ef' },
     { label: 'AI Screened', value: '89', change: '84% conf.', changeColor: '#3f97ef' },
@@ -114,25 +131,34 @@ export default function Hero() {
           </div>
           <div>
             {[
-              { text: 'The future', ghost: false, italic: false },
-              { text: 'of pathology', ghost: true, italic: false },
-            ].map(({ text, ghost }, i) => (
-              <div key={i} style={{ overflow: 'hidden', display: 'block', lineHeight: 0.88, marginBottom: '0.15rem' }}>
-                <span style={{
-                  display: 'inline-block',
-                  fontFamily: 'var(--font-serif)',
-                  fontSize: 'clamp(4.5rem, 8vw, 7.5rem)',
-                  letterSpacing: '-0.03em', lineHeight: 0.88,
-                  color: ghost ? 'transparent' : '#09090E',
-                  WebkitTextStroke: ghost ? '1.5px rgba(9,9,14,0.18)' : undefined,
-                }}>{text}</span>
+              { text: 'The future', ghost: false, blue: false, italic: false },
+              { text: 'of pathology', ghost: true, blue: false, italic: false },
+            ].map((word, i) => (
+              <div key={i} style={{ display: 'block', lineHeight: 0.88, marginBottom: '0.15rem' }}>
+                <span className="word-rise" style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom' }}>
+                  <span className="word-rise-inner hero-word-inner" style={{
+                    display: 'inline-block',
+                    fontFamily: 'var(--font-serif)',
+                    fontSize: 'clamp(4.5rem, 8vw, 7.5rem)',
+                    letterSpacing: '-0.03em', lineHeight: 0.88,
+                    color: word.blue ? '#4F46E5' : word.ghost ? 'transparent' : '#09090E',
+                    WebkitTextStroke: word.ghost ? '1.5px rgba(9,9,14,0.18)' : undefined,
+                    fontStyle: word.italic ? 'italic' : 'normal',
+                  }}>{word.text}</span>
+                </span>
               </div>
             ))}
-            <div style={{ overflow: 'hidden', display: 'block', lineHeight: 0.88 }}>
-              <span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(4.5rem, 8vw, 7.5rem)',
-                letterSpacing: '-0.03em', lineHeight: 0.88, color: '#4F46E5', fontStyle: 'italic' }}>is</span>
-              <span style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(4.5rem, 8vw, 7.5rem)',
-                letterSpacing: '-0.03em', lineHeight: 0.88, color: '#09090E' }}> here.</span>
+            <div style={{ display: 'block', lineHeight: 0.88 }}>
+              <span className="word-rise" style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom' }}>
+                <span className="word-rise-inner hero-word-inner" style={{ display: 'inline-block',
+                  fontFamily: 'var(--font-serif)', fontSize: 'clamp(4.5rem, 8vw, 7.5rem)',
+                  letterSpacing: '-0.03em', lineHeight: 0.88, color: '#4F46E5', fontStyle: 'italic' }}>is</span>
+              </span>
+              <span className="word-rise" style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom' }}>
+                <span className="word-rise-inner hero-word-inner" style={{ display: 'inline-block',
+                  fontFamily: 'var(--font-serif)', fontSize: 'clamp(4.5rem, 8vw, 7.5rem)',
+                  letterSpacing: '-0.03em', lineHeight: 0.88, color: '#09090E' }}>{' here.'}</span>
+              </span>
             </div>
           </div>
         </div>
@@ -153,7 +179,7 @@ export default function Hero() {
           </div>
           <div style={{ display: 'flex', gap: '3.5rem' }}>
             {[['43%','Faster TAT'],['91%','Less manual review'],['97%','AI accuracy']].map(([num,label]) => (
-              <div key={label} style={{ borderLeft: '2px solid #4F46E5', paddingLeft: '1rem' }}>
+              <div key={label} className="hero-kpi" style={{ borderLeft: '2px solid #4F46E5', paddingLeft: '1rem' }}>
                 <div style={{ fontFamily: 'var(--font-serif)', fontSize: '2.5rem', color: '#09090E', lineHeight: 1 }}>{num}</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', fontWeight: 600,
                   letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.3)', marginTop: '3px' }}>{label}</div>

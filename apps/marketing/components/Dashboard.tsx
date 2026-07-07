@@ -55,6 +55,7 @@ export default function Dashboard() {
   return (
     <section style={{ background: '#09090E', color: '#F0EFE9', position: 'relative', overflow: 'hidden',
       borderBottom: '1px solid rgba(9,9,14,0.07)' }}>
+      <div className="section-counter" aria-hidden="true" style={{ color: 'rgba(240,239,233,0.025)' }}>03</div>
       <div style={{ position: 'absolute', inset: 0,
         backgroundImage: 'linear-gradient(rgba(240,239,233,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(240,239,233,0.02) 1px,transparent 1px)',
         backgroundSize: '48px 48px', pointerEvents: 'none' }} />
