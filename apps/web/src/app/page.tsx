@@ -13,10 +13,10 @@ import {
   Play, ArrowRight, ChevronRight, Check, TrendingUp, TrendingDown,
 } from 'lucide-react';
 
-const SpecimenTube3D = dynamic(
-  () => import('@/components/auth/SpecimenTube3D').then((m) => ({ default: m.SpecimenTube3D })),
-  { ssr: false, loading: () => <div style={{ width: 240, height: 500 }} /> },
-);
+const HeroVial = dynamic(() => import('@/components/landing/HeroVial'), {
+  ssr: false,
+  loading: () => <div style={{ width: 600, height: 700 }} />,
+});
 
 const RED = '#E63946';
 const INK = '#0a0b1a';
@@ -55,14 +55,6 @@ export default function LandingPage() {
   useEffect(() => {
     if (hydrated && isAuthed) router.replace('/dashboard');
   }, [hydrated, isAuthed, router]);
-
-  const heroCells: Cell[] = [
-    { size: 60, top: '15%', left: '5%', opacity: 0.6 },
-    { size: 40, top: '25%', right: '10%', opacity: 0.4 },
-    { size: 80, bottom: '30%', left: '8%', opacity: 0.5 },
-    { size: 35, top: '40%', right: '5%', opacity: 0.7 },
-    { size: 55, bottom: '20%', right: '15%', opacity: 0.4 },
-  ];
 
   const heroStats: StatCard[] = [
     { label: 'AI Confidence', value: '98.4%', trend: '2.6% vs last week', up: true },
@@ -203,17 +195,9 @@ export default function LandingPage() {
         </motion.div>
 
         <div style={{ position: 'relative', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: 240, height: 500, position: 'relative', zIndex: 2 }}>
-            <SpecimenTube3D />
+          <div style={{ width: 600, height: 700, position: 'relative', zIndex: 2 }}>
+            <HeroVial />
           </div>
-          {heroCells.map((cell, i) => (
-            <div key={i} className={`mktg-float-${i}`} style={{
-              position: 'absolute', width: cell.size, height: cell.size, borderRadius: '50%',
-              background: 'radial-gradient(circle at 35% 35%, rgba(220,80,80,0.8), rgba(139,0,0,0.6))',
-              top: cell.top, left: cell.left, right: cell.right, bottom: cell.bottom, opacity: cell.opacity,
-              animation: `float${i} ${3 + i}s ease-in-out infinite`, boxShadow: '0 4px 20px rgba(220,57,70,0.3)',
-            }} />
-          ))}
           <div style={{ position: 'absolute', top: '10%', right: -20, width: 200, zIndex: 3 }}>
             {heroStats.map(({ label, value, trend, up }) => (
               <div key={label} style={{
@@ -229,7 +213,6 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-          <div style={{ position: 'absolute', bottom: '20%', left: '50%', transform: 'translateX(-50%)', width: 300, height: 60, background: 'radial-gradient(ellipse, rgba(230,57,70,0.15), transparent)', borderRadius: '50%' }} />
         </div>
       </section>
 
