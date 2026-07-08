@@ -15,6 +15,7 @@ import {
 
 import { WorkflowPipeline } from '@/components/landing/WorkflowPipeline';
 import { SiteNav, SiteFooter, MarketingScrollStyle } from '@/components/landing/marketing-chrome';
+import { SmoothScroll } from '@/components/landing/SmoothScroll';
 
 const HeroVial = dynamic(() => import('@/components/landing/HeroVial'), {
   ssr: false,
@@ -234,6 +235,7 @@ export default function LandingPage() {
   return (
     <div style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif', color: INK, background: '#fff' }}>
       <MarketingScrollStyle />
+      <SmoothScroll />
       <SiteNav active="platform" />
 
       {/* HERO */}

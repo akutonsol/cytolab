@@ -8,6 +8,11 @@
 // package stays dependency-light. `Variants`/`Transition` are type-only imports.
 import type { Variants, Transition } from 'framer-motion';
 
+// GSAP + ScrollTrigger scroll-choreography utilities (reveal, fadeUp, parallax,
+// sectionTransition, …). Client-only, reduced-motion-aware. gsap is an optional
+// peer used only on the marketing surfaces that consume these.
+export * from './scroll';
+
 // ── Easing ──────────────────────────────────────────────────────────────────
 /** Primary spring-like ease used across marketing sections. */
 export const EASE = [0.22, 0.8, 0.2, 1] as const;

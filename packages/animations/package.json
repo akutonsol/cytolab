@@ -6,9 +6,11 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "peerDependencies": {
-    "framer-motion": ">=11"
+    "framer-motion": ">=11",
+    "gsap": ">=3.12"
   },
   "peerDependenciesMeta": {
-    "framer-motion": { "optional": true }
+    "framer-motion": { "optional": true },
+    "gsap": { "optional": true }
   }
 }

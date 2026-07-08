@@ -7,6 +7,7 @@
 // destination is real. Do NOT redesign this — it is the shipping landing chrome.
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { SmoothScroll } from './SmoothScroll';
 
 const RED = '#E63946';
 const INK = '#0a0b1a';
@@ -106,7 +107,7 @@ export function SiteFooter() {
 // keeps anchored sections clear of the 78px fixed nav.
 export function MarketingScrollStyle() {
   return <style dangerouslySetInnerHTML={{ __html: `
-    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
     section[id], [id].scroll-anchor { scroll-margin-top: 96px; }
   ` }} />;
 }
@@ -116,6 +117,7 @@ export function MarketingPage({ active, children }: { active?: string; children:
   return (
     <div style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif', color: INK, background: '#fff', minHeight: '100vh' }}>
       <MarketingScrollStyle />
+      <SmoothScroll />
       <SiteNav active={active} />
       <main style={{ paddingTop: 78 }}>{children}</main>
       <SiteFooter />
