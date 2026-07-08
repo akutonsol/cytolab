@@ -21,7 +21,7 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 // `polish` (landing-only) applies the art-direction refinement pass: stronger
 // glass Fresnel/rim, a quieter purple cell, breathing motion, a haze plane, and
 // wider blood-cell variance. Default false keeps login/CTA byte-identical.
-export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labelY = 0.06, polish = false, spin = false, ripple = true, contain = false }: { bare?: boolean; fill?: number; tilt?: number; labelY?: number; polish?: boolean; spin?: boolean; ripple?: boolean; contain?: boolean } = {}) {
+export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labelY = 0.06, polish = false, spin = false, ripple = true, contain = false, richBlood = false }: { bare?: boolean; fill?: number; tilt?: number; labelY?: number; polish?: boolean; spin?: boolean; ripple?: boolean; contain?: boolean; richBlood?: boolean } = {}) {
   const mountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -123,28 +123,34 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
     const capRidgeMat = new THREE.MeshPhysicalMaterial({ color: 0x8b0008, roughness: 0.55, metalness: 0.0, envMapIntensity: 1.2 });
     // Physical blood — subsurface-ish attenuation, sheen, faint transmission
     const bloodMat = new THREE.MeshPhysicalMaterial({
-      color: polish ? 0xb01222 : 0x66000b, emissive: polish ? 0x3a0206 : 0x220000, emissiveIntensity: polish ? 0.6 : 0.45, roughness: 0.1, metalness: 0.1,
-      transmission: polish ? 0.64 : 0.24, thickness: polish ? 0.7 : 1.4, ior: 1.38, clearcoat: 0.5, clearcoatRoughness: 0.22,
-      attenuationColor: new THREE.Color(polish ? 0x5a0010 : 0x30000a), attenuationDistance: polish ? 0.7 : 0.28,
-      sheen: 0.65, sheenColor: new THREE.Color(polish ? 0xd03040 : 0x9a1626), sheenRoughness: 0.38,
-      transparent: true, opacity: polish ? 0.86 : 0.99, envMapIntensity: polish ? 1.6 : 1.0,
+      color: polish ? 0xb01222 : (richBlood ? 0x8a0c17 : 0x66000b), emissive: polish ? 0x3a0206 : (richBlood ? 0x1e0204 : 0x220000), emissiveIntensity: polish ? 0.6 : (richBlood ? 0.32 : 0.45), roughness: 0.1, metalness: 0.1,
+      transmission: polish ? 0.64 : (richBlood ? 0.12 : 0.24), thickness: polish ? 0.7 : (richBlood ? 1.6 : 1.4), ior: 1.38, clearcoat: 0.5, clearcoatRoughness: 0.22,
+      attenuationColor: new THREE.Color(polish ? 0x5a0010 : (richBlood ? 0x38000a : 0x30000a)), attenuationDistance: polish ? 0.7 : (richBlood ? 0.3 : 0.28),
+      sheen: 0.65, sheenColor: new THREE.Color(polish ? 0xd03040 : (richBlood ? 0x7a1018 : 0x9a1626)), sheenRoughness: 0.38,
+      transparent: true, opacity: polish ? 0.86 : (richBlood ? 0.99 : 0.99), envMapIntensity: polish ? 1.6 : (richBlood ? 1.15 : 1.0),
     });
     // Vertical blood gradient (polish only): darker crimson at the bottom →
     // brighter oxygenated red near the meniscus, so it reads as liquid, not a
     // solid volume. Injected via onBeforeCompile; if the chunk differs across
     // three versions the replace is a no-op (graceful) and the base color shows.
-    if (polish) {
+    if (polish || richBlood) {
       const halfH = fill / 2;
+      // richBlood: a deep venous-red ramp (dark, near-opaque) with a restrained
+      // rose specular streak — reads as real blood. polish keeps its brighter,
+      // oxygenated coral ramp so the landing/CTA vial is unchanged.
+      const gBot = richBlood ? 'vec3(0.24,0.01,0.03)' : 'vec3(0.42,0.01,0.05)';
+      const gTop = richBlood ? 'vec3(0.50,0.03,0.06)' : 'vec3(0.86,0.07,0.13)';
+      const gStreak = richBlood ? 'vec3(0.34,0.09,0.11)' : 'vec3(0.55,0.24,0.26)';
       bloodMat.onBeforeCompile = (shader) => {
         shader.vertexShader = 'varying float vBY;\nvarying float vBX;\n' + shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vBY = position.y;\n  vBX = position.x;');
         shader.fragmentShader = ('varying float vBY;\nvarying float vBX;\n' + shader.fragmentShader).replace(
           'vec4 diffuseColor = vec4( diffuse, opacity );',
           `float _bt = clamp((vBY + ${halfH.toFixed(3)}) / ${fill.toFixed(3)}, 0.0, 1.0);
-  vec3 _bg = mix(vec3(0.42,0.01,0.05), vec3(0.86,0.07,0.13), pow(_bt, 0.55));
+  vec3 _bg = mix(${gBot}, ${gTop}, pow(_bt, 0.55));
   // bright vertical specular streak (glass window reflection) — reads as glossy
   // liquid rather than a flat solid. Offset to one side, stronger toward the top.
   float _streak = smoothstep(0.05, 0.0, abs(vBX - 0.07)) * (0.35 + 0.65 * _bt);
-  _bg += _streak * vec3(0.55, 0.24, 0.26);
+  _bg += _streak * ${gStreak};
   // faint darker settling toward the very bottom for depth
   _bg *= mix(0.82, 1.0, smoothstep(0.0, 0.28, _bt));
   vec4 diffuseColor = vec4( _bg, opacity );`,
