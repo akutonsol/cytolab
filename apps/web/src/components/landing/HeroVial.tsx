@@ -232,22 +232,21 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
     // richBlood: the rounded pool at the base gets its OWN luminous material —
     // brighter, emissive cherry-red, no gradient/streak — so it glows like real
     // blood backlit through the thin curved glass tip (the reference's bright base).
-    // NB: the pooled base MUST stay transmissive — three renders transmissive meshes
-    // in a separate refraction pass that composites correctly over the glass U-bottom.
-    // A non-transmissive dome fails the depth test behind the glass front face and
-    // vanishes. So: transmissive, but brighter + more emissive than the column so the
-    // rounded tip glows cherry-red (backlit through the thin glass) like the reference.
-    const domeMat = richBlood ? new THREE.MeshPhysicalMaterial({
-      color: 0xa00e1c, emissive: 0x8c0816, emissiveIntensity: 0.75, roughness: 0.16, metalness: 0.05,
-      transmission: 0.3, thickness: 1.0, ior: 1.38, clearcoat: 0.7, clearcoatRoughness: 0.14,
-      attenuationColor: new THREE.Color(0x4a0010), attenuationDistance: 0.6,
-      sheen: 0.4, sheenColor: new THREE.Color(0x8a1220),
-      transparent: true, opacity: 0.99, side: THREE.DoubleSide, envMapIntensity: 1.1,
+    // GPU-INDEPENDENT pooled base: a SOLID (non-transmissive) glowing dome. Earlier
+    // this was transmissive, which composites over the glass on software rendering
+    // but can render invisibly on some real GPUs (three's separate refraction pass) —
+    // leaving the base looking flat/empty. Solid + depthTest off (drawn last) means it
+    // ALWAYS paints the rounded U regardless of GPU/driver. Emissive so the tip glows
+    // cherry-red like blood backlit through the thin curved glass (the reference).
+    const domeMat = richBlood ? new THREE.MeshStandardMaterial({
+      color: 0x7a0a15, emissive: 0x8a0814, emissiveIntensity: 0.5, roughness: 0.36, metalness: 0.0,
+      transparent: true, opacity: 1, side: THREE.DoubleSide,
     }) : bloodMat;
     const bloodDome = new THREE.Mesh(new THREE.SphereGeometry(0.181, SEG, SEG, 0, Math.PI * 2, Math.PI * 0.5, Math.PI * 0.5), domeMat);
     // Match the glass bottomDome's centre (−0.625) so the blood pool nests exactly
     // inside the rounded U-bottom instead of floating with a flat base above it.
-    bloodDome.position.y = richBlood ? -0.625 : -0.618; bloodDome.rotation.x = Math.PI; bloodDome.renderOrder = richBlood ? 4 : 1;
+    bloodDome.position.y = richBlood ? -0.625 : -0.618; bloodDome.rotation.x = Math.PI; bloodDome.renderOrder = richBlood ? 6 : 1;
+    if (richBlood) { domeMat.depthTest = false; domeMat.depthWrite = false; } // can't be culled behind the glass on any GPU
     if (polish) bloodDome.scale.set(1.0, domeY, 1.0); // follow the rounded glass bottom
     vialGroup.add(bloodDome);
 
