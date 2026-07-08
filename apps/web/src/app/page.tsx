@@ -623,7 +623,7 @@ export default function LandingPage() {
 
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginBottom: 8 }}>AI Confidence</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                <span style={{ fontSize: 30, fontWeight: 800, color: 'white' }}>98.4%</span>
+                <span style={{ fontSize: 30, fontWeight: 800, color: 'white' }}><CountUp value={98.4} decimals={1} suffix="%" duration={1800} /></span>
                 <span style={{ background: 'rgba(22,163,74,0.25)', border: '1px solid rgba(34,197,94,0.4)', color: '#22c55e', borderRadius: 20, padding: '4px 12px', fontSize: 11, fontWeight: 700, textAlign: 'center', lineHeight: 1.3 }}>High<br />Confidence</span>
               </div>
 
@@ -685,7 +685,7 @@ export default function LandingPage() {
                         <span style={{ width: 9, height: 9, borderRadius: '50%', background: row.color, flexShrink: 0, display: 'inline-block', boxShadow: `0 0 6px ${row.color}66` }} />
                         {row.label}
                       </span>
-                      <span style={{ fontSize: 15, fontWeight: 800, color: '#0a0b1a' }}>{row.count.toLocaleString()}</span>
+                      <span style={{ fontSize: 15, fontWeight: 800, color: '#0a0b1a' }}><CountUp value={row.count} duration={1500} /></span>
                     </div>
                     <svg width="100%" height="16" viewBox="0 0 120 16" preserveAspectRatio="none">
                       <polyline points={row.spark} fill="none" stroke={row.color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
