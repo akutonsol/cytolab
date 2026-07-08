@@ -34,6 +34,8 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
     // Login-mode helpers: `spin` centres + turns the vertical vial; `contain`
     // keeps every floating element inside the narrow background pill.
     const vx = spin ? 0 : (polish ? -0.08 : -0.2);
+    // Login: drop the vial so its full cap→base silhouette centres in the pill.
+    const vy = spin ? -0.33 : -0.15;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
@@ -295,7 +297,7 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
     // tube reshapes. Default stays uniform 1.43 for login/CTA.
     vialGroup.scale.set(SX, SY, SX);
     vialGroup.rotation.z = tilt; // default ~19.5° tilt; landing overrides near-vertical
-    vialGroup.position.set(vx, polish ? -0.34 : -0.15, 0.0); // centered + lowered so the base dips into the pool
+    vialGroup.position.set(vx, spin ? vy : (polish ? -0.34 : -0.15), 0.0); // centered + lowered so the base dips into the pool
 
     // ── PURPLE WHITE-BLOOD CELLS (bigger, glossy, glowing) ────
     const makeWBC = (outerR: number, nucleusR: number, op: number) => {
@@ -324,7 +326,7 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
       [-1.55, 0.65, -0.45, 0.075, 0.042, 0.32, 0.35, 0.04, 4.8],
     ];
     const wbcs: WbcRec[] = wbcData.map(([x, y, z, oR, nR, op, fs, fa, fp]) => {
-      const grp = makeWBC(oR, nR, op); grp.position.set(contain ? x * 0.3 : x, y, z); scene.add(grp);
+      const grp = makeWBC(oR, nR, op); grp.position.set(contain ? x * 0.2 : x, contain ? y * 0.72 : y, z); scene.add(grp);
       return { grp, baseY: y, fs, fa, fp };
     });
 
@@ -349,7 +351,7 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
       mesh.scale.set(s, s, s * 0.24);
       mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
       scene.add(mesh);
-      const rad = contain ? rnd(0.34, 0.52) : rnd(0.55, polish ? 1.45 : 1.4);
+      const rad = contain ? rnd(0.2, 0.36) : rnd(0.55, polish ? 1.45 : 1.4);
       rbcs.push({
         mesh, mat, baseScale: s, baseOp,
         // Under polish: flatter shared orbital plane + slower, mostly-one-direction
@@ -366,7 +368,7 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
     const cellGroup = new THREE.Group();
     // Pushed slightly further back + smaller under `polish` so it never competes
     // with the vial for focus.
-    cellGroup.position.set(contain ? -0.28 : (polish ? -1.58 : -1.25), contain ? 0.62 : 0.12, contain ? -0.35 : (polish ? -0.85 : 0.3)); cellGroup.scale.setScalar(contain ? 0.15 : (polish ? 0.14 : 0.3)); scene.add(cellGroup);
+    cellGroup.position.set(contain ? -0.2 : (polish ? -1.58 : -1.25), contain ? 0.66 : 0.12, contain ? -0.35 : (polish ? -0.85 : 0.3)); cellGroup.scale.setScalar(contain ? 0.13 : (polish ? 0.14 : 0.3)); scene.add(cellGroup);
     // Translucent glass membrane
     const membrane = new THREE.Mesh(new THREE.SphereGeometry(1.25, 48, 48), new THREE.MeshPhysicalMaterial({
       color: 0xf1d8ff, transparent: true, opacity: polish ? 0.1 : 0.26, roughness: 0.0, transmission: 0.9, thickness: 0.5,
@@ -530,7 +532,7 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
     const pCount = 360; const pPos = new Float32Array(pCount * 3); const pCol = new Float32Array(pCount * 3);
     const dustCols = [new THREE.Color(0xffffff), new THREE.Color(0xffc0d8), new THREE.Color(0xd6b0ff)];
     for (let i = 0; i < pCount; i++) {
-      pPos[i * 3] = contain ? rnd(-0.5, 0.5) : rnd(-3.4, 3.4); pPos[i * 3 + 1] = rnd(-3, 3.5); pPos[i * 3 + 2] = contain ? rnd(-1.2, 0.4) : rnd(-2.8, 0.7);
+      pPos[i * 3] = contain ? rnd(-0.42, 0.42) : rnd(-3.4, 3.4); pPos[i * 3 + 1] = contain ? rnd(-1.68, 1.68) : rnd(-3, 3.5); pPos[i * 3 + 2] = contain ? rnd(-1.2, 0.4) : rnd(-2.8, 0.7);
       const c = dustCols[i % 3]; pCol[i * 3] = c.r; pCol[i * 3 + 1] = c.g; pCol[i * 3 + 2] = c.b;
     }
     const bgGeo = new THREE.BufferGeometry();
@@ -600,7 +602,7 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
       vialGroup.rotation.y = spin ? t * 0.45 : Math.sin(t * L11) * 0.014 * fk;
       vialGroup.rotation.x = spin ? 0 : Math.sin(t * L11 * 0.5) * 0.008 * fk;
       vialGroup.rotation.z = spin ? tilt : tilt + Math.sin(t * L11 * 0.7) * 0.010 * fk;
-      vialGroup.position.y = -0.15 + Math.sin(t * L11) * 0.05 * fk; // gentle vertical rise/fall
+      vialGroup.position.y = vy + Math.sin(t * L11) * 0.05 * fk; // gentle vertical rise/fall
       vialGroup.position.x = vx + Math.cos(t * L11 * 0.6) * 0.010 * fk;
       // Gentle "breathing" — a very small scale pulse (±0.4%) over ~15s so the
       // vial feels alive without any noticeable spin (polish only).
@@ -650,7 +652,7 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
 
       cellGroup.rotation.y += 0.0008; cellGroup.rotation.x += 0.0005;
       const cp = 1 + Math.sin(t * 1.0) * 0.04; membrane.scale.setScalar(cp); cellGlow.scale.setScalar(cp * 1.02); nucleus.scale.setScalar(0.92 + Math.sin(t * 0.8) * 0.05);
-      cellGroup.position.y = (contain ? 0.62 : 0.12) + Math.sin(t * 0.42) * 0.07;
+      cellGroup.position.y = (contain ? 0.66 : 0.12) + Math.sin(t * 0.42) * 0.07;
       cellLight.intensity = (0.4 + Math.sin(t * 1.4) * 0.2) * (polish ? 0.38 : 1);
       cellDots.forEach((d) => { d.mesh.position.x = d.orig.x + Math.sin(t + d.offset) * 0.06; d.mesh.position.y = d.orig.y + Math.cos(t + d.offset) * 0.06; });
 
@@ -667,7 +669,7 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
       }
 
       const bp = bgGeo.getAttribute('position') as THREE.BufferAttribute;
-      for (let i = 0; i < pCount; i++) { let y = bp.getY(i) + 0.0012; if (y > 3.5) y = -3; bp.setY(i, y); }
+      for (let i = 0; i < pCount; i++) { let y = bp.getY(i) + 0.0012; if (y > (contain ? 1.68 : 3.5)) y = contain ? -1.68 : -3; bp.setY(i, y); }
       bp.needsUpdate = true;
       dna.rotation.y += 0.0016;
 
