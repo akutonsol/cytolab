@@ -132,7 +132,7 @@ export default function LoginPage() {
       {/* Specimen vial — premium WebGL render (Three.js PBR glass + blood sim). */}
       <div className="pointer-events-none absolute inset-0 z-[5] hidden xl:block" aria-hidden>
         <div className="absolute left-[49%] top-1/2 h-[760px] w-[560px] -translate-x-1/2 -translate-y-1/2">
-          <HeroVial bare />
+          <HeroVial bare tilt={0} spin ripple={false} contain />
         </div>
       </div>
 
