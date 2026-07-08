@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, FolderOpen, ListChecks, FileText, LineChart,
   MousePointer2, Hand, ZoomIn, Maximize2, Play, Pause, Check,
   TestTube2, BrainCircuit, User, FileCheck2, UploadCloud,
   Microscope, Clock, Building2, Activity, Sparkles, ChevronDown, Sun, Crosshair,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, ArrowRight,
 } from 'lucide-react';
 
 import { EASE } from '@cytolab/animations';
@@ -147,6 +148,9 @@ export default function PlatformShowcase() {
           Click any stage below to walk a specimen through CYTOLAB — from accessioning to
           AI screening to a signed, structured report. Or press play for the full tour.
         </p>
+        <Link href="/experience" className="ps-launch">
+          Launch the full interactive experience <ArrowRight size={16} />
+        </Link>
       </motion.div>
 
       {/* ── DASHBOARD CARD ── */}
@@ -392,6 +396,9 @@ const CSS = `
   .ps-title { margin: 14px 0 0; font-size: 60px; line-height: 1.02; font-weight: 800; letter-spacing: -.035em; }
   .ps-title em { font-style: italic; color: ${RED}; }
   .ps-lede { margin: 20px auto 0; max-width: 540px; font-size: 16px; line-height: 1.6; color: #64748B; }
+  .ps-launch { display: inline-flex; align-items: center; gap: 8px; margin-top: 22px; font-size: 14.5px; font-weight: 700; color: #fff; text-decoration: none;
+    background: ${RED}; border-radius: 11px; padding: 12px 22px; box-shadow: 0 12px 28px -10px rgba(230,57,70,.6); transition: transform .15s ease, box-shadow .15s ease; }
+  .ps-launch:hover { transform: translateY(-2px); box-shadow: 0 18px 36px -12px rgba(230,57,70,.7); }
 
   /* Dashboard card */
   .ps-dash { position: relative; z-index: 2; max-width: 1200px; margin: 0 auto; border-radius: 26px; overflow: hidden;

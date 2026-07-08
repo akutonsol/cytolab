@@ -267,12 +267,12 @@ export default function LandingPage() {
               background: RED, color: '#fff', padding: '14px 28px', borderRadius: 10, fontWeight: 700, fontSize: 15,
               textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8,
             }}>Request Demo <ArrowRight size={16} /></Link>
-            <a href="#resources" style={{ color: '#374151', fontSize: 14, fontWeight: 500, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Link href="/experience" style={{ color: '#374151', fontSize: 14, fontWeight: 500, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ width: 34, height: 34, borderRadius: '50%', border: `1px solid ${RED}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: RED }}>
                 <Play size={14} fill={RED} />
               </span>
-              Watch Overview
-            </a>
+              Experience it live
+            </Link>
           </div>
         </motion.div>
 
