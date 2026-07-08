@@ -11,24 +11,18 @@ import {
   Sparkles, Zap, BarChart3, ScanSearch,
   Target, Clock, ShieldCheck, Share2,
   Play, ArrowRight, ChevronRight, Check,
+  Hand, Search, SlidersHorizontal, MoreHorizontal,
 } from 'lucide-react';
 
 import { WorkflowPipeline } from '@/components/landing/WorkflowPipeline';
-import { SiteNav, SiteFooter, MarketingScrollStyle } from '@/components/landing/marketing-chrome';
-import { SmoothScroll } from '@/components/landing/SmoothScroll';
+import { SiteFooter, MarketingScrollStyle } from '@/components/landing/marketing-chrome';
 import { CountUp } from '@/components/landing/CountUp';
 
-// Homepage hero — new AI-pathology design (HeroV2), replaces the old vial hero.
-// (Old hero composition lived in HeroScene; HeroV2 is now mounted below the nav.)
+// Landing-only hero composition (untouched HeroVial centerpiece + illuminated
+// platform + orbiting telemetry cards + entrance choreography).
+import { HeroScene } from '@/components/landing/HeroScene';
+// New AI-pathology hero (replaces the vial hero in the homepage hero section only).
 import { HeroV2 } from '@/components/hero-v2/HeroV2';
-// New V2 landing sections (purple HeroV2 design language).
-import { WorkflowSection } from '@/components/landing-v2/WorkflowSection';
-import { FeatureGridSection } from '@/components/landing-v2/FeatureGridSection';
-import { IntegrationsSection } from '@/components/landing-v2/IntegrationsSection';
-import { SecuritySection } from '@/components/landing-v2/SecuritySection';
-import { TestimonialsSection } from '@/components/landing-v2/TestimonialsSection';
-import { PricingSection } from '@/components/landing-v2/PricingSection';
-import { FinalCtaSection } from '@/components/landing-v2/FinalCtaSection';
 
 // Interactive product showcase — editorial + feature nav + morphing live dashboard.
 const PlatformShowcase = dynamic(() => import('@/components/landing/PlatformShowcase'), { ssr: false });
@@ -240,24 +234,775 @@ export default function LandingPage() {
   return (
     <div style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif', color: INK, background: '#fff' }}>
       <MarketingScrollStyle />
-      <SmoothScroll />
-      <SiteNav active="platform" />
 
-      {/* HERO (v2) — new AI-pathology hero. Keeps the #platform anchor. */}
+      {/* HERO — new AI-pathology hero (replaces the vial hero; #platform anchor kept) */}
       <div id="platform" className="scroll-anchor">
         <HeroV2 />
       </div>
 
-      {/* NEW V2 SECTIONS (being built out; old sections below are WIP replacements) */}
-      <WorkflowSection />
+      {/* WORKFLOW TITLE — white background, above the dark card */}
+      <section style={{ background: '#fff', padding: '84px 88px 40px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: 20 }}>
+            One system. End to end.
+          </div>
+          <h2 style={{ fontSize: 60, fontWeight: 800, lineHeight: 1.04, letterSpacing: '-0.03em', color: INK, margin: 0, maxWidth: 720 }}>
+            Built for the way pathology labs <em style={{ fontStyle: 'italic', color: RED }}>work.</em>
+          </h2>
+          <p style={{ fontSize: 17, lineHeight: 1.7, color: '#64748b', maxWidth: 560, marginTop: 24 }}>
+            From specimen collection to AI-powered diagnosis and structured reporting, PathOS connects every step into one intelligent workflow.
+          </p>
+        </div>
+      </section>
 
-      <FeatureGridSection />
-      <IntegrationsSection />
-      <SecuritySection />
-      <TestimonialsSection />
-      <PricingSection />
-      <FinalCtaSection />
+      {/* SECTION A — LIVE WORKFLOW PIPELINE (dark rounded card) */}
+      <section style={{
+        margin: '0 40px 0 40px',
+        background: 'linear-gradient(180deg, #0d0d1a 0%, #0f0818 50%, #0d0d1a 100%)',
+        borderRadius: '24px',
+        padding: '32px 48px 40px 48px',
+        border: '1px solid rgba(255,255,255,0.08)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes live-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+          .live-dot { display: inline-block; animation: live-blink 1.5s ease-in-out infinite; }
+          @keyframes bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+          @keyframes count-tick {
+            0% { opacity: 1; transform: translateY(0); }
+            50% { opacity: 0; transform: translateY(-4px); }
+            51% { opacity: 0; transform: translateY(4px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes ping-ripple { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(2.8); opacity: 0; } }
+          @keyframes row-sweep { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+          @keyframes heartbeat { 0%, 100% { transform: scale(1); } 14% { transform: scale(1.015); } 28% { transform: scale(1); } 42% { transform: scale(1.01); } 56% { transform: scale(1); } }
+          @keyframes scanner-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+          @keyframes donut-draw { from { stroke-dashoffset: 188.5; } to { stroke-dashoffset: 0; } }
+          @keyframes warn-pulse { 0%, 100% { opacity: 1; filter: drop-shadow(0 0 3px rgba(230,57,70,0.7)); } 50% { opacity: 0.55; filter: drop-shadow(0 0 8px rgba(230,57,70,0.9)); } }
+          @keyframes scan-line { 0% { transform: translateY(0); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(320px); opacity: 0; } }
+          @keyframes badge-pulse { 0%, 100% { box-shadow: 0 4px 16px rgba(230,57,70,0.4); } 50% { box-shadow: 0 4px 28px rgba(230,57,70,0.75); } }
+          @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+          @keyframes float-cell { 0%, 100% { transform: translate(-50%, -50%) translateY(0px); } 50% { transform: translate(-50%, -50%) translateY(-6px); } }
+          @keyframes scan-sweep { 0% { transform: translateY(0); opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { transform: translateY(330px); opacity: 0; } }
+          @keyframes corner-flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+          @keyframes live-ping { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2.2); opacity: 0; } }
+          @keyframes lens-breathe { 0%, 100% { opacity: 0.46; transform: translate3d(0,0,0); } 50% { opacity: 0.72; transform: translate3d(8px,-6px,0); } }
+          @keyframes panel-sheen { 0%, 100% { opacity: 0.24; transform: translateX(-8%); } 50% { opacity: 0.42; transform: translateX(8%); } }
+        ` }} />
+        {/* Top purple atmospheric glow */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: '200px',
+          background: 'radial-gradient(ellipse 70% 100% at 50% 0%, rgba(100,20,120,0.45) 0%, rgba(60,10,80,0.2) 50%, transparent 100%)',
+          pointerEvents: 'none', zIndex: 0,
+        }} />
+        {/* Bottom fade */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px',
+          background: 'linear-gradient(0deg, rgba(10,10,20,0.6), transparent)',
+          pointerEvents: 'none', zIndex: 0,
+        }} />
 
+        {/* Header row */}
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>
+              Live Workflow
+            </span>
+            <span style={{ background: 'rgba(230,57,70,0.15)', color: '#E63946', borderRadius: '20px', padding: '3px 10px', fontSize: '11px', fontWeight: 600 }}>
+              <span className="live-dot">●</span> LIVE
+            </span>
+          </div>
+          <a href="#resources" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+            </svg>
+            View Full Pipeline
+            <ChevronRight size={14} />
+          </a>
+        </div>
+
+        {/* Pipeline — animated glowing-node workflow */}
+        <div style={{ position: 'relative', zIndex: 1, marginBottom: '36px' }}>
+          <WorkflowPipeline />
+        </div>
+
+        {/* Stats cards row */}
+        <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '20px' }}>
+          {/* Card 1 — Active Cases */}
+          <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', animation: 'heartbeat 4s ease-in-out infinite' }}>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '8px' }}>Active Cases</div>
+            <div style={{ lineHeight: 1 }}>
+              <span key={activeCases} style={{ display: 'inline-block', animation: 'count-tick 0.3s ease', fontSize: 36, fontWeight: 800, color: 'white' }}>
+                {activeCases.toLocaleString()}
+              </span>
+            </div>
+            <div style={{ fontSize: '12px', color: '#22c55e', marginTop: '4px' }}>+231 today</div>
+            <svg width="140" height="52" viewBox="0 0 140 52" style={{ marginTop: 12 }}>
+              {[12, 20, 16, 32, 22, 38, 28, 14, 35, 30, 20, 28].map((h, i) => {
+                const x = i * 12 + 4;
+                const y = 52 - h;
+                const isActive = i >= 9;
+                const color = isActive ? '#E63946' : '#8B5CF6';
+                const dimColor = isActive ? '#E63946' : 'rgba(139,92,246,0.4)';
+                return (
+                  <g key={i} style={{ transformBox: 'fill-box', transformOrigin: 'bottom', animation: `bar-grow 0.6s ease ${i * 0.05}s both` }}>
+                    <line x1={x + 3} y1={y + 5} x2={x + 3} y2={52} stroke={dimColor} strokeWidth="2" strokeLinecap="round" />
+                    <circle cx={x + 3} cy={y + 3} r="3.5" fill={color} />
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+
+          {/* Card 2 — In Analysis */}
+          <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '8px' }}>In Analysis</div>
+              <div style={{ lineHeight: 1 }}>
+                <span key={inAnalysis} style={{ display: 'inline-block', animation: 'count-tick 0.3s ease', fontSize: 36, fontWeight: 800, color: 'white' }}>
+                  {inAnalysis.toLocaleString()}
+                </span>
+              </div>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>29% of total</div>
+            </div>
+            <svg width="80" height="80" viewBox="0 0 80 80" style={{ flexShrink: 0 }}>
+              <defs>
+                <linearGradient id="donutGrad2" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#8b5cf6" />
+                  <stop offset="50%" stopColor="#E63946" />
+                  <stop offset="100%" stopColor="#f472b6" />
+                </linearGradient>
+              </defs>
+              <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="9" />
+              <circle cx="40" cy="40" r="30" fill="none" stroke="url(#donutGrad2)" strokeWidth="9" strokeDasharray={`${2 * Math.PI * 30 * 0.29} ${2 * Math.PI * 30}`} strokeLinecap="round" transform="rotate(-90 40 40)" style={{ animation: 'donut-draw 1.5s ease-out forwards', strokeDashoffset: 2 * Math.PI * 30 }} />
+              {/* Rotating scanner line */}
+              <g style={{ transformBox: 'view-box', transformOrigin: '40px 40px', animation: 'scanner-rotate 3s linear infinite' }}>
+                <line x1="40" y1="40" x2="40" y2="12" stroke="rgba(139,92,246,0.4)" strokeWidth="1.5" strokeLinecap="round" />
+                <circle cx="40" cy="12" r="2.5" fill="#8b5cf6" opacity="0.7" />
+              </g>
+              <text x="40" y="37" textAnchor="middle" fill="white" fontSize="12" fontWeight="800">29%</text>
+              <text x="40" y="50" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="8">of total</text>
+            </svg>
+          </div>
+
+          {/* Card 3 — High Priority */}
+          <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: '16px', right: '16px', animation: 'warn-pulse 2s ease-in-out infinite' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M12 3.5l8.5 15h-17z" stroke="#E63946" strokeWidth="2" strokeLinejoin="round" />
+                <line x1="12" y1="10" x2="12" y2="14" stroke="#E63946" strokeWidth="2" strokeLinecap="round" />
+                <circle cx="12" cy="16.6" r="0.8" fill="#E63946" />
+              </svg>
+            </div>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '8px' }}>High Priority</div>
+            <div style={{ fontSize: '36px', fontWeight: 800, color: 'white', lineHeight: 1 }}><CountUp value={38} /></div>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>Requires review</div>
+            <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              {[
+                { label: 'Atypical', count: 18, color: '#E63946', delay: '0s' },
+                { label: 'Suspicious', count: 12, color: '#DB2777', delay: '0.15s' },
+                { label: 'Critical', count: 8, color: '#ef4444', delay: '0.3s' },
+              ].map((item) => (
+                <div key={item.label} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '4px 8px', borderRadius: 6,
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.05) 50%, transparent 100%)',
+                  backgroundSize: '200% 100%',
+                  animation: `row-sweep 3s ease-in-out ${item.delay} infinite`,
+                }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
+                    <span style={{ position: 'relative', width: 9, height: 9, flexShrink: 0, display: 'inline-block' }}>
+                      <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: item.color, animation: 'ping-ripple 2s ease-out infinite', animationDelay: item.delay }} />
+                      <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: item.color, boxShadow: `0 0 6px ${item.color}` }} />
+                    </span>
+                    {item.label}
+                  </span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'white' }}><CountUp value={item.count} duration={1200} /></span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Card 4 — System Status */}
+          <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px' }}>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '16px' }}>System Status</div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {[
+                { label: 'AI Engine', pingDelay: 0 },
+                { label: 'Image Processing', pingDelay: 0.5 },
+                { label: 'Data Sync', pingDelay: 1.0 },
+                { label: 'Storage', pingDelay: 1.5 },
+              ].map((item, i) => (
+                <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 14, height: 14, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'rgba(255,255,255,0.3)' }} />
+                    </div>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)' }}>{item.label}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ position: 'relative', width: 10, height: 10 }}>
+                      <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#22c55e', opacity: 0, animation: `ping-ripple 2s ease-out ${item.pingDelay}s infinite` }} />
+                      <div style={{ position: 'absolute', inset: '15%', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 6px rgba(34,197,94,0.8), 0 0 12px rgba(34,197,94,0.4)' }} />
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#22c55e', letterSpacing: '0.02em' }}>Operational</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION B — AI SCREENING */}
+      <section style={{ padding: '80px 40px', marginTop: 0, background: '#f8f7ff' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '30% minmax(0, 1fr)', gap: '64px', alignItems: 'start' }}>
+          {/* Left column */}
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', color: '#E63946', textTransform: 'uppercase', marginBottom: '16px' }}>AI Screening</div>
+            <h2 style={{ fontSize: '44px', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.02em', color: '#0a0b1a', margin: 0 }}>
+              Smarter screening.<br />Stronger outcomes.
+            </h2>
+            <p style={{ fontSize: '16px', color: '#64748b', lineHeight: 1.65, marginTop: '20px', maxWidth: '380px' }}>
+              Our AI models analyze millions of cells in seconds, prioritizing what matters most and reducing routine workload by up to 70%.
+            </p>
+            <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column' }}>
+              {[
+                { title: 'Deep learning models trained on 50M+ cells', sub: "Built on the world's largest curated datasets", icon: <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" fill="#E63946" /> },
+                { title: '99%+ accuracy on key abnormality detection', sub: 'Proven performance across diverse populations', icon: <><circle cx="12" cy="12" r="3" fill="#E63946" /><circle cx="12" cy="12" r="6" fill="none" stroke="#E63946" strokeWidth="1.5" /></> },
+                { title: 'Continuous learning from expert feedback', sub: 'Models improve with every case reviewed', icon: <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" fill="#E63946" /> },
+                { title: 'CAP & CLIA validated workflows', sub: 'Enterprise-grade accuracy and compliance', icon: <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" fill="#E63946" /> },
+              ].map((feat, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginTop: 18 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(230,57,70,0.08)', border: '1px solid rgba(230,57,70,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">{feat.icon}</svg>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, color: '#0a0b1a', fontWeight: 600, lineHeight: 1.3 }}>{feat.title}</div>
+                    <div style={{ fontSize: 13.5, color: '#64748b', marginTop: 4, lineHeight: 1.45 }}>{feat.sub}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Link href="/solutions" style={{ marginTop: '32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', border: '1.5px solid #E63946', color: '#E63946', background: 'transparent', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+              Explore AI Screening →
+            </Link>
+          </div>
+
+          {/* Right column — 3-panel: microscopy slide / analysis / findings */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: '42% 32% 26%', gap: 0,
+            borderRadius: 30, overflow: 'hidden', minHeight: '940px', padding: 0,
+            position: 'relative',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.94), rgba(249,247,255,0.88))',
+            border: '1px solid rgba(220,226,238,0.92)',
+            boxShadow: '0 54px 140px -62px rgba(44,30,96,0.48), 0 28px 70px -46px rgba(15,23,42,0.28), 0 8px 24px -18px rgba(15,23,42,0.20), inset 0 1px 0 rgba(255,255,255,0.98), inset 0 -1px 0 rgba(124,92,255,0.06)',
+          }}>
+            <div aria-hidden style={{
+              position: 'absolute', inset: 0, borderRadius: 30, pointerEvents: 'none', zIndex: 30,
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.22), transparent 18%, transparent 82%, rgba(124,92,255,0.035))',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.96), inset 1px 0 0 rgba(255,255,255,0.72), inset -1px 0 0 rgba(124,92,255,0.10), inset 0 -1px 0 rgba(77,55,130,0.06)',
+            }} />
+
+            {/* ── COL 1: MICROSCOPY SLIDE ── */}
+            <div style={{
+              position: 'relative',
+              background: 'radial-gradient(ellipse 56% 42% at 30% 26%, rgba(235,226,255,0.54) 0%, transparent 66%), radial-gradient(ellipse 44% 58% at 78% 72%, rgba(178,142,236,0.20) 0%, transparent 64%), linear-gradient(145deg, #fffaff 0%, #f6effd 24%, #efe7fa 50%, #f4edfc 76%, #fffafd 100%)',
+              overflow: 'hidden', minHeight: '940px', borderRadius: '30px 0 0 30px',
+              border: 0,
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.96), inset -1px 0 0 rgba(112,80,184,0.14), inset 0 -32px 72px -58px rgba(68,40,120,0.28)',
+              isolation: 'isolate',
+            }}>
+              <div aria-hidden style={{
+                position: 'absolute', inset: 0, zIndex: 19, pointerEvents: 'none', borderRadius: '30px 0 0 30px',
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.38) 0%, transparent 26%, transparent 72%, rgba(124,92,255,0.06) 100%)',
+                boxShadow: 'inset 1px 0 0 rgba(255,255,255,0.70), inset 0 1px 0 rgba(255,255,255,0.86)',
+              }} />
+              {/* Slide stain texture */}
+              <div style={{
+                position: 'absolute', inset: 0, pointerEvents: 'none',
+                background: 'radial-gradient(ellipse 42% 30% at 18% 28%, rgba(147,112,219,0.26) 0%, transparent 70%), radial-gradient(ellipse 46% 38% at 72% 62%, rgba(138,43,226,0.18) 0%, transparent 70%), radial-gradient(ellipse 66% 52% at 48% 48%, rgba(221,210,243,0.38) 0%, transparent 80%), linear-gradient(135deg, #f8f2ff 0%, #ede4f8 50%, #f4effb 100%)',
+              }} />
+
+              <div aria-hidden style={{
+                position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 6,
+                background: 'radial-gradient(ellipse 72% 54% at 46% 42%, transparent 0%, transparent 58%, rgba(71,37,128,0.10) 100%), linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.32) 22%, transparent 42%, transparent 100%)',
+                mixBlendMode: 'soft-light',
+              }} />
+              <div aria-hidden style={{
+                position: 'absolute', top: '-18%', left: '-10%', width: '78%', height: '58%', borderRadius: '50%',
+                background: 'radial-gradient(ellipse, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.12) 42%, transparent 72%)',
+                pointerEvents: 'none', zIndex: 7, animation: 'lens-breathe 8s ease-in-out infinite',
+              }} />
+
+              {/* Stained cytology cell field */}
+              {cellLayout.map(([cx, cy, r, blur, delay, variant]) => renderCell(cx, cy, r, blur, delay, variant))}
+
+              {/* Primary AI detection box */}
+              <div style={{ position: 'absolute', top: '18%', left: '18%', width: '38%', height: '38%', border: '1.5px solid rgba(230,57,70,0.92)', borderRadius: '6px', zIndex: 10, boxShadow: '0 0 0 1px rgba(255,255,255,0.28), 0 0 20px rgba(230,57,70,0.22), inset 0 0 18px rgba(230,57,70,0.055)' }}>
+                <div style={{ position: 'absolute', top: -2, left: -2, width: 14, height: 14, borderTop: '3px solid #E63946', borderLeft: '3px solid #E63946', animation: 'corner-flash 2s ease-in-out infinite' }} />
+                <div style={{ position: 'absolute', top: -2, right: -2, width: 14, height: 14, borderTop: '3px solid #E63946', borderRight: '3px solid #E63946', animation: 'corner-flash 2s ease-in-out 0.15s infinite' }} />
+                <div style={{ position: 'absolute', bottom: -2, left: -2, width: 14, height: 14, borderBottom: '3px solid #E63946', borderLeft: '3px solid #E63946', animation: 'corner-flash 2s ease-in-out 0.30s infinite' }} />
+                <div style={{ position: 'absolute', bottom: -2, right: -2, width: 14, height: 14, borderBottom: '3px solid #E63946', borderRight: '3px solid #E63946', animation: 'corner-flash 2s ease-in-out 0.45s infinite' }} />
+                <div style={{ position: 'absolute', top: '4%', left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, rgba(230,57,70,0.9), transparent)', boxShadow: '0 0 8px rgba(230,57,70,0.6)', animation: 'scan-sweep 2.5s ease-in-out infinite', willChange: 'transform, opacity' }} />
+              </div>
+
+              {/* Atypical badge */}
+              <div style={{ position: 'absolute', top: '13%', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(180deg, #ff4e59, #E63946)', color: 'white', borderRadius: '20px', padding: '5px 14px', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', zIndex: 20, display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 8px 22px rgba(230,57,70,0.36), inset 0 1px 0 rgba(255,255,255,0.28)', animation: 'badge-pulse 2s ease-in-out infinite' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'white', display: 'inline-block', animation: 'live-blink 1s ease-in-out infinite' }} />
+                Atypical Cell Detected
+              </div>
+
+              {/* Secondary cyan scan box */}
+              <div style={{ position: 'absolute', top: '58%', left: '6%', width: '36%', height: '26%', border: '1.5px dashed rgba(6,182,212,0.65)', borderRadius: '4px', zIndex: 10, boxShadow: '0 0 10px rgba(6,182,212,0.15)' }} />
+
+              {/* Monitoring badge (cyan) */}
+              <div style={{ position: 'absolute', top: '55%', left: '8%', background: 'rgba(6,182,212,0.92)', color: 'white', borderRadius: '20px', padding: '4px 12px', fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap', zIndex: 20, display: 'flex', alignItems: 'center', gap: 5, boxShadow: '0 2px 12px rgba(6,182,212,0.4)' }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'white', display: 'inline-block' }} />
+                Monitoring
+              </div>
+
+              {/* Bottom toolbar */}
+              <div style={{
+                position: 'absolute', bottom: 18, left: 34, right: 34,
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.94), rgba(250,248,255,0.86))',
+                border: '1px solid rgba(255,255,255,0.82)', borderRadius: 20,
+                padding: '13px 16px', display: 'flex', justifyContent: 'space-around', zIndex: 20,
+                boxShadow: '0 24px 48px -28px rgba(44,30,96,0.42), 0 1px 0 rgba(255,255,255,0.9) inset, inset 0 -1px 0 rgba(110,86,170,0.08)',
+              }}>
+                {[
+                  { Icon: Hand, label: 'Pan' },
+                  { Icon: Search, label: 'Zoom' },
+                  { Icon: SlidersHorizontal, label: 'Enhance' },
+                  { Icon: MoreHorizontal, label: 'More' },
+                ].map((tool, i) => (
+                  <button key={tool.label} style={{
+                    background: i === 1 ? 'rgba(124,92,255,0.075)' : 'none',
+                    border: 'none', cursor: 'pointer', color: i === 1 ? '#4c35b0' : '#475569',
+                    fontWeight: 600, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    minWidth: 54, height: 42, borderRadius: 12, justifyContent: 'center',
+                  }}>
+                    <tool.Icon size={15} strokeWidth={1.9} />
+                    <span style={{ fontSize: 10.5, lineHeight: 1 }}>{tool.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── COL 2: ANALYSIS PROGRESS ── */}
+            <div style={{
+              background: 'radial-gradient(ellipse 80% 32% at 50% -8%, rgba(139,92,246,0.34), transparent 70%), linear-gradient(160deg, #21173d 0%, #151027 52%, #1a1229 100%)',
+              padding: '34px 28px 28px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden',
+              minHeight: 940, borderRadius: 0, border: 0,
+              boxShadow: 'inset 1px 0 0 rgba(255,255,255,0.08), inset -1px 0 0 rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -40px 82px -66px rgba(124,92,255,0.40)',
+            }}>
+              <div style={{ position: 'absolute', top: -54, left: '50%', transform: 'translateX(-50%)', width: 260, height: 132, background: 'radial-gradient(ellipse, rgba(139,92,246,0.38) 0%, rgba(139,92,246,0.13) 44%, transparent 72%)', pointerEvents: 'none' }} />
+              <div aria-hidden style={{
+                position: 'absolute', inset: 0, pointerEvents: 'none',
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.10) 0%, transparent 26%, transparent 68%, rgba(124,92,255,0.12) 100%)',
+              }} />
+              {/* Header + LIVE badge */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 26, position: 'relative' }}>
+                <div style={{ fontSize: 16, fontWeight: 750, color: 'white', letterSpacing: '-0.01em' }}>Analysis Progress</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(34,197,94,0.16)', border: '1px solid rgba(34,197,94,0.36)', borderRadius: 20, padding: '4px 11px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)' }}>
+                  <div style={{ position: 'relative', width: 8, height: 8 }}>
+                    <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#22c55e', animation: 'live-ping 1.5s ease-out infinite' }} />
+                    <div style={{ position: 'absolute', inset: '15%', borderRadius: '50%', background: '#22c55e' }} />
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#22c55e' }}>LIVE</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Scanning cells...</span>
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>{Math.round(scanProgress)}%</span>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.09)', borderRadius: 999, height: 7, overflow: 'hidden', marginBottom: 28, position: 'relative', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.26)' }}>
+                <div style={{ width: `${scanProgress}%`, height: '100%', borderRadius: 6, background: 'linear-gradient(90deg, #7c3aed, #a78bfa)', transition: 'width 0.8s ease', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
+                </div>
+              </div>
+
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.50)', marginBottom: 6 }}>Cells Analyzed</div>
+              <div style={{ fontSize: 42, fontWeight: 900, color: 'white', lineHeight: 1, marginBottom: 5, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.035em' }}>{cellsAnalyzed.toLocaleString()}</div>
+              <div style={{ fontSize: 11, color: '#22c55e', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 4 }}>↑ 12% vs last 15 min</div>
+
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginBottom: 8 }}>AI Confidence</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                <span style={{ fontSize: 32, fontWeight: 850, color: 'white', letterSpacing: '-0.035em' }}><CountUp value={98.4} decimals={1} suffix="%" duration={1800} /></span>
+                <span style={{ background: 'rgba(22,163,74,0.25)', border: '1px solid rgba(34,197,94,0.46)', color: '#22c55e', borderRadius: 22, padding: '5px 13px', fontSize: 11, fontWeight: 750, textAlign: 'center', lineHeight: 1.25, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)' }}>High<br />Confidence</span>
+              </div>
+
+              {/* Sparkline + time labels */}
+              <div style={{ marginTop: 'auto' }}>
+                <svg width="100%" height="80" viewBox="0 0 220 80" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="areaGrad2" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#22c55e" stopOpacity="0.5" />
+                      <stop offset="100%" stopColor="#22c55e" stopOpacity="0.02" />
+                    </linearGradient>
+                  </defs>
+                  {[20, 40, 60].map((y) => (<line key={y} x1="0" y1={y} x2="220" y2={y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />))}
+                  <polygon points="0,70 30,65 55,60 80,55 105,48 120,52 140,38 160,32 180,28 200,22 220,16 220,80 0,80" fill="url(#areaGrad2)" />
+                  <polyline points="0,70 30,65 55,60 80,55 105,48 120,52 140,38 160,32 180,28 200,22 220,16" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  {([[0, 70, '#22c55e'], [55, 60, '#22c55e'], [105, 48, '#DB2777'], [140, 38, '#8b5cf6'], [180, 28, '#22c55e'], [220, 16, '#22c55e']] as [number, number, string][]).map(([x, y, c], i) => (
+                    <circle key={i} cx={x} cy={y} r="3.5" fill={c} style={{ filter: `drop-shadow(0 0 4px ${c})` }} />
+                  ))}
+                  <circle r="4.5" fill="#22c55e" opacity="0.9" style={{ filter: 'drop-shadow(0 0 6px #22c55e)' }}>
+                    <animateMotion dur="5s" repeatCount="indefinite"><mpath href="#chartPath2" /></animateMotion>
+                  </circle>
+                  <path id="chartPath2" d="M0,70 L30,65 L55,60 L80,55 L105,48 L120,52 L140,38 L160,32 L180,28 L200,22 L220,16" fill="none" stroke="none" />
+                </svg>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>
+                  <span>10:30</span><span>10:45</span><span>11:00</span><span>Now</span>
+                </div>
+              </div>
+
+              {/* AI Model footer */}
+              <div style={{
+                marginTop: 20, padding: '14px 12px', border: '1px solid rgba(255,255,255,0.08)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+                borderRadius: 16, background: 'rgba(255,255,255,0.035)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <BrainCircuit size={16} color="#a78bfa" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>Model: PathOS AI v3.2</div>
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 1, whiteSpace: 'nowrap' }}>Last updated: Today, 10:42 AM</div>
+                  </div>
+                </div>
+                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#22c55e' }}>
+                  <Check size={13} strokeWidth={3} />
+                </div>
+              </div>
+            </div>
+
+            {/* ── COL 3: TOP FINDINGS ── */}
+            <div style={{
+              background: '#fff',
+              padding: '34px 28px 28px', display: 'flex', flexDirection: 'column', minHeight: 940,
+              borderRadius: '0 30px 30px 0', border: 0,
+              backdropFilter: 'none', WebkitBackdropFilter: 'none',
+              boxShadow: 'inset 1px 0 0 rgba(226,232,240,0.78), inset 0 1px 0 rgba(255,255,255,0.94), inset -1px 0 0 rgba(255,255,255,0.88), inset 28px 0 54px -52px rgba(44,30,96,0.22)',
+              position: 'relative', overflow: 'hidden',
+            }}>
+              <div aria-hidden style={{
+                position: 'absolute', inset: 0, pointerEvents: 'none',
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.58), transparent 36%, rgba(124,92,255,0.025) 100%)',
+              }} />
+              <div style={{ fontSize: 16, fontWeight: 750, color: '#0a0b1a', marginBottom: 28, letterSpacing: '-0.01em' }}>Top Findings</div>
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
+                {[
+                  { label: 'Atypical Squamous Cells', count: 18, color: '#E63946', spark: '0,12 20,10 40,13 60,8 80,9 100,6 120,7' },
+                  { label: 'LSIL', count: 12, color: '#DB2777', spark: '0,10 20,11 40,9 60,10 80,8 100,9 120,8' },
+                  { label: 'HSIL', count: 5, color: '#8b5cf6', spark: '0,11 20,9 40,12 60,8 80,10 100,7 120,9' },
+                  { label: 'Negative', count: 1247, color: '#22c55e', spark: '0,8 20,9 40,7 60,8 80,6 100,7 120,6' },
+                ].map((row, i, arr) => (
+                  <div key={row.label} style={{
+                    padding: '18px 0', borderBottom: i < arr.length - 1 ? '1px solid rgba(226,232,240,0.72)' : 'none',
+                    position: 'relative', zIndex: 1,
+                    background: i === 0 ? 'linear-gradient(90deg, rgba(230,57,70,0.035), transparent 64%)' : 'transparent',
+                    borderRadius: i === 0 ? 12 : 0,
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <span style={{ fontSize: 13.5, color: '#374151', display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+                        <span style={{ width: 9, height: 9, borderRadius: '50%', background: row.color, flexShrink: 0, display: 'inline-block', boxShadow: `0 0 6px ${row.color}66` }} />
+                        {row.label}
+                      </span>
+                      <span style={{ fontSize: 16, fontWeight: 850, color: '#0a0b1a', fontVariantNumeric: 'tabular-nums' }}><CountUp value={row.count} duration={1500} /></span>
+                    </div>
+                    <svg width="100%" height="16" viewBox="0 0 120 16" preserveAspectRatio="none">
+                      <polyline points={row.spark} fill="none" stroke={row.color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
+                    </svg>
+                  </div>
+                ))}
+              </div>
+              <a href="#resources" style={{
+                marginTop: 24, width: '100%', padding: '14px', border: '1px solid rgba(148,163,184,0.30)',
+                borderRadius: 16, background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(249,250,252,0.86))', fontSize: 14, color: '#374151', cursor: 'pointer',
+                textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                fontWeight: 600, transition: 'all 0.2s ease',
+                boxShadow: '0 14px 30px -24px rgba(15,23,42,0.28), inset 0 1px 0 rgba(255,255,255,0.92)',
+                position: 'relative', zIndex: 1,
+              }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#E63946'; e.currentTarget.style.color = '#E63946'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(148,163,184,0.28)'; e.currentTarget.style.color = '#374151'; }}>
+                View Full Results →
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* LIVING SCIENCE — Three.js organism scene */}
+      <LivingScienceSection />
+
+      {/* SECTION C — TRUSTED BY (logo wall) */}
+      <section style={{ padding: '76px 32px 58px', background: 'white' }}>
+        <div style={{ textAlign: 'center', fontSize: 13, fontWeight: 700, letterSpacing: '0.2em', color: '#8f8fb8', marginBottom: 62, textTransform: 'uppercase' }}>
+          Trusted by Leading Labs and Health Systems
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 20, alignItems: 'center', maxWidth: 1780, margin: '0 auto' }}>
+          {[
+            {
+              a: 'MAYO', b: 'CLINIC', icon: (
+                <svg width="54" height="54" viewBox="0 0 44 44" fill="none">
+                  <g fill="#464660">
+                    <path transform="translate(22,15) scale(0.95)" d="M0,-11 C4,-9 6,-9 8,-9 L8,-3 C8,3 4,7 0,9 C-4,7 -8,3 -8,-3 L-8,-9 C-6,-9 -4,-9 0,-11 Z" />
+                    <path transform="translate(13.5,26) scale(0.7)" opacity="0.62" d="M0,-11 C4,-9 6,-9 8,-9 L8,-3 C8,3 4,7 0,9 C-4,7 -8,3 -8,-3 L-8,-9 C-6,-9 -4,-9 0,-11 Z" />
+                    <path transform="translate(30.5,26) scale(0.7)" opacity="0.62" d="M0,-11 C4,-9 6,-9 8,-9 L8,-3 C8,3 4,7 0,9 C-4,7 -8,3 -8,-3 L-8,-9 C-6,-9 -4,-9 0,-11 Z" />
+                  </g>
+                </svg>
+              ),
+            },
+            {
+              a: 'Labcorp', big: true, icon: (
+                <svg width="52" height="52" viewBox="0 0 44 44" fill="none">
+                  <circle cx="22" cy="22" r="15" fill="#464660" opacity="0.1" />
+                  <circle cx="22" cy="22" r="15" stroke="#464660" strokeWidth="1.7" />
+                  <ellipse cx="22" cy="22" rx="6.4" ry="15" stroke="#464660" strokeWidth="1.4" />
+                  <line x1="7" y1="22" x2="37" y2="22" stroke="#464660" strokeWidth="1.4" />
+                  <line x1="10.5" y1="13.5" x2="33.5" y2="13.5" stroke="#464660" strokeWidth="1.1" opacity="0.55" />
+                  <line x1="10.5" y1="30.5" x2="33.5" y2="30.5" stroke="#464660" strokeWidth="1.1" opacity="0.55" />
+                </svg>
+              ),
+            },
+            {
+              a: 'Quest', b: 'Diagnostics', icon: (
+                <svg width="52" height="52" viewBox="0 0 44 44" fill="none">
+                  <circle cx="22" cy="22" r="15" fill="#464660" />
+                  <path d="M29 15a9.5 9.5 0 1 0 1 13" stroke="#fff" strokeWidth="3" strokeLinecap="round" fill="none" />
+                  <circle cx="22" cy="22" r="3.6" fill="#fff" />
+                </svg>
+              ),
+            },
+            {
+              a: 'Cleveland', b: 'Clinic', icon: (
+                <svg width="50" height="50" viewBox="0 0 44 44" fill="none">
+                  <path d="M11 11h11v5.5h-5.5v11H22V33H11z" fill="#464660" />
+                  <path d="M33 11H22v5.5h5.5v11H22V33h11z" fill="#464660" />
+                </svg>
+              ),
+            },
+            {
+              a: 'Sonic', b: 'Healthcare', icon: (
+                <svg width="52" height="52" viewBox="0 0 44 44" fill="none">
+                  <circle cx="22" cy="22" r="15" stroke="#464660" strokeWidth="1.5" opacity="0.4" />
+                  <path d="M16 10c0 7 12 7 12 12s-12 5-12 12" stroke="#464660" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M28 10c0 7-12 7-12 12s12 5 12 12" stroke="#464660" strokeWidth="2" strokeLinecap="round" />
+                  <line x1="17" y1="15" x2="27" y2="15" stroke="#464660" strokeWidth="1.4" />
+                  <line x1="18" y1="22" x2="26" y2="22" stroke="#464660" strokeWidth="1.4" opacity="0.6" />
+                  <line x1="17" y1="29" x2="27" y2="29" stroke="#464660" strokeWidth="1.4" />
+                </svg>
+              ),
+            },
+            {
+              a: 'agilon', b: 'health', icon: (
+                <svg width="50" height="50" viewBox="0 0 44 44" fill="none">
+                  {[0, 45, 90, 135].map((deg) => (
+                    <line key={deg} x1="22" y1="8" x2="22" y2="36" stroke="#464660" strokeWidth="2.8" strokeLinecap="round" transform={`rotate(${deg} 22 22)`} />
+                  ))}
+                  <circle cx="22" cy="22" r="2.6" fill="#464660" />
+                </svg>
+              ),
+            },
+          ].map((logo, i) => (
+            <motion.div key={i}
+              initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.6, ease: 'easeOut', delay: i * 0.08 }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+              {logo.icon}
+              <div style={{ lineHeight: 1.1 }}>
+                <div style={{ fontSize: logo.big ? 30 : 20.5, fontWeight: 800, color: '#33334d', letterSpacing: logo.big ? '-0.01em' : '0.01em' }}>{logo.a}</div>
+                {logo.b && <div style={{ fontSize: 15.5, fontWeight: 600, color: '#9090ac', marginTop: 2 }}>{logo.b}</div>}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* SECTION D — STATS BAR */}
+      <section style={{ padding: '24px 32px 96px', background: 'white' }}>
+        {/* Shared violet→magenta gradient for the stat icons */}
+        <svg width={0} height={0} style={{ position: 'absolute' }} aria-hidden>
+          <defs>
+            <linearGradient id="statIcon" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="24">
+              <stop offset="0%" stopColor="#8b5cf6" />
+              <stop offset="100%" stopColor="#d946ef" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div style={{
+          maxWidth: 1780, margin: '0 auto', background: '#faf9ff', border: '1px solid #eae7f6',
+          borderRadius: 30, boxShadow: '0 18px 52px rgba(80,60,160,0.07)', padding: '46px 24px',
+          display: 'grid', gridTemplateColumns: 'repeat(5,1fr)',
+        }}>
+          {[
+            { Icon: Cog, num: 500, dec: 0, suffix: 'M+', label: 'Cells analyzed' },
+            { Icon: FlaskConical, num: 2500, dec: 0, suffix: '+', label: 'Labs worldwide' },
+            { Icon: ShieldCheck, num: 99.9, dec: 1, suffix: '%', label: 'System uptime' },
+            { Icon: Share2, num: 40, dec: 0, suffix: '%', label: 'Faster turnaround' },
+            { Icon: BarChart3, num: 70, dec: 0, suffix: '%', label: 'Workload reduction' },
+          ].map((stat, i) => (
+            <div key={stat.label} style={{ display: 'flex', alignItems: 'center', gap: 20, padding: '8px 44px', borderLeft: i > 0 ? '1px solid #ede9f8' : 'none' }}>
+              <div style={{ width: 66, height: 66, borderRadius: 19, background: 'linear-gradient(135deg, rgba(139,92,246,0.18), rgba(217,70,239,0.10))', border: '1px solid rgba(139,92,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <stat.Icon size={31} color="url(#statIcon)" strokeWidth={2} />
+              </div>
+              <div>
+                <div style={{ fontSize: 38, fontWeight: 800, letterSpacing: '-0.02em', color: '#0a0b1a', lineHeight: 1 }}><CountUp value={stat.num} decimals={stat.dec} suffix={stat.suffix} /></div>
+                <div style={{ fontSize: 15, color: '#64748b', marginTop: 6 }}>{stat.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* PRODUCT PREVIEW */}
+      {/* INTERACTIVE PLATFORM SHOWCASE (replaces the old feature grid + stats bar) */}
+      <section id="resources">
+        <PlatformShowcase />
+      </section>
+
+      {/* PRICING */}
+      <section id="pricing" style={{ background: '#fff', padding: '80px 64px' }}>
+        <style dangerouslySetInnerHTML={{ __html: `@keyframes badge-breathe { 0%,100% { box-shadow: 0 4px 14px rgba(230,57,70,0.35); } 50% { box-shadow: 0 7px 24px rgba(230,57,70,0.6); } }` }} />
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <Reveal>
+            <div style={{ textAlign: 'center', marginBottom: 48 }}>
+              <div style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>BUILT FOR EVERY SCALE OF PATHOLOGY</div>
+              <p style={{ color: '#6B7280', fontSize: 15 }}>Flexible plans for labs of all sizes. Enterprise-grade security. Unmatched support.</p>
+            </div>
+          </Reveal>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 24, alignItems: 'start' }}>
+            {plans.map(({ name, badge, desc, price, period, features: feats, cta, href, highlighted }, i) => (
+              <Reveal key={name} delay={i * 0.08}>
+                <div
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-6px)';
+                    e.currentTarget.style.boxShadow = highlighted ? '0 30px 72px rgba(230,57,70,0.26)' : '0 24px 52px rgba(16,24,40,0.13)';
+                    e.currentTarget.style.borderColor = highlighted ? RED : '#c9cede';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = highlighted ? '0 20px 60px rgba(230,57,70,0.15)' : 'none';
+                    e.currentTarget.style.borderColor = highlighted ? RED : '#E5E7EB';
+                  }}
+                  style={{
+                    border: highlighted ? `2px solid ${RED}` : '1px solid #E5E7EB', borderRadius: 24, padding: 32,
+                    background: '#fff', position: 'relative', boxShadow: highlighted ? '0 20px 60px rgba(230,57,70,0.15)' : 'none',
+                    transition: 'transform 0.3s cubic-bezier(0.22,0.8,0.2,1), box-shadow 0.3s ease, border-color 0.3s ease',
+                  }}>
+                  {badge && (
+                    <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: RED, color: '#fff', fontSize: 10, fontWeight: 800, padding: '4px 12px', borderRadius: 20, letterSpacing: '0.05em', animation: 'badge-breathe 3s ease-in-out infinite' }}>{badge}</div>
+                  )}
+                  <div style={{ fontSize: 18, fontWeight: 800, color: INK, marginBottom: 4 }}>{name}</div>
+                  <div style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 20 }}>{desc}</div>
+                  <div style={{ marginBottom: 24 }}>
+                    <span style={{ fontSize: 40, fontWeight: 900, color: INK }}>{price}</span>
+                    <span style={{ fontSize: 14, color: '#9CA3AF' }}>{period}</span>
+                  </div>
+                  <div style={{ marginBottom: 24 }}>
+                    {feats.map((f) => (
+                      <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', fontSize: 13, color: '#374151' }}>
+                        <Check size={15} color={GREEN} strokeWidth={3} />{f}
+                      </div>
+                    ))}
+                  </div>
+                  <Link href={href}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      if (highlighted) { e.currentTarget.style.boxShadow = '0 10px 24px rgba(230,57,70,0.4)'; }
+                      else { e.currentTarget.style.background = '#f7f8fb'; e.currentTarget.style.borderColor = '#c9cede'; }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      if (highlighted) { e.currentTarget.style.boxShadow = 'none'; }
+                      else { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E5E7EB'; }
+                    }}
+                    style={{
+                    display: 'block', textAlign: 'center', textDecoration: 'none',
+                    width: '100%', padding: 14, background: highlighted ? RED : 'transparent',
+                    color: highlighted ? '#fff' : '#374151', border: highlighted ? 'none' : '1px solid #E5E7EB',
+                    borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease',
+                  }}>{cta}</Link>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER CTA (red) */}
+      <section id="demo" style={{ background: 'linear-gradient(135deg, #8B0000 0%, #C1121F 35%, #9B1020 65%, #7A0015 100%)', padding: '80px 64px', position: 'relative', overflow: 'hidden' }}>
+        <style>{`@keyframes badgePulse { 0%,100%{opacity:.55} 50%{opacity:1} }`}</style>
+
+        {/* Blended seam — dissolves the white Pricing surface above into the red
+            CTA instead of a hard cut. Sits above the section fill, below content,
+            and clears the heading (which starts at the 80px top padding). */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, zIndex: 0, pointerEvents: 'none', background: 'linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0) 100%)' }} />
+
+        {/* Volumetric overlay layers */}
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 80% at 80% 50%, rgba(255,60,80,0.25) 0%, transparent 60%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 40% 60% at 20% 50%, rgba(80,0,10,0.4) 0%, transparent 55%)', pointerEvents: 'none' }} />
+
+        {footerCells.map((cell, i) => (
+          <motion.div key={i}
+            animate={{ y: [0, -16, 0], x: [0, i % 2 ? 10 : -8, 0] }}
+            transition={{ duration: 13 + i * 4, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ position: 'absolute', width: cell.size, height: cell.size, borderRadius: '50%', background: 'rgba(255,255,255,0.3)', top: cell.top, right: cell.right, bottom: cell.bottom, opacity: cell.opacity }} />
+        ))}
+
+        {/* Living biological microscopy scene — fills the right 40% */}
+        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '42%', minHeight: 380, zIndex: 0, pointerEvents: 'none' }}>
+          <CtaBioScene />
+        </div>
+
+        <Reveal>
+          <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center', position: 'relative', zIndex: 1 }}>
+            <div>
+              <h2 style={{ fontSize: 52, fontWeight: 900, color: '#fff', lineHeight: 1.1, letterSpacing: '-0.02em', textTransform: 'uppercase', margin: '0 0 16px' }}>
+                The arterial operating system your pathology lab deserves.
+              </h2>
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 15, letterSpacing: '0.01em', lineHeight: 1.6, marginBottom: 32 }}>Join 500+ labs transforming diagnostic excellence with PathOS.</p>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <Link
+                  href="/book-demo"
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 34px rgba(0,0,0,0.28), 0 2px 6px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.9)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.15), 0 1px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8)'; }}
+                  style={{ background: 'rgba(255,255,255,0.95)', color: '#BF0D23', padding: '14px 28px', borderRadius: 50, fontWeight: 700, fontSize: 14, letterSpacing: '0.01em', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid rgba(255,255,255,0.3)', boxShadow: '0 4px 24px rgba(0,0,0,0.15), 0 1px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8)', transition: 'all 0.25s ease' }}
+                >
+                  Schedule Live Demo <ArrowRight size={16} />
+                </Link>
+                <Link
+                  href="/contact"
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+                  style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', padding: '14px 28px', borderRadius: 50, fontWeight: 700, fontSize: 14, letterSpacing: '0.01em', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.35)', transition: 'all 0.25s ease' }}
+                >
+                  Contact Sales
+                </Link>
+              </div>
+            </div>
+            <div id="compliance" style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
+              {['HIPAA COMPLIANT', 'SOC 2 TYPE II CERTIFIED', 'ENTERPRISE READY'].map((item) => (
+                <div key={item} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.20)', borderRadius: 40, padding: '8px 16px', boxShadow: '0 2px 12px rgba(0,0,0,0.1)' }}>
+                  <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(255,255,255,0.18)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 10px rgba(255,255,255,0.5)', animation: 'badgePulse 2.4s ease-in-out infinite' }}>
+                    <Check size={12} color="#fff" strokeWidth={3} />
+                  </span>
+                  <span style={{ color: '#fff', fontWeight: 600, fontSize: 12, letterSpacing: '0.08em' }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* FOOTER */}
       <SiteFooter />
     </div>
   );
