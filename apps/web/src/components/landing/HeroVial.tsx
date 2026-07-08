@@ -138,9 +138,14 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
       // richBlood: a deep venous-red ramp (dark, near-opaque) with a restrained
       // rose specular streak — reads as real blood. polish keeps its brighter,
       // oxygenated coral ramp so the landing/CTA vial is unchanged.
-      const gBot = richBlood ? 'vec3(0.12,0.004,0.02)' : 'vec3(0.42,0.01,0.05)';
+      const gBot = richBlood ? 'vec3(0.30,0.02,0.04)' : 'vec3(0.42,0.01,0.05)';
       const gTop = richBlood ? 'vec3(0.46,0.03,0.06)' : 'vec3(0.86,0.07,0.13)';
-      const gStreak = richBlood ? 'vec3(0.30,0.08,0.10)' : 'vec3(0.55,0.24,0.26)';
+      const gStreak = richBlood ? 'vec3(0.20,0.05,0.07)' : 'vec3(0.55,0.24,0.26)';
+      // richBlood streak: wider + softer, and faded out over the bottom third so it
+      // reads as a soft glass highlight (not a hard laser line down to the base).
+      const streakExpr = richBlood
+        ? 'smoothstep(0.08, 0.0, abs(vBX - 0.05)) * smoothstep(0.0, 0.4, _bt) * (0.18 + 0.5 * _bt)'
+        : 'smoothstep(0.05, 0.0, abs(vBX - 0.07)) * (0.35 + 0.65 * _bt)';
       bloodMat.onBeforeCompile = (shader) => {
         shader.vertexShader = 'varying float vBY;\nvarying float vBX;\n' + shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vBY = position.y;\n  vBX = position.x;');
         shader.fragmentShader = ('varying float vBY;\nvarying float vBX;\n' + shader.fragmentShader).replace(
@@ -149,7 +154,7 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
   vec3 _bg = mix(${gBot}, ${gTop}, pow(_bt, 0.55));
   // bright vertical specular streak (glass window reflection) — reads as glossy
   // liquid rather than a flat solid. Offset to one side, stronger toward the top.
-  float _streak = smoothstep(0.05, 0.0, abs(vBX - 0.07)) * (0.35 + 0.65 * _bt);
+  float _streak = ${streakExpr};
   _bg += _streak * ${gStreak};
   // faint darker settling toward the very bottom for depth
   _bg *= mix(0.82, 1.0, smoothstep(0.0, 0.28, _bt));
@@ -224,7 +229,22 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
     // This is what makes it read as liquid in a round-bottom tube, not a solid slug.
     const bloodFill = new THREE.Mesh(new THREE.CylinderGeometry(0.181, 0.181, bloodHeight, SEG, 1, richBlood), bloodMat);
     bloodFill.position.y = -0.625 + bloodHeight / 2; bloodFill.renderOrder = 1; vialGroup.add(bloodFill);
-    const bloodDome = new THREE.Mesh(new THREE.SphereGeometry(0.181, SEG, SEG, 0, Math.PI * 2, Math.PI * 0.5, Math.PI * 0.5), bloodMat);
+    // richBlood: the rounded pool at the base gets its OWN luminous material —
+    // brighter, emissive cherry-red, no gradient/streak — so it glows like real
+    // blood backlit through the thin curved glass tip (the reference's bright base).
+    // NB: the pooled base MUST stay transmissive — three renders transmissive meshes
+    // in a separate refraction pass that composites correctly over the glass U-bottom.
+    // A non-transmissive dome fails the depth test behind the glass front face and
+    // vanishes. So: transmissive, but brighter + more emissive than the column so the
+    // rounded tip glows cherry-red (backlit through the thin glass) like the reference.
+    const domeMat = richBlood ? new THREE.MeshPhysicalMaterial({
+      color: 0xa00e1c, emissive: 0x8c0816, emissiveIntensity: 0.75, roughness: 0.16, metalness: 0.05,
+      transmission: 0.3, thickness: 1.0, ior: 1.38, clearcoat: 0.7, clearcoatRoughness: 0.14,
+      attenuationColor: new THREE.Color(0x4a0010), attenuationDistance: 0.6,
+      sheen: 0.4, sheenColor: new THREE.Color(0x8a1220),
+      transparent: true, opacity: 0.99, side: THREE.DoubleSide, envMapIntensity: 1.1,
+    }) : bloodMat;
+    const bloodDome = new THREE.Mesh(new THREE.SphereGeometry(0.181, SEG, SEG, 0, Math.PI * 2, Math.PI * 0.5, Math.PI * 0.5), domeMat);
     // Match the glass bottomDome's centre (−0.625) so the blood pool nests exactly
     // inside the rounded U-bottom instead of floating with a flat base above it.
     bloodDome.position.y = richBlood ? -0.625 : -0.618; bloodDome.rotation.x = Math.PI; bloodDome.renderOrder = richBlood ? 4 : 1;
