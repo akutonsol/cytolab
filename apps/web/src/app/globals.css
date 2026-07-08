@@ -1316,3 +1316,12 @@ select option {
   .hero-rise { animation: none; opacity: 1; }
   .hero-primary, .hero-play { transition: none; }
 }
+
+/* Lenis smooth scroll (see components/providers/LenisProvider). Non-visual
+   reset: lets Lenis own the document scroll and overrides native
+   scroll-behavior:smooth so anchors don't fight the engine. */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+.lenis.lenis-scrolling iframe { pointer-events: none; }
