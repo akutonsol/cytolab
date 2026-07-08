@@ -18,13 +18,9 @@ import { SiteNav, SiteFooter, MarketingScrollStyle } from '@/components/landing/
 import { SmoothScroll } from '@/components/landing/SmoothScroll';
 import { CountUp } from '@/components/landing/CountUp';
 
-const HeroVial = dynamic(() => import('@/components/landing/HeroVial'), {
-  ssr: false,
-  loading: () => <div style={{ width: 600, height: 700 }} />,
-});
-
-// Floating live AI-telemetry panels overlaying the hero vial (canvas + parallax).
-const HeroStatCards = dynamic(() => import('@/components/landing/HeroStatCards'), { ssr: false });
+// Landing-only hero composition (untouched HeroVial centerpiece + illuminated
+// platform + orbiting telemetry cards + entrance choreography).
+import { HeroScene } from '@/components/landing/HeroScene';
 
 // Interactive product showcase — editorial + feature nav + morphing live dashboard.
 const PlatformShowcase = dynamic(() => import('@/components/landing/PlatformShowcase'), { ssr: false });
@@ -242,51 +238,70 @@ export default function LandingPage() {
       {/* HERO */}
       <section id="platform" style={{
         width: '100vw', minHeight: '100vh', marginLeft: 'calc(-50vw + 50%)', marginTop: 0, paddingTop: 72,
-        background: '#F2F1F9',
+        // Illuminated-studio environment (not a single radial). Many broad,
+        // overlapping, soft layers span the WHOLE hero — warm-white center light,
+        // a pale lavender wash that only reads near the vial, cool gray + faint
+        // blue-white volumetrics in the corners, a tiny blush, and two diagonal
+        // light streaks so the light appears to DRIFT rather than radiate from a
+        // point. Predominantly white (~70% warm white / 20% lavender / 8% gray /
+        // 2% blush). All keep b>90 → never trips zero-orange.
+        background: `
+          linear-gradient(118deg, transparent 14%, rgba(255,255,255,0.42) 38%, transparent 58%),
+          linear-gradient(66deg, transparent 32%, rgba(240,244,252,0.3) 52%, transparent 74%),
+          radial-gradient(150% 130% at 42% 18%, rgba(255,254,251,0.9) 0%, transparent 58%),
+          radial-gradient(88% 96% at 70% 50%, rgba(228,219,248,0.3) 0%, transparent 60%),
+          radial-gradient(82% 82% at 91% 10%, rgba(227,233,246,0.24) 0%, transparent 62%),
+          radial-gradient(86% 86% at 6% 94%, rgba(214,218,228,0.24) 0%, transparent 64%),
+          radial-gradient(32% 34% at 64% 66%, rgba(255,214,226,0.1) 0%, transparent 56%),
+          linear-gradient(160deg, #FAF9FC 0%, #F5F4F8 55%, #F2F1F7 100%)`,
         display: 'flex', alignItems: 'center', overflow: 'hidden', position: 'relative',
       }}>
+        {/* Volumetric light rays — diagonal, heavily blurred, near-imperceptible.
+            Felt more than seen; gives the hero atmospheric depth so the vial sits
+            inside an illuminated environment rather than on a flat white page. */}
+        <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: '-50%', left: '3%', width: '34%', height: '200%', transform: 'rotate(19deg)', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent)', filter: 'blur(72px)' }} />
+          <div style={{ position: 'absolute', top: '-50%', left: '40%', width: '26%', height: '200%', transform: 'rotate(19deg)', background: 'linear-gradient(90deg, transparent, rgba(234,238,250,0.38), transparent)', filter: 'blur(92px)' }} />
+          <div style={{ position: 'absolute', top: '-50%', right: '1%', width: '30%', height: '200%', transform: 'rotate(19deg)', background: 'linear-gradient(90deg, transparent, rgba(244,238,252,0.32), transparent)', filter: 'blur(82px)' }} />
+        </div>
         <motion.div
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: 'easeOut' }}
           style={{ padding: '80px 0 80px 6vw', position: 'relative', zIndex: 2, maxWidth: 620 }}
         >
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
-            background: 'rgba(230,57,70,0.1)', border: '1px solid rgba(230,57,70,0.2)',
+            background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(230,57,70,0.32)',
             borderRadius: 20, padding: '6px 14px', marginBottom: 24,
           }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: RED }} />
-            <span style={{ fontSize: 11, color: RED, fontWeight: 600, letterSpacing: '0.12em' }}>ARTIFICIAL INTELLIGENCE · PATHOLOGY</span>
+            <span style={{ fontSize: 11, color: RED, fontWeight: 700, letterSpacing: '0.12em' }}>AI-POWERED PATHOLOGY PLATFORM</span>
           </div>
           <h1 style={{ fontSize: 72, fontWeight: 800, lineHeight: 1.05, color: INK, margin: '0 0 16px', letterSpacing: '-0.025em' }}>
             Unified pathology.<br />One platform.<br />
             <em style={{ color: RED, fontStyle: 'italic' }}>Cellular level.</em>
           </h1>
           <p style={{ fontSize: 17, fontWeight: 400, color: '#4a4a5a', lineHeight: 1.65, maxWidth: 420, marginBottom: 32 }}>
-            CYTOLAB unifies every step of your workflow with AI-powered screening, intelligent workflows, and real-time
+            PathOS unifies every step of your workflow with AI-powered screening, intelligent workflows, and real-time
             insights — so you can focus on what matters most: better outcomes.
           </p>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             <Link href="/book-demo" style={{
               background: RED, color: '#fff', padding: '14px 28px', borderRadius: 10, fontWeight: 700, fontSize: 15,
               textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8,
-            }}>Request Demo <ArrowRight size={16} /></Link>
+            }}>Request Live Demo <ArrowRight size={16} /></Link>
             <Link href="/experience" style={{ color: '#374151', fontSize: 14, fontWeight: 500, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ width: 34, height: 34, borderRadius: '50%', border: `1px solid ${RED}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: RED }}>
                 <Play size={14} fill={RED} />
               </span>
-              Experience it live
+              Watch Platform Overview
             </Link>
           </div>
         </motion.div>
 
-        {/* Right canvas — bleeds to the right edge of the viewport */}
+        {/* Right stage (~60% of the hero) — untouched HeroVial centerpiece +
+            illuminated platform + orbiting telemetry cards. Bleeds to the edge. */}
         <div style={{ position: 'absolute', top: 72, right: 0, bottom: 0, width: '60vw', zIndex: 1 }}>
-          <div style={{ width: '100%', height: '100%', position: 'relative', zIndex: 2 }}>
-            <HeroVial />
-          </div>
-          <div style={{ position: 'absolute', top: '50%', right: 32, transform: 'translateY(-50%)', zIndex: 3 }}>
-            <HeroStatCards />
-          </div>
+          <HeroScene />
         </div>
       </section>
 
@@ -300,7 +315,7 @@ export default function LandingPage() {
             Built for the way pathology labs <em style={{ fontStyle: 'italic', color: RED }}>work.</em>
           </h2>
           <p style={{ fontSize: 17, lineHeight: 1.7, color: '#64748b', maxWidth: 560, marginTop: 24 }}>
-            From specimen collection to AI-powered diagnosis and structured reporting, CYTOLAB connects every step into one intelligent workflow.
+            From specimen collection to AI-powered diagnosis and structured reporting, PathOS connects every step into one intelligent workflow.
           </p>
         </div>
       </section>
@@ -659,7 +674,7 @@ export default function LandingPage() {
                     <BrainCircuit size={16} color="#a78bfa" />
                   </div>
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>Model: Cytolab AI v3.2</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>Model: PathOS AI v3.2</div>
                     <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 1, whiteSpace: 'nowrap' }}>Last updated: Today, 10:42 AM</div>
                   </div>
                 </div>
@@ -933,7 +948,7 @@ export default function LandingPage() {
               <h2 style={{ fontSize: 52, fontWeight: 900, color: '#fff', lineHeight: 1.1, letterSpacing: '-0.02em', textTransform: 'uppercase', margin: '0 0 16px' }}>
                 The arterial operating system your pathology lab deserves.
               </h2>
-              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 15, letterSpacing: '0.01em', lineHeight: 1.6, marginBottom: 32 }}>Join 500+ labs transforming diagnostic excellence with CYTOLAB.</p>
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 15, letterSpacing: '0.01em', lineHeight: 1.6, marginBottom: 32 }}>Join 500+ labs transforming diagnostic excellence with PathOS.</p>
               <div style={{ display: 'flex', gap: 12 }}>
                 <Link
                   href="/book-demo"

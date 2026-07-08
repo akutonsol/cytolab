@@ -145,7 +145,7 @@ export default function PlatformShowcase() {
         <div className="ps-eyebrow">Interactive Walkthrough <span className="ps-eyebrow-dot" /></div>
         <h2 className="ps-title">One platform.<br />Every step <em>connected.</em></h2>
         <p className="ps-lede">
-          Click any stage below to walk a specimen through CYTOLAB — from accessioning to
+          Click any stage below to walk a specimen through PathOS — from accessioning to
           AI screening to a signed, structured report. Or press play for the full tour.
         </p>
         <Link href="/experience" className="ps-launch">
@@ -168,7 +168,7 @@ export default function PlatformShowcase() {
               })}
               <circle cx="16" cy="16" r="2.8" fill={RED} />
             </svg>
-            <span className="ps-brand-name">CYTOLAB</span>
+            <span className="ps-brand-name">PathOS</span>
           </div>
           <nav className="ps-nav">
             {NAV.map((n, i) => (

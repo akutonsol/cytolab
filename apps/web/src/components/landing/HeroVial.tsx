@@ -14,7 +14,14 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
  */
 // `bare` skips the light backdrop/scene-bg planes so the vial floats
 // transparently over any page background (e.g. the dark-blue login page).
-export default function HeroVial({ bare = false }: { bare?: boolean } = {}) {
+// `fill` is the blood column height in world units (top of blood = -0.625 + fill);
+// `tilt` is the base z-rotation in radians. Both DEFAULT to the original values,
+// so existing consumers (login, CTA) render byte-identically; only the landing
+// hero overrides them (fuller tube, near-vertical) to match the flagship art.
+// `polish` (landing-only) applies the art-direction refinement pass: stronger
+// glass Fresnel/rim, a quieter purple cell, breathing motion, a haze plane, and
+// wider blood-cell variance. Default false keeps login/CTA byte-identical.
+export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labelY = 0.06, polish = false }: { bare?: boolean; fill?: number; tilt?: number; labelY?: number; polish?: boolean } = {}) {
   const mountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -99,9 +106,9 @@ export default function HeroVial({ bare = false }: { bare?: boolean } = {}) {
     // ── Materials ────────────────────────────────────────────
     const glassMat = new THREE.MeshPhysicalMaterial({
       color: 0xffffff, transparent: true, opacity: 0.13, roughness: 0.025, metalness: 0.0,
-      transmission: 0.98, thickness: 0.6, ior: 1.52, reflectivity: 0.98, specularIntensity: 1.0,
+      transmission: 0.98, thickness: polish ? 0.92 : 0.6, ior: polish ? 1.5 : 1.52, reflectivity: 0.98, specularIntensity: polish ? 1.3 : 1.0,
       specularColor: new THREE.Color(0xffffff), clearcoat: 1.0,
-      clearcoatRoughness: 0.045, iridescence: 0.15, iridescenceIOR: 1.3, envMapIntensity: 3.7,
+      clearcoatRoughness: polish ? 0.024 : 0.045, iridescence: polish ? 0.2 : 0.15, iridescenceIOR: 1.3, envMapIntensity: polish ? 4.9 : 3.7,
       side: THREE.DoubleSide, depthWrite: false, attenuationColor: new THREE.Color(0xeef2ff), attenuationDistance: 3.4,
     });
     const glassMatBack = glassMat.clone();
@@ -111,8 +118,8 @@ export default function HeroVial({ bare = false }: { bare?: boolean } = {}) {
     const capRidgeMat = new THREE.MeshPhysicalMaterial({ color: 0x8b0008, roughness: 0.55, metalness: 0.0, envMapIntensity: 1.2 });
     // Physical blood — subsurface-ish attenuation, sheen, faint transmission
     const bloodMat = new THREE.MeshPhysicalMaterial({
-      color: 0x66000b, emissive: 0x220000, emissiveIntensity: 0.45, roughness: 0.1, metalness: 0.1,
-      transmission: 0.24, thickness: 1.4, ior: 1.38, clearcoat: 0.5, clearcoatRoughness: 0.22,
+      color: polish ? 0x7a0110 : 0x66000b, emissive: 0x220000, emissiveIntensity: polish ? 0.55 : 0.45, roughness: 0.1, metalness: 0.1,
+      transmission: polish ? 0.3 : 0.24, thickness: 1.4, ior: 1.38, clearcoat: 0.5, clearcoatRoughness: 0.22,
       attenuationColor: new THREE.Color(0x30000a), attenuationDistance: 0.28,
       sheen: 0.65, sheenColor: new THREE.Color(0x9a1626), sheenRoughness: 0.38,
       transparent: true, opacity: 0.99, envMapIntensity: 1.0,
@@ -143,14 +150,19 @@ export default function HeroVial({ bare = false }: { bare?: boolean } = {}) {
     outerBody.position.y = 0.05; outerBody.renderOrder = 3; vialGroup.add(outerBody);
     const innerBody = new THREE.Mesh(new THREE.CylinderGeometry(0.188, 0.188, 1.35, SEG, 1, true), glassMatBack);
     innerBody.position.y = 0.05; innerBody.renderOrder = 2; vialGroup.add(innerBody);
+    // Refined silhouette under `polish`: a softer bottom point, a taller/softer
+    // shoulder taper, and a narrower neck+rim — a more premium lab-tube profile.
+    const neckR = polish ? 0.152 : 0.168;
     const bottomDome = new THREE.Mesh(new THREE.SphereGeometry(0.21, SEG, SEG, 0, Math.PI * 2, Math.PI * 0.5, Math.PI * 0.5), glassMat);
-    bottomDome.position.y = -0.625; bottomDome.rotation.x = Math.PI; bottomDome.renderOrder = 3; vialGroup.add(bottomDome);
-    const shoulder = new THREE.Mesh(new THREE.CylinderGeometry(0.168, 0.21, 0.15, SEG), glassMat);
-    shoulder.position.y = 0.825; shoulder.renderOrder = 3; vialGroup.add(shoulder);
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.168, 0.168, 0.09, SEG), glassMat);
+    bottomDome.position.y = -0.625; bottomDome.rotation.x = Math.PI; bottomDome.renderOrder = 3;
+    if (polish) bottomDome.scale.set(0.985, 1.24, 0.985); // softer point before rounding
+    vialGroup.add(bottomDome);
+    const shoulder = new THREE.Mesh(new THREE.CylinderGeometry(neckR, 0.21, polish ? 0.2 : 0.15, SEG), glassMat);
+    shoulder.position.y = polish ? 0.85 : 0.825; shoulder.renderOrder = 3; vialGroup.add(shoulder);
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(neckR, neckR, 0.09, SEG), glassMat);
     neck.position.y = 0.945; neck.renderOrder = 3; vialGroup.add(neck);
     // top rim bead (rounded glass edge)
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.168, 0.012, 16, SEG), glassMat);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(neckR, 0.012, 16, SEG), glassMat);
     rim.position.y = 0.99; rim.rotation.x = Math.PI / 2; rim.renderOrder = 3; vialGroup.add(rim);
 
     const capBody = new THREE.Mesh(new THREE.CylinderGeometry(0.185, 0.185, 0.28, SEG), capMat);
@@ -165,11 +177,13 @@ export default function HeroVial({ bare = false }: { bare?: boolean } = {}) {
     }
 
     // ── BLOOD ────────────────────────────────────────────────
-    const bloodHeight = 0.405; // ~30% fill
+    const bloodHeight = fill; // world units; default 0.405 (~30% fill)
     const bloodFill = new THREE.Mesh(new THREE.CylinderGeometry(0.181, 0.181, bloodHeight, SEG), bloodMat);
     bloodFill.position.y = -0.625 + bloodHeight / 2; bloodFill.renderOrder = 1; vialGroup.add(bloodFill);
     const bloodDome = new THREE.Mesh(new THREE.SphereGeometry(0.181, SEG, SEG, 0, Math.PI * 2, Math.PI * 0.5, Math.PI * 0.5), bloodMat);
-    bloodDome.position.y = -0.618; bloodDome.rotation.x = Math.PI; bloodDome.renderOrder = 1; vialGroup.add(bloodDome);
+    bloodDome.position.y = -0.618; bloodDome.rotation.x = Math.PI; bloodDome.renderOrder = 1;
+    if (polish) bloodDome.scale.set(0.985, 1.24, 0.985); // follow the tapered glass bottom
+    vialGroup.add(bloodDome);
 
     const surfMat = new THREE.ShaderMaterial({
       transparent: true, side: THREE.DoubleSide, uniforms: { uTime: { value: 0 } },
@@ -196,7 +210,7 @@ export default function HeroVial({ bare = false }: { bare?: boolean } = {}) {
         }`,
     });
     const bloodSurface = new THREE.Mesh(new THREE.CircleGeometry(0.181, SEG), surfMat);
-    bloodSurface.position.y = -0.22; bloodSurface.rotation.x = -Math.PI / 2; bloodSurface.renderOrder = 2; vialGroup.add(bloodSurface);
+    bloodSurface.position.y = -0.625 + bloodHeight; bloodSurface.rotation.x = -Math.PI / 2; bloodSurface.renderOrder = 2; vialGroup.add(bloodSurface);
 
     // ── LABEL (wrapped pathology label) ──────────────────────
     const lc = document.createElement('canvas');
@@ -208,7 +222,7 @@ export default function HeroVial({ bare = false }: { bare?: boolean } = {}) {
     g.fillStyle = '#B8000E'; g.fillRect(-150, -138, 300, 7);
     g.fillStyle = '#111'; g.font = 'bold 60px Arial'; g.textAlign = 'center'; g.textBaseline = 'middle';
     (g as unknown as { letterSpacing: string }).letterSpacing = '6px';
-    g.fillText('CYTOLAB', 6, -96);
+    g.fillText('PathOS', 6, -96);
     (g as unknown as { letterSpacing: string }).letterSpacing = '0px';
     g.fillStyle = '#B8000E';
     for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; g.beginPath(); g.arc(Math.cos(a) * 15, -150 + Math.sin(a) * 15, 7, 0, Math.PI * 2); g.fill(); }
@@ -240,12 +254,17 @@ export default function HeroVial({ bare = false }: { bare?: boolean } = {}) {
       new THREE.CylinderGeometry(0.2115, 0.2115, 0.62, SEG, 1, true, -1.25, 2.5),
       new THREE.MeshStandardMaterial({ map: labelTex, roughness: 0.72, side: THREE.FrontSide, envMapIntensity: 0.4 }),
     );
-    label.position.y = 0.06; label.renderOrder = 4; vialGroup.add(label);
+    label.position.y = labelY; label.renderOrder = 4; vialGroup.add(label);
 
     // ── VIAL TRANSFORM (unchanged) ───────────────────────────
-    vialGroup.scale.setScalar(1.43);
-    vialGroup.rotation.z = 0.34; // ~19.5° tilt
-    vialGroup.position.set(-0.2, -0.15, 0.0); // shifted left toward the headline
+    // Non-uniform under `polish`: slimmer (x/z) + taller (y) → an elegant lab-tube
+    // silhouette that fits the frame. RBCs/cells live at scene level so only the
+    // tube reshapes. Default stays uniform 1.43 for login/CTA.
+    const SX = polish ? 1.1 : 1.43;  // slim profile
+    const SY = polish ? 1.34 : 1.43; // slightly taller aspect, but not over-stretched
+    vialGroup.scale.set(SX, SY, SX);
+    vialGroup.rotation.z = tilt; // default ~19.5° tilt; landing overrides near-vertical
+    vialGroup.position.set(-0.2, polish ? -0.18 : -0.15, 0.0); // shifted left toward the headline
 
     // ── PURPLE WHITE-BLOOD CELLS (bigger, glossy, glowing) ────
     const makeWBC = (outerR: number, nucleusR: number, op: number) => {
@@ -288,40 +307,45 @@ export default function HeroVial({ bare = false }: { bare?: boolean } = {}) {
     const rbcs: RbcRec[] = [];
     for (let i = 0; i < 20; i++) {
       const front = Math.random() < 0.5;
-      const baseOp = front ? 0.95 : 0.5;
+      const baseOp = front ? (polish ? rnd(0.8, 0.98) : 0.95) : (polish ? rnd(0.28, 0.6) : 0.5);
       const mat = new THREE.MeshPhysicalMaterial({
         color: 0xc8102e, roughness: 0.22, metalness: 0, clearcoat: 0.45, clearcoatRoughness: 0.28,
         sheen: 0.5, sheenColor: new THREE.Color(0xff5a66), emissive: 0x3a040a, emissiveIntensity: 0.28,
         transmission: 0.24, thickness: 0.06, transparent: true, opacity: baseOp, side: THREE.DoubleSide, envMapIntensity: 1.2,
       });
-      const s = rnd(0.06, 0.125);
+      const s = rnd(polish ? 0.045 : 0.06, polish ? 0.15 : 0.125);
       const mesh = new THREE.Mesh(rbcGeo, mat);
       mesh.scale.set(s, s, s * 0.24);
       mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
       scene.add(mesh);
-      const rad = rnd(0.55, 1.4);
+      const rad = rnd(0.55, polish ? 1.45 : 1.4);
       rbcs.push({
         mesh, mat, baseScale: s, baseOp,
-        a: rad, b: rad * rnd(0.6, 0.95), incl: rnd(-0.55, 0.55), yaw0: Math.random() * Math.PI * 2,
+        // Under polish: flatter shared orbital plane + slower, mostly-one-direction
+        // motion so the cells read as a coherent flow around the tube (some pass
+        // behind via z, some in front), rather than randomly scattered.
+        a: rad, b: rad * rnd(0.6, 0.95), incl: rnd(polish ? -0.32 : -0.55, polish ? 0.32 : 0.55), yaw0: Math.random() * Math.PI * 2,
         precess: rnd(-0.015, 0.015), phase: Math.random() * Math.PI * 2,
-        speed: rnd(0.05, 0.14) * (Math.random() < 0.5 ? 1 : -1),
+        speed: rnd(polish ? 0.034 : 0.05, polish ? 0.092 : 0.14) * (Math.random() < (polish ? 0.74 : 0.5) ? 1 : -1),
         spin: new THREE.Vector3(rnd(0.002, 0.006), rnd(0.002, 0.006), rnd(0.001, 0.004)),
       });
     }
 
     // ── ICOSAHEDRON CELL (inside large WBC) ──────────────────
     const cellGroup = new THREE.Group();
-    cellGroup.position.set(-1.25, 0.12, 0.3); cellGroup.scale.setScalar(0.3); scene.add(cellGroup);
+    // Pushed slightly further back + smaller under `polish` so it never competes
+    // with the vial for focus.
+    cellGroup.position.set(polish ? -1.42 : -1.25, 0.12, polish ? -0.45 : 0.3); cellGroup.scale.setScalar(polish ? 0.2 : 0.3); scene.add(cellGroup);
     // Translucent glass membrane
     const membrane = new THREE.Mesh(new THREE.SphereGeometry(1.25, 48, 48), new THREE.MeshPhysicalMaterial({
-      color: 0xf1d8ff, transparent: true, opacity: 0.26, roughness: 0.0, transmission: 0.9, thickness: 0.5,
+      color: 0xf1d8ff, transparent: true, opacity: polish ? 0.13 : 0.26, roughness: 0.0, transmission: 0.9, thickness: 0.5,
       ior: 1.36, clearcoat: 1, clearcoatRoughness: 0, iridescence: 0.42, iridescenceIOR: 1.3,
       envMapIntensity: 2.3, sheen: 0.7, sheenColor: new THREE.Color(0xe0c0ff), side: THREE.DoubleSide,
     }));
     cellGroup.add(membrane);
     // Soft volumetric glow shell (additive back-side)
     const cellGlow = new THREE.Mesh(new THREE.SphereGeometry(1.5, 32, 32), new THREE.MeshBasicMaterial({
-      color: 0xcf8fe0, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.BackSide, fog: false,
+      color: 0xcf8fe0, transparent: true, opacity: polish ? 0.03 : 0.1, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.BackSide, fog: false,
     }));
     cellGroup.add(cellGlow);
     // Soft lobed purple nucleus with internal glow
@@ -481,16 +505,25 @@ export default function HeroVial({ bare = false }: { bare?: boolean } = {}) {
     const bgGeo = new THREE.BufferGeometry();
     bgGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
     bgGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
-    const bgParticles = new THREE.Points(bgGeo, new THREE.PointsMaterial({ map: spriteTex, size: 0.16, transparent: true, opacity: 0.42, depthWrite: false, sizeAttenuation: true, vertexColors: true }));
+    const bgParticles = new THREE.Points(bgGeo, new THREE.PointsMaterial({ map: spriteTex, size: 0.16, transparent: true, opacity: polish ? 0.26 : 0.42, depthWrite: false, sizeAttenuation: true, vertexColors: true }));
     scene.add(bgParticles);
 
-    const bloom = new THREE.Mesh(new THREE.PlaneGeometry(7, 7), new THREE.MeshBasicMaterial({ map: spriteTex, color: 0xff9fb5, transparent: true, opacity: 0.16, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+    const bloom = new THREE.Mesh(new THREE.PlaneGeometry(7, 7), new THREE.MeshBasicMaterial({ map: spriteTex, color: 0xff9fb5, transparent: true, opacity: polish ? 0.22 : 0.16, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
     bloom.position.set(0.1, -0.1, -1.6); scene.add(bloom);
+
+    // Premium environment (polish only): soft volumetric light behind the vial —
+    // a wide haze veil + a pale lavender atmosphere bloom. No particles.
+    if (polish) {
+      const haze = new THREE.Mesh(new THREE.PlaneGeometry(12, 9), new THREE.MeshBasicMaterial({ map: spriteTex, color: 0xf3eaff, transparent: true, opacity: 0.09, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+      haze.position.set(0.25, 0.15, -2.5); scene.add(haze);
+      const atmos = new THREE.Mesh(new THREE.PlaneGeometry(6.5, 8.5), new THREE.MeshBasicMaterial({ map: spriteTex, color: 0xe6d8ff, transparent: true, opacity: 0.13, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+      atmos.position.set(-0.15, 0.05, -1.15); scene.add(atmos);
+    }
 
     // Faint DNA double helix behind the scene
     const dna = new THREE.Group();
-    const dnaMat1 = new THREE.MeshBasicMaterial({ color: 0xffc2d0, transparent: true, opacity: 0.14 });
-    const dnaMat2 = new THREE.MeshBasicMaterial({ color: 0xd9b8ff, transparent: true, opacity: 0.12 });
+    const dnaMat1 = new THREE.MeshBasicMaterial({ color: 0xffc2d0, transparent: true, opacity: polish ? 0.08 : 0.14 });
+    const dnaMat2 = new THREE.MeshBasicMaterial({ color: 0xd9b8ff, transparent: true, opacity: polish ? 0.07 : 0.12 });
     const dnaBead = new THREE.SphereGeometry(0.03, 8, 8);
     for (let i = 0; i < 34; i++) {
       const t = i / 34 * Math.PI * 4;
@@ -503,13 +536,15 @@ export default function HeroVial({ bare = false }: { bare?: boolean } = {}) {
 
     // ── CINEMATIC LIGHTING ───────────────────────────────────
     scene.add(new THREE.AmbientLight(0xfff0f2, 0.5));
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.6); keyLight.position.set(4, 5, 5); scene.add(keyLight);
+    const keyLight = new THREE.DirectionalLight(0xffffff, polish ? 3.3 : 2.6); keyLight.position.set(4, 5, 5); scene.add(keyLight);
     const warmFill = new THREE.DirectionalLight(0xffe6d2, 1.2); warmFill.position.set(-4, 2, 3); scene.add(warmFill);
-    const redUnder = new THREE.PointLight(0xff1a2e, 0.7, 5); redUnder.position.set(0, -1.5, 1.2); scene.add(redUnder);
+    const redUnder = new THREE.PointLight(0xff1a2e, polish ? 1.2 : 0.7, 5); redUnder.position.set(0, -1.5, 1.2); scene.add(redUnder); // under glow + red tint inside the glass
     const purpleRim = new THREE.DirectionalLight(0x9b6bff, 1.15); purpleRim.position.set(-2.5, -0.5, -3.5); scene.add(purpleRim);
-    const glassRim = new THREE.DirectionalLight(0xffffff, 0.9); glassRim.position.set(2.5, 0.5, -3.0); scene.add(glassRim); // back rim to define glass edges
-    const topLight = new THREE.PointLight(0xffffff, 0.9, 4); topLight.position.set(0, 2.5, 2); scene.add(topLight);
+    const glassRim = new THREE.DirectionalLight(0xffffff, polish ? 1.9 : 0.9); glassRim.position.set(2.5, 0.5, -3.0); scene.add(glassRim); // back rim to define glass edges
+    const topLight = new THREE.PointLight(0xffffff, polish ? 1.25 : 0.9, 4); topLight.position.set(0, 2.5, 2); scene.add(topLight);
     const pinkAtmos = new THREE.PointLight(0xffb0c8, 0.35, 8); pinkAtmos.position.set(-1.2, 0.4, 1.6); scene.add(pinkAtmos); // soft pink atmosphere
+    // Soft internal bounce — lifts the blood/glass midtones from the front (polish).
+    if (polish) { const bounce = new THREE.PointLight(0xffd4dc, 0.55, 4.5); bounce.position.set(-0.2, -0.1, 1.3); scene.add(bounce); }
     const cellLight = new THREE.PointLight(0xff4080, 0.5, 3); cellLight.position.set(-1.25, 0.12, 0.8); scene.add(cellLight);
     const sweep = new THREE.PointLight(0xffffff, 0.0, 6); sweep.position.set(0, 0.6, 2.4); scene.add(sweep); // light sweep across the glass
 
@@ -532,12 +567,17 @@ export default function HeroVial({ bare = false }: { bare?: boolean } = {}) {
 
       // Vial — suspended in fluid: weightless ~11s float, no spin. Vertical
       // float dominant; rotation kept under 1° so it never reads as "spinning".
-      const L11 = (Math.PI * 2) / 11;
-      vialGroup.rotation.y = Math.sin(t * L11) * 0.014;        // ~0.8°
-      vialGroup.rotation.x = Math.sin(t * L11 * 0.5) * 0.008;  // ~0.45°
-      vialGroup.rotation.z = 0.34 + Math.sin(t * L11 * 0.7) * 0.010;
-      vialGroup.position.y = -0.15 + Math.sin(t * L11) * 0.05; // gentle vertical rise/fall
-      vialGroup.position.x = -0.2 + Math.cos(t * L11 * 0.6) * 0.010;
+      // Almost-imperceptible drift under polish: slower period + halved amplitude.
+      const L11 = (Math.PI * 2) / (polish ? 15 : 11);
+      const fk = polish ? 0.5 : 1;
+      vialGroup.rotation.y = Math.sin(t * L11) * 0.014 * fk;        // ~0.4°
+      vialGroup.rotation.x = Math.sin(t * L11 * 0.5) * 0.008 * fk;
+      vialGroup.rotation.z = tilt + Math.sin(t * L11 * 0.7) * 0.010 * fk;
+      vialGroup.position.y = -0.15 + Math.sin(t * L11) * 0.05 * fk; // gentle vertical rise/fall
+      vialGroup.position.x = -0.2 + Math.cos(t * L11 * 0.6) * 0.010 * fk;
+      // Gentle "breathing" — a very small scale pulse (±0.4%) over ~15s so the
+      // vial feels alive without any noticeable spin (polish only).
+      if (polish) { const b = 1 + Math.sin(t * ((Math.PI * 2) / 15)) * 0.004; vialGroup.scale.set(SX * b, SY * b, SX * b); }
 
       // Contact shadow tracks the float — grows softer/larger as the vial lifts.
       const lift = vialGroup.position.y + 0.15; // deviation from rest
@@ -584,7 +624,7 @@ export default function HeroVial({ bare = false }: { bare?: boolean } = {}) {
       cellGroup.rotation.y += 0.0008; cellGroup.rotation.x += 0.0005;
       const cp = 1 + Math.sin(t * 1.0) * 0.04; membrane.scale.setScalar(cp); cellGlow.scale.setScalar(cp * 1.02); nucleus.scale.setScalar(0.92 + Math.sin(t * 0.8) * 0.05);
       cellGroup.position.y = 0.12 + Math.sin(t * 0.42) * 0.07;
-      cellLight.intensity = 0.4 + Math.sin(t * 1.4) * 0.2;
+      cellLight.intensity = (0.4 + Math.sin(t * 1.4) * 0.2) * (polish ? 0.38 : 1);
       cellDots.forEach((d) => { d.mesh.position.x = d.orig.x + Math.sin(t + d.offset) * 0.06; d.mesh.position.y = d.orig.y + Math.cos(t + d.offset) * 0.06; });
 
       rippleMat.uniforms.uTime.value = t;
@@ -626,7 +666,7 @@ export default function HeroVial({ bare = false }: { bare?: boolean } = {}) {
       labelTex.dispose(); spriteTex.dispose(); ringTex.dispose(); shadowTex.dispose(); envRT?.dispose(); pmrem.dispose(); renderer.dispose();
       if (mount.contains(canvas)) mount.removeChild(canvas);
     };
-  }, [bare]);
+  }, [bare, fill, tilt, labelY, polish]);
 
   return <div ref={mountRef} style={{ width: '100%', height: '100%', position: 'relative' }} />;
 }

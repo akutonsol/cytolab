@@ -45,7 +45,7 @@ export function SiteNav({ active = 'platform' }: { active?: string }) {
           <circle cx="11.5" cy="12.5" r="1.7" fill={RED} opacity={0.75} />
           <circle cx="20.5" cy="19.5" r="1.7" fill={RED} opacity={0.75} />
         </svg>
-        <span style={{ fontWeight: 900, fontSize: 25, letterSpacing: '0.02em' }}>CYTOLAB</span>
+        <span style={{ fontWeight: 900, fontSize: 25, letterSpacing: '0.02em' }}>PathOS</span>
       </Link>
       <div style={{ display: 'flex', gap: 38, fontSize: 17 }}>
         {NAV.map((item) => {
@@ -78,13 +78,16 @@ export function SiteFooter() {
   return (
     <footer id="support" style={{ background: INK, padding: '32px 64px' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <div style={{ width: 24, height: 24, background: RED, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ color: '#fff', fontSize: 10, fontWeight: 900 }}>CY</span>
-          </div>
-          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 700 }}>CYTOLAB</span>
-          <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12, marginLeft: 8 }}>© 2026 Cytolabs Associates Ltd.</span>
-        </Link>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+            <div style={{ width: 24, height: 24, background: RED, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ color: '#fff', fontSize: 10, fontWeight: 900 }}>PO</span>
+            </div>
+            <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, fontWeight: 800, letterSpacing: '0.01em' }}>PathOS</span>
+          </Link>
+          <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12.5 }}>The Operating System for Modern Pathology</span>
+          <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11 }}>© 2026 PathOS. All rights reserved.</span>
+        </div>
         <div style={{ display: 'flex', gap: 24 }}>
           {links.map((item) => (
             <Link key={item.label} href={item.href} style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, textDecoration: 'none' }}>{item.label}</Link>
