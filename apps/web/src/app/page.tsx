@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth';
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 
 import { WorkflowPipeline } from '@/components/landing/WorkflowPipeline';
+import { SiteNav, SiteFooter, MarketingScrollStyle } from '@/components/landing/marketing-chrome';
 
 const HeroVial = dynamic(() => import('@/components/landing/HeroVial'), {
   ssr: false,
@@ -56,7 +58,7 @@ type Feature = { Icon: typeof Sparkles; label: string; desc: string; badge?: str
 type RecordRow = { id: string; type: string; status: string; color: string };
 type Plan = {
   name: string; desc: string; price: string; period: string;
-  features: string[]; cta: string; highlighted: boolean; badge?: string;
+  features: string[]; cta: string; href: string; highlighted: boolean; badge?: string;
 };
 
 // Granular chromatin stipple — scattered translucent dots reused by every cell
@@ -209,17 +211,17 @@ export default function LandingPage() {
     {
       name: 'Community', desc: 'For small labs and growing teams', price: '$499', period: '/month',
       features: ['Up to 5 users', 'AI screening unlimited', 'Core reporting', 'Standard support'],
-      cta: 'Start Free Trial', highlighted: false,
+      cta: 'Start Free Trial', href: '/book-demo', highlighted: false,
     },
     {
       name: 'Professional', badge: 'MOST POPULAR', desc: 'For established labs and clinics', price: '$1,299', period: '/month',
       features: ['Everything in Community', 'AI Screening Core', 'Workload Analytics', 'Priority Support 24/7', 'HIPAA & SOC-2 Compliance'],
-      cta: 'Contact Sales', highlighted: true,
+      cta: 'Contact Sales', href: '/contact', highlighted: true,
     },
     {
       name: 'Enterprise', desc: 'For large labs and hospital systems', price: 'Custom', period: '',
       features: ['Everything in Professional', 'SSO & Advanced Security', 'Custom Integrations', 'Dedicated Success Manager'],
-      cta: 'Talk to Sales', highlighted: false,
+      cta: 'Talk to Sales', href: '/contact', highlighted: false,
     },
   ];
 
@@ -231,41 +233,8 @@ export default function LandingPage() {
 
   return (
     <div style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif', color: INK, background: '#fff' }}>
-      {/* NAV */}
-      <nav style={{
-        position: 'fixed', top: 0, width: '100%', zIndex: 100,
-        background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(0,0,0,0.06)', padding: '0 48px', height: 78,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Cell-cluster mark (ring of dots + nucleus) to match the brand logo. */}
-          <svg width="42" height="42" viewBox="0 0 32 32" fill="none" aria-hidden>
-            {Array.from({ length: 8 }).map((_, i) => {
-              const a = (i / 8) * Math.PI * 2;
-              return <circle key={i} cx={16 + 9 * Math.cos(a)} cy={16 + 9 * Math.sin(a)} r={2.5} fill={RED} />;
-            })}
-            <circle cx="16" cy="16" r="3" fill={RED} />
-            <circle cx="11.5" cy="12.5" r="1.7" fill={RED} opacity={0.75} />
-            <circle cx="20.5" cy="19.5" r="1.7" fill={RED} opacity={0.75} />
-          </svg>
-          <span style={{ fontWeight: 900, fontSize: 25, letterSpacing: '0.02em' }}>CYTOLAB</span>
-        </div>
-        <div style={{ display: 'flex', gap: 38, fontSize: 17 }}>
-          {['Platform', 'Solutions', 'Resources', 'Pricing', 'Compliance', 'Support'].map((item, i) => (
-            <a key={item} href={`#${item.toLowerCase()}`} style={{
-              color: i === 0 ? RED : '#1F2937', fontWeight: i === 0 ? 700 : 600, textDecoration: 'none',
-              borderBottom: i === 0 ? `2.5px solid ${RED}` : 'none', paddingBottom: 4,
-            }}>{item}</a>
-          ))}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <a href="#demo" style={{
-            background: RED, color: '#fff', padding: '13px 30px', borderRadius: 11,
-            fontWeight: 700, fontSize: 16, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8,
-          }}>Request Demo <ArrowRight size={18} /></a>
-        </div>
-      </nav>
+      <MarketingScrollStyle />
+      <SiteNav active="platform" />
 
       {/* HERO */}
       <section id="platform" style={{
@@ -294,11 +263,11 @@ export default function LandingPage() {
             insights — so you can focus on what matters most: better outcomes.
           </p>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-            <a href="#demo" style={{
+            <Link href="/book-demo" style={{
               background: RED, color: '#fff', padding: '14px 28px', borderRadius: 10, fontWeight: 700, fontSize: 15,
               textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8,
-            }}>Request Demo <ArrowRight size={16} /></a>
-            <a href="#overview" style={{ color: '#374151', fontSize: 14, fontWeight: 500, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
+            }}>Request Demo <ArrowRight size={16} /></Link>
+            <a href="#resources" style={{ color: '#374151', fontSize: 14, fontWeight: 500, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ width: 34, height: 34, borderRadius: '50%', border: `1px solid ${RED}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: RED }}>
                 <Play size={14} fill={RED} />
               </span>
@@ -390,13 +359,13 @@ export default function LandingPage() {
               <span className="live-dot">●</span> LIVE
             </span>
           </div>
-          <button style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+          <a href="#resources" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" />
             </svg>
             View Full Pipeline
             <ChevronRight size={14} />
-          </button>
+          </a>
         </div>
 
         {/* Pipeline — animated glowing-node workflow */}
@@ -562,9 +531,9 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
-            <button style={{ marginTop: '32px', display: 'inline-flex', alignItems: 'center', gap: '6px', border: '1.5px solid #E63946', color: '#E63946', background: 'transparent', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+            <Link href="/solutions" style={{ marginTop: '32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', border: '1.5px solid #E63946', color: '#E63946', background: 'transparent', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
               Explore AI Screening →
-            </button>
+            </Link>
           </div>
 
           {/* Right column — 3-panel: microscopy slide / analysis / findings */}
@@ -721,11 +690,11 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <button style={{ marginTop: 20, width: '100%', padding: '12px', border: '1.5px solid #e5e7eb', borderRadius: 10, background: 'white', fontSize: 14, color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontWeight: 500, transition: 'all 0.2s ease' }}
+              <a href="#resources" style={{ marginTop: 20, width: '100%', padding: '12px', border: '1.5px solid #e5e7eb', borderRadius: 10, background: 'white', fontSize: 14, color: '#374151', cursor: 'pointer', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontWeight: 500, transition: 'all 0.2s ease' }}
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#E63946'; e.currentTarget.style.color = '#E63946'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = '#374151'; }}>
                 View Full Results →
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -867,7 +836,7 @@ export default function LandingPage() {
             </div>
           </Reveal>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 24, alignItems: 'start' }}>
-            {plans.map(({ name, badge, desc, price, period, features: feats, cta, highlighted }, i) => (
+            {plans.map(({ name, badge, desc, price, period, features: feats, cta, href, highlighted }, i) => (
               <Reveal key={name} delay={i * 0.08}>
                 <div style={{
                   border: highlighted ? `2px solid ${RED}` : '1px solid #E5E7EB', borderRadius: 24, padding: 32,
@@ -889,11 +858,12 @@ export default function LandingPage() {
                       </div>
                     ))}
                   </div>
-                  <button style={{
+                  <Link href={href} style={{
+                    display: 'block', textAlign: 'center', textDecoration: 'none',
                     width: '100%', padding: 14, background: highlighted ? RED : 'transparent',
                     color: highlighted ? '#fff' : '#374151', border: highlighted ? 'none' : '1px solid #E5E7EB',
                     borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer',
-                  }}>{cta}</button>
+                  }}>{cta}</Link>
                 </div>
               </Reveal>
             ))}
@@ -926,22 +896,22 @@ export default function LandingPage() {
               </h2>
               <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 15, letterSpacing: '0.01em', lineHeight: 1.6, marginBottom: 32 }}>Join 500+ labs transforming diagnostic excellence with CYTOLAB.</p>
               <div style={{ display: 'flex', gap: 12 }}>
-                <a
-                  href="#demo"
+                <Link
+                  href="/book-demo"
                   onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 34px rgba(0,0,0,0.28), 0 2px 6px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.9)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.15), 0 1px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8)'; }}
                   style={{ background: 'rgba(255,255,255,0.95)', color: '#BF0D23', padding: '14px 28px', borderRadius: 50, fontWeight: 700, fontSize: 14, letterSpacing: '0.01em', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid rgba(255,255,255,0.3)', boxShadow: '0 4px 24px rgba(0,0,0,0.15), 0 1px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8)', backdropFilter: 'blur(8px)', transition: 'all 0.25s ease' }}
                 >
                   Schedule Live Demo <ArrowRight size={16} />
-                </a>
-                <a
-                  href="#support"
+                </Link>
+                <Link
+                  href="/contact"
                   onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
                   style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', padding: '14px 28px', borderRadius: 50, fontWeight: 700, fontSize: 14, letterSpacing: '0.01em', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.35)', backdropFilter: 'blur(8px)', transition: 'all 0.25s ease' }}
                 >
                   Contact Sales
-                </a>
+                </Link>
               </div>
             </div>
             <div id="compliance" style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
@@ -959,29 +929,7 @@ export default function LandingPage() {
       </section>
 
       {/* FOOTER */}
-      <footer id="support" style={{ background: INK, padding: '32px 64px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 24, height: 24, background: RED, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ color: '#fff', fontSize: 10, fontWeight: 900 }}>CY</span>
-            </div>
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 700 }}>CYTOLAB</span>
-            <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12, marginLeft: 8 }}>© 2026 Cytolabs Associates Ltd.</span>
-          </div>
-          <div style={{ display: 'flex', gap: 24 }}>
-            {['Privacy Policy', 'Terms of Service', 'Security', 'Support'].map((item) => (
-              <a key={item} href="#" style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, textDecoration: 'none' }}>{item}</a>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: 12 }}>
-            {['in', 'X', '▶'].map((icon) => (
-              <div key={icon} style={{ width: 32, height: 32, background: 'rgba(255,255,255,0.08)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: 700 }}>{icon}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

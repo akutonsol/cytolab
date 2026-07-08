@@ -1,11 +1,13 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, FolderOpen, ListChecks, FileText, LineChart,
-  MousePointer2, Hand, ZoomIn, Maximize2, Play, Check,
+  MousePointer2, Hand, ZoomIn, Maximize2, Play, Pause, Check,
   TestTube2, BrainCircuit, User, FileCheck2, UploadCloud,
   Microscope, Clock, Building2, Activity, Sparkles, ChevronDown, Sun, Crosshair,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react';
 
 import { EASE } from '@cytolab/animations';
@@ -27,27 +29,64 @@ const BIO = [
 ];
 
 const NAV = [
-  { icon: LayoutDashboard, label: 'Dashboard', active: true },
+  { icon: LayoutDashboard, label: 'Dashboard' },
   { icon: FolderOpen, label: 'Cases' },
   { icon: ListChecks, label: 'Worklist' },
   { icon: FileText, label: 'Reports' },
   { icon: LineChart, label: 'Analytics' },
 ];
 
-const STEPS = [
-  { label: 'Specimen Received', sub: '10:21 AM', state: 'done' },
-  { label: 'AI Screening', sub: 'Analyzing cells...', state: 'active', pct: '98%' },
-  { label: 'Pathologist Review', sub: 'Pending', state: 'pending' },
-  { label: 'Report Generation', sub: 'Pending', state: 'pending' },
-  { label: 'Completed', sub: 'Pending', state: 'pending' },
+// The five pipeline stages that drive the ENTIRE dashboard. Clicking a stage (or
+// autoplay) sets `active`; the slide viewer, case progress, stats and foot all
+// re-derive from it — turning the static mockup into a real click-through tour.
+type Overlay = 'review' | 'report' | 'delivered' | null;
+type Stage = {
+  Icon: typeof TestTube2; label: string; sub: string; // pipeline node
+  navIndex: number; pill: string; pillTint: 'violet' | 'green' | 'red';
+  detections: boolean; scanning: boolean; overlay: Overlay;
+  badge: { title: string; sub: string } | null;
+  confidence: string; cells: string; atypical: string; foot: string;
+};
+const STAGES: Stage[] = [
+  {
+    Icon: TestTube2, label: 'Specimen Received', sub: 'Accessioned and ready for analysis',
+    navIndex: 1, pill: 'Accessioned', pillTint: 'green', detections: false, scanning: false, overlay: null,
+    badge: null, confidence: '—', cells: '0', atypical: '0',
+    foot: 'Specimen C-24-89321 accessioned · queued for AI screening',
+  },
+  {
+    Icon: BrainCircuit, label: 'AI Screening', sub: 'Deep learning models analyze millions of cells',
+    navIndex: 2, pill: 'AI Screening', pillTint: 'violet', detections: true, scanning: true, overlay: null,
+    badge: { title: 'HSIL Detected', sub: 'Confidence 98.4%' }, confidence: '98.4', cells: '14,672', atypical: '18',
+    foot: 'AI model v3.2 · analyzing millions of cells in real time…',
+  },
+  {
+    Icon: User, label: 'Pathologist Review', sub: 'Expert validation with AI insights',
+    navIndex: 2, pill: 'In Review', pillTint: 'red', detections: true, scanning: false, overlay: 'review',
+    badge: { title: 'HSIL Detected', sub: 'Confidence 98.4%' }, confidence: '98.4', cells: '14,672', atypical: '18',
+    foot: 'Case auto-routed to Dr. Sarah Mitchell for validation',
+  },
+  {
+    Icon: FileCheck2, label: 'Report Generated', sub: 'Structured, CAP-compliant report created',
+    navIndex: 3, pill: 'Report Ready', pillTint: 'violet', detections: false, scanning: false, overlay: 'report',
+    badge: null, confidence: '98.4', cells: '14,672', atypical: '18',
+    foot: 'Structured, CAP-compliant report generated and signed out',
+  },
+  {
+    Icon: UploadCloud, label: 'Delivered', sub: 'Seamlessly sent to LIS / EHR',
+    navIndex: 3, pill: 'Delivered', pillTint: 'green', detections: false, scanning: false, overlay: 'delivered',
+    badge: null, confidence: '98.4', cells: '14,672', atypical: '18',
+    foot: 'Report delivered to LIS / EHR · case complete',
+  },
 ];
 
-const PIPE = [
-  { Icon: TestTube2, label: 'Specimen Received', sub: 'Accessioned and ready for analysis', done: true },
-  { Icon: BrainCircuit, label: 'AI Screening', sub: 'Deep learning models analyze millions of cells', active: true },
-  { Icon: User, label: 'Pathologist Review', sub: 'Expert validation with AI insights' },
-  { Icon: FileCheck2, label: 'Report Generated', sub: 'Structured, CAP-compliant report created' },
-  { Icon: UploadCloud, label: 'Delivered', sub: 'Seamlessly sent to LIS / EHR' },
+// Case-progress column labels (one per stage).
+const CASE = [
+  { label: 'Specimen Received', time: '10:21 AM', activeSub: 'Accessioning specimen…' },
+  { label: 'AI Screening', time: '10:23 AM', activeSub: 'Scanning cells…', pct: '98%' },
+  { label: 'Pathologist Review', time: '10:31 AM', activeSub: 'Validating findings…' },
+  { label: 'Report Generation', time: '10:44 AM', activeSub: 'Generating report…' },
+  { label: 'Completed', time: '10:45 AM', activeSub: 'Finalizing…' },
 ];
 
 const KPIS = [
@@ -73,6 +112,20 @@ const DETECTIONS = [
 ];
 
 export default function PlatformShowcase() {
+  const [active, setActive] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const stage = STAGES[active];
+
+  // Autoplay: advance through the pipeline while playing, looping at the end.
+  useEffect(() => {
+    if (!playing) return;
+    const t = setInterval(() => setActive((a) => (a + 1) % STAGES.length), 2800);
+    return () => clearInterval(t);
+  }, [playing]);
+
+  const go = (i: number) => { setActive(((i % STAGES.length) + STAGES.length) % STAGES.length); };
+  const goManual = (i: number) => { setPlaying(false); go(i); };
+
   return (
     <div className="ps">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
@@ -88,11 +141,11 @@ export default function PlatformShowcase() {
       <motion.div className="ps-head"
         initial={{ opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '-120px' }} transition={{ duration: 0.7, ease: EASE }}>
-        <div className="ps-eyebrow">Live Platform <span className="ps-eyebrow-dot" /></div>
+        <div className="ps-eyebrow">Interactive Walkthrough <span className="ps-eyebrow-dot" /></div>
         <h2 className="ps-title">One platform.<br />Every step <em>connected.</em></h2>
         <p className="ps-lede">
-          Watch a specimen move through CYTOLAB in real time — from accessioning to
-          AI screening to a signed, structured report. One continuous, intelligent pipeline.
+          Click any stage below to walk a specimen through CYTOLAB — from accessioning to
+          AI screening to a signed, structured report. Or press play for the full tour.
         </p>
       </motion.div>
 
@@ -114,8 +167,8 @@ export default function PlatformShowcase() {
             <span className="ps-brand-name">CYTOLAB</span>
           </div>
           <nav className="ps-nav">
-            {NAV.map((n) => (
-              <span key={n.label} className={`ps-tab ${n.active ? 'is-active' : ''}`}>
+            {NAV.map((n, i) => (
+              <span key={n.label} className={`ps-tab ${i === stage.navIndex ? 'is-active' : ''}`}>
                 <n.icon size={15} strokeWidth={2} />{n.label}
               </span>
             ))}
@@ -132,7 +185,7 @@ export default function PlatformShowcase() {
           <div className="ps-slide">
             <div className="ps-slide-head">
               <span className="ps-slide-id">Slide: <b>C-24-89321</b></span>
-              <span className="ps-slide-pill">AI Screening</span>
+              <span className={`ps-slide-pill tint-${stage.pillTint}`}>{stage.pill}</span>
               <Crosshair size={16} className="ps-slide-target" />
             </div>
             <div className="ps-slide-body">
@@ -142,15 +195,51 @@ export default function PlatformShowcase() {
                   <span key={i} className={`ps-tool ${i === 0 ? 'is-on' : ''}`}><I size={16} strokeWidth={2} /></span>
                 ))}
               </div>
-              <div className="ps-hsil"><b>HSIL Detected</b><span>Confidence 98.4%</span></div>
-              {DETECTIONS.map((d, i) => (
+
+              {stage.scanning && <span className="ps-scan" />}
+
+              {stage.badge && (
+                <div className="ps-hsil"><b>{stage.badge.title}</b><span>{stage.badge.sub}</span></div>
+              )}
+              {stage.detections && DETECTIONS.map((d, i) => (
                 <div key={i} className="ps-detect" style={{ top: d.top, left: d.left, width: d.w, height: d.h }} />
               ))}
-              <div className="ps-play">
-                <span className="ps-play-btn"><Play size={26} fill={RED} color={RED} /></span>
-                <div className="ps-play-label">Watch Live Demo</div>
-                <div className="ps-play-time">2:18</div>
-              </div>
+
+              {/* Start-tour affordance — only on the first stage while paused */}
+              {active === 0 && !playing && (
+                <button className="ps-play" onClick={() => setPlaying(true)} aria-label="Play walkthrough">
+                  <span className="ps-play-btn"><Play size={26} fill={RED} color={RED} /></span>
+                  <span className="ps-play-label">Play walkthrough</span>
+                  <span className="ps-play-time">5 steps · ~15s</span>
+                </button>
+              )}
+
+              {/* Stage-specific overlays */}
+              {stage.overlay === 'review' && (
+                <div className="ps-ov ps-ov-review">
+                  <span className="av">SM</span>
+                  <span><b>Dr. Sarah Mitchell</b><span>Reviewing findings…</span></span>
+                </div>
+              )}
+              {stage.overlay === 'report' && (
+                <div className="ps-ov ps-ov-report">
+                  <div className="rep-head"><FileCheck2 size={14} /> Cytology Report</div>
+                  <div className="rep-body">
+                    <div className="rep-row"><span>Specimen</span><b>C-24-89321</b></div>
+                    <div className="rep-row"><span>Finding</span><b className="rep-hsil">HSIL</b></div>
+                    <div className="rep-row"><span>Bethesda</span><b>Epithelial abnormality</b></div>
+                    <div className="rep-sign"><Check size={12} strokeWidth={3} /> Signed · Dr. S. Mitchell</div>
+                  </div>
+                </div>
+              )}
+              {stage.overlay === 'delivered' && (
+                <div className="ps-ov ps-ov-delivered">
+                  <span className="circle"><Check size={30} color="#22c55e" strokeWidth={3} /></span>
+                  <b>Delivered to LIS / EHR</b>
+                  <span>Case C-24-89321 complete</span>
+                </div>
+              )}
+
               <div className="ps-slide-foot">
                 <span className="ps-mini"><img src="/cytology-sample.png" alt="" /><span className="ps-mini-box" /></span>
                 <span className="ps-zoom">40x <ChevronDown size={13} /></span>
@@ -163,28 +252,32 @@ export default function PlatformShowcase() {
           <div className="ps-prog">
             <div className="ps-col-title">Case Progress</div>
             <div className="ps-steps">
-              {STEPS.map((s, i) => (
-                <div key={s.label} className={`ps-step ${s.state}`}>
-                  {i < STEPS.length - 1 && <span className="ps-step-line" />}
-                  <span className="ps-step-dot">{s.state === 'done' ? <Check size={11} strokeWidth={3.2} /> : null}</span>
-                  <div className="ps-step-body">
-                    <div className="ps-step-row">
-                      <span className="ps-step-label">{s.label}</span>
-                      {s.state === 'done' && <span className="ps-step-time">{s.sub}</span>}
-                      {s.pct && <span className="ps-step-check"><Check size={13} strokeWidth={2.5} /></span>}
+              {CASE.map((s, i) => {
+                const state = i < active ? 'done' : i === active ? 'active' : 'pending';
+                return (
+                  <div key={s.label} className={`ps-step ${state}`}>
+                    {i < CASE.length - 1 && <span className="ps-step-line" />}
+                    <span className="ps-step-dot">{state === 'done' ? <Check size={11} strokeWidth={3.2} /> : null}</span>
+                    <div className="ps-step-body">
+                      <div className="ps-step-row">
+                        <span className="ps-step-label">{s.label}</span>
+                        {state === 'done' && <span className="ps-step-time">{s.time}</span>}
+                        {state === 'active' && s.pct && <span className="ps-step-check"><Check size={13} strokeWidth={2.5} /></span>}
+                      </div>
+                      {state === 'active' && <div className="ps-step-sub">{s.activeSub}{s.pct && <b>  {s.pct}</b>}</div>}
+                      {state === 'pending' && <div className="ps-step-sub">Pending</div>}
                     </div>
-                    {s.state !== 'done' && <div className="ps-step-sub">{s.sub}{s.pct && <b>  {s.pct}</b>}</div>}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
           {/* Stat cards */}
           <div className="ps-stats-col">
             <div className="ps-mini-card">
-              <div className="ps-mini-head"><span className="ps-mini-label">AI Confidence</span><span className="ps-mini-pill">High</span></div>
-              <div className="ps-mini-value">98.4<span>%</span></div>
+              <div className="ps-mini-head"><span className="ps-mini-label">AI Confidence</span><span className="ps-mini-pill">{stage.confidence === '—' ? 'Idle' : 'High'}</span></div>
+              <div className="ps-mini-value">{stage.confidence}<span>{stage.confidence === '—' ? '' : '%'}</span></div>
               <svg className="ps-spark" viewBox="0 0 120 34" preserveAspectRatio="none">
                 <defs><linearGradient id="psConf" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.4" /><stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" /></linearGradient></defs>
                 <polygon points="0,26 15,22 30,24 45,16 60,19 75,11 90,14 105,7 120,4 120,34 0,34" fill="url(#psConf)" />
@@ -193,12 +286,12 @@ export default function PlatformShowcase() {
             </div>
             <div className="ps-mini-card">
               <span className="ps-mini-label">Cells Analyzed</span>
-              <div className="ps-mini-value">14,672</div>
-              <div className="ps-mini-trend">↑ +12% vs last 15 min</div>
+              <div className="ps-mini-value">{stage.cells}</div>
+              <div className="ps-mini-trend">{active === 0 ? 'Awaiting screening' : '↑ +12% vs last 15 min'}</div>
             </div>
             <div className="ps-mini-card">
               <span className="ps-mini-label">Atypical Cells</span>
-              <div className="ps-mini-value">18</div>
+              <div className="ps-mini-value">{stage.atypical}</div>
               <svg className="ps-spark ps-spark-sm" viewBox="0 0 120 26" preserveAspectRatio="none">
                 <defs><linearGradient id="psAty" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={RED} stopOpacity="0.35" /><stop offset="100%" stopColor={RED} stopOpacity="0" /></linearGradient></defs>
                 <polygon points="0,18 20,15 40,17 60,10 80,13 100,7 120,5 120,26 0,26" fill="url(#psAty)" />
@@ -210,29 +303,50 @@ export default function PlatformShowcase() {
 
         {/* Foot */}
         <div className="ps-foot">
-          <span className="ps-foot-l"><Sparkles size={13} color="#a78bfa" /> AI model v3.2 · HSIL detected in 3 regions · Case auto-routed to Dr. Sarah Mitchell</span>
+          <span className="ps-foot-l"><Sparkles size={13} color="#a78bfa" /> {stage.foot}</span>
           <span className="ps-foot-r">Just now</span>
         </div>
       </motion.div>
 
-      {/* ── PIPELINE ── */}
+      {/* ── WALKTHROUGH CONTROLS ── */}
+      <div className="ps-controls">
+        <button className="ps-ctrl-btn" onClick={() => goManual(active - 1)} aria-label="Previous stage"><ChevronLeft size={18} /></button>
+        <button className="ps-ctrl-btn ps-ctrl-play" onClick={() => setPlaying((p) => !p)} aria-label={playing ? 'Pause' : 'Play'}>
+          {playing ? <Pause size={20} fill="#fff" /> : <Play size={20} fill="#fff" />}
+        </button>
+        <button className="ps-ctrl-btn" onClick={() => goManual(active + 1)} aria-label="Next stage"><ChevronRight size={18} /></button>
+        <div className="ps-ctrl-meta">
+          <div className="ps-ctrl-stage">{stage.label}</div>
+          <div className="ps-ctrl-count">Step {active + 1} of {STAGES.length}{playing ? ' · playing' : ''}</div>
+        </div>
+        <div className="ps-dots">
+          {STAGES.map((s, i) => (
+            <button key={s.label} className={`ps-dot ${i === active ? 'is-on' : ''}`} onClick={() => goManual(i)} aria-label={`Go to ${s.label}`} />
+          ))}
+        </div>
+      </div>
+
+      {/* ── PIPELINE (clickable) ── */}
       <div className="ps-flow">
-        {PIPE.map((p, i) => (
-          <div key={p.label} className="ps-flow-node">
-            <div className="ps-flow-circle-wrap">
-              <div className={`ps-flow-circle ${p.active ? 'is-active' : ''}`}>
-                <p.Icon size={26} strokeWidth={1.8} color={p.active ? RED : '#64748b'} />
-                {p.done && <span className="ps-flow-badge"><Check size={11} strokeWidth={3.4} /></span>}
-                {p.active && <span className="ps-flow-ring" />}
+        {STAGES.map((p, i) => {
+          const state = i < active ? 'is-done' : i === active ? 'is-active' : '';
+          return (
+            <button key={p.label} className="ps-flow-node" onClick={() => goManual(i)} aria-label={`Go to ${p.label}`}>
+              <div className="ps-flow-circle-wrap">
+                <div className={`ps-flow-circle ${state}`}>
+                  <p.Icon size={26} strokeWidth={1.8} color={i === active ? RED : i < active ? '#22c55e' : '#64748b'} />
+                  {i < active && <span className="ps-flow-badge"><Check size={11} strokeWidth={3.4} /></span>}
+                  {i === active && <span className="ps-flow-ring" />}
+                </div>
+                {i < STAGES.length - 1 && (
+                  <div className="ps-flow-arrow"><span className={`ps-flow-line ${i < active ? 'is-done' : ''}`} /><span className="ps-flow-head" /></div>
+                )}
               </div>
-              {i < PIPE.length - 1 && (
-                <div className="ps-flow-arrow"><span className="ps-flow-line" /><span className="ps-flow-head" /></div>
-              )}
-            </div>
-            <div className={`ps-flow-label ${p.active ? 'is-active' : ''}`}>{p.label}</div>
-            <div className="ps-flow-sub">{p.sub}</div>
-          </div>
-        ))}
+              <div className={`ps-flow-label ${i === active ? 'is-active' : ''}`}>{p.label}</div>
+              <div className="ps-flow-sub">{p.sub}</div>
+            </button>
+          );
+        })}
       </div>
 
       {/* ── KPIs + COMPLIANCE ── */}
@@ -289,7 +403,7 @@ const CSS = `
   .ps-brand { display: flex; align-items: center; gap: 9px; }
   .ps-brand-name { font-size: 16px; font-weight: 800; letter-spacing: .02em; color: #fff; }
   .ps-nav { display: flex; align-items: center; gap: 4px; }
-  .ps-tab { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: rgba(255,255,255,.5); padding: 7px 13px; border-radius: 9px; }
+  .ps-tab { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: rgba(255,255,255,.5); padding: 7px 13px; border-radius: 9px; transition: color .25s ease, background .25s ease; }
   .ps-tab.is-active { color: #fff; background: rgba(255,255,255,.09); }
   .ps-top-right { display: flex; align-items: center; gap: 12px; }
   .ps-livesys { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .04em; color: #22c55e;
@@ -305,7 +419,10 @@ const CSS = `
   .ps-slide { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; }
   .ps-slide-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
   .ps-slide-id { font-size: 12px; color: rgba(255,255,255,.55); } .ps-slide-id b { color: #fff; font-weight: 700; }
-  .ps-slide-pill { font-size: 11px; font-weight: 700; color: #c4b5fd; background: rgba(139,92,246,.18); border: 1px solid rgba(139,92,246,.3); border-radius: 999px; padding: 3px 10px; }
+  .ps-slide-pill { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 3px 10px; transition: all .25s ease; }
+  .ps-slide-pill.tint-violet { color: #c4b5fd; background: rgba(139,92,246,.18); border: 1px solid rgba(139,92,246,.3); }
+  .ps-slide-pill.tint-green { color: #6ee7b7; background: rgba(34,197,94,.16); border: 1px solid rgba(34,197,94,.32); }
+  .ps-slide-pill.tint-red { color: #fda4af; background: rgba(230,57,70,.18); border: 1px solid rgba(230,57,70,.34); }
   .ps-slide-target { color: rgba(255,255,255,.5); margin-left: auto; }
   .ps-slide-body { position: relative; flex: 1; min-height: 340px; }
   .ps-slide-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: saturate(1.05); }
@@ -313,16 +430,38 @@ const CSS = `
   .ps-tool { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; color: rgba(255,255,255,.85);
     background: rgba(20,15,35,.55); border: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(6px); }
   .ps-tool.is-on { background: rgba(230,57,70,.85); border-color: transparent; color: #fff; }
-  .ps-hsil { position: absolute; top: 22%; left: 8%; z-index: 4; background: ${RED}; color: #fff; border-radius: 10px; padding: 7px 12px; box-shadow: 0 8px 22px rgba(230,57,70,.5); }
+  .ps-hsil { position: absolute; top: 22%; left: 8%; z-index: 4; background: ${RED}; color: #fff; border-radius: 10px; padding: 7px 12px; box-shadow: 0 8px 22px rgba(230,57,70,.5); animation: ps-fade .4s ease; }
   .ps-hsil b { display: block; font-size: 12.5px; font-weight: 800; } .ps-hsil span { font-size: 10.5px; opacity: .9; }
-  .ps-detect { position: absolute; z-index: 3; border: 1.5px solid rgba(230,57,70,.9); border-radius: 4px; box-shadow: 0 0 10px rgba(230,57,70,.35); }
-  .ps-play { position: absolute; top: 50%; left: 58%; transform: translate(-50%,-50%); z-index: 5; text-align: center; }
+  .ps-detect { position: absolute; z-index: 3; border: 1.5px solid rgba(230,57,70,.9); border-radius: 4px; box-shadow: 0 0 10px rgba(230,57,70,.35); animation: ps-fade .4s ease; }
+  .ps-scan { position: absolute; left: 0; right: 0; top: 0; height: 2px; z-index: 5; background: linear-gradient(90deg, transparent, rgba(167,139,250,.95), transparent); box-shadow: 0 0 12px rgba(139,92,246,.8); animation: ps-scanmove 2.2s ease-in-out infinite; }
+  @keyframes ps-scanmove { 0%{top:4%;opacity:0} 12%{opacity:1} 88%{opacity:1} 100%{top:94%;opacity:0} }
+  @keyframes ps-fade { from{opacity:0} to{opacity:1} }
+
+  .ps-play { position: absolute; top: 50%; left: 58%; transform: translate(-50%,-50%); z-index: 6; text-align: center; display: grid; justify-items: center; background: none; border: none; cursor: pointer; }
   .ps-play-btn { display: grid; place-items: center; width: 74px; height: 74px; margin: 0 auto; border-radius: 50%; background: #fff;
     box-shadow: 0 0 0 6px rgba(230,57,70,.28), 0 0 34px rgba(230,57,70,.5); animation: ps-pulse 2.4s ease-out infinite; }
   @keyframes ps-pulse { 0%{box-shadow:0 0 0 4px rgba(230,57,70,.4),0 0 24px rgba(230,57,70,.5)} 70%{box-shadow:0 0 0 16px rgba(230,57,70,0),0 0 24px rgba(230,57,70,.3)} 100%{box-shadow:0 0 0 4px rgba(230,57,70,0),0 0 24px rgba(230,57,70,.3)} }
   .ps-play-label { margin-top: 12px; font-size: 14px; font-weight: 700; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.5); }
   .ps-play-time { font-size: 12px; color: rgba(255,255,255,.75); text-shadow: 0 2px 8px rgba(0,0,0,.5); }
-  .ps-slide-foot { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+
+  /* Stage overlays */
+  .ps-ov { z-index: 6; animation: ps-fade .45s ease; }
+  .ps-ov-review { position: absolute; right: 14px; bottom: 58px; display: flex; align-items: center; gap: 10px;
+    background: rgba(20,15,35,.82); border: 1px solid rgba(255,255,255,.14); border-radius: 12px; padding: 9px 13px; backdrop-filter: blur(8px); }
+  .ps-ov-review .av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; color: #fff; background: linear-gradient(150deg,#8b5cf6,#6d28d9); }
+  .ps-ov-review b { font-size: 12.5px; color: #fff; display: block; } .ps-ov-review span span, .ps-ov-review > span > span { font-size: 11px; color: rgba(255,255,255,.6); }
+  .ps-ov-report { position: absolute; top: 50%; left: 56%; transform: translate(-50%,-50%); width: 224px; background: #fff; border-radius: 13px; box-shadow: 0 24px 60px rgba(0,0,0,.45); overflow: hidden; }
+  .ps-ov-report .rep-head { display: flex; align-items: center; gap: 7px; padding: 10px 13px; font-size: 12.5px; font-weight: 800; color: #fff; background: linear-gradient(135deg,#7c3aed,#5b21b6); }
+  .ps-ov-report .rep-body { padding: 12px 13px 13px; }
+  .ps-ov-report .rep-row { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: #64748b; padding: 4px 0; }
+  .ps-ov-report .rep-row b { color: #0f172a; font-weight: 700; } .ps-ov-report .rep-hsil { color: ${RED}; }
+  .ps-ov-report .rep-sign { margin-top: 8px; display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: #16a34a; background: rgba(34,197,94,.12); border-radius: 7px; padding: 5px 9px; }
+  .ps-ov-delivered { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 6px; text-align: center;
+    background: radial-gradient(circle at 50% 45%, rgba(10,8,20,.55), rgba(10,8,20,.82)); }
+  .ps-ov-delivered .circle { width: 74px; height: 74px; border-radius: 50%; background: rgba(34,197,94,.16); border: 1px solid rgba(34,197,94,.5); display: grid; place-items: center; margin-bottom: 6px; }
+  .ps-ov-delivered b { font-size: 15px; color: #fff; } .ps-ov-delivered > span:last-child { font-size: 12px; color: rgba(255,255,255,.6); }
+
+  .ps-slide-foot { position: absolute; left: 0; right: 0; bottom: 0; z-index: 7; display: flex; align-items: center; gap: 12px; padding: 10px 12px;
     background: linear-gradient(0deg, rgba(15,10,28,.85), transparent); }
   .ps-mini { position: relative; width: 66px; height: 46px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,.25); }
   .ps-mini img { width: 100%; height: 100%; object-fit: cover; } .ps-mini-box { position: absolute; top: 30%; left: 22%; width: 26%; height: 34%; border: 1.5px solid ${RED}; border-radius: 2px; }
@@ -337,7 +476,7 @@ const CSS = `
   .ps-step-line { position: absolute; left: 8px; top: 20px; bottom: -2px; width: 2px; background: rgba(255,255,255,.1); }
   .ps-step.done .ps-step-line { background: rgba(34,197,94,.4); }
   .ps-step-dot { position: relative; z-index: 1; width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center;
-    background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.2); color: #fff; }
+    background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.2); color: #fff; transition: all .3s ease; }
   .ps-step.done .ps-step-dot { background: #22c55e; border-color: #22c55e; }
   .ps-step.active .ps-step-dot { background: #8b5cf6; border-color: #8b5cf6; box-shadow: 0 0 0 4px rgba(139,92,246,.22); }
   .ps-step-body { flex: 1; }
@@ -366,17 +505,33 @@ const CSS = `
   .ps-foot-l { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: rgba(255,255,255,.55); }
   .ps-foot-r { font-size: 12px; color: rgba(255,255,255,.4); }
 
-  /* Pipeline */
-  .ps-flow { position: relative; z-index: 2; max-width: 1160px; margin: 56px auto 0; display: grid; grid-template-columns: repeat(5,1fr); }
-  .ps-flow-node { text-align: center; padding: 0 6px; }
+  /* Walkthrough controls */
+  .ps-controls { position: relative; z-index: 2; max-width: 1200px; margin: 22px auto 0; display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+  .ps-ctrl-btn { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: #fff; border: 1px solid #e7e3f2; color: #0f172a; cursor: pointer; box-shadow: 0 6px 16px -8px rgba(60,40,120,.35); transition: transform .15s ease, border-color .15s ease; }
+  .ps-ctrl-btn:hover { border-color: ${RED}; transform: translateY(-1px); }
+  .ps-ctrl-play { width: 48px; height: 48px; background: ${RED}; border-color: transparent; color: #fff; box-shadow: 0 10px 22px -8px rgba(230,57,70,.6); }
+  .ps-ctrl-play:hover { border-color: transparent; }
+  .ps-ctrl-meta { min-width: 176px; text-align: center; }
+  .ps-ctrl-stage { font-size: 14px; font-weight: 800; color: #0f172a; letter-spacing: -.01em; }
+  .ps-ctrl-count { font-size: 11px; color: #94a3b8; margin-top: 2px; letter-spacing: .04em; }
+  .ps-dots { display: inline-flex; gap: 7px; }
+  .ps-dot { width: 8px; height: 8px; border-radius: 50%; background: #d9d3e8; border: none; cursor: pointer; padding: 0; transition: all .2s ease; }
+  .ps-dot.is-on { background: ${RED}; transform: scale(1.3); }
+
+  /* Pipeline (clickable) */
+  .ps-flow { position: relative; z-index: 2; max-width: 1160px; margin: 44px auto 0; display: grid; grid-template-columns: repeat(5,1fr); }
+  .ps-flow-node { text-align: center; padding: 8px 6px; background: none; border: none; font: inherit; cursor: pointer; width: 100%; }
   .ps-flow-circle-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
-  .ps-flow-circle { position: relative; width: 66px; height: 66px; border-radius: 50%; display: grid; place-items: center; background: #fff; border: 1.5px solid #e7e3f2; box-shadow: 0 8px 22px -10px rgba(60,40,120,.28); }
+  .ps-flow-circle { position: relative; width: 66px; height: 66px; border-radius: 50%; display: grid; place-items: center; background: #fff; border: 1.5px solid #e7e3f2; box-shadow: 0 8px 22px -10px rgba(60,40,120,.28); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+  .ps-flow-node:hover .ps-flow-circle { transform: translateY(-3px); box-shadow: 0 14px 30px -12px rgba(60,40,120,.4); }
+  .ps-flow-circle.is-done { border-color: #22c55e; }
   .ps-flow-circle.is-active { border-color: ${RED}; box-shadow: 0 0 0 5px rgba(230,57,70,.1), 0 0 28px rgba(230,57,70,.28); }
   .ps-flow-badge { position: absolute; top: -3px; right: -3px; width: 20px; height: 20px; border-radius: 50%; background: #22c55e; border: 2px solid #fff; display: grid; place-items: center; color: #fff; }
   .ps-flow-ring { position: absolute; inset: -6px; border-radius: 50%; border: 2px solid rgba(230,57,70,.4); animation: ps-ring 2.4s ease-out infinite; }
   @keyframes ps-ring { 0%{transform:scale(1);opacity:.6} 100%{transform:scale(1.35);opacity:0} }
   .ps-flow-arrow { position: absolute; left: calc(50% + 40px); right: calc(-50% + 40px); top: 33px; display: flex; align-items: center; }
-  .ps-flow-line { flex: 1; height: 1.5px; background: #d9d3e8; }
+  .ps-flow-line { flex: 1; height: 1.5px; background: #d9d3e8; transition: background .3s ease; }
+  .ps-flow-line.is-done { background: rgba(34,197,94,.55); }
   .ps-flow-head { width: 0; height: 0; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 6px solid #d9d3e8; margin-left: -1px; }
   .ps-flow-label { margin-top: 16px; font-size: 15px; font-weight: 700; color: #0f172a; }
   .ps-flow-label.is-active { color: ${RED}; }
