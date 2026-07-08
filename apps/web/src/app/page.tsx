@@ -906,12 +906,20 @@ export default function LandingPage() {
       <section id="demo" style={{ background: 'linear-gradient(135deg, #8B0000 0%, #C1121F 35%, #9B1020 65%, #7A0015 100%)', padding: '80px 64px', position: 'relative', overflow: 'hidden' }}>
         <style>{`@keyframes badgePulse { 0%,100%{opacity:.55} 50%{opacity:1} }`}</style>
 
+        {/* Blended seam — dissolves the white Pricing surface above into the red
+            CTA instead of a hard cut. Sits above the section fill, below content,
+            and clears the heading (which starts at the 80px top padding). */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, zIndex: 0, pointerEvents: 'none', background: 'linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0) 100%)' }} />
+
         {/* Volumetric overlay layers */}
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 80% at 80% 50%, rgba(255,60,80,0.25) 0%, transparent 60%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 40% 60% at 20% 50%, rgba(80,0,10,0.4) 0%, transparent 55%)', pointerEvents: 'none' }} />
 
         {footerCells.map((cell, i) => (
-          <div key={i} style={{ position: 'absolute', width: cell.size, height: cell.size, borderRadius: '50%', background: 'rgba(255,255,255,0.3)', top: cell.top, right: cell.right, bottom: cell.bottom, opacity: cell.opacity }} />
+          <motion.div key={i}
+            animate={{ y: [0, -16, 0], x: [0, i % 2 ? 10 : -8, 0] }}
+            transition={{ duration: 13 + i * 4, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ position: 'absolute', width: cell.size, height: cell.size, borderRadius: '50%', background: 'rgba(255,255,255,0.3)', top: cell.top, right: cell.right, bottom: cell.bottom, opacity: cell.opacity }} />
         ))}
 
         {/* Living biological microscopy scene — fills the right 40% */}
