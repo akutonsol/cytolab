@@ -1,5 +1,23 @@
 'use client'
 import dynamic from 'next/dynamic'
+import { motion } from 'framer-motion'
+
+const EASE = [0.22, 0.8, 0.2, 1] as const
+// Reveal presets — framer whileInView is tied to React lifecycle, so it always
+// settles to the target (never leaves an element stuck), which matters on this
+// WebGL section. "rise" for the feature cards, "fade" for the floating UI cards.
+const rise = (i: number) => ({
+  initial: { opacity: 0, y: 34 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: '-80px' },
+  transition: { duration: 0.7, ease: EASE, delay: i * 0.12 },
+})
+const fade = (i: number) => ({
+  initial: { opacity: 0 },
+  whileInView: { opacity: 1 },
+  viewport: { once: true, margin: '-60px' },
+  transition: { duration: 0.7, ease: EASE, delay: i * 0.14 },
+})
 
 const LivingScienceScene = dynamic(
   () => import('./LivingScienceScene'),
@@ -24,6 +42,15 @@ export default function LivingScienceSection() {
         position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
         background: 'radial-gradient(ellipse 80% 70% at 55% 40%, rgba(80,20,10,0.5) 0%, rgba(40,5,20,0.3) 40%, transparent 70%)',
       }} />
+
+      {/* Blended TOP edge — dissolves the light AI-Screening surface above into
+          the dark scene instead of a hard cut. Sits above the ambience, below
+          content, and clears the vertically-centered editorial copy. */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: 190, zIndex: 1, pointerEvents: 'none',
+        background: 'linear-gradient(180deg, #f8f7ff 0%, rgba(248,247,255,0.45) 26%, rgba(13,5,8,0) 100%)',
+      }} />
+
 
       {/* ── TOP HERO AREA ── */}
       <div style={{
@@ -223,7 +250,7 @@ export default function LivingScienceSection() {
         }}>
 
           {/* Card 1 — Molecular Density */}
-          <div style={{
+          <motion.div {...fade(0)} style={{
             background: 'rgba(15,10,20,0.85)',
             border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: '16px',
@@ -261,10 +288,10 @@ export default function LivingScienceSection() {
               <polyline points="0,22 10,18 20,14 30,16 40,8 50,4"
                 fill="none" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
-          </div>
+          </motion.div>
 
           {/* Card 2 — Research Scan */}
-          <div style={{
+          <motion.div {...fade(1)} style={{
             background: 'rgba(15,10,20,0.85)',
             border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: '16px',
@@ -307,10 +334,10 @@ export default function LivingScienceSection() {
                 <span style={{ fontSize: '7px' }}>●</span> Analyzing
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Card 3 — Lab Insight */}
-          <div style={{
+          <motion.div {...fade(2)} style={{
             background: 'rgba(15,10,20,0.85)',
             border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: '16px',
@@ -346,7 +373,7 @@ export default function LivingScienceSection() {
                 Growth phase<br/>detected
               </div>
             </div>
-          </div>
+          </motion.div>
 
         </div>
       </div>
@@ -378,7 +405,7 @@ export default function LivingScienceSection() {
             cellColors: ['#1A6B3B','#22c55e','#2A8B4B'],
           },
         ].map((card, i) => (
-          <div key={card.title} style={{
+          <motion.div key={card.title} {...rise(i)} style={{
             position: 'relative',
             padding: '36px 40px',
             background: 'rgba(255,255,255,0.02)',
@@ -466,7 +493,7 @@ export default function LivingScienceSection() {
                 →
               </button>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
