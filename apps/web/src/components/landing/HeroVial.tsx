@@ -123,11 +123,11 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
     const capRidgeMat = new THREE.MeshPhysicalMaterial({ color: 0x8b0008, roughness: 0.55, metalness: 0.0, envMapIntensity: 1.2 });
     // Physical blood — subsurface-ish attenuation, sheen, faint transmission
     const bloodMat = new THREE.MeshPhysicalMaterial({
-      color: polish ? 0xb01222 : (richBlood ? 0x8a0c17 : 0x66000b), emissive: polish ? 0x3a0206 : (richBlood ? 0x1e0204 : 0x220000), emissiveIntensity: polish ? 0.6 : (richBlood ? 0.32 : 0.45), roughness: 0.1, metalness: 0.1,
-      transmission: polish ? 0.64 : (richBlood ? 0.12 : 0.24), thickness: polish ? 0.7 : (richBlood ? 1.6 : 1.4), ior: 1.38, clearcoat: 0.5, clearcoatRoughness: 0.22,
-      attenuationColor: new THREE.Color(polish ? 0x5a0010 : (richBlood ? 0x38000a : 0x30000a)), attenuationDistance: polish ? 0.7 : (richBlood ? 0.3 : 0.28),
-      sheen: 0.65, sheenColor: new THREE.Color(polish ? 0xd03040 : (richBlood ? 0x7a1018 : 0x9a1626)), sheenRoughness: 0.38,
-      transparent: true, opacity: polish ? 0.86 : (richBlood ? 0.99 : 0.99), envMapIntensity: polish ? 1.6 : (richBlood ? 1.15 : 1.0),
+      color: polish ? 0xb01222 : (richBlood ? 0x6e0912 : 0x66000b), emissive: polish ? 0x3a0206 : (richBlood ? 0x160003 : 0x220000), emissiveIntensity: polish ? 0.6 : (richBlood ? 0.26 : 0.45), roughness: polish ? 0.1 : (richBlood ? 0.14 : 0.1), metalness: 0.1,
+      transmission: polish ? 0.64 : (richBlood ? 0.3 : 0.24), thickness: polish ? 0.7 : (richBlood ? 1.9 : 1.4), ior: 1.38, clearcoat: polish ? 0.5 : (richBlood ? 0.7 : 0.5), clearcoatRoughness: polish ? 0.22 : (richBlood ? 0.14 : 0.22),
+      attenuationColor: new THREE.Color(polish ? 0x5a0010 : (richBlood ? 0x24000a : 0x30000a)), attenuationDistance: polish ? 0.7 : (richBlood ? 0.32 : 0.28),
+      sheen: 0.65, sheenColor: new THREE.Color(polish ? 0xd03040 : (richBlood ? 0x6a0e16 : 0x9a1626)), sheenRoughness: 0.38,
+      transparent: true, opacity: polish ? 0.86 : (richBlood ? 0.985 : 0.99), envMapIntensity: polish ? 1.6 : (richBlood ? 1.0 : 1.0),
     });
     // Vertical blood gradient (polish only): darker crimson at the bottom →
     // brighter oxygenated red near the meniscus, so it reads as liquid, not a
@@ -138,9 +138,9 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
       // richBlood: a deep venous-red ramp (dark, near-opaque) with a restrained
       // rose specular streak — reads as real blood. polish keeps its brighter,
       // oxygenated coral ramp so the landing/CTA vial is unchanged.
-      const gBot = richBlood ? 'vec3(0.24,0.01,0.03)' : 'vec3(0.42,0.01,0.05)';
-      const gTop = richBlood ? 'vec3(0.50,0.03,0.06)' : 'vec3(0.86,0.07,0.13)';
-      const gStreak = richBlood ? 'vec3(0.34,0.09,0.11)' : 'vec3(0.55,0.24,0.26)';
+      const gBot = richBlood ? 'vec3(0.12,0.004,0.02)' : 'vec3(0.42,0.01,0.05)';
+      const gTop = richBlood ? 'vec3(0.46,0.03,0.06)' : 'vec3(0.86,0.07,0.13)';
+      const gStreak = richBlood ? 'vec3(0.30,0.08,0.10)' : 'vec3(0.55,0.24,0.26)';
       bloodMat.onBeforeCompile = (shader) => {
         shader.vertexShader = 'varying float vBY;\nvarying float vBX;\n' + shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vBY = position.y;\n  vBX = position.x;');
         shader.fragmentShader = ('varying float vBY;\nvarying float vBX;\n' + shader.fragmentShader).replace(
@@ -219,10 +219,15 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
 
     // ── BLOOD ────────────────────────────────────────────────
     const bloodHeight = fill; // world units; default 0.405 (~30% fill)
-    const bloodFill = new THREE.Mesh(new THREE.CylinderGeometry(0.181, 0.181, bloodHeight, SEG), bloodMat);
+    // richBlood: OPEN-ended column so the flat end-caps don't show — the rounded
+    // dome (below) and the meniscus disc (above) are the real bottom/top surfaces.
+    // This is what makes it read as liquid in a round-bottom tube, not a solid slug.
+    const bloodFill = new THREE.Mesh(new THREE.CylinderGeometry(0.181, 0.181, bloodHeight, SEG, 1, richBlood), bloodMat);
     bloodFill.position.y = -0.625 + bloodHeight / 2; bloodFill.renderOrder = 1; vialGroup.add(bloodFill);
     const bloodDome = new THREE.Mesh(new THREE.SphereGeometry(0.181, SEG, SEG, 0, Math.PI * 2, Math.PI * 0.5, Math.PI * 0.5), bloodMat);
-    bloodDome.position.y = -0.618; bloodDome.rotation.x = Math.PI; bloodDome.renderOrder = 1;
+    // Match the glass bottomDome's centre (−0.625) so the blood pool nests exactly
+    // inside the rounded U-bottom instead of floating with a flat base above it.
+    bloodDome.position.y = richBlood ? -0.625 : -0.618; bloodDome.rotation.x = Math.PI; bloodDome.renderOrder = richBlood ? 4 : 1;
     if (polish) bloodDome.scale.set(1.0, domeY, 1.0); // follow the rounded glass bottom
     vialGroup.add(bloodDome);
 
@@ -332,7 +337,7 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
       [-1.55, 0.65, -0.45, 0.075, 0.042, 0.32, 0.35, 0.04, 4.8],
     ];
     const wbcs: WbcRec[] = wbcData.map(([x, y, z, oR, nR, op, fs, fa, fp]) => {
-      const grp = makeWBC(oR, nR, op); grp.position.set(contain ? x * 0.2 : x, contain ? y * 0.72 : y, z); scene.add(grp);
+      const grp = makeWBC(oR, nR, op); grp.scale.setScalar(contain ? 0.45 : 1); grp.position.set(contain ? x * 0.32 : x, contain ? y * 0.72 : y, contain ? z - 0.28 : z); scene.add(grp);
       return { grp, baseY: y, fs, fa, fp };
     });
 
