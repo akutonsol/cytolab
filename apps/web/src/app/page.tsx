@@ -16,6 +16,7 @@ import {
 import { WorkflowPipeline } from '@/components/landing/WorkflowPipeline';
 import { SiteNav, SiteFooter, MarketingScrollStyle } from '@/components/landing/marketing-chrome';
 import { SmoothScroll } from '@/components/landing/SmoothScroll';
+import { CountUp } from '@/components/landing/CountUp';
 
 const HeroVial = dynamic(() => import('@/components/landing/HeroVial'), {
   ssr: false,
@@ -444,7 +445,7 @@ export default function LandingPage() {
               </svg>
             </div>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: '8px' }}>High Priority</div>
-            <div style={{ fontSize: '36px', fontWeight: 800, color: 'white', lineHeight: 1 }}>38</div>
+            <div style={{ fontSize: '36px', fontWeight: 800, color: 'white', lineHeight: 1 }}><CountUp value={38} /></div>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>Requires review</div>
             <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
               {[
@@ -466,7 +467,7 @@ export default function LandingPage() {
                     </span>
                     {item.label}
                   </span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'white' }}>{item.count}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'white' }}><CountUp value={item.count} duration={1200} /></span>
                 </div>
               ))}
             </div>
