@@ -776,13 +776,16 @@ export default function LandingPage() {
               ),
             },
           ].map((logo, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+            <motion.div key={i}
+              initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.6, ease: 'easeOut', delay: i * 0.08 }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
               {logo.icon}
               <div style={{ lineHeight: 1.1 }}>
                 <div style={{ fontSize: logo.big ? 30 : 20.5, fontWeight: 800, color: '#33334d', letterSpacing: logo.big ? '-0.01em' : '0.01em' }}>{logo.a}</div>
                 {logo.b && <div style={{ fontSize: 15.5, fontWeight: 600, color: '#9090ac', marginTop: 2 }}>{logo.b}</div>}
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
@@ -804,18 +807,18 @@ export default function LandingPage() {
           display: 'grid', gridTemplateColumns: 'repeat(5,1fr)',
         }}>
           {[
-            { Icon: Cog, value: '500M+', label: 'Cells analyzed' },
-            { Icon: FlaskConical, value: '2,500+', label: 'Labs worldwide' },
-            { Icon: ShieldCheck, value: '99.9%', label: 'System uptime' },
-            { Icon: Share2, value: '40%', label: 'Faster turnaround' },
-            { Icon: BarChart3, value: '70%', label: 'Workload reduction' },
+            { Icon: Cog, num: 500, dec: 0, suffix: 'M+', label: 'Cells analyzed' },
+            { Icon: FlaskConical, num: 2500, dec: 0, suffix: '+', label: 'Labs worldwide' },
+            { Icon: ShieldCheck, num: 99.9, dec: 1, suffix: '%', label: 'System uptime' },
+            { Icon: Share2, num: 40, dec: 0, suffix: '%', label: 'Faster turnaround' },
+            { Icon: BarChart3, num: 70, dec: 0, suffix: '%', label: 'Workload reduction' },
           ].map((stat, i) => (
             <div key={stat.label} style={{ display: 'flex', alignItems: 'center', gap: 20, padding: '8px 44px', borderLeft: i > 0 ? '1px solid #ede9f8' : 'none' }}>
               <div style={{ width: 66, height: 66, borderRadius: 19, background: 'linear-gradient(135deg, rgba(139,92,246,0.18), rgba(217,70,239,0.10))', border: '1px solid rgba(139,92,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <stat.Icon size={31} color="url(#statIcon)" strokeWidth={2} />
               </div>
               <div>
-                <div style={{ fontSize: 38, fontWeight: 800, letterSpacing: '-0.02em', color: '#0a0b1a', lineHeight: 1 }}>{stat.value}</div>
+                <div style={{ fontSize: 38, fontWeight: 800, letterSpacing: '-0.02em', color: '#0a0b1a', lineHeight: 1 }}><CountUp value={stat.num} decimals={stat.dec} suffix={stat.suffix} /></div>
                 <div style={{ fontSize: 15, color: '#64748b', marginTop: 6 }}>{stat.label}</div>
               </div>
             </div>
@@ -831,6 +834,7 @@ export default function LandingPage() {
 
       {/* PRICING */}
       <section id="pricing" style={{ background: '#fff', padding: '80px 64px' }}>
+        <style dangerouslySetInnerHTML={{ __html: `@keyframes badge-breathe { 0%,100% { box-shadow: 0 4px 14px rgba(230,57,70,0.35); } 50% { box-shadow: 0 7px 24px rgba(230,57,70,0.6); } }` }} />
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <Reveal>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
@@ -841,12 +845,24 @@ export default function LandingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 24, alignItems: 'start' }}>
             {plans.map(({ name, badge, desc, price, period, features: feats, cta, href, highlighted }, i) => (
               <Reveal key={name} delay={i * 0.08}>
-                <div style={{
-                  border: highlighted ? `2px solid ${RED}` : '1px solid #E5E7EB', borderRadius: 24, padding: 32,
-                  background: '#fff', position: 'relative', boxShadow: highlighted ? '0 20px 60px rgba(230,57,70,0.15)' : 'none',
-                }}>
+                <div
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-6px)';
+                    e.currentTarget.style.boxShadow = highlighted ? '0 30px 72px rgba(230,57,70,0.26)' : '0 24px 52px rgba(16,24,40,0.13)';
+                    e.currentTarget.style.borderColor = highlighted ? RED : '#c9cede';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = highlighted ? '0 20px 60px rgba(230,57,70,0.15)' : 'none';
+                    e.currentTarget.style.borderColor = highlighted ? RED : '#E5E7EB';
+                  }}
+                  style={{
+                    border: highlighted ? `2px solid ${RED}` : '1px solid #E5E7EB', borderRadius: 24, padding: 32,
+                    background: '#fff', position: 'relative', boxShadow: highlighted ? '0 20px 60px rgba(230,57,70,0.15)' : 'none',
+                    transition: 'transform 0.3s cubic-bezier(0.22,0.8,0.2,1), box-shadow 0.3s ease, border-color 0.3s ease',
+                  }}>
                   {badge && (
-                    <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: RED, color: '#fff', fontSize: 10, fontWeight: 800, padding: '4px 12px', borderRadius: 20, letterSpacing: '0.05em' }}>{badge}</div>
+                    <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: RED, color: '#fff', fontSize: 10, fontWeight: 800, padding: '4px 12px', borderRadius: 20, letterSpacing: '0.05em', animation: 'badge-breathe 3s ease-in-out infinite' }}>{badge}</div>
                   )}
                   <div style={{ fontSize: 18, fontWeight: 800, color: INK, marginBottom: 4 }}>{name}</div>
                   <div style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 20 }}>{desc}</div>
@@ -861,11 +877,23 @@ export default function LandingPage() {
                       </div>
                     ))}
                   </div>
-                  <Link href={href} style={{
+                  <Link href={href}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      if (highlighted) { e.currentTarget.style.boxShadow = '0 10px 24px rgba(230,57,70,0.4)'; }
+                      else { e.currentTarget.style.background = '#f7f8fb'; e.currentTarget.style.borderColor = '#c9cede'; }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      if (highlighted) { e.currentTarget.style.boxShadow = 'none'; }
+                      else { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#E5E7EB'; }
+                    }}
+                    style={{
                     display: 'block', textAlign: 'center', textDecoration: 'none',
                     width: '100%', padding: 14, background: highlighted ? RED : 'transparent',
                     color: highlighted ? '#fff' : '#374151', border: highlighted ? 'none' : '1px solid #E5E7EB',
                     borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease',
                   }}>{cta}</Link>
                 </div>
               </Reveal>
