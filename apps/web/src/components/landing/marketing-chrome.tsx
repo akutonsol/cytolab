@@ -45,7 +45,10 @@ export function SiteNav({ active = 'platform' }: { active?: string }) {
           <circle cx="11.5" cy="12.5" r="1.7" fill={RED} opacity={0.75} />
           <circle cx="20.5" cy="19.5" r="1.7" fill={RED} opacity={0.75} />
         </svg>
-        <span style={{ fontWeight: 900, fontSize: 25, letterSpacing: '0.02em' }}>PathOS</span>
+        <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.02 }}>
+          <span style={{ fontWeight: 900, fontSize: 25, letterSpacing: '0.02em' }}>PathOS</span>
+          <span style={{ fontSize: 10.5, fontWeight: 600, color: '#6b7280', letterSpacing: '0.005em', marginTop: 3 }}>The Operating System for Modern Pathology</span>
+        </span>
       </Link>
       <div style={{ display: 'flex', gap: 38, fontSize: 17 }}>
         {NAV.map((item) => {
