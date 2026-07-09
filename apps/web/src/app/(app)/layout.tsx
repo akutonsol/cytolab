@@ -18,6 +18,8 @@ import { ClockWidget } from '@/components/workforce/ClockWidget';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { ReportIssueButton } from '@/components/ReportIssueButton';
 import { RealtimeProvider } from '@/components/providers/RealtimeProvider';
+import { SessionTimeoutProvider } from '@/components/SessionTimeoutProvider';
+import { saveReturnTo, clearReturnTo } from '@/lib/session-drafts';
 import { useAuth, useAuthStore } from '@/lib/auth';
 import { api, refreshSession, validatePersistedSession } from '@/lib/api';
 
@@ -113,8 +115,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // Session-expired redirects carry ?reason so the login page can explain why.
   const sessionExpiredRef = useRef(false);
   const sessionCheckedRef = useRef(false);
+  const explicitLogoutRef = useRef(false);
   useEffect(() => {
-    if (hydrated && !isAuthed) router.replace(sessionExpiredRef.current ? '/login?reason=session_expired' : '/login');
+    if (hydrated && !isAuthed) {
+      // Already navigating to (or on) an auth page — don't stomp its reason param
+      // (e.g. the idle-timeout provider owns its own /login?reason=session_timeout).
+      if (window.location.pathname.startsWith('/login')) return;
+      // Remember where we were so re-login lands back here — unless the user chose
+      // to sign out. saveReturnTo() itself ignores auth paths.
+      if (!explicitLogoutRef.current) saveReturnTo(window.location.pathname + window.location.search);
+      router.replace(sessionExpiredRef.current ? '/login?reason=session_expired' : '/login');
+    }
   }, [hydrated, isAuthed, router]);
   useEffect(() => {
     if (hydrated && isAuthed && stale && !refreshing) {
@@ -182,6 +193,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // Revoke the server session + clear the auth cookies (best-effort), then drop
   // local claims and return to /login.
   const logout = () => {
+    explicitLogoutRef.current = true;
+    clearReturnTo(); // a deliberate sign-out shouldn't bounce them back on next login
     api.post('/auth/logout').catch(() => {}).finally(() => { clear(); router.replace('/login'); });
   };
   const initials = (claims?.email ?? '?').slice(0, 2).toUpperCase();
@@ -254,6 +267,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="premium-scroll" style={{ height: '100vh', position: 'relative', overflowY: 'auto', overflowX: 'hidden', background: CANVAS, display: 'flex', flexDirection: 'column' }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');`}</style>
+
+      {/* Idle-timeout warning + auto-draft of open work (authed app only). */}
+      <SessionTimeoutProvider />
 
       <header className="top-navigation">
         <div className="nav-inner page-container" style={{ flexDirection: 'column', alignItems: 'stretch', justifyContent: 'center', gap: 6, paddingTop: showCenter ? 8 : 6, paddingBottom: 6 }}>

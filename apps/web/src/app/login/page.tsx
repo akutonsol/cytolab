@@ -10,6 +10,7 @@ import {
 import dynamic from 'next/dynamic';
 import { api, loadClaims } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { takeReturnTo, takeSessionEndReason } from '@/lib/session-drafts';
 
 // WebGL specimen vial — the same premium PBR render used on the landing hero.
 // Browser-only (Three.js needs the DOM/GPU), so SSR is off. `bare` skips the
@@ -65,15 +66,22 @@ export default function LoginPage() {
   const notify = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3500); };
 
   // Persistent banner when the app bounced us here from an expired/invalid session.
+  // The reason may arrive as a URL param (layout redirect) or in sessionStorage
+  // (idle-timeout provider — survives a redirect race that would drop a param).
   const [sessionExpired, setSessionExpired] = useState(false);
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('reason') === 'session_expired') setSessionExpired(true);
+    const reason = new URLSearchParams(window.location.search).get('reason') ?? takeSessionEndReason();
+    if (reason === 'session_expired' || reason === 'session_timeout') setSessionExpired(true);
   }, []);
 
-  // Already logged in → leave the login page.
-  useEffect(() => { if (hydrated && isAuthed) router.replace('/dashboard'); }, [hydrated, isAuthed, router]);
+  // Sole place we consume the stashed return path: once authed (either already
+  // logged in and visiting /login, or a fresh sign-in below flipping isAuthed),
+  // land back where the user was when the session ended, else the dashboard.
+  useEffect(() => { if (hydrated && isAuthed) router.replace(takeReturnTo() ?? '/dashboard'); }, [hydrated, isAuthed, router]);
 
-  const finish = async () => { await loadClaims(); router.replace('/dashboard'); };
+  // Hydrate claims after sign-in; the effect above performs the navigation (so we
+  // never consume the return path twice and stomp it with the dashboard default).
+  const finish = async () => { await loadClaims(); };
 
   const login = useMutation({
     mutationFn: async (values: LoginValues) => {

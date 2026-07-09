@@ -7,6 +7,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { DS } from '@/lib/drawer-styles';
 import { DrawerHeader, PremiumFormStyles } from '@/components/DrawerChrome';
+import { DraftRestoreBanner } from '@/components/DraftRestoreBanner';
+import { useAutosaveDraft, loadDraft, clearDraft, type Draft } from '@/lib/session-drafts';
 
 interface CodeSheet {
   id: string;
@@ -45,6 +47,15 @@ export function ResultSheetModal({ open, onClose, record }: Props) {
     if (open) setChosen([]);
   }, [open, record?.id]);
 
+  // Auto-draft the chosen result codes so an idle timeout mid-entry doesn't lose
+  // them; offer to restore when the modal reopens for the same record.
+  const draftKey = record?.id ? `resultsheet-${record.id}` : '';
+  useAutosaveDraft(draftKey, () => chosen, open && !!record?.id);
+  const [draft, setDraft] = useState<Draft<CodeSheet[]> | null>(null);
+  useEffect(() => {
+    setDraft(open && draftKey ? loadDraft<CodeSheet[]>(draftKey) : null);
+  }, [open, draftKey]);
+
   const addCode = (id: string) => {
     const code = (codeSheets ?? []).find((c) => c.id === id);
     if (code && !chosen.some((c) => c.id === code.id)) setChosen((prev) => [...prev, code]);
@@ -65,6 +76,7 @@ export function ResultSheetModal({ open, onClose, record }: Props) {
       }),
     onSuccess: () => {
       message.success('Result sheet created — record moved to Resulted');
+      if (draftKey) clearDraft(draftKey);
       qc.invalidateQueries({ queryKey: ['records'] });
       onClose();
     },
@@ -95,6 +107,14 @@ export function ResultSheetModal({ open, onClose, record }: Props) {
         }
       />
       <div className="ds-form">
+      {draft && draft.data?.length > 0 && (
+        <DraftRestoreBanner
+          savedAt={draft.savedAt}
+          label="result-sheet"
+          onRestore={() => { setChosen(draft.data); setDraft(null); }}
+          onDiscard={() => { clearDraft(draftKey); setDraft(null); }}
+        />
+      )}
       {record && (
         <>
           <Descriptions size="small" column={2} bordered>

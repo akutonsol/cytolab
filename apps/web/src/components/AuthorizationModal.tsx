@@ -7,6 +7,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { DS } from '@/lib/drawer-styles';
 import { DrawerHeader, PremiumFormStyles } from '@/components/DrawerChrome';
+import { DraftRestoreBanner } from '@/components/DraftRestoreBanner';
+import { useAutosaveDraft, loadDraft, clearDraft, type Draft } from '@/lib/session-drafts';
 import { DrawPad } from './DrawPad';
 import { ResultTemplateSelector } from './ResultTemplateSelector';
 import { composeNarrative, type ResultTemplate } from '@/lib/result-templates';
@@ -158,6 +160,16 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
   const authorized = !!sheet?.authorized;
   const lineCount = entries.reduce((n, e) => n + e.resultLines.length, 0);
 
+  // Auto-draft unsaved narrative + line edits so an idle timeout never loses the
+  // report the authorizer is composing. Offered back on return (not for already-
+  // authorized sheets, which are read-only until revoked).
+  const draftKey = sheetId && !authorized ? `authorization-${sheetId}` : '';
+  useAutosaveDraft(draftKey, () => ({ narrative, entries }), open && !!draftKey);
+  const [draft, setDraft] = useState<Draft<{ narrative: string; entries: typeof entries }> | null>(null);
+  useEffect(() => {
+    setDraft(open && draftKey ? loadDraft(draftKey) : null);
+  }, [open, draftKey]);
+
   const setLine = (ei: number, li: number, patch: Partial<Line>) =>
     setEntries((prev) => prev.map((e, i) => (i !== ei ? e : { ...e, resultLines: e.resultLines.map((l, j) => (j !== li ? l : { ...l, ...patch })) })));
 
@@ -183,7 +195,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
 
   const save = useMutation({
     mutationFn: saveContent,
-    onSuccess: () => { message.success(authorized ? 'Saved — authorization revoked, re-sign to approve' : 'Saved'); invalidate(); },
+    onSuccess: () => { message.success(authorized ? 'Saved — authorization revoked, re-sign to approve' : 'Saved'); if (draftKey) clearDraft(draftKey); invalidate(); },
     onError: (e: any) => message.error(e?.response?.data?.message ?? 'Save failed'),
   });
 
@@ -196,7 +208,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
         await api.put('/users/me/signature', { signatureDataUri }).catch(() => {});
       }
     },
-    onSuccess: () => { message.success('Signed off — record Approved, report releasable'); invalidate(); onClose(); },
+    onSuccess: () => { message.success('Signed off — record Approved, report releasable'); if (draftKey) clearDraft(draftKey); invalidate(); onClose(); },
     onError: (e: any) => message.error(e?.response?.data?.message ?? 'Sign-off failed'),
   });
 
@@ -336,6 +348,14 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
         <Empty description="This record has no result sheet yet" image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (
         <>
+          {draft && !authorized && (
+            <DraftRestoreBanner
+              savedAt={draft.savedAt}
+              label="report"
+              onRestore={() => { setNarrative(draft.data.narrative ?? ''); if (draft.data.entries) setEntries(draft.data.entries); setDraft(null); }}
+              onDiscard={() => { clearDraft(draftKey); setDraft(null); }}
+            />
+          )}
           {record.id && (
             <FeatureGate feature="AI_SCREENING">
               <div style={{ marginBottom: 16 }}><AIScreeningCard recordId={record.id} /></div>
