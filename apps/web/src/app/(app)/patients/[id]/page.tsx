@@ -34,7 +34,7 @@ const SPECIMEN: Record<string, string> = {
 const AVATARS = [
   'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=300&q=80',
   'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=300&q=80',
-  'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=300&q=80',
+  'https://images.unsplash.com/photo-1612276529731-4b21494e6d71?w=300&q=80',
 ];
 
 const specLabel = (t?: string | null) => (t ? SPECIMEN[t] ?? t : '—');
@@ -210,10 +210,12 @@ export default function PatientProfilePage() {
 
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[1fr_300px]">
         {/* ══ HERO ══ */}
-        <section className={`relative overflow-hidden ${CARD}`} style={{ background: '#EEF3FF', minHeight: 260 }}>
+        {/* self-stretch: fill the grid row's full height (matches the taller
+            Current Findings card beside it) instead of leaving a gap below. */}
+        <section className={`relative self-stretch overflow-hidden ${CARD}`} style={{ background: '#EEF3FF', minHeight: 260 }}>
           {/* photo — single image, cycles every 4s */}
           <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '45%', overflow: 'hidden', zIndex: 1 }}>
-            <Image key={currentIdx} src={AVATARS[currentIdx]} alt="" fill unoptimized sizes="45vw" style={{ objectFit: 'cover', objectPosition: 'top center' }} />
+            <Image key={patient.avatarUrl || currentIdx} src={patient.avatarUrl || AVATARS[currentIdx]} alt="" fill unoptimized sizes="45vw" style={{ objectFit: 'cover', objectPosition: 'top center' }} />
             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 120, zIndex: 2, background: 'linear-gradient(to right, #EEF3FF 0%, transparent 100%)' }} />
           </div>
 

@@ -44,12 +44,14 @@ const specColor = (t?: string) => SPEC_COLOR[t ?? ''] ?? '#475569';
 const specLabel = (t?: string | null) => (t ? SPECIMEN[t] ?? t : 'Other');
 
 // Specimen enum → Lucide icon + chip colours (inline hex so JIT can't purge them).
-// Urine keeps a detector-safe yellow (#EAB308) per the zero-orange rule.
+// Urine icon uses a detector-safe amber (#A16207, r<200) on a pale-yellow chip
+// per the zero-orange rule. (#EAB308 previously used here trips the detector:
+// r=234, g=179, b=8 satisfies r>200 && g∈[100,190] && b<90.)
 const SPEC_UI: Record<string, { Icon: LucideIcon; bg: string; fg: string }> = {
   PLEURAL_FLD: { Icon: Droplets, bg: '#DBEAFE', fg: '#2563EB' },
   SPUTUM: { Icon: Droplets, bg: '#DBEAFE', fg: '#2563EB' },
   BRONCHIAL_WASH: { Icon: Droplets, bg: '#DBEAFE', fg: '#2563EB' },
-  URINE: { Icon: FlaskConical, bg: '#FEF9C3', fg: '#EAB308' },
+  URINE: { Icon: FlaskConical, bg: '#FEF9C3', fg: '#A16207' },
   BREAST_ASP: { Icon: Syringe, bg: '#FCE7F3', fg: '#DB2777' },
   THYROID_FNA: { Icon: Syringe, bg: '#FCE7F3', fg: '#DB2777' },
   LYMPH_NODE: { Icon: Syringe, bg: '#FCE7F3', fg: '#DB2777' },
@@ -147,7 +149,7 @@ export default function SamplesPage() {
   const [fMine, setFMine] = useState(false);
   const [fSpecTypes, setFSpecTypes] = useState<Set<string>>(new Set());
   const [fPriority, setFPriority] = useState<'all' | 'urgent' | 'normal'>('all');
-  const [fDate, setFDate] = useState<'today' | '7' | '30' | 'all'>('7');
+  const [fDate, setFDate] = useState<'today' | '7' | '30' | 'all'>('all');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [chooseOpen, setChooseOpen] = useState(false);
   const [drawer, setDrawer] = useState<{ formType: FormType; recordId?: string } | null>(null);
@@ -270,9 +272,9 @@ export default function SamplesPage() {
       })
       .filter((r) => !q || `${patientName(r)} ${r.labNumber ?? ''} ${r.client?.accountNo ?? ''}`.toLowerCase().includes(q));
   }, [all, tab, search, fMine, claims?.userId, fSpecTypes, fPriority, fDate]);
-  const activeFilterCount = (fMine ? 1 : 0) + (fSpecTypes.size > 0 ? 1 : 0) + (fPriority !== 'all' ? 1 : 0) + (fDate !== '7' ? 1 : 0);
+  const activeFilterCount = (fMine ? 1 : 0) + (fSpecTypes.size > 0 ? 1 : 0) + (fPriority !== 'all' ? 1 : 0) + (fDate !== 'all' ? 1 : 0);
   const toggleSpec = (t: string) => setFSpecTypes((s) => { const n = new Set(s); if (n.has(t)) n.delete(t); else n.add(t); return n; });
-  const clearFilters = () => { setFMine(false); setFSpecTypes(new Set()); setFPriority('all'); setFDate('7'); };
+  const clearFilters = () => { setFMine(false); setFSpecTypes(new Set()); setFPriority('all'); setFDate('all'); };
 
   // Infinite scroll over the client-side filtered worklist (aggregates use the
   // full `all`). Any filter/tab/search change recomputes `filtered` → new
@@ -285,8 +287,8 @@ export default function SamplesPage() {
     useInfiniteScroll<Rec>({ fetchFn, pageSize: 20 });
 
   const openChoose = () => { if (can('record:create')) setChooseOpen(true); };
-  const TH = 'px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
-  const CELL = 'px-5 py-4 align-middle';
+  const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
+  const CELL = 'px-4 py-4 align-middle whitespace-nowrap';
   const TABS: [Tab, string][] = [['all', 'All'], ['urgent', 'Urgent'], ['processing', 'Processing'], ['submitted', 'Submitted'], ['completed', 'Completed']];
 
   return (
@@ -421,19 +423,19 @@ export default function SamplesPage() {
                   <tr className="border-y border-slate-100">
                     <th className={`${TH} w-10`} />
                     <th className={TH}>Patient</th><th className={TH}>Specimen Type</th><th className={TH}>Accession / Lab ID</th>
-                    <th className={TH}>Priority</th><th className={TH}>Status</th>{showAssignee && <th className={TH}>Assigned To</th>}
+                    <th className={TH}>Status</th>{showAssignee && <th className={TH}>Assigned To</th>}
                     <th className={TH}>Received</th><th className={`${TH} text-right`}>Details</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {!initialLoading && pageRows.length === 0 && <tr><td colSpan={9} className="px-5 py-14 text-center text-sm text-slate-500">No samples found.</td></tr>}
+                  {!initialLoading && pageRows.length === 0 && <tr><td colSpan={8} className="px-5 py-14 text-center text-sm text-slate-500">No samples found.</td></tr>}
                   {pageRows.map((r) => {
                     const name = patientName(r);
                     const age = ageOf(r.patient?.dateOfBirth);
                     const sp = statusPill(r.status);
                     return (
                       <tr key={r.id} className="border-b border-slate-100 transition-colors hover:bg-slate-50">
-                        <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={labelSel.has(r.id)} onChange={() => toggleLabelSel(r.id)} style={{ accentColor: INDIGO }} /></td>
+                        <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={labelSel.has(r.id)} onChange={() => toggleLabelSel(r.id)} style={{ accentColor: INDIGO }} /></td>
                         <td className={CELL}>
                           <div className="flex items-center gap-3">
                             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[11px] font-semibold text-white" style={{ background: avatarBg(name) }}>{initialsOf(name)}</span>
@@ -443,7 +445,7 @@ export default function SamplesPage() {
                                 {escalatedRecordIds.has(r.id) && <span title={`${escalatedRecordIds.get(r.id)} escalation`} className="grid h-4 w-4 place-items-center rounded bg-red-100 text-red-700"><AlertTriangle size={11} /></span>}
                                 {qcFailedRecordIds.has(r.id) && <span title="QC failure" className="grid h-4 w-4 place-items-center rounded bg-yellow-100 text-yellow-700"><AlertTriangle size={11} /></span>}
                               </div>
-                              <div className="text-[11px] text-slate-500">Reg No: {r.patient?.registrationNo ?? '—'}{r.patient?.gender ? ` • ${r.patient.gender[0]}` : ''}{age != null ? ` / ${age}` : ''}</div>
+                              <div className="text-[11px] text-slate-500">Reg No: <span className="font-semibold text-slate-700">{r.patient?.registrationNo ?? '—'}</span>{r.patient?.gender ? ` • ${r.patient.gender[0]}` : ''}{age != null ? ` / ${age}` : ''}</div>
                             </div>
                           </div>
                         </td>
@@ -454,11 +456,10 @@ export default function SamplesPage() {
                           </div>
                         ); })()}</td>
                         <td className={CELL}><div className="text-sm font-bold text-charcoal-heading">LAB# {r.labNumber ?? '—'}</div><div className="text-[11px] text-slate-500">{clientLabel(r)}</div></td>
-                        <td className={CELL}><span className="flex items-center gap-1.5 text-sm" style={{ color: r.urgent ? RED : '#475569' }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: r.urgent ? RED : SLATE }} />{r.urgent ? 'Urgent' : 'Normal'}</span></td>
                         <td className={CELL}>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex flex-col items-start gap-1">
+                            {r.urgent && <span className="rounded-full bg-error-container px-2 py-0.5 text-[10px] font-bold uppercase text-error">Urgent</span>}
                             <span className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase" style={{ background: sp.bg, color: sp.fg }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: sp.fg }} />{r.status}</span>
-                            {r.urgent && <span className="rounded-full bg-error-container px-2 py-1 text-[10px] font-bold text-error">URGENT</span>}
                           </div>
                         </td>
                         {showAssignee && <td className={CELL}><span className="text-sm text-slate-600">{r.assignedTo ? `${r.assignedTo.firstName} ${r.assignedTo.lastName?.[0] ?? ''}.` : <span className="text-slate-500">Unassigned</span>}</span></td>}

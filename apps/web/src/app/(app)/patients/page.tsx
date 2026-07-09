@@ -2,7 +2,7 @@
 
 import { useCallback, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { Activity, AlertCircle, Clock, MoreVertical, Pencil, Plus, RotateCcw, Search, User, Users } from 'lucide-react';
+import { Activity, AlertCircle, Clock, Eye, MoreVertical, Pencil, Plus, RotateCcw, Search, User, Users } from 'lucide-react';
 import { api, type Paginated } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
@@ -114,6 +114,7 @@ export default function PatientsPage() {
   const [term, setTerm] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<PatientRecord | null>(null);
+  const [menuId, setMenuId] = useState<string | null>(null);
 
   // Filters flow through the fetchFn deps: changing `q` gives a new fetchFn, which
   // reloads the list from page 1 automatically (see useInfiniteScroll).
@@ -283,9 +284,17 @@ export default function PatientsPage() {
                     <td className={CELL}><span className="text-slate-500">{relDate(p.lastActivityAt)}</span></td>
                     {hasEdit && (
                       <td className={CELL}>
-                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          <button onClick={() => openEdit(p)} className="btn-secondary"><Pencil size={14} /> Edit</button>
-                          <button aria-label="More actions" className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreVertical size={16} /></button>
+                        <div className="relative flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+                          <button aria-label="Row actions" onClick={() => setMenuId(menuId === p.id ? null : p.id)} className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreVertical size={16} /></button>
+                          {menuId === p.id && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setMenuId(null)} />
+                              <div className="absolute right-0 top-10 z-50 w-36 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                                <button onClick={() => { setMenuId(null); router.push(`/patients/${p.id}`); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"><Eye size={14} /> View</button>
+                                <button onClick={() => { setMenuId(null); openEdit(p); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"><Pencil size={14} /> Edit</button>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </td>
                     )}
