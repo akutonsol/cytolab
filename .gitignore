@@ -11,3 +11,5 @@ coverage/
 
 # Turborepo
 .turbo
+
+.next-claude

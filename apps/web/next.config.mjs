@@ -5,10 +5,15 @@
 // NODE_ENV=production and use `.next-prod`. This means running a production
 // build never overwrites the chunks the running dev server is serving (which
 // otherwise causes _next/static/chunks 404s and a dead, un-hydrated page).
+//
+// A second dev server on the same repo (e.g. another tool's `next dev`) sharing
+// `.next` causes the same 404s via clobbered chunk hashes. Set NEXT_DIST_DIR to
+// give a dev server its own build dir and isolate it from the collision.
 const isProd = process.env.NODE_ENV === 'production';
+const devDistDir = process.env.NEXT_DIST_DIR || '.next';
 
 const nextConfig = {
-  distDir: isProd ? '.next-prod' : '.next',
+  distDir: isProd ? '.next-prod' : devDistDir,
   // Transpile workspace packages that ship raw TypeScript.
   transpilePackages: ['@cytolab/animations', '@cytolab/types', '@cytolab/config'],
   async rewrites() {

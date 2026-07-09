@@ -205,6 +205,49 @@ select option {
   background: transparent;
 }
 
+/* ── Popup form scrollbars (sitewide) ── Modal/Drawer bodies scroll, but the
+   default overlay scrollbar is thin and auto-hides, so it's hard to grab. Make it
+   an always-visible, wide, high-contrast thumb the user can click/drag up & down.
+   Applies to every AntD Modal/Drawer form across the app. */
+.ant-modal-body,
+.ant-modal-wrap,
+.ant-drawer-body,
+.ds-form-scroll {
+  scrollbar-width: auto; /* Firefox: classic (not thin/overlay) */
+  scrollbar-color: rgba(79, 70, 229, 0.55) rgba(15, 23, 42, 0.06);
+}
+.ant-modal-body::-webkit-scrollbar,
+.ant-modal-wrap::-webkit-scrollbar,
+.ant-drawer-body::-webkit-scrollbar,
+.ds-form-scroll::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+.ant-modal-body::-webkit-scrollbar-track,
+.ant-modal-wrap::-webkit-scrollbar-track,
+.ant-drawer-body::-webkit-scrollbar-track,
+.ds-form-scroll::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.05);
+  border-radius: 10px;
+}
+.ant-modal-body::-webkit-scrollbar-thumb,
+.ant-modal-wrap::-webkit-scrollbar-thumb,
+.ant-drawer-body::-webkit-scrollbar-thumb,
+.ds-form-scroll::-webkit-scrollbar-thumb {
+  background: rgba(79, 70, 229, 0.5);
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  min-height: 40px; /* easy to grab */
+}
+.ant-modal-body::-webkit-scrollbar-thumb:hover,
+.ant-modal-wrap::-webkit-scrollbar-thumb:hover,
+.ant-drawer-body::-webkit-scrollbar-thumb:hover,
+.ds-form-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(79, 70, 229, 0.8);
+  background-clip: padding-box;
+}
+
 /* ============================================================
    Dashboard theme (Indigo Enterprise, v0 template) — scoped so it
    only applies to the dashboard page, not the rest of the app.
@@ -1087,6 +1130,11 @@ select option {
   top: 0;
   z-index: 1000;
   width: 100%;
+  /* Sticky header is a flex child of the scrolling column; without this it gets
+     shrunk to min-height while its two-row content stays taller, overflowing
+     below the header and covering the page's top controls (e.g. "New Sample").
+     flex-shrink:0 lets it size to its full content so the page clears it. */
+  flex-shrink: 0;
   min-height: var(--nav-height);
   background: rgba(247, 249, 255, 0.88);
   backdrop-filter: blur(24px);
