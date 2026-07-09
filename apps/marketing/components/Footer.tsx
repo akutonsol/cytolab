@@ -8,21 +8,21 @@ const cols = [
 
 export default function Footer() {
   return (
-    <footer style={{ background: '#09090E', padding: '4rem 2.5rem 2.5rem' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '2.5fr 1fr 1fr 1fr', gap: '3rem', paddingBottom: '3rem', borderBottom: '1px solid rgba(240,239,233,0.04)', marginBottom: '2rem' }}>
+    <footer style={{ background: '#09090E', padding: 'var(--space-64) var(--space-40) var(--space-40)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '2.5fr 1fr 1fr 1fr', gap: 'var(--space-48)', paddingBottom: 'var(--space-48)', borderBottom: '1px solid rgba(240,239,233,0.04)', marginBottom: 'var(--space-32)' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '9px', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.08em', color: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.08em', color: '#fff' }}>
             <div style={{ width: 20, height: 20, background: '#4F46E5', borderRadius: '2px', display: 'grid', placeItems: 'center', fontSize: '8px', fontWeight: 900, color: '#fff' }}>C</div>
             CYTOLAB
           </div>
-          <p className="body-sm" style={{ color: 'rgba(240,239,233,0.18)', marginTop: '0.75rem', maxWidth: '260px' }}>
+          <p className="body-sm" style={{ color: 'rgba(240,239,233,0.18)', marginTop: 'var(--space-12)', maxWidth: 'var(--measure-sm)' }}>
             The AI-powered laboratory operating system for modern cytology and pathology labs. Built by Akuton Solutions, Jamaica.
           </p>
         </div>
         {cols.map(({ title, links }) => (
           <div key={title}>
-            <h5 className="label" style={{ color: 'rgba(240,239,233,0.15)', marginBottom: '1rem' }}>{title}</h5>
-            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '7px' }}>
+            <h5 className="label" style={{ color: 'rgba(240,239,233,0.15)', marginBottom: 'var(--space-16)' }}>{title}</h5>
+            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
               {links.map(link => (
                 <li key={link}>
                   <a href="#" style={{ color: 'rgba(240,239,233,0.28)', textDecoration: 'none', fontSize: '0.72rem', transition: 'color 0.2s' }}

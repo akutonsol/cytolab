@@ -44,9 +44,60 @@ There are **two primary colors**, scoped by surface. This is intentional; do not
 
 ---
 
-## 2. Spacing — 8pt system
-Base unit **4px**; prefer multiples of 8 (`8, 16, 24, 32, 40, 56`). Page gutters:
-product `24–56px`, marketing sections `56px`. Card padding `20–24px`.
+## 2. Spacing system — enterprise design tokens
+The permanent spacing architecture. Tokens live in `apps/marketing/app/globals.css`
+(`:root`); use them as utility classes or directly in inline styles
+(`style={{ padding: 'var(--space-32)' }}`). **Token name = pixel value**
+(`--space-16` = 16px), values in rem so they scale with root font-size. **No magic
+numbers** — never hand-type `1.1rem`, `10px`, `mt-11`, `pb-28`, `gap-7`.
+
+### 2a. Scale
+8px base rhythm, small `2/4/12` steps, deliberately sparse large-scale jumps.
+
+| Token | px | Token | px | Token | px |
+|---|---|---|---|---|---|
+| `--space-2` | 2 | `--space-24` | 24 | `--space-96` | 96 |
+| `--space-4` | 4 | `--space-32` | 32 | `--space-112` | 112 |
+| `--space-8` | 8 (base) | `--space-40` | 40 | `--space-128` | 128 |
+| `--space-12` | 12 | `--space-48` | 48 | `--space-160` | 160 |
+| `--space-16` | 16 | `--space-56` | 56 | | |
+| `--space-20` | 20 | `--space-64` / `--space-80` | 64 / 80 | | |
+
+### 2b. Semantic tokens
+
+**Section spacing** — a section's outer vertical padding (pair with `--section-gutter`, `clamp(20–40px)`):
+
+| Token / class | px | Use |
+|---|---|---|
+| `--section-xs` / `.section-xs` | 40 | tight band |
+| `--section-sm` / `.section-sm` | 56 | sub-section / split panel |
+| `--section-md` / `.section-md` | 80 | **default** section |
+| `--section-lg` / `.section-lg` | 96 | prominent section |
+| `--section-xl` / `.section-xl` | 112 | hero / CTA |
+
+**Card spacing** — interior padding: `--card-padding-sm` 24 · `--card-padding-md` **32 (default)** · `--card-padding-lg` 40 (`.card-padding-*`).
+
+**Containers** — cap + center content: `--container-sm` 640 · `--container-md` 960 · `--container-lg` **1280 (default)** · `--container-xl` 1440 (`.container-*`).
+
+**Content measure** — max readable line length: `--measure-xs` 320 · `--measure-sm` 400 · `--measure-md` **640 (~65ch, body prose)** · `--measure-lg` 768 (`.measure-*`).
+
+### 2c. Where each is used
+- **Section spacing** (page rhythm): section outer `padding` → `--section-*` (vertical) + `--section-gutter` (sides).
+- **Grid spacing** (gaps between grid/flex children, margins between blocks): the raw `--space-*` scale — `gap: 'var(--space-24)'`, `marginBottom: 'var(--space-32)'`. Even steps for rhythm; `--space-4`/`--space-2` only for tight/hairline gaps.
+- **Card spacing** (a card's interior): `--card-padding-*`.
+- **Typography spacing** (space *around* text blocks — heading→body, eyebrow→headline): `--space-*`. Line-height/leading stays a **typographic** property (set by the type utilities), not a spacing token.
+- **Measure**: cap paragraphs with `--measure-*`, page content with `--container-*`.
+
+### 2d. Optical exceptions (intentional, documented — not accidental)
+Visual rhythm > mathematical perfection. These may remain literals:
+- **Button padding** (`13px 26px`, `14px 30px`, `11px`) — tuned for control balance; 8pt-snapping makes buttons feel wrong.
+- **Baseline nudges ≤4px** (`marginTop: '3px'` under a metric) — optical alignment.
+- **Headline leading** between stacked display lines (`0.1rem`, `0.25rem`) — part of the tight editorial composition.
+- **1px** borders / hairline divider lines.
+- **Element dimensions** (dot/icon/line/bar `width`/`height`, e.g. `width: 3`) — graphic sizes, not layout spacing.
+- **Structural positioning** — `inset: 0`, `translate(-50%,-50%)`, full-bleed offsets, decorative `vw`/`em` ghost-type positions.
+
+Everything else references a token. Product app (`apps/web`) follows the same 8pt discipline via Tailwind's scale — avoid odd steps (`mt-11`, `gap-7`).
 
 ## 3. Radius
 | Context | Radius |

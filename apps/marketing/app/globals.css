@@ -13,6 +13,56 @@
   /* --font-serif / --font-sans / --font-mono are injected on <html> by next/font
      (via the `variable` option in layout.tsx); do not re-declare them here —
      `--font-serif: var(--font-serif)` is self-referential and breaks the fonts. */
+
+  /* ═══ SPACING SYSTEM — enterprise design tokens ═══════════════════════════
+     Permanent spacing architecture. TOKEN NAME = PIXEL VALUE (--space-16 = 16px);
+     values are rem so they scale with root font-size. Rhythm is 8px, with 2/4/12
+     small steps and deliberately sparse large-scale jumps (64→80→96→112→128→160).
+     Everything — margin, padding, gap, inset, translate, width — references a
+     token; never a literal. Optical exceptions (button 13px, 3px baseline nudges,
+     headline leading) are allowed but documented in DESIGN_SYSTEM.md §2. */
+  --space-2:   0.125rem;  /*   2px  — hairline / optical */
+  --space-4:   0.25rem;   /*   4px */
+  --space-8:   0.5rem;    /*   8px  — base unit */
+  --space-12:  0.75rem;   /*  12px */
+  --space-16:  1rem;      /*  16px */
+  --space-20:  1.25rem;   /*  20px */
+  --space-24:  1.5rem;    /*  24px */
+  --space-32:  2rem;      /*  32px */
+  --space-40:  2.5rem;    /*  40px */
+  --space-48:  3rem;      /*  48px */
+  --space-56:  3.5rem;    /*  56px */
+  --space-64:  4rem;      /*  64px */
+  --space-80:  5rem;      /*  80px */
+  --space-96:  6rem;      /*  96px */
+  --space-112: 7rem;      /* 112px */
+  --space-128: 8rem;      /* 128px */
+  --space-160: 10rem;     /* 160px */
+
+  /* ── Section vertical rhythm (a page section's outer top/bottom padding) ── */
+  --section-xs: var(--space-40);   /*  40px */
+  --section-sm: var(--space-56);   /*  56px */
+  --section-md: var(--space-80);   /*  80px  — default section */
+  --section-lg: var(--space-96);   /*  96px */
+  --section-xl: var(--space-112);  /* 112px  — hero / CTA */
+  --section-gutter: clamp(1.25rem, 4vw, 2.5rem); /* 20–40px side gutter */
+
+  /* ── Container max-widths (cap + center content) ── */
+  --container-sm: 40rem;   /*  640px */
+  --container-md: 60rem;   /*  960px */
+  --container-lg: 80rem;   /* 1280px — default content cap */
+  --container-xl: 90rem;   /* 1440px — full marketing shell */
+
+  /* ── Card interior padding ── */
+  --card-padding-sm: var(--space-24);  /* 24px */
+  --card-padding-md: var(--space-32);  /* 32px — default */
+  --card-padding-lg: var(--space-40);  /* 40px */
+
+  /* ── Content measure (max readable text width) ── */
+  --measure-xs: 20rem;   /* 320px — captions / very tight columns */
+  --measure-sm: 25rem;   /* 400px — lead / narrow copy */
+  --measure-md: 40rem;   /* 640px — body prose (~65ch) */
+  --measure-lg: 48rem;   /* 768px — wide prose */
 }
 
 * {
@@ -379,3 +429,34 @@ button { font-family: inherit; cursor: pointer; }
   font-weight: 600;
   letter-spacing: 0.02em;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SPACING UTILITIES — pair with the spacing tokens (:root above). Tokens are
+   also usable directly in inline styles, e.g.
+   style={{ padding: 'var(--section-md) var(--section-gutter)' }}.
+
+   When to use:
+     .section-{xs..xl}   → a page section's outer padding (vertical rhythm + gutter)
+     .container-{sm..xl} → cap + center content to a max width
+     .measure-{xs..lg}   → cap PROSE to a readable line length
+     .card-padding-{sm..lg} → interior card padding
+   ═══════════════════════════════════════════════════════════════════════════ */
+.section-xs { padding-block: var(--section-xs); padding-inline: var(--section-gutter); }
+.section-sm { padding-block: var(--section-sm); padding-inline: var(--section-gutter); }
+.section-md { padding-block: var(--section-md); padding-inline: var(--section-gutter); }
+.section-lg { padding-block: var(--section-lg); padding-inline: var(--section-gutter); }
+.section-xl { padding-block: var(--section-xl); padding-inline: var(--section-gutter); }
+
+.container-sm { max-width: var(--container-sm); margin-inline: auto; }
+.container-md { max-width: var(--container-md); margin-inline: auto; }
+.container-lg { max-width: var(--container-lg); margin-inline: auto; }
+.container-xl { max-width: var(--container-xl); margin-inline: auto; }
+
+.measure-xs { max-width: var(--measure-xs); }
+.measure-sm { max-width: var(--measure-sm); }
+.measure-md { max-width: var(--measure-md); }
+.measure-lg { max-width: var(--measure-lg); }
+
+.card-padding-sm { padding: var(--card-padding-sm); }
+.card-padding-md { padding: var(--card-padding-md); }
+.card-padding-lg { padding: var(--card-padding-lg); }

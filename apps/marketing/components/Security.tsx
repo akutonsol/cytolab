@@ -39,7 +39,7 @@ export default function Security() {
   const sTagInv = (label: string) => (
     <div className="label" style={{
       color: 'rgba(240,239,233,0.22)',
-      display: 'flex', alignItems: 'center', gap: '9px',
+      display: 'flex', alignItems: 'center', gap: 'var(--space-8)',
     }}>
       <span style={{ width: 18, height: 1, background: 'rgba(240,239,233,0.18)', display: 'inline-block' }} />
       {label}
@@ -49,7 +49,7 @@ export default function Security() {
   const sTag = (label: string) => (
     <div className="label" style={{
       color: 'rgba(9,9,14,0.22)',
-      display: 'flex', alignItems: 'center', gap: '9px',
+      display: 'flex', alignItems: 'center', gap: 'var(--space-8)',
     }}>
       <span style={{ width: 18, height: 1, background: 'rgba(9,9,14,0.18)', display: 'inline-block' }} />
       {label}
@@ -61,16 +61,16 @@ export default function Security() {
       <div className="section-counter" aria-hidden="true" style={{ color: 'rgba(240,239,233,0.05)' }}>06</div>
 
       <SectionReveal direction="left">
-        <div style={{ background: '#09090E', padding: '6rem 3rem 6rem 2.5rem', borderRight: '1px solid rgba(240,239,233,0.04)', height: '100%' }}>
-          <div style={{ marginBottom: '2rem' }}>{sTagInv('05 · Security')}</div>
-          <div className="display-lg" style={{ marginTop: '2rem' }}>
+        <div style={{ background: '#09090E', padding: 'var(--space-96) var(--space-48) var(--space-96) var(--space-40)', borderRight: '1px solid rgba(240,239,233,0.04)', height: '100%' }}>
+          <div style={{ marginBottom: 'var(--space-32)' }}>{sTagInv('05 · Security')}</div>
+          <div className="display-lg" style={{ marginTop: 'var(--space-32)' }}>
             <span style={{ color: '#fff' }}>Enterprise<br /></span>
             <span style={{ color: 'transparent', WebkitTextStroke: '2px rgba(240,239,233,0.2)' }}>security<br /></span>
             <span style={{ color: '#4F46E5', fontStyle: 'italic' }}>out of the box.</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', background: 'rgba(240,239,233,0.06)', borderRadius: '2px', overflow: 'hidden', marginTop: '3rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', background: 'rgba(240,239,233,0.06)', borderRadius: '2px', overflow: 'hidden', marginTop: 'var(--space-48)' }}>
             {certs.map(c => (
-              <div key={c.name} style={{ background: 'rgba(240,239,233,0.025)', padding: '1.5rem 1.25rem', textAlign: 'center' }}>
+              <div key={c.name} style={{ background: 'rgba(240,239,233,0.025)', padding: 'var(--space-24) var(--space-20)', textAlign: 'center' }}>
                 <div className="cert-n underline-draw" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', fontWeight: 700, color: '#fff' }}>{c.name}</div>
                 <div style={{ fontSize: '0.6rem', color: 'rgba(240,239,233,0.2)', marginTop: '3px' }}>{c.desc}</div>
               </div>
@@ -80,13 +80,13 @@ export default function Security() {
       </SectionReveal>
 
       <SectionReveal direction="right">
-        <div style={{ padding: '6rem 2.5rem 6rem 3rem' }}>
-          <div style={{ marginBottom: '2rem' }}>{sTag('05 · Features')}</div>
+        <div style={{ padding: 'var(--space-96) var(--space-40) var(--space-96) var(--space-48)' }}>
+          <div style={{ marginBottom: 'var(--space-32)' }}>{sTag('05 · Features')}</div>
           <div>
             {features.map((f, i) => (
               <div key={f} style={{
-                display: 'flex', alignItems: 'center', gap: '1rem',
-                padding: '1.1rem 0', borderBottom: '1px solid rgba(9,9,14,0.04)',
+                display: 'flex', alignItems: 'center', gap: 'var(--space-16)',
+                padding: 'var(--space-16) 0', borderBottom: '1px solid rgba(9,9,14,0.04)',
                 borderTop: i === 0 ? '1px solid rgba(9,9,14,0.04)' : 'none',
               }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4F46E5', flexShrink: 0 }} />

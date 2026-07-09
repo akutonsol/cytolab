@@ -39,16 +39,16 @@ function StatCell({ n, suffix, label, ghost, float }: typeof stats[0]) {
   }, [n, suffix, float])
 
   return (
-    <div style={{ padding: '4rem 2rem', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ padding: 'var(--space-64) var(--space-32)', position: 'relative', overflow: 'hidden' }}>
       <div style={{
         position: 'absolute', bottom: '-0.1em', right: '-0.05em',
         fontFamily: 'var(--font-serif)', fontSize: '7.5rem', lineHeight: 1,
         color: 'rgba(9,9,14,0.04)', pointerEvents: 'none', fontStyle: 'italic', userSelect: 'none',
       }}>{ghost}</div>
       <div ref={numRef} className="metric-xl" style={{
-        color: '#09090E', marginBottom: '0.6rem',
+        color: '#09090E', marginBottom: 'var(--space-8)',
       }}>0{suffix}</div>
-      <div className="body-sm" style={{ color: 'rgba(9,9,14,0.38)', maxWidth: '130px' }}>{label}</div>
+      <div className="body-sm" style={{ color: 'rgba(9,9,14,0.38)', maxWidth: 'var(--measure-xs)' }}>{label}</div>
     </div>
   )
 }

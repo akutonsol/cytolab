@@ -36,7 +36,7 @@ export default function AISection() {
   const sTag = (label: string) => (
     <div className="label" style={{
       color: 'rgba(9,9,14,0.22)',
-      display: 'flex', alignItems: 'center', gap: '9px',
+      display: 'flex', alignItems: 'center', gap: 'var(--space-8)',
     }}>
       <span style={{ width: 18, height: 1, background: 'rgba(9,9,14,0.18)', display: 'inline-block' }} />
       {label}
@@ -47,14 +47,14 @@ export default function AISection() {
     <section id="cyto-ai" style={{ borderBottom: '1px solid rgba(9,9,14,0.07)', overflow: 'hidden', position: 'relative' }}>
       <div className="section-counter" aria-hidden="true">04</div>
 
-      <div ref={tickerRef} style={{ padding: '5rem 2.5rem 0' }}>
-        <div style={{ marginBottom: '2.5rem' }}>{sTag('03 · CYTO AI')}</div>
+      <div ref={tickerRef} style={{ padding: 'var(--space-80) var(--space-40) 0' }}>
+        <div style={{ marginBottom: 'var(--space-40)' }}>{sTag('03 · CYTO AI')}</div>
         {[
           [{ text: 'Your new', ghost: false, blue: false }],
           [{ text: 'digital', ghost: true, blue: false }],
           [{ text: 'cytotechnologist.', ghost: false, blue: true }],
         ].map((line, li) => (
-          <div key={li} style={{ display: 'block', lineHeight: 0.88, marginBottom: '0.25rem' }}>
+          <div key={li} style={{ display: 'block', lineHeight: 0.88, marginBottom: 'var(--space-4)' }}>
             {line.map(({ text, ghost, blue }, wi) => (
               <span key={wi} className="word-rise" style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom' }}>
                 <span className="word-rise-inner display-lg" style={{
@@ -69,13 +69,13 @@ export default function AISection() {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid rgba(9,9,14,0.07)', marginTop: '3.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid rgba(9,9,14,0.07)', marginTop: 'var(--space-56)' }}>
         <SectionReveal direction="left">
-          <div style={{ padding: '3.5rem 3rem 4.5rem 2.5rem', borderRight: '1px solid rgba(9,9,14,0.07)' }}>
-            <div style={{ marginBottom: '2rem' }}>{sTag('How it works')}</div>
+          <div style={{ padding: 'var(--space-56) var(--space-48) var(--space-64) var(--space-40)', borderRight: '1px solid rgba(9,9,14,0.07)' }}>
+            <div style={{ marginBottom: 'var(--space-32)' }}>{sTag('How it works')}</div>
             {steps.map((step, i) => (
               <div key={step} style={{
-                display: 'flex', gap: '1.5rem', padding: '1.1rem 0',
+                display: 'flex', gap: 'var(--space-24)', padding: 'var(--space-16) 0',
                 borderBottom: '1px solid rgba(9,9,14,0.04)', alignItems: 'center',
                 borderTop: i === 0 ? '1px solid rgba(9,9,14,0.04)' : 'none',
               }}>
@@ -87,12 +87,12 @@ export default function AISection() {
         </SectionReveal>
 
         <SectionReveal direction="right">
-          <div style={{ padding: '3.5rem 2.5rem 4.5rem 3rem', background: '#E8E7E1' }}>
-            <div style={{ marginBottom: '2rem' }}>{sTag('Outcomes')}</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ padding: 'var(--space-56) var(--space-40) var(--space-64) var(--space-48)', background: '#E8E7E1' }}>
+            <div style={{ marginBottom: 'var(--space-32)' }}>{sTag('Outcomes')}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
               {outcomes.map(({ tag, value, blue }) => (
-                <div key={tag} style={{ background: '#fff', border: '1px solid rgba(9,9,14,0.07)', borderRadius: '2px', padding: '1.75rem' }}>
-                  <div className="label" style={{ color: 'rgba(9,9,14,0.25)', marginBottom: '0.5rem' }}>{tag}</div>
+                <div key={tag} style={{ background: '#fff', border: '1px solid rgba(9,9,14,0.07)', borderRadius: '2px', padding: 'var(--space-24)' }}>
+                  <div className="label" style={{ color: 'rgba(9,9,14,0.25)', marginBottom: 'var(--space-8)' }}>{tag}</div>
                   <div className="metric-xl" style={{ color: blue ? '#4F46E5' : '#09090E' }}>{value}</div>
                 </div>
               ))}

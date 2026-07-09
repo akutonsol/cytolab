@@ -13,14 +13,14 @@ export default function Nav() {
     <nav style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
       height: '56px', display: 'flex', alignItems: 'center',
-      justifyContent: 'space-between', padding: '0 2.5rem',
+      justifyContent: 'space-between', padding: '0 var(--space-40)',
       background: scrolled ? 'rgba(240,239,233,0.92)' : 'rgba(240,239,233,0.75)',
       backdropFilter: 'blur(24px)',
       borderBottom: '1px solid rgba(9,9,14,0.07)',
       transition: 'background 0.3s ease',
     }}>
       <div style={{
-        display: 'flex', alignItems: 'center', gap: '9px',
+        display: 'flex', alignItems: 'center', gap: 'var(--space-8)',
         fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.85rem',
         letterSpacing: '0.08em', color: '#09090E',
       }}>
@@ -30,7 +30,7 @@ export default function Nav() {
         }}>C</div>
         CYTOLAB
       </div>
-      <div style={{ display: 'flex', gap: '2.5rem' }}>
+      <div style={{ display: 'flex', gap: 'var(--space-40)' }}>
         {['Platform', 'CYTO AI', 'Security', 'Pricing'].map(item => (
           <a key={item} href={`#${item.toLowerCase().replace(' ', '-')}`}
             style={{

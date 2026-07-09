@@ -42,7 +42,7 @@ export default function CTA() {
   const sTag = (label: string) => (
     <div className="label" style={{
       color: 'rgba(255,255,255,0.22)',
-      display: 'flex', alignItems: 'center', gap: '9px',
+      display: 'flex', alignItems: 'center', gap: 'var(--space-8)',
     }}>
       <span style={{ width: 18, height: 1, background: 'rgba(255,255,255,0.18)', display: 'inline-block' }} />
       {label}
@@ -51,7 +51,7 @@ export default function CTA() {
 
   return (
     <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', background: '#4F46E5' }}>
-      <div style={{ padding: '7rem 3rem 7rem 2.5rem', borderRight: '1px solid rgba(255,255,255,0.1)', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ padding: 'var(--space-112) var(--space-48) var(--space-112) var(--space-40)', borderRight: '1px solid rgba(255,255,255,0.1)', position: 'relative', overflow: 'hidden' }}>
         <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />
         {/* Ghost AI text */}
         <div style={{
@@ -62,7 +62,7 @@ export default function CTA() {
         }} aria-hidden="true">AI</div>
         <SectionReveal>
           <div style={{ position: 'relative', zIndex: 2 }}>
-            <div style={{ marginBottom: '2.5rem' }}>{sTag('Ready to modernize?')}</div>
+            <div style={{ marginBottom: 'var(--space-40)' }}>{sTag('Ready to modernize?')}</div>
             <div className="display-lg">
               <span style={{ color: '#fff' }}>The laboratory<br /></span>
               <span style={{ color: 'transparent', WebkitTextStroke: '1px rgba(255,255,255,0.22)' }}>operating<br /></span>
@@ -75,11 +75,11 @@ export default function CTA() {
       </div>
 
       <SectionReveal direction="right">
-        <div style={{ padding: '7rem 2.5rem 7rem 3rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <p className="body-lg" style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '3rem', maxWidth: '360px' }}>
+        <div style={{ padding: 'var(--space-112) var(--space-40) var(--space-112) var(--space-48)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <p className="body-lg" style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 'var(--space-48)', maxWidth: 'var(--measure-sm)' }}>
             Join the next generation of pathology laboratories using AI to process more specimens, reduce turnaround time, and improve diagnostic confidence.
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '280px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)', maxWidth: '280px' }}>
             <button className="mag-btn" style={{ background: '#fff', border: 'none', color: '#4F46E5', padding: '14px 30px', borderRadius: '2px', fontFamily: 'var(--font-sans)', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', cursor: 'pointer' }}>
               Request demo &rarr;
             </button>
@@ -87,7 +87,7 @@ export default function CTA() {
               Schedule consultation
             </button>
           </div>
-          <div style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ marginTop: 'var(--space-48)', paddingTop: 'var(--space-32)', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: 'var(--space-8)', flexWrap: 'wrap' }}>
             {['HIPAA', 'SOC 2', 'CAP', 'FHIR R4', 'CLIA'].map(b => (
               <span key={b} style={{ fontFamily: 'var(--font-mono)', fontSize: '0.52rem', fontWeight: 700, color: 'rgba(255,255,255,0.32)', border: '1px solid rgba(255,255,255,0.12)', padding: '4px 10px', borderRadius: '2px', letterSpacing: '0.07em' }}>{b}</span>
             ))}

@@ -35,7 +35,7 @@ export default function Modules() {
   const sTag = (label: string) => (
     <div className="label" style={{
       color: 'rgba(9,9,14,0.22)',
-      display: 'flex', alignItems: 'center', gap: '9px',
+      display: 'flex', alignItems: 'center', gap: 'var(--space-8)',
     }}>
       <span style={{ width: 18, height: 1, background: 'rgba(9,9,14,0.18)', display: 'inline-block' }} />
       {label}
@@ -47,11 +47,11 @@ export default function Modules() {
       <div className="section-counter" aria-hidden="true">05</div>
       <SectionReveal>
         <div style={{
-          padding: '5rem 2.5rem 3.5rem', borderBottom: '1px solid rgba(9,9,14,0.07)',
-          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem', alignItems: 'end',
+          padding: 'var(--space-80) var(--space-40) var(--space-56)', borderBottom: '1px solid rgba(9,9,14,0.07)',
+          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-64)', alignItems: 'end',
         }}>
           <div>
-            <div style={{ marginBottom: '1.5rem' }}>{sTag('04 · Platform')}</div>
+            <div style={{ marginBottom: 'var(--space-24)' }}>{sTag('04 · Platform')}</div>
             <div className="display-lg">
               Ten modules.<br />
               <span style={{ color: 'transparent', WebkitTextStroke: '1px rgba(9,9,14,0.13)' }}>One</span>{' '}
@@ -60,7 +60,7 @@ export default function Modules() {
             </div>
           </div>
           <div style={{ alignSelf: 'end' }}>
-            <p className="body-md" style={{ color: 'rgba(9,9,14,0.32)', maxWidth: '280px' }}>
+            <p className="body-md" style={{ color: 'rgba(9,9,14,0.32)', maxWidth: 'var(--measure-sm)' }}>
               One unified platform replacing every disconnected tool your lab runs today.
             </p>
           </div>
@@ -74,7 +74,7 @@ export default function Modules() {
             className="mod-row-item"
             style={{
               display: 'grid', gridTemplateColumns: '56px 1fr 90px',
-              alignItems: 'center', padding: '1.2rem 2.5rem',
+              alignItems: 'center', padding: 'var(--space-20) var(--space-40)',
               borderBottom: '1px solid rgba(9,9,14,0.04)',
               cursor: 'pointer', position: 'relative',
             }}

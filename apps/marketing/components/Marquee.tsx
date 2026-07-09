@@ -4,7 +4,7 @@ export default function Marquee() {
   return (
     <div style={{
       overflow: 'hidden', borderBottom: '1px solid rgba(9,9,14,0.07)',
-      padding: '10px 0', background: '#E8E7E1', position: 'relative',
+      padding: 'var(--space-8) 0', background: '#E8E7E1', position: 'relative',
     }}>
       <div style={{
         position: 'absolute', left: 0, top: 0, bottom: 0, width: 80,
@@ -17,7 +17,7 @@ export default function Marquee() {
       <div style={{ display: 'flex', animation: 'marquee 26s linear infinite', whiteSpace: 'nowrap' }}>
         {[...items, ...items].map((item, i) => (
           <span key={i} style={{
-            display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '0 2rem',
+            display: 'inline-flex', alignItems: 'center', gap: 'var(--space-8)', padding: '0 var(--space-32)',
             fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
             letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.25)',
           }}>

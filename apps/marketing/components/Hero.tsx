@@ -126,7 +126,7 @@ export default function Hero() {
     <section style={{
       minHeight: '100vh', display: 'grid', gridTemplateColumns: '1fr 1fr',
       borderBottom: '1px solid rgba(9,9,14,0.07)', position: 'relative',
-      overflow: 'hidden', paddingTop: '56px',
+      overflow: 'hidden', paddingTop: 'var(--space-56)',
     }}>
       <div style={{
         position: 'absolute', inset: 0,
@@ -136,14 +136,14 @@ export default function Hero() {
 
       {/* LEFT */}
       <div style={{
-        padding: '6rem 3.5rem 3rem 2.5rem', display: 'flex',
+        padding: 'var(--space-96) var(--space-56) var(--space-48) var(--space-40)', display: 'flex',
         flexDirection: 'column', justifyContent: 'space-between',
         borderRight: '1px solid rgba(9,9,14,0.07)', position: 'relative', zIndex: 2,
       }}>
         <div>
           <div className="label" style={{
             color: 'rgba(9,9,14,0.25)',
-            display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '3rem',
+            display: 'flex', alignItems: 'center', gap: 'var(--space-8)', marginBottom: 'var(--space-48)',
           }}>
             <span style={{ width: 24, height: 1, background: 'rgba(9,9,14,0.2)', display: 'inline-block' }} />
             AI Operating System &middot; Cytology Labs
@@ -184,12 +184,12 @@ export default function Hero() {
         <div>
           <p className="body-xl" style={{
             color: 'rgba(9,9,14,0.45)',
-            maxWidth: '400px', marginBottom: '2rem',
+            maxWidth: 'var(--measure-sm)', marginBottom: 'var(--space-32)',
           }}>
             One AI-powered platform. Specimen tracking, CYTO AI screening, reporting,
             billing, workforce, and full EMR interoperability.
           </p>
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '3.5rem' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-8)', marginBottom: 'var(--space-56)' }}>
             <button className="mag-btn" style={{
               background: '#09090E', color: '#F0EFE9', border: 'none',
               padding: '13px 26px', borderRadius: '2px', fontFamily: 'var(--font-sans)',
@@ -202,9 +202,9 @@ export default function Hero() {
               fontSize: '0.72rem', cursor: 'pointer',
             }}>Watch product tour</button>
           </div>
-          <div style={{ display: 'flex', gap: '3.5rem' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-56)' }}>
             {[['43%', 'Faster TAT'], ['91%', 'Less manual review'], ['97%', 'AI accuracy']].map(([num, label]) => (
-              <div key={label} className="hero-kpi" style={{ borderLeft: '2px solid #4F46E5', paddingLeft: '1rem' }}>
+              <div key={label} className="hero-kpi" style={{ borderLeft: '2px solid #4F46E5', paddingLeft: 'var(--space-16)' }}>
                 <div className="metric-lg" style={{ color: '#09090E' }}>{num}</div>
                 <div className="ui-xs" style={{ textTransform: 'uppercase', color: 'rgba(9,9,14,0.3)', marginTop: '3px' }}>{label}</div>
               </div>
@@ -230,15 +230,15 @@ export default function Hero() {
         <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
         <div style={{ position: 'relative', zIndex: 2 }}>
           <div style={{
-            padding: '2rem 2rem 0', fontFamily: 'var(--font-mono)', fontSize: '0.55rem',
+            padding: 'var(--space-32) var(--space-32) 0', fontFamily: 'var(--font-mono)', fontSize: '0.55rem',
             fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase',
             color: 'rgba(240,239,233,0.18)',
           }}>CYTOLAB &middot; Live &middot; AI Queue</div>
-          <div style={{ padding: '1.25rem 2rem 2.5rem' }}>
+          <div style={{ padding: 'var(--space-20) var(--space-32) var(--space-40)' }}>
             {liveData.map(({ label, value, valueColor, change, changeColor }) => (
               <div key={label} style={{
                 display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-                padding: '11px 0', borderTop: '1px solid rgba(240,239,233,0.05)',
+                padding: 'var(--space-12) 0', borderTop: '1px solid rgba(240,239,233,0.05)',
               }}>
                 <span style={{
                   fontFamily: 'var(--font-mono)', fontSize: '0.62rem', fontWeight: 600,

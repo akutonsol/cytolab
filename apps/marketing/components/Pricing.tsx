@@ -19,7 +19,7 @@ export default function Pricing() {
   const sTag = (label: string) => (
     <div className="label" style={{
       color: 'rgba(9,9,14,0.22)',
-      display: 'flex', alignItems: 'center', gap: '9px',
+      display: 'flex', alignItems: 'center', gap: 'var(--space-8)',
     }}>
       <span style={{ width: 18, height: 1, background: 'rgba(9,9,14,0.18)', display: 'inline-block' }} />
       {label}
@@ -30,8 +30,8 @@ export default function Pricing() {
     <section id="pricing" style={{ borderBottom: '1px solid rgba(9,9,14,0.07)', position: 'relative' }}>
       <div className="section-counter" aria-hidden="true">07</div>
       <SectionReveal>
-        <div style={{ padding: '5rem 2.5rem 3.5rem', borderBottom: '1px solid rgba(9,9,14,0.07)' }}>
-          <div style={{ marginBottom: '1.5rem' }}>{sTag('06 · Plans')}</div>
+        <div style={{ padding: 'var(--space-80) var(--space-40) var(--space-56)', borderBottom: '1px solid rgba(9,9,14,0.07)' }}>
+          <div style={{ marginBottom: 'var(--space-24)' }}>{sTag('06 · Plans')}</div>
           <div className="display-lg">
             Built for every<br />
             <span style={{ color: 'transparent', WebkitTextStroke: '2px rgba(9,9,14,0.2)' }}>scale of</span>{' '}
@@ -44,21 +44,21 @@ export default function Pricing() {
         {plans.map(({ tier, name, featured, features }, i) => (
           <SectionReveal key={name} delay={i * 0.1}>
             <div style={{
-              padding: '3rem 2.5rem',
+              padding: 'var(--space-48) var(--space-40)',
               borderRight: i < 2 ? '1px solid rgba(9,9,14,0.07)' : 'none',
               background: featured ? '#4F46E5' : 'transparent',
               height: '100%',
             }}>
               <div className="label" style={{
                 color: featured ? 'rgba(255,255,255,0.4)' : 'rgba(9,9,14,0.3)',
-                marginBottom: '0.6rem',
+                marginBottom: 'var(--space-8)',
               }}>{tier}</div>
               <div className="heading-lg" style={{
-                color: featured ? '#fff' : '#09090E', marginBottom: '2rem',
+                color: featured ? '#fff' : '#09090E', marginBottom: 'var(--space-32)',
               }}>{name}</div>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '7px', marginBottom: '2.5rem' }}>
+              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 'var(--space-8)', marginBottom: 'var(--space-40)' }}>
                 {features.map(f => (
-                  <li key={f} className="body-sm" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', color: featured ? 'rgba(255,255,255,0.65)' : 'rgba(9,9,14,0.45)' }}>
+                  <li key={f} className="body-sm" style={{ display: 'flex', gap: 'var(--space-8)', alignItems: 'flex-start', color: featured ? 'rgba(255,255,255,0.65)' : 'rgba(9,9,14,0.45)' }}>
                     <span style={{ width: 3, height: 3, background: featured ? 'rgba(255,255,255,0.45)' : '#4F46E5', borderRadius: '50%', flexShrink: 0, marginTop: '6px' }} />
                     {f}
                   </li>
