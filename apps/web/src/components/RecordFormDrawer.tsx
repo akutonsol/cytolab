@@ -6,10 +6,10 @@ import {
   Button,
   Col,
   DatePicker,
+  Drawer,
   Form,
   Input,
   InputNumber,
-  Modal,
   Row,
   Space,
   Switch,
@@ -27,6 +27,9 @@ import { PatientFormDrawer, type PatientRecord } from '@/components/PatientFormD
 import { SPECIMEN_LABELS, specimenTypesForForm, type FormType } from '@/lib/specimen-types';
 import { DS } from '@/lib/drawer-styles';
 import { DrawerHeader, DrawerFooter, PremiumFormStyles } from '@/components/DrawerChrome';
+import { DraftRestoreBanner } from '@/components/DraftRestoreBanner';
+import { useAutosaveDraft, loadDraft, clearDraft, type Draft } from '@/lib/session-drafts';
+import { encodeForm, decodeForm } from '@/lib/form-draft';
 
 // Specimen type multi-select rendered as dark pill chips (legacy form language).
 // Integrates with Form.Item via the injected value/onChange props.
@@ -115,6 +118,15 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
     form.resetFields();
     form.setFieldsValue({ specimenDate: dayjs(), urgent: false, specimenTypes: [] });
   }, [open, isEdit, form]);
+
+  // Auto-draft (create mode): the SessionTimeoutProvider flushes these values to a
+  // local draft right before an idle timeout, so work-in-progress is never lost.
+  const draftKey = isEdit ? '' : `record-new-${formType}`;
+  useAutosaveDraft(draftKey, () => encodeForm(form.getFieldsValue(true)), open && !isEdit);
+  const [draft, setDraft] = useState<Draft | null>(null);
+  useEffect(() => {
+    setDraft(open && !isEdit ? loadDraft(draftKey) : null);
+  }, [open, isEdit, draftKey]);
 
   // Prefill from the loaded record (edit mode).
   useEffect(() => {
@@ -235,6 +247,7 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
     },
     onSuccess: (_r, opts) => {
       message.success(isEdit ? 'Record updated' : opts.submit ? 'Record submitted to Cytolab' : 'Record saved');
+      if (draftKey) clearDraft(draftKey); // saved for real — drop the local draft
       qc.invalidateQueries({ queryKey: ['records'] });
       if (isEdit) qc.invalidateQueries({ queryKey: ['record', recordId] });
       onClose();
@@ -285,22 +298,20 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
   );
 
   return (
-    <Modal
+    <Drawer
       open={open}
-      onCancel={onClose}
-      width={760}
-      centered
-      destroyOnHidden
-      footer={null}
+      onClose={onClose}
+      width={DS.drawerWidth}
+      destroyOnClose
       closable={false}
       styles={{
-        content: { background: DS.drawerBg, borderRadius: 20, padding: 0, maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.18)' },
-        body: { padding: 0, maxHeight: '90vh', overflowY: 'auto', scrollbarWidth: 'thin' },
+        header: { display: 'none' },
+        body: { background: DS.drawerBg, padding: 0, scrollbarWidth: 'thin' },
+        content: { boxShadow: '-8px 0 40px rgba(0,0,0,0.12)' },
         // No backdrop-filter blur: the record detail page runs many continuous
         // full-viewport animations, and blurring them each frame crashes Chrome's
         // GPU process. A solid mask gives the same focus without the hazard.
         mask: { background: 'rgba(15,23,42,0.55)' },
-        header: { display: 'none' },
       }}
     >
       <PremiumFormStyles />
@@ -312,6 +323,14 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
       />
       {locked && (
         <div style={DS.lockedBanner}>🔒 A record cannot be edited or deleted once it reaches {record?.status}. View only.</div>
+      )}
+      {draft && !isEdit && (
+        <DraftRestoreBanner
+          savedAt={draft.savedAt}
+          label="record"
+          onRestore={() => { form.setFieldsValue(decodeForm(draft.data)); setDraft(null); }}
+          onDiscard={() => { clearDraft(draftKey); setDraft(null); }}
+        />
       )}
       <Form className="ds-form" layout="vertical" form={form} requiredMark={false} disabled={locked}>
         {/* ---- Common header ---- */}
@@ -604,6 +623,6 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
           qc.setQueryData(['patient', p.id], p);
         }}
       />
-    </Modal>
+    </Drawer>
   );
 }

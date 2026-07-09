@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { App, Button, Form, Input, Modal, Segmented, Space, Switch, Transfer, Typography } from 'antd';
+import { App, Button, Drawer, Form, Input, Segmented, Space, Switch, Transfer, Typography } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { DS } from '@/lib/drawer-styles';
@@ -93,19 +93,17 @@ export function RoleFormDrawer({ open, onClose, role }: Props) {
   );
 
   return (
-    <Modal
+    <Drawer
       open={open}
-      onCancel={onClose}
-      width={700}
-      centered
-      destroyOnHidden
-      footer={null}
+      onClose={onClose}
+      width={DS.drawerWidth}
+      destroyOnClose
       closable={false}
       styles={{
-        content: { background: DS.drawerBg, borderRadius: 20, padding: 0, maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.18)' },
-        body: { padding: 0, maxHeight: '90vh', overflowY: 'auto', scrollbarWidth: 'thin' },
-        mask: { background: 'rgba(15,23,42,0.55)' }, // solid (no blur): avoids GPU crash blurring animated pages
         header: { display: 'none' },
+        body: { background: DS.drawerBg, padding: 0, scrollbarWidth: 'thin' },
+        content: { boxShadow: '-8px 0 40px rgba(0,0,0,0.12)' },
+        mask: { background: 'rgba(15,23,42,0.55)' }, // solid (no blur): avoids GPU crash blurring animated pages
       }}
     >
       <PremiumFormStyles />
@@ -179,6 +177,6 @@ export function RoleFormDrawer({ open, onClose, role }: Props) {
       </div>
 
       <DrawerFooter>{actions}</DrawerFooter>
-    </Modal>
+    </Drawer>
   );
 }

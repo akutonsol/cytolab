@@ -7,9 +7,9 @@ import {
   Avatar,
   Button,
   Col,
+  Drawer,
   Form,
   Input,
-  Modal,
   Radio,
   Row,
   Space,
@@ -284,19 +284,17 @@ export function ClientFormDrawer({ open, onClose, client }: Props) {
   );
 
   return (
-    <Modal
+    <Drawer
       open={open}
-      onCancel={onClose}
-      width={700}
-      centered
-      destroyOnHidden
-      footer={null}
+      onClose={onClose}
+      width={DS.drawerWidth}
+      destroyOnClose
       closable={false}
       styles={{
-        content: { background: DS.drawerBg, borderRadius: 20, padding: 0, maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.18)' },
-        body: { padding: 0, maxHeight: '90vh', overflowY: 'auto', scrollbarWidth: 'thin' },
-        mask: { background: 'rgba(15,23,42,0.55)' }, // solid (no blur): avoids GPU crash blurring animated pages
         header: { display: 'none' },
+        body: { background: DS.drawerBg, padding: 0, scrollbarWidth: 'thin' },
+        content: { boxShadow: '-8px 0 40px rgba(0,0,0,0.12)' },
+        mask: { background: 'rgba(15,23,42,0.55)' }, // solid (no blur): avoids GPU crash blurring animated pages
       }}
     >
       <PremiumFormStyles />
@@ -317,6 +315,6 @@ export function ClientFormDrawer({ open, onClose, client }: Props) {
       </div>
 
       <DrawerFooter>{actions}</DrawerFooter>
-    </Modal>
+    </Drawer>
   );
 }
