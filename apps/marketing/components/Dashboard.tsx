@@ -51,7 +51,7 @@ export default function Dashboard() {
       <div className="section-counter" aria-hidden="true" style={{ color: 'rgba(240,239,233,0.04)' }}>03</div>
       <SectionReveal>
         <div style={{
-          padding: 'var(--space-80) var(--space-40) var(--space-48)', display: 'grid', gridTemplateColumns: '1fr 1fr',
+          padding: 'var(--section-md) var(--section-gutter) var(--space-48)', display: 'grid', gridTemplateColumns: '1fr 1fr',
           alignItems: 'end', borderBottom: '1px solid rgba(240,239,233,0.04)', position: 'relative',
         }}>
           <div style={{

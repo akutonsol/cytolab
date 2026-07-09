@@ -61,7 +61,7 @@ export default function Security() {
       <div className="section-counter" aria-hidden="true" style={{ color: 'rgba(240,239,233,0.05)' }}>06</div>
 
       <SectionReveal direction="left">
-        <div style={{ background: '#09090E', padding: 'var(--space-96) var(--space-48) var(--space-96) var(--space-40)', borderRight: '1px solid rgba(240,239,233,0.04)', height: '100%' }}>
+        <div style={{ background: '#09090E', padding: 'var(--section-lg) var(--space-48) var(--section-lg) var(--section-gutter)', borderRight: '1px solid rgba(240,239,233,0.04)', height: '100%' }}>
           <div style={{ marginBottom: 'var(--space-32)' }}>{sTagInv('05 · Security')}</div>
           <div className="display-lg" style={{ marginTop: 'var(--space-32)' }}>
             <span style={{ color: '#fff' }}>Enterprise<br /></span>
@@ -80,7 +80,7 @@ export default function Security() {
       </SectionReveal>
 
       <SectionReveal direction="right">
-        <div style={{ padding: 'var(--space-96) var(--space-40) var(--space-96) var(--space-48)' }}>
+        <div style={{ padding: 'var(--section-lg) var(--section-gutter) var(--section-lg) var(--space-48)' }}>
           <div style={{ marginBottom: 'var(--space-32)' }}>{sTag('05 · Features')}</div>
           <div>
             {features.map((f, i) => (

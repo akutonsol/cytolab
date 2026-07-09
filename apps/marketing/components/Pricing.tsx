@@ -30,7 +30,7 @@ export default function Pricing() {
     <section id="pricing" style={{ borderBottom: '1px solid rgba(9,9,14,0.07)', position: 'relative' }}>
       <div className="section-counter" aria-hidden="true">07</div>
       <SectionReveal>
-        <div style={{ padding: 'var(--space-80) var(--space-40) var(--space-56)', borderBottom: '1px solid rgba(9,9,14,0.07)' }}>
+        <div style={{ padding: 'var(--section-md) var(--section-gutter) var(--space-56)', borderBottom: '1px solid rgba(9,9,14,0.07)' }}>
           <div style={{ marginBottom: 'var(--space-24)' }}>{sTag('06 · Plans')}</div>
           <div className="display-lg">
             Built for every<br />

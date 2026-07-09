@@ -51,7 +51,7 @@ export default function CTA() {
 
   return (
     <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', background: '#4F46E5' }}>
-      <div style={{ padding: 'var(--space-112) var(--space-48) var(--space-112) var(--space-40)', borderRight: '1px solid rgba(255,255,255,0.1)', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ padding: 'var(--section-xl) var(--space-48) var(--section-xl) var(--section-gutter)', borderRight: '1px solid rgba(255,255,255,0.1)', position: 'relative', overflow: 'hidden' }}>
         <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />
         {/* Ghost AI text */}
         <div style={{
@@ -75,7 +75,7 @@ export default function CTA() {
       </div>
 
       <SectionReveal direction="right">
-        <div style={{ padding: 'var(--space-112) var(--space-40) var(--space-112) var(--space-48)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div style={{ padding: 'var(--section-xl) var(--section-gutter) var(--section-xl) var(--space-48)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <p className="body-lg" style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 'var(--space-48)', maxWidth: 'var(--measure-sm)' }}>
             Join the next generation of pathology laboratories using AI to process more specimens, reduce turnaround time, and improve diagnostic confidence.
           </p>

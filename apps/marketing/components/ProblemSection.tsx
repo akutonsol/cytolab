@@ -49,7 +49,7 @@ export default function ProblemSection() {
       <div className="section-counter" aria-hidden="true">01</div>
 
       {/* Big type */}
-      <div ref={tickerRef} style={{ padding: 'var(--space-80) var(--space-40) 0' }}>
+      <div ref={tickerRef} style={{ padding: 'var(--section-md) var(--section-gutter) 0' }}>
         <div style={{ marginBottom: 'var(--space-40)' }}>{sTag('01 · The Problem')}</div>
 
         {[
@@ -96,7 +96,7 @@ export default function ProblemSection() {
       {/* Split body */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid rgba(9,9,14,0.07)' }}>
         <SectionReveal direction="left">
-          <div style={{ padding: 'var(--space-56) var(--space-48) var(--space-64) var(--space-40)', borderRight: '1px solid rgba(9,9,14,0.07)' }}>
+          <div style={{ padding: 'var(--space-56) var(--space-48) var(--space-64) var(--section-gutter)', borderRight: '1px solid rgba(9,9,14,0.07)' }}>
             <div style={{ marginBottom: 'var(--space-32)' }}>{sTag('Current Reality')}</div>
             {problems.map(({ text, tag }) => (
               <div key={text} style={{
@@ -113,7 +113,7 @@ export default function ProblemSection() {
         </SectionReveal>
 
         <SectionReveal direction="right">
-          <div style={{ padding: 'var(--space-56) var(--space-40) var(--space-64) var(--space-48)' }}>
+          <div style={{ padding: 'var(--space-56) var(--section-gutter) var(--space-64) var(--space-48)' }}>
             <div style={{ marginBottom: 'var(--space-32)' }}>{sTag('The Fix')}</div>
             <div style={{ background: '#4F46E5', padding: 'var(--card-padding-lg)', borderRadius: '2px', color: '#fff' }}>
               <div className="label" style={{

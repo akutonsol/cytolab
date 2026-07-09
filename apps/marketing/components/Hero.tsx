@@ -136,7 +136,7 @@ export default function Hero() {
 
       {/* LEFT */}
       <div style={{
-        padding: 'var(--space-96) var(--space-56) var(--space-48) var(--space-40)', display: 'flex',
+        padding: 'var(--section-xl) var(--space-56) var(--space-48) var(--section-gutter)', display: 'flex',
         flexDirection: 'column', justifyContent: 'space-between',
         borderRight: '1px solid rgba(9,9,14,0.07)', position: 'relative', zIndex: 2,
       }}>

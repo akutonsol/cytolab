@@ -81,19 +81,56 @@ numbers** — never hand-type `1.1rem`, `10px`, `mt-11`, `pb-28`, `gap-7`.
 
 **Content measure** — max readable line length: `--measure-xs` 320 · `--measure-sm` 400 · `--measure-md` **640 (~65ch, body prose)** · `--measure-lg` 768 (`.measure-*`).
 
-### 2c. Where each is used
-- **Section spacing** (page rhythm): section outer `padding` → `--section-*` (vertical) + `--section-gutter` (sides).
-- **Grid spacing** (gaps between grid/flex children, margins between blocks): the raw `--space-*` scale — `gap: 'var(--space-24)'`, `marginBottom: 'var(--space-32)'`. Even steps for rhythm; `--space-4`/`--space-2` only for tight/hairline gaps.
-- **Card spacing** (a card's interior): `--card-padding-*`.
-- **Typography spacing** (space *around* text blocks — heading→body, eyebrow→headline): `--space-*`. Line-height/leading stays a **typographic** property (set by the type utilities), not a spacing token.
-- **Measure**: cap paragraphs with `--measure-*`, page content with `--container-*`.
+### 2c. Where each is used (semantic application)
 
-### 2d. Optical exceptions (intentional, documented — not accidental)
+**Section spacing** — a section's establishing/outer vertical padding uses a
+`--section-*` tier by the section's role; the outer side gutter uses
+`--section-gutter`:
+
+| Section role | Token | Applied to |
+|---|---|---|
+| Hero / major CTA / cinematic | `--section-xl` (112) | Hero, CTA |
+| Prominent / dark feature panels | `--section-lg` (96) | Security |
+| **Default** content sections | `--section-md` (80) | Problem, AI, Dashboard, Modules, Pricing headers |
+| Compact supporting bands | `--section-sm` (56) / `--section-xs` (40) | Footer top; sub-blocks |
+| Any section's L/R edge | `--section-gutter` (clamp 20–40px) | every full-bleed section (responsive) |
+
+Deeper *content* spacing inside a section (column tops/bottoms, block gaps) stays
+on the raw `--space-*` scale — those aren't the section's outer rhythm.
+
+**Card spacing** — a card's interior padding uses `--card-padding-*` when it's a
+uniform card (e.g. AI outcome cards → `--card-padding-sm`, the blue Fix panel →
+`--card-padding-lg`). Do **not** use raw `--space-*` for card interiors *unless*
+it's a documented exception (see 2d): the compact product-mock cards in the
+Dashboard section (`--space-16`) and the asymmetric editorial cards (Pricing
+`48/40`, Security cert cells `24/20`) intentionally keep bespoke padding.
+
+**Grid spacing** — gaps between grid/flex children and margins between blocks use
+the raw `--space-*` scale (`gap: var(--space-24)`, `marginBottom: var(--space-32)`).
+Even steps for rhythm; `--space-4`/`--space-2` only for tight/hairline gaps.
+
+**Typography spacing** — space *around* text blocks (heading→body, eyebrow→headline)
+uses `--space-*`. Line-height / leading stays a **typographic** property (set by the
+type utilities), not a spacing token.
+
+**Measure** — cap paragraphs with `--measure-*`; cap page content (see below) with
+`--container-*`.
+
+### 2d. Container usage & full-bleed exception
+The marketing site is **intentionally full-bleed / cinematic** — sections run
+edge-to-edge with `--section-gutter` insets, and grids/split panels span the full
+viewport. So `--container-*` are **available for capped editorial / content pages
+(docs, blog, legal, article layouts), not required for full-bleed cinematic
+marketing sections** — none are applied on the marketing homepage today, by design.
+
+### 2e. Optical exceptions (intentional, documented — not accidental)
 Visual rhythm > mathematical perfection. These may remain literals:
-- **Button padding** (`13px 26px`, `14px 30px`, `11px`) — tuned for control balance; 8pt-snapping makes buttons feel wrong.
-- **Baseline nudges ≤4px** (`marginTop: '3px'` under a metric) — optical alignment.
+- **Button padding** (`13px 26px`, `14px 30px`, `11px`, `8px 18px`) — tuned for control balance; 8pt-snapping makes buttons feel wrong.
+- **Baseline nudges ≤4px** (`marginTop: '3px'` under a metric, dot-seating `6px`) — optical alignment.
 - **Headline leading** between stacked display lines (`0.1rem`, `0.25rem`) — part of the tight editorial composition.
-- **1px** borders / hairline divider lines.
+- **Compact product-mock padding** (Dashboard mock cards, `--space-16`) — a deliberately dense UI facsimile, not a real content card.
+- **Asymmetric editorial card padding** (Pricing plan cards `48/40`, Security cert cells `24/20`) — bespoke proportions where a single symmetric `--card-padding-*` wouldn't fit.
+- **1px** borders / hairline divider lines and grid `gap: '1px'` separators.
 - **Element dimensions** (dot/icon/line/bar `width`/`height`, e.g. `width: 3`) — graphic sizes, not layout spacing.
 - **Structural positioning** — `inset: 0`, `translate(-50%,-50%)`, full-bleed offsets, decorative `vw`/`em` ghost-type positions.
 

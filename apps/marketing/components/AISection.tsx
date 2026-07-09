@@ -47,7 +47,7 @@ export default function AISection() {
     <section id="cyto-ai" style={{ borderBottom: '1px solid rgba(9,9,14,0.07)', overflow: 'hidden', position: 'relative' }}>
       <div className="section-counter" aria-hidden="true">04</div>
 
-      <div ref={tickerRef} style={{ padding: 'var(--space-80) var(--space-40) 0' }}>
+      <div ref={tickerRef} style={{ padding: 'var(--section-md) var(--section-gutter) 0' }}>
         <div style={{ marginBottom: 'var(--space-40)' }}>{sTag('03 · CYTO AI')}</div>
         {[
           [{ text: 'Your new', ghost: false, blue: false }],
@@ -71,7 +71,7 @@ export default function AISection() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid rgba(9,9,14,0.07)', marginTop: 'var(--space-56)' }}>
         <SectionReveal direction="left">
-          <div style={{ padding: 'var(--space-56) var(--space-48) var(--space-64) var(--space-40)', borderRight: '1px solid rgba(9,9,14,0.07)' }}>
+          <div style={{ padding: 'var(--space-56) var(--space-48) var(--space-64) var(--section-gutter)', borderRight: '1px solid rgba(9,9,14,0.07)' }}>
             <div style={{ marginBottom: 'var(--space-32)' }}>{sTag('How it works')}</div>
             {steps.map((step, i) => (
               <div key={step} style={{
@@ -87,11 +87,11 @@ export default function AISection() {
         </SectionReveal>
 
         <SectionReveal direction="right">
-          <div style={{ padding: 'var(--space-56) var(--space-40) var(--space-64) var(--space-48)', background: '#E8E7E1' }}>
+          <div style={{ padding: 'var(--space-56) var(--section-gutter) var(--space-64) var(--space-48)', background: '#E8E7E1' }}>
             <div style={{ marginBottom: 'var(--space-32)' }}>{sTag('Outcomes')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
               {outcomes.map(({ tag, value, blue }) => (
-                <div key={tag} style={{ background: '#fff', border: '1px solid rgba(9,9,14,0.07)', borderRadius: '2px', padding: 'var(--space-24)' }}>
+                <div key={tag} style={{ background: '#fff', border: '1px solid rgba(9,9,14,0.07)', borderRadius: '2px', padding: 'var(--card-padding-sm)' }}>
                   <div className="label" style={{ color: 'rgba(9,9,14,0.25)', marginBottom: 'var(--space-8)' }}>{tag}</div>
                   <div className="metric-xl" style={{ color: blue ? '#4F46E5' : '#09090E' }}>{value}</div>
                 </div>

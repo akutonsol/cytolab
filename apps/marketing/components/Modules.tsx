@@ -47,7 +47,7 @@ export default function Modules() {
       <div className="section-counter" aria-hidden="true">05</div>
       <SectionReveal>
         <div style={{
-          padding: 'var(--space-80) var(--space-40) var(--space-56)', borderBottom: '1px solid rgba(9,9,14,0.07)',
+          padding: 'var(--section-md) var(--section-gutter) var(--space-56)', borderBottom: '1px solid rgba(9,9,14,0.07)',
           display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-64)', alignItems: 'end',
         }}>
           <div>

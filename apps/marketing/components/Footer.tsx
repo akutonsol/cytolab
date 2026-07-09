@@ -8,7 +8,7 @@ const cols = [
 
 export default function Footer() {
   return (
-    <footer style={{ background: '#09090E', padding: 'var(--space-64) var(--space-40) var(--space-40)' }}>
+    <footer style={{ background: '#09090E', padding: 'var(--space-64) var(--section-gutter) var(--space-40)' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '2.5fr 1fr 1fr 1fr', gap: 'var(--space-48)', paddingBottom: 'var(--space-48)', borderBottom: '1px solid rgba(240,239,233,0.04)', marginBottom: 'var(--space-32)' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.08em', color: '#fff' }}>

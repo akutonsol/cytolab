@@ -13,7 +13,7 @@ export default function Nav() {
     <nav style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
       height: '56px', display: 'flex', alignItems: 'center',
-      justifyContent: 'space-between', padding: '0 var(--space-40)',
+      justifyContent: 'space-between', padding: '0 var(--section-gutter)',
       background: scrolled ? 'rgba(240,239,233,0.92)' : 'rgba(240,239,233,0.75)',
       backdropFilter: 'blur(24px)',
       borderBottom: '1px solid rgba(9,9,14,0.07)',
