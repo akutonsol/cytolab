@@ -12,6 +12,7 @@ import { api, type Paginated } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
+import { Card } from '@/components/ui';
 
 // Stable empty fallback — a fresh [] each render would retrigger the
 // infinite-scroll fetchFn (which depends on the rows array identity).
@@ -43,11 +44,11 @@ interface Win {
 interface Announcement { id: string; title: string; body: string; type: string; isActive: boolean; showFrom: string; showUntil: string | null }
 interface UserLite { id: string; firstName: string; lastName: string; email: string }
 
-// ─── Style tokens (zero-orange: #A16207 pending, #B45309 high amber) ──────────
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)]';
+// ─── Style tokens (zero-orange: --color-warning throughout; #B45309 removed) ──────────
 const PRIORITY: Record<TicketPriority, { bg: string; fg: string }> = {
   CRITICAL: { bg: '#FEE2E2', fg: '#991B1B' },
-  HIGH: { bg: '#FEF3C7', fg: '#B45309' },
+  // ZERO-ORANGE: see requisitions — warning text on amber-100 must use the -strong stop.
+  HIGH: { bg: 'var(--status-warning-soft-100)', fg: 'var(--status-warning-strong)' },
   MEDIUM: { bg: '#EEF2FF', fg: '#4F46E5' },
   LOW: { bg: '#F1F5F9', fg: '#475569' },
 };
@@ -67,7 +68,7 @@ const CATEGORIES: TicketCategory[] = ['BUG', 'FEATURE_REQUEST', 'DATA_ISSUE', 'A
 const PRIORITIES: TicketPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 const STATUSES: TicketStatus[] = ['OPEN', 'IN_PROGRESS', 'PENDING_RESPONSE', 'RESOLVED', 'CLOSED'];
 const SYSTEMS = ['API', 'Database', 'Portal', 'Email', 'Storage', 'All Systems'];
-const CAT_COLORS = ['#4F46E5', '#6B21A8', '#1D4ED8', '#115E59', '#166534', '#A16207', '#B45309', '#475569'];
+const CAT_COLORS = ['#4F46E5', '#6B21A8', '#1D4ED8', '#115E59', '#166534', '#A16207', 'var(--color-warning)', '#475569'];
 
 const cat = (c: string) => c.replace('_', ' ');
 const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—');
@@ -179,15 +180,15 @@ function TicketsTab() {
       {/* Stats bar */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
         {KPIS.map((k) => (
-          <div key={k.label} className={`${CARD} p-4`}>
+          <Card radius="md" elevation="raised" border="hairline" className="p-4" key={k.label}>
             <div className="text-[26px] font-bold leading-none" style={{ color: k.color }}>{k.value}</div>
             <div className="mt-1.5 text-[12px] font-medium text-[#475569]">{k.label}</div>
-          </div>
+          </Card>
         ))}
       </div>
 
       {/* Filters + New */}
-      <div className={`${CARD} flex flex-wrap items-center gap-3 p-4`}>
+      <Card radius="md" elevation="raised" border="hairline" className="flex flex-wrap items-center gap-3 p-4">
         <div className="flex h-11 min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-[#E2E8F0] bg-white px-3.5 text-[#9CA3AF]">
           <Search size={16} />
           <input value={f.search} onChange={(e) => setF({ ...f, search: e.target.value })} placeholder="Search title or ticket #..." className="w-full border-none bg-transparent text-sm text-[#0F172A] outline-none placeholder:text-[#9CA3AF]" />
@@ -197,10 +198,10 @@ function TicketsTab() {
         <select aria-label="Filter by category" value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} className="h-11 rounded-xl border border-[#E2E8F0] px-3 text-sm"><option value="">All Categories</option>{CATEGORIES.map((c) => <option key={c} value={c}>{cat(c)}</option>)}</select>
         <select aria-label="Filter by submitter type" value={f.submitterType} onChange={(e) => setF({ ...f, submitterType: e.target.value })} className="h-11 rounded-xl border border-[#E2E8F0] px-3 text-sm"><option value="">All Submitters</option><option value="STAFF">Staff</option><option value="CLIENT">Client</option><option value="CONSULTANT">Consultant</option></select>
         <button onClick={() => setNewOpen(true)} className={`${btnPrimary} ml-auto`}><Plus size={16} /> New Ticket</button>
-      </div>
+      </Card>
 
       {/* Table */}
-      <div className={`${CARD} overflow-hidden p-0`}>
+      <Card radius="md" elevation="raised" border="hairline" className="overflow-hidden p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
@@ -231,7 +232,7 @@ function TicketsTab() {
         {ticketRows.length > 0 && (
           <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
         )}
-      </div>
+      </Card>
 
       {newOpen && <NewTicketModal users={users} onClose={() => setNewOpen(false)} />}
       {openId && <TicketDetail id={openId} users={users} onClose={() => setOpenId(null)} />}
@@ -378,10 +379,10 @@ function MaintenanceTab() {
         <h2 className="text-[16px] font-bold text-[#0F172A]">Upcoming Windows</h2>
         <button onClick={() => setOpen(true)} className={btnPrimary}><Plus size={16} /> Schedule Maintenance</button>
       </div>
-      {upcoming.length === 0 && <div className={`${CARD} p-8 text-center text-[14px] text-[#475569]`}>No upcoming maintenance scheduled.</div>}
+      {upcoming.length === 0 && <Card radius="md" elevation="raised" border="hairline" className="p-8 text-center text-[14px] text-[#475569]">No upcoming maintenance scheduled.</Card>}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {upcoming.map((w) => (
-          <div key={w.id} className={`${CARD} p-5`}>
+          <Card radius="md" elevation="raised" border="hairline" className="p-5" key={w.id}>
             <div className="flex items-start justify-between">
               <div className="text-[15px] font-bold text-[#0F172A]">{w.title}</div>
               <Badge bg={winStatus[w.status]?.bg ?? '#F1F5F9'} fg={winStatus[w.status]?.fg ?? '#475569'}>{w.status}</Badge>
@@ -390,12 +391,12 @@ function MaintenanceTab() {
             <div className="mt-3 flex items-center gap-2 text-[13px] text-[#334155]"><Clock size={15} className="text-[#475569]" /> {fmtDateTime(w.scheduledAt)} · {w.durationMinutes} min</div>
             <div className="mt-3 flex flex-wrap gap-1.5">{w.affectedSystems.map((s) => <span key={s} className="rounded-full bg-[#F1F5F9] px-2.5 py-1 text-[11px] font-semibold text-[#475569]">{s}</span>)}</div>
             <button onClick={() => cancel.mutate(w.id)} className="mt-4 text-[12px] font-semibold text-[#991B1B] hover:underline">Cancel window</button>
-          </div>
+          </Card>
         ))}
       </div>
 
       {past.length > 0 && (
-        <div className={`${CARD} overflow-hidden p-0`}>
+        <Card radius="md" elevation="raised" border="hairline" className="overflow-hidden p-0">
           <div className="border-b border-[#EEF2F7] p-4 text-[14px] font-bold text-[#0F172A]">Past &amp; Cancelled</div>
           <table className="w-full text-left text-sm">
             <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]">{['Title', 'Scheduled', 'Duration', 'Systems', 'Status'].map((h) => <th key={h} className="px-4 py-3 font-semibold">{h}</th>)}</tr></thead>
@@ -411,7 +412,7 @@ function MaintenanceTab() {
               ))}
             </tbody>
           </table>
-        </div>
+        </Card>
       )}
 
       {open && <ScheduleModal onClose={() => setOpen(false)} />}
@@ -471,12 +472,12 @@ function AnnouncementsTab() {
         <h2 className="text-[16px] font-bold text-[#0F172A]">Announcements</h2>
         <button onClick={() => setOpen(true)} className={btnPrimary}><Plus size={16} /> New Announcement</button>
       </div>
-      {list.length === 0 && <div className={`${CARD} p-8 text-center text-[14px] text-[#475569]`}>No announcements yet.</div>}
+      {list.length === 0 && <Card radius="md" elevation="raised" border="hairline" className="p-8 text-center text-[14px] text-[#475569]">No announcements yet.</Card>}
       <div className="flex flex-col gap-3">
         {list.map((a) => {
           const c = ANN_TYPE[a.type] ?? ANN_TYPE.INFO;
           return (
-            <div key={a.id} className={`${CARD} p-5`}>
+            <Card radius="md" elevation="raised" border="hairline" className="p-5" key={a.id}>
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2"><Badge bg={c.bg} fg={c.fg}>{a.type}</Badge><span className="text-[15px] font-bold text-[#0F172A]">{a.title}</span></div>
@@ -487,7 +488,7 @@ function AnnouncementsTab() {
                   <input type="checkbox" checked={a.isActive} onChange={() => toggle.mutate(a)} style={{ accentColor: '#4F46E5' }} /> {a.isActive ? 'Active' : 'Inactive'}
                 </label>
               </div>
-            </div>
+            </Card>
           );
         })}
       </div>
@@ -571,15 +572,15 @@ function AnalyticsTab() {
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {KPIS.map((k) => (
-          <div key={k.label} className={`${CARD} p-5`}>
+          <Card radius="md" elevation="raised" border="hairline" className="p-5" key={k.label}>
             <div className="text-[30px] font-bold leading-none" style={{ color: k.color }}>{k.value}</div>
             <div className="mt-2 text-[13px] font-medium text-[#475569]">{k.label}</div>
-          </div>
+          </Card>
         ))}
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <div className={`${CARD} p-5`}>
+        <Card radius="md" elevation="raised" border="hairline" className="p-5">
           <div className="mb-4 text-[14px] font-bold text-[#0F172A]">Tickets by Category</div>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={byCategory}>
@@ -590,9 +591,9 @@ function AnalyticsTab() {
               <Bar dataKey="value" radius={[6, 6, 0, 0]}>{byCategory.map((_, i) => <Cell key={i} fill={CAT_COLORS[i % CAT_COLORS.length]} />)}</Bar>
             </BarChart>
           </ResponsiveContainer>
-        </div>
+        </Card>
 
-        <div className={`${CARD} p-5`}>
+        <Card radius="md" elevation="raised" border="hairline" className="p-5">
           <div className="mb-4 text-[14px] font-bold text-[#0F172A]">Tickets by Status</div>
           <div className="flex items-center gap-4">
             <PieChart width={200} height={200}>
@@ -605,10 +606,10 @@ function AnalyticsTab() {
               {byStatus.length === 0 && <div className="text-[13px] text-[#475569]">No data</div>}
             </div>
           </div>
-        </div>
+        </Card>
       </div>
 
-      <div className={`${CARD} p-5`}>
+      <Card radius="md" elevation="raised" border="hairline" className="p-5">
         <div className="mb-4 text-[14px] font-bold text-[#0F172A]">Ticket Volume (last 30 days)</div>
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={days}>
@@ -619,7 +620,7 @@ function AnalyticsTab() {
             <Line type="monotone" dataKey="count" stroke="#4F46E5" strokeWidth={2.5} dot={false} />
           </LineChart>
         </ResponsiveContainer>
-      </div>
+      </Card>
     </div>
   );
 }

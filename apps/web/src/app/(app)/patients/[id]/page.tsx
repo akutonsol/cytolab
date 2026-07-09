@@ -14,6 +14,7 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { AddCorrelationModal } from '@/components/AddCorrelationModal';
 import { RESULT_META as CORR_META, shortDate as corrDate, type CorrelationCase } from '@/lib/correlation';
 import { STATUS_META as RECALL_META, dueColor, dueLabel, shortDate as recallDate, type Recall } from '@/lib/recall';
+import { Card } from '@/components/ui';
 
 const STAGE: Record<string, { label: string; pct: number }> = {
   Pending: { label: 'Intake', pct: 10 }, Submitted: { label: 'Intake', pct: 25 },
@@ -46,7 +47,6 @@ const dmy = (d?: string | null) => {
 };
 const daysSince = (d?: string | null) => (d ? Math.max(0, Math.floor((Date.now() - new Date(d).getTime()) / 86_400_000)) : 0);
 const initials = (n: string) => n.split(' ').map((p) => p[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
-const CARD = 'rounded-[20px] border border-[#EEF2F7] shadow-[0_4px_24px_rgba(0,0,0,0.04),0_1px_4px_rgba(79,70,229,0.06)]';
 
 // Status → badge classes (no orange anywhere).
 const statusCls = (s: string) =>
@@ -122,7 +122,7 @@ function Stat({ value, unit, label }: { value: React.ReactNode; unit: string; la
 }
 
 function SkelCard({ h }: { h: number }) {
-  return <div className={`animate-pulse bg-[#eef2f8] ${CARD}`} style={{ height: h }} />;
+  return <Card radius="lg" elevation="glow" border="hairline" surface={false} className="animate-pulse bg-[#eef2f8]" style={{ height: h }} />;
 }
 
 export default function PatientProfilePage() {
@@ -212,7 +212,7 @@ export default function PatientProfilePage() {
         {/* ══ HERO ══ */}
         {/* self-stretch: fill the grid row's full height (matches the taller
             Current Findings card beside it) instead of leaving a gap below. */}
-        <section className={`relative self-stretch overflow-hidden ${CARD}`} style={{ background: '#EEF3FF', minHeight: 260 }}>
+        <Card as="section" radius="lg" elevation="glow" border="hairline" surface={false} className="relative self-stretch overflow-hidden" style={{ background: '#EEF3FF', minHeight: 260 }}>
           {/* photo — single image, cycles every 4s */}
           <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '45%', overflow: 'hidden', zIndex: 1 }}>
             <Image key={patient.avatarUrl || currentIdx} src={patient.avatarUrl || AVATARS[currentIdx]} alt="" fill unoptimized sizes="45vw" style={{ objectFit: 'cover', objectPosition: 'top center' }} />
@@ -266,10 +266,10 @@ export default function PatientProfilePage() {
             <div className="text-[20px] font-bold text-[#111827]">{fullName}</div>
             <div className="text-[14px] text-[#6B7280]">{age != null ? `${age} years old` : 'Age —'}, {patient.gender ?? '—'}</div>
           </div>
-        </section>
+        </Card>
 
         {/* ══ CURRENT FINDINGS ══ */}
-        <section className={`flex flex-col bg-white p-5 ${CARD}`}>
+        <Card as="section" radius="lg" elevation="glow" border="hairline" surface={false} className="flex flex-col bg-white p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-[16px] font-bold text-[#111827]">Current findings</h2>
             <div className="flex items-center gap-2">
@@ -298,10 +298,10 @@ export default function PatientProfilePage() {
               </div>
             ))}
           </div>
-        </section>
+        </Card>
 
         {/* ══ RECORD HISTORY ══ */}
-        <section className={`flex flex-col bg-white ${CARD}`}>
+        <Card as="section" radius="lg" elevation="glow" border="hairline" surface={false} className="flex flex-col bg-white">
           <div className="flex flex-wrap items-center justify-between gap-3 px-6 pt-6">
             <h2 className="text-[18px] font-bold text-[#111827]">Record History</h2>
             <div className="flex items-center gap-2">
@@ -349,11 +349,11 @@ export default function PatientProfilePage() {
               <button disabled={page === pageCount} onClick={() => setPage((p) => p + 1)} className="grid h-8 w-8 place-items-center rounded-full text-[#6b7280] disabled:opacity-30 hover:bg-[#f1f3f6]">→</button>
             </div>
           </div>
-        </section>
+        </Card>
 
         {/* ══ CORRELATIONS (cyto-histo) ══ */}
         <FeatureGate feature="CORRELATION_TRACKING">
-          <section className={`flex flex-col p-5 ${CARD}`}>
+          <Card as="section" radius="lg" elevation="glow" border="hairline" surface={false} className="flex flex-col p-5">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-[18px] font-bold text-[#111827]">Correlations</h2>
               <button onClick={() => setAddCorr(true)} className="flex items-center gap-1.5 rounded-lg bg-[#4F46E5] px-3 py-1.5 text-[13px] font-semibold text-white"><Plus size={14} /> Add</button>
@@ -374,12 +374,12 @@ export default function PatientProfilePage() {
                 ))}
               </div>
             )}
-          </section>
+          </Card>
         </FeatureGate>
 
         {/* ══ RECALLS (scheduled follow-up) ══ */}
         <FeatureGate feature="PATIENT_RECALL">
-          <section className={`flex flex-col p-5 ${CARD}`}>
+          <Card as="section" radius="lg" elevation="glow" border="hairline" surface={false} className="flex flex-col p-5">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-[18px] font-bold text-[#111827]">Recalls</h2>
               <button onClick={() => router.push('/recalls')} className="text-[13px] font-semibold text-[#4F46E5] hover:underline">View all →</button>
@@ -399,11 +399,11 @@ export default function PatientProfilePage() {
                 ))}
               </div>
             )}
-          </section>
+          </Card>
         </FeatureGate>
 
         {/* ══ CURRENT EXAMINATIONS ══ */}
-        <section className={`flex flex-col p-5 ${CARD}`} style={{ background: '#F0F0FF' }}>
+        <Card as="section" radius="lg" elevation="glow" border="hairline" surface={false} className="flex flex-col p-5" style={{ background: '#F0F0FF' }}>
           <div className="flex items-center justify-between">
             <h2 className="text-[18px] font-bold text-[#111827]">Current examinations</h2>
             <button aria-label="Add examination" className="grid h-8 w-8 place-items-center rounded-full bg-[#111827] text-white hover:bg-black"><Plus size={16} /></button>
@@ -449,7 +449,7 @@ export default function PatientProfilePage() {
               );
             })}
           </div>
-        </section>
+        </Card>
       </div>
       {addCorr && <AddCorrelationModal defaultPatientId={id} onClose={() => setAddCorr(false)} />}
     </div>

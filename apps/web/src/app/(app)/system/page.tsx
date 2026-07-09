@@ -10,6 +10,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Line, LineChart, ResponsiveContainer } from 'recharts';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { Card, Button } from '@/components/ui';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Status = 'ok' | 'warn' | 'error';
@@ -71,13 +72,13 @@ const DEEP_BANNER: Record<Status, { bg: string; border: string; color: string; I
 };
 
 // ─── Style tokens ────────────────────────────────────────────────────────────
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)]';
-// Status semantics: ok green, error red. Warn uses dark amber #B45309 (reads as
+// Status semantics: ok green, error red. Warn uses --color-warning (#A16207); the
+// old #B45309 anti-aliased into the trip box. (reads as
 // yellow-brown, detector-safe) per the System Health spec.
-const DOT: Record<Status, string> = { ok: '#22C55E', warn: '#B45309', error: '#EF4444' };
+const DOT: Record<Status, string> = { ok: '#22C55E', warn: 'var(--color-warning)', error: '#EF4444' };
 const BANNER: Record<Status, { bg: string; border: string; color: string; Icon: any; text: string }> = {
   ok: { bg: '#F0FDF4', border: '#BBF7D0', color: '#16A34A', Icon: CheckCircle, text: 'All systems operational' },
-  warn: { bg: '#FFFBEB', border: '#FDE68A', color: '#B45309', Icon: AlertTriangle, text: 'Some checks need attention' },
+  warn: { bg: '#FFFBEB', border: '#FDE68A', color: 'var(--color-warning)', Icon: AlertTriangle, text: 'Some checks need attention' },
   error: { bg: '#FEF2F2', border: '#FECACA', color: '#EF4444', Icon: XCircle, text: 'Critical issues detected' },
 };
 
@@ -143,11 +144,11 @@ export default function SystemHealthPage() {
   if (!allowed) {
     return (
       <div className="min-h-full pt-4" style={{ background: '#F8FAFC' }}>
-        <div className={`${CARD} mx-auto mt-16 max-w-md p-8 text-center`}>
+        <Card radius="md" elevation="raised" border="hairline" className="mx-auto mt-16 max-w-md p-8 text-center">
           <Shield size={28} className="mx-auto text-[#9CA3AF]" />
           <div className="mt-3 text-[18px] font-bold text-[#0F172A]">Access restricted</div>
           <div className="mt-1 text-[14px] text-[#6B7280]">System Health is available to superusers only.</div>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -255,7 +256,7 @@ export default function SystemHealthPage() {
           </Section>
 
           {/* ── Maintenance Log ── */}
-          <div className={`${CARD} p-6`}>
+          <Card radius="md" elevation="raised" border="hairline" className="p-6">
             <div className="mb-4 flex items-center gap-2">
               <Clock size={18} className="text-[#4F46E5]" />
               <h2 className="text-[18px] font-bold text-[#0F172A]">Maintenance Log</h2>
@@ -292,7 +293,7 @@ export default function SystemHealthPage() {
                 </tbody>
               </table>
             )}
-          </div>
+          </Card>
 
           {/* ── Data Backup ── */}
           <div className="glass-card mt-6 rounded-2xl p-6">
@@ -303,13 +304,12 @@ export default function SystemHealthPage() {
                   Daily automated backup to Google Sheets at 2:30 AM. Appends new data — full history preserved.
                 </p>
               </div>
-              <button
-                onClick={() => backupMutation.mutate()}
+              <Button onClick={() => backupMutation.mutate()}
                 disabled={backupMutation.isPending}
-                className="btn-primary flex items-center gap-2">
+                className="flex items-center gap-2">
                 {backupMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <Cloud size={15} />}
                 Run Backup Now
-              </button>
+              </Button>
             </div>
 
             {/* Config status */}
@@ -331,8 +331,8 @@ export default function SystemHealthPage() {
                 </>
               ) : (
                 <>
-                  {/* Dark amber #B45309 (detector-safe); #D97706 would trip the zero-orange rule. */}
-                  <AlertTriangle size={18} style={{ color: '#B45309' }} />
+                  {/* --color-warning (#A16207). #B45309 and #D97706 both trip the zero-orange rule. */}
+                  <AlertTriangle size={18} style={{ color: 'var(--color-warning)' }} />
                   <div>
                     <p className="font-label-md text-label-md text-on-surface">Not configured</p>
                     <p className="font-body-sm text-body-sm text-secondary">Set BACKUP_SHEET_ID environment variable to enable.</p>
@@ -358,7 +358,7 @@ export default function SystemHealthPage() {
           </div>
 
           {/* ── Deep Diagnostics ── */}
-          <div className={`${CARD} mt-6 p-6`}>
+          <Card radius="md" elevation="raised" border="hairline" className="mt-6 p-6">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Cpu size={18} className="text-[#4F46E5]" />
@@ -389,7 +389,7 @@ export default function SystemHealthPage() {
             ) : (
               <DeepResults result={deepResult} />
             )}
-          </div>
+          </Card>
         </>
       )}
 
@@ -416,13 +416,13 @@ function Banner({ status }: { status: Status }) {
 
 function Section({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) {
   return (
-    <div className={`${CARD} mb-5 p-6`}>
+    <Card radius="md" elevation="raised" border="hairline" className="mb-5 p-6">
       <div className="mb-4 flex items-center gap-2">
         <Icon size={18} className="text-[#4F46E5]" />
         <h2 className="text-[18px] font-bold text-[#0F172A]">{title}</h2>
       </div>
       {children}
-    </div>
+    </Card>
   );
 }
 

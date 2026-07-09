@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { useAuth } from '@/lib/auth';
+import { Card, Button } from '@/components/ui';
 
 interface LabCode {
   id: string;
@@ -33,7 +34,6 @@ const initialsOf = (code: string) => code.replace(/\s+/g, '').slice(0, 2).toUppe
 const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—');
 const fmtTime = (d?: string | null) => (d ? new Date(d).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '');
 
-const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 
 function Sparkline({ color, data = [3, 4, 4, 5, 6, 6, 7], w = 84, h = 30 }: { color: string; data?: number[]; w?: number; h?: number }) {
   const max = Math.max(...data), min = Math.min(...data), range = max - min || 1;
@@ -49,7 +49,7 @@ function KpiCard({ icon, iconClass, label, value, sub, spark }: {
   icon: React.ReactNode; iconClass: string; label: string; value: React.ReactNode; sub: string; spark: string;
 }) {
   return (
-    <div className={`${CARD} p-5`}>
+    <Card radius="sm" elevation="sm" border="subtle" className="p-5">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -61,7 +61,7 @@ function KpiCard({ icon, iconClass, label, value, sub, spark }: {
         </div>
         <Sparkline color={spark} />
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -97,10 +97,10 @@ function LabCodeModal({ editing, onClose }: { editing: LabCode | 'new'; onClose:
           className="mb-2 h-11 w-full rounded-xl border border-slate-200 px-3.5 text-sm text-slate-700 outline-none focus:border-primary" />
         {err && <div className="mb-2 text-sm text-error">{err}</div>}
         <div className="mt-4 flex justify-end gap-2">
-          <button onClick={onClose} className="btn-secondary">Cancel</button>
-          <button onClick={() => save.mutate()} disabled={!code.trim() || save.isPending} className="btn-primary" style={{ opacity: !code.trim() || save.isPending ? 0.5 : 1 }}>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => save.mutate()} disabled={!code.trim() || save.isPending}  style={{ opacity: !code.trim() || save.isPending ? 0.5 : 1 }}>
             {save.isPending ? 'Saving…' : 'Save'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -175,7 +175,7 @@ function LabCodesTab() {
         </div>
 
         {/* Filter bar */}
-        <div className={`${CARD} mb-6 flex flex-wrap items-center gap-3 p-4`}>
+        <Card radius="sm" elevation="sm" border="subtle" className="mb-6 flex flex-wrap items-center gap-3 p-4">
           <div className="flex h-11 min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-slate-500">
             <Search size={16} />
             <input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search lab code..."
@@ -194,12 +194,12 @@ function LabCodesTab() {
             <option value="recent">Recently Updated</option>
           </select>
           {can('labcode:create') && (
-            <button onClick={() => setModal('new')} className="btn-primary ml-auto"><Plus size={16} /> New Lab Code</button>
+            <Button onClick={() => setModal('new')} className="ml-auto"><Plus size={16} /> New Lab Code</Button>
           )}
-        </div>
+        </Card>
 
         {/* Table */}
-        <div className={`${CARD} p-0`}>
+        <Card radius="sm" elevation="sm" border="subtle" className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
@@ -266,13 +266,13 @@ function LabCodesTab() {
           {filtered.length > 0 && (
             <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
           )}
-        </div>
+        </Card>
       </div>
 
       {/* RIGHT sidebar */}
       <div className="flex w-full shrink-0 flex-col gap-6 xl:w-[300px]">
         {/* Overview */}
-        <div className={`${CARD} p-5`}>
+        <Card radius="sm" elevation="sm" border="subtle" className="p-5">
           <div className="mb-4 text-sm font-semibold text-charcoal-heading">Lab Codes Overview</div>
           <div className="flex flex-col gap-3.5">
             {[
@@ -288,10 +288,10 @@ function LabCodesTab() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
         {/* Recently updated */}
-        <div className={`${CARD} p-5`}>
+        <Card radius="sm" elevation="sm" border="subtle" className="p-5">
           <div className="mb-3 flex items-center justify-between">
             <div className="text-sm font-semibold text-charcoal-heading">Recently Updated Codes</div>
             <button onClick={() => setSort('recent')} className="text-xs font-semibold text-primary hover:underline">View all</button>
@@ -309,17 +309,17 @@ function LabCodesTab() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
         {/* Need help */}
-        <div className={`${CARD} p-5`}>
+        <Card radius="sm" elevation="sm" border="subtle" className="p-5">
           <div className="mb-2 flex items-center gap-2">
             <HelpCircle size={18} className="text-primary" />
             <div className="text-sm font-semibold text-charcoal-heading">Need Help?</div>
           </div>
           <p className="mb-4 text-sm text-slate-500">Lab codes are used when creating or updating client records and linked cases.</p>
           <a href="https://docs.cytolab.app" target="_blank" rel="noreferrer" className="btn-secondary w-full justify-center">View Documentation</a>
-        </div>
+        </Card>
       </div>
 
       {modal && <LabCodeModal editing={modal} onClose={() => setModal(null)} />}
@@ -380,10 +380,10 @@ function CodeSlideOver({ cfg, editing, onClose }: { cfg: typeof CATALOG_CFG[keyo
           {err && <div className="mt-2 text-sm text-error">{err}</div>}
         </div>
         <div className="flex justify-end gap-2 border-t border-slate-100 px-6 py-4">
-          <button onClick={onClose} className="btn-secondary">Cancel</button>
-          <button onClick={() => save.mutate()} disabled={!abbr.trim() || save.isPending} className="btn-primary" style={{ opacity: !abbr.trim() || save.isPending ? 0.5 : 1 }}>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => save.mutate()} disabled={!abbr.trim() || save.isPending}  style={{ opacity: !abbr.trim() || save.isPending ? 0.5 : 1 }}>
             {save.isPending ? 'Saving…' : 'Save'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -436,17 +436,17 @@ function CodeCatalogTab({ variant }: { variant: 'sheets' | 'findings' }) {
       </div>
 
       {/* Filter bar */}
-      <div className={`${CARD} mb-6 flex flex-wrap items-center gap-3 p-4`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="mb-6 flex flex-wrap items-center gap-3 p-4">
         <div className="flex h-11 min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-slate-500">
           <Search size={16} />
           <input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder={`Search ${cfg.noun}...`}
             className="w-full border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-500" />
         </div>
-        <button onClick={() => setSlideOver('new')} className="btn-primary ml-auto"><Plus size={16} /> {cfg.addLabel}</button>
-      </div>
+        <Button onClick={() => setSlideOver('new')} className="ml-auto"><Plus size={16} /> {cfg.addLabel}</Button>
+      </Card>
 
       {/* Table */}
-      <div className={`${CARD} p-0`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
@@ -492,7 +492,7 @@ function CodeCatalogTab({ variant }: { variant: 'sheets' | 'findings' }) {
         {filtered.length > 0 && (
           <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
         )}
-      </div>
+      </Card>
 
       {slideOver && <CodeSlideOver cfg={cfg} editing={slideOver} onClose={() => setSlideOver(null)} />}
     </div>

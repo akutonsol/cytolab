@@ -12,8 +12,8 @@ import {
   APPT_TYPES, STATUS_META, TYPE_META, dateKey, longDate, normStatus, normType, timeOf,
   type Appointment, type AppointmentStats,
 } from '@/lib/appointments';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function TypeChip({ type, compact }: { type: string; compact?: boolean }) {
@@ -73,7 +73,7 @@ function RowActions({ appt, onReschedule }: { appt: Appointment; onReschedule: (
       {s === 'Scheduled' && <button onClick={() => act.mutate({ id: appt.id, action: 'confirm' })} className={`${btn} text-[#4F46E5]`}>Confirm</button>}
       {['Scheduled', 'Confirmed'].includes(s) && <button onClick={() => act.mutate({ id: appt.id, action: 'check-in' })} className={`${btn} text-[#1D4ED8]`}>Check In</button>}
       {s === 'CheckedIn' && <button onClick={() => act.mutate({ id: appt.id, action: 'complete' })} className="rounded-lg bg-[#16A34A] px-2.5 py-1 text-[12px] font-semibold text-white">Complete</button>}
-      <button onClick={onReschedule} className={`${btn} text-[#B45309]`}>Reschedule</button>
+      <button onClick={onReschedule} className={`${btn} text-[var(--color-warning)]`}>Reschedule</button>
       {['Scheduled', 'Confirmed'].includes(s) && <button onClick={() => act.mutate({ id: appt.id, action: 'no-show' })} className={`${btn} text-[#B91C1C]`}>No-Show</button>}
       <button onClick={() => act.mutate({ id: appt.id, action: 'cancel' })} className={`${btn} text-[#475569]`}>Cancel</button>
     </div>
@@ -151,13 +151,13 @@ export default function AppointmentsPage() {
           { label: 'Completion Rate', value: `${stats?.completionRate ?? 0}%`, fg: '#16A34A' },
           { label: 'No-Show Rate', value: `${stats?.noShowRate ?? 0}%`, fg: (stats?.noShowRate ?? 0) > 0 ? '#B91C1C' : '#0F172A' },
         ].map((k) => (
-          <div key={k.label} className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: k.fg }}>{k.value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{k.label}</div></div>
+          <Card radius="md" elevation="soft" border="hairline" className="p-4" key={k.label}><div className="text-[24px] font-bold leading-none" style={{ color: k.fg }}>{k.value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{k.label}</div></Card>
         ))}
       </div>
 
       {/* CALENDAR VIEW */}
       {view === 'calendar' && (
-        <div className={`${CARD} p-4`}>
+        <Card radius="md" elevation="soft" border="hairline" className="p-4">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button onClick={() => setCursor(new Date(year, month - 2, 1))} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E2E8F0] text-[#475569] hover:bg-slate-50"><ChevronLeft size={16} /></button>
@@ -190,12 +190,12 @@ export default function AppointmentsPage() {
               );
             })}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* LIST VIEW */}
       {view === 'list' && (
-        <div className={`${CARD} overflow-hidden`}>
+        <Card radius="md" elevation="soft" border="hairline" className="overflow-hidden">
           <div className="flex flex-wrap items-center gap-2 border-b border-[#EEF2F7] p-3">
             <select value={fStatus} onChange={(e) => setFStatus(e.target.value)} className="h-9 rounded-lg border border-[#E2E8F0] px-2 text-[13px]"><option value="">All statuses</option>{Object.keys(STATUS_META).map((s) => <option key={s} value={s}>{s}</option>)}</select>
             <select value={fType} onChange={(e) => setFType(e.target.value)} className="h-9 rounded-lg border border-[#E2E8F0] px-2 text-[13px]"><option value="">All types</option>{APPT_TYPES.map((t) => <option key={t} value={t}>{TYPE_META[t].label}</option>)}</select>
@@ -221,7 +221,7 @@ export default function AppointmentsPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Day detail slide-over */}

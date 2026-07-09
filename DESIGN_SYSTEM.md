@@ -164,6 +164,33 @@ shipping code, and none were caught by reading the source:
 The last one is the important lesson: grepping for `#` is not a zero-orange audit.
 **Only the pixel detector is.**
 
+### 1g. Anti-aliasing: a colour can be safe and still be a violation
+Sprint 5 found `#B45309` (Tailwind `amber-700`) in **42 places across 22 `.tsx` files
+and 9 `lib/*.ts` colour scales**, every one carrying a comment asserting it was
+"detector-safe". As a *solid* it is: `r=180`. But text and 1px strokes are
+anti-aliased, and blending it toward white passes straight through the trip box:
+
+```
+#B45309 over white   → trips for alpha 0.671–0.733, e.g. rgb(202,134,82)
+```
+
+That exactly matched the observed `rgb(203,136,85)`. Replaced app-wide with
+`var(--color-warning)` (`#A16207`), which is provably safe at **every** alpha over white.
+
+**And the background matters too.** `--color-warning` on an *amber-100* chip
+(`#FEF3C7`) trips in a razor-thin band (alpha 0.568–0.581) — six pixels on
+`/requisitions`. Warning text on a deeper amber fill must use the darker stop:
+
+| Foreground | on white | on `#FFFBEB` (amber-50) | on `#FEF3C7` (amber-100) |
+|---|---|---|---|
+| `--color-warning` `#A16207` | ✅ | ✅ | ❌ trips |
+| `--status-warning-strong` `#854D0E` | ✅ | ✅ | ✅ |
+| `--amber-900` `#78350F` | ✅ | ✅ | ✅ |
+
+Hence `--status-warning-soft-100`: if you fill with it, the text must be
+`--status-warning-strong`. **Verify a foreground against the background it sits on,
+at every alpha — not against white, and never by reading the hex.**
+
 ---
 
 ## 2. Spacing system — enterprise design tokens
@@ -424,16 +451,62 @@ The long tail is expected to converge onto it, not to grow.
 - Tables: these parts + `DataTable` for uniform cases; **TanStack Table** for new
   complex tables.
 
-### 8d. Adoption status (Sprint 4)
-Migrated pixel-identically: `records`, `billing`, `patients`, `settings`,
-`result-sheets`. `dashboard` was **deliberately not migrated** — it has zero
-`const CARD` and zero `.btn-*`; its surfaces are bespoke gradient/glass compositions,
-so adopting primitives there would be a redesign, not a migration. ~42 `CARD` files,
-316 buttons and 130 pills remain, sequenced for a broad rollout now that the API is proven.
+### 8d. Component Inventory (end of Sprint 5)
+
+| Primitive | Before | After | Sites | Status |
+|---|---|---|---|---|
+| `Card` | 45 `const CARD` in 45 files, 10 variants | **1** | 237 `<Card>` | 98% — the 1 is `analytics-old.tsx`, a gradient, not a card |
+| `Button` | 123 `<button className="btn-*">` | **0** | 138 `<Button>` | 100% of clean files |
+| `Th` / `Td` | 12 `const TH` + 12 `const CELL` | **3 + 3** | 222 | 75% — the 3 are the Group-B type family (below) |
+| `Badge` | 13 `const BADGE/PILL/CHIP` | **4** | 34 `<Badge>` | 69% |
+
+**Deliberately deferred, with counts** (not silently skipped):
+- **`IconAction`: 0 / 91.** The square `grid h-8 w-8 … rounded-lg` buttons come in at
+  least three tones (`text-[#475569]`, `text-slate-500`, `text-secondary`). Migrating
+  them uniformly would recolour; each needs a decision. Sprint 6.
+- **`Input`: 7 `const INPUT` remain.** Same reason — three focus treatments.
+- **`EmptyState`: 21 copies** of `rounded-2xl … p-8 text-center shadow-sm` remain inline.
+- **`.btn-*` on 2 `<a>` tags** — correctly left: an anchor already consumes the shared
+  CSS class, so there is no duplication to remove.
+
+**Excluded from this sprint:**
+- `dashboard` — bespoke by decision; becomes a reference implementation once the
+  primitive system matures.
+- `SettingsListPane.tsx`, `change-requests`, landing/hero files — carry unrelated
+  uncommitted edits; migrating them would contaminate an isolated commit.
+- `components/experience/InteractiveExperience.tsx` — marketing surface.
+
+### 8e. Group-B tables: a second type family
+`roles`, `users` and `portal/records` write their tables with `font-label-sm` /
+`text-label-sm` / `text-on-surface` — the *reference* type tokens — while every other
+table uses `text-sm` / `slate-500` / `slate-700`. Converting them would mean choosing
+which typography family wins, which is a design decision, not a migration. Left intact
+and documented. `Th`/`Td` gained the axes the real code needed (`density`
+compact·cozy·default·roomy, `size` xs·sm, `tone` cell·inherit) rather than forcing
+convergence.
 
 **Table text tokens.** All 8 `const TH` agreed on `slate-500` and both `const CELL` on
 `slate-700` — neither matching `--color-text-secondary` (#6b7280) or `--color-text-body`
 (#374151). Rather than recolour, tables got `--color-table-header` / `--color-table-cell`.
+
+### 8f. Escape hatches, and why they exist
+- **`cardClass()`** — the card class string, for surfaces that cannot be a `<Card>`
+  element. `next/link` owns its own `href` typing, so the portal's quick-action tiles
+  call `cn(cardClass({ elevation: 'none' }), …)` instead of copying classes.
+- **`Card as="button" | "section" | "article"`** — a card is often the click target.
+  Wrapping a `<button>` in a `<div>` would break semantics and keyboard focus.
+- **`Card surface={false}`** — the patient hero lets a gradient show through.
+- **`Card border="gray" | "faint"`** and **`Td tone="inherit"`** — pure convergence
+  debt, absorbing two legacy files and the workforce tables pixel-identically. Do not
+  reach for them in new code.
+
+### 8g. Duplicate implementations
+`components/security/ui.tsx` shipped a parallel micro-design-system: its own `Badge`,
+`Card`, `Table`, and `primaryBtn`/`ghostBtn`/`dangerBtn` class constants.
+Its **`Badge` now delegates** to the primitive (`size="sm"` reproduces its geometry
+exactly); the shim survives only because its callers pass raw `bg`/`color` hex props.
+The rest of that module is a **known duplicate**, left for a dedicated pass — it is a
+different geometry, not a copy, and folding it in would be a redesign.
 
 ## 9. Verification (required for any visual change)
 1. `tsc --noEmit` clean · production build clean.

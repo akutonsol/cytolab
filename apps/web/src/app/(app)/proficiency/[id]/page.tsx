@@ -13,8 +13,8 @@ import {
   DIFFICULTIES, DIFFICULTY_META, STATUS_META, passBadge, scoreColor,
   type CaseDifficulty, type ProfResults, type TestDetail,
 } from '@/lib/proficiency';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 
 function AddCaseModal({ testId, onClose }: { testId: string; onClose: () => void }) {
@@ -96,7 +96,7 @@ export default function ProficiencyDetailPage() {
 
       {/* Cases */}
       {tab === 'cases' && (
-        <div className={CARD}>
+        <Card radius="md" elevation="soft" border="hairline">
           <div className="flex items-center justify-between border-b border-[#EEF2F7] p-4">
             <span className="text-[15px] font-bold text-[#0F172A]">Cases ({test.cases.length})</span>
             {isManager && test.status === 'Draft' && <button onClick={() => setAddOpen(true)} className="flex items-center gap-1.5 rounded-lg bg-[#4F46E5] px-3 py-1.5 text-[13px] font-semibold text-white"><Plus size={14} /> Add Case</button>}
@@ -121,12 +121,12 @@ export default function ProficiencyDetailPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Responses */}
       {tab === 'responses' && (
-        <div className={CARD}>
+        <Card radius="md" elevation="soft" border="hairline">
           <div className="border-b border-[#EEF2F7] p-4 text-[15px] font-bold text-[#0F172A]">Responses</div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13px]">
@@ -143,13 +143,13 @@ export default function ProficiencyDetailPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Results */}
       {tab === 'results' && results && (
         <div className="flex flex-col gap-5">
-          <div className={`${CARD} p-4`}>
+          <Card radius="md" elevation="soft" border="hairline" className="p-4">
             <div className="mb-3 flex flex-wrap items-center gap-4">
               <span className="text-[15px] font-bold text-[#0F172A]">Scorecard</span>
               <span className="text-[13px] text-[#475569]">Lab average <span className="font-bold" style={{ color: scoreColor(results.labAverage, results.passingScore) }}>{results.labAverage.toFixed(1)}%</span> · pass rate {results.passRate.toFixed(1)}%</span>
@@ -169,8 +169,8 @@ export default function ProficiencyDetailPage() {
                 </tbody>
               </table>
             </div>
-          </div>
-          <div className={`${CARD} p-4`}>
+          </Card>
+          <Card radius="md" elevation="soft" border="hairline" className="p-4">
             <div className="mb-3 text-[15px] font-bold text-[#0F172A]">Per-Case Breakdown</div>
             <div className="flex flex-col gap-3">
               {results.cases.map((c) => (
@@ -188,7 +188,7 @@ export default function ProficiencyDetailPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         </div>
       )}
 

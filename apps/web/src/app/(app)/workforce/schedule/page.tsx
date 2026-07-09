@@ -6,8 +6,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, empName, SHIFT_CHIP } from '@/lib/workforce';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 const pad2 = (n: number) => String(n).padStart(2, '0');
 // Plain LOCAL calendar date (YYYY-MM-DD) — built from local components, never
 // via toISOString(), which would UTC-shift the day in non-zero-offset zones.
@@ -83,7 +83,7 @@ function Grid() {
         <div><h1 className="text-[30px] font-bold leading-tight tracking-tight text-charcoal-heading">Schedule</h1><p className="mt-1 text-sm text-secondary">Weekly shift assignments.</p></div>
       </div>
 
-      <div className={`${CARD} mb-4 flex flex-wrap items-center justify-between gap-3 p-3`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="mb-4 flex flex-wrap items-center justify-between gap-3 p-3">
         <div className="flex items-center gap-2">
           <button onClick={() => setWeekStart(new Date(+weekStart - 7 * 86_400_000))} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"><ChevronLeft size={16} /></button>
           <span className="min-w-[190px] text-center text-sm font-semibold text-charcoal-heading">{rangeLabel}</span>
@@ -93,9 +93,9 @@ function Grid() {
         <select value={deptId} onChange={(e) => setDeptId(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary">
           <option value="all">All Departments</option>{departments.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
         </select>
-      </div>
+      </Card>
 
-      <div className={`${CARD} overflow-x-auto p-0`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="overflow-x-auto p-0">
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-slate-100">
@@ -131,7 +131,7 @@ function Grid() {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
 
       {/* Legend */}
       <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">

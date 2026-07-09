@@ -8,6 +8,7 @@ import { api, type Paginated } from '@/lib/api';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { money, monthYear, thisMonth, fmtDate, previewAdvice, type RunDetail } from '@/lib/payroll';
+import { Button } from '@/components/ui';
 
 interface Emp {
   id: string; employeeNo: string; jobTitle: string; salary: number; isFixedSalary: boolean;
@@ -188,8 +189,8 @@ export default function PayrollWizardPage() {
                 Showing {pageEmps.length} of {employees.length} employees
               </div>
               <div className="flex gap-2">
-                <button className="btn-secondary" onClick={() => router.push('/payroll')}>Back</button>
-                <button className="btn-primary" disabled={employees.length === 0} style={{ opacity: employees.length === 0 ? 0.5 : 1 }} onClick={() => setStep(1)}>Taxes <ArrowRight size={15} /></button>
+                <Button variant="secondary" onClick={() => router.push('/payroll')}>Back</Button>
+                <Button disabled={employees.length === 0} style={{ opacity: employees.length === 0 ? 0.5 : 1 }} onClick={() => setStep(1)}>Taxes <ArrowRight size={15} /></Button>
               </div>
             </div>
           </div>
@@ -209,8 +210,8 @@ export default function PayrollWizardPage() {
               ))}
             </div>
             <div className="mt-8 flex justify-end gap-2">
-              <button className="btn-secondary" onClick={() => setStep(0)}>Back</button>
-              <button className="btn-primary" onClick={() => setStep(2)}>Review <ArrowRight size={15} /></button>
+              <Button variant="secondary" onClick={() => setStep(0)}>Back</Button>
+              <Button onClick={() => setStep(2)}>Review <ArrowRight size={15} /></Button>
             </div>
           </div>
         )}
@@ -271,8 +272,8 @@ export default function PayrollWizardPage() {
             </div>
 
             <div className="mt-6 flex justify-end gap-2">
-              <button className="btn-secondary" onClick={() => setStep(1)}>Back</button>
-              <button className="btn-primary" disabled={process.isPending} style={{ opacity: process.isPending ? 0.6 : 1 }} onClick={() => process.mutate()}>{process.isPending ? 'Processing…' : 'Run Payroll'}</button>
+              <Button variant="secondary" onClick={() => setStep(1)}>Back</Button>
+              <Button disabled={process.isPending} style={{ opacity: process.isPending ? 0.6 : 1 }} onClick={() => process.mutate()}>{process.isPending ? 'Processing…' : 'Run Payroll'}</Button>
             </div>
           </div>
         )}
@@ -322,11 +323,11 @@ export default function PayrollWizardPage() {
             )}
 
             <div className="mt-6 flex items-center justify-between">
-              <button className="btn-secondary" onClick={() => router.push(`/payroll/run/${result.id}`)}>Open Payroll Report</button>
+              <Button variant="secondary" onClick={() => router.push(`/payroll/run/${result.id}`)}>Open Payroll Report</Button>
               {approved ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 font-label-md text-label-md font-semibold" style={{ background: '#F0FDF4', color: '#16A34A' }}><CheckCircle2 size={16} /> Approved</span>
               ) : (
-                <button className="btn-primary" disabled={approve.isPending} style={{ opacity: approve.isPending ? 0.6 : 1 }} onClick={() => approve.mutate()}><ShieldCheck size={16} /> {approve.isPending ? 'Approving…' : 'Approve'}</button>
+                <Button disabled={approve.isPending} style={{ opacity: approve.isPending ? 0.6 : 1 }} onClick={() => approve.mutate()}><ShieldCheck size={16} /> {approve.isPending ? 'Approving…' : 'Approve'}</Button>
               )}
             </div>
           </div>

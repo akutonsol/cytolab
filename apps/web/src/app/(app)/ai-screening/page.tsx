@@ -11,11 +11,11 @@ import { useFeatures } from '@/lib/feature-context';
 import { ConfidenceRing } from '@/components/ConfidenceRing';
 import { ReviewScreeningModal } from '@/components/ReviewScreeningModal';
 import { LEVEL_META, SPECIMEN_LABEL, type AIAnalytics, type AIScreening } from '@/lib/ai-screening';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 
 function Kpi({ label, value, fg = '#0F172A' }: { label: string; value: string; fg?: string }) {
-  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></div>;
+  return <Card radius="md" elevation="soft" border="hairline" className="p-4"><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></Card>;
 }
 
 function DistBar({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
@@ -83,7 +83,7 @@ export default function AIScreeningPage() {
       {/* KPI strip */}
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
         <Kpi label="Total Screened" value={String(a?.totalScreened ?? 0)} />
-        <Kpi label="Pending Review" value={String(a?.pendingReview ?? 0)} fg={(a?.pendingReview ?? 0) > 0 ? '#B45309' : '#0F172A'} />
+        <Kpi label="Pending Review" value={String(a?.pendingReview ?? 0)} fg={(a?.pendingReview ?? 0) > 0 ? 'var(--color-warning)' : '#0F172A'} />
         <Kpi label="High Confidence" value={`${highPct}%`} fg="#16A34A" />
         <Kpi label="Low Confidence" value={String(a?.lowConfidence ?? 0)} fg={(a?.lowConfidence ?? 0) > 0 ? '#B91C1C' : '#0F172A'} />
         <Kpi label="Agreement Rate" value={`${a?.agreementRate ?? 0}%`} fg="#4F46E5" />
@@ -92,7 +92,7 @@ export default function AIScreeningPage() {
       {/* Two-column main */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         {/* LEFT — Review queue */}
-        <div className={`${CARD} overflow-hidden lg:col-span-3`}>
+        <Card radius="md" elevation="soft" border="hairline" className="overflow-hidden lg:col-span-3">
           <div className="flex items-center justify-between border-b border-[#EEF2F7] px-4 py-3">
             <h2 className="text-[15px] font-bold text-[#0F172A]">Review Queue</h2>
             <span className="text-[12px] text-[#475569]">Lowest confidence first · {queue.length}</span>
@@ -125,26 +125,26 @@ export default function AIScreeningPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
 
         {/* RIGHT — Analytics */}
         <div className="flex flex-col gap-4 lg:col-span-2">
-          <div className={`${CARD} p-4`}>
+          <Card radius="md" elevation="soft" border="hairline" className="p-4">
             <h2 className="mb-3 text-[15px] font-bold text-[#0F172A]">Confidence Distribution</h2>
             <div className="flex flex-col gap-3">
               <DistBar label="High (≥90%)" count={a?.highConfidence ?? 0} total={totalLevels} color={LEVEL_META.High.ring} />
               <DistBar label="Medium (70–89%)" count={a?.mediumConfidence ?? 0} total={totalLevels} color={LEVEL_META.Medium.ring} />
               <DistBar label="Low (<70%)" count={a?.lowConfidence ?? 0} total={totalLevels} color={LEVEL_META.Low.ring} />
             </div>
-          </div>
+          </Card>
 
-          <div className={`${CARD} p-4`}>
+          <Card radius="md" elevation="soft" border="hairline" className="p-4">
             <h2 className="text-[15px] font-bold text-[#0F172A]">Agreement Rate</h2>
             <div className="mt-1 text-[32px] font-bold leading-none text-[#4F46E5]">{a?.agreementRate ?? 0}%</div>
             <div className="mt-1 text-[13px] text-[#475569]">Avg confidence {a?.avgConfidence ?? 0}%</div>
-          </div>
+          </Card>
 
-          <div className={`${CARD} p-4`}>
+          <Card radius="md" elevation="soft" border="hairline" className="p-4">
             <h2 className="mb-2 text-[15px] font-bold text-[#0F172A]">By Specimen Type</h2>
             <table className="w-full text-left text-[13px]">
               <thead><tr className="text-[11px] uppercase tracking-wide text-[#475569]"><th className="py-1 font-semibold">Type</th><th className="py-1 text-right font-semibold">Screened</th><th className="py-1 text-right font-semibold">Avg Conf.</th></tr></thead>
@@ -160,12 +160,12 @@ export default function AIScreeningPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </Card>
         </div>
       </div>
 
       {/* Performance trend */}
-      <div className={`${CARD} mt-4 p-4`}>
+      <Card radius="md" elevation="soft" border="hairline" className="mt-4 p-4">
         <h2 className="mb-3 text-[15px] font-bold text-[#0F172A]">Avg Confidence — Last 6 Months</h2>
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={a?.trendByMonth ?? []} margin={{ top: 8, right: 16, bottom: 0, left: -12 }}>
@@ -176,7 +176,7 @@ export default function AIScreeningPage() {
             <Line type="monotone" dataKey="avgConfidence" stroke="#4F46E5" strokeWidth={2.5} dot={{ r: 3, fill: '#4F46E5' }} activeDot={{ r: 5 }} />
           </LineChart>
         </ResponsiveContainer>
-      </div>
+      </Card>
 
       {review && <ReviewScreeningModal result={review} onClose={() => setReview(null)} />}
     </div>

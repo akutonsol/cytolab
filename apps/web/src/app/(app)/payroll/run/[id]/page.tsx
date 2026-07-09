@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { PayslipCard } from '@/components/PayslipCard';
 import { money, monthYear, fmtDate, type RunDetail, type SlipData } from '@/lib/payroll';
+import { Button } from '@/components/ui';
 
 export default function PayrollReportPage() {
   const router = useRouter();
@@ -107,7 +108,7 @@ export default function PayrollReportPage() {
               ) : (
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-body-sm text-body-sm text-secondary">Not yet approved.</span>
-                  <button className="btn-primary !px-3 !py-1.5 !text-[13px]" disabled={approve.isPending} onClick={() => approve.mutate()}><ShieldCheck size={14} /> Approve</button>
+                  <Button className="!px-3 !py-1.5 !text-[13px]" disabled={approve.isPending} onClick={() => approve.mutate()}><ShieldCheck size={14} /> Approve</Button>
                 </div>
               )}
             </div>

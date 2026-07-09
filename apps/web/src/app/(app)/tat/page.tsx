@@ -6,6 +6,7 @@ import { AlarmClock, Check, CheckCircle2, Clock, Pencil, Plus, RefreshCw, Settin
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { SPECIMEN_LABELS } from '@/lib/specimen-types';
+import { Button } from '@/components/ui';
 
 type Level = 'Approaching' | 'Breached';
 type Status = 'Open' | 'Acknowledged' | 'Resolved';
@@ -21,7 +22,7 @@ interface Config { id: string; name: string; specimenType: string | null; thresh
 const fmtDur = (h: number) => (h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : `${h}h`);
 const LEVEL: Record<Level, { bg: string; color: string; label: string }> = {
   Breached: { bg: '#FEF2F2', color: '#DC2626', label: 'Breached' },
-  Approaching: { bg: '#FFFBEB', color: '#B45309', label: 'Approaching' }, // detector-safe amber
+  Approaching: { bg: '#FFFBEB', color: 'var(--color-warning)', label: 'Approaching' }, // detector-safe amber
 };
 const STATUS: Record<Status, { bg: string; color: string }> = {
   Open: { bg: '#EEF2FF', color: '#4F46E5' }, Acknowledged: { bg: '#F0F9FF', color: '#0284C7' }, Resolved: { bg: '#F0FDF4', color: '#16A34A' },
@@ -63,15 +64,15 @@ export default function TatPage() {
             <h1 className="text-3xl font-bold text-charcoal-heading">TAT Alerts</h1>
             <p className="mt-1 font-body-sm text-body-sm text-secondary">Turnaround-time monitoring — breaches and approaching deadlines.</p>
           </div>
-          <button className="btn-primary" disabled={scan.isPending} onClick={() => scan.mutate()}>
+          <Button disabled={scan.isPending} onClick={() => scan.mutate()}>
             <RefreshCw size={16} className={scan.isPending ? 'animate-spin' : ''} /> {scan.isPending ? 'Scanning…' : 'Run Scan'}
-          </button>
+          </Button>
         </div>
 
         {/* KPI strip */}
         <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Kpi icon={TriangleAlert} color="#DC2626" label="Open Breaches" value={stats?.openBreached ?? 0} />
-          <Kpi icon={AlarmClock} color="#B45309" label="Approaching" value={stats?.openApproaching ?? 0} />
+          <Kpi icon={AlarmClock} color="var(--color-warning)" label="Approaching" value={stats?.openApproaching ?? 0} />
           <Kpi icon={Check} color="#0284C7" label="Acknowledged" value={stats?.acknowledged ?? 0} />
           <Kpi icon={CheckCircle2} color="#16A34A" label="Resolved" value={stats?.resolved ?? 0} />
         </div>
@@ -116,7 +117,7 @@ export default function TatPage() {
                       <td className="px-4 py-3 font-body-sm text-body-sm text-secondary">{a.record.patient ? `${a.record.patient.firstName} ${a.record.patient.lastName}` : '—'}</td>
                       <td className="px-4 py-3 font-body-sm text-body-sm text-secondary">{a.record.specimens.map((s) => SPECIMEN_LABELS[s.type] ?? s.type).join(', ') || '—'}</td>
                       <td className="px-4 py-3 font-body-sm text-body-sm text-on-surface">{fmtDur(a.elapsedHours)} <span className="text-secondary">/ {fmtDur(a.thresholdHours)}</span></td>
-                      <td className="px-4 py-3 font-body-sm text-body-sm font-semibold" style={{ color: overdue > 0 ? '#DC2626' : '#B45309' }}>{overdue > 0 ? `+${fmtDur(overdue)}` : `in ${fmtDur(-overdue)}`}</td>
+                      <td className="px-4 py-3 font-body-sm text-body-sm font-semibold" style={{ color: overdue > 0 ? '#DC2626' : 'var(--color-warning)' }}>{overdue > 0 ? `+${fmtDur(overdue)}` : `in ${fmtDur(-overdue)}`}</td>
                       <td className="px-4 py-3"><span style={{ background: lv.bg, color: lv.color }} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-label-sm text-label-sm font-medium">{a.level === 'Breached' ? <TriangleAlert size={12} /> : <Clock size={12} />}{lv.label}</span></td>
                       <td className="px-4 py-3"><span style={{ background: st.bg, color: st.color }} className="inline-block rounded-full px-2.5 py-1 font-label-sm text-label-sm font-medium">{a.status}</span></td>
                       <td className="px-4 py-3">
@@ -137,7 +138,7 @@ export default function TatPage() {
         <div className="glass-card overflow-hidden rounded-2xl">
           <div className="flex items-center justify-between border-b border-outline-variant/40 px-5 py-4">
             <div className="flex items-center gap-2"><Settings2 size={16} className="text-secondary" /><h2 className="font-headline-sm text-headline-sm text-charcoal-heading">TAT Thresholds</h2></div>
-            <button className="btn-primary !h-9 !px-3 !text-[13px]" onClick={() => setCfgModal({ mode: 'new' })}><Plus size={14} /> New Threshold</button>
+            <Button className="!h-9 !px-3 !text-[13px]" onClick={() => setCfgModal({ mode: 'new' })}><Plus size={14} /> New Threshold</Button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
@@ -230,8 +231,8 @@ function ConfigModal({ mode, config, onClose, onSaved, onError }: { mode: 'new' 
           <label className="flex items-center gap-2.5"><input type="checkbox" checked={f.isActive} onChange={(e) => set('isActive', e.target.checked)} style={{ accentColor: '#4F46E5', width: 16, height: 16 }} /><span className="font-body-sm text-body-sm text-on-surface">Active</span></label>
         </div>
         <div className="mt-6 flex justify-end gap-2">
-          <button className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => save.mutate()}>{save.isPending ? 'Saving…' : 'Save'}</button>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => save.mutate()}>{save.isPending ? 'Saving…' : 'Save'}</Button>
         </div>
       </div>
     </div>

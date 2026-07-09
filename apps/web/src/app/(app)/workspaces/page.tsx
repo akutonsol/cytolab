@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Building2, FileText, Layers, MoreHorizontal, Pencil, Plus, Trash2, Users, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
+import { Button } from '@/components/ui';
 
 interface Workspace {
   id: string;
@@ -64,7 +65,7 @@ export default function WorkspacesPage() {
             <h1 className="font-headline-lg text-headline-lg text-charcoal-heading">Workspaces</h1>
             <p className="mt-1 font-body-sm text-body-sm text-secondary">Departments and branches within your lab.</p>
           </div>
-          <button className="btn-primary" onClick={openCreate}><Plus size={16} /> New Workspace</button>
+          <Button onClick={openCreate}><Plus size={16} /> New Workspace</Button>
         </div>
 
         {/* KPI strip */}
@@ -90,7 +91,7 @@ export default function WorkspacesPage() {
             <Layers size={48} className="text-[#E2E8F0]" />
             <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">No workspaces yet</h3>
             <p className="max-w-xs font-body-sm text-body-sm text-secondary">Create your first workspace to organize users and records.</p>
-            <button className="btn-primary mt-1" onClick={openCreate}><Plus size={16} /> New Workspace</button>
+            <Button className="mt-1" onClick={openCreate}><Plus size={16} /> New Workspace</Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -177,10 +178,10 @@ export default function WorkspacesPage() {
               <p className="mt-2 font-body-sm text-body-sm text-secondary">This workspace is empty and will be permanently deleted.</p>
             )}
             <div className="mt-6 flex justify-end gap-2">
-              <button className="btn-secondary" onClick={() => setConfirm(null)}>Cancel</button>
-              <button className="btn-primary" style={{ background: '#DC2626', boxShadow: '0 4px 12px rgba(220,38,38,0.2)', opacity: confirm._count.users + confirm._count.records + confirm._count.clients > 0 ? 0.5 : 1 }}
+              <Button variant="secondary" onClick={() => setConfirm(null)}>Cancel</Button>
+              <Button style={{ background: '#DC2626', boxShadow: '0 4px 12px rgba(220,38,38,0.2)', opacity: confirm._count.users + confirm._count.records + confirm._count.clients > 0 ? 0.5 : 1 }}
                 disabled={confirm._count.users + confirm._count.records + confirm._count.clients > 0 || del.isPending}
-                onClick={() => del.mutate(confirm.id)}>Delete</button>
+                onClick={() => del.mutate(confirm.id)}>Delete</Button>
             </div>
           </div>
         </div>
@@ -218,10 +219,10 @@ function WorkspaceModal({ workspace, onClose, onSaved, onError }: { workspace: W
           placeholder="e.g. Cytology Department"
           className="h-11 w-full rounded-xl border border-outline-variant/40 bg-white px-3.5 font-body-sm text-body-sm text-on-surface outline-none transition-colors focus:border-primary" />
         <div className="mt-6 flex justify-end gap-2">
-          <button className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => save.mutate()}>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => save.mutate()}>
             {save.isPending ? 'Saving…' : workspace ? 'Save Changes' : 'Create Workspace'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { ArrowUpRight, ChevronDown, Folder, MoreHorizontal, Plus, Search, Slider
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { ClientSelect } from '@/components/ClientSelect';
+import { Button } from '@/components/ui';
 
 // The six folder swatches (keys mirror the backend CABINET_COLORS). Orange here is
 // only a user-chosen folder colour swatch — never used for a status/accent.
@@ -128,7 +129,7 @@ export default function CabinetsPage() {
             <Folder size={40} fill="#c7ccd6" color="#c7ccd6" />
             <div className="mt-3 font-headline-sm text-headline-sm text-charcoal-heading">No folder selected</div>
             <div className="mt-1 text-small font-medium text-text-secondary">Add a folder to start filing client records.</div>
-            <button onClick={() => setModalOpen(true)} className="btn-primary mt-4"><Plus size={16} /> New folder</button>
+            <Button onClick={() => setModalOpen(true)} className="mt-4"><Plus size={16} /> New folder</Button>
           </div>
         ) : (
           <>
@@ -199,7 +200,7 @@ export default function CabinetsPage() {
                   <FilterSelect value={formType} onChange={setFormType} placeholder="Form type"
                     options={[{ value: 'Gynecology', label: 'Gynecology' }, { value: 'NonGynecology', label: 'Non-Gynecology' }]} />
                   <FilterSelect value={status} onChange={setStatus} placeholder="Status" options={ALL_STATUSES.map((s) => ({ value: s, label: s }))} />
-                  <button onClick={() => setModalOpen(true)} className="btn-primary"><Plus size={16} /> Add</button>
+                  <Button onClick={() => setModalOpen(true)}><Plus size={16} /> Add</Button>
                 </div>
               </div>
 

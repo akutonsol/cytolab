@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Banknote, Pencil, Plus, Search, Trash2, UserPlus, Users, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
+import { Button } from '@/components/ui';
 
 type EmploymentType = 'FullTime' | 'PartTime' | 'Contract';
 interface Employee {
@@ -87,7 +88,7 @@ export default function EmployeesPage() {
             <h1 className="font-headline-lg text-headline-lg text-charcoal-heading">Employees</h1>
             <p className="mt-1 font-body-sm text-body-sm text-secondary">Staff HR records, employment and payroll details.</p>
           </div>
-          <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true); }}><UserPlus size={16} /> New Employee</button>
+          <Button onClick={() => { setEditing(null); setModalOpen(true); }}><UserPlus size={16} /> New Employee</Button>
         </div>
 
         <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -188,8 +189,8 @@ export default function EmployeesPage() {
             <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">Remove {confirm.user.firstName} {confirm.user.lastName}?</h3>
             <p className="mt-2 font-body-sm text-body-sm text-secondary">This removes the HR record. Employees with pay history can’t be deleted — deactivate them instead.</p>
             <div className="mt-6 flex justify-end gap-2">
-              <button className="btn-secondary" onClick={() => setConfirm(null)}>Cancel</button>
-              <button className="btn-primary" style={{ background: '#DC2626', boxShadow: '0 4px 12px rgba(220,38,38,0.2)' }} disabled={del.isPending} onClick={() => del.mutate(confirm.id)}>Remove</button>
+              <Button variant="secondary" onClick={() => setConfirm(null)}>Cancel</Button>
+              <Button style={{ background: '#DC2626', boxShadow: '0 4px 12px rgba(220,38,38,0.2)' }} disabled={del.isPending} onClick={() => del.mutate(confirm.id)}>Remove</Button>
             </div>
           </div>
         </div>
@@ -336,10 +337,10 @@ function EmployeeModal({ employee, departments, onClose, onSaved, onError }: {
         </div>
 
         <div className="flex justify-end gap-2 border-t border-outline-variant/30 p-6 pt-4">
-          <button className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => save.mutate()}>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => save.mutate()}>
             {save.isPending ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Employee'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

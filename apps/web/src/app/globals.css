@@ -325,6 +325,10 @@
    * existing token, which is why 22 files hand-wrote them as shadow-[…]. */
   --shadow-card-soft: 0 2px 12px rgba(0, 0, 0, 0.03);
   --shadow-card-raised: 0 4px 24px rgba(0, 0, 0, 0.04);
+  /* Raised + a faint indigo lift. One file (patients/[id] hero) hand-wrote this. */
+  --shadow-card-glow: 0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(79, 70, 229, 0.06);
+  /* Tight, high-contrast hover lift (portal quick-action tiles). */
+  --shadow-card-lift: 0 10px 30px -14px rgba(15, 23, 42, 0.35);
 }
 
 /* ============================================================================
@@ -410,6 +414,9 @@
   --status-warning: var(--color-warning);
   --status-warning-strong: var(--amber-800);
   --status-warning-soft: var(--amber-50);
+  /* The deeper chip fill. Text on THIS must be --status-warning-strong: the
+   * lighter --color-warning anti-aliases through the zero-orange trip box here. */
+  --status-warning-soft-100: var(--amber-100);
   --status-danger: var(--color-danger);
   --status-danger-strong: var(--red-600);
   --status-danger-soft: var(--red-50);

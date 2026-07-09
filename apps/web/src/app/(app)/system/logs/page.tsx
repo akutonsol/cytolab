@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
+import { Button } from '@/components/ui';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Severity = 'info' | 'success' | 'warning' | 'error';
@@ -55,11 +56,12 @@ const TYPE_BADGE: Record<LogType, { bg: string; color: string; label: string }> 
 // Fallback so an unmapped/new log type never crashes the row (returns undefined).
 const BADGE_FALLBACK = { bg: '#F1F5F9', color: '#475569', label: 'Event' };
 
-// Severity → left-border accent. Warning is dark amber #B45309 (detector-safe;
+// Severity → left-border accent. Warning is --color-warning (#A16207); #B45309 was
+// replaced because its anti-aliased edges trip the detector (
 // #D97706 would trip the zero-orange rule).
 const SEVERITY_BORDER: Record<Severity, string> = {
   error: '#DC2626',
-  warning: '#B45309',
+  warning: 'var(--color-warning)',
   success: '#16A34A',
   info: 'transparent',
 };
@@ -167,9 +169,9 @@ export default function SystemLogPage() {
             <h1 className="font-headline-lg text-headline-lg text-charcoal-heading">System Log</h1>
             <p className="mt-1 font-body-sm text-body-sm text-secondary">Complete audit trail of all system activity.</p>
           </div>
-          <button className="btn-secondary" onClick={exportCsv} disabled={!entries.length}>
+          <Button variant="secondary" onClick={exportCsv} disabled={!entries.length}>
             <Download size={16} /> Export CSV
-          </button>
+          </Button>
         </div>
 
         {/* Filter bar */}

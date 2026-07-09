@@ -9,12 +9,10 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, fmtHours, fmtMoney, fmtMultiplier, rateColor, WARN_FG } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
+import { Card, Button, Th, Td } from '@/components/ui';
 
-const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
-const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
-const CELL = 'px-4 py-3 align-middle text-sm';
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 function downloadCsv(filename: string, headers: string[], rows: (string | number)[][]) {
@@ -57,7 +55,7 @@ function AttendanceTab() {
 
   return (
     <div>
-      <div className={`${CARD} mb-6 flex flex-wrap items-center justify-between gap-3 p-4`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="mb-6 flex flex-wrap items-center justify-between gap-3 p-4">
         <div className="flex flex-wrap items-center gap-3">
           <DateRange start={start} end={end} onStart={setStart} onEnd={setEnd} />
           <select value={departmentId} onChange={(e) => setDept(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary">
@@ -65,38 +63,36 @@ function AttendanceTab() {
             {departments.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
           </select>
         </div>
-        <button
-          onClick={() => downloadCsv('attendance-summary.csv',
+        <Button variant="secondary" onClick={() => downloadCsv('attendance-summary.csv',
             ['Employee', 'Department', 'Total Days', 'Present', 'Absent', 'Late', 'On Leave', 'Attendance Rate %'],
             rows.map((r: any) => [r.name, r.department ?? '', r.totalDays, r.presentDays, r.absentDays, r.lateDays, r.leaveDays, r.attendanceRate]))}
           disabled={rows.length === 0}
-          className="btn-secondary disabled:opacity-40"
-        ><Download size={15} /> Export CSV</button>
-      </div>
+          className="disabled:opacity-40"><Download size={15} /> Export CSV</Button>
+      </Card>
 
-      <div className={`${CARD} overflow-hidden`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
-            <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Department</th><th className={`${TH} text-right`}>Total Days</th><th className={`${TH} text-right`}>Present</th><th className={`${TH} text-right`}>Absent</th><th className={`${TH} text-right`}>Late</th><th className={`${TH} text-right`}>On Leave</th><th className={`${TH} text-right`}>Attendance Rate</th></tr></thead>
+            <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs">Department</Th><Th density="compact" size="xs" className="text-right">Total Days</Th><Th density="compact" size="xs" className="text-right">Present</Th><Th density="compact" size="xs" className="text-right">Absent</Th><Th density="compact" size="xs" className="text-right">Late</Th><Th density="compact" size="xs" className="text-right">On Leave</Th><Th density="compact" size="xs" className="text-right">Attendance Rate</Th></tr></thead>
             <tbody>
-              {!initialLoading && rows.length === 0 && <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-500">No data for this range.</td></tr>}
+              {!initialLoading && rows.length === 0 && <tr><Td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-500">No data for this range.</Td></tr>}
               {pageRows.map((r: any) => (
                 <tr key={r.employeeId} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className={`${CELL} font-medium text-charcoal-heading`}>{r.name}</td>
-                  <td className={`${CELL} text-slate-600`}>{r.department ?? '—'}</td>
-                  <td className={`${CELL} text-right`}>{r.totalDays}</td>
-                  <td className={`${CELL} text-right`}>{r.presentDays}</td>
-                  <td className={`${CELL} text-right`}>{r.absentDays}</td>
-                  <td className={`${CELL} text-right`}>{r.lateDays}</td>
-                  <td className={`${CELL} text-right`}>{r.leaveDays}</td>
-                  <td className={`${CELL} text-right font-semibold`} style={{ color: rateColor(r.attendanceRate) }}>{r.attendanceRate}%</td>
+                  <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{r.name}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-slate-600">{r.department ?? '—'}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right">{r.totalDays}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right">{r.presentDays}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right">{r.absentDays}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right">{r.lateDays}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right">{r.leaveDays}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right font-semibold" style={{ color: rateColor(r.attendanceRate) }}>{r.attendanceRate}%</Td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
         {pageRows.length > 0 && <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />}
-      </div>
+      </Card>
     </div>
   );
 }
@@ -107,36 +103,36 @@ function LeaveLiabilityTab() {
   const totalCost = rows.reduce((s: number, r: any) => s + (r.estimatedCostCents ?? 0), 0);
   const totalRemaining = rows.reduce((s: number, r: any) => s + (r.remaining ?? 0), 0);
   return (
-    <div className={`${CARD} overflow-hidden`}>
+    <Card radius="sm" elevation="sm" border="subtle" className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
-          <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Leave Type</th><th className={`${TH} text-right`}>Entitlement</th><th className={`${TH} text-right`}>Used</th><th className={`${TH} text-right`}>Pending</th><th className={`${TH} text-right`}>Remaining</th><th className={`${TH} text-right`}>Est. Cost</th></tr></thead>
+          <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs">Leave Type</Th><Th density="compact" size="xs" className="text-right">Entitlement</Th><Th density="compact" size="xs" className="text-right">Used</Th><Th density="compact" size="xs" className="text-right">Pending</Th><Th density="compact" size="xs" className="text-right">Remaining</Th><Th density="compact" size="xs" className="text-right">Est. Cost</Th></tr></thead>
           <tbody>
-            {rows.length === 0 && <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-500">No leave balances for this year.</td></tr>}
+            {rows.length === 0 && <tr><Td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-500">No leave balances for this year.</Td></tr>}
             {rows.map((r: any, i: number) => (
               <tr key={`${r.employeeId}-${r.leaveType}-${i}`} className="border-b border-slate-100 hover:bg-slate-50">
-                <td className={`${CELL} font-medium text-charcoal-heading`}>{r.name}</td>
-                <td className={`${CELL} text-slate-600`}>{r.leaveType}</td>
-                <td className={`${CELL} text-right`}>{r.entitlement}</td>
-                <td className={`${CELL} text-right`}>{r.used}</td>
-                <td className={`${CELL} text-right`}>{r.pending}</td>
-                <td className={`${CELL} text-right font-semibold text-charcoal-heading`}>{r.remaining}</td>
-                <td className={`${CELL} text-right`}>{fmtMoney(r.estimatedCostCents)}</td>
+                <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{r.name}</Td>
+                <Td density="compact" tone="inherit" className="text-sm text-slate-600">{r.leaveType}</Td>
+                <Td density="compact" tone="inherit" className="text-sm text-right">{r.entitlement}</Td>
+                <Td density="compact" tone="inherit" className="text-sm text-right">{r.used}</Td>
+                <Td density="compact" tone="inherit" className="text-sm text-right">{r.pending}</Td>
+                <Td density="compact" tone="inherit" className="text-sm text-right font-semibold text-charcoal-heading">{r.remaining}</Td>
+                <Td density="compact" tone="inherit" className="text-sm text-right">{fmtMoney(r.estimatedCostCents)}</Td>
               </tr>
             ))}
           </tbody>
           {rows.length > 0 && (
             <tfoot>
               <tr className="border-t border-slate-200 bg-slate-50/60">
-                <td className={`${CELL} font-bold`} colSpan={5}>Totals</td>
-                <td className={`${CELL} text-right font-bold`}>{totalRemaining}</td>
-                <td className={`${CELL} text-right font-bold`}>{fmtMoney(totalCost)}</td>
+                <Td density="compact" tone="inherit" className="text-sm font-bold" colSpan={5}>Totals</Td>
+                <Td density="compact" tone="inherit" className="text-sm text-right font-bold">{totalRemaining}</Td>
+                <Td density="compact" tone="inherit" className="text-sm text-right font-bold">{fmtMoney(totalCost)}</Td>
               </tr>
             </tfoot>
           )}
         </table>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -155,29 +151,29 @@ function OvertimeCostTab() {
 
   return (
     <div>
-      <div className={`${CARD} mb-6 p-4`}><DateRange start={start} end={end} onStart={setStart} onEnd={setEnd} /></div>
+      <Card radius="sm" elevation="sm" border="subtle" className="mb-6 p-4"><DateRange start={start} end={end} onStart={setStart} onEnd={setEnd} /></Card>
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className={`${CARD} flex items-center gap-3 p-5`}><span className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><Timer size={20} /></span><div><div className="text-3xl font-bold leading-none text-charcoal-heading">{fmtHours(totalMinutes)}</div><div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Total OT Hours</div></div></div>
-        <div className={`${CARD} flex items-center gap-3 p-5`}><span className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><BarChart3 size={20} /></span><div><div className="text-3xl font-bold leading-none text-charcoal-heading">{fmtMoney(totalCost)}</div><div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Total Est. Cost</div></div></div>
+        <Card radius="sm" elevation="sm" border="subtle" className="flex items-center gap-3 p-5"><span className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><Timer size={20} /></span><div><div className="text-3xl font-bold leading-none text-charcoal-heading">{fmtHours(totalMinutes)}</div><div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Total OT Hours</div></div></Card>
+        <Card radius="sm" elevation="sm" border="subtle" className="flex items-center gap-3 p-5"><span className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><BarChart3 size={20} /></span><div><div className="text-3xl font-bold leading-none text-charcoal-heading">{fmtMoney(totalCost)}</div><div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Total Est. Cost</div></div></Card>
       </div>
-      <div className={`${CARD} overflow-hidden`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
-            <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={`${TH} text-right`}>Total OT Hours</th><th className={`${TH} text-right`}>Rate</th><th className={`${TH} text-right`}>Est. Cost</th></tr></thead>
+            <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs" className="text-right">Total OT Hours</Th><Th density="compact" size="xs" className="text-right">Rate</Th><Th density="compact" size="xs" className="text-right">Est. Cost</Th></tr></thead>
             <tbody>
-              {rows.length === 0 && <tr><td colSpan={4} className="px-4 py-12 text-center text-sm text-slate-500">No overtime in this range.</td></tr>}
+              {rows.length === 0 && <tr><Td colSpan={4} className="px-4 py-12 text-center text-sm text-slate-500">No overtime in this range.</Td></tr>}
               {rows.map((r: any) => (
                 <tr key={r.employeeId} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className={`${CELL} font-medium text-charcoal-heading`}>{r.name}</td>
-                  <td className={`${CELL} text-right`}>{fmtHours(r.totalOvertimeMinutes)}</td>
-                  <td className={`${CELL} text-right`}>{fmtMultiplier(r.rateMultiplierX100)}</td>
-                  <td className={`${CELL} text-right font-semibold text-charcoal-heading`}>{fmtMoney(r.estimatedOvertimeCostCents)}</td>
+                  <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{r.name}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right">{fmtHours(r.totalOvertimeMinutes)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right">{fmtMultiplier(r.rateMultiplierX100)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right font-semibold text-charcoal-heading">{fmtMoney(r.estimatedOvertimeCostCents)}</Td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -195,27 +191,27 @@ function TimesheetSummaryTab() {
 
   return (
     <div>
-      <div className={`${CARD} mb-6 p-4`}><DateRange start={start} end={end} onStart={setStart} onEnd={setEnd} /></div>
-      <div className={`${CARD} overflow-hidden`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="mb-6 p-4"><DateRange start={start} end={end} onStart={setStart} onEnd={setEnd} /></Card>
+      <Card radius="sm" elevation="sm" border="subtle" className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
-            <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={`${TH} text-right`}>Regular Hrs</th><th className={`${TH} text-right`}>OT Hrs</th><th className={`${TH} text-right`}>Submitted</th><th className={`${TH} text-right`}>Approved</th><th className={`${TH} text-right`}>Pending</th></tr></thead>
+            <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs" className="text-right">Regular Hrs</Th><Th density="compact" size="xs" className="text-right">OT Hrs</Th><Th density="compact" size="xs" className="text-right">Submitted</Th><Th density="compact" size="xs" className="text-right">Approved</Th><Th density="compact" size="xs" className="text-right">Pending</Th></tr></thead>
             <tbody>
-              {rows.length === 0 && <tr><td colSpan={6} className="px-4 py-12 text-center text-sm text-slate-500">No timesheets in this range.</td></tr>}
+              {rows.length === 0 && <tr><Td colSpan={6} className="px-4 py-12 text-center text-sm text-slate-500">No timesheets in this range.</Td></tr>}
               {rows.map((r: any) => (
                 <tr key={r.employeeId} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className={`${CELL} font-medium text-charcoal-heading`}>{r.name}</td>
-                  <td className={`${CELL} text-right`}>{fmtHours(r.totalRegularMinutes)}</td>
-                  <td className={`${CELL} text-right`}>{fmtHours(r.totalOvertimeMinutes)}</td>
-                  <td className={`${CELL} text-right`}>{r.submittedCount}</td>
-                  <td className={`${CELL} text-right`}>{r.approvedCount}</td>
-                  <td className={`${CELL} text-right font-semibold`} style={{ color: r.pendingCount > 0 ? WARN_FG : undefined }}>{r.pendingCount}</td>
+                  <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{r.name}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right">{fmtHours(r.totalRegularMinutes)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right">{fmtHours(r.totalOvertimeMinutes)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right">{r.submittedCount}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right">{r.approvedCount}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right font-semibold" style={{ color: r.pendingCount> 0 ? WARN_FG : undefined }}>{r.pendingCount}</Td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -232,7 +228,7 @@ function ReportsPage() {
   const [tab, setTab] = useState<(typeof TABS)[number]['key']>('attendance');
 
   if (!can('employee:change')) {
-    return <div className={`${CARD} p-8 text-sm text-secondary`}>Workforce reports require a manager or admin role.</div>;
+    return <Card radius="sm" elevation="sm" border="subtle" className="p-8 text-sm text-secondary">Workforce reports require a manager or admin role.</Card>;
   }
 
   return (

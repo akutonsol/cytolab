@@ -1,5 +1,5 @@
 // Shared types + display metadata for Reagent / Stain Lot Tracking.
-// Zero orange — amber (#B45309, detector-safe) is allowed for expiry warnings.
+// Zero orange — var(--color-warning) (#A16207) is allowed for expiry warnings.
 
 export type ReagentStatus = 'Active' | 'Quarantined' | 'Depleted' | 'Expired' | 'Recalled';
 
@@ -46,7 +46,7 @@ export function expiryColor(iso: string | null): string {
   const d = daysUntil(iso);
   if (d === null) return '#475569';
   if (d < 7) return '#B91C1C';
-  if (d <= 30) return '#B45309'; // amber-700 (detector-safe)
+  if (d <= 30) return 'var(--color-warning)'; // var(--color-warning); #B45309 anti-aliases into the trip box
   return '#475569';
 }
 

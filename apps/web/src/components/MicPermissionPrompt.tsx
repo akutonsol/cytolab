@@ -2,6 +2,7 @@
 
 import { createPortal } from 'react-dom';
 import { Mic, MicOff, X } from 'lucide-react';
+import { Button } from '@/components/ui';
 
 interface Props {
   open: boolean;
@@ -34,8 +35,8 @@ export function MicPermissionPrompt({ open, mode, onAllow, onClose }: Props) {
               Cytolab will ask your browser for microphone access. Click <span className="font-semibold text-on-surface">Allow</span> in the prompt that appears, then start speaking — your words are transcribed into the field. Nothing is recorded or sent to a server; transcription runs in your browser.
             </p>
             <div className="mt-6 flex justify-end gap-2">
-              <button className="btn-secondary" onClick={onClose}>Not now</button>
-              <button className="btn-primary" onClick={onAllow}><Mic size={15} /> Allow &amp; dictate</button>
+              <Button variant="secondary" onClick={onClose}>Not now</Button>
+              <Button onClick={onAllow}><Mic size={15} /> Allow &amp; dictate</Button>
             </div>
           </>
         ) : (
@@ -47,7 +48,7 @@ export function MicPermissionPrompt({ open, mode, onAllow, onClose }: Props) {
               <li><span className="font-semibold">Firefox:</span> click the mic icon left of the address bar → clear the block → retry.</li>
             </ul>
             <div className="mt-6 flex justify-end">
-              <button className="btn-primary" onClick={onClose}>Got it</button>
+              <Button onClick={onClose}>Got it</Button>
             </div>
           </>
         )}

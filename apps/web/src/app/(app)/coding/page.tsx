@@ -12,13 +12,13 @@ import {
   STATUS_META, SYSTEM_META, shortDate,
   type CodeSystem, type CodingRecordRow, type CodingStats, type ExportData, type MedicalCode,
 } from '@/lib/coding';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 const TABS = ['Records', 'Code Dictionary', 'Export'] as const;
 type Tab = typeof TABS[number];
 
 function Kpi({ label, value, fg = '#0F172A' }: { label: string; value: string; fg?: string }) {
-  return <div className={`${CARD} p-4`}><div className="truncate text-[22px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></div>;
+  return <Card radius="md" elevation="soft" border="hairline" className="p-4"><div className="truncate text-[22px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></Card>;
 }
 function SystemBadge({ system }: { system: CodeSystem }) {
   const m = SYSTEM_META[system];
@@ -115,7 +115,7 @@ export default function CodingPage() {
 
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Kpi label="Coded Records" value={String(stats?.totalCoded ?? 0)} fg="#16A34A" />
-        <Kpi label="Uncoded Records" value={String(stats?.uncoded ?? 0)} fg={(stats?.uncoded ?? 0) > 0 ? '#B45309' : '#0F172A'} />
+        <Kpi label="Uncoded Records" value={String(stats?.uncoded ?? 0)} fg={(stats?.uncoded ?? 0) > 0 ? 'var(--color-warning)' : '#0F172A'} />
         <Kpi label="Codes in Dictionary" value={String(stats?.dictionarySize ?? 0)} />
         <Kpi label="Most Used Code" value={mostUsed ? `${mostUsed.code}` : '—'} fg="#4F46E5" />
       </div>
@@ -128,7 +128,7 @@ export default function CodingPage() {
 
       {/* Records tab */}
       {tab === 'Records' && (
-        <div className={`${CARD} overflow-hidden`}>
+        <Card radius="md" elevation="soft" border="hairline" className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13px]">
               <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]">
@@ -153,12 +153,12 @@ export default function CodingPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Code Dictionary tab */}
       {tab === 'Code Dictionary' && (
-        <div className={`${CARD} overflow-hidden`}>
+        <Card radius="md" elevation="soft" border="hairline" className="overflow-hidden">
           <div className="flex flex-wrap items-center gap-2 border-b border-[#EEF2F7] p-3">
             <div className="relative">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#475569]" />
@@ -187,12 +187,12 @@ export default function CodingPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Export tab */}
       {tab === 'Export' && (
-        <div className={`${CARD} p-5`}>
+        <Card radius="md" elevation="soft" border="hairline" className="p-5">
           <div className="flex flex-wrap items-end gap-4">
             <div><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">From</label><input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-10 rounded-lg border border-[#E2E8F0] px-3 text-[14px]" /></div>
             <div><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">To</label><input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-10 rounded-lg border border-[#E2E8F0] px-3 text-[14px]" /></div>
@@ -219,7 +219,7 @@ export default function CodingPage() {
               ))}
             </div>
           </div>
-        </div>
+        </Card>
       )}
 
       {panel && <CodingPanel recordId={panel.recordId} meta={{ labNo: panel.labNo, patientInitials: panel.patientInitials, specimenType: panel.specimenType, bethesda: panel.bethesda }} onClose={() => setPanel(null)} />}

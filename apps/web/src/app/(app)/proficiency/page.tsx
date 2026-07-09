@@ -13,8 +13,8 @@ import {
   STATUS_META, TEST_TYPES, TYPE_META, scoreColor, shortDate,
   type ProfAnalytics, type ProfTest, type ProfTestType,
 } from '@/lib/proficiency';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 
 function NewTestModal({ onClose }: { onClose: (id?: string) => void }) {
@@ -60,7 +60,7 @@ function NewTestModal({ onClose }: { onClose: (id?: string) => void }) {
 }
 
 function Kpi({ label, value, fg = '#0F172A' }: { label: string; value: string | number; fg?: string }) {
-  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></div>;
+  return <Card radius="md" elevation="soft" border="hairline" className="p-4"><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></Card>;
 }
 
 export default function ProficiencyPage() {
@@ -117,12 +117,12 @@ export default function ProficiencyPage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {tests.length === 0 ? (
-          <div className={`${CARD} p-8 text-center text-[14px] text-[#475569]`}>No proficiency tests yet.</div>
+          <Card radius="md" elevation="soft" border="hairline" className="p-8 text-center text-[14px] text-[#475569]">No proficiency tests yet.</Card>
         ) : tests.map((t) => {
           const st = STATUS_META[t.status];
           const ty = TYPE_META[t.testType];
           return (
-            <div key={t.id} className={`${CARD} flex flex-col p-4`}>
+            <Card radius="md" elevation="soft" border="hairline" className="flex flex-col p-4" key={t.id}>
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="text-[16px] font-bold text-[#0F172A]">{t.name}</div>
@@ -141,7 +141,7 @@ export default function ProficiencyPage() {
                 {isManager && t.status === 'Active' && <button onClick={() => act.mutate({ id: t.id, action: 'close' })} className="rounded-lg bg-[#7C3AED] px-3 py-1.5 text-[13px] font-semibold text-white">Close</button>}
                 {isManager && t.status === 'Grading' && <button onClick={() => act.mutate({ id: t.id, action: 'grade' })} className="rounded-lg bg-[#16A34A] px-3 py-1.5 text-[13px] font-semibold text-white">Grade</button>}
               </div>
-            </div>
+            </Card>
           );
         })}
       </div>

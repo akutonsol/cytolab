@@ -11,6 +11,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
+import { Card } from '@/components/ui';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (cents: number) => '$' + ((cents ?? 0) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -23,15 +24,15 @@ const relTime = (d: string) => {
   return `${Math.floor(s / 86400)}d ago`;
 };
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white';
-// Zero-orange: BankTransfer uses a dark amber (#B45309) that stays clear of the
+// Zero-orange: BankTransfer uses --color-warning (#A16207). NOT #B45309: that is
+// safe as a solid (r=180) but its anti-aliased edges blend through the trip box.
 // orange range, not #D97706 (which the orange detector flags).
 const TYPE_BADGE: Record<string, { bg: string; fg: string }> = {
   Cash: { bg: '#F0FDF4', fg: '#16A34A' },
   Cheque: { bg: '#EEF2FF', fg: '#4F46E5' },
   CreditCard: { bg: '#F5F3FF', fg: '#7C3AED' },
   DebitCard: { bg: '#F0F9FF', fg: '#0284C7' },
-  BankTransfer: { bg: '#FFFBEB', fg: '#B45309' },
+  BankTransfer: { bg: '#FFFBEB', fg: 'var(--color-warning)' },
   Other: { bg: '#F1F5F9', fg: '#475569' },
 };
 const badgeFor = (t: string) => TYPE_BADGE[t] ?? TYPE_BADGE.Other;
@@ -155,7 +156,7 @@ export default function PaymentsPage() {
       {/* KPI strip */}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map(({ icon: Icon, color, label, value, delta, pct, sub }) => (
-          <div key={label} className={`${CARD} px-6 py-5`}>
+          <Card radius="md" elevation="none" border="hairline" className="px-6 py-5" key={label}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Icon size={20} color={color} />
@@ -165,12 +166,12 @@ export default function PaymentsPage() {
             </div>
             <div className="mt-2 text-[48px] font-extrabold leading-none text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif', letterSpacing: '-0.03em' }}>{value}</div>
             <div className="mt-1.5 text-[13px] text-[#475569]">{sub}</div>
-          </div>
+          </Card>
         ))}
       </div>
 
       {/* Trend chart */}
-      <div className={`${CARD} mb-6 p-6`}>
+      <Card radius="md" elevation="none" border="hairline" className="mb-6 p-6">
         <div className="mb-4 flex items-center justify-between">
           <span className="text-[18px] font-semibold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Payment Trends</span>
           <button onClick={() => setPeriod((p) => (p === 'Yearly' ? 'Monthly' : 'Yearly'))} className="flex items-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5 text-[13px] font-medium text-[#374151]">{period} <ChevronDown size={14} /></button>
@@ -200,7 +201,7 @@ export default function PaymentsPage() {
             <Area type="monotone" dataKey="count" stroke="#4F46E5" strokeWidth={2.5} fill="url(#payGrad)" activeDot={{ r: 5, fill: '#4F46E5', stroke: '#fff', strokeWidth: 2 }} isAnimationActive animationDuration={800} />
           </AreaChart>
         </ResponsiveContainer>
-      </div>
+      </Card>
 
       {/* Payments table section */}
       <div>
@@ -217,7 +218,7 @@ export default function PaymentsPage() {
           ))}
         </div>
 
-        <div className={`${CARD} p-5`}>
+        <Card radius="md" elevation="none" border="hairline" className="p-5">
           {/* Filter row */}
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); }} className={selectCls}>
@@ -301,7 +302,7 @@ export default function PaymentsPage() {
           {pageRows.length > 0 && (
             <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
           )}
-        </div>
+        </Card>
       </div>
 
       {toast && <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: '#16A34A' }}>{toast}</div>}

@@ -34,7 +34,7 @@ export interface ReportDef {
   requiredFeature?: FeatureKey;
 }
 
-export const CHART = { indigo: '#4F46E5', blue: '#3B82F6', violet: '#7C3AED', teal: '#0D9488', green: '#16A34A', red: '#DC2626', amber: '#B45309', slate: '#475569' };
+export const CHART = { indigo: '#4F46E5', blue: '#3B82F6', violet: '#7C3AED', teal: '#0D9488', green: '#16A34A', red: '#DC2626', amber: 'var(--color-warning)', slate: '#475569' };
 const DONUT_COLORS = [CHART.indigo, CHART.blue, CHART.violet, CHART.teal, CHART.green, CHART.amber, CHART.slate, '#DB2777'];
 export const donutColor = (i: number) => DONUT_COLORS[i % DONUT_COLORS.length];
 

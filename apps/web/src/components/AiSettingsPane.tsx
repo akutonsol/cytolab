@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { Button } from '@/components/ui';
 
 interface AiSettings {
   enabled: boolean;
@@ -60,9 +61,9 @@ export function AiSettingsPane() {
 
       {data && !data.hasApiKey && (
         <div className="mt-4 flex items-start gap-3 rounded-xl p-4" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
-          <AlertTriangle size={18} className="mt-0.5 shrink-0" style={{ color: '#B45309' }} />
+          <AlertTriangle size={18} className="mt-0.5 shrink-0" style={{ color: 'var(--color-warning)' }} />
           <div>
-            <div className="font-label-md text-label-md" style={{ color: '#B45309' }}>No API key configured on the server</div>
+            <div className="font-label-md text-label-md" style={{ color: 'var(--color-warning)' }}>No API key configured on the server</div>
             <div className="font-body-sm text-body-sm text-secondary">AI actions stay unavailable to authorizers until ANTHROPIC_API_KEY is set, even if enabled here.</div>
           </div>
         </div>
@@ -104,9 +105,9 @@ export function AiSettingsPane() {
         </div>
 
         <div>
-          <button className="btn-primary" disabled={save.isPending} style={{ opacity: save.isPending ? 0.6 : 1 }} onClick={() => save.mutate()}>
+          <Button disabled={save.isPending} style={{ opacity: save.isPending ? 0.6 : 1 }} onClick={() => save.mutate()}>
             {save.isPending ? 'Saving…' : 'Save'}
-          </button>
+          </Button>
         </div>
       </div>
 

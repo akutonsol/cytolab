@@ -9,13 +9,11 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, useMyEmployee, empName, fmtDate } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
+import { Card, Button, Th, Td } from '@/components/ui';
 
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
 
-const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
-const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
-const CELL = 'px-4 py-3 align-middle text-sm';
 
 // Score colour: ≥80 green, 60-79 detector-safe yellow, <60 red (no orange).
 const scoreColor = (v: number) => (v >= 80 ? '#16A34A' : v >= 60 ? '#A16207' : '#DC2626');
@@ -80,7 +78,7 @@ function NewReviewModal({ onClose }: { onClose: () => void }) {
         <label className="mb-1 block text-sm font-medium text-slate-600">Comments</label>
         <textarea value={comments} onChange={(e) => setComments(e.target.value)} rows={3} className="mb-4 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-primary" />
         {err && <div className="mb-2 text-sm text-error">{err}</div>}
-        <div className="flex justify-end gap-2"><button onClick={onClose} className="btn-secondary">Cancel</button><button onClick={() => { setErr(''); create.mutate(); }} disabled={!employeeId || !period.trim() || create.isPending} className="btn-primary" style={{ opacity: !employeeId || !period.trim() || create.isPending ? 0.5 : 1 }}>{create.isPending ? 'Saving…' : 'Save Draft'}</button></div>
+        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={() => { setErr(''); create.mutate(); }} disabled={!employeeId || !period.trim() || create.isPending}  style={{ opacity: !employeeId || !period.trim() || create.isPending ? 0.5 : 1 }}>{create.isPending ? 'Saving…' : 'Save Draft'}</Button></div>
       </div>
     </div>
   );
@@ -130,7 +128,7 @@ function ReviewDrawer({ id, onClose }: { id: string; onClose: () => void }) {
               </div>
 
               {composite && (
-                <div className={`${CARD} mb-6 p-4`}>
+                <Card radius="sm" elevation="sm" border="subtle" className="mb-6 p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <span className="text-sm font-semibold text-charcoal-heading">Composite Score</span>
                     <span className="text-2xl font-bold" style={{ color: scoreColor(composite.score) }}>{composite.score}</span>
@@ -140,12 +138,12 @@ function ReviewDrawer({ id, onClose }: { id: string; onClose: () => void }) {
                       <div key={label} className="flex items-center justify-between"><span className="text-slate-500">{label} <span className="text-slate-300">· {w}</span></span><span className="font-semibold text-charcoal-heading">{b.score}</span></div>
                     ))}
                   </div>
-                </div>
+                </Card>
               )}
 
               <div className="flex gap-2">
-                {isManager && r.status === 'DRAFT' && <button onClick={() => act.mutate('submit')} disabled={act.isPending} className="btn-primary flex-1 justify-center">Submit to Employee</button>}
-                {isMine && r.status === 'SUBMITTED' && <button onClick={() => act.mutate('acknowledge')} disabled={act.isPending} className="btn-primary flex-1 justify-center"><Check size={16} /> Acknowledge</button>}
+                {isManager && r.status === 'DRAFT' && <Button onClick={() => act.mutate('submit')} disabled={act.isPending} className="flex-1 justify-center">Submit to Employee</Button>}
+                {isMine && r.status === 'SUBMITTED' && <Button onClick={() => act.mutate('acknowledge')} disabled={act.isPending} className="flex-1 justify-center"><Check size={16} /> Acknowledge</Button>}
                 {r.status === 'ACKNOWLEDGED' && <div className="flex-1 rounded-xl bg-green-50 px-4 py-2.5 text-center text-sm font-semibold text-green-700">Acknowledged</div>}
               </div>
             </>
@@ -174,7 +172,7 @@ function ReviewsTab() {
 
   return (
     <div>
-      <div className={`${CARD} mb-6 flex flex-wrap items-center justify-between gap-3 p-4`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="mb-6 flex flex-wrap items-center justify-between gap-3 p-4">
         <div className="flex flex-wrap items-center gap-3">
           <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary">
             <option value="">All Employees</option>{employees.map((e) => <option key={e.id} value={e.id}>{empName(e)}</option>)}
@@ -184,32 +182,32 @@ function ReviewsTab() {
             {['ALL', 'DRAFT', 'SUBMITTED', 'ACKNOWLEDGED'].map((s) => <option key={s} value={s}>{s === 'ALL' ? 'All Statuses' : s}</option>)}
           </select>
         </div>
-        {isManager && <button onClick={() => setNewOpen(true)} className="btn-primary"><Plus size={16} /> New Review</button>}
-      </div>
+        {isManager && <Button onClick={() => setNewOpen(true)}><Plus size={16} /> New Review</Button>}
+      </Card>
 
-      <div className={`${CARD} overflow-hidden`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
-            <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Period</th><th className={`${TH} text-right`}>Overall</th><th className={`${TH} text-right`}>Attend.</th><th className={`${TH} text-right`}>Prod.</th><th className={`${TH} text-right`}>Quality</th><th className={TH}>Status</th><th className={TH}>Reviewer</th></tr></thead>
+            <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs">Period</Th><Th density="compact" size="xs" className="text-right">Overall</Th><Th density="compact" size="xs" className="text-right">Attend.</Th><Th density="compact" size="xs" className="text-right">Prod.</Th><Th density="compact" size="xs" className="text-right">Quality</Th><Th density="compact" size="xs">Status</Th><Th density="compact" size="xs">Reviewer</Th></tr></thead>
             <tbody>
-              {!initialLoading && reviews.length === 0 && <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-500">No reviews match these filters.</td></tr>}
+              {!initialLoading && reviews.length === 0 && <tr><Td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-500">No reviews match these filters.</Td></tr>}
               {pageRows.map((r: any) => (
                 <tr key={r.id} className="cursor-pointer border-b border-slate-100 hover:bg-slate-50" onClick={() => setDetailId(r.id)}>
-                  <td className={`${CELL} font-medium text-charcoal-heading`}>{empName(r.employee)}</td>
-                  <td className={`${CELL} text-slate-600`}>{r.period}</td>
-                  <td className={`${CELL} text-right font-bold`} style={{ color: scoreColor(r.overallScore) }}>{r.overallScore}</td>
-                  <td className={`${CELL} text-right text-slate-600`}>{r.attendanceScore}</td>
-                  <td className={`${CELL} text-right text-slate-600`}>{r.productivityScore}</td>
-                  <td className={`${CELL} text-right text-slate-600`}>{r.qualityScore}</td>
-                  <td className={CELL}><Badge status={r.status} map={REVIEW_STATUS} /></td>
-                  <td className={`${CELL} text-slate-500`}>{r.reviewer ? `${r.reviewer.firstName} ${r.reviewer.lastName}` : '—'}</td>
+                  <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{empName(r.employee)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-slate-600">{r.period}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right font-bold" style={{ color: scoreColor(r.overallScore) }}>{r.overallScore}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right text-slate-600">{r.attendanceScore}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right text-slate-600">{r.productivityScore}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right text-slate-600">{r.qualityScore}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm"><Badge status={r.status} map={REVIEW_STATUS} /></Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-slate-500">{r.reviewer ? `${r.reviewer.firstName} ${r.reviewer.lastName}` : '—'}</Td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
         {pageRows.length > 0 && <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />}
-      </div>
+      </Card>
 
       {newOpen && <NewReviewModal onClose={() => setNewOpen(false)} />}
       {detailId && <ReviewDrawer id={detailId} onClose={() => setDetailId(null)} />}
@@ -246,7 +244,7 @@ function NewGoalModal({ onClose }: { onClose: () => void }) {
         <label className="mb-1 block text-sm font-medium text-slate-600">Target date</label>
         <input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} className="mb-4 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary" />
         {err && <div className="mb-2 text-sm text-error">{err}</div>}
-        <div className="flex justify-end gap-2"><button onClick={onClose} className="btn-secondary">Cancel</button><button onClick={() => { setErr(''); create.mutate(); }} disabled={!employeeId || !title.trim() || !targetDate || create.isPending} className="btn-primary" style={{ opacity: !employeeId || !title.trim() || !targetDate || create.isPending ? 0.5 : 1 }}>{create.isPending ? 'Saving…' : 'Create Goal'}</button></div>
+        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={() => { setErr(''); create.mutate(); }} disabled={!employeeId || !title.trim() || !targetDate || create.isPending}  style={{ opacity: !employeeId || !title.trim() || !targetDate || create.isPending ? 0.5 : 1 }}>{create.isPending ? 'Saving…' : 'Create Goal'}</Button></div>
       </div>
     </div>
   );
@@ -270,7 +268,7 @@ function GoalEditor({ goal, onClose }: { goal: any; onClose: () => void }) {
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="mb-5 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary">
           {['ACTIVE', 'COMPLETED', 'MISSED'].map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-        <div className="flex justify-end gap-2"><button onClick={onClose} className="btn-secondary">Cancel</button><button onClick={() => save.mutate()} disabled={save.isPending} className="btn-primary">{save.isPending ? 'Saving…' : 'Save'}</button></div>
+        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={() => save.mutate()} disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save'}</Button></div>
       </div>
     </div>
   );
@@ -291,7 +289,7 @@ function GoalsTab() {
 
   return (
     <div>
-      <div className={`${CARD} mb-6 flex flex-wrap items-center justify-between gap-3 p-4`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="mb-6 flex flex-wrap items-center justify-between gap-3 p-4">
         <div className="flex flex-wrap items-center gap-3">
           <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary">
             <option value="">All Employees</option>{employees.map((e) => <option key={e.id} value={e.id}>{empName(e)}</option>)}
@@ -300,34 +298,34 @@ function GoalsTab() {
             {['ALL', 'ACTIVE', 'COMPLETED', 'MISSED'].map((s) => <option key={s} value={s}>{s === 'ALL' ? 'All Statuses' : s}</option>)}
           </select>
         </div>
-        <button onClick={() => setNewOpen(true)} className="btn-primary"><Plus size={16} /> New Goal</button>
-      </div>
+        <Button onClick={() => setNewOpen(true)}><Plus size={16} /> New Goal</Button>
+      </Card>
 
-      <div className={`${CARD} overflow-hidden`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
-            <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Title</th><th className={TH}>Target Date</th><th className={TH}>Progress</th><th className={TH}>Status</th></tr></thead>
+            <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs">Title</Th><Th density="compact" size="xs">Target Date</Th><Th density="compact" size="xs">Progress</Th><Th density="compact" size="xs">Status</Th></tr></thead>
             <tbody>
-              {!initialLoading && goals.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-500">No goals match these filters.</td></tr>}
+              {!initialLoading && goals.length === 0 && <tr><Td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-500">No goals match these filters.</Td></tr>}
               {pageRows.map((g: any) => (
                 <tr key={g.id} className="cursor-pointer border-b border-slate-100 hover:bg-slate-50" onClick={() => setEditing(g)}>
-                  <td className={`${CELL} text-slate-600`}>{empName(g.employee)}</td>
-                  <td className={`${CELL} font-medium text-charcoal-heading`}>{g.title}</td>
-                  <td className={`${CELL} text-slate-600`}>{fmtDate(g.targetDate)}</td>
-                  <td className={CELL}>
+                  <Td density="compact" tone="inherit" className="text-sm text-slate-600">{empName(g.employee)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{g.title}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-slate-600">{fmtDate(g.targetDate)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm">
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-28 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${g.progress}%` }} /></div>
                       <span className="text-xs text-slate-500">{g.progress}%</span>
                     </div>
-                  </td>
-                  <td className={CELL}><Badge status={g.status} map={GOAL_STATUS} /></td>
+                  </Td>
+                  <Td density="compact" tone="inherit" className="text-sm"><Badge status={g.status} map={GOAL_STATUS} /></Td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
         {pageRows.length > 0 && <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />}
-      </div>
+      </Card>
 
       {newOpen && <NewGoalModal onClose={() => setNewOpen(false)} />}
       {editing && <GoalEditor goal={editing} onClose={() => setEditing(null)} />}

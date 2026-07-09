@@ -7,6 +7,7 @@ import { ChevronRight, Trash2 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { CATEGORIES, type ResultTemplate, type TemplateCategory } from '@/lib/result-templates';
+import { Button } from '@/components/ui';
 
 const blank = {
   name: '', shortCode: '', category: 'Cervical' as TemplateCategory, description: '', isActive: true,
@@ -74,8 +75,8 @@ export default function ResultTemplateEditPage() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-3xl font-bold text-charcoal-heading">{isNew ? 'New Template' : 'Edit Template'}</h1>
           <div className="flex items-center gap-2">
-            {!isNew && <button className="btn-secondary !text-error" onClick={() => del.mutate()} disabled={del.isPending}><Trash2 size={15} /> Delete</button>}
-            <button className="btn-primary" disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => save.mutate()}>{save.isPending ? 'Saving…' : 'Save Template'}</button>
+            {!isNew && <Button variant="secondary" className="!text-error" onClick={() => del.mutate()} disabled={del.isPending}><Trash2 size={15} /> Delete</Button>}
+            <Button disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => save.mutate()}>{save.isPending ? 'Saving…' : 'Save Template'}</Button>
           </div>
         </div>
 

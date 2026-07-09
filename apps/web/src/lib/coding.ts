@@ -1,5 +1,5 @@
 // Shared types + display metadata for LOINC/SNOMED coding. Zero orange —
-// Partial status uses detector-safe amber (#B45309).
+// Partial status uses the safe amber token var(--color-warning) = #A16207.
 
 export type CodeSystem = 'LOINC' | 'SNOMED_CT' | 'ICD10' | 'CPT';
 export type CodingType = 'Procedure' | 'Diagnosis' | 'Specimen' | 'Finding';
@@ -69,7 +69,7 @@ export const SYSTEM_META: Record<CodeSystem, { label: string; bg: string; fg: st
 
 export const STATUS_META: Record<CodingStatus, { label: string; bg: string; fg: string; outline?: boolean }> = {
   Coded: { label: 'Coded', bg: '#DCFCE7', fg: '#16A34A' },
-  Partial: { label: 'Partial', bg: '#FFFBEB', fg: '#B45309' }, // amber, not orange
+  Partial: { label: 'Partial', bg: '#FFFBEB', fg: 'var(--color-warning)' }, // var(--color-warning); safe at every alpha
   Uncoded: { label: 'Uncoded', bg: '#FFFFFF', fg: '#B91C1C', outline: true },
 };
 

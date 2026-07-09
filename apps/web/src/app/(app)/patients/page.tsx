@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { PatientFormDrawer, type PatientRecord } from '@/components/PatientFormDrawer';
-import { Th, Td } from '@/components/ui';
+import { Th, Td, Button, Badge } from '@/components/ui';
 
 // The list endpoint enriches each patient with these two computed fields.
 type PatientListRow = PatientRecord & {
@@ -18,8 +18,6 @@ type PatientListRow = PatientRecord & {
   updatedAt?: string | null;
 };
 
-const BADGE = 'inline-flex items-center rounded-full px-3 py-1 text-sm font-medium';
-const PILL = 'inline-flex items-center rounded-full px-3 py-1 text-sm';
 
 const fullName = (p: PatientListRow) => `${p.firstName} ${p.lastName}`.trim();
 
@@ -168,7 +166,7 @@ export default function PatientsPage() {
             />
           </div>
           {can('patient:create') && (
-            <button className="btn-primary" onClick={openCreate}><Plus size={16} /> New Patient</button>
+            <Button onClick={openCreate}><Plus size={16} /> New Patient</Button>
           )}
         </div>
       </div>
@@ -216,7 +214,7 @@ export default function PatientsPage() {
             <div className="flex-1">
               <div className="font-label-md text-label-md text-error">Failed to load</div>
               <div className="font-body-sm text-body-sm text-on-error-container">{error}</div>
-              <button className="btn-secondary mt-3" onClick={() => reset()}><RotateCcw size={14} /> Retry</button>
+              <Button variant="secondary" className="mt-3" onClick={() => reset()}><RotateCcw size={14} /> Retry</Button>
             </div>
           </div>
         )}
@@ -267,18 +265,18 @@ export default function PatientsPage() {
                     </Td>
                     <Td density="roomy" className="text-base">
                       {isMale
-                        ? <span className={`${PILL} border border-blue-200 bg-blue-50 text-blue-800`}>Male</span>
+                        ? <Badge size="lg" weight="normal" className="border border-blue-200 bg-blue-50 text-blue-800">Male</Badge>
                         : isFemale
-                          ? <span className={`${PILL} border border-pink-200 bg-pink-50 text-pink-800`}>Female</span>
-                          : <span className={`${PILL} border border-slate-200 bg-slate-100 text-slate-600`}>—</span>}
+                          ? <Badge size="lg" weight="normal" className="border border-pink-200 bg-pink-50 text-pink-800">Female</Badge>
+                          : <Badge size="lg" weight="normal" className="border border-slate-200 bg-slate-100 text-slate-600">—</Badge>}
                     </Td>
                     <Td density="roomy" className="text-base">{age != null ? `${age} yrs` : '—'}</Td>
                     <Td density="roomy" className="text-base">{p.phoneNumber || '—'}</Td>
                     <Td density="roomy" className="text-base">{clientName || '—'}</Td>
                     <Td density="roomy" className="text-base">
                       {cases > 0
-                        ? <span className={`${PILL} bg-indigo-100 text-indigo-700`}>{cases} active</span>
-                        : <span className={`${PILL} bg-slate-100 text-slate-600`}>None</span>}
+                        ? <Badge size="lg" weight="normal" className="bg-indigo-100 text-indigo-700">{cases} active</Badge>
+                        : <Badge size="lg" weight="normal" className="bg-slate-100 text-slate-600">None</Badge>}
                     </Td>
                     <Td density="roomy" className="text-base"><span className="text-slate-500">{relDate(p.lastActivityAt)}</span></Td>
                     {hasEdit && (

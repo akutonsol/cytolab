@@ -14,8 +14,8 @@ import {
   FILTER_TABS, STATUS_META, dueColor, dueLabel, shortDate,
   type Recall, type RecallListRow, type RecallStatus, type RecallSummary,
 } from '@/lib/recall';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 
 function StatusBadge({ s }: { s: RecallStatus }) {
@@ -23,7 +23,7 @@ function StatusBadge({ s }: { s: RecallStatus }) {
   return <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: m.bg, color: m.fg }}>{s === 'Overdue' && <AlertTriangle size={11} />}{m.label}</span>;
 }
 function Kpi({ label, value, fg = '#0F172A' }: { label: string; value: number; fg?: string }) {
-  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></div>;
+  return <Card radius="md" elevation="soft" border="hairline" className="p-4"><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></Card>;
 }
 
 // ─── Detail slide-over ───────────────────────────────────────────────────────
@@ -221,7 +221,7 @@ export default function RecallsPage() {
 
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Kpi label="Pending" value={summary?.pending ?? 0} />
-        <Kpi label="Due Now" value={summary?.due ?? 0} fg={(summary?.due ?? 0) > 0 ? '#B45309' : '#0F172A'} />
+        <Kpi label="Due Now" value={summary?.due ?? 0} fg={(summary?.due ?? 0) > 0 ? 'var(--color-warning)' : '#0F172A'} />
         <Kpi label="Overdue" value={summary?.overdue ?? 0} fg={(summary?.overdue ?? 0) > 0 ? '#B91C1C' : '#0F172A'} />
         <Kpi label="Completed This Month" value={summary?.completedThisMonth ?? 0} fg="#16A34A" />
       </div>
@@ -232,7 +232,7 @@ export default function RecallsPage() {
         ))}
       </div>
 
-      <div className={`${CARD} overflow-hidden`}>
+      <Card radius="md" elevation="soft" border="hairline" className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[13px]">
             <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]">
@@ -257,7 +257,7 @@ export default function RecallsPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       {detailId && <RecallDetail id={detailId} onClose={() => setDetailId(null)} />}
       {genOpen && <GenerateListModal onClose={() => setGenOpen(false)} />}

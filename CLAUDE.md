@@ -46,6 +46,11 @@ yellow/amber on dark backgrounds trip it — verify, don't assume. Safe substitu
 behind a comment claiming compliance. Screenshot gradients and run the detector.
 **Grepping for `#` is not an audit.** `/result-sheets` shipped `#EAB308` as the Tailwind
 utility `text-yellow-500` — no hex to find. Only the pixel detector catches these.
+**A safe solid can still be a violation.** `#B45309` (r=180) passes, but its anti-aliased
+edges blend through the box (alpha .67–.73 → `rgb(202,134,82)`). It shipped in 42 places
+behind "detector-safe" comments. Use `--color-warning` (`#A16207`) on white/amber-50, and
+`--status-warning-strong` (`#854D0E`) on amber-100 — `#A16207` trips over amber-100.
+Check a foreground against **its actual background, at every alpha**.
 **Run the pixel detector after every UI change; it must report 0.**
 
 ## Verification workflow (non-negotiable for shipping changes)

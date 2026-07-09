@@ -9,12 +9,10 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, empName, fmtHours } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
+import { Card, Button, Th, Td } from '@/components/ui';
 
-const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
-const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
-const CELL = 'px-4 py-3 align-middle text-sm';
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const initials = (s: string) => (s || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 
@@ -70,7 +68,7 @@ function LogMetric() {
   });
 
   return (
-    <div className={`${CARD} overflow-hidden`}>
+    <Card radius="sm" elevation="sm" border="subtle" className="overflow-hidden">
       <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between px-5 py-4 text-left hover:bg-slate-50">
         <span className="flex items-center gap-2 text-base font-semibold text-charcoal-heading"><Plus size={17} className="text-slate-500" /> Log Daily Metric</span>
         {open ? <ChevronDown size={18} className="text-slate-500" /> : <ChevronRight size={18} className="text-slate-500" />}
@@ -96,11 +94,11 @@ function LogMetric() {
           </div>
           <div className="mt-4 flex items-center justify-end gap-3">
             {msg && <span className="text-sm text-secondary">{msg}</span>}
-            <button onClick={() => save.mutate()} disabled={!employeeId || save.isPending} className="btn-primary" style={{ opacity: !employeeId || save.isPending ? 0.5 : 1 }}>{save.isPending ? 'Saving…' : 'Save Metric'}</button>
+            <Button onClick={() => save.mutate()} disabled={!employeeId || save.isPending}  style={{ opacity: !employeeId || save.isPending ? 0.5 : 1 }}>{save.isPending ? 'Saving…' : 'Save Metric'}</Button>
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -127,24 +125,24 @@ function ProductivityPage() {
 
       {/* Benchmarks */}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className={`${CARD} flex items-center gap-4 p-5`}>
+        <Card radius="sm" elevation="sm" border="subtle" className="flex items-center gap-4 p-5">
           <span className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><FlaskConical size={20} /></span>
           <div><div className="text-3xl font-bold leading-none text-charcoal-heading">{benchmarks?.avgSpecimensPerDay ?? 0}</div><div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Avg Specimens / Day</div></div>
-        </div>
-        <div className={`${CARD} flex items-center gap-4 p-5`}>
+        </Card>
+        <Card radius="sm" elevation="sm" border="subtle" className="flex items-center gap-4 p-5">
           <span className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><Activity size={20} /></span>
           <div><div className="text-3xl font-bold leading-none text-charcoal-heading">{fmtHours(benchmarks?.avgTATMinutes)}h</div><div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Avg Turnaround</div></div>
-        </div>
-        <div className={`${CARD} flex items-center gap-4 p-5`}>
+        </Card>
+        <Card radius="sm" elevation="sm" border="subtle" className="flex items-center gap-4 p-5">
           <Ring value={benchmarks?.avgQualityScore ?? 0} />
           <div><div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Avg Quality Score</div><div className="mt-1 flex items-center gap-1 text-sm text-slate-500"><Gauge size={14} /> out of 100</div></div>
-        </div>
+        </Card>
       </div>
 
       <div className="flex flex-col gap-6 xl:flex-row">
         {/* Leaderboard */}
         <div className="xl:w-[360px]">
-          <div className={`${CARD} p-5`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-5">
             <div className="mb-4 text-base font-semibold text-charcoal-heading">Leaderboard <span className="text-xs font-normal text-slate-500">· this month</span></div>
             {leaders.length === 0 && <div className="py-8 text-center text-sm text-slate-500">No metrics logged this month.</div>}
             <div className="flex flex-col gap-3">
@@ -163,12 +161,12 @@ function ProductivityPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Summary + Log */}
         <div className="min-w-0 flex-1 space-y-6">
-          <div className={`${CARD} overflow-hidden`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
               <span className="text-base font-semibold text-charcoal-heading">Summary</span>
               <div className="flex items-center gap-2">
@@ -179,24 +177,24 @@ function ProductivityPage() {
             </div>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
-                <thead><tr className="border-y border-slate-100"><th className={TH}>Employee</th><th className={`${TH} text-right`}>Specimens/Day</th><th className={`${TH} text-right`}>Avg TAT</th><th className={`${TH} text-right`}>Quality</th><th className={`${TH} text-right`}>Reports</th><th className={`${TH} text-right`}>Trend</th></tr></thead>
+                <thead><tr className="border-y border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs" className="text-right">Specimens/Day</Th><Th density="compact" size="xs" className="text-right">Avg TAT</Th><Th density="compact" size="xs" className="text-right">Quality</Th><Th density="compact" size="xs" className="text-right">Reports</Th><Th density="compact" size="xs" className="text-right">Trend</Th></tr></thead>
                 <tbody>
-                  {!initialLoading && summary.length === 0 && <tr><td colSpan={6} className="px-4 py-12 text-center text-sm text-slate-500">No metrics for this range.</td></tr>}
+                  {!initialLoading && summary.length === 0 && <tr><Td colSpan={6} className="px-4 py-12 text-center text-sm text-slate-500">No metrics for this range.</Td></tr>}
                   {pageRows.map((r: any) => (
                     <tr key={r.employeeId} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className={`${CELL} font-medium text-charcoal-heading`}>{r.name}</td>
-                      <td className={`${CELL} text-right`}>{r.avgSpecimensPerDay}</td>
-                      <td className={`${CELL} text-right text-slate-600`}>{fmtHours(r.avgTATMinutes)}h</td>
-                      <td className={`${CELL} text-right text-slate-600`}>{r.avgQualityScore}</td>
-                      <td className={`${CELL} text-right text-slate-600`}>{r.totalReports}</td>
-                      <td className={`${CELL} text-right`}><Trend t={r.trend} /></td>
+                      <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{r.name}</Td>
+                      <Td density="compact" tone="inherit" className="text-sm text-right">{r.avgSpecimensPerDay}</Td>
+                      <Td density="compact" tone="inherit" className="text-sm text-right text-slate-600">{fmtHours(r.avgTATMinutes)}h</Td>
+                      <Td density="compact" tone="inherit" className="text-sm text-right text-slate-600">{r.avgQualityScore}</Td>
+                      <Td density="compact" tone="inherit" className="text-sm text-right text-slate-600">{r.totalReports}</Td>
+                      <Td density="compact" tone="inherit" className="text-sm text-right"><Trend t={r.trend} /></Td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
             {pageRows.length > 0 && <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />}
-          </div>
+          </Card>
 
           {isManager && <LogMetric />}
         </div>

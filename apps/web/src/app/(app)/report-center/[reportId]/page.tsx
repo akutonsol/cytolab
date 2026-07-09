@@ -11,12 +11,12 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
 import { donutColor, fmtValue, getPath, reportById, toCsv } from '@/lib/report-center';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const STATUS_COLOR: Record<string, { fg: string; bg: string }> = {
   Compliant: { fg: '#16A34A', bg: '#DCFCE7' },
-  Warning: { fg: '#B45309', bg: '#FFFBEB' },
+  Warning: { fg: 'var(--color-warning)', bg: '#FFFBEB' },
   'Non-Compliant': { fg: '#B91C1C', bg: '#FEE2E2' },
 };
 
@@ -63,14 +63,14 @@ export default function ReportRunnerPage() {
       </div>
 
       {/* Controls */}
-      <div className={`${CARD} no-print mb-5 flex flex-wrap items-end gap-3 p-4`}>
+      <Card radius="md" elevation="soft" border="hairline" className="no-print mb-5 flex flex-wrap items-end gap-3 p-4">
         <div><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">From</label><input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-10 rounded-lg border border-[#E2E8F0] px-3 text-[14px]" /></div>
         <div><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">To</label><input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-10 rounded-lg border border-[#E2E8F0] px-3 text-[14px]" /></div>
         <button onClick={runReport} className="rounded-lg bg-[#4F46E5] px-4 py-2.5 text-[14px] font-semibold text-white">Run Report</button>
         <button onClick={exportCsv} className="flex items-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-4 py-2.5 text-[14px] font-semibold text-[#334155]"><Download size={15} /> Export CSV</button>
         <button onClick={() => window.print()} className="flex items-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-3 py-2.5 text-[14px] font-semibold text-[#334155]"><Printer size={15} /></button>
         {isFetching && <span className="text-[13px] text-[#475569]">Running…</span>}
-      </div>
+      </Card>
 
       {/* CAP benchmarks — dedicated status layout */}
       {def.id === 'cap-benchmarks' ? (
@@ -79,19 +79,19 @@ export default function ReportRunnerPage() {
             {([['ASC:SIL Ratio', 'ascSilRatio', 'ratio'], ['Unsatisfactory Rate', 'unsatisfactoryRate', 'percent'], ['TAT Compliance', 'tatCompliance', 'percent'], ['QC Pass Rate', 'qcPassRate', 'percent']] as const).map(([label, key, fmt]) => {
               const m = data?.[key]; const sc = STATUS_COLOR[m?.status] ?? STATUS_COLOR.Warning;
               return (
-                <div key={key} className={`${CARD} p-4`}>
+                <Card radius="md" elevation="soft" border="hairline" className="p-4" key={key}>
                   <div className="text-[13px] text-[#475569]">{label}</div>
                   <div className="mt-1 text-[32px] font-bold text-[#0F172A]">{m ? fmtValue(m.value, fmt as any) : '—'}</div>
                   <div className="mt-1 text-[12px] text-[#475569]">Benchmark {m ? fmtValue(m.benchmark, fmt as any) : '—'}</div>
                   {m && <span className="mt-2 inline-flex rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: sc.bg, color: sc.fg }}>{m.status}</span>}
-                </div>
+                </Card>
               );
             })}
           </div>
-          <div className={`${CARD} flex items-center justify-between p-5`}>
+          <Card radius="md" elevation="soft" border="hairline" className="flex items-center justify-between p-5">
             <span className="text-[15px] font-bold text-[#0F172A]">Overall Compliance</span>
             {data?.overall && <span className="rounded-full px-3 py-1 text-[14px] font-bold" style={{ background: (STATUS_COLOR[data.overall] ?? STATUS_COLOR.Warning).bg, color: (STATUS_COLOR[data.overall] ?? STATUS_COLOR.Warning).fg }}>{data.overall}</span>}
-          </div>
+          </Card>
         </div>
       ) : (
         <div className="printable">
@@ -99,17 +99,17 @@ export default function ReportRunnerPage() {
           {def.kpis && (
             <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
               {def.kpis.map((k) => (
-                <div key={k.path} className={`${CARD} p-4`}>
+                <Card radius="md" elevation="soft" border="hairline" className="p-4" key={k.path}>
                   <div className="text-[13px] text-[#475569]">{k.label}</div>
                   <div className="mt-1 text-[32px] font-bold leading-none text-[#0F172A]">{data ? fmtValue(getPath(data, k.path), k.format) : '—'}</div>
-                </div>
+                </Card>
               ))}
             </div>
           )}
 
           {/* Chart */}
           {def.chart && chartData.length > 0 && (
-            <div className={`${CARD} mb-5 p-4`}>
+            <Card radius="md" elevation="soft" border="hairline" className="mb-5 p-4">
               <ResponsiveContainer width="100%" height={300}>
                 {def.chart.type === 'donut' ? (
                   <PieChart>
@@ -136,12 +136,12 @@ export default function ReportRunnerPage() {
                   </LineChart>
                 )}
               </ResponsiveContainer>
-            </div>
+            </Card>
           )}
 
           {/* Table */}
           {def.table && (
-            <div className={`${CARD} overflow-hidden`}>
+            <Card radius="md" elevation="soft" border="hairline" className="overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-[13px]">
                   <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]">
@@ -160,7 +160,7 @@ export default function ReportRunnerPage() {
                   </tbody>
                 </table>
               </div>
-            </div>
+            </Card>
           )}
         </div>
       )}

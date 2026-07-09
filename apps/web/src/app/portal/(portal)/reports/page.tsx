@@ -6,8 +6,8 @@ import { Check, Download, Eye, FileText, FolderOpen, Search } from 'lucide-react
 import { useQuery } from '@tanstack/react-query';
 import { portalApi } from '@/lib/portal-api';
 import { fmtDate, isAuthorized, specLabel } from '@/lib/portal-ui';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#E5E7EB] bg-white';
 
 type Range = 'all' | 'month' | 'quarter';
 
@@ -74,21 +74,21 @@ export default function PortalReportsPage() {
       {/* Grid */}
       {isFetching && reports.length === 0 ? (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, i) => <div key={i} className={`${CARD} h-[220px] animate-pulse`} />)}
+          {Array.from({ length: 4 }).map((_, i) => <Card radius="md" elevation="none" border="gray" className="h-[220px] animate-pulse" key={i} />)}
         </div>
       ) : reports.length === 0 ? (
-        <div className={`${CARD} flex flex-col items-center gap-2 px-10 py-20 text-center`}>
+        <Card radius="md" elevation="none" border="gray" className="flex flex-col items-center gap-2 px-10 py-20 text-center">
           <FolderOpen size={40} className="text-[#CBD5E1]" />
           <div className="mt-2 text-[18px] font-semibold text-[#0a0b1a]">No reports yet</div>
           <div className="text-[14px] text-[#64748b]">Authorized reports will appear here, ready to download.</div>
-        </div>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           {reports.map((r) => {
             const spec = specLabel(r.specimens?.[0]?.type);
             const pages = r.specimens?.length ? Math.max(2, r.specimens.length + 1) : 2;
             return (
-              <div key={r.id} className={`${CARD} flex flex-col p-6`}>
+              <Card radius="md" elevation="none" border="gray" className="flex flex-col p-6" key={r.id}>
                 <div className="mb-4 flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2.5">
@@ -121,7 +121,7 @@ export default function PortalReportsPage() {
                     <Eye size={16} />
                   </button>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>

@@ -1,5 +1,5 @@
 // Shared types + display metadata for Appointments. Zero orange — RecallVisit
-// and Rescheduled use detector-safe amber (#B45309).
+// and Rescheduled use the safe amber token var(--color-warning) = #A16207.
 
 export type AppointmentType = 'SpecimenCollection' | 'FollowUp' | 'RecallVisit' | 'Consultation' | 'Other';
 export type AppointmentStatus = 'Scheduled' | 'Confirmed' | 'CheckedIn' | 'Completed' | 'NoShow' | 'Cancelled' | 'Rescheduled';
@@ -46,7 +46,7 @@ export const normStatus = (s: string): AppointmentStatus => (LEGACY_STATUS[s] ??
 export const TYPE_META: Record<AppointmentType, { label: string; color: string; bg: string }> = {
   SpecimenCollection: { label: 'Specimen Collection', color: '#4F46E5', bg: '#EEF2FF' },
   FollowUp: { label: 'Follow-Up', color: '#1D4ED8', bg: '#DBEAFE' },
-  RecallVisit: { label: 'Recall Visit', color: '#B45309', bg: '#FFFBEB' }, // amber, not orange
+  RecallVisit: { label: 'Recall Visit', color: 'var(--color-warning)', bg: '#FFFBEB' }, // var(--color-warning); safe at every alpha
   Consultation: { label: 'Consultation', color: '#6D28D9', bg: '#EDE9FE' },
   Other: { label: 'Other', color: '#475569', bg: '#F1F5F9' },
 };
@@ -58,7 +58,7 @@ export const STATUS_META: Record<AppointmentStatus, { label: string; fg: string;
   Completed: { label: 'Completed', fg: '#16A34A', bg: '#DCFCE7' },
   NoShow: { label: 'No Show', fg: '#B91C1C', bg: '#FEE2E2' },
   Cancelled: { label: 'Cancelled', fg: '#475569', bg: '#F1F5F9', strike: true },
-  Rescheduled: { label: 'Rescheduled', fg: '#B45309', bg: '#FFFBEB' }, // amber, not orange
+  Rescheduled: { label: 'Rescheduled', fg: 'var(--color-warning)', bg: '#FFFBEB' }, // var(--color-warning); safe at every alpha
 };
 
 export const APPT_TYPES: AppointmentType[] = ['SpecimenCollection', 'FollowUp', 'RecallVisit', 'Consultation', 'Other'];

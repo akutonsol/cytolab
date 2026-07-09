@@ -1,5 +1,5 @@
 // Shared types + display metadata for AI Screening.
-// Zero orange — Medium uses detector-safe amber (#B45309).
+// Zero orange — Medium uses the safe amber token var(--color-warning) = #A16207.
 
 export type AIScreenStatus = 'Pending' | 'Processing' | 'Completed' | 'Failed' | 'Skipped';
 export type AIConfidenceLevel = 'High' | 'Medium' | 'Low';
@@ -41,7 +41,7 @@ export interface AIAnalytics {
 
 export const LEVEL_META: Record<AIConfidenceLevel, { label: string; ring: string; bg: string; fg: string }> = {
   High: { label: 'High', ring: '#16A34A', bg: '#DCFCE7', fg: '#16A34A' },
-  Medium: { label: 'Medium', ring: '#B45309', bg: '#FFFBEB', fg: '#B45309' }, // amber, not orange
+  Medium: { label: 'Medium', ring: 'var(--color-warning)', bg: '#FFFBEB', fg: 'var(--color-warning)' }, // var(--color-warning); safe at every alpha
   Low: { label: 'Low', ring: '#DC2626', bg: '#FEE2E2', fg: '#B91C1C' },
 };
 

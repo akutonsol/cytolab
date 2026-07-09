@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
+import { Badge as UiBadge } from '@/components/ui';
 
 /** Page shell used by every Security Center screen — consistent header + body. */
 export function SecurityPage({
@@ -61,7 +62,7 @@ export function KpiCard({
   const toneColor = {
     default: '#4F46E5',
     danger: '#DC2626',
-    warning: '#B45309',
+    warning: 'var(--color-warning)',
     ok: '#16A34A',
   }[tone];
   return (
@@ -89,14 +90,19 @@ export function Card({ title, children, actions }: { title?: string; children: R
   );
 }
 
+/**
+ * Thin wrapper over the `Badge` primitive, kept only because this module's callers
+ * pass raw `bg`/`color` values. The geometry now has a single definition in
+ * `ui/Badge` (`size="sm"` reproduces the previous px-2.5 py-0.5 text-xs exactly).
+ *
+ * TODO: migrate the callers to `tone` / `domain` and delete this shim — the raw
+ * hex props are the last thing keeping it alive.
+ */
 export function Badge({ children, bg, color }: { children: ReactNode; bg: string; color: string }) {
   return (
-    <span
-      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
-      style={{ background: bg, color }}
-    >
+    <UiBadge size="sm" style={{ background: bg, color }}>
       {children}
-    </span>
+    </UiBadge>
   );
 }
 

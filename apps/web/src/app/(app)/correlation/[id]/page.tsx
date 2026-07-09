@@ -11,8 +11,8 @@ import {
   CORRELATION_RESULTS, HISTOLOGY_SOURCES, RESULT_META, patientName, shortDate,
   type CorrelationCase, type CorrelationResult, type HistologySource,
 } from '@/lib/correlation';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 const Info = ({ label, value }: { label: string; value: React.ReactNode }) => (
   <div className="mb-2.5"><div className="text-[11px] font-semibold uppercase tracking-wide text-[#475569]">{label}</div><div className="mt-0.5 text-[14px] text-[#0F172A]">{value}</div></div>
@@ -57,14 +57,14 @@ export default function CorrelationDetailPage() {
 
       {/* Two-column: cytology | histology */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <div className={`${CARD} p-5`}>
+        <Card radius="md" elevation="soft" border="hairline" className="p-5">
           <div className="mb-3 flex items-center gap-2 text-[15px] font-bold text-[#0F172A]"><FlaskConical size={18} className="text-[#4F46E5]" /> Cytology</div>
           <Info label="Record" value={c.cytologyRecord ? (c.cytologyRecord.labNumber ?? c.cytologyRecord.identifier) : '—'} />
           <Info label="Date" value={shortDate(c.cytologyDate)} />
           <Info label="Diagnosis" value={c.cytologyDiagnosis} />
           {bethesda && <Info label="Bethesda" value={<span>{bethesda.shortCode || '—'}{bethesda.generatedNarrative ? <span className="mt-1 block text-[12px] text-[#475569]">{bethesda.generatedNarrative.slice(0, 200)}</span> : null}</span>} />}
-        </div>
-        <div className={`${CARD} p-5`}>
+        </Card>
+        <Card radius="md" elevation="soft" border="hairline" className="p-5">
           <div className="mb-3 flex items-center gap-2 text-[15px] font-bold text-[#0F172A]"><Microscope size={18} className="text-[#7C3AED]" /> Histology</div>
           {c.histologyDiagnosis || c.histologyDate ? (
             <>
@@ -75,11 +75,11 @@ export default function CorrelationDetailPage() {
           ) : (
             <div className="text-[14px] text-[#475569]">No histology recorded yet.</div>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Assessment */}
-      <div className={`${CARD} mt-5 p-5`} style={{ borderLeft: `4px solid ${m.fg}` }}>
+      <Card radius="md" elevation="soft" border="hairline" className="mt-5 p-5" style={{ borderLeft: `4px solid ${m.fg}` }}>
         <div className="mb-2 text-[15px] font-bold text-[#0F172A]">Correlation Assessment</div>
         {c.discordanceReason && <Info label="Discordance Reason" value={c.discordanceReason} />}
         <Info label="Review status" value={c.reviewedAt ? <span className="text-[#16A34A]">Reviewed {shortDate(c.reviewedAt)}{c.reviewedBy ? ` by ${c.reviewedBy.firstName} ${c.reviewedBy.lastName}` : ''}</span> : c.reviewRequired ? <span className="text-[#B91C1C]">Review required</span> : 'No review required'} />
@@ -94,7 +94,7 @@ export default function CorrelationDetailPage() {
 
         <button onClick={() => setEditOpen((v) => !v)} className="mt-3 text-[13px] font-semibold text-[#4F46E5] hover:underline">{editOpen ? 'Hide' : 'Update histology / result'}</button>
         {editOpen && <UpdateForm caseId={id} current={c} onDone={() => { setEditOpen(false); invalidate(); }} />}
-      </div>
+      </Card>
     </div>
   );
 }

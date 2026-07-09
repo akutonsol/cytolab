@@ -13,6 +13,7 @@ import { useFeatures } from '@/lib/feature-context';
 import { FeatureGate } from '@/components/FeatureGate';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
+import { Card } from '@/components/ui';
 
 interface Rec {
   id: string;
@@ -98,7 +99,6 @@ const firstEventAt = (hist: Rec['statusHistory'], status: string): number | null
 };
 const authorizedAtOf = (r: Rec) => r.resultSheets?.find((s) => s.authorized)?.authorizedAt ?? r.createdAt;
 
-const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 
 function Sparkline({ color, data, w = 96, h = 34 }: { color: string; data: number[]; w?: number; h?: number }) {
   const max = Math.max(...data), min = Math.min(...data), range = max - min || 1;
@@ -288,7 +288,7 @@ export default function AuthorizerPage() {
       {/* KPI strip */}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {kpis.map(({ label, value, sub, subColor, icon: Icon, spark, data: sd }) => (
-          <div key={label} className={`${CARD} p-5`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-5" key={label}>
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
@@ -300,12 +300,12 @@ export default function AuthorizerPage() {
               </div>
               <Sparkline color={spark} data={sd} />
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 
       {/* Filter bar */}
-      <div className={`${CARD} mb-6 flex flex-wrap items-center gap-3 p-4`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="mb-6 flex flex-wrap items-center gap-3 p-4">
         <div className="flex h-11 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-slate-500">
           <Search size={16} />
           <input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search lab #, patient, client, specimen..."
@@ -330,13 +330,13 @@ export default function AuthorizerPage() {
         <button className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 hover:bg-slate-50">
           <Filter size={15} /> More Filters
         </button>
-      </div>
+      </Card>
 
       {/* Main split */}
       <div className="flex flex-col gap-6 xl:flex-row">
         {/* LEFT — records table */}
         <div className="min-w-0 flex-1">
-          <div className={`${CARD} p-0`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-0">
             <div className="flex flex-wrap items-center justify-between gap-3 px-6 pt-6">
               <h2 className="text-base font-semibold text-charcoal-heading">Records · {totalRecords}</h2>
             </div>
@@ -430,13 +430,13 @@ export default function AuthorizerPage() {
             {filtered.length > 0 && (
               <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
             )}
-          </div>
+          </Card>
         </div>
 
         {/* RIGHT — sidebar */}
         <div className="flex w-full shrink-0 flex-col gap-6 xl:w-[320px]">
           {/* Priority Breakdown */}
-          <div className={`${CARD} p-5`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-5">
             <div className="mb-4 text-sm font-semibold text-charcoal-heading">Priority Breakdown</div>
             <div className="flex items-center gap-5">
               <PriorityDonut total={awaiting.length} segments={PRIORITY_ORDER.map((p) => ({ value: priorityCounts[p], color: PRIORITY_META[p].color }))} />
@@ -451,10 +451,10 @@ export default function AuthorizerPage() {
                 ))}
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Average Review Time */}
-          <div className={`${CARD} p-5`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-5">
             <div className="mb-3 text-sm font-semibold text-charcoal-heading">Average Review Time</div>
             <div className="flex items-center gap-3">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><Clock size={20} /></span>
@@ -464,10 +464,10 @@ export default function AuthorizerPage() {
               </div>
               <Sparkline color="#6366F1" data={[5, 4, 4, 3, 4, 3, 2]} />
             </div>
-          </div>
+          </Card>
 
           {/* Recent Authorizations */}
-          <div className={`${CARD} p-5`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-5">
             <div className="mb-3 flex items-center justify-between">
               <div className="text-sm font-semibold text-charcoal-heading">Recent Authorizations</div>
               <button onClick={() => setTab('approved')} className="text-xs font-semibold text-primary hover:underline">View all</button>
@@ -487,10 +487,10 @@ export default function AuthorizerPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
 
           {/* AI Confidence Overview */}
-          <div className={`${CARD} p-5`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-5">
             <div className="mb-3 flex items-center gap-2">
               <div className="text-sm font-semibold text-charcoal-heading">AI Confidence Overview</div>
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Sample</span>
@@ -512,7 +512,7 @@ export default function AuthorizerPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         </div>
       </div>
 

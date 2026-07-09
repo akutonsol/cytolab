@@ -17,7 +17,7 @@ import { useFeatures } from '@/lib/feature-context';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import type { FormType } from '@/lib/specimen-types';
-import { Card } from '@/components/ui';
+import { Card, Button } from '@/components/ui';
 
 interface Rec {
   id: string; labNumber?: string | null; identifier?: string; formType?: string | null; status: string; urgent: boolean;
@@ -315,7 +315,7 @@ export default function SamplesPage() {
           <p className="mt-1 text-sm text-secondary">Real-time status tracking for clinical diagnostic samples.</p>
         </div>
         <div className="flex items-center gap-2.5">
-          {can('record:create') && <button onClick={openChoose} className="btn-primary"><Plus size={16} /> New Sample</button>}
+          {can('record:create') && <Button onClick={openChoose}><Plus size={16} /> New Sample</Button>}
         </div>
       </div>
 
@@ -411,7 +411,7 @@ export default function SamplesPage() {
                         </div>
                         <div className="mt-4 flex gap-2">
                           <button onClick={clearFilters} className="flex-1 rounded-lg border border-slate-200 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Clear filters</button>
-                          <button onClick={() => setFiltersOpen(false)} className="btn-primary flex-1 justify-center">Apply</button>
+                          <Button onClick={() => setFiltersOpen(false)} className="flex-1 justify-center">Apply</Button>
                         </div>
                       </div>
                     </>
@@ -604,7 +604,7 @@ export default function SamplesPage() {
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-1 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Delete this sample?</h3><button onClick={() => setConfirmDel(null)} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={16} /></button></div>
             <p className="mt-1 text-sm text-secondary">{confirmDel.labNumber ?? 'This sample'} will be permanently deleted.</p>
-            <div className="mt-5 flex justify-end gap-2"><button className="btn-secondary" onClick={() => setConfirmDel(null)}>Cancel</button><button className="btn-primary" style={{ background: 'var(--red-600)' }} disabled={del.isPending} onClick={() => del.mutate(confirmDel.id)}>{del.isPending ? 'Deleting…' : 'Delete'}</button></div>
+            <div className="mt-5 flex justify-end gap-2"><Button variant="secondary" onClick={() => setConfirmDel(null)}>Cancel</Button><Button style={{ background: 'var(--red-600)' }} disabled={del.isPending} onClick={() => del.mutate(confirmDel.id)}>{del.isPending ? 'Deleting…' : 'Delete'}</Button></div>
           </div>
         </div>
       )}

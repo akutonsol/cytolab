@@ -19,7 +19,9 @@ import { cn } from './cn';
  * yields an unresolved var, which is loud in review — not a silent wrong colour.)
  */
 type Tone = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'primary';
-type Size = 'sm' | 'md';
+type Size = 'xs' | 'sm' | 'md' | 'lg';
+/** The app ships pills at three weights; `semibold` is the status-pill default. */
+type Weight = 'normal' | 'medium' | 'semibold';
 
 const TONE: Record<Tone, string> = {
   success: 'bg-success-soft text-success',
@@ -31,8 +33,16 @@ const TONE: Record<Tone, string> = {
 };
 
 const SIZE: Record<Size, string> = {
-  sm: 'px-2 py-0.5 text-[11px]',
-  md: 'px-2.5 py-1 text-xs',
+  xs: 'px-2 py-0.5 text-[11px] leading-none',
+  sm: 'px-2.5 py-0.5 text-xs',
+  md: 'px-2.5 py-1 text-xs leading-none',
+  lg: 'px-3 py-1 text-sm',
+};
+
+const WEIGHT: Record<Weight, string> = {
+  normal: '',
+  medium: 'font-medium',
+  semibold: 'font-semibold',
 };
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
@@ -40,13 +50,14 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   /** A Tier-2.5 domain token stem, e.g. `workflow-complete`, `specimen-urine`. */
   domain?: string;
   size?: Size;
+  weight?: Weight;
   /** Leading status dot in the current text colour. */
   dot?: boolean;
   icon?: ReactNode;
   children?: ReactNode;
 }
 
-export function Badge({ tone, domain, size = 'md', dot, icon, className, children, style, ...rest }: BadgeProps) {
+export function Badge({ tone, domain, size = 'md', weight = 'semibold', dot, icon, className, children, style, ...rest }: BadgeProps) {
   const domainStyle = domain
     ? { background: `var(--${domain}-soft)`, color: `var(--${domain})` }
     : undefined;
@@ -54,9 +65,15 @@ export function Badge({ tone, domain, size = 'md', dot, icon, className, childre
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-pill font-semibold leading-none',
+        'inline-flex items-center rounded-pill',
+        // gap only when there is something to sit beside the label — a bare pill
+        // must be geometrically identical to the hand-written spans it replaces.
+        (dot || icon) && 'gap-1.5',
         SIZE[size],
-        !domain && TONE[tone ?? 'neutral'],
+        WEIGHT[weight],
+        // `tone` is skipped when neither tone nor domain is given: the call site is
+        // supplying its own colour classes (the legacy pill shells did exactly this).
+        !domain && tone && TONE[tone],
         className,
       )}
       style={{ ...domainStyle, ...style }}

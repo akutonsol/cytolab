@@ -7,8 +7,8 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
 import { fmtDate, fmtTime, SHIFT_CHIP } from '@/lib/workforce';
+import { Card } from '@/components/ui';
 
-const CARD = 'glass-card rounded-2xl';
 const fmtJMD = (cents?: number) => 'J$' + Math.round((cents ?? 0) / 100).toLocaleString('en-US');
 const initials = (s: string) => (s || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 const EVENT_LABEL: Record<string, string> = { ClockIn: 'Clock In', ClockOut: 'Clock Out', BreakStart: 'Break Start', BreakEnd: 'Break End', LunchStart: 'Lunch Start', LunchEnd: 'Lunch End' };
@@ -33,20 +33,20 @@ function Overview({ e }: { e: any }) {
   ];
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      <div className={`${CARD} p-6`}>
+      <Card radius="md" elevation="none" border="none" className="glass-card p-6">
         <div className="mb-4 font-label-sm text-label-sm uppercase tracking-wider text-secondary">Employment</div>
         <dl className="divide-y divide-outline-variant/30">
           {rows.map(([k, v]) => <div key={k} className="flex items-center justify-between py-2.5 text-sm"><dt className="text-secondary">{k}</dt><dd className="text-on-surface">{v}</dd></div>)}
         </dl>
-      </div>
-      <div className={`${CARD} p-6`}>
+      </Card>
+      <Card radius="md" elevation="none" border="none" className="glass-card p-6">
         <div className="mb-4 font-label-sm text-label-sm uppercase tracking-wider text-secondary">Contact & Banking</div>
         <dl className="divide-y divide-outline-variant/30">
           {([['Email', e.user?.email ?? '—'], ['Address', e.address ?? '—'], ['Emergency', e.emergencyContactName ?? '—'], ['Emergency phone', e.emergencyContactPhone ?? '—'], ['Bank', e.bankName ?? '—'], ['Account #', e.bankAccount ?? '—'], ['TRN', e.trn ?? '—']] as [string, string][]).map(([k, v]) => (
             <div key={k} className="flex items-center justify-between py-2.5 text-sm"><dt className="text-secondary">{k}</dt><dd className="text-on-surface">{v}</dd></div>
           ))}
         </dl>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -56,7 +56,7 @@ function ClockHistoryTab({ id }: { id: string }) {
   const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500';
   const CELL = 'px-4 py-3 align-middle text-sm';
   return (
-    <div className={`${CARD} overflow-hidden`}>
+    <Card radius="md" elevation="none" border="none" className="glass-card overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead><tr className="border-b border-outline-variant/40"><th className={TH}>Date</th><th className={TH}>Time</th><th className={TH}>Event</th><th className={TH}>Method</th><th className={TH}>Notes</th></tr></thead>
@@ -74,7 +74,7 @@ function ClockHistoryTab({ id }: { id: string }) {
           </tbody>
         </table>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -83,7 +83,7 @@ function TimesheetsTab({ id }: { id: string }) {
   const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500';
   const CELL = 'px-4 py-3 align-middle text-sm';
   return (
-    <div className={`${CARD} overflow-hidden`}>
+    <Card radius="md" elevation="none" border="none" className="glass-card overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead><tr className="border-b border-outline-variant/40"><th className={TH}>Period</th><th className={`${TH} text-right`}>Regular</th><th className={`${TH} text-right`}>OT</th><th className={`${TH} text-right`}>Total</th><th className={TH}>Status</th></tr></thead>
@@ -104,7 +104,7 @@ function TimesheetsTab({ id }: { id: string }) {
           </tbody>
         </table>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -123,7 +123,7 @@ function ScheduleTab({ id }: { id: string }) {
   }, [schedule, id]);
   const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   return (
-    <div className={`${CARD} p-5`}>
+    <Card radius="md" elevation="none" border="none" className="glass-card p-5">
       <div className="mb-4 flex items-center gap-2">
         <button onClick={() => setWeekStart(new Date(+weekStart - 7 * 86_400_000))} className="rounded-lg border border-slate-200 px-2.5 py-1 text-sm text-slate-500 hover:bg-slate-50">‹</button>
         <span className="text-sm font-semibold text-charcoal-heading">Week of {fmtDate(days[0])}</span>
@@ -141,7 +141,7 @@ function ScheduleTab({ id }: { id: string }) {
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -156,7 +156,7 @@ function PerformanceTab({ id }: { id: string }) {
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      <div className={`${CARD} p-6`}>
+      <Card radius="md" elevation="none" border="none" className="glass-card p-6">
         <div className="mb-4 flex items-center justify-between">
           <span className="font-label-sm text-label-sm uppercase tracking-wider text-secondary">Composite Score</span>
           <span className="text-4xl font-bold" style={{ color: scoreColor(composite?.score ?? 0) }}>{composite?.score ?? 0}</span>
@@ -169,10 +169,10 @@ function PerformanceTab({ id }: { id: string }) {
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
       <div className="flex flex-col gap-6">
-        <div className={`${CARD} p-6`}>
+        <Card radius="md" elevation="none" border="none" className="glass-card p-6">
           <div className="mb-3 font-label-sm text-label-sm uppercase tracking-wider text-secondary">Last Review</div>
           {lastReview ? (
             <div>
@@ -184,9 +184,9 @@ function PerformanceTab({ id }: { id: string }) {
               {lastReview.comments && <p className="mt-2 text-sm text-on-surface">{lastReview.comments}</p>}
             </div>
           ) : <p className="text-sm text-slate-500">No reviews yet.</p>}
-        </div>
+        </Card>
 
-        <div className={`${CARD} p-6`}>
+        <Card radius="md" elevation="none" border="none" className="glass-card p-6">
           <div className="mb-3 font-label-sm text-label-sm uppercase tracking-wider text-secondary">Active Goals</div>
           {goals.length === 0 ? <p className="text-sm text-slate-500">No active goals.</p> : (
             <div className="flex flex-col gap-3">
@@ -198,7 +198,7 @@ function PerformanceTab({ id }: { id: string }) {
               ))}
             </div>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );
@@ -226,7 +226,7 @@ function EmployeeDetail({ id }: { id: string }) {
       <div className="py-8">
         <Link href="/employees" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"><ArrowLeft size={15} /> Employees</Link>
 
-        <div className={`${CARD} mb-6 flex flex-wrap items-center gap-4 p-6`}>
+        <Card radius="md" elevation="none" border="none" className="glass-card mb-6 flex flex-wrap items-center gap-4 p-6">
           <span style={{ background: '#EEF2FF', color: '#4F46E5' }} className="grid h-16 w-16 shrink-0 place-items-center rounded-full text-xl font-bold">{initials(name)}</span>
           <div className="min-w-0 flex-1">
             <h1 className="font-headline-lg text-headline-lg text-charcoal-heading">{name}</h1>
@@ -235,7 +235,7 @@ function EmployeeDetail({ id }: { id: string }) {
               {e.user?.email && <><span>·</span><span className="inline-flex items-center gap-1"><Mail size={13} /> {e.user.email}</span></>}
             </div>
           </div>
-        </div>
+        </Card>
 
         <div className="mb-6 flex flex-wrap gap-1 border-b border-outline-variant/40">
           {tabs.map((t) => (

@@ -8,8 +8,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
 import { AGREEMENT_META, STATUS_META, TIMELINE, URGENCY_META, dateTime, shortDate, timelineIndex, type Consult } from '@/lib/teleconsult';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 
 export default function ConsultDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -53,7 +53,7 @@ export default function ConsultDetailPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* LEFT — case + response */}
         <div className="flex flex-col gap-4 lg:col-span-2">
-          <div className={`${CARD} p-5`}>
+          <Card radius="md" elevation="soft" border="hairline" className="p-5">
             <div className="mb-3 text-[12px] font-bold uppercase tracking-wide text-[#475569]">Case Details (de-identified)</div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-[13px]">
               <div><div className="text-[11px] font-semibold uppercase tracking-wide text-[#475569]">Patient</div><div className="mt-0.5 font-semibold text-[#0F172A]">{c.patientInitials}</div></div>
@@ -67,10 +67,10 @@ export default function ConsultDetailPage() {
               <div className="text-[11px] font-semibold uppercase tracking-wide text-[#475569]">Specific Question</div>
               <p className="mt-1 text-[14px] font-medium text-[#0F172A]">{c.specificQuestion}</p>
             </div>
-          </div>
+          </Card>
 
           {/* Timeline */}
-          <div className={`${CARD} p-5`}>
+          <Card radius="md" elevation="soft" border="hairline" className="p-5">
             <div className="mb-4 text-[12px] font-bold uppercase tracking-wide text-[#475569]">Progress</div>
             <div className="flex items-center">
               {TIMELINE.map((stage, i) => (
@@ -83,11 +83,11 @@ export default function ConsultDetailPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
 
           {/* Response */}
           {c.consultantResponse ? (
-            <div className={`${CARD} p-5`}>
+            <Card radius="md" elevation="soft" border="hairline" className="p-5">
               <div className="mb-2 flex items-center justify-between">
                 <div className="text-[12px] font-bold uppercase tracking-wide text-[#475569]">Consultant Response</div>
                 {c.agreementLevel && <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: AGREEMENT_META[c.agreementLevel].bg, color: AGREEMENT_META[c.agreementLevel].fg }}>{AGREEMENT_META[c.agreementLevel].label}</span>}
@@ -102,15 +102,15 @@ export default function ConsultDetailPage() {
                   <button onClick={() => act.mutate('decline')} className="rounded-lg border border-[#E2E8F0] px-4 py-2 text-[13px] font-semibold text-[#475569]">Decline</button>
                 </div>
               )}
-            </div>
+            </Card>
           ) : (
-            <div className={`${CARD} p-5 text-[14px] text-[#475569]`}>Awaiting the consultant's response.</div>
+            <Card radius="md" elevation="soft" border="hairline" className="p-5 text-[14px] text-[#475569]">Awaiting the consultant's response.</Card>
           )}
         </div>
 
         {/* RIGHT — request details */}
         <div className="flex flex-col gap-4">
-          <div className={`${CARD} p-5`}>
+          <Card radius="md" elevation="soft" border="hairline" className="p-5">
             <div className="mb-3 text-[12px] font-bold uppercase tracking-wide text-[#475569]">Consultant</div>
             <div className="text-[15px] font-bold text-[#0F172A]">{c.consultantName}</div>
             {c.consultantInstitution && <div className="text-[13px] text-[#475569]">{c.consultantInstitution}</div>}
@@ -119,16 +119,16 @@ export default function ConsultDetailPage() {
               <div><div className="text-[11px] font-semibold uppercase tracking-wide text-[#475569]">Urgency</div><div className="mt-0.5 font-semibold" style={{ color: URGENCY_META[c.urgency].fg }}>{c.urgency}</div></div>
               <div><div className="text-[11px] font-semibold uppercase tracking-wide text-[#475569]">Due</div><div className="mt-0.5" style={{ color: c.isOverdue ? '#B91C1C' : '#334155' }}>{shortDate(c.dueDate)}</div></div>
             </div>
-          </div>
+          </Card>
 
-          <div className={`${CARD} p-5`}>
+          <Card radius="md" elevation="soft" border="hairline" className="p-5">
             <div className="mb-2 text-[12px] font-bold uppercase tracking-wide text-[#475569]">Shared Materials</div>
             {shared.length === 0 ? <div className="text-[13px] text-[#475569]">Case summary only.</div> : (
               <ul className="flex flex-col gap-1 text-[13px] text-[#334155]">{shared.map((s) => <li key={s} className="flex items-center gap-1.5"><Check size={13} className="text-[#16A34A]" /> {s}</li>)}</ul>
             )}
-          </div>
+          </Card>
 
-          <div className={`${CARD} p-5`}>
+          <Card radius="md" elevation="soft" border="hairline" className="p-5">
             <div className="mb-2 text-[12px] font-bold uppercase tracking-wide text-[#475569]">Access Link</div>
             <div className="flex items-center gap-2">
               <input readOnly value={publicLink} className="h-9 flex-1 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-2 text-[12px] text-[#475569] outline-none" />
@@ -136,7 +136,7 @@ export default function ConsultDetailPage() {
             </div>
             <div className="mt-1.5 text-[11px] text-[#475569]">Expires {shortDate(c.tokenExpiresAt)}</div>
             <button onClick={() => act.mutate('resend')} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#E2E8F0] px-3 py-2 text-[13px] font-semibold text-[#4F46E5] hover:bg-[#EEF3FF]"><Send size={14} /> Resend Link</button>
-          </div>
+          </Card>
         </div>
       </div>
     </div>

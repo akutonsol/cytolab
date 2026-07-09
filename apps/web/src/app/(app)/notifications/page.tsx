@@ -10,6 +10,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
+import { Button } from '@/components/ui';
 
 // ── Unified notification model (merges /notifications + /workforce/notifications) ─
 interface UItem {
@@ -301,11 +302,11 @@ function Detail({ n, onClose, onView, onMarkRead }: { n: UItem; onClose: () => v
 
       <div className="mt-5 flex flex-col gap-2">
         {viewRoute && (
-          <button onClick={() => onView(viewRoute)} className="btn-primary w-full justify-center">
+          <Button onClick={() => onView(viewRoute)} className="w-full justify-center">
             View {tkt ? 'Ticket' : 'Details'} <ExternalLink size={16} />
-          </button>
+          </Button>
         )}
-        {!n.read && <button onClick={onMarkRead} className="btn-secondary w-full justify-center"><Check size={15} /> Mark as read</button>}
+        {!n.read && <Button variant="secondary" onClick={onMarkRead} className="w-full justify-center"><Check size={15} /> Mark as read</Button>}
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { ArrowRight, CalendarDays, ChevronDown, Clock, Coffee, LogIn, LogOut } f
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useMyEmployee, greeting, fmtTime, empName, SHIFT_CHIP } from '@/lib/workforce';
+import { Button } from '@/components/ui';
 
 function useNow(intervalMs = 1000) {
   const [now, setNow] = useState(() => new Date());
@@ -187,7 +188,7 @@ export function ClockWidget({ compact = false, nav = false }: { compact?: boolea
               </div>
               <div className="flex gap-2">
                 <button onClick={() => clock.mutate('ClockOut')} disabled={clock.isPending} className={`inline-flex items-center gap-2 rounded-xl bg-red-600 font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-60 ${compact ? 'px-4 py-2 text-sm' : 'px-6 py-3 text-base'}`}><LogOut size={compact ? 16 : 18} /> CLOCK OUT</button>
-                <button onClick={() => clock.mutate('BreakStart')} disabled={clock.isPending} className="btn-secondary"><Coffee size={16} /> Break</button>
+                <Button variant="secondary" onClick={() => clock.mutate('BreakStart')} disabled={clock.isPending}><Coffee size={16} /> Break</Button>
               </div>
             </>
           ) : (

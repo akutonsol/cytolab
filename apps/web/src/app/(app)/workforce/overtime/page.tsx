@@ -9,12 +9,10 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, empName, fmtDate, fmtHours, fmtMultiplier, WF_STATUS } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
+import { Card, Button, Th, Td } from '@/components/ui';
 
-const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
-const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
-const CELL = 'px-4 py-3 align-middle text-sm';
 
 function StatusBadge({ status }: { status: string }) {
   const s = WF_STATUS[status] ?? WF_STATUS.PENDING;
@@ -53,7 +51,7 @@ function CalculateModal({ onClose }: { onClose: () => void }) {
         </div>
         {result && <div className="mb-3 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">Created / updated <span className="font-semibold text-charcoal-heading">{result.daysWithOvertime}</span> overtime day(s).</div>}
         {err && <div className="mb-2 text-sm text-error">{err}</div>}
-        <div className="flex justify-end gap-2"><button onClick={onClose} className="btn-secondary">{result ? 'Close' : 'Cancel'}</button><button onClick={() => { setErr(''); calc.mutate(); }} disabled={!employeeId || calc.isPending} className="btn-primary" style={{ opacity: !employeeId || calc.isPending ? 0.5 : 1 }}>{calc.isPending ? 'Calculating…' : 'Calculate'}</button></div>
+        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>{result ? 'Close' : 'Cancel'}</Button><Button onClick={() => { setErr(''); calc.mutate(); }} disabled={!employeeId || calc.isPending}  style={{ opacity: !employeeId || calc.isPending ? 0.5 : 1 }}>{calc.isPending ? 'Calculating…' : 'Calculate'}</Button></div>
       </div>
     </div>
   );
@@ -98,7 +96,7 @@ function RuleModal({ onClose }: { onClose: () => void }) {
           <span className="text-sm text-slate-700">Requires approval</span>
         </label>
         {err && <div className="mb-2 text-sm text-error">{err}</div>}
-        <div className="flex justify-end gap-2"><button onClick={onClose} className="btn-secondary">Cancel</button><button onClick={() => { setErr(''); create.mutate(); }} disabled={!name.trim() || create.isPending} className="btn-primary" style={{ opacity: !name.trim() || create.isPending ? 0.5 : 1 }}>{create.isPending ? 'Saving…' : 'Add Rule'}</button></div>
+        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={() => { setErr(''); create.mutate(); }} disabled={!name.trim() || create.isPending}  style={{ opacity: !name.trim() || create.isPending ? 0.5 : 1 }}>{create.isPending ? 'Saving…' : 'Add Rule'}</Button></div>
       </div>
     </div>
   );
@@ -148,11 +146,11 @@ function OvertimePage() {
           <h1 className="text-[30px] font-bold leading-tight tracking-tight text-charcoal-heading">Overtime</h1>
           <p className="mt-1 text-sm text-secondary">Overtime records derived from clock events, and the rules that price them.</p>
         </div>
-        {isManager && <button onClick={() => setCalcOpen(true)} className="btn-primary"><Timer size={16} /> Calculate Overtime</button>}
+        {isManager && <Button onClick={() => setCalcOpen(true)}><Timer size={16} /> Calculate Overtime</Button>}
       </div>
 
       {/* Filters */}
-      <div className={`${CARD} mb-6 flex flex-wrap items-center gap-3 p-4`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="mb-6 flex flex-wrap items-center gap-3 p-4">
         <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary">
           <option value="">All Employees</option>
           {employees.map((e) => <option key={e.id} value={e.id}>{empName(e)}</option>)}
@@ -163,32 +161,32 @@ function OvertimePage() {
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary">
           {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((s) => <option key={s} value={s}>{s === 'ALL' ? 'All Statuses' : s}</option>)}
         </select>
-      </div>
+      </Card>
 
       {/* Records */}
-      <div className={`${CARD} mb-6 overflow-hidden`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="mb-6 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
-            <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Date</th><th className={`${TH} text-right`}>Regular Hrs</th><th className={`${TH} text-right`}>Overtime Hrs</th><th className={`${TH} text-right`}>Rate</th><th className={TH}>Status</th>{isManager && <th className={`${TH} text-right`}>Actions</th>}</tr></thead>
+            <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs">Date</Th><Th density="compact" size="xs" className="text-right">Regular Hrs</Th><Th density="compact" size="xs" className="text-right">Overtime Hrs</Th><Th density="compact" size="xs" className="text-right">Rate</Th><Th density="compact" size="xs">Status</Th>{isManager && <Th density="compact" size="xs" className="text-right">Actions</Th>}</tr></thead>
             <tbody>
-              {!initialLoading && records.length === 0 && <tr><td colSpan={isManager ? 7 : 6} className="px-4 py-12 text-center text-sm text-slate-500">No overtime records. Use “Calculate Overtime” to generate them.</td></tr>}
+              {!initialLoading && records.length === 0 && <tr><Td colSpan={isManager ? 7 : 6} className="px-4 py-12 text-center text-sm text-slate-500">No overtime records. Use “Calculate Overtime” to generate them.</Td></tr>}
               {pageRows.map((r: any) => (
                 <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className={`${CELL} font-medium text-charcoal-heading`}>{empName(r.employee)}</td>
-                  <td className={`${CELL} text-slate-600`}>{fmtDate(r.date)}</td>
-                  <td className={`${CELL} text-right`}>{fmtHours(r.regularMinutes)}</td>
-                  <td className={`${CELL} text-right font-semibold text-charcoal-heading`}>{fmtHours(r.overtimeMinutes)}</td>
-                  <td className={`${CELL} text-right`}>{fmtMultiplier(r.overtimeRule?.rateMultiplierX100)}</td>
-                  <td className={CELL}><StatusBadge status={r.status} /></td>
+                  <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{empName(r.employee)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-slate-600">{fmtDate(r.date)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right">{fmtHours(r.regularMinutes)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right font-semibold text-charcoal-heading">{fmtHours(r.overtimeMinutes)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right">{fmtMultiplier(r.overtimeRule?.rateMultiplierX100)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm"><StatusBadge status={r.status} /></Td>
                   {isManager && (
-                    <td className={CELL}>
+                    <Td density="compact" tone="inherit" className="text-sm">
                       {r.status === 'PENDING' ? (
                         <div className="flex items-center justify-end gap-1.5">
                           <button onClick={() => approve.mutate(r.id)} disabled={approve.isPending} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-green-700 hover:bg-green-50" title="Approve"><Check size={16} /></button>
                           <button onClick={() => reject.mutate(r.id)} disabled={reject.isPending} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-red-600 hover:bg-red-50" title="Reject"><X size={16} /></button>
                         </div>
                       ) : <div className="text-right text-xs text-slate-500">—</div>}
-                    </td>
+                    </Td>
                   )}
                 </tr>
               ))}
@@ -196,31 +194,31 @@ function OvertimePage() {
           </table>
         </div>
         {pageRows.length > 0 && <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />}
-      </div>
+      </Card>
 
       {/* Rules (manager only, collapsible) */}
       {isManager && (
-        <div className={`${CARD} overflow-hidden`}>
+        <Card radius="sm" elevation="sm" border="subtle" className="overflow-hidden">
           <button onClick={() => setRulesShown((v) => !v)} className="flex w-full items-center justify-between px-5 py-4 text-left hover:bg-slate-50">
             <span className="flex items-center gap-2 text-base font-semibold text-charcoal-heading"><Settings2 size={17} className="text-slate-500" /> Overtime Rules</span>
             {rulesShown ? <ChevronDown size={18} className="text-slate-500" /> : <ChevronRight size={18} className="text-slate-500" />}
           </button>
           {rulesShown && (
             <div className="border-t border-slate-100 p-5">
-              <div className="mb-3 flex justify-end"><button onClick={() => setRuleOpen(true)} className="btn-secondary"><Plus size={15} /> Add Rule</button></div>
+              <div className="mb-3 flex justify-end"><Button variant="secondary" onClick={() => setRuleOpen(true)}><Plus size={15} /> Add Rule</Button></div>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
-                  <thead><tr className="border-b border-slate-100"><th className={TH}>Name</th><th className={`${TH} text-right`}>Daily</th><th className={`${TH} text-right`}>Weekly</th><th className={`${TH} text-right`}>Rate</th><th className={TH}>Approval</th><th className={TH}>Active</th></tr></thead>
+                  <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Name</Th><Th density="compact" size="xs" className="text-right">Daily</Th><Th density="compact" size="xs" className="text-right">Weekly</Th><Th density="compact" size="xs" className="text-right">Rate</Th><Th density="compact" size="xs">Approval</Th><Th density="compact" size="xs">Active</Th></tr></thead>
                   <tbody>
-                    {rules.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">No rules yet.</td></tr>}
+                    {rules.length === 0 && <tr><Td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">No rules yet.</Td></tr>}
                     {rules.map((rule: any) => (
                       <tr key={rule.id} className="border-b border-slate-100">
-                        <td className={`${CELL} font-medium text-charcoal-heading`}>{rule.name}</td>
-                        <td className={`${CELL} text-right text-slate-600`}>{fmtHours(rule.dailyThresholdMinutes)}h</td>
-                        <td className={`${CELL} text-right text-slate-600`}>{fmtHours(rule.weeklyThresholdMinutes)}h</td>
-                        <td className={`${CELL} text-right`}>{fmtMultiplier(rule.rateMultiplierX100)}</td>
-                        <td className={`${CELL} text-slate-600`}>{rule.requiresApproval ? 'Required' : 'Auto'}</td>
-                        <td className={CELL}>{rule.isActive ? <span className="text-green-700">Active</span> : <span className="text-slate-500">Inactive</span>}</td>
+                        <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{rule.name}</Td>
+                        <Td density="compact" tone="inherit" className="text-sm text-right text-slate-600">{fmtHours(rule.dailyThresholdMinutes)}h</Td>
+                        <Td density="compact" tone="inherit" className="text-sm text-right text-slate-600">{fmtHours(rule.weeklyThresholdMinutes)}h</Td>
+                        <Td density="compact" tone="inherit" className="text-sm text-right">{fmtMultiplier(rule.rateMultiplierX100)}</Td>
+                        <Td density="compact" tone="inherit" className="text-sm text-slate-600">{rule.requiresApproval ? 'Required' : 'Auto'}</Td>
+                        <Td density="compact" tone="inherit" className="text-sm">{rule.isActive ? <span className="text-green-700">Active</span> : <span className="text-slate-500">Inactive</span>}</Td>
                       </tr>
                     ))}
                   </tbody>
@@ -228,7 +226,7 @@ function OvertimePage() {
               </div>
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {calcOpen && <CalculateModal onClose={() => setCalcOpen(false)} />}

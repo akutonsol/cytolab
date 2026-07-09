@@ -10,6 +10,7 @@ import { api } from '@/lib/api';
 import { jmd, monthYear, fmtDate } from '@/lib/payroll';
 import { useFeatures } from '@/lib/feature-context';
 import { PayrollEngine } from '@/components/payroll/PayrollEngine';
+import { Button } from '@/components/ui';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Money4 { nis: number; nht: number; edTax: number; paye: number }
@@ -184,7 +185,7 @@ export default function PayrollDashboard() {
         {/* Top bar */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-3xl font-bold text-charcoal-heading">Payroll</h1>
-          <button className="btn-primary !h-12 !px-6 !text-[15px]" onClick={() => router.push('/payroll/wizard')}><Calculator size={18} /> Run Salary Payroll</button>
+          <Button className="!h-12 !px-6 !text-[15px]" onClick={() => router.push('/payroll/wizard')}><Calculator size={18} /> Run Salary Payroll</Button>
         </div>
 
         {wf && (
@@ -359,7 +360,7 @@ export default function PayrollDashboard() {
               <span className="font-display text-5xl font-bold text-[#4F46E5]">{daysLeftInMonth()}</span>
               <span className="font-body-sm text-body-sm text-secondary">days until month end</span>
             </div>
-            <button className="btn-primary mt-auto w-full justify-center" onClick={() => router.push('/payroll/wizard')}>Run Payroll <ArrowUpRight size={15} /></button>
+            <Button className="mt-auto w-full justify-center" onClick={() => router.push('/payroll/wizard')}>Run Payroll <ArrowUpRight size={15} /></Button>
           </div>
         </div>
 

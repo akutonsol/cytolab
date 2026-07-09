@@ -7,11 +7,8 @@ import { useAuth } from '@/lib/auth';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { ClientFormDrawer, type ClientRecord } from '@/components/ClientFormDrawer';
+import { Th, Td, Badge, Button } from '@/components/ui';
 
-const BADGE = 'inline-flex items-center rounded-full px-3 py-1 text-sm font-medium';
-const PILL = 'inline-flex items-center rounded-full px-3 py-1 text-sm';
-const TH = 'px-8 py-4 text-left text-sm font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
-const CELL = 'px-8 py-5 text-base text-slate-700 align-middle';
 
 // Deterministic avatar colour from the client name (sum of char codes % palette).
 const AVATAR_COLORS = ['bg-indigo-500', 'bg-violet-500', 'bg-blue-500', 'bg-teal-500', 'bg-green-500', 'bg-purple-500'];
@@ -135,7 +132,7 @@ export default function ClientsPage() {
             />
           </div>
           {can('client:create') && (
-            <button className="btn-primary" onClick={openCreate}><Plus size={16} /> New Client</button>
+            <Button onClick={openCreate}><Plus size={16} /> New Client</Button>
           )}
         </div>
       </div>
@@ -184,7 +181,7 @@ export default function ClientsPage() {
             <div className="flex-1">
               <div className="font-label-md text-label-md text-error">Failed to load</div>
               <div className="font-body-sm text-body-sm text-on-error-container">{error}</div>
-              <button className="btn-secondary mt-3" onClick={() => reset()}><RotateCcw size={14} /> Retry</button>
+              <Button variant="secondary" className="mt-3" onClick={() => reset()}><RotateCcw size={14} /> Retry</Button>
             </div>
           </div>
         )}
@@ -193,26 +190,26 @@ export default function ClientsPage() {
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-slate-100">
-                <th className={TH}>Client</th>
-                <th className={TH}>Office</th>
-                <th className={TH}>Type</th>
-                <th className={TH}>Phone</th>
-                <th className={TH}>Email</th>
-                <th className={TH}>Status</th>
-                <th className={TH}>Portal Access</th>
-                {hasEdit && <th className={TH}>Actions</th>}
+                <Th density="roomy">Client</Th>
+                <Th density="roomy">Office</Th>
+                <Th density="roomy">Type</Th>
+                <Th density="roomy">Phone</Th>
+                <Th density="roomy">Email</Th>
+                <Th density="roomy">Status</Th>
+                <Th density="roomy">Portal Access</Th>
+                {hasEdit && <Th density="roomy">Actions</Th>}
               </tr>
             </thead>
             <tbody>
               {initialLoading && !isError && (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="border-b border-slate-100">
-                    <td colSpan={colCount} className="px-6 py-4"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></td>
+                    <Td colSpan={colCount} className="px-6 py-4"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></Td>
                   </tr>
                 ))
               )}
               {!initialLoading && rows.length === 0 && !isError && (
-                <tr><td colSpan={colCount} className="px-6 py-10 text-center font-body-sm text-body-sm text-secondary">No clients found.</td></tr>
+                <tr><Td colSpan={colCount} className="px-6 py-10 text-center font-body-sm text-body-sm text-secondary">No clients found.</Td></tr>
               )}
               {rows.map((r) => {
                 const name = `${r.firstName} ${r.lastName}`.trim();
@@ -220,7 +217,7 @@ export default function ClientsPage() {
                 const hasPortal = !!(r.portalUsers && r.portalUsers.length > 0);
                 return (
                 <tr key={r.id} className="border-b border-slate-100 transition-colors hover:bg-slate-50">
-                  <td className={CELL}>
+                  <Td density="roomy" className="text-base">
                     <div className="flex items-center gap-4">
                       <ClientAvatar name={name} />
                       <div className="min-w-0">
@@ -228,34 +225,34 @@ export default function ClientsPage() {
                         <div className="text-sm text-slate-500">Client ID: {r.id.slice(0, 8)}</div>
                       </div>
                     </div>
-                  </td>
-                  <td className={CELL}>{r.officeName || '—'}</td>
-                  <td className={CELL}>
+                  </Td>
+                  <Td density="roomy" className="text-base">{r.officeName || '—'}</Td>
+                  <Td density="roomy" className="text-base">
                     {r.clientType
-                      ? <span className={`${PILL} border ${isLab ? 'border-slate-200 bg-slate-100 text-slate-600' : 'border-indigo-200 bg-indigo-50 text-indigo-600'}`}>{r.clientType.type}</span>
+                      ? <Badge size="lg" weight="normal" className={`border ${isLab ? 'border-slate-200 bg-slate-100 text-slate-600' : 'border-indigo-200 bg-indigo-50 text-indigo-600'}`}>{r.clientType.type}</Badge>
                       : '—'}
-                  </td>
-                  <td className={CELL}>{r.phoneNumber || '—'}</td>
-                  <td className={CELL}>{r.email || '—'}</td>
-                  <td className={CELL}>
+                  </Td>
+                  <Td density="roomy" className="text-base">{r.phoneNumber || '—'}</Td>
+                  <Td density="roomy" className="text-base">{r.email || '—'}</Td>
+                  <Td density="roomy" className="text-base">
                     {r.blocked
-                      ? <span className={`${BADGE} bg-error-container text-error`}>Blocked</span>
+                      ? <Badge size="lg" weight="medium" className="bg-error-container text-error">Blocked</Badge>
                       : r.active
-                        ? <span className={`${BADGE} bg-status-sage/10 text-status-sage`}>Active</span>
-                        : <span className={`${BADGE} bg-surface-container text-secondary`}>Inactive</span>}
-                  </td>
-                  <td className={CELL}>
+                        ? <Badge size="lg" weight="medium" className="bg-status-sage/10 text-status-sage">Active</Badge>
+                        : <Badge size="lg" weight="medium" className="bg-surface-container text-secondary">Inactive</Badge>}
+                  </Td>
+                  <Td density="roomy" className="text-base">
                     {hasPortal
-                      ? <span className={`${PILL} bg-indigo-100 text-indigo-700`}>Portal Access</span>
-                      : <span className={`${PILL} bg-slate-100 text-slate-500`}>No Access</span>}
-                  </td>
+                      ? <Badge size="lg" weight="normal" className="bg-indigo-100 text-indigo-700">Portal Access</Badge>
+                      : <Badge size="lg" weight="normal" className="bg-slate-100 text-slate-500">No Access</Badge>}
+                  </Td>
                   {hasEdit && (
-                    <td className={CELL}>
+                    <Td density="roomy" className="text-base">
                       <div className="flex items-center gap-2">
-                        <button onClick={() => openEdit(r)} className="btn-secondary"><Pencil size={14} /> Edit</button>
+                        <Button variant="secondary" onClick={() => openEdit(r)}><Pencil size={14} /> Edit</Button>
                         <button aria-label="More actions" className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreVertical size={16} /></button>
                       </div>
-                    </td>
+                    </Td>
                   )}
                 </tr>
                 );

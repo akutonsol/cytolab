@@ -9,8 +9,8 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, empName, fmtDate } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
+import { Card, Button } from '@/components/ui';
 
-const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 // Stable empty fallback — a fresh [] each render would retrigger the
 // infinite-scroll fetchFn (which depends on the filtered array identity).
 const NO_ROWS: any[] = [];
@@ -46,7 +46,7 @@ function GenerateModal({ onClose }: { onClose: () => void }) {
           <div className="flex-1"><label className="mb-1 block text-sm font-medium text-slate-600">Period end</label><input type="date" value={periodEnd} onChange={(e) => setEnd(e.target.value)} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary" /></div>
         </div>
         {err && <div className="mb-2 text-sm text-error">{err}</div>}
-        <div className="flex justify-end gap-2"><button onClick={onClose} className="btn-secondary">Cancel</button><button onClick={() => gen.mutate()} disabled={!employeeId || gen.isPending} className="btn-primary" style={{ opacity: !employeeId || gen.isPending ? 0.5 : 1 }}>{gen.isPending ? 'Generating…' : 'Generate'}</button></div>
+        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={() => gen.mutate()} disabled={!employeeId || gen.isPending}  style={{ opacity: !employeeId || gen.isPending ? 0.5 : 1 }}>{gen.isPending ? 'Generating…' : 'Generate'}</Button></div>
       </div>
     </div>
   );
@@ -80,16 +80,16 @@ function List() {
     <div className="w-full">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div><h1 className="text-[30px] font-bold leading-tight tracking-tight text-charcoal-heading">Timesheets</h1><p className="mt-1 text-sm text-secondary">Auto-generated from clock events; review and approve.</p></div>
-        <button onClick={() => setGenOpen(true)} className="btn-primary"><Plus size={16} /> Generate Timesheet</button>
+        <Button onClick={() => setGenOpen(true)}><Plus size={16} /> Generate Timesheet</Button>
       </div>
 
-      <div className={`${CARD} mb-6 flex flex-wrap items-center gap-3 p-4`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="mb-6 flex flex-wrap items-center gap-3 p-4">
         <select value={statusF} onChange={(e) => setStatusF(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary">
           <option value="all">All Statuses</option>{Object.keys(STATUS).map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-      </div>
+      </Card>
 
-      <div className={`${CARD} p-0`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Period</th><th className={`${TH} text-right`}>Regular Hrs</th><th className={`${TH} text-right`}>OT Hrs</th><th className={`${TH} text-right`}>Total</th><th className={TH}>Status</th><th className={`${TH} text-right`}>Actions</th></tr></thead>
@@ -125,7 +125,7 @@ function List() {
         {pageRows.length > 0 && (
           <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
         )}
-      </div>
+      </Card>
       {genOpen && <GenerateModal onClose={() => setGenOpen(false)} />}
     </div>
   );

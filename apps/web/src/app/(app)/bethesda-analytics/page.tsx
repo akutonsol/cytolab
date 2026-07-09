@@ -12,16 +12,16 @@ import {
   CAT_COLOR, PERIOD_LABELS, STATUS_COLOR, pct1, rateColor,
   type AnalyticsPeriod, type Benchmarks, type BethesdaSummary, type TechnicianRow, type TrendPoint,
 } from '@/lib/bethesda-analytics';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 
 function Kpi({ label, value, fg = '#0F172A', sub }: { label: string; value: string | number; fg?: string; sub?: string }) {
   return (
-    <div className={`${CARD} p-4`}>
+    <Card radius="md" elevation="soft" border="hairline" className="p-4">
       <div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div>
       <div className="mt-1.5 text-[12px] font-medium text-[#475569]">{label}</div>
       {sub && <div className="mt-0.5 text-[11px] text-[#475569]">{sub}</div>}
-    </div>
+    </Card>
   );
 }
 
@@ -97,7 +97,7 @@ export default function BethesdaAnalyticsPage() {
 
       {/* Row 2 — Trend (60) + Distribution (40) */}
       <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-[60fr_40fr]">
-        <div className={`${CARD} p-4`}>
+        <Card radius="md" elevation="soft" border="hairline" className="p-4">
           <div className="mb-3 text-[15px] font-bold text-[#0F172A]">Classification Trend <span className="text-[12px] font-normal text-[#475569]">· last 12 months</span></div>
           <ResponsiveContainer width="100%" height={300}>
             <ComposedChart data={trend} margin={{ top: 6, right: 6, left: -16, bottom: 0 }}>
@@ -117,9 +117,9 @@ export default function BethesdaAnalyticsPage() {
               <Line yAxisId="right" type="monotone" dataKey="abnormalityRate" stroke="#4F46E5" strokeWidth={2} dot={false} name="Abnormality %" />
             </ComposedChart>
           </ResponsiveContainer>
-        </div>
+        </Card>
 
-        <div className={`${CARD} p-4`}>
+        <Card radius="md" elevation="soft" border="hairline" className="p-4">
           <div className="mb-3 text-[15px] font-bold text-[#0F172A]">Distribution Breakdown</div>
           <div className="flex flex-col gap-2.5">
             {dist.map((d) => {
@@ -137,7 +137,7 @@ export default function BethesdaAnalyticsPage() {
               );
             })}
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Row 3 — Benchmarks (50) + HPV (50) */}
@@ -149,16 +149,16 @@ export default function BethesdaAnalyticsPage() {
               <>
                 <BenchmarkCard title="ASC:SIL Ratio" value={benchmarks.ascSilRatio.value.toFixed(2)} standard="< 3.0" status={benchmarks.ascSilRatio.status} progress={Math.min(100, (benchmarks.ascSilRatio.value / 3.0) * 100)} />
                 <BenchmarkCard title="Unsatisfactory Rate" value={`${benchmarks.unsatisfactoryRate.value.toFixed(1)}%`} standard="< 1%" status={benchmarks.unsatisfactoryRate.status} progress={Math.min(100, (benchmarks.unsatisfactoryRate.value / 1.0) * 100)} />
-                <div className={`${CARD} p-4`} style={{ borderLeft: '4px solid #475569' }}>
+                <Card radius="md" elevation="soft" border="hairline" className="p-4" style={{ borderLeft: '4px solid #475569' }}>
                   <div className="text-[14px] font-bold text-[#0F172A]">HSIL:ASC-US Ratio</div>
                   <div className="mt-1 text-[13px] text-[#475569]">Your value: <span className="font-semibold text-[#0F172A]">{benchmarks.hsil_ascus_ratio.value.toFixed(2)}</span> · {benchmarks.hsil_ascus_ratio.note}</div>
-                </div>
+                </Card>
               </>
             )}
           </div>
         </div>
 
-        <div className={`${CARD} p-4`}>
+        <Card radius="md" elevation="soft" border="hairline" className="p-4">
           <div className="mb-3 text-[15px] font-bold text-[#0F172A]">HPV Analysis</div>
           <div className="flex flex-col items-center">
             <ResponsiveContainer width="100%" height={200}>
@@ -175,11 +175,11 @@ export default function BethesdaAnalyticsPage() {
               <div className="text-[12px] text-[#475569]">HPV positivity rate (of tested)</div>
             </div>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Row 4 — Technician performance */}
-      <div className={`${CARD} overflow-hidden`}>
+      <Card radius="md" elevation="soft" border="hairline" className="overflow-hidden">
         <div className="border-b border-[#EEF2F7] p-4 text-[15px] font-bold text-[#0F172A]">Performance by Technician</div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[13px]">
@@ -212,7 +212,7 @@ export default function BethesdaAnalyticsPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -220,7 +220,7 @@ export default function BethesdaAnalyticsPage() {
 function BenchmarkCard({ title, value, standard, status, progress }: { title: string; value: string; standard: string; status: 'pass' | 'warning' | 'fail'; progress: number }) {
   const m = STATUS_COLOR[status];
   return (
-    <div className={`${CARD} p-4`} style={{ borderLeft: `4px solid ${m.border}` }}>
+    <Card radius="md" elevation="soft" border="hairline" className="p-4" style={{ borderLeft: `4px solid ${m.border}` }}>
       <div className="flex items-center justify-between">
         <div className="text-[14px] font-bold text-[#0F172A]">{title}</div>
         <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: m.bg, color: m.fg }}>{m.label}</span>
@@ -229,6 +229,6 @@ function BenchmarkCard({ title, value, standard, status, progress }: { title: st
       <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[#F1F5F9]">
         <div className="h-full rounded-full" style={{ width: `${progress}%`, background: m.border }} />
       </div>
-    </div>
+    </Card>
   );
 }

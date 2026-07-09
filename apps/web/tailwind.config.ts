@@ -140,6 +140,8 @@ const config: Config = {
         'card-hover': 'var(--shadow-card-hover)',
         'card-soft': 'var(--shadow-card-soft)',
         'card-raised': 'var(--shadow-card-raised)',
+        'card-glow': 'var(--shadow-card-glow)',
+        'card-lift': 'var(--shadow-card-lift)',
       },
       fontFamily: {
         sans: 'var(--font-family)',

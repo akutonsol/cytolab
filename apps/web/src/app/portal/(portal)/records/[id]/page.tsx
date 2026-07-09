@@ -7,8 +7,8 @@ import { ArrowLeft, CheckCircle2, Clock, Download, ExternalLink, Loader2, Messag
 import { useQuery } from '@tanstack/react-query';
 import { portalApi } from '@/lib/portal-api';
 import { fmtDate, isAuthorized, recordStep, specLabel, StatusBadge, STEPS } from '@/lib/portal-ui';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white';
 
 export default function PortalRecordDetail() {
   const id = String(useParams().id);
@@ -60,7 +60,7 @@ export default function PortalRecordDetail() {
       <div className="flex flex-col gap-6 lg:flex-row">
         {/* LEFT */}
         <div className="flex min-w-0 flex-[3] flex-col gap-6">
-          <div className={`${CARD} p-6`}>
+          <Card radius="md" elevation="none" border="hairline" className="p-6">
             <div className="flex flex-wrap items-center gap-3">
               <span className="font-display text-[24px] font-bold tracking-tight text-[#0F172A]">{r.labNumber ?? r.identifier}</span>
               <StatusBadge status={r.status} />
@@ -74,10 +74,10 @@ export default function PortalRecordDetail() {
               <Info label="Received" value={fmtDate(r.specimens?.[0]?.dateReceived ?? r.createdAt)} />
               <Info label="Client" value={clientName} />
             </div>
-          </div>
+          </Card>
 
           {/* Timeline */}
-          <div className={`${CARD} p-6`}>
+          <Card radius="md" elevation="none" border="hairline" className="p-6">
             <h2 className="text-[15px] font-bold text-[#0F172A]">Progress</h2>
             <div className="mt-5 flex flex-col gap-0">
               {STEPS.map((label, i) => {
@@ -101,11 +101,11 @@ export default function PortalRecordDetail() {
                 );
               })}
             </div>
-          </div>
+          </Card>
 
           {/* Activity (read-only) */}
           {(r.statusHistory ?? []).length > 0 && (
-            <div className={`${CARD} p-6`}>
+            <Card radius="md" elevation="none" border="hairline" className="p-6">
               <h2 className="text-[15px] font-bold text-[#0F172A]">Activity</h2>
               <div className="mt-4 flex flex-col gap-3">
                 {[...r.statusHistory].reverse().map((e: any, i: number) => (
@@ -117,14 +117,14 @@ export default function PortalRecordDetail() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
           )}
         </div>
 
         {/* RIGHT */}
         <div className="flex flex-[2] flex-col gap-6">
           {authorized ? (
-            <div className={`${CARD} p-6 text-center`}>
+            <Card radius="md" elevation="none" border="hairline" className="p-6 text-center">
               <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#F0FDF4] text-[#16A34A]"><CheckCircle2 size={28} /></span>
               <div className="mt-3 text-[18px] font-bold text-[#0F172A]">Your report is ready</div>
               <div className="mt-1 text-[13px] text-[#94A3B8]">Authorized on {fmtDate(authEvent?.createdAt ?? r.dateStatus)}</div>
@@ -136,23 +136,23 @@ export default function PortalRecordDetail() {
                 className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] text-[14px] font-semibold text-[#374151] transition-colors hover:bg-[#F9FAFB] disabled:opacity-60">
                 {busy === 'view' ? <><Loader2 size={16} className="animate-spin" /> Opening…</> : <><ExternalLink size={16} /> View in browser</>}
               </button>
-            </div>
+            </Card>
           ) : (
-            <div className={`${CARD} p-6 text-center`}>
+            <Card radius="md" elevation="none" border="hairline" className="p-6 text-center">
               <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#EEF3FF] text-[#4F46E5]"><Clock size={28} /></span>
               <div className="mt-3 text-[18px] font-bold text-[#0F172A]">Report pending</div>
               <div className="mt-1 text-[13px] text-[#64748B]">Your report is being processed. Current status: <span className="font-semibold text-[#0F172A]">{r.status}</span>.</div>
-            </div>
+            </Card>
           )}
 
-          <div className={`${CARD} p-6`}>
+          <Card radius="md" elevation="none" border="hairline" className="p-6">
             <div className="text-[15px] font-bold text-[#0F172A]">Have a question?</div>
             <div className="mt-1 text-[13px] text-[#64748B]">Message the lab about this record.</div>
             <Link href={`/portal/messages?recordId=${r.id}`}
               className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#4F46E5] text-[14px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#EEF3FF]">
               <MessageSquare size={16} /> Send Message
             </Link>
-          </div>
+          </Card>
         </div>
       </div>
     </div>

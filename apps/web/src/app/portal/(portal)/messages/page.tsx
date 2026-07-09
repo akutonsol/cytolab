@@ -6,6 +6,7 @@ import { Plus, Send } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { portalApi } from '@/lib/portal-api';
 import { CrStatusBadge, fmtDateTime } from '@/lib/portal-ui';
+import { Button } from '@/components/ui';
 
 const CR_TYPES = [
   { value: 'GeneralQuery', label: 'General query' },
@@ -119,8 +120,8 @@ function MessagesInner() {
               </div>
               {recordId && <div className="text-[12px] text-[#94A3B8]">Linked to record {recordId.slice(0, 8)}…</div>}
               <div className="flex justify-end gap-2">
-                <button className="btn-secondary" onClick={() => setComposing(false)}>Cancel</button>
-                <button className="btn-primary" disabled={!canCreate} style={{ opacity: canCreate ? 1 : 0.5 }} onClick={() => create.mutate()}>{create.isPending ? 'Sending…' : 'Send'}</button>
+                <Button variant="secondary" onClick={() => setComposing(false)}>Cancel</Button>
+                <Button disabled={!canCreate} style={{ opacity: canCreate ? 1 : 0.5 }} onClick={() => create.mutate()}>{create.isPending ? 'Sending…' : 'Send'}</Button>
               </div>
             </div>
           ) : !active ? (

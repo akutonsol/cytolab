@@ -1,5 +1,5 @@
 // Shared types + display metadata for HL7/FHIR integration. Zero orange —
-// Sandbox/Retrying use detector-safe amber (#B45309).
+// Sandbox/Retrying use the safe amber token var(--color-warning) = #A16207.
 
 export type EMRSystem = 'Epic' | 'Cerner' | 'Meditech' | 'Allscripts' | 'Generic';
 export type FHIRAuthType = 'Bearer' | 'OAuth2' | 'APIKey' | 'None';
@@ -67,7 +67,7 @@ export const STATUS_META: Record<TransmissionStatus, { label: string; bg: string
   Failed: { label: 'Failed', bg: '#FEE2E2', fg: '#B91C1C' },
   Pending: { label: 'Pending', bg: '#F1F5F9', fg: '#475569', spin: true },
   Sending: { label: 'Sending', bg: '#EEF2FF', fg: '#4F46E5', spin: true },
-  Retrying: { label: 'Retrying', bg: '#FFFBEB', fg: '#B45309', spin: true }, // amber, not orange
+  Retrying: { label: 'Retrying', bg: '#FFFBEB', fg: 'var(--color-warning)', spin: true }, // var(--color-warning); safe at every alpha
 };
 
 export const EMR_SYSTEMS: EMRSystem[] = ['Epic', 'Cerner', 'Meditech', 'Allscripts', 'Generic'];

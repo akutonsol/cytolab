@@ -12,6 +12,7 @@ import {
   type GlandularCategory, type HPVResult, type SquamousCategory,
 } from '@/lib/bethesda';
 import { DictationButton } from './DictationButton';
+import { Button } from '@/components/ui';
 
 interface Props {
   open: boolean;
@@ -189,9 +190,9 @@ export function BethesdaClassificationModal({ open, onClose, recordId, onApply }
         <div className="flex items-center justify-between gap-2 border-t border-slate-200 p-4">
           <div className="font-label-sm text-label-sm text-secondary">{existing ? `Last reported ${new Date(existing.reportedAt).toLocaleDateString()}` : 'New classification'}</div>
           <div className="flex items-center gap-2">
-            <button className="btn-secondary" onClick={onClose}>Cancel</button>
-            <button className="btn-secondary" disabled={!valid || save.isPending} style={{ opacity: !valid || save.isPending ? 0.5 : 1 }} onClick={() => doSave(false)}>{save.isPending ? <Loader2 size={14} className="animate-spin" /> : null} Save</button>
-            {onApply && <button className="btn-primary" disabled={!valid || save.isPending} style={{ opacity: !valid || save.isPending ? 0.5 : 1 }} onClick={() => doSave(true)}>Save &amp; Apply to Report</button>}
+            <Button variant="secondary" onClick={onClose}>Cancel</Button>
+            <Button variant="secondary" disabled={!valid || save.isPending} style={{ opacity: !valid || save.isPending ? 0.5 : 1 }} onClick={() => doSave(false)}>{save.isPending ? <Loader2 size={14} className="animate-spin" /> : null} Save</Button>
+            {onApply && <Button disabled={!valid || save.isPending} style={{ opacity: !valid || save.isPending ? 0.5 : 1 }} onClick={() => doSave(true)}>Save &amp; Apply to Report</Button>}
           </div>
         </div>
       </div>

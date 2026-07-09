@@ -13,32 +13,46 @@ import { cn } from './cn';
  * `density` is the knob the copies actually differed on: records used px-4/py-4,
  * patients px-8/py-5.
  */
-type Density = 'compact' | 'default' | 'roomy';
+type Density = 'compact' | 'cozy' | 'default' | 'roomy';
+/** Header type size. The app ships two: an 11px micro-label and a 14px label. */
+type ThSize = 'xs' | 'sm';
+/**
+ * Cell text colour. `cell` is --color-table-cell (slate-700); `inherit` leaves the
+ * colour to the row, which the workforce tables rely on. Not a style choice —
+ * convergence debt, documented in DESIGN_SYSTEM §8d.
+ */
+type TdTone = 'cell' | 'inherit';
 
 const TH_DENSITY: Record<Density, string> = {
   compact: 'px-4 py-3',
+  cozy: 'px-4 py-4',
   default: 'px-6 py-4',
   roomy: 'px-8 py-4',
 };
 
 const TD_DENSITY: Record<Density, string> = {
-  compact: 'px-4 py-4',
+  compact: 'px-4 py-3',
+  cozy: 'px-4 py-4',
   default: 'px-6 py-4',
   roomy: 'px-8 py-5',
 };
 
 export interface ThProps extends ThHTMLAttributes<HTMLTableCellElement> {
   density?: Density;
+  size?: ThSize;
   children?: ReactNode;
 }
 
+const TH_SIZE: Record<ThSize, string> = { xs: 'text-[11px]', sm: 'text-sm' };
+
 /** Column header: uppercase, tracked, muted. */
-export function Th({ density = 'default', className, children, ...rest }: ThProps) {
+export function Th({ density = 'default', size = 'sm', className, children, ...rest }: ThProps) {
   return (
     <th
       className={cn(
         TH_DENSITY[density],
-        'whitespace-nowrap text-left text-sm font-semibold uppercase tracking-wide text-table-header',
+        TH_SIZE[size],
+        'whitespace-nowrap text-left font-semibold uppercase tracking-wide text-table-header',
         className,
       )}
       {...rest}
@@ -50,15 +64,22 @@ export function Th({ density = 'default', className, children, ...rest }: ThProp
 
 export interface TdProps extends TdHTMLAttributes<HTMLTableCellElement> {
   density?: Density;
+  tone?: TdTone;
   /** Prevent wrapping (IDs, dates, status columns). */
   nowrap?: boolean;
   children?: ReactNode;
 }
 
-export function Td({ density = 'default', nowrap, className, children, ...rest }: TdProps) {
+export function Td({ density = 'default', tone = 'cell', nowrap, className, children, ...rest }: TdProps) {
   return (
     <td
-      className={cn(TD_DENSITY[density], 'align-middle text-table-cell', nowrap && 'whitespace-nowrap', className)}
+      className={cn(
+        TD_DENSITY[density],
+        'align-middle',
+        tone === 'cell' && 'text-table-cell',
+        nowrap && 'whitespace-nowrap',
+        className,
+      )}
       {...rest}
     >
       {children}

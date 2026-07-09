@@ -7,6 +7,7 @@ import { ClipboardList, Copy, Layers, Pencil, Plus, Search, TrendingUp } from 'l
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { CATEGORIES, composeNarrative, type ResultTemplate } from '@/lib/result-templates';
+import { Button } from '@/components/ui';
 
 export default function ResultTemplatesPage() {
   const router = useRouter();
@@ -51,7 +52,7 @@ export default function ResultTemplatesPage() {
             <h1 className="text-3xl font-bold text-charcoal-heading">Result Templates</h1>
             <p className="mt-1 font-body-sm text-body-sm text-secondary">Reusable cytology report templates that pre-fill result sheets.</p>
           </div>
-          <button className="btn-primary" onClick={() => router.push('/result-templates/new')}><Plus size={16} /> New Template</button>
+          <Button onClick={() => router.push('/result-templates/new')}><Plus size={16} /> New Template</Button>
         </div>
 
         {/* KPI strip */}
@@ -82,7 +83,7 @@ export default function ResultTemplatesPage() {
             <ClipboardList size={48} className="text-[#E2E8F0]" />
             <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">No templates found</h3>
             <p className="max-w-xs font-body-sm text-body-sm text-secondary">Try a different category or search, or create a new template.</p>
-            <button className="btn-primary mt-1" onClick={() => router.push('/result-templates/new')}><Plus size={16} /> New Template</button>
+            <Button className="mt-1" onClick={() => router.push('/result-templates/new')}><Plus size={16} /> New Template</Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -110,7 +111,7 @@ export default function ResultTemplatesPage() {
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
                     <button onClick={() => router.push(`/result-templates/${t.id}`)} title="Edit" className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low hover:text-primary"><Pencil size={15} /></button>
-                    <button onClick={() => copyTemplate(t)} className="btn-primary !h-8 !px-3 !text-[13px]"><Copy size={13} /> Use</button>
+                    <Button onClick={() => copyTemplate(t)} className="!h-8 !px-3 !text-[13px]"><Copy size={13} /> Use</Button>
                   </div>
                 </div>
               </div>

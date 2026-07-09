@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { RoleFormDrawer, type RoleRecord } from '@/components/RoleFormDrawer';
+import { Button } from '@/components/ui';
 
 const BADGE = 'inline-flex items-center rounded-full px-3 py-1 font-label-sm text-label-sm';
 const TH = 'px-4 py-3 text-left font-label-sm text-label-sm text-secondary uppercase tracking-wider whitespace-nowrap';
@@ -57,7 +58,7 @@ export default function RolesPage() {
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search roles"
               className="w-full border-none bg-transparent font-body-sm text-body-sm text-on-surface outline-none placeholder:text-outline" />
           </div>
-          {can('permission:create') && <button className="btn-primary" onClick={openCreate}><Plus size={16} /> New Role</button>}
+          {can('permission:create') && <Button onClick={openCreate}><Plus size={16} /> New Role</Button>}
         </div>
       </div>
 
@@ -68,7 +69,7 @@ export default function RolesPage() {
             <div className="flex-1">
               <div className="font-label-md text-label-md text-error">Failed to load</div>
               <div className="font-body-sm text-body-sm text-on-error-container">{errorMessage}</div>
-              <button className="btn-secondary mt-3" onClick={() => refetch()}><RotateCcw size={14} /> Retry</button>
+              <Button variant="secondary" className="mt-3" onClick={() => refetch()}><RotateCcw size={14} /> Retry</Button>
             </div>
           </div>
         )}
@@ -112,12 +113,12 @@ export default function RolesPage() {
                       {confirmId === r.id ? (
                         <div className="flex items-center gap-2">
                           <span className="font-body-sm text-body-sm text-secondary">Delete?</span>
-                          <button onClick={() => del.mutate(r.id)} disabled={del.isPending} className="btn-primary" style={{ background: '#DC2626', boxShadow: '0 4px 12px rgba(220,38,38,0.2)' }}>Delete</button>
-                          <button onClick={() => setConfirmId(null)} className="btn-secondary">Cancel</button>
+                          <Button onClick={() => del.mutate(r.id)} disabled={del.isPending}  style={{ background: '#DC2626', boxShadow: '0 4px 12px rgba(220,38,38,0.2)' }}>Delete</Button>
+                          <Button variant="secondary" onClick={() => setConfirmId(null)}>Cancel</Button>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          {can('permission:change') && <button onClick={() => openEdit(r)} className="btn-secondary"><Pencil size={14} /> Edit</button>}
+                          {can('permission:change') && <Button variant="secondary" onClick={() => openEdit(r)}><Pencil size={14} /> Edit</Button>}
                           {can('permission:delete') && (
                             <button onClick={() => setConfirmId(r.id)} className="grid h-9 w-9 place-items-center rounded-xl border border-outline-variant/30 text-secondary transition-colors hover:bg-error-container hover:text-error"><Trash2 size={15} /></button>
                           )}

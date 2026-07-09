@@ -8,8 +8,8 @@ import { KbStatus, listArticles, listCategories } from '@/lib/knowledge-base';
 import { useAuth } from '@/lib/auth';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)]';
 const STATUS_TINT: Record<KbStatus, string> = { PUBLISHED: '#16A34A', DRAFT: '#A16207', ARCHIVED: '#475569' };
 
 function ArticleListInner() {
@@ -65,7 +65,7 @@ function ArticleListInner() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_1fr]">
         {/* Sidebar */}
         <aside className="space-y-4">
-          <div className={`${CARD} p-4`}>
+          <Card radius="md" elevation="raised" border="hairline" className="p-4">
             <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-[#475569]">Categories</div>
             <button onClick={() => setCategoryId('')} className={`block w-full rounded-lg px-3 py-2 text-left text-[14px] ${!categoryId ? 'bg-[#EEF3FF] font-semibold text-[#4F46E5]' : 'text-[#334155] hover:bg-[#F8FAFC]'}`}>All categories</button>
             {categories?.map((c) => (
@@ -73,10 +73,10 @@ function ArticleListInner() {
                 {c.name}<span className="ml-1 text-[12px] text-[#475569]">({c._count?.articles ?? 0})</span>
               </button>
             ))}
-          </div>
+          </Card>
 
           {!!tagCloud.length && (
-            <div className={`${CARD} p-4`}>
+            <Card radius="md" elevation="raised" border="hairline" className="p-4">
               <div className="mb-2 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-wide text-[#475569]"><Tag size={12} /> Tags</div>
               <div className="flex flex-wrap gap-1.5">
                 {tag && <button onClick={() => setTag('')} className="rounded-full bg-[#EEF3FF] px-2.5 py-1 text-[12px] font-semibold text-[#4F46E5]">clear ✕</button>}
@@ -84,7 +84,7 @@ function ArticleListInner() {
                   <button key={t} onClick={() => setTag(t === tag ? '' : t)} className={`rounded-full px-2.5 py-1 text-[12px] ${t === tag ? 'bg-[#4F46E5] text-white' : 'bg-[#F1F5F9] text-[#475569] hover:bg-[#E2E8F0]'}`}>{t}<span className="ml-1 opacity-60">{n}</span></button>
                 ))}
               </div>
-            </div>
+            </Card>
           )}
         </aside>
 
@@ -108,14 +108,13 @@ function ArticleListInner() {
           </div>
 
           {isLoading ? (
-            <div className={`${CARD} p-10 text-center text-[14px] text-[#475569]`}>Loading…</div>
+            <Card radius="md" elevation="raised" border="hairline" className="p-10 text-center text-[14px] text-[#475569]">Loading…</Card>
           ) : !filtered.length ? (
-            <div className={`${CARD} p-10 text-center text-[14px] text-[#475569]`}>No articles match your filters.</div>
+            <Card radius="md" elevation="raised" border="hairline" className="p-10 text-center text-[14px] text-[#475569]">No articles match your filters.</Card>
           ) : (
             <div className="space-y-3">
               {pageArticles.map((a) => (
-                <button key={a.id} onClick={() => router.push(`/knowledge-base/articles/${a.slug}`)}
-                  className={`${CARD} block w-full p-5 text-left transition-shadow hover:shadow-[0_8px_30px_rgba(79,70,229,0.10)]`}>
+                <Card as="button" radius="md" elevation="raised" border="hairline" className="block w-full p-5 text-left transition-shadow hover:shadow-[0_8px_30px_rgba(79,70,229,0.10)]" key={a.id} onClick={() => router.push(`/knowledge-base/articles/${a.slug}`)}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
@@ -133,7 +132,7 @@ function ArticleListInner() {
                     </div>
                     <div className="flex shrink-0 items-center gap-1.5 text-[12px] text-[#475569]"><Eye size={13} /> {a.viewCount}</div>
                   </div>
-                </button>
+                </Card>
               ))}
               {/* Infinite scroll: auto-loads more articles as you scroll. */}
               <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />

@@ -117,7 +117,7 @@ export default function PublicConsultPage() {
                   <div className="mt-4">
                     <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-[#94A3B8]">Agreement with existing classification ({c.bethesdaClassification})</label>
                     <div className="flex flex-col gap-2">
-                      {([['FullAgreement', 'Full Agreement', '#16A34A'], ['PartialAgreement', 'Partial Agreement', '#B45309'], ['Disagreement', 'Disagreement', '#DC2626']] as [ConsultAgreement, string, string][]).map(([val, label, color]) => (
+                      {([['FullAgreement', 'Full Agreement', '#16A34A'], ['PartialAgreement', 'Partial Agreement', 'var(--color-warning)'], ['Disagreement', 'Disagreement', '#DC2626']] as [ConsultAgreement, string, string][]).map(([val, label, color]) => (
                         <button key={val} onClick={() => setAgreement(val)} className="flex items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left text-[13px] font-semibold transition-colors"
                           style={agreement === val ? { borderColor: color, background: `${color}12`, color } : { borderColor: '#E2E8F0', color: '#334155' }}>
                           <span className="grid h-5 w-5 place-items-center rounded-full border-2" style={{ borderColor: agreement === val ? color : '#CBD5E1' }}>{agreement === val && <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />}</span>

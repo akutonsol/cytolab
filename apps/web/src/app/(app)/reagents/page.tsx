@@ -11,8 +11,8 @@ import {
   STATUS_META, daysUntil, expiryColor, isExpiringSoon, relTime, shortDate,
   type ReagentDetail, type ReagentLot, type ReagentStats, type ReagentStatus,
 } from '@/lib/reagent';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 const F = ({ label, children }: { label: string; children: React.ReactNode }) => (<div className="mb-3"><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">{label}</label>{children}</div>);
 
@@ -157,7 +157,7 @@ function ReagentDetailPanel({ id, onClose }: { id: string; onClose: () => void }
 const Info = ({ label, value }: { label: string; value: React.ReactNode }) => (<div><div className="text-[11px] font-semibold uppercase tracking-wide text-[#475569]">{label}</div><div className="mt-0.5 text-[#0F172A]">{value}</div></div>);
 
 function Kpi({ label, value, fg = '#0F172A' }: { label: string; value: number; fg?: string }) {
-  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></div>;
+  return <Card radius="md" elevation="soft" border="hairline" className="p-4"><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></Card>;
 }
 
 export default function ReagentsPage() {
@@ -195,14 +195,14 @@ export default function ReagentsPage() {
 
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Kpi label="Active Lots" value={stats?.totalActive ?? 0} fg="#16A34A" />
-        <Kpi label="Expiring Soon" value={stats?.expiringSoon ?? 0} fg={(stats?.expiringSoon ?? 0) > 0 ? '#B45309' : '#0F172A'} />
+        <Kpi label="Expiring Soon" value={stats?.expiringSoon ?? 0} fg={(stats?.expiringSoon ?? 0) > 0 ? 'var(--color-warning)' : '#0F172A'} />
         <Kpi label="Quarantined" value={stats?.quarantined ?? 0} fg={(stats?.quarantined ?? 0) > 0 ? '#B91C1C' : '#0F172A'} />
         <Kpi label="Usages This Month" value={stats?.usagesThisMonth ?? 0} />
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[65fr_35fr]">
         {/* Lots table */}
-        <div className={CARD}>
+        <Card radius="md" elevation="soft" border="hairline">
           <div className="flex items-center justify-between border-b border-[#EEF2F7] p-3">
             <span className="text-[15px] font-bold text-[#0F172A]">Reagent Lots</span>
             <select value={fStatus} onChange={(e) => setFStatus(e.target.value)} className="h-9 rounded-lg border border-[#E2E8F0] px-2 text-[13px] outline-none">
@@ -225,24 +225,24 @@ export default function ReagentsPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
 
         {/* Sidebar */}
         <div className="flex flex-col gap-5">
-          <div className={`${CARD} p-4`}>
+          <Card radius="md" elevation="soft" border="hairline" className="p-4">
             <div className="mb-2 text-[15px] font-bold text-[#0F172A]">Expiring Soon</div>
             {expiring.length === 0 ? <div className="text-[13px] text-[#475569]">No lots expiring within 30 days.</div> : (
               <div className="flex flex-col gap-2">
                 {expiring.map((l) => { const d = daysUntil(l.expiryDate); return (
                   <button key={l.id} onClick={() => setDetailId(l.id)} className="flex items-center justify-between rounded-lg border border-[#EEF2F7] px-3 py-2 text-left">
                     <span><span className="block text-[13px] font-semibold text-[#0F172A]">{l.name}</span><span className="block font-mono text-[11px] text-[#4F46E5]">{l.lotNumber}</span></span>
-                    <span className="text-[12px] font-bold" style={{ color: (d ?? 99) < 7 ? '#B91C1C' : '#B45309' }}>{d}d</span>
+                    <span className="text-[12px] font-bold" style={{ color: (d ?? 99) < 7 ? '#B91C1C' : 'var(--color-warning)' }}>{d}d</span>
                   </button>
                 ); })}
               </div>
             )}
-          </div>
-          <div className={`${CARD} p-4`}>
+          </Card>
+          <Card radius="md" elevation="soft" border="hairline" className="p-4">
             <div className="mb-2 text-[15px] font-bold text-[#0F172A]">Recent Usages</div>
             {(stats?.recentUsages ?? []).length === 0 ? <div className="text-[13px] text-[#475569]">No usage logged yet.</div> : (
               <div className="flex flex-col gap-2">
@@ -254,7 +254,7 @@ export default function ReagentsPage() {
                 ))}
               </div>
             )}
-          </div>
+          </Card>
         </div>
       </div>
 

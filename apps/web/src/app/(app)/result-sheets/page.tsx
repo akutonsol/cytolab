@@ -13,7 +13,7 @@ import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { ResultSheetModal } from '@/components/ResultSheetModal';
 import { RecordFormDrawer } from '@/components/RecordFormDrawer';
 import type { FormType } from '@/lib/specimen-types';
-import { Card } from '@/components/ui';
+import { Card, Button } from '@/components/ui';
 
 interface Rec {
   id: string;
@@ -434,7 +434,7 @@ export default function ResultSheetsPage() {
             <select aria-label="Filter by date range" className={SELECT} value={dateRange} onChange={(e) => { setDateRange(e.target.value); }}><option value="7">Last 7 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option><option value="all">All Time</option></select>
             <select aria-label="Filter by AI confidence" className={SELECT} value={confF} onChange={(e) => { setConfF(e.target.value); }}><option value="all">AI Confidence</option><option value="High">High</option><option value="Moderate">Moderate</option><option value="Low">Low</option></select>
             <button className="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 hover:bg-slate-50"><SlidersHorizontal size={15} /> Filters</button>
-            <button onClick={() => setSheetFor(all[0] ?? null)} className="btn-primary"><Plus size={16} /> New Result Sheet</button>
+            <Button onClick={() => setSheetFor(all[0] ?? null)}><Plus size={16} /> New Result Sheet</Button>
             <button aria-label="Export" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50"><Download size={16} /></button>
           </Card>
 
@@ -442,7 +442,7 @@ export default function ResultSheetsPage() {
             <div className="mb-4 rounded-xl border border-error/20 bg-error-container p-4">
               <div className="font-label-md text-label-md text-error">Failed to load</div>
               <div className="font-body-sm text-body-sm text-on-error-container">{(error as any)?.response?.data?.message ?? 'Could not load result sheets.'}</div>
-              <button className="btn-secondary mt-3" onClick={() => refetch()}><RotateCcw size={14} /> Retry</button>
+              <Button variant="secondary" className="mt-3" onClick={() => refetch()}><RotateCcw size={14} /> Retry</Button>
             </div>
           )}
 
@@ -589,8 +589,8 @@ export default function ResultSheetsPage() {
             {(NEXT_STATUS[statusRec.status] ?? []).map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
           <div className="mt-6 flex justify-end gap-2">
-            <button className="btn-secondary" onClick={() => setStatusRec(null)}>Cancel</button>
-            <button className="btn-primary" disabled={!nextStatus || changeStatus.isPending} style={{ opacity: !nextStatus || changeStatus.isPending ? 0.5 : 1 }} onClick={() => statusRec && nextStatus && changeStatus.mutate({ id: statusRec.id, status: nextStatus })}>{changeStatus.isPending ? 'Updating…' : 'Update'}</button>
+            <Button variant="secondary" onClick={() => setStatusRec(null)}>Cancel</Button>
+            <Button disabled={!nextStatus || changeStatus.isPending} style={{ opacity: !nextStatus || changeStatus.isPending ? 0.5 : 1 }} onClick={() => statusRec && nextStatus && changeStatus.mutate({ id: statusRec.id, status: nextStatus })}>{changeStatus.isPending ? 'Updating…' : 'Update'}</Button>
           </div>
         </Overlay>
       )}
@@ -600,8 +600,8 @@ export default function ResultSheetsPage() {
           <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">{confirm.title}</h3>
           <p className="mt-2 font-body-sm text-body-sm text-secondary">{confirm.content}</p>
           <div className="mt-6 flex justify-end gap-2">
-            <button className="btn-secondary" onClick={() => setConfirm(null)}>Cancel</button>
-            <button className="btn-primary" style={confirm.danger ? { background: '#991B1B', boxShadow: '0 4px 12px rgba(220,38,38,0.2)' } : undefined} onClick={() => { confirm.onOk(); setConfirm(null); }}>{confirm.okText}</button>
+            <Button variant="secondary" onClick={() => setConfirm(null)}>Cancel</Button>
+            <Button style={confirm.danger ? { background: '#991B1B', boxShadow: '0 4px 12px rgba(220,38,38,0.2)' } : undefined} onClick={() => { confirm.onOk(); setConfirm(null); }}>{confirm.okText}</Button>
           </div>
         </Overlay>
       )}

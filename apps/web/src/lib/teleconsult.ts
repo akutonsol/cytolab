@@ -1,5 +1,5 @@
 // Shared types + display metadata for Teleconsultation. Zero orange — Priority
-// urgency and Partial agreement use detector-safe amber (#B45309).
+// urgency and Partial agreement use the safe amber token var(--color-warning) = #A16207.
 
 export type ConsultUrgency = 'Routine' | 'Priority' | 'Urgent';
 export type ConsultStatus = 'Pending' | 'Viewed' | 'InProgress' | 'Responded' | 'Accepted' | 'Declined' | 'Expired';
@@ -70,7 +70,7 @@ export interface PublicCase {
 
 export const URGENCY_META: Record<ConsultUrgency, { label: string; bg: string; fg: string }> = {
   Routine: { label: 'Routine', bg: '#F1F5F9', fg: '#475569' },
-  Priority: { label: 'Priority', bg: '#FFFBEB', fg: '#B45309' }, // amber, not orange
+  Priority: { label: 'Priority', bg: '#FFFBEB', fg: 'var(--color-warning)' }, // var(--color-warning); safe at every alpha
   Urgent: { label: 'Urgent', bg: '#FEE2E2', fg: '#B91C1C' },
 };
 
@@ -86,7 +86,7 @@ export const STATUS_META: Record<ConsultStatus, { label: string; bg: string; fg:
 
 export const AGREEMENT_META: Record<ConsultAgreement, { label: string; bg: string; fg: string }> = {
   FullAgreement: { label: 'Full Agreement', bg: '#DCFCE7', fg: '#16A34A' },
-  PartialAgreement: { label: 'Partial Agreement', bg: '#FFFBEB', fg: '#B45309' }, // amber, not orange
+  PartialAgreement: { label: 'Partial Agreement', bg: '#FFFBEB', fg: 'var(--color-warning)' }, // var(--color-warning); safe at every alpha
   Disagreement: { label: 'Disagreement', bg: '#FEE2E2', fg: '#B91C1C' },
 };
 

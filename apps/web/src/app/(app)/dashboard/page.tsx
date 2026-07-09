@@ -748,7 +748,7 @@ export default function DashboardPage() {
             const border = hasOverdue ? '#FECACA' : '#FDE68A';
             const bg = hasOverdue ? '#FEF2F2' : '#FFFBEB';
             const chipBg = hasOverdue ? '#FEE2E2' : '#FEF3C7';
-            const accent = hasOverdue ? '#B91C1C' : '#B45309';
+            const accent = hasOverdue ? '#B91C1C' : 'var(--color-warning)';
             return (
               <button onClick={() => router.push('/recalls')}
                 style={{ marginTop: 16, width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 18, border: `1px solid ${border}`, background: bg, cursor: 'pointer', textAlign: 'left' }}>

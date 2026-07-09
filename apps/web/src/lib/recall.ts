@@ -1,5 +1,5 @@
 // Shared types + display metadata for Patient Recall Management.
-// Zero orange — amber (#B45309, detector-safe) is allowed for "due" warnings.
+// Zero orange — var(--color-warning) (#A16207) is allowed for "due" warnings.
 
 export type RecallStatus = 'Pending' | 'Due' | 'Overdue' | 'Completed' | 'Cancelled' | 'Declined';
 
@@ -18,7 +18,7 @@ export interface RecallListRow { patientName: string; dob: string | null; lastRe
 
 export const STATUS_META: Record<RecallStatus, { label: string; bg: string; fg: string; rowBg?: string }> = {
   Pending: { label: 'Pending', bg: '#F1F5F9', fg: '#475569' },
-  Due: { label: 'Due', bg: '#FFFBEB', fg: '#B45309', rowBg: '#FFFBEB' }, // amber (not orange)
+  Due: { label: 'Due', bg: '#FFFBEB', fg: 'var(--color-warning)', rowBg: '#FFFBEB' }, // amber (not orange)
   Overdue: { label: 'Overdue', bg: '#FEE2E2', fg: '#B91C1C', rowBg: '#FEF2F2' },
   Completed: { label: 'Completed', bg: '#DCFCE7', fg: '#16A34A' },
   Cancelled: { label: 'Cancelled', bg: '#F1F5F9', fg: '#475569' },
@@ -31,7 +31,7 @@ export const FILTER_TABS: (RecallStatus | 'all')[] = ['all', 'Pending', 'Due', '
 /** Due-date text color: red if past due, amber if <30 days, slate otherwise. */
 export function dueColor(days: number): string {
   if (days < 0) return '#B91C1C';
-  if (days <= 30) return '#B45309';
+  if (days <= 30) return 'var(--color-warning)';
   return '#475569';
 }
 

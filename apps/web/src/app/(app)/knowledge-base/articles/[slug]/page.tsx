@@ -7,8 +7,8 @@ import { ChevronRight, Eye, Pencil, Printer, ThumbsDown, ThumbsUp } from 'lucide
 import { getArticle, submitFeedback } from '@/lib/knowledge-base';
 import { Markdown } from '@/components/knowledge-base/Markdown';
 import { useAuth } from '@/lib/auth';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)]';
 const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—');
 
 export default function ArticleViewPage() {
@@ -34,10 +34,10 @@ export default function ArticleViewPage() {
   if (isError || !article) {
     return (
       <div className="min-h-full pt-4" style={{ background: '#F8FAFC' }}>
-        <div className={`${CARD} mx-auto mt-16 max-w-md p-8 text-center`}>
+        <Card radius="md" elevation="raised" border="hairline" className="mx-auto mt-16 max-w-md p-8 text-center">
           <div className="text-[18px] font-bold text-[#0F172A]">Article not found</div>
           <button onClick={() => router.push('/knowledge-base')} className="mt-3 rounded-lg bg-[#4F46E5] px-4 py-2 text-[13px] font-semibold text-white">Back to Knowledge Base</button>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -56,7 +56,7 @@ export default function ArticleViewPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
         {/* Article */}
         <article>
-          <div className={`${CARD} p-8 printable`}>
+          <Card radius="md" elevation="raised" border="hairline" className="p-8 printable">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h1 className="text-[30px] font-bold leading-tight tracking-tight text-[#0F172A]">{article.title}</h1>
@@ -82,10 +82,10 @@ export default function ArticleViewPage() {
                 {article.tags.map((t) => <span key={t} className="rounded-md bg-[#F1F5F9] px-2 py-0.5 text-[12px] text-[#475569]">{t}</span>)}
               </div>
             )}
-          </div>
+          </Card>
 
           {/* Feedback */}
-          <div className={`${CARD} mt-5 p-6 print:hidden`}>
+          <Card radius="md" elevation="raised" border="hairline" className="mt-5 p-6 print:hidden">
             {sentHelpful === null ? (
               <div className="flex flex-wrap items-center gap-4">
                 <span className="text-[15px] font-semibold text-[#0F172A]">Was this article helpful?</span>
@@ -103,12 +103,12 @@ export default function ArticleViewPage() {
                 <ThumbsUp size={16} /> Thanks for your feedback!
               </div>
             )}
-          </div>
+          </Card>
         </article>
 
         {/* Sidebar */}
         <aside className="space-y-4 print:hidden">
-          <div className={`${CARD} p-5`}>
+          <Card radius="md" elevation="raised" border="hairline" className="p-5">
             <div className="mb-3 text-[12px] font-semibold uppercase tracking-wide text-[#475569]">Details</div>
             <dl className="space-y-2.5 text-[13px]">
               <div className="flex justify-between gap-2"><dt className="text-[#475569]">Author</dt><dd className="text-right font-medium text-[#334155]">{article.authorName ?? '—'}</dd></div>
@@ -116,10 +116,10 @@ export default function ArticleViewPage() {
               <div className="flex justify-between gap-2"><dt className="text-[#475569]">Updated</dt><dd className="text-right font-medium text-[#334155]">{fmtDate(article.updatedAt)}</dd></div>
               <div className="flex justify-between gap-2"><dt className="text-[#475569]">Views</dt><dd className="text-right font-medium text-[#334155]">{article.viewCount}</dd></div>
             </dl>
-          </div>
+          </Card>
 
           {!!article.related.length && (
-            <div className={`${CARD} p-5`}>
+            <Card radius="md" elevation="raised" border="hairline" className="p-5">
               <div className="mb-3 text-[12px] font-semibold uppercase tracking-wide text-[#475569]">Related articles</div>
               <div className="space-y-1">
                 {article.related.map((r) => (
@@ -127,7 +127,7 @@ export default function ArticleViewPage() {
                     className="block w-full rounded-lg px-3 py-2 text-left text-[14px] font-medium text-[#334155] transition-colors hover:bg-[#F5F7FF] hover:text-[#4F46E5]">{r.title}</button>
                 ))}
               </div>
-            </div>
+            </Card>
           )}
         </aside>
       </div>

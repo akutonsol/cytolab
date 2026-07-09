@@ -1,24 +1,26 @@
 'use client';
 
+// ZERO-ORANGE: #A16207 on the #FEF9C3 chip anti-aliases through the trip box in a
+// narrow alpha band. The on-hold domain pair (#854D0E on #FEF9C3) is safe at every alpha.
 import { AlertTriangle, CalendarOff, Clock, TimerReset, UserCheck, UserX } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FeatureGate } from '@/components/FeatureGate';
 import { ClockWidget } from '@/components/workforce/ClockWidget';
 import { ATT_STATUS, SHIFT_CHIP, fmtTime } from '@/lib/workforce';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 
 function Kpi({ icon, iconClass, label, value, sub, subColor }: { icon: React.ReactNode; iconClass: string; label: string; value: React.ReactNode; sub?: string; subColor?: string }) {
   return (
-    <div className={`${CARD} p-5`}>
+    <Card radius="sm" elevation="sm" border="subtle" className="p-5">
       <div className="flex items-center gap-2">
         <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${iconClass}`}>{icon}</span>
         <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</span>
       </div>
       <div className="mt-2 text-4xl font-bold leading-none text-charcoal-heading">{value}</div>
       {sub && <div className="mt-1 text-xs font-semibold" style={{ color: subColor ?? '#475569' }}>{sub}</div>}
-    </div>
+    </Card>
   );
 }
 
@@ -50,7 +52,7 @@ function Dashboard() {
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
         <Kpi icon={<UserCheck size={20} />} iconClass="bg-green-50 text-green-700" label="Present Today" value={today?.present ?? 0} sub={`${pct(present)}% of team`} subColor="#166534" />
         <Kpi icon={<UserX size={20} />} iconClass="bg-red-50 text-red-600" label="Absent" value={today?.absent ?? 0} sub="not clocked in" subColor="#991B1B" />
-        <Kpi icon={<AlertTriangle size={20} />} iconClass="bg-[#FEF9C3] text-[#A16207]" label="Late" value={today?.late ?? 0} sub="after grace" subColor="#A16207" />
+        <Kpi icon={<AlertTriangle size={20} />} iconClass="bg-[var(--workflow-on-hold-soft)] text-[var(--workflow-on-hold)]" label="Late" value={today?.late ?? 0} sub="after grace" subColor="#A16207" />
         <Kpi icon={<CalendarOff size={20} />} iconClass="bg-slate-100 text-slate-500" label="On Leave" value={today?.onLeave ?? 0} sub="scheduled off" subColor="#475569" />
         <Kpi icon={<TimerReset size={20} />} iconClass="bg-indigo-50 text-indigo-600" label="Overtime Hours" value={today?.overtime ?? 0} sub="beyond 8h/day" subColor="#4F46E5" />
       </div>
@@ -62,7 +64,7 @@ function Dashboard() {
       <div className="flex flex-col gap-6 xl:flex-row">
         {/* Roster */}
         <div className="min-w-0 flex-1">
-          <div className={`${CARD} p-0`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-0">
             <div className="flex items-center justify-between px-5 pt-5"><span className="text-base font-semibold text-charcoal-heading">Today&apos;s Roster</span><span className="text-xs text-slate-500">{roster.length} staff</span></div>
             <div className="mt-3 overflow-x-auto">
               <table className="w-full border-collapse">
@@ -87,12 +89,12 @@ function Dashboard() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Stats */}
         <div className="flex w-full shrink-0 flex-col gap-6 xl:w-[320px]">
-          <div className={`${CARD} p-5`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-5">
             <div className="mb-4 text-sm font-semibold text-charcoal-heading">Attendance</div>
             {([['Present', today?.present ?? 0, '#166534'], ['Absent', today?.absent ?? 0, '#991B1B'], ['Late', today?.late ?? 0, '#A16207']] as const).map(([label, n, c]) => (
               <div key={label} className="mb-3">
@@ -100,18 +102,18 @@ function Dashboard() {
                 <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full" style={{ width: `${pct(n)}%`, background: c }} /></div>
               </div>
             ))}
-          </div>
+          </Card>
 
-          <div className={`${CARD} p-5`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-5">
             <div className="mb-3 text-sm font-semibold text-charcoal-heading">Late Arrivals</div>
             {late.length === 0 ? <div className="text-sm text-slate-500">None today.</div> : (
               <div className="flex flex-col gap-2">
                 {late.map((r: any) => <div key={r.employeeId} className="flex items-center justify-between text-sm"><span className="text-charcoal-heading">{r.name}</span><span className="text-xs font-semibold" style={{ color: '#A16207' }}>in {fmtTime(r.clockIn)}</span></div>)}
               </div>
             )}
-          </div>
+          </Card>
 
-          <div className={`${CARD} p-5`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-5">
             <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-charcoal-heading"><Clock size={15} className="text-slate-500" /> Missing Punches</div>
             <div className="mb-3 text-xs text-slate-500">Clocked in with no clock-out yet.</div>
             {missing.length === 0 ? <div className="text-sm text-slate-500">All clear.</div> : (
@@ -119,7 +121,7 @@ function Dashboard() {
                 {missing.map((r: any) => <div key={r.employeeId} className="flex items-center justify-between text-sm"><span className="text-charcoal-heading">{r.name}</span><span className="text-xs font-semibold text-green-700">since {fmtTime(r.clockIn)}</span></div>)}
               </div>
             )}
-          </div>
+          </Card>
         </div>
       </div>
     </div>

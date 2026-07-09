@@ -8,8 +8,8 @@ import { portalApi } from '@/lib/portal-api';
 import {
   CrStatusBadge, fmtDate, fmtDateTime, greeting, isAuthorized, specLabel, SpecimenIcon, StatusBadge,
 } from '@/lib/portal-ui';
+import { Card, cardClass, cn } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white';
 
 export default function PortalDashboard() {
   const router = useRouter();
@@ -52,14 +52,14 @@ export default function PortalDashboard() {
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((c) => (
-          <div key={c.label} className={`${CARD} flex items-center gap-4 p-5`}>
+          <Card radius="md" elevation="none" border="hairline" className="flex items-center gap-4 p-5" key={c.label}>
             <span style={{ background: c.iconBg, color: c.iconColor }} className="grid h-12 w-12 shrink-0 place-items-center rounded-xl"><c.Icon size={20} /></span>
             <div>
               <div className="text-[30px] font-extrabold leading-none text-[#0a0b1a]">{c.value}</div>
               <div className="mt-1 text-[13px] text-[#64748b]">{c.label}</div>
               <div className="mt-1 text-[12px] font-medium" style={{ color: c.subColor }}>{c.sub}</div>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 
@@ -67,7 +67,7 @@ export default function PortalDashboard() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {actions.map((a) => (
           <Link key={a.label} href={a.href}
-            className={`${CARD} group flex items-center gap-3.5 p-5 transition-shadow hover:shadow-[0_10px_30px_-14px_rgba(15,23,42,.35)]`}>
+            className={cn(cardClass({ elevation: 'none' }), 'group flex items-center gap-3.5 p-5 transition-shadow duration-fast ease-standard hover:shadow-card-lift')}>
             <span style={{ background: `${a.color}18`, color: a.color }} className="grid h-10 w-10 shrink-0 place-items-center rounded-[10px]"><a.Icon size={18} /></span>
             <div className="min-w-0">
               <div className="text-[14px] font-semibold text-[#0a0b1a]">{a.label}</div>
@@ -81,7 +81,7 @@ export default function PortalDashboard() {
       {/* Records + TAT */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.9fr_1fr]">
         {/* Recent records */}
-        <div className={CARD}>
+        <Card radius="md" elevation="none" border="hairline">
           <div className="flex items-center justify-between px-5 py-4">
             <h2 className="text-[17px] font-bold text-[#0F172A]">Recent Records</h2>
             <Link href="/portal/records" className="text-[13px] font-semibold text-[#4F46E5] hover:underline">View all →</Link>
@@ -106,10 +106,10 @@ export default function PortalDashboard() {
             ))}
           </div>
           <Link href="/portal/records" className="block border-t border-[#F8FAFC] px-5 py-3.5 text-center text-[13px] font-semibold text-[#4F46E5] hover:underline">View all records →</Link>
-        </div>
+        </Card>
 
         {/* Turnaround time */}
-        <div className={`${CARD} p-6`}>
+        <Card radius="md" elevation="none" border="hairline" className="p-6">
           <div className="text-[14px] font-semibold text-[#0a0b1a]">Turnaround Time</div>
           <div className="mt-0.5 text-[11px] text-[#64748b]">Last 30 days</div>
           <div className="mt-5 text-[40px] font-extrabold leading-none text-[#0a0b1a]">2.1</div>
@@ -138,11 +138,11 @@ export default function PortalDashboard() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Messages preview */}
-      <div className={CARD}>
+      <Card radius="md" elevation="none" border="hairline">
         <div className="flex items-center justify-between px-5 py-4">
           <h2 className="text-[17px] font-bold text-[#0F172A]">Recent Messages</h2>
           <Link href="/portal/messages" className="text-[13px] font-semibold text-[#4F46E5] hover:underline">View all →</Link>
@@ -167,7 +167,7 @@ export default function PortalDashboard() {
             <MessageSquarePlus size={15} /> New Message
           </Link>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

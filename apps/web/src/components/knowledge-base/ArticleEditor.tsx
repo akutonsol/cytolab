@@ -8,8 +8,8 @@ import {
   KbArticle, archiveArticle, createArticle, listCategories, publishArticle, updateArticle,
 } from '@/lib/knowledge-base';
 import { Markdown } from './Markdown';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)]';
 const INPUT = 'w-full rounded-lg border border-[#E2E8F0] px-3 py-2.5 text-[14px] text-[#0F172A] outline-none focus:border-[#4F46E5]';
 const LABEL = 'mb-1.5 block text-[13px] font-semibold text-[#334155]';
 
@@ -106,7 +106,7 @@ export function ArticleEditor({ article }: { article?: KbArticle }) {
       )}
 
       {/* Metadata */}
-      <div className={`${CARD} mb-4 p-5`}>
+      <Card radius="md" elevation="raised" border="hairline" className="mb-4 p-5">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <label className={LABEL}>Title</label>
@@ -138,19 +138,19 @@ export function ArticleEditor({ article }: { article?: KbArticle }) {
             <textarea className={`${INPUT} resize-none`} rows={2} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Short summary shown in listings and search results" />
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Editor + preview */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className={`${CARD} flex flex-col p-5`}>
+        <Card radius="md" elevation="raised" border="hairline" className="flex flex-col p-5">
           <label className={LABEL}>Content (Markdown)</label>
           <textarea className={`${INPUT} min-h-[460px] flex-1 font-mono text-[13px] leading-relaxed`} value={content}
             onChange={(e) => setContent(e.target.value)} placeholder="# Heading&#10;&#10;Write your article in **Markdown**…" />
-        </div>
-        <div className={`${CARD} p-5`}>
+        </Card>
+        <Card radius="md" elevation="raised" border="hairline" className="p-5">
           <div className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-[#334155]"><Eye size={15} className="text-[#4F46E5]" /> Live preview</div>
           {content.trim() ? <Markdown content={content} /> : <div className="py-16 text-center text-[13px] text-[#475569]">Preview appears here as you type.</div>}
-        </div>
+        </Card>
       </div>
     </div>
   );

@@ -12,12 +12,12 @@ import {
   AGREEMENT_META, STATUS_META, TIMELINE, URGENCY_META, shortDate, timelineIndex,
   type Consult, type ConsultAnalytics, type ConsultStatus,
 } from '@/lib/teleconsult';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 const TABS: (ConsultStatus | 'all')[] = ['all', 'Pending', 'Responded', 'Accepted'];
 
 function Kpi({ label, value, fg = '#0F172A' }: { label: string; value: string; fg?: string }) {
-  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></div>;
+  return <Card radius="md" elevation="soft" border="hairline" className="p-4"><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></Card>;
 }
 
 function Timeline({ status }: { status: ConsultStatus }) {
@@ -78,7 +78,7 @@ export default function TeleconsultPage() {
 
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Kpi label="Active Requests" value={String(analytics?.pending ?? 0)} />
-        <Kpi label="Awaiting Response" value={String(analytics?.pending ?? 0)} fg={(analytics?.pending ?? 0) > 0 ? '#B45309' : '#0F172A'} />
+        <Kpi label="Awaiting Response" value={String(analytics?.pending ?? 0)} fg={(analytics?.pending ?? 0) > 0 ? 'var(--color-warning)' : '#0F172A'} />
         <Kpi label="Responded" value={String(analytics?.responded ?? 0)} fg="#16A34A" />
         <Kpi label="Avg Response Time" value={`${analytics?.avgResponseDays ?? 0}d`} fg="#4F46E5" />
       </div>
@@ -90,14 +90,14 @@ export default function TeleconsultPage() {
       </div>
 
       {list.length === 0 ? (
-        <div className={`${CARD} p-12 text-center text-[#475569]`}>No consultations.</div>
+        <Card radius="md" elevation="soft" border="hairline" className="p-12 text-center text-[#475569]">No consultations.</Card>
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {list.map((c) => {
             const u = URGENCY_META[c.urgency];
             const s = STATUS_META[c.status];
             return (
-              <div key={c.id} className={`${CARD} flex flex-col p-4`}>
+              <Card radius="md" elevation="soft" border="hairline" className="flex flex-col p-4" key={c.id}>
                 <div className="mb-2 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: u.bg, color: u.fg }}>{u.label}</span>
@@ -132,7 +132,7 @@ export default function TeleconsultPage() {
                     </>
                   )}
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>

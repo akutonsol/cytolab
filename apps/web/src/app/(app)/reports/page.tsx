@@ -10,6 +10,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
+import { Card } from '@/components/ui';
 
 interface Summary { total: number; thisMonth: number; authorized: number; pending: number }
 interface Report {
@@ -27,7 +28,6 @@ interface Report {
   } | null;
 }
 
-const CARD = 'glass-card rounded-2xl';
 const PAGE_SIZE = 20;
 
 const fmtDateTime = (iso?: string | null) =>
@@ -156,7 +156,7 @@ function ReportsWorkspace() {
       </div>
 
       {/* Table card */}
-      <div className={`${CARD} p-6`}>
+      <Card radius="md" elevation="none" border="none" className="glass-card p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-headline-sm text-headline-sm text-charcoal-heading">Released Reports · {total}</h2>
           <div className="flex items-center gap-2">
@@ -240,7 +240,7 @@ function ReportsWorkspace() {
         {rows.length > 0 && (
           <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
         )}
-      </div>
+      </Card>
 
       {releaseOpen && recordForRelease && (
         <ReleaseModal

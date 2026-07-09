@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { Button } from '@/components/ui';
 
 interface Attachment {
   id: string;
@@ -122,7 +123,7 @@ export default function FilesPage() {
             <h1 className="font-headline-lg text-headline-lg text-charcoal-heading">Files</h1>
             <p className="mt-1 font-body-sm text-body-sm text-secondary">Record attachments and specimen images.</p>
           </div>
-          <button className="btn-primary" onClick={() => setUploadOpen(true)}><Upload size={16} /> Upload</button>
+          <Button onClick={() => setUploadOpen(true)}><Upload size={16} /> Upload</Button>
         </div>
 
         {/* KPI strip */}
@@ -133,7 +134,7 @@ export default function FilesPage() {
           </div>
           <div className="glass-card rounded-2xl p-5">
             <div className="flex items-center gap-2">
-              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: isGcs ? '#16A34A' : '#B45309' }} />
+              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: isGcs ? '#16A34A' : 'var(--color-warning)' }} />
               <div className="font-display text-[24px] font-bold leading-none text-[#0F172A]">{isGcs ? 'Google Cloud' : 'Local'}</div>
             </div>
             <div className="mt-2 font-label-sm text-label-sm uppercase tracking-wider text-secondary">Storage Mode</div>
@@ -155,7 +156,7 @@ export default function FilesPage() {
             </div>
           ) : (
             <div className="mb-5 flex items-center gap-3 rounded-2xl border px-5 py-4" style={{ background: '#FFFBEB', borderColor: '#FDE68A' }}>
-              <HardDrive size={18} style={{ color: '#B45309' }} />
+              <HardDrive size={18} style={{ color: 'var(--color-warning)' }} />
               <span className="font-body-sm text-body-sm" style={{ color: '#92400E' }}>
                 Using local storage — configure STORAGE_BUCKET for Google Cloud Storage.
               </span>
@@ -254,8 +255,8 @@ export default function FilesPage() {
             <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">Delete “{confirm.filename}”?</h3>
             <p className="mt-2 font-body-sm text-body-sm text-secondary">This permanently removes the file.</p>
             <div className="mt-6 flex justify-end gap-2">
-              <button className="btn-secondary" onClick={() => setConfirm(null)}>Cancel</button>
-              <button className="btn-primary" style={{ background: '#DC2626', boxShadow: '0 4px 12px rgba(220,38,38,0.2)' }} disabled={del.isPending} onClick={() => del.mutate(confirm.id)}>Delete</button>
+              <Button variant="secondary" onClick={() => setConfirm(null)}>Cancel</Button>
+              <Button style={{ background: '#DC2626', boxShadow: '0 4px 12px rgba(220,38,38,0.2)' }} disabled={del.isPending} onClick={() => del.mutate(confirm.id)}>Delete</Button>
             </div>
           </div>
         </div>
@@ -296,7 +297,7 @@ function PreviewModal({ file, onClose, onDownload }: { file: Attachment; onClose
               {gcs ? (
                 <a href={file.storageUrl} target="_blank" rel="noreferrer" className="btn-secondary">Open in new tab</a>
               ) : (
-                <button className="btn-secondary" onClick={onDownload}>Download</button>
+                <Button variant="secondary" onClick={onDownload}>Download</Button>
               )}
             </div>
           )}
@@ -441,10 +442,10 @@ function UploadModal({ onClose, onUploaded, onError }: { onClose: () => void; on
         )}
 
         <div className="mt-6 flex justify-end gap-2">
-          <button className="btn-secondary" onClick={onClose} disabled={uploading}>Cancel</button>
-          <button className="btn-primary" disabled={!file || uploading} style={{ opacity: !file || uploading ? 0.5 : 1 }} onClick={doUpload}>
+          <Button variant="secondary" onClick={onClose} disabled={uploading}>Cancel</Button>
+          <Button disabled={!file || uploading} style={{ opacity: !file || uploading ? 0.5 : 1 }} onClick={doUpload}>
             {uploading ? 'Uploading…' : 'Upload'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -12,8 +12,8 @@ import {
   CORRELATION_RESULTS, DONUT_COLOR, RESULT_META, patientName, shortDate,
   type CorrelationAnalytics, type CorrelationCase, type CorrelationResult,
 } from '@/lib/correlation';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 
 function ResultBadge({ r }: { r: CorrelationResult | null }) {
   const m = RESULT_META[r ?? 'Unresolved'];
@@ -21,7 +21,7 @@ function ResultBadge({ r }: { r: CorrelationResult | null }) {
 }
 
 function Kpi({ label, value, fg = '#0F172A' }: { label: string; value: string | number; fg?: string }) {
-  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></div>;
+  return <Card radius="md" elevation="soft" border="hairline" className="p-4"><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></Card>;
 }
 
 export default function CorrelationPage() {
@@ -76,7 +76,7 @@ export default function CorrelationPage() {
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[65fr_35fr]">
         {/* Cases table */}
-        <div className={CARD}>
+        <Card radius="md" elevation="soft" border="hairline">
           <div className="flex flex-wrap items-center gap-2 border-b border-[#EEF2F7] p-3">
             <select value={fResult} onChange={(e) => setFResult(e.target.value)} className="h-9 rounded-lg border border-[#E2E8F0] px-2 text-[13px] outline-none">
               <option value="">All results</option>{CORRELATION_RESULTS.map((r) => <option key={r} value={r}>{RESULT_META[r].label}</option>)}
@@ -111,11 +111,11 @@ export default function CorrelationPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
 
         {/* Analytics panel */}
         <div className="flex flex-col gap-5">
-          <div className={`${CARD} p-4`}>
+          <Card radius="md" elevation="soft" border="hairline" className="p-4">
             <div className="mb-2 text-[15px] font-bold text-[#0F172A]">Concordance Distribution</div>
             {donut.length === 0 ? <div className="py-8 text-center text-[13px] text-[#475569]">No data yet.</div> : (
               <ResponsiveContainer width="100%" height={190}>
@@ -125,8 +125,8 @@ export default function CorrelationPage() {
                 </PieChart>
               </ResponsiveContainer>
             )}
-          </div>
-          <div className={`${CARD} p-4`}>
+          </Card>
+          <Card radius="md" elevation="soft" border="hairline" className="p-4">
             <div className="mb-2 text-[15px] font-bold text-[#0F172A]">Monthly Trend <span className="text-[12px] font-normal text-[#475569]">· 6 months</span></div>
             <ResponsiveContainer width="100%" height={140}>
               <BarChart data={analytics?.byMonth ?? []} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
@@ -137,8 +137,8 @@ export default function CorrelationPage() {
                 <Bar dataKey="majorDiscordant" stackId="a" fill={DONUT_COLOR.MajorDiscordant} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
-          <div className={`${CARD} p-4`}>
+          </Card>
+          <Card radius="md" elevation="soft" border="hairline" className="p-4">
             <div className="mb-2 text-[15px] font-bold text-[#0F172A]">Pending Review ({pending.length})</div>
             {pending.length === 0 ? <div className="text-[13px] text-[#475569]">Nothing awaiting review.</div> : (
               <div className="flex flex-col gap-2">
@@ -150,7 +150,7 @@ export default function CorrelationPage() {
                 ))}
               </div>
             )}
-          </div>
+          </Card>
         </div>
       </div>
 

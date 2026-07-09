@@ -5,10 +5,10 @@ import {
   Bar, BarChart, Area, AreaChart, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
 import { Calendar, Check, ChevronDown, Clock, Droplet, FlaskConical, Filter, Plus, ScanLine, SlidersHorizontal, TestTube, TrendingUp } from 'lucide-react';
+import { Card } from '@/components/ui';
 
 // ── Palette (zero-orange: indigo / teal / emerald / slate only) ──────────────
 const INDIGO = '#4F46E5', INDIGO_LT = '#A5B4FC', TEAL = '#0D9488', EMERALD = '#10B981', SLATE = '#94A3B8';
-const CARD = 'bg-white rounded-2xl border border-gray-100 p-6 shadow-sm';
 
 // ── Seeded data (matches the reference; monthly/financial breakdowns are not
 //    yet exposed by /analytics/home, so these are placeholders ready to wire). ──
@@ -646,7 +646,7 @@ export default function AnalyticsPage() {
           {/* ── TOP SECTION ── */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Left — Monthly Specimen Volume */}
-            <div className={CARD}>
+            <Card radius="md" elevation="sm" border="faint" padding="lg">
               <div className="mb-4 flex items-start justify-between">
                 <span className="text-lg font-bold text-gray-900">Monthly Specimen Volume</span>
                 <div className="text-right">
@@ -697,12 +697,12 @@ export default function AnalyticsPage() {
                   ))}
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Right column */}
             <div className="flex flex-col gap-6">
               {/* Case Conversion Rate */}
-              <div className={CARD}>
+              <Card radius="md" elevation="sm" border="faint" padding="lg">
                 <div className="mb-4 flex items-start justify-between gap-4">
                   <span className="text-lg font-bold text-gray-900">Case Conversion Rate</span>
                   <div className="flex items-start gap-3">
@@ -727,10 +727,10 @@ export default function AnalyticsPage() {
                     <Bar dataKey="pending" name="Received" stackId="c" fill={INDIGO_LT} radius={[6, 6, 0, 0]} maxBarSize={22} />
                   </BarChart>
                 </ResponsiveContainer>
-              </div>
+              </Card>
 
               {/* Specimen Type Distribution */}
-              <div className={CARD}>
+              <Card radius="md" elevation="sm" border="faint" padding="lg">
                 <div className="mb-4 text-lg font-bold text-gray-900">Specimen Type Distribution</div>
                 <div className="space-y-4">
                   {DISTRIBUTION.map(({ label, specimens, pct, color, Icon }) => (
@@ -751,12 +751,12 @@ export default function AnalyticsPage() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </Card>
             </div>
           </div>
 
           {/* ── BOTTOM SECTION: Revenue ── */}
-          <div className={`${CARD} mt-6`}>
+          <Card radius="md" elevation="sm" border="faint" padding="lg" className="mt-6">
             <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
               <div>
                 <div className="text-sm font-medium text-gray-500">Total Revenue</div>
@@ -810,7 +810,7 @@ export default function AnalyticsPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
         </>
       )}
     </div>

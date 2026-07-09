@@ -12,11 +12,12 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
 import { CATEGORIES, REPORTS, fmtValue, type ReportCategory, type ReportDef } from '@/lib/report-center';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 
 // ── Category coding (color + icon + full label) ──────────────────────────────
-// Zero-orange: Quality uses the sanctioned dark amber #B45309; every tint is a
+// Zero-orange: Quality uses --color-warning (#A16207); #B45309 is NOT sanctioned —
+// it anti-aliases into the trip box. Every tint is a
 // low-alpha wash of the category colour (never a standalone orange).
 const CAT: Record<ReportCategory, { color: string; Icon: LucideIcon; label: string }> = {
   Specimen: { color: '#3f97ef', Icon: FlaskConical, label: 'Specimen' },
@@ -24,7 +25,7 @@ const CAT: Record<ReportCategory, { color: string; Icon: LucideIcon; label: stri
   Financial: { color: '#059669', Icon: DollarSign, label: 'Financial' },
   Patient: { color: '#7C3AED', Icon: Users, label: 'Patient' },
   Staff: { color: '#475569', Icon: UserCog, label: 'Staff' },
-  Quality: { color: '#B45309', Icon: ShieldCheck, label: 'Quality & Compliance' },
+  Quality: { color: 'var(--color-warning)', Icon: ShieldCheck, label: 'Quality & Compliance' },
 };
 const tint = (color: string) => `${color}1A`; // ~10% wash over white
 
@@ -188,10 +189,10 @@ export default function ReportCenterPage() {
             { label: 'GYN', value: fmtValue(summary?.specimens?.gyn ?? 0, 'number'), fg: '#4F46E5' },
             { label: 'Non-GYN', value: fmtValue(summary?.specimens?.nonGyn ?? 0, 'number'), fg: '#7C3AED' },
           ].map((s) => (
-            <div key={s.label} className={`${CARD} px-4 py-2.5`}>
+            <Card radius="md" elevation="soft" border="hairline" className="px-4 py-2.5" key={s.label}>
               <div className="text-[11px] font-semibold uppercase tracking-wide text-[#475569]">{s.label}</div>
               <div className="text-[18px] font-bold" style={{ color: s.fg }}>{s.value}</div>
-            </div>
+            </Card>
           ))}
         </div>
       </div>
@@ -237,12 +238,12 @@ export default function ReportCenterPage() {
       </div>
 
       {searched.length === 0 ? (
-        <div className={`${CARD} p-12 text-center text-[#475569]`}>
+        <Card radius="md" elevation="soft" border="hairline" className="p-12 text-center text-[#475569]">
           {topTab === 'favorites' ? 'No favorite reports yet — tap the star on any report to add it here.'
             : topTab === 'recent' ? 'No reports run yet — reports you run will appear here.'
             : topTab === 'saved' ? 'Nothing saved yet — reports you run are kept here.'
             : 'No reports match your search.'}
-        </div>
+        </Card>
       ) : showLanding ? (
         <>
           {/* Featured Reports */}
@@ -356,7 +357,7 @@ function Spark({ id, color }: { id: string; color: string }) {
 function FeaturedCard({ r, runs, onRun }: { r: ReportDef; runs: number; onRun: () => void }) {
   const { color } = CAT[r.category];
   return (
-    <div className={`${CARD} flex flex-col p-4 transition-shadow hover:shadow-md`}>
+    <Card radius="md" elevation="soft" border="hairline" className="flex flex-col p-4 transition-shadow hover:shadow-md">
       <div className="flex items-start justify-between">
         <CatIcon category={r.category} />
         <TrendBadge id={r.id} />
@@ -373,7 +374,7 @@ function FeaturedCard({ r, runs, onRun }: { r: ReportDef; runs: number; onRun: (
           <ArrowUpRight size={16} />
         </button>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -382,7 +383,7 @@ function ReportCard({ r, runs, fav, menuOpen, onRun, onCustomize, onShare, onTog
   onRun: () => void; onCustomize: () => void; onShare: () => void; onToggleFav: () => void; onMenu: (e: React.MouseEvent) => void;
 }) {
   return (
-    <div className={`${CARD} relative flex flex-col p-4 transition-shadow hover:shadow-md`}>
+    <Card radius="md" elevation="soft" border="hairline" className="relative flex flex-col p-4 transition-shadow hover:shadow-md">
       <div className="flex items-start gap-3">
         <CatIcon category={r.category} size={36} />
         <div className="min-w-0 flex-1">
@@ -407,7 +408,7 @@ function ReportCard({ r, runs, fav, menuOpen, onRun, onCustomize, onShare, onTog
           )}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -425,7 +426,7 @@ function ReportTable({ items, favSet, runCount, onRun, onCustomize, onToggleFav 
 }) {
   const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#475569] whitespace-nowrap';
   return (
-    <div className={`${CARD} overflow-hidden p-0`}>
+    <Card radius="md" elevation="soft" border="hairline" className="overflow-hidden p-0">
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-[13px]">
           <thead>
@@ -464,6 +465,6 @@ function ReportTable({ items, favSet, runCount, onRun, onCustomize, onToggleFav 
           </tbody>
         </table>
       </div>
-    </div>
+    </Card>
   );
 }

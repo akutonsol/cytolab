@@ -9,12 +9,10 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useMyEmployee, empName, fmtDate, daysBetweenInclusive, WF_STATUS } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
+import { Card, Button, Th, Td } from '@/components/ui';
 
-const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
-const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
-const CELL = 'px-4 py-3 align-middle text-sm';
 
 function StatusBadge({ status }: { status: string }) {
   const s = WF_STATUS[status] ?? WF_STATUS.PENDING;
@@ -56,7 +54,7 @@ function RequestModal({ employeeId, onClose }: { employeeId: string; onClose: ()
         <label className="mb-1 block text-sm font-medium text-slate-600">Reason <span className="text-slate-500">(optional)</span></label>
         <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} className="mb-4 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-primary" placeholder="Add a note…" />
         {err && <div className="mb-2 text-sm text-error">{err}</div>}
-        <div className="flex justify-end gap-2"><button onClick={onClose} className="btn-secondary">Cancel</button><button onClick={() => submit.mutate()} disabled={!valid || submit.isPending} className="btn-primary" style={{ opacity: !valid || submit.isPending ? 0.5 : 1 }}>{submit.isPending ? 'Submitting…' : 'Submit Request'}</button></div>
+        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={() => submit.mutate()} disabled={!valid || submit.isPending}  style={{ opacity: !valid || submit.isPending ? 0.5 : 1 }}>{submit.isPending ? 'Submitting…' : 'Submit Request'}</Button></div>
       </div>
     </div>
   );
@@ -81,23 +79,23 @@ function MyLeaveTab() {
   const { items: pageRows, loading, initialLoading, hasMore, sentinelRef } = useInfiniteScroll<any>({ fetchFn, pageSize: 20 });
 
   if (isLoading) return <div className="p-8 text-sm text-slate-500">Loading…</div>;
-  if (!employee) return <div className={`${CARD} p-6 text-sm text-slate-500`}>No employee profile is linked to your account.</div>;
+  if (!employee) return <Card radius="sm" elevation="sm" border="subtle" className="p-6 text-sm text-slate-500">No employee profile is linked to your account.</Card>;
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-base font-semibold text-charcoal-heading">Balances · {new Date().getFullYear()}</h2>
-        <button onClick={() => setReqOpen(true)} className="btn-primary"><Plus size={16} /> Request Leave</button>
+        <Button onClick={() => setReqOpen(true)}><Plus size={16} /> Request Leave</Button>
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {balances.length === 0 && <div className={`${CARD} p-5 text-sm text-slate-500`}>No balances initialised for this year.</div>}
+        {balances.length === 0 && <Card radius="sm" elevation="sm" border="subtle" className="p-5 text-sm text-slate-500">No balances initialised for this year.</Card>}
         {balances.map((b: any) => {
           const remaining = b.entitlement - b.used - b.pending;
           const usedPct = b.entitlement > 0 ? Math.min(100, Math.round((b.used / b.entitlement) * 100)) : 0;
           const pendPct = b.entitlement > 0 ? Math.min(100 - usedPct, Math.round((b.pending / b.entitlement) * 100)) : 0;
           return (
-            <div key={b.id} className={`${CARD} p-5`}>
+            <Card radius="sm" elevation="sm" border="subtle" className="p-5" key={b.id}>
               <div className="mb-3 flex items-center gap-2"><span className="grid h-9 w-9 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><CalendarOff size={17} /></span><span className="text-sm font-semibold text-charcoal-heading">{b.leaveType?.name ?? 'Leave'}</span></div>
               <div className="mb-1 flex items-end justify-between"><span className="text-3xl font-bold leading-none text-charcoal-heading">{remaining}</span><span className="text-xs text-slate-500">of {b.entitlement} days</span></div>
               <div className="mb-2 text-[11px] font-medium text-slate-500">remaining</div>
@@ -106,32 +104,32 @@ function MyLeaveTab() {
                 <div className="h-full" style={{ width: `${pendPct}%`, background: '#A16207' }} />
               </div>
               <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500"><span>Used {b.used}</span><span style={{ color: '#A16207' }}>Pending {b.pending}</span></div>
-            </div>
+            </Card>
           );
         })}
       </div>
 
       <h2 className="mb-3 text-base font-semibold text-charcoal-heading">My Requests</h2>
-      <div className={`${CARD} overflow-hidden`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
-            <thead><tr className="border-b border-slate-100"><th className={TH}>Type</th><th className={TH}>Start</th><th className={TH}>End</th><th className={`${TH} text-right`}>Days</th><th className={TH}>Status</th></tr></thead>
+            <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Type</Th><Th density="compact" size="xs">Start</Th><Th density="compact" size="xs">End</Th><Th density="compact" size="xs" className="text-right">Days</Th><Th density="compact" size="xs">Status</Th></tr></thead>
             <tbody>
-              {!initialLoading && requests.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-500">No leave requests yet.</td></tr>}
+              {!initialLoading && requests.length === 0 && <tr><Td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-500">No leave requests yet.</Td></tr>}
               {pageRows.map((r: any) => (
                 <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className={`${CELL} font-medium text-charcoal-heading`}>{r.leaveType?.name ?? '—'}</td>
-                  <td className={`${CELL} text-slate-600`}>{fmtDate(r.startDate)}</td>
-                  <td className={`${CELL} text-slate-600`}>{fmtDate(r.endDate)}</td>
-                  <td className={`${CELL} text-right`}>{r.totalDays}</td>
-                  <td className={CELL}><StatusBadge status={r.status} /></td>
+                  <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{r.leaveType?.name ?? '—'}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-slate-600">{fmtDate(r.startDate)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-slate-600">{fmtDate(r.endDate)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right">{r.totalDays}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm"><StatusBadge status={r.status} /></Td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
         {pageRows.length > 0 && <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />}
-      </div>
+      </Card>
 
       {reqOpen && <RequestModal employeeId={employee.id} onClose={() => setReqOpen(false)} />}
     </div>
@@ -169,30 +167,30 @@ function ManageLeaveTab() {
 
   return (
     <div>
-      <div className={`${CARD} mb-6 flex flex-wrap items-center gap-3 p-4`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="mb-6 flex flex-wrap items-center gap-3 p-4">
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary">
           {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((s) => <option key={s} value={s}>{s === 'ALL' ? 'All Statuses' : s}</option>)}
         </select>
         <input type="date" value={startDate} onChange={(e) => setStart(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary" />
         <span className="text-sm text-slate-500">to</span>
         <input type="date" value={endDate} onChange={(e) => setEnd(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary" />
-      </div>
+      </Card>
 
-      <div className={`${CARD} overflow-hidden`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
-            <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Type</th><th className={TH}>Dates</th><th className={`${TH} text-right`}>Days</th><th className={TH}>Reason</th><th className={TH}>Status</th><th className={`${TH} text-right`}>Actions</th></tr></thead>
+            <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs">Type</Th><Th density="compact" size="xs">Dates</Th><Th density="compact" size="xs" className="text-right">Days</Th><Th density="compact" size="xs">Reason</Th><Th density="compact" size="xs">Status</Th><Th density="compact" size="xs" className="text-right">Actions</Th></tr></thead>
             <tbody>
-              {!initialLoading && requests.length === 0 && <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-500">No leave requests match these filters.</td></tr>}
+              {!initialLoading && requests.length === 0 && <tr><Td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-500">No leave requests match these filters.</Td></tr>}
               {pageRows.map((r: any) => (
                 <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className={`${CELL} font-medium text-charcoal-heading`}>{empName(r.employee)}</td>
-                  <td className={`${CELL} text-slate-600`}>{r.leaveType?.name ?? '—'}</td>
-                  <td className={`${CELL} text-slate-600`}>{fmtDate(r.startDate)} – {fmtDate(r.endDate)}</td>
-                  <td className={`${CELL} text-right`}>{r.totalDays}</td>
-                  <td className={`${CELL} max-w-[220px] truncate text-slate-500`} title={r.reason ?? ''}>{r.reason ?? '—'}</td>
-                  <td className={CELL}><StatusBadge status={r.status} /></td>
-                  <td className={CELL}>
+                  <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{empName(r.employee)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-slate-600">{r.leaveType?.name ?? '—'}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-slate-600">{fmtDate(r.startDate)} – {fmtDate(r.endDate)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right">{r.totalDays}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm max-w-[220px] truncate text-slate-500" title={r.reason ?? ''}>{r.reason ?? '—'}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm"><StatusBadge status={r.status} /></Td>
+                  <Td density="compact" tone="inherit" className="text-sm">
                     {r.status === 'PENDING' ? (
                       rejecting === r.id ? (
                         <div className="flex items-center justify-end gap-1.5">
@@ -207,14 +205,14 @@ function ManageLeaveTab() {
                         </div>
                       )
                     ) : <span className="text-xs text-slate-500">—</span>}
-                  </td>
+                  </Td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
         {pageRows.length > 0 && <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />}
-      </div>
+      </Card>
     </div>
   );
 }

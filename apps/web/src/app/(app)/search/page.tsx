@@ -13,18 +13,19 @@ interface Hit {
 interface Results { patients: Hit[]; records: Hit[]; clients: Hit[]; bills: Hit[]; total: number }
 
 const RECENT_KEY = 'cytolab-recent-searches';
-// Per-type icon + tint. Bill amber uses detector-safe #B45309 for the glyph.
+// Per-type icon + tint. Bill amber uses --color-warning (#A16207) for the glyph:
+// #B45309 passes as a solid but trips the detector when anti-aliased.
 const ICON: Record<Hit['type'], { bg: string; color: string; Icon: any }> = {
   patient: { bg: '#EEF2FF', color: '#4F46E5', Icon: User },
   record: { bg: '#F0FDF4', color: '#16A34A', Icon: FileText },
   client: { bg: '#FFF1F2', color: '#E11D48', Icon: Building2 },
-  bill: { bg: '#FFFBEB', color: '#B45309', Icon: Receipt },
+  bill: { bg: '#FFFBEB', color: 'var(--color-warning)', Icon: Receipt },
 };
 const SECTIONS: { key: keyof Results; label: string; type: Hit['type']; badgeBg: string; badgeColor: string }[] = [
   { key: 'patients', label: 'Patients', type: 'patient', badgeBg: '#EEF2FF', badgeColor: '#4F46E5' },
   { key: 'records', label: 'Records', type: 'record', badgeBg: '#F0FDF4', badgeColor: '#16A34A' },
   { key: 'clients', label: 'Clients', type: 'client', badgeBg: '#FFF1F2', badgeColor: '#E11D48' },
-  { key: 'bills', label: 'Bills', type: 'bill', badgeBg: '#FFFBEB', badgeColor: '#B45309' },
+  { key: 'bills', label: 'Bills', type: 'bill', badgeBg: '#FFFBEB', badgeColor: 'var(--color-warning)' },
 ];
 const QUICK = [
   { label: 'All Patients', href: '/patients', ...ICON.patient },

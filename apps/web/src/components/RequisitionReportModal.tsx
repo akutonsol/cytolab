@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Mail, Printer, RefreshCw, X } from 'lucide-react';
 import { api } from '@/lib/api';
+import { Button } from '@/components/ui';
 
 interface Props {
   open: boolean;
@@ -18,7 +19,7 @@ const fmtD = (d?: string) => (d ? new Date(d).toLocaleDateString(undefined, { mo
 const fmtDT = (d?: string) => (d ? new Date(d).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
 
 const STATUS_LABEL: Record<string, string> = { Partial: 'PARTIAL', Completed: 'COMPLETE', Active: 'RECEIVED', Pending: 'PENDING', Disabled: 'DISABLED' };
-const STATUS_COLOR: Record<string, string> = { Partial: '#B45309', Completed: '#15803D', Active: '#1D4ED8', Pending: '#475569', Disabled: '#475569' };
+const STATUS_COLOR: Record<string, string> = { Partial: 'var(--color-warning)', Completed: '#15803D', Active: '#1D4ED8', Pending: '#475569', Disabled: '#475569' };
 const stLabel = (s: string) => STATUS_LABEL[s] ?? s.toUpperCase();
 const stColor = (s: string) => STATUS_COLOR[s] ?? '#475569';
 
@@ -114,7 +115,7 @@ export function RequisitionReportModal({ open, onClose, clients }: Props) {
               {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
-          <button onClick={run} disabled={loading} className="btn-primary" style={{ opacity: loading ? 0.6 : 1 }}>Run Report</button>
+          <Button onClick={run} disabled={loading}  style={{ opacity: loading ? 0.6 : 1 }}>Run Report</Button>
           <button onClick={reset} aria-label="Reset" title="Reset to defaults" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button>
         </div>
 

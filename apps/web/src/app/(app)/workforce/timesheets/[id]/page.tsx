@@ -7,8 +7,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FeatureGate } from '@/components/FeatureGate';
 import { fmtDate, fmtTime, SHIFT_CHIP } from '@/lib/workforce';
+import { Card, Button } from '@/components/ui';
 
-const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 const STATUS: Record<string, { bg: string; fg: string }> = {
   Draft: { bg: '#F1F5F9', fg: '#475569' }, Submitted: { bg: '#E0F2FE', fg: '#0284C7' }, UnderReview: { bg: '#EEF2FF', fg: '#4F46E5' },
   Approved: { bg: '#DCFCE7', fg: '#16A34A' }, Rejected: { bg: '#FEE2E2', fg: '#DC2626' }, PayrollLocked: { bg: '#F1F5F9', fg: '#334155' },
@@ -32,7 +32,7 @@ function Detail({ id }: { id: string }) {
     <div className="w-full">
       <Link href="/workforce/timesheets" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"><ArrowLeft size={15} /> Timesheets</Link>
 
-      <div className={`${CARD} mb-6 flex flex-wrap items-center justify-between gap-4 p-5`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="mb-6 flex flex-wrap items-center justify-between gap-4 p-5">
         <div>
           <div className="text-xl font-bold text-charcoal-heading">{name}</div>
           <div className="text-sm text-slate-500">{ts.employee?.department?.name ?? '—'} · {fmtDate(ts.periodStart)} – {fmtDate(ts.periodEnd)}</div>
@@ -41,16 +41,16 @@ function Detail({ id }: { id: string }) {
         <div className="flex items-center gap-4">
           <div className="text-right"><div className="text-2xl font-bold text-charcoal-heading">{ts.totalHours}h</div><div className="text-xs text-slate-500">{ts.regularHours} reg · {ts.overtimeHours} OT</div></div>
           <div className="flex gap-2">
-            {ts.status === 'Draft' && <button onClick={() => act.mutate({ action: 'submit' })} className="btn-primary"><Send size={15} /> Submit</button>}
+            {ts.status === 'Draft' && <Button onClick={() => act.mutate({ action: 'submit' })}><Send size={15} /> Submit</Button>}
             {['Submitted', 'UnderReview'].includes(ts.status) && <>
               <button onClick={() => act.mutate({ action: 'approve' })} className="inline-flex items-center gap-1.5 rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"><Check size={15} /> Approve</button>
               <button onClick={() => { const r = window.prompt('Reason for rejection?'); if (r) act.mutate({ action: 'reject', reason: r }); }} className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"><X size={15} /> Reject</button>
             </>}
           </div>
         </div>
-      </div>
+      </Card>
 
-      <div className={`${CARD} p-0`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="p-0">
         <div className="px-5 pt-5 text-base font-semibold text-charcoal-heading">Daily Entries</div>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full border-collapse">
@@ -78,7 +78,7 @@ function Detail({ id }: { id: string }) {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

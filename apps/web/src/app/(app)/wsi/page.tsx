@@ -9,11 +9,11 @@ import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
 import { AddSlideModal } from '@/components/AddSlideModal';
 import { formatBytes, shortDate, type DigitalSlide, type WsiSummary } from '@/lib/wsi';
+import { Card } from '@/components/ui';
 
-const CARD = 'rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]';
 
 function Kpi({ label, value }: { label: string; value: number }) {
-  return <div className={`${CARD} p-4`}><div className="text-[24px] font-bold leading-none text-[#0F172A]">{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></div>;
+  return <Card radius="md" elevation="soft" border="hairline" className="p-4"><div className="text-[24px] font-bold leading-none text-[#0F172A]">{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></Card>;
 }
 
 export default function WsiPage() {
@@ -61,7 +61,7 @@ export default function WsiPage() {
         <Kpi label="Total Annotations" value={summary?.totalAnnotations ?? 0} />
       </div>
 
-      <div className={`${CARD} overflow-hidden`}>
+      <Card radius="md" elevation="soft" border="hairline" className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[13px]">
             <thead>
@@ -104,7 +104,7 @@ export default function WsiPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       {uploadOpen && <AddSlideModal onClose={() => setUploadOpen(false)} onSaved={(id) => router.push(`/wsi/${id}`)} />}
     </div>

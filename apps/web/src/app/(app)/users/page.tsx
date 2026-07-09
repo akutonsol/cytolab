@@ -5,6 +5,7 @@ import { Plus, Search, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { Button } from '@/components/ui';
 
 interface UserRow {
   id: string;
@@ -56,7 +57,7 @@ export default function UsersPage() {
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search users"
               className="w-full border-none bg-transparent font-body-sm text-body-sm text-on-surface outline-none placeholder:text-outline" />
           </div>
-          {can('user:create') && <button className="btn-primary" onClick={() => setModalOpen(true)}><Plus size={16} /> New User</button>}
+          {can('user:create') && <Button onClick={() => setModalOpen(true)}><Plus size={16} /> New User</Button>}
         </div>
       </div>
 
@@ -192,10 +193,10 @@ function NewUserModal({ onClose, onCreated, notify }: { onClose: () => void; onC
         </div>
 
         <div className="mt-6 flex justify-end gap-2">
-          <button className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => create.mutate()}>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => create.mutate()}>
             {create.isPending ? 'Creating…' : 'Create User'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

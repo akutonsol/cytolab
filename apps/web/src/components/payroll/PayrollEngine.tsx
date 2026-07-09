@@ -7,10 +7,8 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { jmd, fmtDate } from '@/lib/payroll';
 import { fmtHours, empName } from '@/lib/workforce';
+import { Card, Button, Th, Td } from '@/components/ui';
 
-const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
-const TH = 'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
-const CELL = 'px-4 py-3 align-middle text-sm';
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const periodName = (month: number, year: number) => `${MONTHS[month - 1]} ${year}`;
 
@@ -57,7 +55,7 @@ function NewPeriodModal({ onClose }: { onClose: () => void }) {
         <label className="mb-1 block text-sm font-medium text-slate-600">Year</label>
         <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="mb-4 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary" />
         {err && <div className="mb-2 text-sm text-error">{err}</div>}
-        <div className="flex justify-end gap-2"><button onClick={onClose} className="btn-secondary">Cancel</button><button onClick={() => { setErr(''); create.mutate(); }} disabled={create.isPending} className="btn-primary">{create.isPending ? 'Creating…' : 'Create'}</button></div>
+        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={() => { setErr(''); create.mutate(); }} disabled={create.isPending}>{create.isPending ? 'Creating…' : 'Create'}</Button></div>
       </div>
     </div>
   );
@@ -101,40 +99,40 @@ function PeriodDrawer({ id, onClose }: { id: string; onClose: () => void }) {
         <div className="min-h-0 flex-1 overflow-y-auto p-6">
           <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {summary.map(([label, value]) => (
-              <div key={label} className={`${CARD} p-4`}>
+              <Card radius="sm" elevation="sm" border="subtle" className="p-4" key={label}>
                 <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</div>
                 <div className="mt-1 text-xl font-bold text-charcoal-heading">{value}</div>
-              </div>
+              </Card>
             ))}
           </div>
 
           <div className="mb-3 flex items-center justify-between">
             <span className="text-sm font-semibold text-charcoal-heading">Entries</span>
-            <button onClick={exportCsv} disabled={entries.length === 0} className="btn-secondary disabled:opacity-40"><Download size={15} /> Export CSV</button>
+            <Button variant="secondary" onClick={exportCsv} disabled={entries.length === 0} className="disabled:opacity-40"><Download size={15} /> Export CSV</Button>
           </div>
-          <div className={`${CARD} overflow-hidden`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
-                <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={`${TH} text-right`}>Reg Hrs</th><th className={`${TH} text-right`}>OT Hrs</th><th className={`${TH} text-right`}>Gross</th><th className={`${TH} text-right`}>NIS</th><th className={`${TH} text-right`}>NHT</th><th className={`${TH} text-right`}>Ed Tax</th><th className={`${TH} text-right`}>PAYE</th><th className={`${TH} text-right`}>Net</th></tr></thead>
+                <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs" className="text-right">Reg Hrs</Th><Th density="compact" size="xs" className="text-right">OT Hrs</Th><Th density="compact" size="xs" className="text-right">Gross</Th><Th density="compact" size="xs" className="text-right">NIS</Th><Th density="compact" size="xs" className="text-right">NHT</Th><Th density="compact" size="xs" className="text-right">Ed Tax</Th><Th density="compact" size="xs" className="text-right">PAYE</Th><Th density="compact" size="xs" className="text-right">Net</Th></tr></thead>
                 <tbody>
-                  {entries.length === 0 && <tr><td colSpan={9} className="px-4 py-10 text-center text-sm text-slate-500">No entries — process this period to generate payroll.</td></tr>}
+                  {entries.length === 0 && <tr><Td colSpan={9} className="px-4 py-10 text-center text-sm text-slate-500">No entries — process this period to generate payroll.</Td></tr>}
                   {entries.map((e) => (
                     <tr key={e.id} className="border-b border-slate-100">
-                      <td className={`${CELL} font-medium text-charcoal-heading`}>{empName(e.employee)}</td>
-                      <td className={`${CELL} text-right`}>{fmtHours(e.regularMinutes)}</td>
-                      <td className={`${CELL} text-right`}>{fmtHours(e.overtimeMinutes)}</td>
-                      <td className={`${CELL} text-right font-semibold text-charcoal-heading`}>{jmd(e.grossCents)}</td>
-                      <td className={`${CELL} text-right text-slate-600`}>{jmd(e.nisCents)}</td>
-                      <td className={`${CELL} text-right text-slate-600`}>{jmd(e.nhtCents)}</td>
-                      <td className={`${CELL} text-right text-slate-600`}>{jmd(e.educationTaxCents)}</td>
-                      <td className={`${CELL} text-right text-slate-600`}>{jmd(e.payeCents)}</td>
-                      <td className={`${CELL} text-right font-semibold text-charcoal-heading`}>{jmd(e.netCents)}</td>
+                      <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{empName(e.employee)}</Td>
+                      <Td density="compact" tone="inherit" className="text-sm text-right">{fmtHours(e.regularMinutes)}</Td>
+                      <Td density="compact" tone="inherit" className="text-sm text-right">{fmtHours(e.overtimeMinutes)}</Td>
+                      <Td density="compact" tone="inherit" className="text-sm text-right font-semibold text-charcoal-heading">{jmd(e.grossCents)}</Td>
+                      <Td density="compact" tone="inherit" className="text-sm text-right text-slate-600">{jmd(e.nisCents)}</Td>
+                      <Td density="compact" tone="inherit" className="text-sm text-right text-slate-600">{jmd(e.nhtCents)}</Td>
+                      <Td density="compact" tone="inherit" className="text-sm text-right text-slate-600">{jmd(e.educationTaxCents)}</Td>
+                      <Td density="compact" tone="inherit" className="text-sm text-right text-slate-600">{jmd(e.payeCents)}</Td>
+                      <Td density="compact" tone="inherit" className="text-sm text-right font-semibold text-charcoal-heading">{jmd(e.netCents)}</Td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>
@@ -159,37 +157,37 @@ export function PayrollEngine() {
     <div>
       <div className="mb-5 flex items-center justify-between">
         <p className="text-sm text-secondary">Create a period, then run the engine to calculate gross, statutory deductions and net for every active employee.</p>
-        {isManager && <button onClick={() => setNewOpen(true)} className="btn-primary"><Plus size={16} /> New Period</button>}
+        {isManager && <Button onClick={() => setNewOpen(true)}><Plus size={16} /> New Period</Button>}
       </div>
 
-      <div className={`${CARD} overflow-hidden`}>
+      <Card radius="sm" elevation="sm" border="subtle" className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
-            <thead><tr className="border-b border-slate-100"><th className={TH}>Period</th><th className={`${TH} text-right`}>Employees</th><th className={`${TH} text-right`}>Gross</th><th className={`${TH} text-right`}>Net</th><th className={`${TH} text-right`}>Taxes</th><th className={TH}>Status</th><th className={`${TH} text-right`}>Actions</th></tr></thead>
+            <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Period</Th><Th density="compact" size="xs" className="text-right">Employees</Th><Th density="compact" size="xs" className="text-right">Gross</Th><Th density="compact" size="xs" className="text-right">Net</Th><Th density="compact" size="xs" className="text-right">Taxes</Th><Th density="compact" size="xs">Status</Th><Th density="compact" size="xs" className="text-right">Actions</Th></tr></thead>
             <tbody>
-              {periods.length === 0 && <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-500">No payroll periods yet.</td></tr>}
+              {periods.length === 0 && <tr><Td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-500">No payroll periods yet.</Td></tr>}
               {periods.map((p: any) => (
                 <tr key={p.id} className="cursor-pointer border-b border-slate-100 hover:bg-slate-50" onClick={() => setDetailId(p.id)}>
-                  <td className={`${CELL} font-medium text-charcoal-heading`}>{periodName(p.month, p.year)}</td>
-                  <td className={`${CELL} text-right text-slate-600`}>{p.employeeCount}</td>
-                  <td className={`${CELL} text-right`}>{jmd(p.totalGrossCents)}</td>
-                  <td className={`${CELL} text-right font-semibold text-charcoal-heading`}>{jmd(p.totalNetCents)}</td>
-                  <td className={`${CELL} text-right text-slate-600`}>{jmd(p.totalTaxCents)}</td>
-                  <td className={CELL}><StatusBadge status={p.status} /></td>
-                  <td className={CELL} onClick={(e) => e.stopPropagation()}>
+                  <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{periodName(p.month, p.year)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right text-slate-600">{p.employeeCount}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right">{jmd(p.totalGrossCents)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right font-semibold text-charcoal-heading">{jmd(p.totalNetCents)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm text-right text-slate-600">{jmd(p.totalTaxCents)}</Td>
+                  <Td density="compact" tone="inherit" className="text-sm"><StatusBadge status={p.status} /></Td>
+                  <Td density="compact" tone="inherit" className="text-sm" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1.5">
                       {isManager && p.status === 'DRAFT' && (
                         <button onClick={() => setConfirm(p)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5"><Play size={14} /> Process</button>
                       )}
                       <button onClick={() => setDetailId(p.id)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">View</button>
                     </div>
-                  </td>
+                  </Td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       {newOpen && <NewPeriodModal onClose={() => setNewOpen(false)} />}
       {detailId && <PeriodDrawer id={detailId} onClose={() => setDetailId(null)} />}
@@ -203,8 +201,8 @@ export function PayrollEngine() {
             </div>
             <p className="mb-5 text-sm text-secondary">This will calculate payroll for all active employees for <span className="font-semibold text-charcoal-heading">{periodName(confirm.month, confirm.year)}</span>. Continue?</p>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setConfirm(null)} disabled={process.isPending} className="btn-secondary">Cancel</button>
-              <button onClick={() => process.mutate(confirm.id)} disabled={process.isPending} className="btn-primary">{process.isPending ? 'Processing…' : 'Process Payroll'}</button>
+              <Button variant="secondary" onClick={() => setConfirm(null)} disabled={process.isPending}>Cancel</Button>
+              <Button onClick={() => process.mutate(confirm.id)} disabled={process.isPending}>{process.isPending ? 'Processing…' : 'Process Payroll'}</Button>
             </div>
             {process.isError && <div className="mt-2 text-sm text-error">Processing failed — please try again.</div>}
           </div>
