@@ -34,9 +34,8 @@ export default function AISection() {
   }, [])
 
   const sTag = (label: string) => (
-    <div style={{
-      fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
-      letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.22)',
+    <div className="label" style={{
+      color: 'rgba(9,9,14,0.22)',
       display: 'flex', alignItems: 'center', gap: '9px',
     }}>
       <span style={{ width: 18, height: 1, background: 'rgba(9,9,14,0.18)', display: 'inline-block' }} />
@@ -58,11 +57,8 @@ export default function AISection() {
           <div key={li} style={{ display: 'block', lineHeight: 0.88, marginBottom: '0.25rem' }}>
             {line.map(({ text, ghost, blue }, wi) => (
               <span key={wi} className="word-rise" style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom' }}>
-                <span className="word-rise-inner" style={{
+                <span className="word-rise-inner display-lg" style={{
                   display: 'inline-block',
-                  fontFamily: 'var(--font-serif)',
-                  fontSize: 'clamp(4.5rem, 11vw, 11rem)',
-                  letterSpacing: '-0.04em',
                   color: ghost ? 'transparent' : blue ? '#4F46E5' : '#09090E',
                   WebkitTextStroke: ghost ? '2px rgba(9,9,14,0.2)' : undefined,
                   fontStyle: blue ? 'italic' : 'normal',
@@ -96,8 +92,8 @@ export default function AISection() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {outcomes.map(({ tag, value, blue }) => (
                 <div key={tag} style={{ background: '#fff', border: '1px solid rgba(9,9,14,0.07)', borderRadius: '2px', padding: '1.75rem' }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.25)', marginBottom: '0.5rem' }}>{tag}</div>
-                  <div style={{ fontFamily: 'var(--font-serif)', fontSize: '3.5rem', lineHeight: 0.88, color: blue ? '#4F46E5' : '#09090E' }}>{value}</div>
+                  <div className="label" style={{ color: 'rgba(9,9,14,0.25)', marginBottom: '0.5rem' }}>{tag}</div>
+                  <div className="metric-xl" style={{ color: blue ? '#4F46E5' : '#09090E' }}>{value}</div>
                 </div>
               ))}
             </div>

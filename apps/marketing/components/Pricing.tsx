@@ -17,9 +17,8 @@ const plans = [
 
 export default function Pricing() {
   const sTag = (label: string) => (
-    <div style={{
-      fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
-      letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.22)',
+    <div className="label" style={{
+      color: 'rgba(9,9,14,0.22)',
       display: 'flex', alignItems: 'center', gap: '9px',
     }}>
       <span style={{ width: 18, height: 1, background: 'rgba(9,9,14,0.18)', display: 'inline-block' }} />
@@ -33,7 +32,7 @@ export default function Pricing() {
       <SectionReveal>
         <div style={{ padding: '5rem 2.5rem 3.5rem', borderBottom: '1px solid rgba(9,9,14,0.07)' }}>
           <div style={{ marginBottom: '1.5rem' }}>{sTag('06 · Plans')}</div>
-          <div style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(4rem, 7vw, 7rem)', lineHeight: 0.88, letterSpacing: '-0.04em' }}>
+          <div className="display-lg">
             Built for every<br />
             <span style={{ color: 'transparent', WebkitTextStroke: '2px rgba(9,9,14,0.2)' }}>scale of</span>{' '}
             <span style={{ color: '#4F46E5', fontStyle: 'italic' }}>laboratory.</span>
@@ -50,19 +49,16 @@ export default function Pricing() {
               background: featured ? '#4F46E5' : 'transparent',
               height: '100%',
             }}>
-              <div style={{
-                fontFamily: 'var(--font-mono)', fontSize: '0.52rem', fontWeight: 700,
-                letterSpacing: '0.1em', textTransform: 'uppercase',
+              <div className="label" style={{
                 color: featured ? 'rgba(255,255,255,0.4)' : 'rgba(9,9,14,0.3)',
                 marginBottom: '0.6rem',
               }}>{tier}</div>
-              <div style={{
-                fontFamily: 'var(--font-serif)', fontSize: '2.2rem',
-                color: featured ? '#fff' : '#09090E', lineHeight: 1.0, marginBottom: '2rem',
+              <div className="heading-lg" style={{
+                color: featured ? '#fff' : '#09090E', marginBottom: '2rem',
               }}>{name}</div>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '7px', marginBottom: '2.5rem' }}>
                 {features.map(f => (
-                  <li key={f} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', fontSize: '0.75rem', color: featured ? 'rgba(255,255,255,0.65)' : 'rgba(9,9,14,0.45)' }}>
+                  <li key={f} className="body-sm" style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', color: featured ? 'rgba(255,255,255,0.65)' : 'rgba(9,9,14,0.45)' }}>
                     <span style={{ width: 3, height: 3, background: featured ? 'rgba(255,255,255,0.45)' : '#4F46E5', borderRadius: '50%', flexShrink: 0, marginTop: '6px' }} />
                     {f}
                   </li>
@@ -72,7 +68,7 @@ export default function Pricing() {
                 className="mag-btn"
                 style={{
                   width: '100%', padding: '11px', borderRadius: '2px',
-                  fontFamily: 'var(--font-mono)', fontSize: '0.7rem', fontWeight: 700,
+                  fontFamily: 'var(--font-sans)', fontSize: '0.7rem', fontWeight: 700,
                   letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer',
                   background: featured ? '#fff' : '#09090E',
                   border: 'none',

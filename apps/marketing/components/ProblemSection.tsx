@@ -35,9 +35,8 @@ export default function ProblemSection() {
   }, [])
 
   const sTag = (label: string) => (
-    <div style={{
-      fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
-      letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.22)',
+    <div className="label" style={{
+      color: 'rgba(9,9,14,0.22)',
       display: 'flex', alignItems: 'center', gap: '9px',
     }}>
       <span style={{ width: 18, height: 1, background: 'rgba(9,9,14,0.18)', display: 'inline-block' }} />
@@ -61,11 +60,8 @@ export default function ProblemSection() {
           <div key={li} style={{ display: 'block', lineHeight: 0.88, marginBottom: '0.25rem' }}>
             {line.map(({ text, ghost, blue }, wi) => (
               <span key={wi} className="word-rise" style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom' }}>
-                <span className="word-rise-inner" style={{
+                <span className="word-rise-inner display-lg" style={{
                   display: 'inline-block',
-                  fontFamily: 'var(--font-serif)',
-                  fontSize: 'clamp(4.5rem, 11vw, 11rem)',
-                  letterSpacing: '-0.04em',
                   color: ghost ? 'transparent' : blue ? '#4F46E5' : '#09090E',
                   WebkitTextStroke: ghost ? '2px rgba(9,9,14,0.2)' : undefined,
                   fontStyle: blue ? 'italic' : 'normal',
@@ -120,12 +116,10 @@ export default function ProblemSection() {
           <div style={{ padding: '3.5rem 2.5rem 4.5rem 3rem' }}>
             <div style={{ marginBottom: '2rem' }}>{sTag('The Fix')}</div>
             <div style={{ background: '#4F46E5', padding: '2.5rem', borderRadius: '2px', color: '#fff' }}>
-              <div style={{
-                fontFamily: 'var(--font-mono)', fontSize: '0.52rem', fontWeight: 700,
-                letterSpacing: '0.14em', textTransform: 'uppercase',
+              <div className="label" style={{
                 color: 'rgba(255,255,255,0.35)', marginBottom: '1rem',
               }}>CYTOLAB Platform</div>
-              <div style={{ fontFamily: 'var(--font-serif)', fontSize: '2.4rem', lineHeight: 0.95, marginBottom: '1.5rem' }}>
+              <div className="heading-lg" style={{ marginBottom: '1.5rem' }}>
                 One platform.<br />Zero chaos.
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>

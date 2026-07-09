@@ -37,9 +37,8 @@ export default function Dashboard() {
   }, [])
 
   const sTagInv = (label: string) => (
-    <div style={{
-      fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
-      letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.22)',
+    <div className="label" style={{
+      color: 'rgba(240,239,233,0.22)',
       display: 'flex', alignItems: 'center', gap: '9px',
     }}>
       <span style={{ width: 18, height: 1, background: 'rgba(240,239,233,0.18)', display: 'inline-block' }} />
@@ -63,7 +62,7 @@ export default function Dashboard() {
           }}>Workspace</div>
           <div style={{ position: 'relative', zIndex: 2 }}>
             <div style={{ marginBottom: '1.5rem' }}>{sTagInv('02 · Platform')}</div>
-            <div style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(4rem, 7vw, 7rem)', color: '#fff', lineHeight: 0.88, letterSpacing: '-0.03em' }}>
+            <div className="display-lg" style={{ color: '#fff' }}>
               One workspace.<br />
               <em style={{ fontStyle: 'italic', color: 'rgba(240,239,233,0.18)' }}>Every workflow.</em>
             </div>

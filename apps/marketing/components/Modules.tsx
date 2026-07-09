@@ -33,9 +33,8 @@ export default function Modules() {
   }, [])
 
   const sTag = (label: string) => (
-    <div style={{
-      fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
-      letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.22)',
+    <div className="label" style={{
+      color: 'rgba(9,9,14,0.22)',
       display: 'flex', alignItems: 'center', gap: '9px',
     }}>
       <span style={{ width: 18, height: 1, background: 'rgba(9,9,14,0.18)', display: 'inline-block' }} />
@@ -53,7 +52,7 @@ export default function Modules() {
         }}>
           <div>
             <div style={{ marginBottom: '1.5rem' }}>{sTag('04 · Platform')}</div>
-            <div style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(4rem, 7vw, 7rem)', lineHeight: 0.88, letterSpacing: '-0.04em' }}>
+            <div className="display-lg">
               Ten modules.<br />
               <span style={{ color: 'transparent', WebkitTextStroke: '1px rgba(9,9,14,0.13)' }}>One</span>{' '}
               <span style={{ color: '#4F46E5', fontStyle: 'italic' }}>operating</span><br />
@@ -61,7 +60,7 @@ export default function Modules() {
             </div>
           </div>
           <div style={{ alignSelf: 'end' }}>
-            <p style={{ fontSize: '0.82rem', color: 'rgba(9,9,14,0.32)', lineHeight: 1.7, maxWidth: '280px', fontWeight: 300 }}>
+            <p className="body-md" style={{ color: 'rgba(9,9,14,0.32)', maxWidth: '280px' }}>
               One unified platform replacing every disconnected tool your lab runs today.
             </p>
           </div>

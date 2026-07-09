@@ -45,11 +45,10 @@ function StatCell({ n, suffix, label, ghost, float }: typeof stats[0]) {
         fontFamily: 'var(--font-serif)', fontSize: '7.5rem', lineHeight: 1,
         color: 'rgba(9,9,14,0.04)', pointerEvents: 'none', fontStyle: 'italic', userSelect: 'none',
       }}>{ghost}</div>
-      <div ref={numRef} style={{
-        fontFamily: 'var(--font-serif)', fontSize: 'clamp(3.5rem, 5.5vw, 5.5rem)',
-        lineHeight: 0.88, color: '#09090E', marginBottom: '0.6rem',
+      <div ref={numRef} className="metric-xl" style={{
+        color: '#09090E', marginBottom: '0.6rem',
       }}>0{suffix}</div>
-      <div style={{ fontSize: '0.72rem', color: 'rgba(9,9,14,0.38)', lineHeight: 1.5, maxWidth: '130px' }}>{label}</div>
+      <div className="body-sm" style={{ color: 'rgba(9,9,14,0.38)', maxWidth: '130px' }}>{label}</div>
     </div>
   )
 }

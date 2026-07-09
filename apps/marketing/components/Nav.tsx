@@ -34,7 +34,7 @@ export default function Nav() {
         {['Platform', 'CYTO AI', 'Security', 'Pricing'].map(item => (
           <a key={item} href={`#${item.toLowerCase().replace(' ', '-')}`}
             style={{
-              fontFamily: 'var(--font-mono)', fontSize: '0.68rem', fontWeight: 700,
+              fontFamily: 'var(--font-sans)', fontSize: '0.68rem', fontWeight: 700,
               letterSpacing: '0.08em', textTransform: 'uppercase',
               color: 'rgba(9,9,14,0.32)', textDecoration: 'none', transition: 'color 0.2s',
             }}
@@ -48,7 +48,7 @@ export default function Nav() {
         style={{
           background: '#09090E', color: '#F0EFE9', border: 'none',
           padding: '8px 18px', borderRadius: '2px',
-          fontFamily: 'var(--font-mono)', fontSize: '0.68rem', fontWeight: 700,
+          fontFamily: 'var(--font-sans)', fontSize: '0.68rem', fontWeight: 700,
           letterSpacing: '0.07em', textTransform: 'uppercase', cursor: 'pointer',
           transition: 'background 0.2s',
         }}

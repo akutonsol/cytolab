@@ -218,3 +218,164 @@ button { font-family: inherit; cursor: pointer; }
   .stagger-children > * { opacity: 1; transform: none; transition: none; }
   * { scroll-behavior: auto !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PathOS MARKETING TYPOGRAPHY SYSTEM
+   ───────────────────────────────────────────────────────────────────────────
+   One reusable type scale for the marketing website — premium, clinical,
+   editorial, enterprise. Use these semantic utilities instead of arbitrary
+   text sizes so every page & section shares the same hierarchy, spacing, tone.
+
+   ┌── FONT DECISION RULES — never guess; pick the font by CONTENT TYPE ────────┐
+   │                                                                            │
+   │  Space Mono  (--font-mono → .label / .label-pill / .ui-xs)                 │
+   │    The clinical/technical signal. Use for:                                 │
+   │      • Status:        AI Screening, LIVE, Processing, Complete, Pending    │
+   │      • Compliance:    HIPAA, SOC 2, CAP, FHIR R4, CLIA                      │
+   │      • Technical badges & version numbers  (e.g. v3.2)                      │
+   │      • Identifiers:   Slide IDs, Specimen IDs, accession / lab numbers      │
+   │      • Timestamps                                                          │
+   │      • KPI captions   (the small uppercase caption under a metric)          │
+   │                                                                            │
+   │  Inter  (--font-sans → .heading-* / .body-* / .metric-* / .ui-sm)          │
+   │    The SaaS UI + prose voice. Use for:                                      │
+   │      • Buttons / CTAs        • Navigation                                   │
+   │      • Paragraphs / body     • Feature descriptions                         │
+   │      • Card text             • Section headings (SaaS tier) & KPI numbers   │
+   │                                                                            │
+   │  Newsreader  (--font-display → .display-xl / .display-lg)                   │
+   │      • Hero headlines and major section headlines ONLY.                     │
+   └────────────────────────────────────────────────────────────────────────────┘
+
+   Font roles (variables → utilities):
+     --font-display  Newsreader (editorial serif)  → .display-xl / .display-lg
+     --font-sans     Inter (SaaS)                   → .heading-*, .body-*, .metric-*, .ui-sm
+     --font-mono     Space Mono (clinical/technical)→ .label / .label-pill / .ui-xs
+
+   When to use each utility (full guide in DESIGN_SYSTEM.md § Marketing typography):
+     .display-xl  homepage hero H1 ONLY        .display-lg  major section headers
+     .heading-xl  strong SaaS section titles   .heading-lg  subsection titles
+     .heading-md  card / feature titles
+     .body-xl     hero paragraph               .body-lg     section body copy
+     .body-md     normal body                  .body-sm     supporting text
+     .label       small uppercase labels       .label-pill  hero badges
+     .metric-xl   large KPI numbers            .metric-lg   smaller KPI numbers
+     .ui-sm       interface labels             .ui-xs       tiny dashboard metadata
+
+   Rules: responsive via clamp(); no arbitrary text sizes once this exists;
+   replace repeated ad-hoc text styles with these utilities. Marketing-only —
+   the product app (apps/web) keeps Inter/Geist; the editorial serif is for the
+   marketing site's hero + section titles.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* — Display: large editorial serif (hero + major section headlines) — */
+.display-xl {
+  font-family: var(--font-display), 'Newsreader', Georgia, serif;
+  font-size: clamp(64px, 7.8vw, 128px);
+  line-height: 0.92;
+  letter-spacing: -0.055em;
+  font-weight: 400;
+}
+.display-lg {
+  font-family: var(--font-display), 'Newsreader', Georgia, serif;
+  font-size: clamp(44px, 5vw, 76px);
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+  font-weight: 400;
+}
+
+/* — Headings: strong SaaS section/card titles (sans) — */
+.heading-xl {
+  font-family: var(--font-sans), 'Inter', sans-serif;
+  font-size: clamp(36px, 4vw, 56px);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  font-weight: 650;
+}
+.heading-lg {
+  font-family: var(--font-sans), 'Inter', sans-serif;
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  font-weight: 650;
+}
+.heading-md {
+  font-family: var(--font-sans), 'Inter', sans-serif;
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  font-weight: 650;
+}
+
+/* — Body copy (sans) — */
+.body-xl {
+  font-family: var(--font-sans), 'Inter', sans-serif;
+  font-size: clamp(18px, 1.4vw, 22px);
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+}
+.body-lg {
+  font-family: var(--font-sans), 'Inter', sans-serif;
+  font-size: 18px;
+  line-height: 1.6;
+}
+.body-md {
+  font-family: var(--font-sans), 'Inter', sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+}
+.body-sm {
+  font-family: var(--font-sans), 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* — Labels: precise, clinical, uppercase tracking. Space Mono is the dedicated
+   technical-label face (eyebrows, status, KPI captions, compliance). — */
+.label {
+  font-family: var(--font-mono), 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.label-pill {
+  font-family: var(--font-mono), 'Space Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* — Metrics: bold, product-grade KPI numbers (sans) — */
+.metric-xl {
+  font-family: var(--font-sans), 'Inter', sans-serif;
+  font-size: clamp(36px, 4vw, 56px);
+  line-height: 0.95;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+.metric-lg {
+  font-family: var(--font-sans), 'Inter', sans-serif;
+  font-size: 32px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+/* — UI text: compact, functional, calm (sans) — */
+.ui-sm {
+  font-family: var(--font-sans), 'Inter', sans-serif;
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 500;
+}
+/* Tiny dashboard metadata reads as clinical mono. */
+.ui-xs {
+  font-family: var(--font-mono), 'Space Mono', monospace;
+  font-size: 11px;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}

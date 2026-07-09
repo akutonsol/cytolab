@@ -70,6 +70,55 @@ Glass surfaces: `background: rgba(255,255,255,.72–.9)` + `backdrop-filter: blu
 - Display headings `700–900`, tight tracking (`-.02 … -.03em`); marketing hero up to `80px`.
 - Body `13–17px`, secondary `#64748b`. Numeric/tabular values use `font-variant-numeric: tabular-nums`.
 
+### 5a. Marketing typography system (`apps/marketing`)
+One reusable, premium/editorial type scale for the **marketing website only**. The
+product app (`apps/web`) keeps Inter/Geist; the editorial serif is for the
+marketing hero + section titles. Utilities live in `apps/marketing/app/globals.css`;
+fonts are loaded once in `apps/marketing/app/layout.tsx`.
+
+**Font roles (CSS variables, injected by `next/font`):**
+- `--font-display` — **Newsreader** (editorial serif) → `.display-xl`, `.display-lg`
+- `--font-sans` — **Inter** (SaaS) → headings, body, metrics, `.ui-sm`
+- `--font-mono` — **Space Mono** (dedicated clinical/technical label face) →
+  `.label`, `.label-pill`, `.ui-xs` — eyebrows, status, KPI captions, compliance,
+  dashboard metadata
+- `--font-serif` — DM Serif Display — **legacy**, being migrated to `--font-display`
+
+**Font decision rules — pick the font by content type, never guess:**
+
+| Font | Utilities | Use for |
+|---|---|---|
+| **Space Mono** (`--font-mono`) | `.label` · `.label-pill` · `.ui-xs` | **Status** (AI Screening, LIVE, Processing, Complete, Pending) · **Compliance** (HIPAA, SOC 2, CAP, FHIR R4, CLIA) · **technical badges** · **version numbers** (v3.2) · **identifiers** (Slide IDs, Specimen IDs, accession/lab #) · **timestamps** · **KPI captions** |
+| **Inter** (`--font-sans`) | `.heading-*` · `.body-*` · `.metric-*` · `.ui-sm` | **Buttons/CTAs** · **navigation** · **paragraphs/body** · **feature descriptions** · **card text** · SaaS section headings & KPI numbers |
+| **Newsreader** (`--font-display`) | `.display-xl` · `.display-lg` | **Hero headlines and major section headlines ONLY** |
+
+Rule of thumb: if it's a *machine/clinical token* (a code, ID, status, cert, timestamp, or a metric's caption) → Space Mono. If it's something a *human reads or clicks* (prose, a button, a nav item, a card) → Inter. If it's a *statement headline* → Newsreader.
+
+**Utilities — use these instead of arbitrary text sizes (all responsive via `clamp()`):**
+
+| Class | Use for | Family · size · leading · tracking · weight |
+|---|---|---|
+| `.display-xl` | **Homepage hero H1 only** | serif · `clamp(64–128px)` · `.92` · `-.055em` · 400 |
+| `.display-lg` | Major section headers | serif · `clamp(44–76px)` · `.95` · `-.045em` · 400 |
+| `.heading-xl` | Strong SaaS section titles | sans · `clamp(36–56px)` · `1.02` · `-.04em` · 650 |
+| `.heading-lg` | Subsection titles | sans · `clamp(28–40px)` · `1.1` · `-.03em` · 650 |
+| `.heading-md` | Card / feature titles | sans · `20px` · `1.25` · `-.02em` · 650 |
+| `.body-xl` | Hero paragraph | sans · `clamp(18–22px)` · `1.55` · `-.01em` |
+| `.body-lg` | Section body copy | sans · `18px` · `1.6` |
+| `.body-md` | Normal body | sans · `16px` · `1.55` |
+| `.body-sm` | Supporting text | sans · `14px` · `1.45` |
+| `.label` | Small uppercase section labels | **mono** · `12px` · `1` · `.18em` · 700 · UPPER |
+| `.label-pill` | Hero badges | **mono** · `12px` · `.16em` · 700 · UPPER |
+| `.metric-xl` | Large KPI numbers | sans · `clamp(36–56px)` · `.95` · `-.045em` · 700 |
+| `.metric-lg` | Smaller KPI numbers | sans · `32px` · `1` · `-.035em` · 700 |
+| `.ui-sm` | Interface labels | sans · `13px` · `1.35` · 500 |
+| `.ui-xs` | Tiny dashboard metadata | **mono** · `11px` · `1.25` · `.02em` · 600 |
+
+**Rules:** no arbitrary/ad-hoc text sizes once this exists; replace repeated
+Tailwind text classes with these semantic utilities as sections are migrated;
+apply gradually (hero first, then per-section on approval). Do not apply globally
+in a way that changes the product app.
+
 ## 6. Motion (see BRAND_GUIDELINES §Motion for the philosophy)
 - Standard easing (marketing): `cubic-bezier(.22,.8,.2,1)`; doc-spec alt `cubic-bezier(.22,.61,.36,1)`.
 - Durations: micro-interactions `150–350ms`; section reveals `600–800ms`.

@@ -141,9 +141,8 @@ export default function Hero() {
         borderRight: '1px solid rgba(9,9,14,0.07)', position: 'relative', zIndex: 2,
       }}>
         <div>
-          <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: '0.58rem', fontWeight: 700,
-            letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.25)',
+          <div className="label" style={{
+            color: 'rgba(9,9,14,0.25)',
             display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '3rem',
           }}>
             <span style={{ width: 24, height: 1, background: 'rgba(9,9,14,0.2)', display: 'inline-block' }} />
@@ -154,36 +153,28 @@ export default function Hero() {
           <div>
             <div style={{ overflow: 'hidden', display: 'block', lineHeight: 0.85, marginBottom: '0.1rem' }}>
               <span className="word-rise" style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom' }}>
-                <span className="word-rise-inner hero-word-inner" style={{
-                  display: 'inline-block', fontFamily: 'var(--font-serif)',
-                  fontSize: 'clamp(5rem, 11vw, 10.5rem)', letterSpacing: '-0.04em',
-                  lineHeight: 0.85, color: '#09090E',
+                <span className="word-rise-inner hero-word-inner display-xl" style={{
+                  display: 'inline-block', color: '#09090E',
                 }}>The future</span>
               </span>
             </div>
             <div style={{ overflow: 'hidden', display: 'block', lineHeight: 0.85, marginBottom: '0.1rem' }}>
               <span className="word-rise" style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom' }}>
-                <span className="word-rise-inner hero-word-inner" style={{
-                  display: 'inline-block', fontFamily: 'var(--font-serif)',
-                  fontSize: 'clamp(5rem, 11vw, 10.5rem)', letterSpacing: '-0.04em',
-                  lineHeight: 0.85, color: 'transparent',
+                <span className="word-rise-inner hero-word-inner display-xl" style={{
+                  display: 'inline-block', color: 'transparent',
                   WebkitTextStroke: '2px rgba(9,9,14,0.22)',
                 }}>of pathology</span>
               </span>
             </div>
             <div style={{ overflow: 'hidden', display: 'block', lineHeight: 0.85 }}>
               <span className="word-rise" style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom' }}>
-                <span className="word-rise-inner hero-word-inner" style={{
-                  display: 'inline-block', fontFamily: 'var(--font-serif)',
-                  fontSize: 'clamp(5rem, 11vw, 10.5rem)', letterSpacing: '-0.04em',
-                  lineHeight: 0.85, color: '#4F46E5', fontStyle: 'italic',
+                <span className="word-rise-inner hero-word-inner display-xl" style={{
+                  display: 'inline-block', color: '#4F46E5', fontStyle: 'italic',
                 }}>is</span>
               </span>
               <span className="word-rise" style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom' }}>
-                <span className="word-rise-inner hero-word-inner" style={{
-                  display: 'inline-block', fontFamily: 'var(--font-serif)',
-                  fontSize: 'clamp(5rem, 11vw, 10.5rem)', letterSpacing: '-0.04em',
-                  lineHeight: 0.85, color: '#09090E',
+                <span className="word-rise-inner hero-word-inner display-xl" style={{
+                  display: 'inline-block', color: '#09090E',
                 }}>&nbsp;here.</span>
               </span>
             </div>
@@ -191,9 +182,9 @@ export default function Hero() {
         </div>
 
         <div>
-          <p style={{
-            fontSize: '0.9rem', color: 'rgba(9,9,14,0.45)', lineHeight: 1.75,
-            maxWidth: '400px', marginBottom: '2rem', fontWeight: 300,
+          <p className="body-xl" style={{
+            color: 'rgba(9,9,14,0.45)',
+            maxWidth: '400px', marginBottom: '2rem',
           }}>
             One AI-powered platform. Specimen tracking, CYTO AI screening, reporting,
             billing, workforce, and full EMR interoperability.
@@ -201,7 +192,7 @@ export default function Hero() {
           <div style={{ display: 'flex', gap: '10px', marginBottom: '3.5rem' }}>
             <button className="mag-btn" style={{
               background: '#09090E', color: '#F0EFE9', border: 'none',
-              padding: '13px 26px', borderRadius: '2px', fontFamily: 'var(--font-mono)',
+              padding: '13px 26px', borderRadius: '2px', fontFamily: 'var(--font-sans)',
               fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em',
               textTransform: 'uppercase', cursor: 'pointer',
             }}>Request demo &rarr;</button>
@@ -214,11 +205,8 @@ export default function Hero() {
           <div style={{ display: 'flex', gap: '3.5rem' }}>
             {[['43%', 'Faster TAT'], ['91%', 'Less manual review'], ['97%', 'AI accuracy']].map(([num, label]) => (
               <div key={label} className="hero-kpi" style={{ borderLeft: '2px solid #4F46E5', paddingLeft: '1rem' }}>
-                <div style={{ fontFamily: 'var(--font-serif)', fontSize: '2.5rem', color: '#09090E', lineHeight: 1 }}>{num}</div>
-                <div style={{
-                  fontFamily: 'var(--font-mono)', fontSize: '0.62rem', fontWeight: 600,
-                  letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.3)', marginTop: '3px',
-                }}>{label}</div>
+                <div className="metric-lg" style={{ color: '#09090E' }}>{num}</div>
+                <div className="ui-xs" style={{ textTransform: 'uppercase', color: 'rgba(9,9,14,0.3)', marginTop: '3px' }}>{label}</div>
               </div>
             ))}
           </div>

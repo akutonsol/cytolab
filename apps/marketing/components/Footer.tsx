@@ -15,13 +15,13 @@ export default function Footer() {
             <div style={{ width: 20, height: 20, background: '#4F46E5', borderRadius: '2px', display: 'grid', placeItems: 'center', fontSize: '8px', fontWeight: 900, color: '#fff' }}>C</div>
             CYTOLAB
           </div>
-          <p style={{ fontSize: '0.72rem', color: 'rgba(240,239,233,0.18)', lineHeight: 1.7, marginTop: '0.75rem', maxWidth: '260px', fontWeight: 300 }}>
+          <p className="body-sm" style={{ color: 'rgba(240,239,233,0.18)', marginTop: '0.75rem', maxWidth: '260px' }}>
             The AI-powered laboratory operating system for modern cytology and pathology labs. Built by Akuton Solutions, Jamaica.
           </p>
         </div>
         {cols.map(({ title, links }) => (
           <div key={title}>
-            <h5 style={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.15)', marginBottom: '1rem' }}>{title}</h5>
+            <h5 className="label" style={{ color: 'rgba(240,239,233,0.15)', marginBottom: '1rem' }}>{title}</h5>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '7px' }}>
               {links.map(link => (
                 <li key={link}>

@@ -8,6 +8,9 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
+        // Editorial display serif for hero + section headlines (font-display).
+        display: ['var(--font-display)', 'Newsreader', 'Georgia', 'serif'],
+        // Legacy display serif — being migrated to `display`.
         serif: ['var(--font-serif)', 'DM Serif Display', 'serif'],
         sans: ['var(--font-sans)', 'Inter', 'sans-serif'],
         mono: ['var(--font-mono)', 'Space Mono', 'monospace'],

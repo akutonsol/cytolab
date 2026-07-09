@@ -37,9 +37,8 @@ export default function Security() {
   }, [])
 
   const sTagInv = (label: string) => (
-    <div style={{
-      fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
-      letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.22)',
+    <div className="label" style={{
+      color: 'rgba(240,239,233,0.22)',
       display: 'flex', alignItems: 'center', gap: '9px',
     }}>
       <span style={{ width: 18, height: 1, background: 'rgba(240,239,233,0.18)', display: 'inline-block' }} />
@@ -48,9 +47,8 @@ export default function Security() {
   )
 
   const sTag = (label: string) => (
-    <div style={{
-      fontFamily: 'var(--font-mono)', fontSize: '0.55rem', fontWeight: 700,
-      letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(9,9,14,0.22)',
+    <div className="label" style={{
+      color: 'rgba(9,9,14,0.22)',
       display: 'flex', alignItems: 'center', gap: '9px',
     }}>
       <span style={{ width: 18, height: 1, background: 'rgba(9,9,14,0.18)', display: 'inline-block' }} />
@@ -65,7 +63,7 @@ export default function Security() {
       <SectionReveal direction="left">
         <div style={{ background: '#09090E', padding: '6rem 3rem 6rem 2.5rem', borderRight: '1px solid rgba(240,239,233,0.04)', height: '100%' }}>
           <div style={{ marginBottom: '2rem' }}>{sTagInv('05 · Security')}</div>
-          <div style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(4rem, 7vw, 7rem)', lineHeight: 0.88, letterSpacing: '-0.04em', marginTop: '2rem' }}>
+          <div className="display-lg" style={{ marginTop: '2rem' }}>
             <span style={{ color: '#fff' }}>Enterprise<br /></span>
             <span style={{ color: 'transparent', WebkitTextStroke: '2px rgba(240,239,233,0.2)' }}>security<br /></span>
             <span style={{ color: '#4F46E5', fontStyle: 'italic' }}>out of the box.</span>
