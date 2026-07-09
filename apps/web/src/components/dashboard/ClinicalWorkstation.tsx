@@ -35,6 +35,19 @@ export function ClinicalWorkstation({
   const [zoom, setZoom] = useState(100);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [modelExpanded, setModelExpanded] = useState(false);
+  const [showTimeline, setShowTimeline] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [comments, setComments] = useState([
+    { author: 'AI Triage', text: 'Atypical squamous cells flagged — recommend cytotech review.', time: '08:43 AM' },
+    { author: 'Dr. Bailey', text: 'Agree — prioritizing this case for review this shift.', time: '08:51 AM' },
+  ]);
+  const [draft, setDraft] = useState('');
+  const postComment = () => {
+    const text = draft.trim();
+    if (!text) return;
+    setComments((c) => [...c, { author: 'Dwight McMorris', text, time: 'Just now' }]);
+    setDraft('');
+  };
   // Pan tool (Move button): drag to move the zoomed model. Reset (Target) recenters.
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [panMode, setPanMode] = useState(false);
@@ -212,7 +225,7 @@ export function ClinicalWorkstation({
         {/* Right — User + actions */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => {}}
+            onClick={() => setShowTimeline(true)}
             style={{
               display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px',
               background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
@@ -653,11 +666,13 @@ export function ClinicalWorkstation({
 
         {/* Comments + Begin Review */}
         <div className="flex items-center gap-3 px-5 border-l border-white/8 h-full">
-          <button className="relative w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/8 flex items-center justify-center transition-colors">
+          <button onClick={() => setShowChat(true)} title="Case discussion" className="relative w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/8 flex items-center justify-center transition-colors">
             <MessageSquare size={16} className="text-white/50" />
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-indigo-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white">
-              2
-            </div>
+            {comments.length > 0 && (
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-indigo-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white">
+                {comments.length}
+              </div>
+            )}
           </button>
           <button
             onClick={onBeginReview}
@@ -714,6 +729,61 @@ export function ClinicalWorkstation({
             <button onClick={() => setShowShortcuts(false)} className="mt-4 w-full py-2 bg-white/10 hover:bg-white/15 text-white text-sm rounded-xl transition-colors">
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Compare Timeline modal — the case's pipeline progression */}
+      {showTimeline && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60" onClick={() => setShowTimeline(false)}>
+          <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 w-96" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-white font-bold">Case Timeline · {currentCase.id}</div>
+              <button onClick={() => setShowTimeline(false)} className="text-white/40 hover:text-white/80"><X size={16} /></button>
+            </div>
+            <div className="flex flex-col gap-3">
+              {workflowSteps.map((s) => (
+                <div key={s.label} className="flex items-center gap-3">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: stepColor[s.state].dot }} />
+                  <span className="flex-1 text-[13px]" style={{ color: stepColor[s.state].label }}>{s.label}</span>
+                  <span className="text-[12px] font-mono" style={{ color: stepColor[s.state].time }}>{s.time}</span>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setShowTimeline(false)} className="mt-5 w-full py-2 bg-white/10 hover:bg-white/15 text-white text-sm rounded-xl transition-colors">Close</button>
+          </div>
+        </div>
+      )}
+
+      {/* Case discussion — session-scoped comments for the case */}
+      {showChat && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60" onClick={() => setShowChat(false)}>
+          <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 w-[420px]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-white font-bold">Case Discussion · {currentCase.id}</div>
+              <button onClick={() => setShowChat(false)} className="text-white/40 hover:text-white/80"><X size={16} /></button>
+            </div>
+            <div className="flex flex-col gap-2.5 max-h-64 overflow-y-auto mb-3 pr-1">
+              {comments.map((c, i) => (
+                <div key={i} className="rounded-xl bg-white/5 border border-white/8 px-3 py-2">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-[12px] font-semibold text-white/85">{c.author}</span>
+                    <span className="text-[10px] text-white/35">{c.time}</span>
+                  </div>
+                  <div className="text-[12px] text-white/65 leading-snug">{c.text}</div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                value={draft}
+                onChange={e => setDraft(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') postComment(); }}
+                placeholder="Add a comment…"
+                className="flex-1 rounded-lg bg-white/8 border border-white/12 px-3 py-2 text-[13px] text-white outline-none focus:border-indigo-400 placeholder:text-white/30"
+              />
+              <button onClick={postComment} disabled={!draft.trim()} className="rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 px-4 py-2 text-[13px] font-semibold text-white transition-colors">Post</button>
+            </div>
           </div>
         </div>
       )}

@@ -946,8 +946,8 @@ export default function DashboardPage() {
                 { label: 'Auth Rate', value: `${eff?.authorization || 0}%`, sub: 'on target' },
               ]}
               onBeginReview={() => router.push('/result-sheets')}
-              onNextCase={() => {}}
-              onPrevCase={() => {}}
+              onNextCase={() => router.push('/records')}
+              onPrevCase={() => router.push('/records')}
             />
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.8fr) minmax(0, 1fr)', gap: 20, alignItems: 'stretch' }}>
             {buildSpecimenQueue(false)}

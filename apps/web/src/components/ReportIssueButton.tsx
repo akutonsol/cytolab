@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { LifeBuoy, X } from 'lucide-react';
 import { App as AntdApp } from 'antd';
 import { useMutation } from '@tanstack/react-query';
@@ -53,7 +54,12 @@ function ReportIssueModal({ onClose }: { onClose: () => void }) {
     onError: () => message.error('Could not submit your ticket — please try again.'),
   });
 
-  return (
+  // Portal to <body>: the trigger lives in the frosted top nav, whose
+  // backdrop-filter creates a containing block for position:fixed descendants —
+  // rendered inline, the modal would anchor to the nav (pinned to the top) rather
+  // than the viewport. The portal escapes that so it centers on screen.
+  if (typeof document === 'undefined') return null;
+  return createPortal(
     <>
       <div className="fixed inset-0 z-[70] bg-black/30" onClick={onClose} />
       <div className="fixed left-1/2 top-1/2 z-[71] max-h-[90vh] w-full max-w-[520px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
@@ -93,6 +99,7 @@ function ReportIssueModal({ onClose }: { onClose: () => void }) {
           <button disabled={!v.title.trim() || !v.description.trim() || m.isPending} onClick={() => m.mutate()} className={btnPrimary}>Submit Ticket</button>
         </div>
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
