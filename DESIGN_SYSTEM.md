@@ -6,41 +6,149 @@
 
 ---
 
-## 1. Color — two-surface split (locked decision)
+## 1. Color — the semantic token system
 
-There are **two primary colors**, scoped by surface. This is intentional; do not merge them.
+### 1a. Token architecture (five tiers)
 
-### Product (authenticated: dashboard, workstation, client portal, lab)
-| Token | Value | Use |
+Colour flows one way. **A component may only consume Tier 2 or Tier 2.5.** It must
+never name a hue (`--teal-600`) or a raw hex.
+
+```
+Tier 1  Primitive          slate · gray · indigo · violet · purple · teal · cyan
+        (raw ramps)        pink · blue · sky · rose · green · red · yellow · amber
+                           ↓  implementation detail — not for components
+Tier 2  Semantic UI        primary · surface · border · text · success · warning
+        (the contract)     danger · info · overlay · glass · glow · focus
+                           ↓
+Tier 2.5 Domain            specimen · workflow · priority · status · billing
+        (business meaning) chart · gauge · identity
+                           ↓
+Tier 3  Theme              default · dark · emerald · … (re-point Tier 2 only)
+                           ↓
+Tier 4  Components         cards · buttons · tables · charts · badges · pills
+```
+
+**Why Tier 2.5 exists.** Today *Urine* is amber. When a hospital wants it blue, a
+component that says `--teal-600` forces a hunt through the app; one that says
+`--specimen-urine` is a one-line change. Tier 2.5 separates *business* meaning from
+*UI* meaning.
+
+Tier 1 and Tier 2 are product-agnostic and are what a future shared design system
+would own. Tier 2.5 is **per-product**: PathOS declares `--specimen-urine`; a fitness
+product would declare `--workout-strength`; an infra product `--deployment-live`.
+The core never learns what a specimen is.
+
+Tokens live in `apps/web/src/app/globals.css`. Tier 3 themes override **Tier 2 only** —
+never Tier 1, never Tier 2.5. That is what keeps a theme a colour swap rather than a
+data-encoding change (a *Failed* record must not turn green under a green theme).
+
+### 1b. Tier 2 — semantic UI tokens (the public contract)
+
+`--color-primary` `-hover` `-active` `-soft` `-light` `-on` · `--color-on-accent` ·
+`--color-surface` `-2` `-3` `-hover` · `--color-border` `-light` `-subtle` `-strong` ·
+`--color-text` `-secondary` `-tertiary` `-heading` `-body` `-muted` `-disabled` ·
+`--color-success` `-soft` · `--color-warning` `-soft` · `--color-danger` `-soft` ·
+`--color-info` `-soft` · `--color-glass` · `--color-glow` · `--color-overlay`.
+
+> ⚠️ **Tier 2 values are load-bearing.** `tailwind.config` is var-backed
+> (`text-secondary` → `var(--color-text-secondary)`, 366 call sites; `surface` → 235).
+> Changing a Tier-2 *value* silently recolours the whole app. To retire a raw hex,
+> point it at a **Tier 1** token; do not "fix" Tier 2 to match the hex.
+
+### 1c. Tier 2.5 — PathOS domain tokens
+
+Every family ships an `fg` token and a `-soft` background pair.
+
+| Family | Tokens |
+|---|---|
+| Specimen | `--specimen-{fluid, urine, aspirate, cervical, endocervical, body-fluid, other}` |
+| Workflow | `--workflow-{pending, processing, submitted, resulted, complete, on-hold, failed}` |
+| Priority | `--priority-{low, medium, high, critical}` + `-{urgent, normal}` aliases |
+| Status | `--status-{success, warning, danger, info}` + `-strong` / `-soft` |
+| Billing | `--billing-{draft, issued, partial, paid, void, overdue}` |
+| Chart | `--chart-specimen-*` (saturated: slices sit on white, chips sit on `-soft`) |
+| Gauge | `--gauge-{low, low-mid, mid, mid-high, high}` |
+| Identity | `--identity-1..6` (hashed avatar palette; carries no meaning) |
+
+`--priority-low`/`-medium` are declared but unused: PathOS models priority as a
+boolean today, and the four-level scale lets the domain grow without a component
+rewrite.
+
+### 1d. Hex → token mapping
+
+| Was | Now | Notes |
 |---|---|---|
-| Primary (indigo) | `#4F46E5` | interactive: buttons, links, active nav, focus |
-| Primary tint | `rgba(99,102,241,.10–.15)` | icon chips, hover, selected rows |
-| Text primary | `#0a0b1a` / `#0F172A` | headings, values |
-| Text secondary | `#64748b` | labels, meta |
-| Surface | `#F8F8FA` / `#F8FAFC` | app background |
-| Card | `#FFFFFF` | cards |
-| Border | `#E5E7EB` / `#EEF2F7` | hairlines |
-| Success | `#16A34A` / `#22c55e` | authorized, complete |
-| Amber (safe) | bg `#FEF3C7` · text `#92400E` | warnings / pending — **the only sanctioned amber** |
-| Error | `#ef4444` / `#DC2626` | destructive |
-| Red accent | `#E63946` | branding, AI highlights, specimen visuals, key CTAs |
+| `#4F46E5` | `--color-primary` | theme-aware; was hue-locked before |
+| `#4338CA` | `--color-primary-hover` | |
+| `#0F172A` `#334155` `#475569` `#E2E8F0` `#F1F5F9` `#F8FAFC` `#CBD5E1` | `--slate-*` | neutrals |
+| `#111827` `#374151` `#6B7280` `#9CA3AF` `#D1D5DB` `#E5E7EB` `#F3F4F6` `#F9FAFB` | `--color-text-*` / `--gray-*` | |
+| `#2563EB` `#DBEAFE` | `--specimen-fluid` `-soft` | pleural, sputum, bronchial |
+| `#A16207` `#FEF9C3` | `--specimen-urine` `-soft` | |
+| `#DB2777` `#FCE7F3` | `--specimen-aspirate` `-soft` | breast, thyroid, lymph |
+| `#16A34A` `#DCFCE7` | `--specimen-cervical` `-soft` | |
+| `#9333EA` `#F3E8FF` | `--specimen-endocervical` `-soft` | |
+| `#0D9488` `#CCFBF1` | `--specimen-body-fluid` `-soft` | CSF, synovial, joint |
+| `#7C3AED` `#EDE9FE` | `--workflow-processing` `-soft` | |
+| `#0284C7` `#E0F2FE` | `--workflow-submitted` `-soft` | |
+| `#DC2626` `#FEE2E2` | `--workflow-failed` `-soft` / `--status-danger-strong` | |
+| `#854D0E` `#FEF9C3` | `--workflow-on-hold` `-soft` | |
+| `#E11D48` | `--priority-urgent` | |
+| `#F0FDF4` `#FEF2F2` | `--status-{success,danger}-soft` | badge fills |
+| `#EEF3FF` | `--indigo-50` | **snapped** — was 1/255 off `#EEF2FF` (drift) |
+| `#F0F0FF` | `--violet-50` | |
+| `#F1F3F7` | `--color-border-subtle` | |
+| `#F5F7FF` | `--color-surface-hover` | |
+| `#D97706` | `--status-warning` | **zero-orange violation** (see below) |
+| `#f59e0b` | `--color-warning` → `--amber-700` | **zero-orange violation** |
 
-### Marketing (public landing, login, `apps/marketing`)
-| Token | Value | Use |
+### 1e. Two-surface split (locked decision) — with one live contradiction
+
+| Surface | Primary | Reality |
 |---|---|---|
-| Brand primary (red) | `#E63946` | primary accent, CTAs, active states, italic emphasis |
-| Ink / graphite | `#0E1016`–`#06070d` | dark section backgrounds |
-| Violet ambient | `#8B5CF6` / `rgba(139,92,246,…)` | glows, cell clusters |
-| Green | `#10B981` | live/positive indicators |
+| Product (`apps/web`, authenticated) | indigo `#4F46E5` | ✅ matches |
+| Marketing routes **inside** `apps/web` (`/`, `/solutions`, `/experience`, `portal/`, `components/landing/*`) | red `#E63946` | ✅ matches |
+| Standalone site `apps/marketing` | indigo `#4F46E5` | ❌ **contradicts the rule** — its brand var is literally `--blue: #4F46E5` |
+
+The doc previously said "marketing = red" full stop. That is true of the marketing
+routes inside `apps/web`, and false of `apps/marketing`. **Unresolved — needs a
+decision**; nothing was recoloured. (Landing/hero files are scope-locked.)
 
 ### 🚫 Absolute rules
 - **ZERO-ORANGE.** Never emit a pixel where `r>200 && 100≤g≤190 && b<90`. Never
-  `#F97316`, `#f59e0b`, `#FF6A5C`, or emoji that render orange/amber. Watch
-  anti-aliased edges of yellow/amber on dark backgrounds (they blend into the trip
-  box). Safe substitutes: dark amber `#92400E`/`#78350F`, `#FDE68A` (b=138), rose-400
-  `#FB7185`, yellow-400 `#FACC15` (solid only). **Run the detector after every UI change.**
-- **Never a blue *marketing* primary; never a red *product* primary.** (See split above.)
+  `#F97316`, `#f59e0b`, `#D97706`, `#EAB308`, `#FF6A5C`, or emoji that render
+  orange/amber. Safe substitutes: dark amber `#92400E`/`#78350F`/`#A16207`,
+  `#FDE68A` (b=138), rose-400 `#FB7185`, yellow-400 `#FACC15` (g=204).
+  **Run the detector after every UI change.**
+- **Safe stops are not a safe gradient.** The browser interpolates *between* stops,
+  and a ramp whose endpoints both pass can still paint orange in the middle. A
+  direct `#EF4444 → #FACC15` ramp emits `rgb(242,108,54)`. This shipped on
+  `/billing` for months behind a comment asserting it was compliant. Route around
+  the trip box: keep `b ≥ 90` while `g` climbs through 100–190, then push `g`
+  above 190 before `b` falls (see `--gauge-*`). **Screenshot gradients and run the
+  detector — reading the stops is not verification.**
+- **Never a blue *marketing* primary; never a red *product* primary.**
+- **No component may contain a raw hex.** Consume Tier 2 or Tier 2.5.
+- Amber 300–600 is deliberately **absent** from Tier 1: `#fbbf24` (g=191) is a
+  near-miss that anti-aliases into the trip box, and `#f59e0b`/`#d97706` violate
+  outright. The ramp jumps `--amber-200` → `--amber-700`.
 - No rainbow gradients; gradients are subtle and purposeful only.
+
+### 1f. Migration status
+`records/page.tsx` and `billing/page.tsx` are fully tokenized (zero raw hexes) and
+serve as the reference implementations. The remaining screens are sequenced for
+follow-up passes; `dashboard/page.tsx` (79 unique hexes) is the largest.
+
+**Known inconsistencies found while migrating, preserved rather than silently
+unified** (each would be a visible recolour):
+- "Processing" renders in three different hues: violet (status pill),
+  blue (KPI card), sky (mini-stat).
+- The destructive button uses `#DC2626` while `--color-danger` is `#EF4444`.
+- Badge text uses the `600` stops while `--color-success`/`-danger` point at `500`
+  — hence the `--status-*-strong` variants.
+- `cabinets/page.tsx` stores `#f97316` / `#eab308` as **user-chosen folder swatches**
+  persisted in the DB (mirroring backend `CABINET_COLORS`). These are live
+  zero-orange violations, but changing the hex recolours existing users' folders.
+  **Needs a decision** (migrate the data, or remap on read).
 
 ---
 

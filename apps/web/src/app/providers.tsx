@@ -31,7 +31,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
             colorPrimaryHover: '#3b6cf5',
             colorInfo: '#4f7df9',
             colorSuccess: '#22c55e',
-            colorWarning: '#f59e0b',
+            // ZERO-ORANGE: #f59e0b trips r>200 && g∈[100,190] && b<90 and is banned
+            // by name in CLAUDE.md. amber-700 (#a16207, r=161) is detector-safe.
+            // AntD derives its warning shades from this hex, so it must be a literal.
+            colorWarning: '#a16207',
             colorError: '#ef4444',
             colorText: '#111827',
             colorTextSecondary: '#6b7280',

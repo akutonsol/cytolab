@@ -12,14 +12,16 @@ import { api, type Paginated } from '@/lib/api';
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (cents: number) => '$' + ((cents ?? 0) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—');
-const CARD = 'rounded-[20px] border border-[#EEF2F7] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)]';
+const CARD = 'rounded-[20px] border border-[var(--color-light-gray)] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)]';
 
+// Invoice lifecycle -> BILLING domain tokens (Tier 2.5, globals.css).
+const badge = (n: string) => ({ bg: `var(--billing-${n}-soft)`, fg: `var(--billing-${n})` });
 const STATUS_BADGE: Record<string, { bg: string; fg: string }> = {
-  Draft: { bg: '#F3F4F6', fg: '#6B7280' },
-  Issued: { bg: '#EEF3FF', fg: '#4F46E5' },
-  PartiallyPaid: { bg: '#F0F0FF', fg: '#7C3AED' },
-  Paid: { bg: '#F0FDF4', fg: '#16A34A' },
-  Void: { bg: '#FEF2F2', fg: '#DC2626' },
+  Draft: badge('draft'),
+  Issued: badge('issued'),
+  PartiallyPaid: badge('partial'),
+  Paid: badge('paid'),
+  Void: badge('void'),
 };
 const PAYMENT_TYPES = [['Cash', 'Cash'], ['Cheque', 'Cheque'], ['CreditCard', 'Credit Card'], ['DebitCard', 'Debit Card'], ['BankTransfer', 'Bank Transfer']] as const;
 
@@ -153,7 +155,7 @@ function BillingWorkspace() {
   const targetPct = target ? Number(target) : null;
 
   return (
-    <div className="min-h-full py-6" style={{ background: '#F7FAFD' }}>
+    <div className="min-h-full py-6" style={{ background: 'var(--background)' }}>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.75fr_1fr]">
         {/* ══ LEFT COLUMN ══ */}
         <div className="flex min-w-0 flex-col gap-6">
@@ -162,13 +164,13 @@ function BillingWorkspace() {
           {/* KPI pills */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {[
-              { n: overdueCount, label: 'Overdue Bills', circle: '#EF4444' },
-              { n: paidCount, label: 'Paid Bills', circle: '#16A34A' },
-              { n: pendingCount, label: 'Pending', circle: '#4F46E5' },
+              { n: overdueCount, label: 'Overdue Bills', circle: 'var(--status-danger)' },
+              { n: paidCount, label: 'Paid Bills', circle: 'var(--status-success-strong)' },
+              { n: pendingCount, label: 'Pending', circle: 'var(--color-primary)' },
             ].map((p) => (
               <div key={p.label} className={`${CARD} flex items-center gap-4 p-5`}>
                 <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full text-[22px] font-extrabold text-white" style={{ background: p.circle, fontFamily: 'Geist,sans-serif' }}>{p.n}</div>
-                <span className="text-[17px] font-semibold text-[#0F172A]">{p.label}</span>
+                <span className="text-[17px] font-semibold text-[var(--slate-900)]">{p.label}</span>
               </div>
             ))}
           </div>
@@ -177,34 +179,34 @@ function BillingWorkspace() {
           <div className={`${CARD} p-6`}>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <h2 className="text-[18px] font-bold text-[#0F172A]">Bills · {total}</h2>
-                <div className="flex gap-1 rounded-full bg-[#F1F5F9] p-1">
+                <h2 className="text-[18px] font-bold text-[var(--slate-900)]">Bills · {total}</h2>
+                <div className="flex gap-1 rounded-full bg-[var(--slate-100)] p-1">
                   {(['all', 'unpaid', 'paid'] as const).map((t) => (
-                    <button key={t} onClick={() => setTab(t)} className="rounded-full px-4 py-1.5 text-[14px] font-semibold capitalize transition-colors" style={{ background: tab === t ? '#fff' : 'transparent', color: tab === t ? '#4F46E5' : '#6B7280', boxShadow: tab === t ? '0 1px 2px rgba(0,0,0,0.06)' : 'none' }}>{t}</button>
+                    <button key={t} onClick={() => setTab(t)} className="rounded-full px-4 py-1.5 text-[14px] font-semibold capitalize transition-colors" style={{ background: tab === t ? 'var(--color-surface)' : 'transparent', color: tab === t ? 'var(--color-primary)' : 'var(--color-text-secondary)', boxShadow: tab === t ? '0 1px 2px rgba(0,0,0,0.06)' : 'none' }}>{t}</button>
                   ))}
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex h-10 w-[220px] items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-4 text-[#9CA3AF]">
+                <div className="flex h-10 w-[220px] items-center gap-2 rounded-full border border-[var(--gray-200)] bg-white px-4 text-[var(--color-text-muted)]">
                   <Search size={16} />
-                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search bills…" className="w-full border-none bg-transparent text-[14px] text-[#0F172A] outline-none placeholder:text-[#9CA3AF]" />
+                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search bills…" className="w-full border-none bg-transparent text-[14px] text-[var(--slate-900)] outline-none placeholder:text-[var(--color-text-muted)]" />
                 </div>
-                <button onClick={() => setCreateOpen(true)} className="flex h-10 items-center gap-2 rounded-xl bg-[#4F46E5] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#4338CA]"><Receipt size={16} /> Create Invoice</button>
+                <button onClick={() => setCreateOpen(true)} className="flex h-10 items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[var(--color-primary-hover)]"><Receipt size={16} /> Create Invoice</button>
               </div>
             </div>
 
         {pageRows.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-            <Receipt size={30} className="text-[#D1D5DB]" />
-            <div className="text-[15px] font-semibold text-[#0F172A]">No bills yet</div>
-            <div className="text-[13px] text-[#9CA3AF]">Create an invoice from an approved record.</div>
-            <button onClick={() => router.push('/records')} className="mt-2 text-[13px] font-semibold text-[#4F46E5] hover:underline">Go to Records →</button>
+            <Receipt size={30} className="text-[var(--color-text-disabled)]" />
+            <div className="text-[15px] font-semibold text-[var(--slate-900)]">No bills yet</div>
+            <div className="text-[13px] text-[var(--color-text-muted)]">Create an invoice from an approved record.</div>
+            <button onClick={() => router.push('/records')} className="mt-2 text-[13px] font-semibold text-[var(--color-primary)] hover:underline">Go to Records →</button>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="border-b border-[#F3F4F6] text-[13px] font-medium uppercase tracking-wide text-[#9CA3AF]">
+                <tr className="border-b border-[var(--gray-100)] text-[13px] font-medium uppercase tracking-wide text-[var(--color-text-muted)]">
                   <th className="pb-3.5 font-medium">Bill#</th><th className="pb-3.5 font-medium">Client</th><th className="pb-3.5 font-medium">Record</th>
                   <th className="pb-3.5 text-right font-medium">Amount</th><th className="pb-3.5 text-right font-medium">Paid</th><th className="pb-3.5 text-right font-medium">Outstanding</th>
                   <th className="pb-3.5 font-medium">Status</th><th className="pb-3.5 font-medium">Due</th><th className="pb-3.5 text-right font-medium">Actions</th>
@@ -214,16 +216,16 @@ function BillingWorkspace() {
                 {pageRows.map((b) => {
                   const out = outstandingOf(b); const over = isOverdue(b);
                   return (
-                    <tr key={b.id} onClick={() => setDrawerId(b.id)} className="cursor-pointer border-b border-[#F3F4F6] transition-colors hover:bg-[#F9FAFB]"
-                      style={over ? { boxShadow: 'inset 3px 0 0 0 #EF4444' } : undefined}>
-                      <td className="whitespace-nowrap py-4 pr-4"><span className="font-mono text-[14px] font-bold text-[#0F172A]">{b.referenceNo}</span></td>
-                      <td className="whitespace-nowrap py-4 pr-4 text-[15px] font-semibold text-[#0F172A]">{clientName(b.client)}</td>
-                      <td className="whitespace-nowrap py-4 pr-4"><span className="font-mono text-[13px] text-[#9CA3AF]">{b.record?.labNumber ?? b.record?.identifier ?? '—'}</span></td>
-                      <td className="py-4 text-right text-[15px] font-medium text-[#0F172A]">{fmt(b.total)}</td>
-                      <td className="py-4 text-right text-[15px] font-medium" style={{ color: b.amountPaid > 0 ? '#16A34A' : '#9CA3AF' }}>{fmt(b.amountPaid)}</td>
-                      <td className="py-4 text-right text-[15px] font-semibold" style={{ color: out > 0 ? '#DC2626' : '#16A34A' }}>{fmt(out)}</td>
+                    <tr key={b.id} onClick={() => setDrawerId(b.id)} className="cursor-pointer border-b border-[var(--gray-100)] transition-colors hover:bg-[var(--gray-50)]"
+                      style={over ? { boxShadow: 'inset 3px 0 0 0 var(--status-danger)' } : undefined}>
+                      <td className="whitespace-nowrap py-4 pr-4"><span className="font-mono text-[14px] font-bold text-[var(--slate-900)]">{b.referenceNo}</span></td>
+                      <td className="whitespace-nowrap py-4 pr-4 text-[15px] font-semibold text-[var(--slate-900)]">{clientName(b.client)}</td>
+                      <td className="whitespace-nowrap py-4 pr-4"><span className="font-mono text-[13px] text-[var(--color-text-muted)]">{b.record?.labNumber ?? b.record?.identifier ?? '—'}</span></td>
+                      <td className="py-4 text-right text-[15px] font-medium text-[var(--slate-900)]">{fmt(b.total)}</td>
+                      <td className="py-4 text-right text-[15px] font-medium" style={{ color: b.amountPaid > 0 ? 'var(--status-success-strong)' : 'var(--color-text-muted)' }}>{fmt(b.amountPaid)}</td>
+                      <td className="py-4 text-right text-[15px] font-semibold" style={{ color: out > 0 ? 'var(--status-danger-strong)' : 'var(--status-success-strong)' }}>{fmt(out)}</td>
                       <td className="py-4"><StatusBadge status={b.status} /></td>
-                      <td className="py-4 text-[15px]" style={{ color: over ? '#DC2626' : '#6B7280' }}>{fmtDate(b.dueDate)}</td>
+                      <td className="py-4 text-[15px]" style={{ color: over ? 'var(--status-danger-strong)' : 'var(--color-text-secondary)' }}>{fmtDate(b.dueDate)}</td>
                       <td className="py-4" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
                           <IconBtn title="View invoice" onClick={() => setDrawerId(b.id)}><Eye size={15} /></IconBtn>
@@ -241,12 +243,12 @@ function BillingWorkspace() {
 
         {hasMore ? (
           <div ref={sentinelRef} className="mt-4 flex items-center justify-center py-3">
-            <span className="flex items-center gap-2 text-[13px] font-medium text-[#475569]">
-              <Loader2 size={16} className="animate-spin text-[#4F46E5]" /> Loading more…
+            <span className="flex items-center gap-2 text-[13px] font-medium text-[var(--slate-600)]">
+              <Loader2 size={16} className="animate-spin text-[var(--color-primary)]" /> Loading more…
             </span>
           </div>
         ) : total > PAGE_SIZE ? (
-          <div className="mt-4 py-2 text-center text-[12px] text-[#CBD5E1]">All {total} bills loaded</div>
+          <div className="mt-4 py-2 text-center text-[12px] text-[var(--slate-300)]">All {total} bills loaded</div>
         ) : null}
           </div>
 
@@ -256,25 +258,25 @@ function BillingWorkspace() {
         <div className="flex min-w-0 flex-col gap-6">
           {/* Financial health */}
           <div className={`${CARD} overflow-hidden`}>
-            <div style={{ background: 'linear-gradient(135deg,#EEF2FF 0%,#F0FDF4 100%)', padding: 32 }}>
-              <div className="text-[30px] font-bold leading-tight text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Good morning, {firstName}</div>
-              <div className="mt-1.5 text-[16px] text-[#475569]">Here is your lab financial health</div>
+            <div style={{ background: 'linear-gradient(135deg,var(--indigo-50) 0%,var(--status-success-soft) 100%)', padding: 32 }}>
+              <div className="text-[30px] font-bold leading-tight text-[var(--slate-900)]" style={{ fontFamily: 'Geist,sans-serif' }}>Good morning, {firstName}</div>
+              <div className="mt-1.5 text-[16px] text-[var(--slate-600)]">Here is your lab financial health</div>
               <div className="mt-5 inline-flex gap-1 rounded-full bg-white/70 p-1">
                 {([['month', 'This Month'], ['last', 'Last Month'], ['ytd', 'YTD']] as const).map(([v, l]) => (
-                  <button key={v} onClick={() => setPeriod(v)} className="rounded-full px-5 py-2 text-[14px] font-semibold transition-colors" style={{ background: period === v ? '#fff' : 'transparent', color: period === v ? '#0F172A' : '#475569', boxShadow: period === v ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>{l}</button>
+                  <button key={v} onClick={() => setPeriod(v)} className="rounded-full px-5 py-2 text-[14px] font-semibold transition-colors" style={{ background: period === v ? 'var(--color-surface)' : 'transparent', color: period === v ? 'var(--slate-900)' : 'var(--slate-600)', boxShadow: period === v ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>{l}</button>
                 ))}
               </div>
               <div className="mt-5">
                 <CollectionGauge rate={gaugeRate} delta={deltaPts} />
               </div>
-              <button onClick={() => setTargetOpen((o) => !o)} className="mt-5 w-full rounded-full py-3.5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90" style={{ background: '#0F172A' }}>Update Financial Target</button>
+              <button onClick={() => setTargetOpen((o) => !o)} className="mt-5 w-full rounded-full py-3.5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90" style={{ background: 'var(--slate-900)' }}>Update Financial Target</button>
               {targetOpen && (
                 <div className="mt-3 flex items-center gap-2">
-                  <input type="number" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Target collection %" className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]" />
-                  <button onClick={() => setTargetOpen(false)} className="h-10 shrink-0 rounded-xl bg-[#4F46E5] px-4 text-[13px] font-semibold text-white">Set</button>
+                  <input type="number" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Target collection %" className="h-10 w-full rounded-xl border border-[var(--slate-200)] bg-white px-3 text-[14px] outline-none focus:border-[var(--color-primary)]" />
+                  <button onClick={() => setTargetOpen(false)} className="h-10 shrink-0 rounded-xl bg-[var(--color-primary)] px-4 text-[13px] font-semibold text-white">Set</button>
                 </div>
               )}
-              {targetPct != null && !targetOpen && <div className="mt-2 text-[12px] text-[#475569]">Financial target: <span className="font-semibold text-[#0F172A]">{targetPct}%</span> · {collectionRate >= targetPct ? 'on track ✓' : `${targetPct - collectionRate} pts to go`}</div>}
+              {targetPct != null && !targetOpen && <div className="mt-2 text-[12px] text-[var(--slate-600)]">Financial target: <span className="font-semibold text-[var(--slate-900)]">{targetPct}%</span> · {collectionRate >= targetPct ? 'on track ✓' : `${targetPct - collectionRate} pts to go`}</div>}
             </div>
           </div>
 
@@ -290,22 +292,22 @@ function BillingWorkspace() {
 
           {/* Payment History (under the stats cards) */}
           <div className={`${CARD} p-6`}>
-            <div className="text-[18px] font-bold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Payment History</div>
-            <div className="mt-1.5 text-[14px] text-[#475569]">You have made {onTimePct}% of payments on time.</div>
+            <div className="text-[18px] font-bold text-[var(--slate-900)]" style={{ fontFamily: 'Geist,sans-serif' }}>Payment History</div>
+            <div className="mt-1.5 text-[14px] text-[var(--slate-600)]">You have made {onTimePct}% of payments on time.</div>
             <div className="mt-6 overflow-x-auto">
               <div className="inline-block">
                 <div className="mb-3 flex gap-2 pl-11">
-                  {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'].map((m, i) => <span key={i} className="w-6 text-center text-[12px] font-medium text-[#475569]">{m}</span>)}
+                  {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'].map((m, i) => <span key={i} className="w-6 text-center text-[12px] font-medium text-[var(--slate-600)]">{m}</span>)}
                 </div>
                 {calYears.map((y) => (
                   <div key={y} className="mb-2.5 flex items-center gap-2">
-                    <span className="w-9 text-[13px] font-medium text-[#475569]">{y}</span>
+                    <span className="w-9 text-[13px] font-medium text-[var(--slate-600)]">{y}</span>
                     {Array.from({ length: 12 }, (_, mo) => {
                       const cell = pymByYM.get(`${y}-${mo}`);
                       const title = `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][mo]} ${y}`;
-                      if (!cell) return <span key={mo} className="h-6 w-6 rounded-full bg-[#E5E7EB]" title={title} />;
-                      if (cell.late) return <span key={mo} className="grid h-6 w-6 place-items-center rounded-full" style={{ background: '#EF4444' }} title={`${title} · late`}><X size={13} strokeWidth={3} color="#fff" /></span>;
-                      return <span key={mo} className="h-6 w-6 rounded-full" style={{ background: '#4ADE80' }} title={`${title} · on time`} />;
+                      if (!cell) return <span key={mo} className="h-6 w-6 rounded-full bg-[var(--gray-200)]" title={title} />;
+                      if (cell.late) return <span key={mo} className="grid h-6 w-6 place-items-center rounded-full" style={{ background: 'var(--status-danger)' }} title={`${title} · late`}><X size={13} strokeWidth={3} color="var(--color-on-accent)" /></span>;
+                      return <span key={mo} className="h-6 w-6 rounded-full" style={{ background: 'var(--green-400)' }} title={`${title} · on time`} />;
                     })}
                   </div>
                 ))}
@@ -319,7 +321,7 @@ function BillingWorkspace() {
       {createOpen && <CreateInvoiceModal presetRecordId={recordIdParam} onClose={() => { setCreateOpen(false); if (recordIdParam) clearParam(); }} onCreated={() => { setCreateOpen(false); refetch(); notify('ok', 'Invoice created'); if (recordIdParam) clearParam(); }} notify={notify} />}
       {payBill && <PaymentModal bill={payBill} onClose={() => setPayBill(null)} onPaid={() => { setPayBill(null); refetch(); notify('ok', 'Payment recorded'); }} notify={notify} />}
 
-      {toast && <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>{toast.msg}</div>}
+      {toast && <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? 'var(--status-success-strong)' : 'var(--status-danger-strong)' }}>{toast.msg}</div>}
     </div>
   );
 }
@@ -335,14 +337,14 @@ function BillTimeline({ step1Done, step2Done, step3Done }: { step1Done: boolean;
     <div className={`${CARD} p-7`}>
       <div className="relative flex items-start">
         {/* dashed connector behind the circles */}
-        <div className="absolute left-[16%] right-[16%] top-4 border-t-2 border-dashed border-[#CBD5E1]" />
+        <div className="absolute left-[16%] right-[16%] top-4 border-t-2 border-dashed border-[var(--slate-300)]" />
         {steps.map((s, i) => (
           <div key={i} className="relative z-10 flex flex-1 flex-col items-center text-center">
-            <div className="grid h-8 w-8 place-items-center rounded-full" style={{ background: s.done ? '#4F46E5' : '#F1F5F9', color: s.done ? '#fff' : '#475569' }}>
+            <div className="grid h-8 w-8 place-items-center rounded-full" style={{ background: s.done ? 'var(--color-primary)' : 'var(--slate-100)', color: s.done ? 'var(--color-primary-on)' : 'var(--slate-600)' }}>
               {s.done ? <Check size={18} strokeWidth={3} /> : <span className="text-[14px] font-bold">{i + 1}</span>}
             </div>
-            <div className="mt-3 text-[15px] font-semibold text-[#334155]">{s.label}</div>
-            <div className="mt-0.5 text-[12px] text-[#475569]">{s.sub}</div>
+            <div className="mt-3 text-[15px] font-semibold text-[var(--slate-700)]">{s.label}</div>
+            <div className="mt-0.5 text-[12px] text-[var(--slate-600)]">{s.sub}</div>
           </div>
         ))}
       </div>
@@ -350,8 +352,14 @@ function BillTimeline({ step1Done, step2Done, step3Done }: { step1Done: boolean;
   );
 }
 
-// Large semi-open arc gauge — segmented red→yellow→green spectrum (zero-orange:
-// mid stop is true yellow #FACC15, not amber) with a marker at `rate`.
+// Large semi-open arc gauge — segmented red→yellow→green spectrum with a marker
+// at `rate`.
+//
+// ZERO-ORANGE: safe *stops* are not enough — the browser interpolates BETWEEN
+// them, and a direct var(--status-danger) → var(--yellow-400) ramp passes through rgb(242,108,54),
+// which satisfies r>200 && g∈[100,190] && b<90. (Measured: 1,749 orange pixels.)
+// The fix routes around the trip box: rose keeps b≥90 while g climbs through the
+// 100–190 band, then pale amber lifts g above 190 before b falls away.
 function CollectionGauge({ rate, delta }: { rate: number; delta: number }) {
   const W = 320, H = 196, cx = W / 2, cy = 160, r = 130;
   const START = -125, SWEEP = 250, END = START + SWEEP;
@@ -367,30 +375,40 @@ function CollectionGauge({ rate, delta }: { rate: number; delta: number }) {
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
         <defs>
           <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#EF4444" /><stop offset="50%" stopColor="#FACC15" /><stop offset="100%" stopColor="#16A34A" />
+            <stop offset="0%" stopColor="var(--gauge-low)" />
+            <stop offset="30%" stopColor="var(--gauge-low-mid)" />
+            <stop offset="50%" stopColor="var(--gauge-mid)" />
+            <stop offset="64%" stopColor="var(--gauge-mid-high)" />
+            <stop offset="100%" stopColor="var(--gauge-high)" />
           </linearGradient>
         </defs>
         <path d={arc(START, END)} fill="none" stroke="url(#gaugeGrad)" strokeWidth={18} strokeLinecap="round" strokeDasharray={`${seg * 0.62} ${seg * 0.38}`} />
-        <circle cx={mx} cy={my} r={10} fill="#fff" stroke="#0F172A" strokeWidth={3} />
+        <circle cx={mx} cy={my} r={10} fill="var(--color-surface)" stroke="var(--slate-900)" strokeWidth={3} />
       </svg>
-      <span style={{ position: 'absolute', left: 6, top: H - 28, fontSize: 13, fontWeight: 500, color: '#475569' }}>0%</span>
-      <span style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: -2, fontSize: 13, fontWeight: 500, color: '#475569' }}>50%</span>
-      <span style={{ position: 'absolute', right: 6, top: H - 28, fontSize: 13, fontWeight: 500, color: '#475569' }}>100%</span>
+      <span style={{ position: 'absolute', left: 6, top: H - 28, fontSize: 13, fontWeight: 500, color: 'var(--slate-600)' }}>0%</span>
+      <span style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: -2, fontSize: 13, fontWeight: 500, color: 'var(--slate-600)' }}>50%</span>
+      <span style={{ position: 'absolute', right: 6, top: H - 28, fontSize: 13, fontWeight: 500, color: 'var(--slate-600)' }}>100%</span>
       <div style={{ position: 'absolute', left: 0, right: 0, top: 82, textAlign: 'center' }}>
         {delta !== 0 && (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: delta > 0 ? '#F0FDF4' : '#FEF2F2', color: delta > 0 ? '#16A34A' : '#DC2626', borderRadius: 999, padding: '3px 12px', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)} pts</div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: delta > 0 ? 'var(--status-success-soft)' : 'var(--status-danger-soft)', color: delta > 0 ? 'var(--status-success-strong)' : 'var(--status-danger-strong)', borderRadius: 999, padding: '3px 12px', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)} pts</div>
         )}
-        <div style={{ fontSize: 56, fontWeight: 800, color: '#0F172A', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{rate}%</div>
+        <div style={{ fontSize: 56, fontWeight: 800, color: 'var(--slate-900)', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{rate}%</div>
         {rate === 0 && (
-          <div style={{ fontSize: 11, color: '#475569', marginTop: 4, textAlign: 'center', maxWidth: 120, marginLeft: 'auto', marginRight: 'auto' }}>No payments recorded yet</div>
+          <div style={{ fontSize: 11, color: 'var(--slate-600)', marginTop: 4, textAlign: 'center', maxWidth: 120, marginLeft: 'auto', marginRight: 'auto' }}>No payments recorded yet</div>
         )}
       </div>
     </div>
   );
 }
 
+// ZERO-ORANGE: the `yellow` tone previously used #D97706 (r=217, g=119, b=6),
+// a direct violation. --color-warning (amber-700, r=161) is the safe substitute.
 function ImpactBadge({ tone, text }: { tone: 'green' | 'yellow' | 'red'; text: string }) {
-  const c = tone === 'green' ? { bg: '#F0FDF4', fg: '#16A34A' } : tone === 'yellow' ? { bg: '#FFFBEB', fg: '#D97706' } : { bg: '#FEF2F2', fg: '#DC2626' };
+  const c = tone === 'green'
+    ? { bg: 'var(--status-success-soft)', fg: 'var(--status-success-strong)' }
+    : tone === 'yellow'
+      ? { bg: 'var(--status-warning-soft)', fg: 'var(--status-warning)' }
+      : { bg: 'var(--status-danger-soft)', fg: 'var(--status-danger-strong)' };
   return <span style={{ background: c.bg, color: c.fg, fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '3px 10px' }}>{text}</span>;
 }
 
@@ -398,14 +416,14 @@ function MetricCard({ title, value, tone, badge, sub, onClick }: { title: string
   return (
     <div onClick={onClick} className={`${CARD} cursor-pointer p-5 transition-shadow hover:shadow-md`}>
       <div className="flex items-center justify-between">
-        <span className="text-[16px] font-semibold text-[#0F172A]">{title}</span>
-        <ArrowUpRight size={17} className="text-[#475569]" />
+        <span className="text-[16px] font-semibold text-[var(--slate-900)]">{title}</span>
+        <ArrowUpRight size={17} className="text-[var(--slate-600)]" />
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-2.5">
-        <span className="text-[30px] font-extrabold leading-none text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>{value}</span>
+        <span className="text-[30px] font-extrabold leading-none text-[var(--slate-900)]" style={{ fontFamily: 'Geist,sans-serif' }}>{value}</span>
         <ImpactBadge tone={tone} text={badge} />
       </div>
-      <div className="mt-2.5 text-[13px] leading-snug text-[#475569]">{sub}</div>
+      <div className="mt-2.5 text-[13px] leading-snug text-[var(--slate-600)]">{sub}</div>
     </div>
   );
 }
@@ -413,9 +431,9 @@ function MetricCard({ title, value, tone, badge, sub, onClick }: { title: string
 // ─── Small components ────────────────────────────────────────────────────────
 function Kpi({ icon: Icon, label, value, color }: { icon: any; label: string; value: string; color?: string }) {
   return (
-    <div className="rounded-2xl border border-[#EEF2F7] bg-white p-5 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
-      <div className="flex items-center gap-2 text-[#6B7280]"><Icon size={18} /><span className="text-[12px]">{label}</span></div>
-      <div className="mt-3 text-[24px] font-bold leading-none" style={{ color: color ?? '#0F172A' }}>{value}</div>
+    <div className="rounded-2xl border border-[var(--color-light-gray)] bg-white p-5 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
+      <div className="flex items-center gap-2 text-[var(--color-text-secondary)]"><Icon size={18} /><span className="text-[12px]">{label}</span></div>
+      <div className="mt-3 text-[24px] font-bold leading-none" style={{ color: color ?? 'var(--slate-900)' }}>{value}</div>
     </div>
   );
 }
@@ -424,7 +442,7 @@ function StatusBadge({ status }: { status: string }) {
   return <span className="rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: s.bg, color: s.fg }}>{status === 'PartiallyPaid' ? 'Partial' : status}</span>;
 }
 function IconBtn({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }) {
-  return <button title={title} onClick={onClick} className="grid h-8 w-8 place-items-center rounded-full border border-[#EEF2F7] text-[#6B7280] transition-colors hover:bg-[#F5F7FF] hover:text-[#4F46E5]">{children}</button>;
+  return <button title={title} onClick={onClick} className="grid h-8 w-8 place-items-center rounded-full border border-[var(--color-light-gray)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-primary)]">{children}</button>;
 }
 
 // ─── Bill Detail drawer ──────────────────────────────────────────────────────
@@ -433,41 +451,41 @@ function BillDrawer({ id, onClose, onPay, onChanged, notify }: { id: string; onC
   const issue = useMutation({ mutationFn: () => api.put(`/bill/billed/${id}`).then((r) => r.data), onSuccess: () => { notify('ok', 'Bill issued'); onChanged(); }, onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Could not issue') });
   const markViewed = useMutation({ mutationFn: () => api.put(`/bill/viewed/${id}`).then((r) => r.data), onSuccess: () => { notify('ok', 'Marked as viewed'); onChanged(); }, onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Failed') });
 
-  const box = 'rounded-xl border border-[#EEF2F7] bg-[#F8FAFC] p-5';
+  const box = 'rounded-xl border border-[var(--color-light-gray)] bg-[var(--slate-50)] p-5';
   const out = bill ? outstandingOf(bill) : 0;
 
   return (
     <div className="fixed inset-0 z-[100] flex justify-end bg-slate-900/40" onClick={onClose}>
       <div className="premium-scroll flex h-full w-full max-w-[560px] flex-col overflow-y-auto bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#EEF2F7] bg-white px-6 py-4">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--color-light-gray)] bg-white px-6 py-4">
           <div className="flex items-center gap-2.5">
-            <span className="text-[17px] font-bold text-[#0F172A]">Invoice</span>
-            <span className="font-mono text-[13px] text-[#6B7280]">{bill?.referenceNo ?? '…'}</span>
+            <span className="text-[17px] font-bold text-[var(--slate-900)]">Invoice</span>
+            <span className="font-mono text-[13px] text-[var(--color-text-secondary)]">{bill?.referenceNo ?? '…'}</span>
             {bill && <StatusBadge status={bill.status} />}
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#9CA3AF] hover:bg-[#F3F4F6]"><X size={18} /></button>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[var(--color-text-muted)] hover:bg-[var(--gray-100)]"><X size={18} /></button>
         </div>
 
-        {!bill ? <div className="grid flex-1 place-items-center text-[13px] text-[#9CA3AF]">Loading…</div> : (
+        {!bill ? <div className="grid flex-1 place-items-center text-[13px] text-[var(--color-text-muted)]">Loading…</div> : (
           <div className="flex flex-col gap-5 p-6">
             {/* Invoice header */}
             <div className={box}>
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="text-[18px] font-extrabold tracking-tight text-[#4F46E5]">CYTOLAB</div>
-                  <div className="text-[12px] text-[#6B7280]">Cytology &amp; Pathology Laboratory</div>
+                  <div className="text-[18px] font-extrabold tracking-tight text-[var(--color-primary)]">CYTOLAB</div>
+                  <div className="text-[12px] text-[var(--color-text-secondary)]">Cytology &amp; Pathology Laboratory</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[20px] font-extrabold tracking-tight text-[#0F172A]">INVOICE</div>
-                  <div className="font-mono text-[13px] text-[#6B7280]">{bill.referenceNo}</div>
-                  <div className="mt-1 text-[12px] text-[#9CA3AF]">Date: {fmtDate(bill.createdAt)}</div>
-                  <div className="text-[12px] text-[#9CA3AF]">Due: {fmtDate(bill.dueDate)}</div>
+                  <div className="text-[20px] font-extrabold tracking-tight text-[var(--slate-900)]">INVOICE</div>
+                  <div className="font-mono text-[13px] text-[var(--color-text-secondary)]">{bill.referenceNo}</div>
+                  <div className="mt-1 text-[12px] text-[var(--color-text-muted)]">Date: {fmtDate(bill.createdAt)}</div>
+                  <div className="text-[12px] text-[var(--color-text-muted)]">Due: {fmtDate(bill.dueDate)}</div>
                 </div>
               </div>
-              <div className="mt-4 border-t border-[#EEF2F7] pt-3">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-[#9CA3AF]">Bill To</div>
-                <div className="mt-0.5 text-[14px] font-bold text-[#0F172A]">{clientName(bill.client)}</div>
-                <div className="font-mono text-[12px] text-[#9CA3AF]">{bill.record?.labNumber ?? bill.record?.identifier ?? '—'}</div>
+              <div className="mt-4 border-t border-[var(--color-light-gray)] pt-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">Bill To</div>
+                <div className="mt-0.5 text-[14px] font-bold text-[var(--slate-900)]">{clientName(bill.client)}</div>
+                <div className="font-mono text-[12px] text-[var(--color-text-muted)]">{bill.record?.labNumber ?? bill.record?.identifier ?? '—'}</div>
               </div>
             </div>
 
@@ -475,19 +493,19 @@ function BillDrawer({ id, onClose, onPay, onChanged, notify }: { id: string; onC
             <div>
               <table className="w-full border-collapse text-left text-[13px]">
                 <thead>
-                  <tr className="border-b border-[#F3F4F6] text-[11px] font-medium uppercase tracking-wide text-[#9CA3AF]">
+                  <tr className="border-b border-[var(--gray-100)] text-[11px] font-medium uppercase tracking-wide text-[var(--color-text-muted)]">
                     <th className="pb-2 font-medium">Service</th><th className="pb-2 font-medium">Code</th>
                     <th className="pb-2 text-center font-medium">Qty</th><th className="pb-2 text-right font-medium">Unit</th><th className="pb-2 text-right font-medium">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(bill.lines ?? []).map((l) => (
-                    <tr key={l.id} className="border-b border-[#F9FAFB]">
-                      <td className="py-2 text-[#0F172A]">{l.serviceName}</td>
-                      <td className="py-2 text-[#9CA3AF]">{l.serviceCode ?? '—'}</td>
-                      <td className="py-2 text-center text-[#6B7280]">{l.quantity}</td>
-                      <td className="py-2 text-right text-[#6B7280]">{fmt(l.unitPrice)}</td>
-                      <td className="py-2 text-right font-medium text-[#0F172A]">{fmt(l.amount)}</td>
+                    <tr key={l.id} className="border-b border-[var(--gray-50)]">
+                      <td className="py-2 text-[var(--slate-900)]">{l.serviceName}</td>
+                      <td className="py-2 text-[var(--color-text-muted)]">{l.serviceCode ?? '—'}</td>
+                      <td className="py-2 text-center text-[var(--color-text-secondary)]">{l.quantity}</td>
+                      <td className="py-2 text-right text-[var(--color-text-secondary)]">{fmt(l.unitPrice)}</td>
+                      <td className="py-2 text-right font-medium text-[var(--slate-900)]">{fmt(l.amount)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -495,48 +513,48 @@ function BillDrawer({ id, onClose, onPay, onChanged, notify }: { id: string; onC
               <div className="mt-3 flex flex-col gap-1.5 text-[13px]">
                 <Row label="Subtotal" value={fmt(bill.subtotal)} />
                 {(bill.taxes ?? []).map((t) => <Row key={t.id} label={`${t.name} (${(t.rateBasisPoints / 100).toFixed(t.rateBasisPoints % 100 ? 2 : 0)}%)`} value={fmt(t.amount)} muted />)}
-                <div className="mt-1 flex items-center justify-between border-t border-[#EEF2F7] pt-2 text-[15px] font-bold text-[#0F172A]"><span>Total</span><span>{fmt(bill.total)}</span></div>
+                <div className="mt-1 flex items-center justify-between border-t border-[var(--color-light-gray)] pt-2 text-[15px] font-bold text-[var(--slate-900)]"><span>Total</span><span>{fmt(bill.total)}</span></div>
               </div>
             </div>
 
             {/* Payments */}
             <div>
-              <div className="mb-2 text-[14px] font-bold text-[#0F172A]">Payments</div>
-              {(bill.payments ?? []).length === 0 ? <div className="text-[13px] text-[#9CA3AF]">No payments recorded.</div> : (
+              <div className="mb-2 text-[14px] font-bold text-[var(--slate-900)]">Payments</div>
+              {(bill.payments ?? []).length === 0 ? <div className="text-[13px] text-[var(--color-text-muted)]">No payments recorded.</div> : (
                 <div className="flex flex-col gap-2">
                   {bill.payments!.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between rounded-lg border border-[#F1F3F7] px-3 py-2 text-[13px]">
+                    <div key={p.id} className="flex items-center justify-between rounded-lg border border-[var(--color-border-subtle)] px-3 py-2 text-[13px]">
                       <div className="flex items-center gap-2">
-                        <span className="rounded-md bg-[#F3F4F6] px-2 py-0.5 text-[11px] font-semibold text-[#374151]">{p.type}</span>
-                        <span className="text-[#9CA3AF]">{fmtDate(p.datePaid)}</span>
+                        <span className="rounded-md bg-[var(--gray-100)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-text-body)]">{p.type}</span>
+                        <span className="text-[var(--color-text-muted)]">{fmtDate(p.datePaid)}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-[#0F172A]">{fmt(p.amount)}</span>
-                        <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={p.verified ? { background: '#F0FDF4', color: '#16A34A' } : { background: '#F3F4F6', color: '#6B7280' }}>{p.verified ? 'Verified' : 'Unverified'}</span>
+                        <span className="font-medium text-[var(--slate-900)]">{fmt(p.amount)}</span>
+                        <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={p.verified ? { background: 'var(--status-success-soft)', color: 'var(--status-success-strong)' } : { background: 'var(--gray-100)', color: 'var(--color-text-secondary)' }}>{p.verified ? 'Verified' : 'Unverified'}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
               <div className="mt-3 flex flex-col gap-1.5 text-[13px]">
-                <Row label="Amount Paid" value={fmt(bill.amountPaid)} valueColor="#16A34A" />
-                <Row label="Outstanding" value={fmt(out)} valueColor={out > 0 ? '#DC2626' : '#16A34A'} bold />
+                <Row label="Amount Paid" value={fmt(bill.amountPaid)} valueColor="var(--status-success-strong)" />
+                <Row label="Outstanding" value={fmt(out)} valueColor={out > 0 ? 'var(--status-danger-strong)' : 'var(--status-success-strong)'} bold />
               </div>
             </div>
 
             {/* Actions */}
-            <div className="flex flex-wrap gap-3 border-t border-[#EEF2F7] pt-4">
+            <div className="flex flex-wrap gap-3 border-t border-[var(--color-light-gray)] pt-4">
               {(bill.status === 'Issued' || bill.status === 'Draft' || bill.status === 'PartiallyPaid') && out > 0 && (
-                <button onClick={() => onPay(bill)} className="flex items-center gap-2 rounded-xl bg-[#4F46E5] px-4 py-2.5 text-[14px] font-semibold text-white hover:bg-[#4338CA]"><CreditCard size={15} /> Record Payment</button>
+                <button onClick={() => onPay(bill)} className="flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-[14px] font-semibold text-white hover:bg-[var(--color-primary-hover)]"><CreditCard size={15} /> Record Payment</button>
               )}
               {bill.status === 'Draft' && (
-                <button onClick={() => issue.mutate()} disabled={issue.isPending} className="rounded-xl border border-[#4F46E5] px-4 py-2.5 text-[14px] font-semibold text-[#4F46E5] hover:bg-[#EEF3FF] disabled:opacity-60">Issue Bill</button>
+                <button onClick={() => issue.mutate()} disabled={issue.isPending} className="rounded-xl border border-[var(--color-primary)] px-4 py-2.5 text-[14px] font-semibold text-[var(--color-primary)] hover:bg-[var(--indigo-50)] disabled:opacity-60">Issue Bill</button>
               )}
               {bill.status === 'Paid' && (
-                <button onClick={() => (window.location.href = '/reports')} className="rounded-xl border border-[#4F46E5] px-4 py-2.5 text-[14px] font-semibold text-[#4F46E5] hover:bg-[#EEF3FF]">Download Invoice PDF</button>
+                <button onClick={() => (window.location.href = '/reports')} className="rounded-xl border border-[var(--color-primary)] px-4 py-2.5 text-[14px] font-semibold text-[var(--color-primary)] hover:bg-[var(--indigo-50)]">Download Invoice PDF</button>
               )}
               {!bill.viewed && (
-                <button onClick={() => markViewed.mutate()} disabled={markViewed.isPending} className="rounded-xl border border-[#E5E7EB] px-4 py-2.5 text-[14px] font-semibold text-[#6B7280] hover:text-[#0F172A] disabled:opacity-60">Mark as Viewed</button>
+                <button onClick={() => markViewed.mutate()} disabled={markViewed.isPending} className="rounded-xl border border-[var(--gray-200)] px-4 py-2.5 text-[14px] font-semibold text-[var(--color-text-secondary)] hover:text-[var(--slate-900)] disabled:opacity-60">Mark as Viewed</button>
               )}
             </div>
           </div>
@@ -548,8 +566,8 @@ function BillDrawer({ id, onClose, onPay, onChanged, notify }: { id: string; onC
 function Row({ label, value, muted, bold, valueColor }: { label: string; value: string; muted?: boolean; bold?: boolean; valueColor?: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className={muted ? 'text-[#9CA3AF]' : 'text-[#6B7280]'}>{label}</span>
-      <span className={bold ? 'font-bold' : 'font-medium'} style={{ color: valueColor ?? '#0F172A' }}>{value}</span>
+      <span className={muted ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text-secondary)]'}>{label}</span>
+      <span className={bold ? 'font-bold' : 'font-medium'} style={{ color: valueColor ?? 'var(--slate-900)' }}>{value}</span>
     </div>
   );
 }
@@ -589,15 +607,15 @@ function CreateInvoiceModal({ presetRecordId, onClose, onCreated, notify }: { pr
   });
 
   const recLabel = (r: any) => `${r.labNumber ?? r.identifier} — ${r.patient ? `${r.patient.firstName} ${r.patient.lastName}` : '—'} — ${r.client ? (r.client.officeName || `${r.client.firstName} ${r.client.lastName}`) : '—'}`;
-  const input = 'h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px] text-[#0F172A] outline-none focus:border-[#4F46E5]';
-  const label = 'text-[13px] font-semibold text-[#0F172A]';
+  const input = 'h-10 w-full rounded-lg border border-[var(--slate-200)] px-3 text-[14px] text-[var(--slate-900)] outline-none focus:border-[var(--color-primary)]';
+  const label = 'text-[13px] font-semibold text-[var(--slate-900)]';
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
       <div className="premium-scroll max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between">
-          <div><div className="text-[20px] font-bold text-[#0F172A]">Create Invoice</div><div className="mt-0.5 text-[14px] text-[#6B7280]">Bill an approved record.</div></div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#9CA3AF] hover:bg-[#F3F4F6]"><X size={18} /></button>
+          <div><div className="text-[20px] font-bold text-[var(--slate-900)]">Create Invoice</div><div className="mt-0.5 text-[14px] text-[var(--color-text-secondary)]">Bill an approved record.</div></div>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[var(--color-text-muted)] hover:bg-[var(--gray-100)]"><X size={18} /></button>
         </div>
 
         <div className="mt-5 flex flex-col gap-4">
@@ -613,11 +631,11 @@ function CreateInvoiceModal({ presetRecordId, onClose, onCreated, notify }: { pr
             </label>
             <label className="flex flex-col gap-1.5"><span className={label}>Due Date</span><input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={input} /></label>
           </div>
-          {record && <div className="rounded-lg bg-[#F8FAFC] px-3 py-2 text-[13px] text-[#6B7280]">Client: <span className="font-semibold text-[#0F172A]">{record.client ? (record.client.officeName || `${record.client.firstName} ${record.client.lastName}`) : '—'}</span></div>}
+          {record && <div className="rounded-lg bg-[var(--slate-50)] px-3 py-2 text-[13px] text-[var(--color-text-secondary)]">Client: <span className="font-semibold text-[var(--slate-900)]">{record.client ? (record.client.officeName || `${record.client.firstName} ${record.client.lastName}`) : '—'}</span></div>}
 
           {/* Line items */}
           <div>
-            <div className="mb-2 text-[13px] font-semibold text-[#0F172A]">Line Items</div>
+            <div className="mb-2 text-[13px] font-semibold text-[var(--slate-900)]">Line Items</div>
             <div className="flex flex-col gap-2">
               {lines.map((l, i) => {
                 const price = priceOf(l.serviceId);
@@ -628,25 +646,25 @@ function CreateInvoiceModal({ presetRecordId, onClose, onCreated, notify }: { pr
                       {services.map((s: any) => <option key={s.id} value={s.id}>{s.name} — {fmt(s.price)}</option>)}
                     </select>
                     <input type="number" min={1} value={l.quantity} onChange={(e) => setLines((s) => s.map((x, j) => j === i ? { ...x, quantity: Math.max(1, Number(e.target.value)) } : x))} className={`${input} w-16 text-center`} />
-                    <div className="w-24 text-right text-[13px] text-[#6B7280]">{fmt(price)}</div>
-                    <div className="w-24 text-right text-[13px] font-semibold text-[#0F172A]">{fmt(price * (l.quantity || 0))}</div>
-                    <button onClick={() => setLines((s) => s.length > 1 ? s.filter((_, j) => j !== i) : s)} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[#9CA3AF] hover:bg-[#FEF2F2] hover:text-[#EF4444]"><X size={15} /></button>
+                    <div className="w-24 text-right text-[13px] text-[var(--color-text-secondary)]">{fmt(price)}</div>
+                    <div className="w-24 text-right text-[13px] font-semibold text-[var(--slate-900)]">{fmt(price * (l.quantity || 0))}</div>
+                    <button onClick={() => setLines((s) => s.length > 1 ? s.filter((_, j) => j !== i) : s)} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[var(--color-text-muted)] hover:bg-[var(--status-danger-soft)] hover:text-[var(--status-danger)]"><X size={15} /></button>
                   </div>
                 );
               })}
             </div>
-            <button onClick={() => setLines((s) => [...s, { serviceId: '', quantity: 1 }])} className="mt-2 flex items-center gap-1.5 text-[13px] font-semibold text-[#4F46E5] hover:underline"><Plus size={14} /> Add Line</button>
+            <button onClick={() => setLines((s) => [...s, { serviceId: '', quantity: 1 }])} className="mt-2 flex items-center gap-1.5 text-[13px] font-semibold text-[var(--color-primary)] hover:underline"><Plus size={14} /> Add Line</button>
           </div>
 
           {/* Taxes */}
           {(taxes ?? []).length > 0 && (
             <div>
-              <div className="mb-2 text-[13px] font-semibold text-[#0F172A]">Taxes</div>
+              <div className="mb-2 text-[13px] font-semibold text-[var(--slate-900)]">Taxes</div>
               <div className="flex flex-wrap gap-3">
                 {taxes!.map((t) => (
-                  <label key={t.id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#E2E8F0] px-3 py-2 text-[13px]">
-                    <input type="checkbox" checked={taxIds.includes(t.id)} onChange={(e) => setTaxIds((s) => e.target.checked ? [...s, t.id] : s.filter((x) => x !== t.id))} className="accent-[#4F46E5]" />
-                    <span className="font-medium text-[#0F172A]">{t.name} — {(t.rateBasisPoints / 100).toFixed(t.rateBasisPoints % 100 ? 2 : 0)}%</span>
+                  <label key={t.id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--slate-200)] px-3 py-2 text-[13px]">
+                    <input type="checkbox" checked={taxIds.includes(t.id)} onChange={(e) => setTaxIds((s) => e.target.checked ? [...s, t.id] : s.filter((x) => x !== t.id))} className="accent-[var(--color-primary)]" />
+                    <span className="font-medium text-[var(--slate-900)]">{t.name} — {(t.rateBasisPoints / 100).toFixed(t.rateBasisPoints % 100 ? 2 : 0)}%</span>
                   </label>
                 ))}
               </div>
@@ -654,17 +672,17 @@ function CreateInvoiceModal({ presetRecordId, onClose, onCreated, notify }: { pr
           )}
 
           {/* Summary */}
-          <div className="rounded-xl bg-[#F8FAFC] p-4">
+          <div className="rounded-xl bg-[var(--slate-50)] p-4">
             <Row label="Subtotal" value={fmt(subtotal)} />
             <div className="mt-1.5"><Row label="Tax" value={fmt(taxTotal)} muted /></div>
-            <div className="mt-2 flex items-center justify-between border-t border-[#EEF2F7] pt-2 text-[16px] font-bold text-[#0F172A]"><span>Total</span><span>{fmt(total)}</span></div>
+            <div className="mt-2 flex items-center justify-between border-t border-[var(--color-light-gray)] pt-2 text-[16px] font-bold text-[var(--slate-900)]"><span>Total</span><span>{fmt(total)}</span></div>
           </div>
         </div>
 
         <div className="mt-6 flex justify-end gap-2.5">
-          <button onClick={onClose} className="h-10 rounded-lg border border-[#E5E7EB] px-4 text-[14px] font-semibold text-[#6B7280] hover:text-[#0F172A]">Cancel</button>
-          <button onClick={() => create.mutate(false)} disabled={!canSave || create.isPending} className="h-10 rounded-lg border border-[#4F46E5] px-4 text-[14px] font-semibold text-[#4F46E5] hover:bg-[#EEF3FF] disabled:opacity-50">Save as Draft</button>
-          <button onClick={() => create.mutate(true)} disabled={!canSave || create.isPending} className="h-10 rounded-lg bg-[#4F46E5] px-5 text-[14px] font-semibold text-white hover:bg-[#4338CA] disabled:opacity-50">{create.isPending ? 'Saving…' : 'Create & Issue'}</button>
+          <button onClick={onClose} className="h-10 rounded-lg border border-[var(--gray-200)] px-4 text-[14px] font-semibold text-[var(--color-text-secondary)] hover:text-[var(--slate-900)]">Cancel</button>
+          <button onClick={() => create.mutate(false)} disabled={!canSave || create.isPending} className="h-10 rounded-lg border border-[var(--color-primary)] px-4 text-[14px] font-semibold text-[var(--color-primary)] hover:bg-[var(--indigo-50)] disabled:opacity-50">Save as Draft</button>
+          <button onClick={() => create.mutate(true)} disabled={!canSave || create.isPending} className="h-10 rounded-lg bg-[var(--color-primary)] px-5 text-[14px] font-semibold text-white hover:bg-[var(--color-primary-hover)] disabled:opacity-50">{create.isPending ? 'Saving…' : 'Create & Issue'}</button>
         </div>
       </div>
     </div>
@@ -685,20 +703,20 @@ function PaymentModal({ bill, onClose, onPaid, notify }: { bill: Bill; onClose: 
   });
   const cents = Math.round(Number(amount) * 100);
   const valid = cents >= 1 && cents <= out;
-  const input = 'h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px] text-[#0F172A] outline-none focus:border-[#4F46E5]';
-  const label = 'text-[13px] font-semibold text-[#0F172A]';
+  const input = 'h-10 w-full rounded-lg border border-[var(--slate-200)] px-3 text-[14px] text-[var(--slate-900)] outline-none focus:border-[var(--color-primary)]';
+  const label = 'text-[13px] font-semibold text-[var(--slate-900)]';
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between">
-          <div><div className="text-[20px] font-bold text-[#0F172A]">Record Payment</div><div className="mt-0.5 text-[14px] text-[#6B7280]">{bill.referenceNo} · Outstanding {fmt(out)}</div></div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#9CA3AF] hover:bg-[#F3F4F6]"><X size={18} /></button>
+          <div><div className="text-[20px] font-bold text-[var(--slate-900)]">Record Payment</div><div className="mt-0.5 text-[14px] text-[var(--color-text-secondary)]">{bill.referenceNo} · Outstanding {fmt(out)}</div></div>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[var(--color-text-muted)] hover:bg-[var(--gray-100)]"><X size={18} /></button>
         </div>
         <div className="mt-5 flex flex-col gap-4">
           <label className="flex flex-col gap-1.5"><span className={label}>Amount</span>
-            <div className="relative"><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-[#9CA3AF]">$</span><input type="number" min={0.01} step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className={`${input} pl-7`} /></div>
-            {!valid && <span className="text-[12px] text-[#DC2626]">Enter an amount between $0.01 and {fmt(out)}.</span>}
+            <div className="relative"><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-[var(--color-text-muted)]">$</span><input type="number" min={0.01} step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className={`${input} pl-7`} /></div>
+            {!valid && <span className="text-[12px] text-[var(--status-danger-strong)]">Enter an amount between $0.01 and {fmt(out)}.</span>}
           </label>
           <label className="flex flex-col gap-1.5"><span className={label}>Payment Type</span>
             <select value={type} onChange={(e) => setType(e.target.value)} className={`${input} appearance-none`}>{PAYMENT_TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
@@ -706,8 +724,8 @@ function PaymentModal({ bill, onClose, onPaid, notify }: { bill: Bill; onClose: 
           <label className="flex flex-col gap-1.5"><span className={label}>Reference No</span><input value={referenceNo} onChange={(e) => setReferenceNo(e.target.value)} placeholder="Optional" className={input} /></label>
         </div>
         <div className="mt-6 flex justify-end gap-2.5">
-          <button onClick={onClose} className="h-10 rounded-lg border border-[#E5E7EB] px-4 text-[14px] font-semibold text-[#6B7280] hover:text-[#0F172A]">Cancel</button>
-          <button onClick={() => pay.mutate()} disabled={!valid || pay.isPending} className="h-10 rounded-lg bg-[#4F46E5] px-5 text-[14px] font-semibold text-white hover:bg-[#4338CA] disabled:opacity-50">{pay.isPending ? 'Recording…' : 'Record Payment'}</button>
+          <button onClick={onClose} className="h-10 rounded-lg border border-[var(--gray-200)] px-4 text-[14px] font-semibold text-[var(--color-text-secondary)] hover:text-[var(--slate-900)]">Cancel</button>
+          <button onClick={() => pay.mutate()} disabled={!valid || pay.isPending} className="h-10 rounded-lg bg-[var(--color-primary)] px-5 text-[14px] font-semibold text-white hover:bg-[var(--color-primary-hover)] disabled:opacity-50">{pay.isPending ? 'Recording…' : 'Record Payment'}</button>
         </div>
       </div>
     </div>

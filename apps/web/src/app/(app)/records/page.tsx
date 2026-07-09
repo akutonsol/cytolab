@@ -35,36 +35,40 @@ const SPECIMEN: Record<string, string> = {
   CSF: 'CSF', PLEURAL_FLD: 'Pleural Fluid', BREAST_ASP: 'Breast Aspirate', JOINT_ASP: 'Joint Asp.', SYNOVIAL_FLD: 'Synovial Fluid', OTHER: 'Other',
   BODY_FLUID: 'Body Fluid', SPUTUM: 'Sputum', BRONCHIAL_WASH: 'Bronchial Wash', THYROID_FNA: 'Thyroid FNA', LYMPH_NODE: 'Lymph Node FNA', BONE_MARROW: 'Bone Marrow', SKIN_SCRAPING: 'Skin Scraping',
 };
+// Donut-chart fills. Saturated siblings of the SPEC_UI chip colours: chart slices
+// sit on white, chips sit on a tinted `-soft` background. (var() resolves inside
+// SVG presentation attributes, so Recharts `fill`/`stroke` can consume tokens.)
 const SPEC_COLOR: Record<string, string> = {
-  PLEURAL_FLD: '#3B82F6', URINE: '#FACC15', BREAST_ASP: '#EC4899', CERV_SCRAP: '#22C55E', ENDOCERV_ASP: '#8B5CF6', VAG_POOL: '#8B5CF6',
-  CSF: '#06B6D4', SYNOVIAL_FLD: '#14B8A6', JOINT_ASP: '#14B8A6', BODY_FLUID: '#14B8A6', SPUTUM: '#3B82F6', BRONCHIAL_WASH: '#3B82F6',
-  THYROID_FNA: '#0D9488', LYMPH_NODE: '#0D9488', OTHER: '#475569',
+  PLEURAL_FLD: 'var(--chart-specimen-fluid)', SPUTUM: 'var(--chart-specimen-fluid)', BRONCHIAL_WASH: 'var(--chart-specimen-fluid)',
+  URINE: 'var(--chart-specimen-urine)', BREAST_ASP: 'var(--chart-specimen-aspirate)', CERV_SCRAP: 'var(--chart-specimen-cervical)',
+  ENDOCERV_ASP: 'var(--chart-specimen-endocervical)', VAG_POOL: 'var(--chart-specimen-endocervical)',
+  CSF: 'var(--chart-specimen-csf)', SYNOVIAL_FLD: 'var(--chart-specimen-body-fluid)', JOINT_ASP: 'var(--chart-specimen-body-fluid)', BODY_FLUID: 'var(--chart-specimen-body-fluid)',
+  THYROID_FNA: 'var(--chart-specimen-thyroid)', LYMPH_NODE: 'var(--chart-specimen-thyroid)', OTHER: 'var(--chart-specimen-other)',
 };
-const specColor = (t?: string) => SPEC_COLOR[t ?? ''] ?? '#475569';
+const specColor = (t?: string) => SPEC_COLOR[t ?? ''] ?? SPEC_COLOR.OTHER;
 const specLabel = (t?: string | null) => (t ? SPECIMEN[t] ?? t : 'Other');
 
-// Specimen enum → Lucide icon + chip colours (inline hex so JIT can't purge them).
-// Urine icon uses a detector-safe amber (#A16207, r<200) on a pale-yellow chip
-// per the zero-orange rule. (#EAB308 previously used here trips the detector:
-// r=234, g=179, b=8 satisfies r>200 && g∈[100,190] && b<90.)
+// Specimen enum → Lucide icon + chip colours.
+// Colours reference DOMAIN tokens (Tier 2.5, globals.css), never a hue: re-theming
+// "Urine" is a one-line change to --specimen-urine, not a hunt through the app.
 const SPEC_UI: Record<string, { Icon: LucideIcon; bg: string; fg: string }> = {
-  PLEURAL_FLD: { Icon: Droplets, bg: '#DBEAFE', fg: '#2563EB' },
-  SPUTUM: { Icon: Droplets, bg: '#DBEAFE', fg: '#2563EB' },
-  BRONCHIAL_WASH: { Icon: Droplets, bg: '#DBEAFE', fg: '#2563EB' },
-  URINE: { Icon: FlaskConical, bg: '#FEF9C3', fg: '#A16207' },
-  BREAST_ASP: { Icon: Syringe, bg: '#FCE7F3', fg: '#DB2777' },
-  THYROID_FNA: { Icon: Syringe, bg: '#FCE7F3', fg: '#DB2777' },
-  LYMPH_NODE: { Icon: Syringe, bg: '#FCE7F3', fg: '#DB2777' },
-  CERV_SCRAP: { Icon: Microscope, bg: '#DCFCE7', fg: '#16A34A' },
-  ENDOCERV_ASP: { Icon: TestTube, bg: '#F3E8FF', fg: '#9333EA' },
-  VAG_POOL: { Icon: TestTube, bg: '#F3E8FF', fg: '#9333EA' },
-  BODY_FLUID: { Icon: Droplet, bg: '#CCFBF1', fg: '#0D9488' },
-  CSF: { Icon: Droplet, bg: '#CCFBF1', fg: '#0D9488' },
-  SYNOVIAL_FLD: { Icon: Droplet, bg: '#CCFBF1', fg: '#0D9488' },
-  JOINT_ASP: { Icon: Droplet, bg: '#CCFBF1', fg: '#0D9488' },
-  OTHER: { Icon: FlaskConical, bg: '#F1F5F9', fg: '#475569' },
+  PLEURAL_FLD: { Icon: Droplets, bg: 'var(--specimen-fluid-soft)', fg: 'var(--specimen-fluid)' },
+  SPUTUM: { Icon: Droplets, bg: 'var(--specimen-fluid-soft)', fg: 'var(--specimen-fluid)' },
+  BRONCHIAL_WASH: { Icon: Droplets, bg: 'var(--specimen-fluid-soft)', fg: 'var(--specimen-fluid)' },
+  URINE: { Icon: FlaskConical, bg: 'var(--specimen-urine-soft)', fg: 'var(--specimen-urine)' },
+  BREAST_ASP: { Icon: Syringe, bg: 'var(--specimen-aspirate-soft)', fg: 'var(--specimen-aspirate)' },
+  THYROID_FNA: { Icon: Syringe, bg: 'var(--specimen-aspirate-soft)', fg: 'var(--specimen-aspirate)' },
+  LYMPH_NODE: { Icon: Syringe, bg: 'var(--specimen-aspirate-soft)', fg: 'var(--specimen-aspirate)' },
+  CERV_SCRAP: { Icon: Microscope, bg: 'var(--specimen-cervical-soft)', fg: 'var(--specimen-cervical)' },
+  ENDOCERV_ASP: { Icon: TestTube, bg: 'var(--specimen-endocervical-soft)', fg: 'var(--specimen-endocervical)' },
+  VAG_POOL: { Icon: TestTube, bg: 'var(--specimen-endocervical-soft)', fg: 'var(--specimen-endocervical)' },
+  BODY_FLUID: { Icon: Droplet, bg: 'var(--specimen-body-fluid-soft)', fg: 'var(--specimen-body-fluid)' },
+  CSF: { Icon: Droplet, bg: 'var(--specimen-body-fluid-soft)', fg: 'var(--specimen-body-fluid)' },
+  SYNOVIAL_FLD: { Icon: Droplet, bg: 'var(--specimen-body-fluid-soft)', fg: 'var(--specimen-body-fluid)' },
+  JOINT_ASP: { Icon: Droplet, bg: 'var(--specimen-body-fluid-soft)', fg: 'var(--specimen-body-fluid)' },
+  OTHER: { Icon: FlaskConical, bg: 'var(--specimen-other-soft)', fg: 'var(--specimen-other)' },
 };
-const specUI = (t?: string) => SPEC_UI[t ?? ''] ?? { Icon: FlaskConical, bg: '#F1F5F9', fg: '#475569' };
+const specUI = (t?: string) => SPEC_UI[t ?? ''] ?? SPEC_UI.OTHER;
 
 // Specimen options shown in the worklist filter popover (enum → label).
 const SPEC_FILTER_OPTS: [string, string][] = [
@@ -75,10 +79,19 @@ const SPEC_FILTER_OPTS: [string, string][] = [
 const ACTIVE = ['Pending', 'Submitted', 'Processing', 'Partial', 'Completed', 'Resulted'];
 const COMPLETED_SET = ['Approved', 'Billed', 'Paid', 'Viewed'];
 const PROCESSING_SET = ['Processing', 'Partial'];
-const GREEN = '#16A34A', RED = '#E11D48', INDIGO = '#4F46E5', BLUE = '#3B82F6', TEAL = '#14B8A6', SLATE = '#475569';
+// Accents, named by MEANING rather than hue (see Tier 2.5 in globals.css).
+// NOTE an inconsistency inherited from the original design, preserved here rather
+// than silently unified: the "Processing" KPI card is blue while the "Processing"
+// status pill is violet (--workflow-processing).
+const C_PRIMARY = 'var(--color-primary)';
+const C_URGENT = 'var(--priority-urgent)';
+const C_DONE = 'var(--workflow-complete)';
+const C_PROCESSING_KPI = 'var(--blue-500)';
+const C_TAT = 'var(--teal-500)';
+const C_MUTED = 'var(--slate-600)';
 
-const AVATAR_HEX = ['#4F46E5', '#7C3AED', '#2563EB', '#0D9488', '#16A34A', '#9333EA'];
-const avatarBg = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h += s.charCodeAt(i); return AVATAR_HEX[h % AVATAR_HEX.length]; };
+const AVATAR_TOKENS = ['var(--identity-1)', 'var(--identity-2)', 'var(--identity-3)', 'var(--identity-4)', 'var(--identity-5)', 'var(--identity-6)'];
+const avatarBg = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h += s.charCodeAt(i); return AVATAR_TOKENS[h % AVATAR_TOKENS.length]; };
 const patientName = (r: Rec) => (r.patient ? `${r.patient.firstName} ${r.patient.lastName}`.trim() : '—');
 const initialsOf = (name: string) => name.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?';
 const clientLabel = (r: Rec) => (r.client ? (r.client.officeName || `${r.client.firstName} ${r.client.lastName}`.trim()) : '—');
@@ -99,14 +112,16 @@ const elapsedLabel = (d: string) => { const m = Math.floor((Date.now() - new Dat
 const STATUS_ACTION: Record<string, string> = { Pending: 'created', Submitted: 'submitted', Processing: 'processing', Partial: 'partially resulted', Completed: 'completed', Resulted: 'resulted', Approved: 'approved', Billed: 'billed', Paid: 'paid', Viewed: 'viewed', OnHold: 'on hold', Failed: 'failed', Disabled: 'cancelled' };
 const statusAction = (s: string) => STATUS_ACTION[s] ?? s.toLowerCase();
 
+// Record lifecycle → pill colours, via WORKFLOW domain tokens (Tier 2.5).
+const pill = (name: string) => ({ bg: `var(--workflow-${name}-soft)`, fg: `var(--workflow-${name})` });
 const STATUS_PILL: Record<string, { bg: string; fg: string }> = {
-  Processing: { bg: '#EDE9FE', fg: '#7C3AED' }, Partial: { bg: '#EDE9FE', fg: '#7C3AED' },
-  Completed: { bg: '#DCFCE7', fg: GREEN }, Resulted: { bg: '#EEF2FF', fg: INDIGO },
-  Approved: { bg: '#DCFCE7', fg: GREEN }, Billed: { bg: '#DCFCE7', fg: GREEN }, Paid: { bg: '#DCFCE7', fg: GREEN }, Viewed: { bg: '#DCFCE7', fg: GREEN },
-  Submitted: { bg: '#E0F2FE', fg: '#0284C7' }, Failed: { bg: '#FEE2E2', fg: '#DC2626' }, Disabled: { bg: '#F1F5F9', fg: '#475569' },
-  OnHold: { bg: '#FEF9C3', fg: '#854D0E' }, Pending: { bg: '#F1F5F9', fg: '#475569' },
+  Processing: pill('processing'), Partial: pill('processing'),
+  Completed: pill('complete'), Resulted: pill('resulted'),
+  Approved: pill('complete'), Billed: pill('complete'), Paid: pill('complete'), Viewed: pill('complete'),
+  Submitted: pill('submitted'), Failed: pill('failed'), Disabled: pill('pending'),
+  OnHold: pill('on-hold'), Pending: pill('pending'),
 };
-const statusPill = (s: string) => STATUS_PILL[s] ?? { bg: '#F1F5F9', fg: '#475569' };
+const statusPill = (s: string) => STATUS_PILL[s] ?? pill('pending');
 
 const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 
@@ -214,10 +229,10 @@ export default function SamplesPage() {
 
   // Completion-rate donut (proportional workload).
   const completionSegs = [
-    { label: 'Completed', value: completedCount, color: GREEN },
-    { label: 'Processing', value: processingCount, color: '#7C3AED' },
-    { label: 'Urgent', value: urgentAll.length, color: RED },
-    { label: 'On Hold', value: onHoldCount, color: SLATE },
+    { label: 'Completed', value: completedCount, color: C_DONE },
+    { label: 'Processing', value: processingCount, color: 'var(--workflow-processing)' },
+    { label: 'Urgent', value: urgentAll.length, color: C_URGENT },
+    { label: 'On Hold', value: onHoldCount, color: C_MUTED },
   ];
   const completionRate = all.length ? Math.round((completedCount / all.length) * 1000) / 10 : 0;
 
@@ -231,7 +246,7 @@ export default function SamplesPage() {
     const rows = others > 0 ? [...top, { label: 'Other', value: others }] : top;
     const sum = rows.reduce((s, x) => s + x.value, 0) || 1;
     const colorFor = (label: string) => Object.entries(SPECIMEN).find(([, l]) => l === label)?.[0];
-    return rows.map((x) => ({ ...x, pct: Math.round((x.value / sum) * 100), color: x.label === 'Other' ? SLATE : specColor(colorFor(x.label)) }));
+    return rows.map((x) => ({ ...x, pct: Math.round((x.value / sum) * 100), color: x.label === 'Other' ? C_MUTED : specColor(colorFor(x.label)) }));
   }, [all]);
 
   // Real last-7-calendar-days buckets (used by KPI sparklines + the summary bars).
@@ -309,11 +324,11 @@ export default function SamplesPage() {
         <div className="flex min-w-0 flex-1 flex-col gap-6">
           {/* KPI strip */}
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
-            <KpiCard icon={<FlaskConical size={18} />} iconClass="bg-indigo-50 text-indigo-600" label="New Samples" value={newSamples} sub={`+${newToday} today`} subColor={GREEN} spark={INDIGO} sparkData={newSeries} />
-            <KpiCard icon={<CheckCircle2 size={18} />} iconClass="bg-green-50 text-green-700" label="Completed" value={completedCount} sub={`${accuracy}% authorized`} subColor={GREEN} spark={GREEN} sparkData={completedSeries} />
-            <KpiCard icon={<AlertTriangle size={18} />} iconClass="bg-red-50 text-red-600" label="Urgent" value={urgentAll.length} sub="Needs attention" subColor={RED} spark={RED} sparkData={urgentSeries} />
-            <KpiCard icon={<Settings size={18} />} iconClass="bg-blue-50 text-blue-600" label="Processing" value={processingCount} sub="Active in lab" subColor={BLUE} spark={BLUE} sparkData={processingSeries} />
-            <KpiCard icon={<Activity size={18} />} iconClass="bg-teal-50 text-teal-600" label="Avg TAT" value={avgTat != null ? `${avgTat} hrs` : '—'} sub={avgTat != null ? 'avg turnaround' : 'no data yet'} subColor={SLATE} spark={TEAL} sparkData={completedSeries} />
+            <KpiCard icon={<FlaskConical size={18} />} iconClass="bg-indigo-50 text-indigo-600" label="New Samples" value={newSamples} sub={`+${newToday} today`} subColor={C_DONE} spark={C_PRIMARY} sparkData={newSeries} />
+            <KpiCard icon={<CheckCircle2 size={18} />} iconClass="bg-green-50 text-green-700" label="Completed" value={completedCount} sub={`${accuracy}% authorized`} subColor={C_DONE} spark={C_DONE} sparkData={completedSeries} />
+            <KpiCard icon={<AlertTriangle size={18} />} iconClass="bg-red-50 text-red-600" label="Urgent" value={urgentAll.length} sub="Needs attention" subColor={C_URGENT} spark={C_URGENT} sparkData={urgentSeries} />
+            <KpiCard icon={<Settings size={18} />} iconClass="bg-blue-50 text-blue-600" label="Processing" value={processingCount} sub="Active in lab" subColor={C_PROCESSING_KPI} spark={C_PROCESSING_KPI} sparkData={processingSeries} />
+            <KpiCard icon={<Activity size={18} />} iconClass="bg-teal-50 text-teal-600" label="Avg TAT" value={avgTat != null ? `${avgTat} hrs` : '—'} sub={avgTat != null ? 'avg turnaround' : 'no data yet'} subColor={C_MUTED} spark={C_TAT} sparkData={completedSeries} />
           </div>
 
           {/* Urgent Flagged + Automation */}
@@ -326,9 +341,9 @@ export default function SamplesPage() {
               <div className="flex flex-col gap-2">
                 {urgentAll.length === 0 && <div className="py-6 text-center text-sm font-semibold text-green-700">✓ No urgent cases</div>}
                 {urgentAll.slice(0, 4).map((r) => (
-                  <div key={r.id} onClick={() => router.push(`/records/${r.id}`)} className="flex cursor-pointer items-center gap-3 rounded-lg border-l-4 bg-red-50/60 px-3 py-2.5 hover:bg-red-50" style={{ borderColor: RED }}>
+                  <div key={r.id} onClick={() => router.push(`/records/${r.id}`)} className="flex cursor-pointer items-center gap-3 rounded-lg border-l-4 bg-red-50/60 px-3 py-2.5 hover:bg-red-50" style={{ borderColor: C_URGENT }}>
                     {(() => { const { Icon } = specUI(r.specimens?.[0]?.type); return (
-                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full" style={{ background: '#FEE2E2', color: '#EF4444' }}><Icon size={20} /></span>
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full" style={{ background: 'var(--color-danger-soft)', color: 'var(--color-danger)' }}><Icon size={20} /></span>
                     ); })()}
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-semibold text-charcoal-heading">{specLabel(r.specimens?.[0]?.type)}</div>
@@ -339,7 +354,7 @@ export default function SamplesPage() {
                       <div className="truncate text-xs text-slate-500">{clientLabel(r)}</div>
                     </div>
                     <div className="shrink-0 text-right">
-                      <div className="text-sm font-semibold" style={{ color: RED }}>{elapsedLabel(r.createdAt)}</div>
+                      <div className="text-sm font-semibold" style={{ color: C_URGENT }}>{elapsedLabel(r.createdAt)}</div>
                       <div className="text-xs text-slate-500">Since {clock(r.createdAt)}</div>
                     </div>
                   </div>
@@ -358,7 +373,7 @@ export default function SamplesPage() {
               </div>
               <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Average Turnaround (real)</div>
               <div className="mt-2 flex items-center gap-3">
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full" style={{ width: `${tatPct}%`, background: GREEN }} /></div>
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full" style={{ width: `${tatPct}%`, background: C_DONE }} /></div>
                 <span className="text-sm font-bold text-charcoal-heading">{avgTat != null ? `${avgTat} hrs` : '—'}</span>
               </div>
               <div className="mt-2 text-xs text-slate-500">{tatHours.length > 0 ? `${tatPct}% of ${tatHours.length} authorized within 72h` : 'No completed turnaround data yet'}</div>
@@ -372,27 +387,27 @@ export default function SamplesPage() {
               <div className="flex items-center gap-2">
                 <div className="flex h-9 w-56 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-slate-500"><Search size={15} /><input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search by patient, ID, accession..." className="w-full border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-500" /></div>
                 <div className="relative">
-                  <button onClick={() => setFiltersOpen((v) => !v)} className="relative grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50" style={activeFilterCount > 0 ? { borderColor: INDIGO, color: INDIGO } : undefined}>
+                  <button onClick={() => setFiltersOpen((v) => !v)} className="relative grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50" style={activeFilterCount > 0 ? { borderColor: C_PRIMARY, color: C_PRIMARY } : undefined}>
                     <Filter size={15} />
-                    {activeFilterCount > 0 && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white" style={{ background: INDIGO }} />}
+                    {activeFilterCount > 0 && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white" style={{ background: C_PRIMARY }} />}
                   </button>
                   {filtersOpen && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setFiltersOpen(false)} />
                       <div className="absolute right-0 top-11 z-50 w-72 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
                         <div className="mb-3 flex items-center justify-between"><span className="text-sm font-semibold text-charcoal-heading">Filters</span>{activeFilterCount > 0 && <span className="text-xs text-slate-500">{activeFilterCount} active</span>}</div>
-                        {showAssignee && <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={fMine} onChange={(e) => { setFMine(e.target.checked); }} style={{ accentColor: INDIGO }} /> My Cases only</label>}
+                        {showAssignee && <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={fMine} onChange={(e) => { setFMine(e.target.checked); }} style={{ accentColor: C_PRIMARY }} /> My Cases only</label>}
                         <div className="mb-1 mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Specimen Type</div>
                         <div className="flex max-h-44 flex-col gap-1.5 overflow-auto pr-1">
-                          {SPEC_FILTER_OPTS.map(([v, l]) => <label key={v} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={fSpecTypes.has(v)} onChange={() => toggleSpec(v)} style={{ accentColor: INDIGO }} /> {l}</label>)}
+                          {SPEC_FILTER_OPTS.map(([v, l]) => <label key={v} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={fSpecTypes.has(v)} onChange={() => toggleSpec(v)} style={{ accentColor: C_PRIMARY }} /> {l}</label>)}
                         </div>
                         <div className="mb-1 mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Priority</div>
                         <div className="flex flex-col gap-1.5">
-                          {([['all', 'All'], ['urgent', 'Urgent only'], ['normal', 'Normal only']] as const).map(([v, l]) => <label key={v} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="radio" name="wl-priority" checked={fPriority === v} onChange={() => { setFPriority(v); }} style={{ accentColor: INDIGO }} /> {l}</label>)}
+                          {([['all', 'All'], ['urgent', 'Urgent only'], ['normal', 'Normal only']] as const).map(([v, l]) => <label key={v} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="radio" name="wl-priority" checked={fPriority === v} onChange={() => { setFPriority(v); }} style={{ accentColor: C_PRIMARY }} /> {l}</label>)}
                         </div>
                         <div className="mb-1 mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Date Range</div>
                         <div className="flex flex-col gap-1.5">
-                          {([['today', 'Today'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['all', 'All time']] as const).map(([v, l]) => <label key={v} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="radio" name="wl-date" checked={fDate === v} onChange={() => { setFDate(v); }} style={{ accentColor: INDIGO }} /> {l}</label>)}
+                          {([['today', 'Today'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['all', 'All time']] as const).map(([v, l]) => <label key={v} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="radio" name="wl-date" checked={fDate === v} onChange={() => { setFDate(v); }} style={{ accentColor: C_PRIMARY }} /> {l}</label>)}
                         </div>
                         <div className="mt-4 flex gap-2">
                           <button onClick={clearFilters} className="flex-1 rounded-lg border border-slate-200 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Clear filters</button>
@@ -406,7 +421,7 @@ export default function SamplesPage() {
             </div>
             <div className="mt-3 flex flex-wrap gap-2 px-5">
               {TABS.map(([v, l]) => (
-                <button key={v} onClick={() => { setTab(v); }} className="rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors" style={tab === v ? { background: INDIGO, color: '#fff', borderColor: INDIGO } : { background: '#fff', color: '#475569', borderColor: '#E2E8F0' }}>{l} ({tabCount(v)})</button>
+                <button key={v} onClick={() => { setTab(v); }} className="rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors" style={tab === v ? { background: C_PRIMARY, color: 'var(--color-primary-on)', borderColor: C_PRIMARY } : { background: 'var(--color-surface)', color: C_MUTED, borderColor: 'var(--slate-200)' }}>{l} ({tabCount(v)})</button>
               ))}
             </div>
 
@@ -435,7 +450,7 @@ export default function SamplesPage() {
                     const sp = statusPill(r.status);
                     return (
                       <tr key={r.id} className="border-b border-slate-100 transition-colors hover:bg-slate-50">
-                        <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={labelSel.has(r.id)} onChange={() => toggleLabelSel(r.id)} style={{ accentColor: INDIGO }} /></td>
+                        <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={labelSel.has(r.id)} onChange={() => toggleLabelSel(r.id)} style={{ accentColor: C_PRIMARY }} /></td>
                         <td className={CELL}>
                           <div className="flex items-center gap-3">
                             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[11px] font-semibold text-white" style={{ background: avatarBg(name) }}>{initialsOf(name)}</span>
@@ -505,7 +520,7 @@ export default function SamplesPage() {
             <div className="text-4xl font-bold text-charcoal-heading">{all.length.toLocaleString()}</div>
             <div className="text-xs text-slate-500">Total samples</div>
             <div className="mt-4 grid grid-cols-4 gap-2 text-center">
-              {([['Completed', completedCount, GREEN], ['Urgent', urgentAll.length, RED], ['Processing', processingCount, '#0284C7'], ['On Hold', onHoldCount, SLATE]] as const).map(([l, v, c]) => (
+              {([['Completed', completedCount, C_DONE], ['Urgent', urgentAll.length, C_URGENT], ['Processing', processingCount, 'var(--sky-600)'], ['On Hold', onHoldCount, C_MUTED]] as const).map(([l, v, c]) => (
                 <div key={l}><div className="text-lg font-bold" style={{ color: c }}>{v}</div><div className="text-[10px] text-slate-500">{l}</div></div>
               ))}
             </div>
@@ -513,8 +528,8 @@ export default function SamplesPage() {
               {bars.map((b, i) => (
                 <div key={i} className="flex flex-1 flex-col items-center gap-1">
                   <span className="text-[9px] font-semibold text-slate-500">{b.v}</span>
-                  <div className="w-full rounded-t" style={{ height: `${(b.v / barPeak) * 60}px`, minHeight: 3, background: b.cur ? INDIGO : '#C7D2FE' }} />
-                  <span className="text-[9px]" style={{ color: b.cur ? INDIGO : '#475569', fontWeight: b.cur ? 700 : 500 }}>{b.l}</span>
+                  <div className="w-full rounded-t" style={{ height: `${(b.v / barPeak) * 60}px`, minHeight: 3, background: b.cur ? C_PRIMARY : 'var(--indigo-200)' }} />
+                  <span className="text-[9px]" style={{ color: b.cur ? C_PRIMARY : C_MUTED, fontWeight: b.cur ? 700 : 500 }}>{b.l}</span>
                 </div>
               ))}
             </div>
@@ -589,7 +604,7 @@ export default function SamplesPage() {
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-1 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Delete this sample?</h3><button onClick={() => setConfirmDel(null)} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={16} /></button></div>
             <p className="mt-1 text-sm text-secondary">{confirmDel.labNumber ?? 'This sample'} will be permanently deleted.</p>
-            <div className="mt-5 flex justify-end gap-2"><button className="btn-secondary" onClick={() => setConfirmDel(null)}>Cancel</button><button className="btn-primary" style={{ background: '#DC2626' }} disabled={del.isPending} onClick={() => del.mutate(confirmDel.id)}>{del.isPending ? 'Deleting…' : 'Delete'}</button></div>
+            <div className="mt-5 flex justify-end gap-2"><button className="btn-secondary" onClick={() => setConfirmDel(null)}>Cancel</button><button className="btn-primary" style={{ background: 'var(--red-600)' }} disabled={del.isPending} onClick={() => del.mutate(confirmDel.id)}>{del.isPending ? 'Deleting…' : 'Delete'}</button></div>
           </div>
         </div>
       )}
@@ -597,7 +612,7 @@ export default function SamplesPage() {
       {drawer && <RecordFormDrawer open onClose={() => { setDrawer(null); qc.invalidateQueries({ queryKey: ['records-all'] }); }} formType={drawer.formType} recordId={drawer.recordId} />}
       {printIds && <PrintLabelsModal recordIds={printIds} onClose={() => setPrintIds(null)} />}
 
-      {toast && <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>{toast.msg}</div>}
+      {toast && <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? C_DONE : 'var(--red-600)' }}>{toast.msg}</div>}
     </div>
   );
 }

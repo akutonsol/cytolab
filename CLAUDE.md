@@ -17,7 +17,14 @@ changes. Companion docs: **ARCHITECTURE.md**, **DESIGN_SYSTEM.md**,
 
 ## Locked decisions
 - **Color split:** marketing = red `#E63946`; product = indigo `#4F46E5`. **Do not
-  recolor the product UI.** (DESIGN_SYSTEM §1.)
+  recolor the product UI.** (DESIGN_SYSTEM §1.) ⚠️ The standalone `apps/marketing`
+  site actually ships **indigo**, not red — an unresolved contradiction, not a
+  licence to recolor either surface. See DESIGN_SYSTEM §1e.
+- **Color tokens:** three-tier + a domain layer (primitive → semantic UI → **domain**
+  → theme → component). **No component may contain a raw hex**; consume
+  `--color-*` (Tier 2) or `--specimen-* / --workflow-* / --billing-*` (Tier 2.5).
+  Never name a hue in a component. To retire a hex, point it at a Tier-1 token —
+  never edit a Tier-2 *value* (Tailwind is var-backed; you'd recolor 600+ sites).
 - **UI libraries:** new components → **shadcn/ui**; migrate **antd** only when a screen
   is already being redesigned. Never rewrite a stable screen to swap libraries.
 - **Keep custom auth, GCS storage, and the Claude-based AI reporting path** (see
@@ -25,9 +32,13 @@ changes. Companion docs: **ARCHITECTURE.md**, **DESIGN_SYSTEM.md**,
 
 ## The zero-orange rule (hard constraint)
 No pixel may satisfy `r>200 && g in [100,190] && b<90`. Never `#F97316`, `#f59e0b`,
-coral `#FF6A5C`, or orange/amber emoji. Anti-aliased edges of yellow/amber on dark
-backgrounds trip it — verify, don't assume. Safe substitutes: `#92400E`/`#78350F`
-(dark amber), `#FDE68A` (b=138), `#FB7185` (rose), `#FACC15` (solid yellow only).
+`#D97706`, `#EAB308`, coral `#FF6A5C`, or orange/amber emoji. Anti-aliased edges of
+yellow/amber on dark backgrounds trip it — verify, don't assume. Safe substitutes:
+`#92400E`/`#78350F`/`#A16207` (dark amber), `#FDE68A` (b=138), `#FB7185` (rose),
+`#FACC15` (solid yellow only).
+**Gradients: safe stops ≠ safe gradient.** The browser interpolates between stops, so
+`#EF4444 → #FACC15` paints `rgb(242,108,54)` in the middle. This shipped on `/billing`
+behind a comment claiming compliance. Screenshot gradients and run the detector.
 **Run the pixel detector after every UI change; it must report 0.**
 
 ## Verification workflow (non-negotiable for shipping changes)
