@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { PatientFormDrawer, type PatientRecord } from '@/components/PatientFormDrawer';
+import { Th, Td } from '@/components/ui';
 
 // The list endpoint enriches each patient with these two computed fields.
 type PatientListRow = PatientRecord & {
@@ -19,8 +20,6 @@ type PatientListRow = PatientRecord & {
 
 const BADGE = 'inline-flex items-center rounded-full px-3 py-1 text-sm font-medium';
 const PILL = 'inline-flex items-center rounded-full px-3 py-1 text-sm';
-const TH = 'px-8 py-4 text-left text-sm font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap';
-const CELL = 'px-8 py-5 text-base text-slate-700 align-middle';
 
 const fullName = (p: PatientListRow) => `${p.firstName} ${p.lastName}`.trim();
 
@@ -226,26 +225,26 @@ export default function PatientsPage() {
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-slate-100">
-                <th className={TH}>Patient</th>
-                <th className={TH}>Gender</th>
-                <th className={TH}>Age</th>
-                <th className={TH}>Phone</th>
-                <th className={TH}>Client</th>
-                <th className={TH}>Active Cases</th>
-                <th className={TH}>Last Activity</th>
-                {hasEdit && <th className={TH}>Actions</th>}
+                <Th density="roomy">Patient</Th>
+                <Th density="roomy">Gender</Th>
+                <Th density="roomy">Age</Th>
+                <Th density="roomy">Phone</Th>
+                <Th density="roomy">Client</Th>
+                <Th density="roomy">Active Cases</Th>
+                <Th density="roomy">Last Activity</Th>
+                {hasEdit && <Th density="roomy">Actions</Th>}
               </tr>
             </thead>
             <tbody>
               {initialLoading && !isError && (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="border-b border-slate-100">
-                    <td colSpan={colCount} className="px-8 py-5"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></td>
+                    <Td colSpan={colCount} density="roomy"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></Td>
                   </tr>
                 ))
               )}
               {!initialLoading && rows.length === 0 && !isError && (
-                <tr><td colSpan={colCount} className="px-8 py-10 text-center font-body-sm text-body-sm text-secondary">No patients found.</td></tr>
+                <tr><Td colSpan={colCount} className="px-8 py-10 text-center font-body-sm text-body-sm text-secondary">No patients found.</Td></tr>
               )}
               {rows.map((p) => {
                 const name = fullName(p);
@@ -257,7 +256,7 @@ export default function PatientsPage() {
                 return (
                   <tr key={p.id} onClick={() => router.push(`/patients/${p.id}`)}
                     className="cursor-pointer border-b border-slate-100 transition-colors hover:bg-slate-50">
-                    <td className={CELL}>
+                    <Td density="roomy" className="text-base">
                       <div className="flex items-center gap-4">
                         <PatientAvatar name={name} />
                         <div className="min-w-0">
@@ -265,25 +264,25 @@ export default function PatientsPage() {
                           <div className="text-sm text-slate-500">Reg: {p.registrationNo || p.id.slice(0, 8)}</div>
                         </div>
                       </div>
-                    </td>
-                    <td className={CELL}>
+                    </Td>
+                    <Td density="roomy" className="text-base">
                       {isMale
                         ? <span className={`${PILL} border border-blue-200 bg-blue-50 text-blue-800`}>Male</span>
                         : isFemale
                           ? <span className={`${PILL} border border-pink-200 bg-pink-50 text-pink-800`}>Female</span>
                           : <span className={`${PILL} border border-slate-200 bg-slate-100 text-slate-600`}>—</span>}
-                    </td>
-                    <td className={CELL}>{age != null ? `${age} yrs` : '—'}</td>
-                    <td className={CELL}>{p.phoneNumber || '—'}</td>
-                    <td className={CELL}>{clientName || '—'}</td>
-                    <td className={CELL}>
+                    </Td>
+                    <Td density="roomy" className="text-base">{age != null ? `${age} yrs` : '—'}</Td>
+                    <Td density="roomy" className="text-base">{p.phoneNumber || '—'}</Td>
+                    <Td density="roomy" className="text-base">{clientName || '—'}</Td>
+                    <Td density="roomy" className="text-base">
                       {cases > 0
                         ? <span className={`${PILL} bg-indigo-100 text-indigo-700`}>{cases} active</span>
                         : <span className={`${PILL} bg-slate-100 text-slate-600`}>None</span>}
-                    </td>
-                    <td className={CELL}><span className="text-slate-500">{relDate(p.lastActivityAt)}</span></td>
+                    </Td>
+                    <Td density="roomy" className="text-base"><span className="text-slate-500">{relDate(p.lastActivityAt)}</span></Td>
                     {hasEdit && (
-                      <td className={CELL}>
+                      <Td density="roomy" className="text-base">
                         <div className="relative flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
                           <button aria-label="Row actions" onClick={() => setMenuId(menuId === p.id ? null : p.id)} className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreVertical size={16} /></button>
                           {menuId === p.id && (
@@ -296,7 +295,7 @@ export default function PatientsPage() {
                             </>
                           )}
                         </div>
-                      </td>
+                      </Td>
                     )}
                   </tr>
                 );

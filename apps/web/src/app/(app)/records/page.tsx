@@ -17,6 +17,7 @@ import { useFeatures } from '@/lib/feature-context';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import type { FormType } from '@/lib/specimen-types';
+import { Card } from '@/components/ui';
 
 interface Rec {
   id: string; labNumber?: string | null; identifier?: string; formType?: string | null; status: string; urgent: boolean;
@@ -123,7 +124,6 @@ const STATUS_PILL: Record<string, { bg: string; fg: string }> = {
 };
 const statusPill = (s: string) => STATUS_PILL[s] ?? pill('pending');
 
-const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 
 // Real 7-day trend line — no data means no line (nothing fabricated).
 function Sparkline({ color, data, w = 72, h = 30 }: { color: string; data: number[]; w?: number; h?: number }) {
@@ -135,7 +135,7 @@ function Sparkline({ color, data, w = 72, h = 30 }: { color: string; data: numbe
 
 function KpiCard({ icon, iconClass, label, value, sub, subColor, spark, sparkData }: { icon: React.ReactNode; iconClass: string; label: string; value: React.ReactNode; sub: string; subColor: string; spark: string; sparkData: number[] }) {
   return (
-    <div className={`${CARD} p-4`}>
+    <Card radius="sm" elevation="sm" border="subtle" className="p-4">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -147,7 +147,7 @@ function KpiCard({ icon, iconClass, label, value, sub, subColor, spark, sparkDat
         </div>
         <Sparkline color={spark} data={sparkData} />
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -333,7 +333,7 @@ export default function SamplesPage() {
 
           {/* Urgent Flagged + Automation */}
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.4fr_1fr]">
-            <div className={`${CARD} p-5`}>
+            <Card radius="sm" elevation="sm" border="subtle" className="p-5">
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2"><span className="text-base font-semibold text-charcoal-heading">Urgent Flagged Cases</span><span className="rounded-full bg-error-container px-2 py-0.5 text-xs font-bold text-error">{urgentAll.length}</span></div>
                 <button onClick={() => setTab('urgent')} className="text-xs font-semibold text-primary hover:underline">View all urgent →</button>
@@ -360,9 +360,9 @@ export default function SamplesPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
 
-            <div className={`${CARD} p-5`}>
+            <Card radius="sm" elevation="sm" border="subtle" className="p-5">
               <span className="text-base font-semibold text-charcoal-heading">Automation Overview</span>
               {/* Analyzer instrument metrics are not available from the API yet —
                   placeholder instead of fabricated performance numbers. */}
@@ -377,11 +377,11 @@ export default function SamplesPage() {
                 <span className="text-sm font-bold text-charcoal-heading">{avgTat != null ? `${avgTat} hrs` : '—'}</span>
               </div>
               <div className="mt-2 text-xs text-slate-500">{tatHours.length > 0 ? `${tatPct}% of ${tatHours.length} authorized within 72h` : 'No completed turnaround data yet'}</div>
-            </div>
+            </Card>
           </div>
 
           {/* Active Worklist */}
-          <div className={`${CARD} p-0`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-0">
             <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5">
               <span className="text-base font-semibold text-charcoal-heading">Active Worklist ({tabCount('all')})</span>
               <div className="flex items-center gap-2">
@@ -509,13 +509,13 @@ export default function SamplesPage() {
                 <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
               </>
             )}
-          </div>
+          </Card>
         </div>
 
         {/* Sidebar */}
         <div className="flex w-full shrink-0 flex-col gap-6 xl:w-[300px]">
           {/* Sample Summary */}
-          <div className={`${CARD} p-5`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-5">
             <div className="mb-2 flex items-center justify-between"><span className="text-sm font-semibold text-charcoal-heading">Sample Summary</span><span className="rounded-full border border-slate-200 px-2 py-0.5 text-xs text-slate-500">Last 7 days</span></div>
             <div className="text-4xl font-bold text-charcoal-heading">{all.length.toLocaleString()}</div>
             <div className="text-xs text-slate-500">Total samples</div>
@@ -533,10 +533,10 @@ export default function SamplesPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
 
           {/* Completion Rate */}
-          <div className={`${CARD} p-5`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-5">
             <div className="mb-3 text-sm font-semibold text-charcoal-heading">Completion Rate</div>
             <div className="flex items-center gap-4">
               <div className="relative shrink-0">
@@ -547,10 +547,10 @@ export default function SamplesPage() {
                 {completionSegs.map((s) => <div key={s.label} className="flex items-center justify-between text-xs"><span className="flex items-center gap-1.5 text-slate-600"><span className="h-2 w-2 rounded-full" style={{ background: s.color }} /> {s.label}</span><span className="font-semibold text-charcoal-heading">{s.value}</span></div>)}
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Specimen Distribution */}
-          <div className={`${CARD} p-5`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-5">
             <div className="mb-2 text-sm font-semibold text-charcoal-heading">Specimen Distribution</div>
             <div className="flex items-center gap-3">
               <PieChart width={110} height={110}><Pie data={specDist} dataKey="value" cx="50%" cy="50%" innerRadius={32} outerRadius={50} paddingAngle={2} stroke="none">{specDist.map((s, i) => <Cell key={i} fill={s.color} />)}</Pie></PieChart>
@@ -558,10 +558,10 @@ export default function SamplesPage() {
                 {specDist.map((s) => <div key={s.label} className="flex items-center justify-between text-[12px]"><span className="flex items-center gap-1.5 text-slate-600"><span className="h-2 w-2 rounded-full" style={{ background: s.color }} /> {s.label}</span><span className="font-semibold text-charcoal-heading">{s.pct}%</span></div>)}
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Recent Activity */}
-          <div className={`${CARD} p-5`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-5">
             <div className="mb-3 flex items-center justify-between"><span className="text-sm font-semibold text-charcoal-heading">Recent Activity</span><button onClick={() => router.push('/records')} className="text-xs font-semibold text-primary hover:underline">View all</button></div>
             <div className="flex flex-col gap-3">
               {recent.length === 0 && <div className="text-sm text-slate-500">No recent activity.</div>}
@@ -578,7 +578,7 @@ export default function SamplesPage() {
                 );
               })}
             </div>
-          </div>
+          </Card>
         </div>
       </div>
 

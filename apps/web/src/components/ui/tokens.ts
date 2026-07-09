@@ -1,7 +1,14 @@
 /**
- * Literal token values for contexts that can't read CSS variables — chiefly
- * recharts (SVG fills/strokes are computed in JS). Keep these in lockstep with
- * the CSS variables in globals.css (real design spec).
+ * Literal token values for JS-side consumers.
+ *
+ * CORRECTION (Sprint 3): this file used to claim recharts "can't read CSS
+ * variables". That is false — `var()` resolves inside SVG presentation attributes
+ * (`fill`, `stroke`), verified in a live browser. `records/page.tsx` now feeds
+ * `<Cell fill="var(--chart-specimen-…)">` straight from the token layer.
+ *
+ * These literals remain only for code that must *compute* on a colour (interpolate,
+ * darken, compare). Prefer `var(--token)` everywhere else, and keep anything here
+ * in lockstep with globals.css.
  */
 export const CHART = {
   primary: '#4f7df9',

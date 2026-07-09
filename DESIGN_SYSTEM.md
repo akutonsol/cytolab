@@ -149,6 +149,20 @@ unified** (each would be a visible recolour):
   persisted in the DB (mirroring backend `CABINET_COLORS`). These are live
   zero-orange violations, but changing the hex recolours existing users' folders.
   **Needs a decision** (migrate the data, or remap on read).
+- `--color-border-card` is `#e5e3dc` (warm), but every real card border is `#eef2f7`
+  (cool). The token and the reality diverged; `Card`'s `hairline` variant follows
+  reality, `warm` follows the token.
+
+**Zero-orange violations found and fixed (Sprints 3–4).** All three were live in
+shipping code, and none were caught by reading the source:
+| Where | Value | Why it slipped through |
+|---|---|---|
+| `/billing` gauge | interpolated `rgb(242,108,54)` | both *stops* were safe; the gradient between them was not |
+| `/billing` ImpactBadge | `#D97706` | named literal |
+| `/result-sheets` KPI icon | `#EAB308` via `text-yellow-500` | a **Tailwind utility**, not a hex — invisible to a hex grep |
+
+The last one is the important lesson: grepping for `#` is not a zero-orange audit.
+**Only the pixel detector is.**
 
 ---
 
@@ -315,24 +329,111 @@ Tailwind text classes with these semantic utilities as sections are migrated;
 apply gradually (hero first, then per-section on approval). Do not apply globally
 in a way that changes the product app.
 
-## 6. Motion (see BRAND_GUIDELINES §Motion for the philosophy)
-- Standard easing (marketing): `cubic-bezier(.22,.8,.2,1)`; doc-spec alt `cubic-bezier(.22,.61,.36,1)`.
-- Durations: micro-interactions `150–350ms`; section reveals `600–800ms`.
-- **framer-motion** in `apps/web`; **GSAP + Lenis** in `apps/marketing`. Prefer GPU
-  transforms (`translate3d`, `scale`, `opacity`); drive continuous fields with
-  `requestAnimationFrame`. Counters increment only on viewport entry.
+## 6. Motion — the token system
+
+Motion is a **Tier-1 primitive** and one of the five dimensions a theme may override
+(colour, type, motion, density, assets). A clinical product keeps motion quick and
+undramatic; a fitness product would make the same tokens springy.
+
+### 6a. Primitives (Tier 1)
+| Duration | Value | Use |
+|---|---|---|
+| `--duration-instant` | 80ms | press / active feedback |
+| `--duration-fast` | 120ms | hover, colour swaps |
+| `--duration-quick` | 160ms | exits |
+| `--duration-base` | 200ms | entrances; the default |
+| `--duration-slow` | 320ms | modals, drawers |
+| `--duration-slower` | 480ms | deliberate, cinematic |
+
+| Easing | Value |
+|---|---|
+| `--ease-standard` | `cubic-bezier(0.22, 0.8, 0.2, 1)` — **the house curve** |
+| `--ease-emphasized` | `cubic-bezier(0.22, 1, 0.36, 1)` |
+| `--ease-out` / `--ease-in` / `--ease-in-out` / `--ease-linear` | conventional |
+
+`--ease-standard` was not invented: it is the curve the codebase had already
+converged on, previously spelled three different ways across 19 call sites
+(`cubic-bezier(.22,.8,.2,1)` ×12, the framer array form ×5, the zero-padded form ×2).
+
+### 6b. Semantic motion (Tier 2) — what components consume
+Each token is a `<duration> <easing>` pair, valid in any `transition` shorthand:
+
+```css
+transition: color var(--motion-hover);
+```
+
+`--motion-hover` · `--motion-press` · `--motion-focus` · `--motion-entrance` ·
+`--motion-exit` · `--motion-modal`
+
+**A component must never write a raw duration or curve.** Tailwind exposes the
+primitives as `duration-fast|base|slow…` and `ease-standard|emphasized|smooth`.
+
+### 6c. Reduced motion
+`prefers-reduced-motion: reduce` collapses every `--duration-*` to `1ms` **at the
+token layer**, so components inherit it without opting in. Easings are left intact
+so the shorthand stays valid. Verified in-browser.
+
+### 6d. Libraries
+**framer-motion** in `apps/web`; **GSAP + Lenis** in `apps/marketing`. Prefer GPU
+transforms (`translate3d`, `scale`, `opacity`); drive continuous fields with
+`requestAnimationFrame`. Counters increment only on viewport entry.
 
 ## 7. Icons
 **Lucide only.** Never Heroicons, never emoji in UI (emoji are inconsistent and an
 orange risk — replace with Lucide SVGs).
 
-## 8. Components — conventions
+## 8. Components — the primitive layer (Tier 4)
+
+Primitives live in `apps/web/src/components/ui` and are re-exported from
+`@/components/ui`. **They consume Tier 2 / Tier 2.5 / motion tokens only** — no raw
+hex, shadow, radius, duration or curve.
+
+| Primitive | Replaces | API |
+|---|---|---|
+| `Card` | 10 drifted `const CARD` strings across 47 files | `radius` sm·md·lg · `elevation` none·sm·soft·raised · `border` hairline·subtle·warm·none · `padding` · `interactive` |
+| `Button` | 132 `.btn-*` call sites | `variant` primary·secondary·ghost·outline·danger · `size` · `icon` · `block` |
+| `IconAction` | ~45 `grid h-8 w-8 … rounded-lg` buttons | `icon` · `tone` muted·primary·danger |
+| `Input` | 7 `const INPUT` strings | `inputSize` · `addon` · `invalid` |
+| `Badge` | ~130 hand-rolled pills | `tone` (Tier 2) **or** `domain` (Tier 2.5) · `size` · `dot` · `icon` |
+| `Th` / `Td` / `Tr` | 11 `const TH` + 11 `const CELL` | `density` compact·default·roomy · `nowrap` · `interactive` |
+| `EmptyState` | ~21 copies of the empty card | `icon` · `title` · `description` · `action` · `bare` |
+| `SectionContainer` | ad-hoc page wrappers | `width` · `gap` |
+
+### 8a. Badge is where Tier 2.5 meets Tier 4
+```tsx
+<Badge tone="success">Paid</Badge>                  // UI semantics
+<Badge domain="workflow-complete">Approved</Badge>  // business meaning  ← prefer
+```
+`domain` expands to `var(--<name>)` / `var(--<name>-soft)`, so a component still
+never names a hue and re-theming a status is a one-token change.
+
+### 8b. The variant axes absorb legacy drift — they are not a licence to invent
+`Card`'s four axes exist because 47 files had already drifted apart, and adoption had
+to be **pixel-identical**. New screens take the defaults
+(`radius="md" elevation="soft" border="hairline"`), which is the dominant shape.
+The long tail is expected to converge onto it, not to grow.
+
+### 8c. Conventions
 - **New components → shadcn/ui.** Existing **antd** stays until a screen is redesigned
-  (see ARCHITECTURE §5). Never rewrite a stable screen to swap libraries.
-- Compose class names with `clsx` + `tailwind-merge`.
-- Charts: **Recharts**. Tables: custom today; **TanStack Table** for new complex tables.
-- Status is communicated by the shared portal helpers (`StatusBadge`, `SpecimenIcon`)
-  whose palettes are already zero-orange — reuse them, don't re-invent colors.
+  (see ARCHITECTURE §5). Never rewrite a stable screen to swap libraries — and never
+  rewrite one merely to adopt a primitive.
+- Compose class names with `cn()` (`clsx` + `tailwind-merge`).
+- Charts: **Recharts** — and `var()` **does** resolve in SVG presentation attributes
+  (`fill`, `stroke`), so charts consume tokens directly. `ui/tokens.ts` literals are
+  only for code that must *compute* on a colour.
+- Tables: these parts + `DataTable` for uniform cases; **TanStack Table** for new
+  complex tables.
+
+### 8d. Adoption status (Sprint 4)
+Migrated pixel-identically: `records`, `billing`, `patients`, `settings`,
+`result-sheets`. `dashboard` was **deliberately not migrated** — it has zero
+`const CARD` and zero `.btn-*`; its surfaces are bespoke gradient/glass compositions,
+so adopting primitives there would be a redesign, not a migration. ~42 `CARD` files,
+316 buttons and 130 pills remain, sequenced for a broad rollout now that the API is proven.
+
+**Table text tokens.** All 8 `const TH` agreed on `slate-500` and both `const CELL` on
+`slate-700` — neither matching `--color-text-secondary` (#6b7280) or `--color-text-body`
+(#374151). Rather than recolour, tables got `--color-table-header` / `--color-table-cell`.
 
 ## 9. Verification (required for any visual change)
 1. `tsc --noEmit` clean · production build clean.

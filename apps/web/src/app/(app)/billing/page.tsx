@@ -8,11 +8,11 @@ import {
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
+import { Card } from '@/components/ui';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (cents: number) => '$' + ((cents ?? 0) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—');
-const CARD = 'rounded-[20px] border border-[var(--color-light-gray)] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)]';
 
 // Invoice lifecycle -> BILLING domain tokens (Tier 2.5, globals.css).
 const badge = (n: string) => ({ bg: `var(--billing-${n}-soft)`, fg: `var(--billing-${n})` });
@@ -168,15 +168,15 @@ function BillingWorkspace() {
               { n: paidCount, label: 'Paid Bills', circle: 'var(--status-success-strong)' },
               { n: pendingCount, label: 'Pending', circle: 'var(--color-primary)' },
             ].map((p) => (
-              <div key={p.label} className={`${CARD} flex items-center gap-4 p-5`}>
+              <Card radius="lg" elevation="raised" border="hairline" className="flex items-center gap-4 p-5" key={p.label}>
                 <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full text-[22px] font-extrabold text-white" style={{ background: p.circle, fontFamily: 'Geist,sans-serif' }}>{p.n}</div>
                 <span className="text-[17px] font-semibold text-[var(--slate-900)]">{p.label}</span>
-              </div>
+              </Card>
             ))}
           </div>
 
           {/* Bills table */}
-          <div className={`${CARD} p-6`}>
+          <Card radius="lg" elevation="raised" border="hairline" className="p-6">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <h2 className="text-[18px] font-bold text-[var(--slate-900)]">Bills · {total}</h2>
@@ -250,14 +250,14 @@ function BillingWorkspace() {
         ) : total > PAGE_SIZE ? (
           <div className="mt-4 py-2 text-center text-[12px] text-[var(--slate-300)]">All {total} bills loaded</div>
         ) : null}
-          </div>
+          </Card>
 
         </div>
 
         {/* ══ RIGHT COLUMN ══ */}
         <div className="flex min-w-0 flex-col gap-6">
           {/* Financial health */}
-          <div className={`${CARD} overflow-hidden`}>
+          <Card radius="lg" elevation="raised" border="hairline" className="overflow-hidden">
             <div style={{ background: 'linear-gradient(135deg,var(--indigo-50) 0%,var(--status-success-soft) 100%)', padding: 32 }}>
               <div className="text-[30px] font-bold leading-tight text-[var(--slate-900)]" style={{ fontFamily: 'Geist,sans-serif' }}>Good morning, {firstName}</div>
               <div className="mt-1.5 text-[16px] text-[var(--slate-600)]">Here is your lab financial health</div>
@@ -278,7 +278,7 @@ function BillingWorkspace() {
               )}
               {targetPct != null && !targetOpen && <div className="mt-2 text-[12px] text-[var(--slate-600)]">Financial target: <span className="font-semibold text-[var(--slate-900)]">{targetPct}%</span> · {collectionRate >= targetPct ? 'on track ✓' : `${targetPct - collectionRate} pts to go`}</div>}
             </div>
-          </div>
+          </Card>
 
           {/* 6 metric cards */}
           <div className="grid grid-cols-2 gap-4">
@@ -291,7 +291,7 @@ function BillingWorkspace() {
           </div>
 
           {/* Payment History (under the stats cards) */}
-          <div className={`${CARD} p-6`}>
+          <Card radius="lg" elevation="raised" border="hairline" className="p-6">
             <div className="text-[18px] font-bold text-[var(--slate-900)]" style={{ fontFamily: 'Geist,sans-serif' }}>Payment History</div>
             <div className="mt-1.5 text-[14px] text-[var(--slate-600)]">You have made {onTimePct}% of payments on time.</div>
             <div className="mt-6 overflow-x-auto">
@@ -313,7 +313,7 @@ function BillingWorkspace() {
                 ))}
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
 
@@ -334,7 +334,7 @@ function BillTimeline({ step1Done, step2Done, step3Done }: { step1Done: boolean;
     { done: step3Done, label: 'Record Closed', sub: 'Paid → Closed' },
   ];
   return (
-    <div className={`${CARD} p-7`}>
+    <Card radius="lg" elevation="raised" border="hairline" className="p-7">
       <div className="relative flex items-start">
         {/* dashed connector behind the circles */}
         <div className="absolute left-[16%] right-[16%] top-4 border-t-2 border-dashed border-[var(--slate-300)]" />
@@ -348,7 +348,7 @@ function BillTimeline({ step1Done, step2Done, step3Done }: { step1Done: boolean;
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -414,7 +414,7 @@ function ImpactBadge({ tone, text }: { tone: 'green' | 'yellow' | 'red'; text: s
 
 function MetricCard({ title, value, tone, badge, sub, onClick }: { title: string; value: string; tone: 'green' | 'yellow' | 'red'; badge: string; sub: string; onClick: () => void }) {
   return (
-    <div onClick={onClick} className={`${CARD} cursor-pointer p-5 transition-shadow hover:shadow-md`}>
+    <Card radius="lg" elevation="raised" border="hairline" className="cursor-pointer p-5 transition-shadow hover:shadow-md" onClick={onClick}>
       <div className="flex items-center justify-between">
         <span className="text-[16px] font-semibold text-[var(--slate-900)]">{title}</span>
         <ArrowUpRight size={17} className="text-[var(--slate-600)]" />
@@ -424,7 +424,7 @@ function MetricCard({ title, value, tone, badge, sub, onClick }: { title: string
         <ImpactBadge tone={tone} text={badge} />
       </div>
       <div className="mt-2.5 text-[13px] leading-snug text-[var(--slate-600)]">{sub}</div>
-    </div>
+    </Card>
   );
 }
 

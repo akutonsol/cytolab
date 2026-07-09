@@ -13,6 +13,7 @@ import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { ResultSheetModal } from '@/components/ResultSheetModal';
 import { RecordFormDrawer } from '@/components/RecordFormDrawer';
 import type { FormType } from '@/lib/specimen-types';
+import { Card } from '@/components/ui';
 
 interface Rec {
   id: string;
@@ -120,7 +121,6 @@ const clientOffice = (r: Rec) => (r.client ? r.client.officeName || `${r.client.
 const physician = (r: Rec) => (r.client ? `${r.client.firstName} ${r.client.lastName}`.trim() : '');
 const firstEventAt = (h: Rec['statusHistory'], s: string) => { const t = (h ?? []).filter((e) => e.status === s).map((e) => new Date(e.createdAt).getTime()).sort((a, b) => a - b)[0]; return t ?? null; };
 
-const CARD = 'rounded-xl border border-slate-100 bg-white shadow-sm';
 
 function Sparkline({ color, data, w = 84, h = 30 }: { color: string; data: number[]; w?: number; h?: number }) {
   const max = Math.max(...data), min = Math.min(...data), range = max - min || 1;
@@ -158,7 +158,7 @@ function KpiCard({ icon, iconClass, label, value, sub, subColor, spark }: {
   icon: React.ReactNode; iconClass: string; label: string; value: React.ReactNode; sub: string; subColor: string; spark: string;
 }) {
   return (
-    <div className={`${CARD} p-4`}>
+    <Card radius="sm" elevation="sm" border="subtle" className="p-4">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ function KpiCard({ icon, iconClass, label, value, sub, subColor, spark }: {
         </div>
         <Sparkline color={spark} data={[3, 4, 4, 5, 4, 6, 7]} />
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -401,7 +401,9 @@ export default function ResultSheetsPage() {
       {/* KPI strip */}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <KpiCard icon={<FileText size={18} />} iconClass="bg-indigo-50 text-indigo-600" label="Total Reports" value={total.toLocaleString()} sub={`+${addedToday} today`} subColor={GREEN} spark={INDIGO} />
-        <KpiCard icon={<Clock size={18} />} iconClass="bg-yellow-50 text-yellow-500" label="Pending Review" value={pendingCount} sub="High priority" subColor={AMBER} spark={YELLOW} />
+        {/* ZERO-ORANGE: text-yellow-500 is #eab308 (r=234,g=179,b=8) — a violation.
+            "Pending Review" is the on-hold workflow state, so it takes that domain token. */}
+        <KpiCard icon={<Clock size={18} />} iconClass="bg-[var(--workflow-on-hold-soft)] text-[var(--workflow-on-hold)]" label="Pending Review" value={pendingCount} sub="High priority" subColor={AMBER} spark={YELLOW} />
         <KpiCard icon={<CheckCircle2 size={18} />} iconClass="bg-green-50 text-green-700" label="Completed" value={completedCount.toLocaleString()} sub={`${completedPct}% of total`} subColor={GREEN} spark={GREEN} />
         <KpiCard icon={<AlertTriangle size={18} />} iconClass="bg-red-50 text-red-600" label="Urgent" value={urgentCount} sub="Needs attention" subColor={RED} spark={RED} />
         <KpiCard icon={<Clock size={18} />} iconClass="bg-indigo-50 text-indigo-600" label="Avg Review Time" value={avgReviewHrs != null ? `${avgReviewHrs.toFixed(1)} hrs` : '—'} sub="Resulted → Approved" subColor={SLATE} spark={INDIGO} />
@@ -421,7 +423,7 @@ export default function ResultSheetsPage() {
           </div>
 
           {/* Filter bar */}
-          <div className={`${CARD} mb-4 flex flex-wrap items-center gap-3 p-3`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="mb-4 flex flex-wrap items-center gap-3 p-3">
             <div className="flex h-10 min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-slate-500">
               <Search size={16} />
               <input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search reports, patient, lab #, accession..." className="w-full border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-500" />
@@ -434,7 +436,7 @@ export default function ResultSheetsPage() {
             <button className="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 hover:bg-slate-50"><SlidersHorizontal size={15} /> Filters</button>
             <button onClick={() => setSheetFor(all[0] ?? null)} className="btn-primary"><Plus size={16} /> New Result Sheet</button>
             <button aria-label="Export" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50"><Download size={16} /></button>
-          </div>
+          </Card>
 
           {isError && (
             <div className="mb-4 rounded-xl border border-error/20 bg-error-container p-4">
@@ -445,7 +447,7 @@ export default function ResultSheetsPage() {
           )}
 
           {/* Table */}
-          <div className={`${CARD} p-0`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
@@ -481,12 +483,12 @@ export default function ResultSheetsPage() {
             {!groupByClient && filtered.length > 0 && (
               <ScrollSentinel ref={sentinelRef} loading={loading && !initialLoading} hasMore={hasMore} />
             )}
-          </div>
+          </Card>
         </div>
 
         {/* Sidebar */}
         <div className="flex w-full shrink-0 flex-col gap-6 xl:w-[300px]">
-          <div className={`${CARD} p-5`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-5">
             <div className="mb-3 flex items-center justify-between"><div className="text-sm font-semibold text-charcoal-heading">Today&apos;s Activity</div></div>
             <div className="flex flex-col gap-3">
               {([['Submitted', '#4F46E5'], ['Processing', '#075985'], ['In Review', '#6B21A8'], ['Authorized', GREEN]] as const).map(([k, c]) => (
@@ -496,7 +498,7 @@ export default function ResultSheetsPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
 
           <div className="rounded-xl p-5 text-white shadow-sm" style={{ backgroundColor: '#4338CA', backgroundImage: 'linear-gradient(135deg,#4F46E5 0%,#6D28D9 100%)' }}>
             <div className="mb-3 flex items-center gap-2"><Sparkles size={16} /><div className="text-sm font-semibold">AI Insights</div><span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold">BETA</span></div>
@@ -517,7 +519,7 @@ export default function ResultSheetsPage() {
             <button onClick={() => { setConfF('Low'); setTab('all'); }} className="mt-4 bg-transparent text-[13px] font-semibold text-white hover:underline">View AI Recommendations →</button>
           </div>
 
-          <div className={`${CARD} p-5`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-5">
             <div className="mb-2 flex items-center justify-between"><div className="text-sm font-semibold text-charcoal-heading">Specimen Distribution</div><span className="text-[11px] text-slate-500">Last 30 days</span></div>
             <div className="flex items-center gap-3">
               <PieChart width={120} height={120}>
@@ -534,9 +536,9 @@ export default function ResultSheetsPage() {
                 ))}
               </div>
             </div>
-          </div>
+          </Card>
 
-          <div className={`${CARD} p-5`}>
+          <Card radius="sm" elevation="sm" border="subtle" className="p-5">
             <div className="mb-3 flex items-center justify-between"><div className="text-sm font-semibold text-charcoal-heading">Recent Authorizations</div><button onClick={() => setTab('authorized')} className="text-xs font-semibold text-primary hover:underline">View all</button></div>
             <div className="flex flex-col gap-3">
               {recentAuth.length === 0 && <div className="text-sm text-slate-500">No authorizations yet.</div>}
@@ -550,7 +552,7 @@ export default function ResultSheetsPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         </div>
       </div>
 

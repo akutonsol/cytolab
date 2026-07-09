@@ -6,6 +6,7 @@ import { SettingsListPane, type PaneField } from '@/components/SettingsListPane'
 import { AiSettingsPane } from '@/components/AiSettingsPane';
 import { DrawPad } from '@/components/DrawPad';
 import { api } from '@/lib/api';
+import { Card, Button } from '@/components/ui';
 
 type SectionId =
   | 'labcodes' | 'codesheet' | 'codefindings'
@@ -164,7 +165,7 @@ export default function SettingsPage() {
 
   return (
     <div className="flex items-start gap-4">
-      <div className="glass-card w-60 shrink-0 rounded-2xl p-4">
+      <Card border="none" elevation="none" className="glass-card w-60 shrink-0 p-4">
         <div className="mb-4 font-headline-sm text-headline-sm text-charcoal-heading">Settings</div>
         {NAV_GROUPS.map((group) => (
           <div key={group.title} className="mb-4">
@@ -185,11 +186,11 @@ export default function SettingsPage() {
             </div>
           </div>
         ))}
-      </div>
+      </Card>
 
       {/* key by section so each pane remounts — otherwise the shared
           SettingsListPane instance leaks its draft/edit state across sections. */}
-      <div className="glass-card min-w-0 flex-1 rounded-2xl p-6" key={active}>{pane}</div>
+      <Card border="none" elevation="none" className="glass-card min-w-0 flex-1 p-6" key={active}>{pane}</Card>
     </div>
   );
 }
@@ -239,14 +240,14 @@ function SignatureSettings() {
       <DrawPad key={padKey} value={newSignature} onChange={setNewSignature} width={500} height={150} />
 
       <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-        <button onClick={saveSignature} disabled={!newSignature || saving} className="btn-primary flex items-center gap-2">
+        <Button onClick={saveSignature} disabled={!newSignature || saving} className="flex items-center gap-2">
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           Save Signature
-        </button>
+        </Button>
         {newSignature && (
-          <button onClick={clearSignature} className="btn-secondary flex items-center gap-2">
+          <Button variant="secondary" onClick={clearSignature} className="flex items-center gap-2">
             <Trash2 size={14} /> Clear
-          </button>
+          </Button>
         )}
       </div>
 

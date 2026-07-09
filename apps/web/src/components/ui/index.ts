@@ -16,3 +16,14 @@ export { LineChart, type LineSeries } from './LineChart';
 export { MiniAreaChart } from './MiniAreaChart';
 export { DataTable, UserCell, StackedCell, type Column } from './DataTable';
 export { AppShell, type RailItem, type TopItem } from './AppShell';
+
+// ── Core primitives (Sprint 4) ────────────────────────────────────────────
+// Prefer these over hand-written class strings. They consume semantic (Tier 2),
+// domain (Tier 2.5) and motion tokens only — never a raw hex, shadow or curve.
+export { Card, type CardProps } from './Card';
+export { Button, IconAction, type ButtonProps, type IconActionProps } from './Button';
+export { Input, type InputProps } from './Input';
+export { Badge, type BadgeProps } from './Badge';
+export { Th, Td, Tr, type ThProps, type TdProps, type TrProps } from './Table';
+export { EmptyState, type EmptyStateProps } from './EmptyState';
+export { SectionContainer, type SectionContainerProps } from './SectionContainer';

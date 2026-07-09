@@ -21,10 +21,14 @@ const config: Config = {
         surface: {
           DEFAULT: 'var(--color-surface)',
           alt: 'var(--color-surface-alt)',
+          2: 'var(--color-surface-2)',
+          3: 'var(--color-surface-3)',
+          hover: 'var(--color-surface-hover)',
         },
         border: {
           DEFAULT: 'var(--color-border)',
           soft: 'var(--color-border-soft)',
+          subtle: 'var(--color-border-subtle)',
           card: 'var(--color-border-card)',
           strong: 'var(--color-border-strong)',
         },
@@ -33,7 +37,14 @@ const config: Config = {
           secondary: 'var(--color-text-secondary)',
           tertiary: 'var(--color-text-tertiary)',
           disabled: 'var(--color-text-disabled)',
+          heading: 'var(--color-text-heading)',
+          // Named `ink`, not `body`: a `text.body` key would collide with the
+          // existing `fontSize.body`, and `text-body` would then set a colour too.
+          ink: 'var(--color-text-body)',
+          muted: 'var(--color-text-muted)',
         },
+        'table-header': 'var(--color-table-header)',
+        'table-cell': 'var(--color-table-cell)',
         inputbg: 'var(--color-input-bg)',
         placeholder: 'var(--color-placeholder)',
         purple: 'var(--color-purple)',
@@ -103,6 +114,22 @@ const config: Config = {
         control: 'var(--radius-control)',
         pill: 'var(--radius-pill)',
         avatar: 'var(--radius-avatar)',
+        panel: 'var(--radius-panel)',
+      },
+      // Motion primitives (Tier 1). Prefer the semantic shorthand in components
+      // (`transition: colors var(--motion-hover)`); these back utility usage.
+      transitionDuration: {
+        instant: 'var(--duration-instant)',
+        fast: 'var(--duration-fast)',
+        quick: 'var(--duration-quick)',
+        base: 'var(--duration-base)',
+        slow: 'var(--duration-slow)',
+        slower: 'var(--duration-slower)',
+      },
+      transitionTimingFunction: {
+        standard: 'var(--ease-standard)',
+        emphasized: 'var(--ease-emphasized)',
+        smooth: 'var(--ease-in-out)',
       },
       boxShadow: {
         sm: 'var(--shadow-sm)',
@@ -111,6 +138,8 @@ const config: Config = {
         lg: 'var(--shadow-lg)',
         float: 'var(--shadow-float)',
         'card-hover': 'var(--shadow-card-hover)',
+        'card-soft': 'var(--shadow-card-soft)',
+        'card-raised': 'var(--shadow-card-raised)',
       },
       fontFamily: {
         sans: 'var(--font-family)',

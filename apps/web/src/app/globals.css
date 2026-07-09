@@ -115,6 +115,57 @@
   --amber-700: #a16207;  /* r=161 — safe text */
   --amber-800: #854d0e;
   --amber-900: #78350f;
+
+  /* ── Motion primitives ──────────────────────────────────────────────────
+   * Brand-agnostic. Motion is one of the five dimensions a theme may override
+   * (colour, type, motion, density, assets): a fitness product makes these
+   * springier; a clinical product keeps them quick and undramatic.
+   *
+   * --ease-standard is not a new invention. It is the curve this codebase had
+   * already converged on — cubic-bezier(.22,.8,.2,1) — previously spelled three
+   * different ways across 19 call sites. */
+  --duration-instant: 80ms;   /* press / active feedback */
+  --duration-fast:    120ms;  /* hover, colour swaps */
+  --duration-quick:   160ms;  /* exits */
+  --duration-base:    200ms;  /* entrances; the default */
+  --duration-slow:    320ms;  /* modals, drawers */
+  --duration-slower:  480ms;  /* deliberate, cinematic */
+
+  --ease-standard:   cubic-bezier(0.22, 0.8, 0.2, 1);  /* the house curve */
+  --ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1);   /* long, settling tail */
+  --ease-out:        cubic-bezier(0, 0, 0.2, 1);
+  --ease-in:         cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out:     cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-linear:     linear;
+}
+
+/* ============================================================================
+ * TIER 2 — SEMANTIC MOTION (the contract components consume)
+ * A component writes `transition: color var(--motion-hover)` — never a raw
+ * duration or curve. Each token is a `<duration> <easing>` pair, valid wherever
+ * a CSS transition shorthand is accepted.
+ * ==========================================================================*/
+:root {
+  --motion-hover:    var(--duration-fast) var(--ease-standard);
+  --motion-press:    var(--duration-instant) var(--ease-standard);
+  --motion-focus:    var(--duration-fast) var(--ease-out);
+  --motion-entrance: var(--duration-base) var(--ease-emphasized);
+  --motion-exit:     var(--duration-quick) var(--ease-in);
+  --motion-modal:    var(--duration-slow) var(--ease-emphasized);
+}
+
+/* Accessibility: honour the OS "reduce motion" setting at the TOKEN layer, so
+ * every component inherits it without opting in. Durations collapse; easings
+ * stay intact so the shorthand remains valid. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 1ms;
+    --duration-fast:    1ms;
+    --duration-quick:   1ms;
+    --duration-base:    1ms;
+    --duration-slow:    1ms;
+    --duration-slower:  1ms;
+  }
 }
 
 /* ============================================================
@@ -157,6 +208,12 @@
   --color-border-soft: #f1f0ea;
   --color-border-light: var(--color-border-soft); /* spec alias */
   --color-border-subtle: #f1f3f7;                 /* faintest hairline (list rows) */
+  /* Table text. All 8 hand-written `const TH` agreed on slate-500 and both
+   * `const CELL` on slate-700 — neither equals --color-text-secondary (#6b7280)
+   * nor --color-text-body (#374151). The tables are self-consistent, so they get
+   * their own tokens rather than a recolour. */
+  --color-table-header: var(--slate-500);
+  --color-table-cell: var(--slate-700);
   --color-border-card: #e5e3dc; /* the 1px border on cards */
   --color-border-strong: #d4d2cc;
   --color-text: var(--gray-900); /* primary */
@@ -255,6 +312,7 @@
   --radius-control: 14px; /* button default */
   --radius-pill: 999px;
   --radius-avatar: 999px;
+  --radius-panel: 20px; /* the large surface radius used by billing/report cards */
 
   /* Elevation */
   --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04);
@@ -263,6 +321,10 @@
   --shadow-lg: 0 20px 50px rgba(16, 24, 40, 0.08);
   --shadow-card-hover: 0 20px 50px rgba(16, 24, 40, 0.08);
   --shadow-float: 0 8px 24px rgba(16, 24, 40, 0.06);
+  /* The two elevations cards in the wild actually use. Neither matched an
+   * existing token, which is why 22 files hand-wrote them as shadow-[…]. */
+  --shadow-card-soft: 0 2px 12px rgba(0, 0, 0, 0.03);
+  --shadow-card-raised: 0 4px 24px rgba(0, 0, 0, 0.04);
 }
 
 /* ============================================================================
@@ -756,10 +818,13 @@ select option {
   --color-surface: #1e293b; --color-surface-alt: #16233b; --color-bg: #0f172a;
 }
 
-/* ── Buttons ─────────────────────────────────────────────── */
+/* ── Buttons ─────────────────────────────────────────────────
+ * Colour → semantic tokens; timing → motion tokens. The 0.15s/0.1s literals
+ * became --motion-hover (120ms) / --motion-press (80ms). Focus-visible rings
+ * are new: these buttons previously had NO keyboard-focus affordance. */
 .btn-primary {
   background: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-primary-on);
   border: none;
   border-radius: 0.75rem; /* rounded-xl */
   padding: 10px 20px;
@@ -772,15 +837,15 @@ select option {
   align-items: center;
   gap: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  transition: filter 0.15s, transform 0.1s;
+  transition: filter var(--motion-hover), transform var(--motion-press);
 }
 .btn-primary:hover { filter: brightness(1.1); }
 .btn-primary:active { transform: scale(0.97); }
 
 .btn-secondary {
-  background: #ffffff;
-  color: #374151; /* gray-700 */
-  border: 1px solid #e5e7eb; /* gray-200 */
+  background: var(--color-surface);
+  color: var(--color-text-body);
+  border: 1px solid var(--gray-200);
   border-radius: 0.75rem; /* rounded-xl */
   padding: 10px 16px; /* px-4 py-2.5 */
   font-family: 'Geist', sans-serif;
@@ -791,9 +856,23 @@ select option {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background var(--motion-hover), border-color var(--motion-hover);
 }
-.btn-secondary:hover { background: #f9fafb; border-color: #d1d5db; } /* gray-50 / gray-300 */
+.btn-secondary:hover { background: var(--gray-50); border-color: var(--gray-300); }
+
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-ghost:focus-visible,
+.btn-outline:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  transition: outline-color var(--motion-focus);
+}
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-ghost:disabled,
+.btn-outline:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary:disabled:hover { filter: none; }
 
 .btn-outline {
   background: transparent;
@@ -810,16 +889,16 @@ select option {
 
 .btn-ghost {
   background: transparent;
-  color: #374151; /* gray-700 */
+  color: var(--color-text-body);
   border: 1px solid transparent;
   border-radius: 0.75rem; /* rounded-xl */
   padding: 8px 12px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background var(--motion-hover), border-color var(--motion-hover);
 }
-.btn-ghost:hover { background: #f9fafb; border-color: #e5e7eb; } /* gray-50 / gray-200 */
+.btn-ghost:hover { background: var(--gray-50); border-color: var(--gray-200); }
 
 /* ── Cards ───────────────────────────────────────────────── */
 .card {

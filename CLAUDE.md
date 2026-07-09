@@ -27,6 +27,11 @@ changes. Companion docs: **ARCHITECTURE.md**, **DESIGN_SYSTEM.md**,
   never edit a Tier-2 *value* (Tailwind is var-backed; you'd recolor 600+ sites).
 - **UI libraries:** new components → **shadcn/ui**; migrate **antd** only when a screen
   is already being redesigned. Never rewrite a stable screen to swap libraries.
+- **Primitives:** build screens from `@/components/ui` (`Card`, `Button`, `IconAction`,
+  `Input`, `Badge`, `Th/Td/Tr`, `EmptyState`, `SectionContainer`) instead of hand-written
+  class strings. Primitives consume Tier-2/2.5 + **motion tokens** only. Never write a
+  raw duration or easing curve — use `--motion-hover/-press/-focus/-entrance/-modal`.
+  Don't rewrite a stable screen just to adopt a primitive. (DESIGN_SYSTEM §6, §8.)
 - **Keep custom auth, GCS storage, and the Claude-based AI reporting path** (see
   ARCHITECTURE §4). Don't replace them to match the target doc literally.
 
@@ -39,6 +44,8 @@ yellow/amber on dark backgrounds trip it — verify, don't assume. Safe substitu
 **Gradients: safe stops ≠ safe gradient.** The browser interpolates between stops, so
 `#EF4444 → #FACC15` paints `rgb(242,108,54)` in the middle. This shipped on `/billing`
 behind a comment claiming compliance. Screenshot gradients and run the detector.
+**Grepping for `#` is not an audit.** `/result-sheets` shipped `#EAB308` as the Tailwind
+utility `text-yellow-500` — no hex to find. Only the pixel detector catches these.
 **Run the pixel detector after every UI change; it must report 0.**
 
 ## Verification workflow (non-negotiable for shipping changes)
