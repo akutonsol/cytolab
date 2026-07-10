@@ -18,7 +18,13 @@ import { cn } from './cn';
  * families grow per product, and the token layer is the source of truth. A typo
  * yields an unresolved var, which is loud in review — not a silent wrong colour.)
  */
-type Tone = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'primary';
+type Tone =
+  | 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'primary'
+  // `-strong` pairs: a 50-level fill with a 600-level label. The Security Center used
+  // these as raw hex (#F0FDF4/#16A34A, #FEF2F2/#DC2626, #F1F5F9/#475569).
+  | 'success-strong' | 'danger-strong' | 'muted'
+  // security severity pills: a slate/indigo fill with a saturated label
+  | 'warning-muted' | 'primary-strong';
 type Size = 'xs' | 'sm' | 'md' | 'lg';
 /** The app ships pills at three weights; `semibold` is the status-pill default. */
 type Weight = 'normal' | 'medium' | 'semibold';
@@ -30,6 +36,11 @@ const TONE: Record<Tone, string> = {
   info: 'bg-info-soft text-info',
   neutral: 'bg-neutralbadge-soft text-neutralbadge',
   primary: 'bg-primary-soft text-primary',
+  'success-strong': 'bg-[var(--status-success-soft)] text-[var(--status-success-strong)]',
+  'danger-strong': 'bg-[var(--status-danger-soft)] text-[var(--status-danger-strong)]',
+  muted: 'bg-[var(--specimen-other-soft)] text-[var(--specimen-other)]',
+  'warning-muted': 'bg-[var(--specimen-other-soft)] text-warning',
+  'primary-strong': 'bg-[var(--indigo-50)] text-primary',
 };
 
 const SIZE: Record<Size, string> = {

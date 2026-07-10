@@ -14,7 +14,7 @@ import { cn } from './cn';
  */
 type Radius = 'sm' | 'md' | 'lg';
 type Elevation = 'none' | 'sm' | 'soft' | 'raised' | 'glow';
-type Border = 'hairline' | 'subtle' | 'gray' | 'faint' | 'warm' | 'none';
+type Border = 'hairline' | 'subtle' | 'slate' | 'gray' | 'faint' | 'warm' | 'none';
 type Padding = 'none' | 'sm' | 'md' | 'lg' | 'xl';
 
 const RADIUS: Record<Radius, string> = {
@@ -42,6 +42,9 @@ const BORDER: Record<Border, string> = {
   // new code; they are convergence debt, not choices.
   gray: 'border border-gray-200',
   faint: 'border border-gray-100',
+  // #e2e8f0 — the Security Center's border. A fourth near-identical hairline;
+  // convergence debt, documented in DESIGN_SYSTEM §8n.
+  slate: 'border border-field-border',
   warm: 'border border-card',
   none: '',
 };

@@ -43,6 +43,7 @@ const config: Config = {
           ink: 'var(--color-text-body)',
           muted: 'var(--color-text-muted)',
         },
+        'text-strong': 'var(--color-text-strong)',
         'field-border': 'var(--color-field-border)',
         'field-text': 'var(--color-field-text)',
         'icon-strong': 'var(--color-icon-strong)',

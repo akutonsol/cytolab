@@ -169,11 +169,19 @@ export const securityApi = {
 
 // ─── Presentation helpers ────────────────────────────────────────────────────
 
-export const SEVERITY_STYLE: Record<AlertSeverity, { bg: string; color: string }> = {
-  CRITICAL: { bg: '#FEF2F2', color: '#DC2626' },
-  HIGH: { bg: '#F1F5F9', color: 'var(--color-warning)' }, // slate bg + dark-amber text — detector-safe, per house style
-  MEDIUM: { bg: '#EEF2FF', color: '#4F46E5' },
-  LOW: { bg: '#F1F5F9', color: '#475569' },
+/**
+ * Spread straight into <Badge {...SEVERITY_STYLE[s]}>. These are Badge props, not raw
+ * colours — the previous `{bg, color}` hex pair was silently dropped when the local
+ * Badge was folded onto the primitive, because TypeScript does not excess-property-check
+ * a spread. Tones map 1:1 to the old hexes:
+ *   CRITICAL #FEF2F2/#DC2626   HIGH #F1F5F9/--color-warning
+ *   MEDIUM   #EEF2FF/#4F46E5   LOW  #F1F5F9/#475569
+ */
+export const SEVERITY_STYLE: Record<AlertSeverity, { size: 'sm'; tone: 'danger-strong' | 'warning-muted' | 'primary-strong' | 'muted' }> = {
+  CRITICAL: { size: 'sm', tone: 'danger-strong' },
+  HIGH: { size: 'sm', tone: 'warning-muted' },
+  MEDIUM: { size: 'sm', tone: 'primary-strong' },
+  LOW: { size: 'sm', tone: 'muted' },
 };
 
 export const ALERT_TYPE_LABEL: Record<AlertType, string> = {

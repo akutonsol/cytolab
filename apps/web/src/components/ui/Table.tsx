@@ -13,7 +13,7 @@ import { cn } from './cn';
  * `density` is the knob the copies actually differed on: records used px-4/py-4,
  * patients px-8/py-5.
  */
-type Density = 'compact' | 'cozy' | 'default' | 'roomy';
+type Density = 'compact' | 'snug' | 'cozy' | 'default' | 'roomy';
 /** Header type size. The app ships two: an 11px micro-label and a 14px label. */
 type ThSize = 'xs' | 'sm';
 /**
@@ -33,6 +33,7 @@ type TdTone = 'cell' | 'inherit';
 
 const TH_DENSITY: Record<Density, string> = {
   compact: 'px-4 py-3',
+  snug: 'px-5 py-3',
   cozy: 'px-4 py-4',
   default: 'px-6 py-4',
   roomy: 'px-8 py-4',
@@ -40,6 +41,7 @@ const TH_DENSITY: Record<Density, string> = {
 
 const TD_DENSITY: Record<Density, string> = {
   compact: 'px-4 py-3',
+  snug: 'px-5 py-3',
   cozy: 'px-4 py-4',
   default: 'px-6 py-4',
   roomy: 'px-8 py-5',
@@ -49,6 +51,13 @@ export interface ThProps extends ThHTMLAttributes<HTMLTableCellElement> {
   density?: Density;
   size?: ThSize;
   family?: Family;
+  /**
+   * Keep the header on one line. Every hand-written `const TH` had `whitespace-nowrap`,
+   * so it defaults to true — but the Security Center's headers did NOT, and forcing it
+   * there redistributes column widths (it made a wrapped "Force reset" button fit on one
+   * line). Header wrapping is layout, not decoration.
+   */
+  nowrap?: boolean;
   children?: ReactNode;
 }
 
@@ -65,14 +74,15 @@ const TD_FAMILY: Record<Family, string> = {
 };
 
 /** Column header: uppercase, tracked, muted. */
-export function Th({ density = 'default', size = 'sm', family = 'slate', className, children, ...rest }: ThProps) {
+export function Th({ density = 'default', size = 'sm', family = 'slate', nowrap = true, className, children, ...rest }: ThProps) {
   return (
     <th
       className={cn(
         TH_DENSITY[density],
         // the reference family sets its own size via font-label-sm/text-label-sm
         family === 'slate' && TH_SIZE[size],
-        'whitespace-nowrap text-left uppercase',
+        nowrap && 'whitespace-nowrap',
+        'text-left uppercase',
         TH_FAMILY[family],
         className,
       )}

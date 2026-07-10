@@ -39,7 +39,7 @@ export default function LockedUsersPage() {
               key: 'auto', header: 'Auto-unlock', render: (l) =>
                 l.autoUnlockAt
                   ? <span className="text-slate-500">{fmtDateTime(l.autoUnlockAt)}</span>
-                  : <Badge bg="#FEF2F2" color="#DC2626">Admin required</Badge>,
+                  : <Badge size="sm" tone="danger-strong">Admin required</Badge>,
             },
             {
               key: 'act', header: '', render: (l) => (

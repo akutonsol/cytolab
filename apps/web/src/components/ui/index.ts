@@ -21,7 +21,7 @@ export { AppShell, type RailItem, type TopItem } from './AppShell';
 // Prefer these over hand-written class strings. They consume semantic (Tier 2),
 // domain (Tier 2.5) and motion tokens only — never a raw hex, shadow or curve.
 export { Card, cardClass, type CardProps, type CardStyle } from './Card';
-export { Button, IconAction, type ButtonProps, type IconActionProps } from './Button';
+export { Button, IconAction, compactButtonClass, type ButtonProps, type IconActionProps } from './Button';
 export { Input, fieldClass, type InputProps, type FieldStyle } from './Input';
 export { Badge, type BadgeProps } from './Badge';
 export { Th, Td, Tr, type ThProps, type TdProps, type TrProps } from './Table';

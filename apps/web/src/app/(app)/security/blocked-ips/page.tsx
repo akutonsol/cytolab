@@ -54,7 +54,7 @@ export default function BlockedIpsPage() {
             { key: 'at', header: 'Blocked at', render: (b) => <span className="text-slate-500">{fmtDateTime(b.blockedAt)}</span> },
             {
               key: 'exp', header: 'Expires', render: (b) =>
-                b.permanent ? <Badge bg="#FEF2F2" color="#DC2626">Permanent</Badge>
+                b.permanent ? <Badge size="sm" tone="danger-strong">Permanent</Badge>
                   : b.expiresAt ? fmtDateTime(b.expiresAt) : '—',
             },
             {

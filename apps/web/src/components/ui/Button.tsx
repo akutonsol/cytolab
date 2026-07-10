@@ -70,6 +70,26 @@ export function Button({
 }
 
 /**
+ * Compact button class string. The Security Center ships a smaller button than the
+ * global `.btn-*` family (rounded-lg, 12px text, py-1.5) and applies it to both
+ * `<button>` and `<a>`. Exporting the builder gives that shape ONE definition without
+ * changing its geometry — the same escape hatch as `cardClass()` and `fieldClass()`.
+ *
+ * It is convergence debt, not a second button system: see DESIGN_SYSTEM §8n.
+ */
+type CompactTone = 'primary' | 'ghost' | 'danger';
+
+const COMPACT: Record<CompactTone, string> = {
+  primary: 'bg-indigo-600 px-3.5 py-2 text-white hover:bg-indigo-700',
+  ghost: 'border border-slate-200 bg-white px-3 py-1.5 text-slate-600 hover:bg-slate-50',
+  danger: 'border border-red-200 bg-white px-3 py-1.5 text-red-600 hover:bg-red-50',
+};
+
+export function compactButtonClass(tone: CompactTone = 'ghost') {
+  return cn('inline-flex items-center gap-1.5 rounded-lg text-xs font-semibold', COMPACT[tone]);
+}
+
+/**
  * Icon-only action button — the `grid h-N w-N place-items-center rounded-*` shape
  * repeated 178 times across the app. Distinct from `IconButton` (fixed circle) and
  * from the 141 *decorative* icon tiles, which are spans and not interactive.

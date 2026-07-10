@@ -74,8 +74,8 @@ export default function LoginHistoryPage() {
             {
               key: 'result', header: 'Result', render: (l) =>
                 l.success
-                  ? <Badge bg="#F0FDF4" color="#16A34A">Success</Badge>
-                  : <Badge bg="#FEF2F2" color="#DC2626">{l.failReason ?? 'Failed'}</Badge>,
+                  ? <Badge size="sm" tone="success-strong">Success</Badge>
+                  : <Badge size="sm" tone="danger-strong">{l.failReason ?? 'Failed'}</Badge>,
             },
           ]}
         />

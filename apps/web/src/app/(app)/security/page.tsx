@@ -85,7 +85,7 @@ export default function SecurityDashboardPage() {
               { key: 'loc', header: 'Location', render: (l) => [l.city, l.country].filter(Boolean).join(', ') || '—' },
               {
                 key: 'ok', header: 'Result', render: (l) =>
-                  l.success ? <Badge bg="#F0FDF4" color="#16A34A">Success</Badge> : <Badge bg="#FEF2F2" color="#DC2626">Failed</Badge>,
+                  l.success ? <Badge size="sm" tone="success-strong">Success</Badge> : <Badge size="sm" tone="danger-strong">Failed</Badge>,
               },
             ]}
           />

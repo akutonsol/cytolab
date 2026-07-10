@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { Badge as UiBadge, IconAction } from '@/components/ui';
+import { Badge as UiBadge, Card as UiCard, IconAction, Th, Td, cn, compactButtonClass } from '@/components/ui';
 
 /** Page shell used by every Security Center screen — consistent header + body. */
 export function SecurityPage({
@@ -53,26 +53,33 @@ export function KpiCard({
   hint?: string;
   tone?: 'default' | 'danger' | 'warning' | 'ok';
 }) {
+  // Tokens, not hex: #4F46E5 = --color-primary, #DC2626 = --status-danger-strong,
+  // #16A34A = --status-success-strong.
   const toneColor = {
-    default: '#4F46E5',
-    danger: '#DC2626',
+    default: 'var(--color-primary)',
+    danger: 'var(--status-danger-strong)',
     warning: 'var(--color-warning)',
-    ok: '#16A34A',
+    ok: 'var(--status-success-strong)',
   }[tone];
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+    <UiCard radius="md" elevation="none" border="slate" padding="md">
       <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</div>
       <div className="mt-2 text-3xl font-bold" style={{ color: toneColor }}>
         {value}
       </div>
       {hint && <div className="mt-1 text-xs text-slate-500">{hint}</div>}
-    </div>
+    </UiCard>
   );
 }
 
+/**
+ * Titled panel. Now the `Card` primitive with the Security Center's exact geometry
+ * (rounded-2xl, slate-200 border, no shadow) — see DESIGN_SYSTEM §8n. The header row
+ * and its hairline stay here: they are this module's composition, not a Card concern.
+ */
 export function Card({ title, children, actions }: { title?: string; children: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white">
+    <UiCard radius="md" elevation="none" border="slate">
       {(title || actions) && (
         <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-3.5">
           {title && <h2 className="text-sm font-semibold text-slate-800">{title}</h2>}
@@ -80,31 +87,21 @@ export function Card({ title, children, actions }: { title?: string; children: R
         </div>
       )}
       <div>{children}</div>
-    </div>
+    </UiCard>
   );
 }
 
 /**
- * Thin wrapper over the `Badge` primitive, kept only because this module's callers
- * pass raw `bg`/`color` values. The geometry now has a single definition in
- * `ui/Badge` (`size="sm"` reproduces the previous px-2.5 py-0.5 text-xs exactly).
- *
- * TODO: migrate the callers to `tone` / `domain` and delete this shim — the raw
- * hex props are the last thing keeping it alive.
+ * Re-exported from the primitive. The local implementation is gone; `tone` replaces the
+ * raw `bg`/`color` hex props its callers used to pass.
  */
-export function Badge({ children, bg, color }: { children: ReactNode; bg: string; color: string }) {
-  return (
-    <UiBadge size="sm" style={{ background: bg, color }}>
-      {children}
-    </UiBadge>
-  );
-}
+export { UiBadge as Badge };
 
 export function BoolPill({ on, onText = 'Yes', offText = 'No' }: { on: boolean; onText?: string; offText?: string }) {
   return on ? (
-    <Badge bg="#F0FDF4" color="#16A34A">{onText}</Badge>
+    <UiBadge size="sm" tone="success-strong">{onText}</UiBadge>
   ) : (
-    <Badge bg="#F1F5F9" color="#475569">{offText}</Badge>
+    <UiBadge size="sm" tone="muted">{offText}</UiBadge>
   );
 }
 
@@ -128,9 +125,9 @@ export function Table<T>({
         <thead>
           <tr className="border-b border-slate-100 text-left">
             {columns.map((c) => (
-              <th key={c.key} className={`px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 ${c.className ?? ''}`}>
+              <Th key={c.key} density="snug" nowrap={false} className={cn('text-xs', c.className)}>
                 {c.header}
-              </th>
+              </Th>
             ))}
           </tr>
         </thead>
@@ -151,9 +148,9 @@ export function Table<T>({
             rows.map((row) => (
               <tr key={rowKey(row)} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60">
                 {columns.map((c) => (
-                  <td key={c.key} className={`px-5 py-3 align-middle text-slate-700 ${c.className ?? ''}`}>
+                  <Td key={c.key} density="snug" className={c.className}>
                     {c.render(row)}
-                  </td>
+                  </Td>
                 ))}
               </tr>
             ))
@@ -164,9 +161,10 @@ export function Table<T>({
   );
 }
 
-export const dangerBtn =
-  'inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50';
-export const primaryBtn =
-  'inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-indigo-700';
-export const ghostBtn =
-  'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50';
+/**
+ * The Security Center's compact button shape. One definition now lives in
+ * `ui/Button.tsx` (`compactButtonClass`); these are the same strings, not copies.
+ */
+export const dangerBtn = compactButtonClass('danger');
+export const primaryBtn = compactButtonClass('primary');
+export const ghostBtn = compactButtonClass('ghost');

@@ -618,13 +618,110 @@ card on a single `return` line; the migrator refused rather than guess.
 The remaining 22 rows across 18 combos are convergence debt: collapsing them onto the
 semantic set is a visual decision for the refinement sprint, not a migration.
 
-### 8g. Duplicate implementations
-`components/security/ui.tsx` shipped a parallel micro-design-system: its own `Badge`,
-`Card`, `Table`, and `primaryBtn`/`ghostBtn`/`dangerBtn` class constants.
-Its **`Badge` now delegates** to the primitive (`size="sm"` reproduces its geometry
-exactly); the shim survives only because its callers pass raw `bg`/`color` hex props.
-The rest of that module is a **known duplicate**, left for a dedicated pass — it is a
-different geometry, not a copy, and folding it in would be a redesign.
+### 8m. 📊 Typography Audit — reference vs slate (report only; do NOT reconcile yet)
+
+Two typography families coexist across `apps/web`. This is the audit; the reconciliation
+is a dedicated future sprint.
+
+#### Adoption
+
+| family | usages | files | share |
+|---|---:|---:|---:|
+| **reference** (`font-body-sm`, `text-label-sm`, `text-on-surface`, `text-secondary`) | 1,261 | 64 | 42.5% |
+| **slate** (`text-sm`, `text-slate-500`, `text-xs`, …) | 1,709 | 80 | 57.5% |
+| | **2,970** | | |
+
+**36 files use both.** That is the drift surface.
+
+#### They are not the same kind of thing
+
+| | reference | slate |
+|---|---|---|
+| naming | by **role** (`label-sm`, `body-md`, `headline-sm`) | by **size** (`text-xs`, `text-sm`) |
+| carries | size + line-height + weight + letter-spacing | size + line-height only |
+| colour | `text-on-surface`, `text-secondary` (Material-3 palette) | `text-slate-*`, `text-gray-*` (hue-named) |
+| example | `text-label-sm` = 12px/16px, 600, `.05em` | `text-xs` = 12px/16px |
+
+The reference family is a **semantic type scale**; the slate family is a **raw t-shirt
+scale plus hue-named colours**. Only one of those is compatible with the rule *"never name
+a hue in a component"*.
+
+#### 🔴 A name collision that will cause a real bug
+
+```
+text-secondary        →  #49607e   (top-level Tailwind colour, Material-3 "secondary")   387 usages
+text-text-secondary   →  var(--color-text-secondary) = #6b7280   (our Tier-2 token)       46 usages
+```
+
+Two different colours, one letter apart. A developer reaching for "the secondary text
+colour" has a coin-flip chance of picking the Material-3 blue-grey instead of the token.
+This already bit us: `IconAction`'s tone tiers were mis-derived because `text-secondary`
+was assumed to be `#6b7280` (DESIGN_SYSTEM §8h).
+
+#### Recommendation (for the reconciliation sprint — not now)
+
+Split the decision; the scale and the palette travel together today but are separable.
+
+1. **Adopt the reference *type scale* as canonical.** It is role-named and carries weight
+   and tracking, which is what a design system should own. Migrate `text-xs`/`text-sm`
+   call sites to `text-label-sm`/`text-body-sm`. Note these are **not** pixel-identical:
+   `text-sm` is 14px/**20px**, `text-body-sm` is 14px/**22px**. Line-height changes reflow
+   text — this is a visual change and must be its own reviewed pass.
+2. **Retire the reference *colour* palette onto Tier-2 tokens.** `text-on-surface`,
+   `text-secondary`, `border-outline-variant` are Material-3 leftovers that duplicate
+   `--color-text`, `--color-text-secondary`, `--color-border`. Retiring them removes the
+   collision above.
+3. **Rename before migrating.** `text-secondary` → `text-m3-secondary` (or delete it) so
+   the two names can never be confused during the migration itself.
+4. Sequence: rename → retire colours → migrate scale. Never together.
+
+Estimated blast radius: ~2,970 utility usages, 108 files, of which 36 mix families.
+
+### 8n. Security fold — structural convergence, zero visual change
+
+`components/security/ui.tsx` shipped a parallel micro-design-system. It is now composed
+entirely from primitives. **Zero duplicate implementations remain; zero raw hexes remain.**
+
+| was | now | how geometry was preserved |
+|---|---|---|
+| local `Card` | `Card` primitive | new `border="slate"` (#e2e8f0) |
+| local `KpiCard` | `Card` primitive | `elevation="none" padding="md"` |
+| local `Table` | `Th` / `Td` | new `density="snug"` (px-5 py-3), new `nowrap` axis |
+| local `Badge` | re-exported primitive | new tones `success-strong`, `danger-strong`, `muted`, `warning-muted`, `primary-strong` |
+| `dangerBtn` / `primaryBtn` / `ghostBtn` | `compactButtonClass()` | one definition; set-equality proven |
+
+The new variants are **convergence debt**, not choices: `border="slate"` is a *fourth*
+near-identical hairline (`#eef2f7`, `#e5e7eb`, `#f1f5f9`, `#e2e8f0`). Collapsing them is a
+visual decision for the refinement sprint.
+
+#### Two bugs this fold exposed
+
+1. **`Th` forced `whitespace-nowrap`.** Every hand-written `const TH` had it, so it became
+   the default — but the Security Center's headers did not. Forcing it redistributed
+   column widths, which made a wrapped "Force reset" button fit on one line. Header
+   wrapping is *layout*, not decoration; `Th` now takes `nowrap` (default `true`).
+
+2. **A spread silently dropped props.** `<Badge {...SEVERITY_STYLE[s]}>` passed
+   `{bg, color}` hex. When `Badge` became the primitive, TypeScript **did not complain** —
+   it does not excess-property-check a spread — so `bg`/`color` fell through to the DOM as
+   unknown attributes and the severity pills lost all colour. `tsc` was clean and the build
+   was clean; only the pixel diff caught it. `SEVERITY_STYLE` now holds typed Badge props.
+
+> Spreading an object into a component is a **type hole**. When you change a component's
+> props, grep for `{...` before trusting a green typecheck.
+
+#### Verification
+6/10 screens byte-identical. The other 4 (`/security`, `/security/sessions`,
+`/security/login-history`, `/profile/security`) differ **only** in session and login-history
+rows — the verification logs in, which writes the very data it then screenshots. Layout,
+columns, badges and buttons were confirmed identical by crop. Establish a noise floor for
+these screens before trusting any diff on them.
+
+**Still duplicated, out of scope:** `system/support/page.tsx` defines a *third* local
+`Badge` (props `bg`/`fg`). Not touched.
+
+### 8g. Duplicate implementations (historical)
+The entry above supersedes this: the security module no longer duplicates the primitives.
 
 ## 9. Verification (required for any visual change)
 1. `tsc --noEmit` clean · production build clean.
