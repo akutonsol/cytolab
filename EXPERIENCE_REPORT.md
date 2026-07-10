@@ -417,3 +417,39 @@ zero-orange 0 px · tsc clean · production build clean · merge-contract guard 
 - The custom per-page toast (105 calls) was **not** removed. `notify` is now the single
   API and antd is the single renderer; retiring the hand-rolled toast is a visual change
   and belongs to the Tier-3 surface work.
+
+
+---
+
+## Post-Sprint-8 — the three latency classes are now independently measurable
+
+`apps/web/scripts/measure-experience.mjs` (`npm run measure:experience`) measures each
+class separately, with its own budget and its own pass/fail. They are never summed.
+
+| class | boundary | budget | baseline (prod, local API) |
+|---|---|---:|---:|
+| 1 cold startup | blank → interactive shell | 2000ms | **17ms** |
+| 2 route loading | commit → content (fast API) | 400ms | **104ms** |
+| 2 route loading | commit → loading cue (API +1500ms) | 200ms | **89ms** |
+| 3 interaction | click → visible acknowledgement | 100ms | **72ms** |
+| — | no false empty state while loading | *invariant* | **honest** |
+
+**Why they must stay separate.** Class 1 is bounded by bundle size and boot — no progress
+bar can exist yet, because the bar *is* React and React has not run. Class 2 is bounded by
+the route chunk and its first query. Class 3 is bounded by nothing but our own code. A fix
+for one does nothing for the others, and Sprint 8 nearly optimised the wrong one after a
+dev-mode hard navigation was mistaken for a blank screen.
+
+**The harness is proven able to fail**, in both directions:
+
+- with `--budget-interaction 1 --budget-cue 1` it reports ❌ and exits 1;
+- with the `No urgent cases` gate temporarily removed and rebuilt, the honesty invariant
+  reported `❌ lied` — then `✅ honest` once restored.
+
+A check that cannot fail is not a check.
+
+**Two traps this harness closes.** Its interaction probe must be *deterministic and
+side-effect free*: the first version clicked "Mark all read", which is **disabled once
+everything is read**, so the budget silently became a no-op. It now clicks the notification
+bell — present on every authenticated screen, always enabled, writes nothing. And if the
+trigger is ever missing it fails loudly rather than passing vacuously.

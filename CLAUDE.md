@@ -61,6 +61,26 @@ behind "detector-safe" comments. Use `--color-warning` (`#A16207`) on white/ambe
 Check a foreground against **its actual background, at every alpha**.
 **Run the pixel detector after every UI change; it must report 0.**
 
+## Experience budgets (three independent latency classes)
+Never collapse these into one number. Different causes, different fixes; a good score in
+one hides a bad score in another. `cd apps/web && npm run measure:experience` (needs a
+**production** build on :3100 — dev numbers measure the compiler, not the product).
+
+| # | class | boundary | budget | fixed by |
+|---|---|---|---|---|
+| 1 | cold startup | blank → interactive shell | ≤ 2000ms | shipping less JS. A progress bar cannot exist yet — it *is* React. |
+| 2 | route loading | commit → content (and → loading cue under latency) | ≤ 400ms / ≤ 200ms | `loading.tsx`, Suspense, per-screen skeletons |
+| 3 | interaction | click → visible acknowledgement | ≤ 100ms | `GlobalProgress`, `Button loading`, optimistic updates |
+
+Plus one non-negotiable invariant: **no false empty state while loading.** A `0` or a
+"✓ No urgent cases" rendered before data arrives is a lie, not a wait.
+Sprint 8 conflated classes 1 and 2 once (a dev-mode hard navigation looked like a blank
+screen; in production it was a cold start) and nearly optimised the wrong thing.
+
+**Don't broaden optimistic UI without clear user value.** It buys perceived speed with
+rollback complexity. The unread badge qualifies (the eye is on it); the list behind it
+does not (the row is on screen either way).
+
 ## Verification workflow (non-negotiable for shipping changes)
 - `cd apps/web && npx tsc --noEmit` → clean (ignore stale `.next-prod/types/**`
   TS6053 noise; `rm -rf .next-prod` if needed).
