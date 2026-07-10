@@ -548,8 +548,21 @@ twMerge dropped `text-label-sm`, and the roles/users tables rendered at 16px ins
 of 12px. `DataTable` had the same latent bug (`text-label` + `text-text-secondary`).
 
 `ui/cn.ts` now calls `extendTailwindMerge` and declares every custom size.
-**Keep that list in sync with `tailwind.config.ts`.** A missing entry fails silently —
-no type error, no build error, just the wrong font size.
+
+> ### 🔒 Permanent rule — custom utilities are part of the merge contract
+> **Whenever Helix introduces a custom utility namespace — typography, spacing, sizing,
+> colour, radius, shadow, motion — `extendTailwindMerge` must be updated simultaneously.**
+> Custom utilities are part of the *merge contract*, not just the design system.
+>
+> tailwind-merge resolves conflicts per class-group. A utility it has never heard of is
+> mis-grouped, and the next class in that group evicts it. The failure is silent: it type-checks,
+> it builds, and it renders wrong. Only a pixel diff catches it.
+>
+> Checklist when adding a namespace to `tailwind.config.ts`:
+> 1. add the keys to the matching `classGroups` entry in `ui/cn.ts`;
+> 2. if the namespace is genuinely new (not an extension of a built-in group), declare the
+>    group **and** its `conflictingClassGroups`;
+> 3. verify with a pixel diff on a screen that uses it — nothing else will tell you.
 
 ### 8g. Duplicate implementations
 `components/security/ui.tsx` shipped a parallel micro-design-system: its own `Badge`,

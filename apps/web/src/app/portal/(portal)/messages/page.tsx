@@ -6,7 +6,7 @@ import { Plus, Send } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { portalApi } from '@/lib/portal-api';
 import { CrStatusBadge, fmtDateTime } from '@/lib/portal-ui';
-import { Button } from '@/components/ui';
+import { Button, Input, fieldClass, cn } from '@/components/ui';
 
 const CR_TYPES = [
   { value: 'GeneralQuery', label: 'General query' },
@@ -14,7 +14,6 @@ const CR_TYPES = [
   { value: 'AddTest', label: 'Add a test' },
   { value: 'CancelRequest', label: 'Cancel a request' },
 ];
-const INPUT = 'h-11 w-full rounded-xl border border-[#E2E8F0] bg-white px-3.5 text-[14px] text-[#0F172A] outline-none transition-colors focus:border-[#4F46E5]';
 
 function MessagesInner() {
   const qc = useQueryClient();
@@ -106,17 +105,17 @@ function MessagesInner() {
               <div className="text-[16px] font-bold text-[#0F172A]">New message to the lab</div>
               <div>
                 <label className="mb-1.5 block text-[13px] font-semibold text-[#0F172A]">Topic</label>
-                <select className={INPUT} value={type} onChange={(e) => setType(e.target.value)}>
+                <select className={fieldClass()} value={type} onChange={(e) => setType(e.target.value)}>
                   {CR_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
               </div>
               <div>
                 <label className="mb-1.5 block text-[13px] font-semibold text-[#0F172A]">Subject</label>
-                <input className={INPUT} value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Brief subject" />
+                <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Brief subject" />
               </div>
               <div>
                 <label className="mb-1.5 block text-[13px] font-semibold text-[#0F172A]">Message</label>
-                <textarea className={`${INPUT} h-auto py-2.5`} rows={5} value={body} onChange={(e) => setBody(e.target.value)} placeholder="How can the lab help?" style={{ resize: 'vertical' }} />
+                <textarea className={cn(fieldClass(), 'h-auto py-2.5')} rows={5} value={body} onChange={(e) => setBody(e.target.value)} placeholder="How can the lab help?" style={{ resize: 'vertical' }} />
               </div>
               {recordId && <div className="text-[12px] text-[#94A3B8]">Linked to record {recordId.slice(0, 8)}…</div>}
               <div className="flex justify-end gap-2">

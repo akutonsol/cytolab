@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Button } from '@/components/ui';
+import { Button, Input, fieldClass, cn } from '@/components/ui';
 
 interface AiSettings {
   enabled: boolean;
@@ -14,7 +14,6 @@ interface AiSettings {
   hasApiKey: boolean;
 }
 
-const INPUT = 'h-11 w-full rounded-xl border border-outline-variant/40 bg-white px-3.5 font-body-sm text-body-sm text-on-surface outline-none transition-colors focus:border-primary';
 const FIELD_LABEL = 'mb-1 block font-label-sm text-label-sm text-secondary';
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
@@ -78,7 +77,7 @@ export function AiSettingsPane() {
         <div>
           <span className={FIELD_LABEL}>Redaction policy</span>
           <select
-            className={`${INPUT} w-[320px] max-w-full`}
+            className={cn(fieldClass({ family: 'reference', border: 'outline' }), 'w-[320px] max-w-full')}
             value={form.redactionPolicy ?? 'Strict'}
             onChange={(e) => setForm((f) => ({ ...f, redactionPolicy: e.target.value as AiSettings['redactionPolicy'] }))}
           >
@@ -92,16 +91,13 @@ export function AiSettingsPane() {
           <textarea
             rows={4} placeholder="Guidance the draft narrative should follow (tone, structure, standard phrasing)…"
             value={form.houseStyle ?? ''} onChange={(e) => setForm((f) => ({ ...f, houseStyle: e.target.value }))}
-            className={`${INPUT} h-auto py-2.5`} style={{ resize: 'vertical' }}
+            className={cn(fieldClass({ family: 'reference', border: 'outline' }), 'h-auto py-2.5')} style={{ resize: 'vertical' }}
           />
         </div>
 
         <div>
           <span className={FIELD_LABEL}>Model override (optional)</span>
-          <input
-            className={`${INPUT} w-[320px] max-w-full`} placeholder="claude-sonnet-4-6 (default)"
-            value={form.model ?? ''} onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))}
-          />
+          <Input family="reference" border="outline" className="w-[320px] max-w-full" placeholder="claude-sonnet-4-6 (default)" value={form.model ?? ''} onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))} />
         </div>
 
         <div>

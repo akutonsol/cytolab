@@ -230,6 +230,11 @@
   --color-icon-muted:  var(--slate-500);   /* #64748b */
   --color-icon-faint:  var(--gray-400);    /* #9ca3af */
   --color-icon-hover:  var(--slate-100);   /* #f1f5f9 — the dominant hover fill */
+
+  /* Form fields. Every hand-written `const INPUT` agreed on these two values, and
+   * neither matches --color-border-strong (#d4d2cc, warm) or --color-text (#111827). */
+  --color-field-border: var(--slate-200);  /* #e2e8f0 */
+  --color-field-text:   var(--slate-900);  /* #0f172a */
   --color-border-card: #e5e3dc; /* the 1px border on cards */
   --color-border-strong: #d4d2cc;
   --color-text: var(--gray-900); /* primary */

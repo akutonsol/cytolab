@@ -8,8 +8,8 @@ import { useMutation } from '@tanstack/react-query';
 import { portalApi } from '@/lib/portal-api';
 import { usePortalAuthStore } from '@/lib/portal-auth';
 import { PortalLogo } from '@/lib/portal-ui';
+import { Input } from '@/components/ui';
 
-const INPUT = 'h-11 w-full rounded-xl border border-[#E2E8F0] bg-white px-3.5 text-[14px] text-[#0F172A] outline-none transition-colors focus:border-[#4F46E5]';
 
 function LoginInner() {
   const router = useRouter();
@@ -51,14 +51,12 @@ function LoginInner() {
         <div className="mt-6 flex flex-col gap-4">
           <div>
             <label className="mb-1.5 block text-[13px] font-semibold text-[#0F172A]">Email</label>
-            <input className={INPUT} type="email" autoComplete="email" placeholder="your@email.com"
-              value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
+            <Input type="email" autoComplete="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
           </div>
           <div>
             <label className="mb-1.5 block text-[13px] font-semibold text-[#0F172A]">Password</label>
             <div className="relative">
-              <input className={`${INPUT} pr-11`} type={showPw ? 'text' : 'password'} autoComplete="current-password" placeholder="••••••••"
-                value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
+              <Input className="pr-11" type={showPw ? 'text' : 'password'} autoComplete="current-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
               <button type="button" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? 'Hide password' : 'Show password'}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#0F172A]">
                 {showPw ? <EyeOff size={18} /> : <Eye size={18} />}

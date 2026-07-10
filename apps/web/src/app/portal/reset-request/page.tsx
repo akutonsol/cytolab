@@ -6,8 +6,8 @@ import { ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { portalApi } from '@/lib/portal-api';
 import { PortalLogo } from '@/lib/portal-ui';
+import { Input } from '@/components/ui';
 
-const INPUT = 'h-11 w-full rounded-xl border border-[#E2E8F0] bg-white px-3.5 text-[14px] text-[#0F172A] outline-none transition-colors focus:border-[#4F46E5]';
 
 export default function ResetRequestPage() {
   const [email, setEmail] = useState('');
@@ -37,8 +37,7 @@ export default function ResetRequestPage() {
           <div className="mt-6 flex flex-col gap-4">
             <div>
               <label className="mb-1.5 block text-[13px] font-semibold text-[#0F172A]">Email</label>
-              <input className={INPUT} type="email" autoComplete="email" placeholder="your@email.com"
-                value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && email.trim() && request.mutate()} />
+              <Input type="email" autoComplete="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && email.trim() && request.mutate()} />
             </div>
             <button type="button" onClick={() => email.trim() && request.mutate()} disabled={request.isPending || !email.trim()}
               className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#4F46E5] text-[14px] font-semibold text-white transition-[filter] hover:brightness-110 disabled:opacity-60">

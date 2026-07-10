@@ -32,10 +32,14 @@ changes. Companion docs: **ARCHITECTURE.md**, **DESIGN_SYSTEM.md**,
   class strings. Primitives consume Tier-2/2.5 + **motion tokens** only. Never write a
   raw duration or easing curve — use `--motion-hover/-press/-focus/-entrance/-modal`.
   Don't rewrite a stable screen just to adopt a primitive. (DESIGN_SYSTEM §6, §8.)
-- **`cn()` + custom font sizes:** `tailwind-merge` classifies our non-t-shirt sizes
-  (`text-body-sm`, `text-label-sm`, `text-hero`, …) as *colours*, so a later `text-<colour>`
-  silently evicts them — no type error, no build error, just the wrong size. `ui/cn.ts`
-  declares them via `extendTailwindMerge`; **keep that list in sync with tailwind.config.ts**.
+- **Custom utilities are part of the merge contract.** Whenever Helix introduces a custom
+  utility namespace (typography, spacing, sizing, colour, radius, shadow, motion …),
+  `extendTailwindMerge` in `ui/cn.ts` **must be updated in the same change**. A custom
+  utility that tailwind-merge does not know about gets mis-grouped and silently evicted by
+  a later class in the same group — no type error, no build error, just wrong rendering.
+  This is a rule about the *merge contract*, not merely about the design tokens.
+  (It shipped once: `text-label-sm` was filed as a colour and evicted by `text-secondary`,
+  rendering the roles/users tables at 16px instead of 12px. DESIGN_SYSTEM §8j.)
 - **Keep custom auth, GCS storage, and the Claude-based AI reporting path** (see
   ARCHITECTURE §4). Don't replace them to match the target doc literally.
 

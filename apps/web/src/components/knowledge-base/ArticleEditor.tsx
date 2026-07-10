@@ -8,9 +8,8 @@ import {
   KbArticle, archiveArticle, createArticle, listCategories, publishArticle, updateArticle,
 } from '@/lib/knowledge-base';
 import { Markdown } from './Markdown';
-import { Card } from '@/components/ui';
+import { Card, Input, fieldClass, cn } from '@/components/ui';
 
-const INPUT = 'w-full rounded-lg border border-[#E2E8F0] px-3 py-2.5 text-[14px] text-[#0F172A] outline-none focus:border-[#4F46E5]';
 const LABEL = 'mb-1.5 block text-[13px] font-semibold text-[#334155]';
 
 export function ArticleEditor({ article }: { article?: KbArticle }) {
@@ -110,18 +109,18 @@ export function ArticleEditor({ article }: { article?: KbArticle }) {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <label className={LABEL}>Title</label>
-            <input className={INPUT} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Article title" />
+            <Input inputSize="auto" radius="lg" surface={false} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Article title" />
           </div>
           <div>
             <label className={LABEL}>Category</label>
-            <select className={INPUT} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+            <select className={fieldClass({ inputSize: 'auto', radius: 'lg', surface: false })} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
               <option value="">Select a category…</option>
               {categories?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div>
             <label className={LABEL}>Tags <span className="font-normal text-[#475569]">(comma separated)</span></label>
-            <input className={INPUT} value={tags} onChange={(e) => setTags(e.target.value)} placeholder="onboarding, billing, faq" />
+            <Input inputSize="auto" radius="lg" surface={false} value={tags} onChange={(e) => setTags(e.target.value)} placeholder="onboarding, billing, faq" />
           </div>
           <div className="flex items-end justify-between gap-4">
             <div className="flex-1">
@@ -135,7 +134,7 @@ export function ArticleEditor({ article }: { article?: KbArticle }) {
           </div>
           <div className="md:col-span-2">
             <label className={LABEL}>Excerpt <span className="font-normal text-[#475569]">(optional summary)</span></label>
-            <textarea className={`${INPUT} resize-none`} rows={2} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Short summary shown in listings and search results" />
+            <textarea className={cn(fieldClass({ inputSize: 'auto', radius: 'lg', surface: false }), 'resize-none')} rows={2} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Short summary shown in listings and search results" />
           </div>
         </div>
       </Card>
@@ -144,7 +143,12 @@ export function ArticleEditor({ article }: { article?: KbArticle }) {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card radius="md" elevation="raised" border="hairline" className="flex flex-col p-5">
           <label className={LABEL}>Content (Markdown)</label>
-          <textarea className={`${INPUT} min-h-[460px] flex-1 font-mono text-[13px] leading-relaxed`} value={content}
+          <textarea className={cn(fieldClass({ inputSize: 'auto', radius: 'lg', surface: false }), 'min-h-[460px] flex-1 font-mono leading-relaxed')}
+            /* LATENT BUG, preserved: the original wrote `text-[13px]` but rendered at 14px —
+               the un-merged class string carried both text-[14px] (from INPUT) and text-[13px],
+               and Tailwind's source order won. cn() resolves it correctly, which would have
+               silently shrunk this editor. Applying the author's intent is a one-line visual
+               change, deliberately deferred to the visual-refinement sprint. */ value={content}
             onChange={(e) => setContent(e.target.value)} placeholder="# Heading&#10;&#10;Write your article in **Markdown**…" />
         </Card>
         <Card radius="md" elevation="raised" border="hairline" className="p-5">

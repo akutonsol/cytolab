@@ -6,8 +6,8 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { portalApi } from '@/lib/portal-api';
 import { PortalLogo } from '@/lib/portal-ui';
+import { Input } from '@/components/ui';
 
-const INPUT = 'h-11 w-full rounded-xl border border-[#E2E8F0] bg-white px-3.5 text-[14px] text-[#0F172A] outline-none transition-colors focus:border-[#4F46E5]';
 
 function AcceptInviteInner() {
   const router = useRouter();
@@ -48,8 +48,7 @@ function AcceptInviteInner() {
           <div>
             <label className="mb-1.5 block text-[13px] font-semibold text-[#0F172A]">Password</label>
             <div className="relative">
-              <input className={`${INPUT} pr-11`} type={showPw ? 'text' : 'password'} placeholder="At least 8 characters"
-                value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Input className="pr-11" type={showPw ? 'text' : 'password'} placeholder="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} />
               <button type="button" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? 'Hide password' : 'Show password'}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#0F172A]">
                 {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -59,8 +58,7 @@ function AcceptInviteInner() {
           </div>
           <div>
             <label className="mb-1.5 block text-[13px] font-semibold text-[#0F172A]">Confirm password</label>
-            <input className={INPUT} type={showPw ? 'text' : 'password'} placeholder="Re-enter password"
-              value={confirm} onChange={(e) => setConfirm(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
+            <Input type={showPw ? 'text' : 'password'} placeholder="Re-enter password" value={confirm} onChange={(e) => setConfirm(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
             {mismatch && <div className="mt-1 text-[12px] text-[#DC2626]">Passwords do not match.</div>}
           </div>
 
