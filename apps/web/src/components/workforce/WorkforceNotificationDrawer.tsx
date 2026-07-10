@@ -6,6 +6,7 @@ import { AlertTriangle, Bell, CalendarOff, CheckCheck, FileClock, Timer, X } fro
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 interface WFNotification {
   id: string;
@@ -65,8 +66,12 @@ export function WorkforceNotificationBell() {
     qc.invalidateQueries({ queryKey: ['wf-notifications'] });
     qc.invalidateQueries({ queryKey: ['wf-notif-unread'] });
   };
-  const markAll = useMutation({ mutationFn: () => api.patch('/workforce/notifications/read-all'), onSuccess: invalidate });
-  const markOne = useMutation({ mutationFn: (id: string) => api.patch(`/workforce/notifications/${id}/read`), onSuccess: invalidate });
+  const markAll = useMutation({ mutationFn: () => api.patch('/workforce/notifications/read-all'), onSuccess: () => { invalidate(); notify.success('All notifications marked as read'); } });
+  const markOne = useMutation({
+    // Self-evident: the row's unread dot clears in place. No toast.
+    mutationFn: (id: string) => api.patch(`/workforce/notifications/${id}/read`),
+    onSuccess: invalidate,
+  });
 
   const count = unread?.count ?? 0;
 

@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { SPECIMEN_LABELS } from '@/lib/specimen-types';
 import { Button, IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 type Level = 'Approaching' | 'Breached';
 type Status = 'Open' | 'Acknowledged' | 'Resolved';
@@ -32,8 +33,6 @@ export default function TatPage() {
   const qc = useQueryClient();
   const [filter, setFilter] = useState<'Breached' | 'Approaching' | 'Resolved'>('Breached');
   const [cfgModal, setCfgModal] = useState<{ mode: 'new' | 'edit'; config?: Config } | null>(null);
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3000); };
 
   const { data: stats } = useQuery({ queryKey: ['tat-stats'], queryFn: () => api.get<Stats>('/tat/stats').then((r) => r.data) });
   const { data: alerts = [] } = useQuery({
@@ -46,12 +45,12 @@ export default function TatPage() {
 
   const scan = useMutation({
     mutationFn: () => api.post<{ scanned: number; breached: number; approaching: number; resolved: number }>('/tat/scan').then((r) => r.data),
-    onSuccess: (d) => { refetch(); notify('ok', `Scanned ${d.scanned} records — ${d.breached} breached, ${d.approaching} approaching`); },
-    onError: () => notify('err', 'Scan failed'),
+    onSuccess: (d) => { refetch(); notify.success(`Scanned ${d.scanned} records — ${d.breached} breached, ${d.approaching} approaching`); },
+    onError: () => notify.error('Scan failed'),
   });
-  const ack = useMutation({ mutationFn: (id: string) => api.patch(`/tat/alerts/${id}/acknowledge`), onSuccess: () => { refetch(); notify('ok', 'Acknowledged'); } });
-  const resolve = useMutation({ mutationFn: (id: string) => api.patch(`/tat/alerts/${id}/resolve`), onSuccess: () => { refetch(); notify('ok', 'Resolved'); } });
-  const delCfg = useMutation({ mutationFn: (id: string) => api.delete(`/tat/configs/${id}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ['tat-configs'] }); qc.invalidateQueries({ queryKey: ['tat-stats'] }); notify('ok', 'Threshold deleted'); } });
+  const ack = useMutation({ mutationFn: (id: string) => api.patch(`/tat/alerts/${id}/acknowledge`), onSuccess: () => { refetch(); notify.success('Acknowledged'); } });
+  const resolve = useMutation({ mutationFn: (id: string) => api.patch(`/tat/alerts/${id}/resolve`), onSuccess: () => { refetch(); notify.success('Resolved'); } });
+  const delCfg = useMutation({ mutationFn: (id: string) => api.delete(`/tat/configs/${id}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ['tat-configs'] }); qc.invalidateQueries({ queryKey: ['tat-stats'] }); notify.success('Threshold deleted'); } });
 
   const shown = filter === 'Resolved' ? alerts : alerts.filter((a) => a.status !== 'Resolved');
 
@@ -174,10 +173,10 @@ export default function TatPage() {
       </div>
 
       {cfgModal && <ConfigModal mode={cfgModal.mode} config={cfgModal.config} onClose={() => setCfgModal(null)}
-        onSaved={() => { setCfgModal(null); qc.invalidateQueries({ queryKey: ['tat-configs'] }); qc.invalidateQueries({ queryKey: ['tat-stats'] }); notify('ok', cfgModal.mode === 'new' ? 'Threshold created' : 'Threshold saved'); }}
-        onError={(m) => notify('err', m)} />}
+        onSaved={() => { setCfgModal(null); qc.invalidateQueries({ queryKey: ['tat-configs'] }); qc.invalidateQueries({ queryKey: ['tat-stats'] }); notify.success(cfgModal.mode === 'new' ? 'Threshold created' : 'Threshold saved'); }}
+        onError={(m) => notify.error(m)} />}
 
-      {toast && <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>{toast.msg}</div>}
+      
     </div>
   );
 }
@@ -232,7 +231,7 @@ function ConfigModal({ mode, config, onClose, onSaved, onError }: { mode: 'new' 
         </div>
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => save.mutate()}>{save.isPending ? 'Saving…' : 'Save'}</Button>
+          <Button loading={save.isPending} disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => save.mutate()}>Save</Button>
         </div>
       </div>
     </div>

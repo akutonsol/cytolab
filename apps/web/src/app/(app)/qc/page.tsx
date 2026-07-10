@@ -3,7 +3,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, CheckCircle2, FlaskConical, Plus, ShieldCheck, X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api, type Paginated } from '@/lib/api';
@@ -16,6 +15,7 @@ import {
   type Equipment, type QCAlert, type QCCheck, type QCResult, type QCStats,
 } from '@/lib/qc';
 import { IconAction, EmptyState } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 function ResultBadge({ r }: { r: QCResult }) {
   const m = RESULT_META[r];
@@ -34,7 +34,6 @@ function Kpi({ label, value, fg, bg, icon }: { label: string; value: string | nu
 // ─── Log QC modal ────────────────────────────────────────────────────────────
 function LogQCModal({ equipment, onClose }: { equipment: Equipment[]; onClose: () => void }) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [checkType, setCheckType] = useState('SlidePreparation');
   const [result, setResult] = useState<QCResult>('Pass');
   const [equipmentId, setEquipmentId] = useState('');
@@ -71,11 +70,11 @@ function LogQCModal({ equipment, onClose }: { equipment: Equipment[]; onClose: (
       }
     },
     onSuccess: () => {
-      message.success('QC check logged');
+      notify.success('QC check logged');
       ['qc-list', 'qc-stats', 'qc-alerts', 'record-detail', 'reagent-stats'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
       onClose();
     },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not log check'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not log check'),
   });
 
   const canSave = !!checkType && !!result && (result !== 'Fail' || failureReason.trim().length > 0);
@@ -146,12 +145,11 @@ function LogQCModal({ equipment, onClose }: { equipment: Equipment[]; onClose: (
 // ─── Resolve alert slide-over ────────────────────────────────────────────────
 function ResolveModal({ alert, onClose }: { alert: QCAlert; onClose: () => void }) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [action, setAction] = useState('');
   const resolve = useMutation({
     mutationFn: () => api.patch(`/qc/alerts/${alert.id}/resolve`, { correctiveAction: action || undefined }),
-    onSuccess: () => { message.success('Alert resolved'); ['qc-alerts', 'qc-stats', 'qc-list'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); onClose(); },
-    onError: () => message.error('Could not resolve'),
+    onSuccess: () => { notify.success('Alert resolved'); ['qc-alerts', 'qc-stats', 'qc-list'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); onClose(); },
+    onError: () => notify.error('Could not resolve'),
   });
   const c = alert.qcCheck;
   return createPortal(

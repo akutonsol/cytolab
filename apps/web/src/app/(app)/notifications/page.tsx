@@ -169,7 +169,7 @@ export default function NotificationsPage() {
       ]);
       if (results.every((r) => r.status === 'rejected')) throw (results[0] as PromiseRejectedResult).reason;
     },
-    onSuccess: invalidate,
+    onSuccess: () => { invalidate(); notify.success('All notifications marked as read'); },
   });
 
   // Merge + sort by createdAt desc.

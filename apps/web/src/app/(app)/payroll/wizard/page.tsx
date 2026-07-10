@@ -273,7 +273,7 @@ export default function PayrollWizardPage() {
 
             <div className="mt-6 flex justify-end gap-2">
               <Button variant="secondary" onClick={() => setStep(1)}>Back</Button>
-              <Button disabled={process.isPending} style={{ opacity: process.isPending ? 0.6 : 1 }} onClick={() => process.mutate()}>{process.isPending ? 'Processing…' : 'Run Payroll'}</Button>
+              <Button loading={process.isPending} disabled={process.isPending} style={{ opacity: process.isPending ? 0.6 : 1 }} onClick={() => process.mutate()}>Run Payroll</Button>
             </div>
           </div>
         )}
@@ -327,7 +327,7 @@ export default function PayrollWizardPage() {
               {approved ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 font-label-md text-label-md font-semibold" style={{ background: '#F0FDF4', color: '#16A34A' }}><CheckCircle2 size={16} /> Approved</span>
               ) : (
-                <Button disabled={approve.isPending} style={{ opacity: approve.isPending ? 0.6 : 1 }} onClick={() => approve.mutate()}><ShieldCheck size={16} /> {approve.isPending ? 'Approving…' : 'Approve'}</Button>
+                <Button loading={approve.isPending} icon={<ShieldCheck size={16} />} disabled={approve.isPending} style={{ opacity: approve.isPending ? 0.6 : 1 }} onClick={() => approve.mutate()}>Approve</Button>
               )}
             </div>
           </div>

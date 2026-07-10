@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Download, Hash, Plus, Search, X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
@@ -13,6 +12,7 @@ import {
   type CodeSystem, type CodingRecordRow, type CodingStats, type ExportData, type MedicalCode,
 } from '@/lib/coding';
 import { Card, IconAction, EmptyState } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const TABS = ['Records', 'Code Dictionary', 'Export'] as const;
 type Tab = typeof TABS[number];
@@ -28,7 +28,6 @@ function SystemBadge({ system }: { system: CodeSystem }) {
 // ── Add Code modal ───────────────────────────────────────────────────────────
 function AddCodeModal({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [system, setSystem] = useState<CodeSystem>('LOINC');
   const [code, setCode] = useState('');
   const [display, setDisplay] = useState('');
@@ -36,8 +35,8 @@ function AddCodeModal({ onClose }: { onClose: () => void }) {
   const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
   const save = useMutation({
     mutationFn: () => api.post('/coding/codes', { system, code, display, category: category || undefined }).then((r) => r.data),
-    onSuccess: () => { message.success('Code added'); ['coding-codes', 'coding-stats'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); onClose(); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not add code'),
+    onSuccess: () => { notify.success('Code added'); ['coding-codes', 'coding-stats'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); onClose(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not add code'),
   });
   return createPortal(
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2300, background: 'rgba(15,23,42,0.55)' }} onClick={onClose}>
@@ -59,7 +58,6 @@ function AddCodeModal({ onClose }: { onClose: () => void }) {
 export default function CodingPage() {
   const { isEnabled } = useFeatures();
   const enabled = isEnabled('LOINC_SNOMED');
-  const { message } = AntdApp.useApp();
   const [tab, setTab] = useState<Tab>('Records');
   const [panel, setPanel] = useState<CodingRecordRow | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -82,8 +80,8 @@ export default function CodingPage() {
       const blob = new Blob([body], { type: format === 'csv' ? 'text/csv' : 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = `coded-records.${format}`; a.click(); URL.revokeObjectURL(url);
-      message.success('Export downloaded');
-    } catch { message.error('Export failed'); }
+      notify.success('Export downloaded');
+    } catch { notify.error('Export failed'); }
   };
 
   const mostUsed = stats?.mostUsedCodes?.[0];

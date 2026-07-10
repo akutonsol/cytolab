@@ -4,13 +4,13 @@ import { Fragment, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, CheckCheck, CheckCircle2, ChevronDown, ChevronRight, ListChecks, X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
 import { PRIORITY_META, type TatPriority } from '@/lib/workload';
 import { SPECIMEN_LABELS } from '@/lib/specimen-types';
 import { IconAction, EmptyState } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 interface BatchCase {
   id: string; labNo: string; patientName: string; formType: string | null; specimenType: string | null;
@@ -29,7 +29,6 @@ function PriorityBadge({ p }: { p: TatPriority }) {
 export default function BatchAuthorizePage() {
   const router = useRouter();
   const params = useSearchParams();
-  const { message } = AntdApp.useApp();
   const { isEnabled } = useFeatures();
   const enabled = isEnabled('BATCH_AUTHORIZATION');
 
@@ -93,7 +92,7 @@ export default function BatchAuthorizePage() {
   const authorize = useMutation({
     mutationFn: () => api.post('/records/batch-authorize', { recordIds: Array.from(selected), batchNote: batchNote || undefined }).then((r) => r.data as BatchResult),
     onSuccess: (r) => { setResult(r); setConfirmOpen(false); refetch(); },
-    onError: (e: any) => { setConfirmOpen(false); message.error(e?.response?.data?.message ?? 'Batch authorization failed'); },
+    onError: (e: any) => { setConfirmOpen(false); notify.error(e?.response?.data?.message ?? 'Batch authorization failed'); },
   });
 
   if (!enabled) {

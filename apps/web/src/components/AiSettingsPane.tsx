@@ -5,6 +5,7 @@ import { AlertTriangle } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Button, Input, fieldClass, cn } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 interface AiSettings {
   enabled: boolean;
@@ -31,8 +32,6 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
  */
 export function AiSettingsPane() {
   const qc = useQueryClient();
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3000); };
   const { data } = useQuery<AiSettings>({ queryKey: ['ai-settings'], queryFn: () => api.get('/lab/ai-settings').then((r) => r.data) });
 
   const [form, setForm] = useState<Partial<AiSettings>>({});
@@ -45,8 +44,8 @@ export function AiSettingsPane() {
       redactionPolicy: form.redactionPolicy,
       model: form.model || undefined,
     }),
-    onSuccess: () => { notify('ok', 'AI settings saved'); qc.invalidateQueries({ queryKey: ['ai-settings'] }); },
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Save failed'),
+    onSuccess: () => { notify.success('AI settings saved'); qc.invalidateQueries({ queryKey: ['ai-settings'] }); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Save failed'),
   });
 
   return (
@@ -101,18 +100,13 @@ export function AiSettingsPane() {
         </div>
 
         <div>
-          <Button disabled={save.isPending} style={{ opacity: save.isPending ? 0.6 : 1 }} onClick={() => save.mutate()}>
-            {save.isPending ? 'Saving…' : 'Save'}
+          <Button loading={save.isPending} disabled={save.isPending} style={{ opacity: save.isPending ? 0.6 : 1 }} onClick={() => save.mutate()}>
+            Save
           </Button>
         </div>
       </div>
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 font-label-md text-label-md text-white shadow-lg"
-          style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>
-          {toast.msg}
-        </div>
-      )}
+      
     </div>
   );
 }

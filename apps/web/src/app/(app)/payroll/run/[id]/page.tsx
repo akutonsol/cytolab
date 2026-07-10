@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { PayslipCard } from '@/components/PayslipCard';
 import { money, monthYear, fmtDate, type RunDetail, type SlipData } from '@/lib/payroll';
 import { Button } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 export default function PayrollReportPage() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export default function PayrollReportPage() {
 
   const approve = useMutation({
     mutationFn: () => api.put(`/payroll/runs/approve/${id}`, {}),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['payroll-run', id] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['payroll-run', id] }); notify.success('Payroll run approved'); },
   });
 
   if (isLoading || !run) {

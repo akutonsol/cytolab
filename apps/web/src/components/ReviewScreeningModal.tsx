@@ -3,16 +3,15 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, MapPin, X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { ConfidenceRing } from '@/components/ConfidenceRing';
 import { LEVEL_META, shortDate, type AIScreening } from '@/lib/ai-screening';
 import { IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 export function ReviewScreeningModal({ result, onClose, readOnly = false }: { result: AIScreening; onClose: () => void; readOnly?: boolean }) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const alreadyReviewed = result.reviewedAt != null;
   const [agree, setAgree] = useState<boolean | null>(result.agreedWithAI);
   const [note, setNote] = useState(result.pathologistNote ?? '');
@@ -21,11 +20,11 @@ export function ReviewScreeningModal({ result, onClose, readOnly = false }: { re
   const submit = useMutation({
     mutationFn: () => api.patch(`/ai-screening/${result.id}/review`, { agreedWithAI: agree, pathologistNote: note || undefined }).then((r) => r.data),
     onSuccess: () => {
-      message.success('Review submitted');
+      notify.success('Review submitted');
       ['ai-queue', 'ai-analytics', 'ai-record', 'ai-screening'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
       onClose();
     },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not submit review'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not submit review'),
   });
 
   const editable = !readOnly && !alreadyReviewed;

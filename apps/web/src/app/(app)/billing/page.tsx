@@ -9,6 +9,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { Card, IconAction, SkeletonRows } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (cents: number) => '$' + ((cents ?? 0) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -56,8 +57,6 @@ function BillingWorkspace() {
   const [drawerId, setDrawerId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [payBill, setPayBill] = useState<Bill | null>(null);
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3200); };
   const [period, setPeriod] = useState<'month' | 'last' | 'ytd'>('month');
   const [targetOpen, setTargetOpen] = useState(false);
   const [target, setTarget] = useState('');
@@ -318,11 +317,11 @@ function BillingWorkspace() {
         </div>
       </div>
 
-      {drawerId && <BillDrawer id={drawerId} onClose={() => setDrawerId(null)} onPay={(b) => setPayBill(b)} onChanged={refetch} notify={notify} />}
-      {createOpen && <CreateInvoiceModal presetRecordId={recordIdParam} onClose={() => { setCreateOpen(false); if (recordIdParam) clearParam(); }} onCreated={() => { setCreateOpen(false); refetch(); notify('ok', 'Invoice created'); if (recordIdParam) clearParam(); }} notify={notify} />}
-      {payBill && <PaymentModal bill={payBill} onClose={() => setPayBill(null)} onPaid={() => { setPayBill(null); refetch(); notify('ok', 'Payment recorded'); }} notify={notify} />}
+      {drawerId && <BillDrawer id={drawerId} onClose={() => setDrawerId(null)} onPay={(b) => setPayBill(b)} onChanged={refetch} />}
+      {createOpen && <CreateInvoiceModal presetRecordId={recordIdParam} onClose={() => { setCreateOpen(false); if (recordIdParam) clearParam(); }} onCreated={() => { setCreateOpen(false); refetch(); notify.success('Invoice created'); if (recordIdParam) clearParam(); }} />}
+      {payBill && <PaymentModal bill={payBill} onClose={() => setPayBill(null)} onPaid={() => { setPayBill(null); refetch(); notify.success('Payment recorded'); }} />}
 
-      {toast && <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? 'var(--status-success-strong)' : 'var(--status-danger-strong)' }}>{toast.msg}</div>}
+      
     </div>
   );
 }
@@ -447,10 +446,10 @@ function IconBtn({ title, onClick, children }: { title: string; onClick: () => v
 }
 
 // ─── Bill Detail drawer ──────────────────────────────────────────────────────
-function BillDrawer({ id, onClose, onPay, onChanged, notify }: { id: string; onClose: () => void; onPay: (b: Bill) => void; onChanged: () => void; notify: (t: 'ok' | 'err', m: string) => void }) {
+function BillDrawer({ id, onClose, onPay, onChanged }: { id: string; onClose: () => void; onPay: (b: Bill) => void; onChanged: () => void; }) {
   const { data: bill } = useQuery<Bill>({ queryKey: ['bill', id], queryFn: () => api.get(`/bill/${id}`).then((r) => r.data) });
-  const issue = useMutation({ mutationFn: () => api.put(`/bill/billed/${id}`).then((r) => r.data), onSuccess: () => { notify('ok', 'Bill issued'); onChanged(); }, onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Could not issue') });
-  const markViewed = useMutation({ mutationFn: () => api.put(`/bill/viewed/${id}`).then((r) => r.data), onSuccess: () => { notify('ok', 'Marked as viewed'); onChanged(); }, onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Failed') });
+  const issue = useMutation({ mutationFn: () => api.put(`/bill/billed/${id}`).then((r) => r.data), onSuccess: () => { notify.success('Bill issued'); onChanged(); }, onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not issue') });
+  const markViewed = useMutation({ mutationFn: () => api.put(`/bill/viewed/${id}`).then((r) => r.data), onSuccess: () => { notify.success('Marked as viewed'); onChanged(); }, onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Failed') });
 
   const box = 'rounded-xl border border-[var(--color-light-gray)] bg-[var(--slate-50)] p-5';
   const out = bill ? outstandingOf(bill) : 0;
@@ -574,7 +573,7 @@ function Row({ label, value, muted, bold, valueColor }: { label: string; value: 
 }
 
 // ─── Create Invoice modal ────────────────────────────────────────────────────
-function CreateInvoiceModal({ presetRecordId, onClose, onCreated, notify }: { presetRecordId: string | null; onClose: () => void; onCreated: () => void; notify: (t: 'ok' | 'err', m: string) => void }) {
+function CreateInvoiceModal({ presetRecordId, onClose, onCreated }: { presetRecordId: string | null; onClose: () => void; onCreated: () => void; }) {
   const [recordId, setRecordId] = useState<string>('');
   const [dueDate, setDueDate] = useState('');
   const [lines, setLines] = useState<{ serviceId: string; quantity: number }[]>([{ serviceId: '', quantity: 1 }]);
@@ -604,7 +603,7 @@ function CreateInvoiceModal({ presetRecordId, onClose, onCreated, notify }: { pr
       return bill;
     },
     onSuccess: onCreated,
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Could not create invoice'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not create invoice'),
   });
 
   const recLabel = (r: any) => `${r.labNumber ?? r.identifier} — ${r.patient ? `${r.patient.firstName} ${r.patient.lastName}` : '—'} — ${r.client ? (r.client.officeName || `${r.client.firstName} ${r.client.lastName}`) : '—'}`;
@@ -691,7 +690,7 @@ function CreateInvoiceModal({ presetRecordId, onClose, onCreated, notify }: { pr
 }
 
 // ─── Record Payment modal ────────────────────────────────────────────────────
-function PaymentModal({ bill, onClose, onPaid, notify }: { bill: Bill; onClose: () => void; onPaid: () => void; notify: (t: 'ok' | 'err', m: string) => void }) {
+function PaymentModal({ bill, onClose, onPaid }: { bill: Bill; onClose: () => void; onPaid: () => void; }) {
   const out = outstandingOf(bill);
   const [amount, setAmount] = useState((out / 100).toFixed(2));
   const [type, setType] = useState('Cash');
@@ -700,7 +699,7 @@ function PaymentModal({ bill, onClose, onPaid, notify }: { bill: Bill; onClose: 
   const pay = useMutation({
     mutationFn: () => api.post('/payment/create', { billId: bill.id, amount: Math.round(Number(amount) * 100), type, referenceNo: referenceNo || undefined }).then((r) => r.data),
     onSuccess: onPaid,
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Could not record payment'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not record payment'),
   });
   const cents = Math.round(Number(amount) * 100);
   const valid = cents >= 1 && cents <= out;

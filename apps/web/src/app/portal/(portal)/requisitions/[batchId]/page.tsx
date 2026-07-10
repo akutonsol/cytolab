@@ -11,6 +11,7 @@ import { DigitalRequisitionForm, DigitalForm } from '@/components/portal/Digital
 import { ScanUploadModal } from '@/components/portal/ScanUploadModal';
 import { SignatureCanvas } from '@/components/portal/SignatureCanvas';
 import { CardPaymentModal } from '@/components/portal/CardPaymentModal';
+import { notify } from '@/lib/notify';
 
 interface Batch {
   id: string;
@@ -68,7 +69,7 @@ export default function BatchEditorPage() {
   });
   const deleteForm = useMutation({
     mutationFn: (id: string) => portalApi.delete(`/portal/batches/${batchId}/forms/${id}`),
-    onSuccess: invalidate,
+    onSuccess: () => { invalidate(); notify.success('Form removed'); },
   });
   const saveSig = useMutation({
     mutationFn: (vars: { id: string; dataUrl: string }) =>
@@ -86,6 +87,7 @@ export default function BatchEditorPage() {
     },
   });
   const setPaymentMethod = useMutation({
+    // Self-evident: the chosen method becomes the selected chip on refetch. No toast.
     mutationFn: (m: string) => portalApi.patch(`/portal/batches/${batchId}`, { paymentMethod: m }),
     onSuccess: invalidate,
   });
@@ -109,7 +111,7 @@ export default function BatchEditorPage() {
         unsigned.map((f) => portalApi.post(`/portal/batches/${batchId}/forms/${f.id}/signature`, { signatureDataUrl: dataUrl })),
       );
     },
-    onSuccess: () => { invalidate(); setSignAllOpen(false); },
+    onSuccess: () => { invalidate(); setSignAllOpen(false); notify.success('All forms signed'); },
   });
 
   const downloadManifest = async () => {

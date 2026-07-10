@@ -9,6 +9,7 @@ import { DS } from '@/lib/drawer-styles';
 import { DrawerHeader, PremiumFormStyles } from '@/components/DrawerChrome';
 import { DraftRestoreBanner } from '@/components/DraftRestoreBanner';
 import { useAutosaveDraft, loadDraft, clearDraft, type Draft } from '@/lib/session-drafts';
+import { notify } from '@/lib/notify';
 
 interface CodeSheet {
   id: string;
@@ -32,7 +33,6 @@ interface Props {
 }
 
 export function ResultSheetModal({ open, onClose, record }: Props) {
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const [chosen, setChosen] = useState<CodeSheet[]>([]);
   const isGyn = record?.formType === 'Gynecology';
@@ -75,12 +75,12 @@ export function ResultSheetModal({ open, onClose, record }: Props) {
         ],
       }),
     onSuccess: () => {
-      message.success('Result sheet created — record moved to Resulted');
+      notify.success('Result sheet created — record moved to Resulted');
       if (draftKey) clearDraft(draftKey);
       qc.invalidateQueries({ queryKey: ['records'] });
       onClose();
     },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Failed to create result sheet'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Failed to create result sheet'),
   });
 
   const codeLabel = (c: CodeSheet) => `${c.abbreviation}${c.description ? ` : ${c.description}` : ''}`;

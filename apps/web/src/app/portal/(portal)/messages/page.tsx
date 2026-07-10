@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { portalApi } from '@/lib/portal-api';
 import { CrStatusBadge, fmtDateTime } from '@/lib/portal-ui';
 import { Button, Input, fieldClass, cn } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const CR_TYPES = [
   { value: 'GeneralQuery', label: 'General query' },
@@ -25,8 +26,6 @@ function MessagesInner() {
   const [subject, setSubject] = useState('');
   const [type, setType] = useState('GeneralQuery');
   const [body, setBody] = useState('');
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const notify = (t: 'ok' | 'err', msg: string) => { setToast({ type: t, msg }); setTimeout(() => setToast(null), 3200); };
 
   const { data: me } = useQuery({ queryKey: ['portal-me'], queryFn: () => portalApi.get('/portal/auth/me').then((r) => r.data) });
   const { data: listData } = useQuery({
@@ -53,15 +52,15 @@ function MessagesInner() {
       setComposing(false); setSubject(''); setBody(''); setType('GeneralQuery');
       qc.invalidateQueries({ queryKey: ['portal-change-requests'] });
       setActiveId(cr.id);
-      notify('ok', 'Message sent to the lab');
+      notify.success('Message sent to the lab');
     },
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Could not send message'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not send message'),
   });
 
   const reply = useMutation({
     mutationFn: (b: string) => portalApi.post(`/portal/change-requests/${activeId}/messages`, { body: b }).then((r) => r.data),
     onSuccess: () => { setText(''); qc.invalidateQueries({ queryKey: ['portal-change-request', activeId] }); qc.invalidateQueries({ queryKey: ['portal-change-requests'] }); },
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Could not send'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not send'),
   });
 
   const startNew = () => { setComposing(true); setActiveId(undefined); };
@@ -120,7 +119,7 @@ function MessagesInner() {
               {recordId && <div className="text-[12px] text-[#94A3B8]">Linked to record {recordId.slice(0, 8)}…</div>}
               <div className="flex justify-end gap-2">
                 <Button variant="secondary" onClick={() => setComposing(false)}>Cancel</Button>
-                <Button disabled={!canCreate} style={{ opacity: canCreate ? 1 : 0.5 }} onClick={() => create.mutate()}>{create.isPending ? 'Sending…' : 'Send'}</Button>
+                <Button loading={create.isPending} disabled={!canCreate} style={{ opacity: canCreate ? 1 : 0.5 }} onClick={() => create.mutate()}>Send</Button>
               </div>
             </div>
           ) : !active ? (
@@ -158,9 +157,7 @@ function MessagesInner() {
         </section>
       </div>
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>{toast.msg}</div>
-      )}
+      
     </div>
   );
 }

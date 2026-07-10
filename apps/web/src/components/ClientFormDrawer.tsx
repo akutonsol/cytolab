@@ -25,6 +25,7 @@ import { api } from '@/lib/api';
 import { RemoteSelect } from '@/components/RemoteSelect';
 import { DS } from '@/lib/drawer-styles';
 import { DrawerHeader, DrawerFooter, PremiumFormStyles } from '@/components/DrawerChrome';
+import { notify } from '@/lib/notify';
 
 export interface ClientRecord {
   id: string;
@@ -97,11 +98,11 @@ export function ClientFormDrawer({ open, onClose, client }: Props) {
       return api.post('/client', payload);
     },
     onSuccess: () => {
-      message.success(isEdit ? 'Client updated' : 'Client created — a portal invite was emailed if a login was requested');
+      notify.success(isEdit ? 'Client updated' : 'Client created — a portal invite was emailed if a login was requested');
       qc.invalidateQueries({ queryKey: ['clients'] });
       onClose();
     },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Save failed'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Save failed'),
   });
 
   const labCodeInitial = client?.labCode

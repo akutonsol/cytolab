@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { RoleFormDrawer, type RoleRecord } from '@/components/RoleFormDrawer';
 import { Button, IconAction, Th, Td, TableEmpty } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const BADGE = 'inline-flex items-center rounded-full px-3 py-1 font-label-sm text-label-sm';
 
@@ -17,8 +18,6 @@ export default function RolesPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<RoleRecord | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3000); };
 
   const { data, isFetching, isError, error, refetch } = useQuery({
     queryKey: ['roles'],
@@ -27,8 +26,8 @@ export default function RolesPage() {
 
   const del = useMutation({
     mutationFn: (id: string) => api.delete(`/roles/${id}`),
-    onSuccess: () => { notify('ok', 'Role deleted'); setConfirmId(null); qc.invalidateQueries({ queryKey: ['roles'] }); },
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Delete failed'),
+    onSuccess: () => { notify.success('Role deleted'); setConfirmId(null); qc.invalidateQueries({ queryKey: ['roles'] }); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Delete failed'),
   });
 
   const rows = (data ?? []).filter((r) => !q || r.name.toLowerCase().includes(q.toLowerCase()));
@@ -133,12 +132,7 @@ export default function RolesPage() {
 
       <RoleFormDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} role={editing} />
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 font-label-md text-label-md text-white shadow-lg"
-          style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>
-          {toast.msg}
-        </div>
-      )}
+      
     </div>
   );
 }

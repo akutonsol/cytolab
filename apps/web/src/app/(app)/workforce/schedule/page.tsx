@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, empName, SHIFT_CHIP } from '@/lib/workforce';
 import { Card, IconAction, TableEmpty } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 // Plain LOCAL calendar date (YYYY-MM-DD) — built from local components, never
@@ -57,12 +58,12 @@ function Grid() {
 
   const assign = useMutation({
     mutationFn: (v: { employeeId: string; shiftId: string; date: string }) => api.post('/workforce/schedule/assign', v),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['schedule'] }); setPicker(null); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['schedule'] }); setPicker(null); notify.success('Shift assigned'); },
     onError: (e: any) => setAssignError(e?.response?.data?.message ?? 'Could not assign shift. Please try again.'),
   });
   const remove = useMutation({
     mutationFn: (assignmentId: string) => api.delete(`/workforce/schedule/assignments/${assignmentId}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['schedule'] }); setPicker(null); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['schedule'] }); setPicker(null); notify.success('Shift removed'); },
     onError: (e: any) => setAssignError(e?.response?.data?.message ?? 'Could not remove shift. Please try again.'),
   });
   const busy = assign.isPending || remove.isPending;

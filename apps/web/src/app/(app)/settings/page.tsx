@@ -7,6 +7,7 @@ import { AiSettingsPane } from '@/components/AiSettingsPane';
 import { DrawPad } from '@/components/DrawPad';
 import { api } from '@/lib/api';
 import { Card, Button } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 type SectionId =
   | 'labcodes' | 'codesheet' | 'codefindings'
@@ -202,7 +203,6 @@ function SignatureSettings() {
   const [newSignature, setNewSignature] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [padKey, setPadKey] = useState(0);
-  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     api.get('/users/me/signature')
@@ -218,8 +218,7 @@ function SignatureSettings() {
       setCurrentSignature(newSignature);
       setNewSignature(null);
       setPadKey((k) => k + 1);
-      setToast('Signature saved');
-      setTimeout(() => setToast(null), 3000);
+      notify.success('Signature saved');
     } finally {
       setSaving(false);
     }
@@ -260,11 +259,7 @@ function SignatureSettings() {
         </div>
       )}
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: '#16A34A' }}>
-          {toast}
-        </div>
-      )}
+      
     </div>
   );
 }

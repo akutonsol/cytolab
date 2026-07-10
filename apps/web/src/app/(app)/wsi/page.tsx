@@ -10,6 +10,7 @@ import { useFeatures } from '@/lib/feature-context';
 import { AddSlideModal } from '@/components/AddSlideModal';
 import { formatBytes, shortDate, type DigitalSlide, type WsiSummary } from '@/lib/wsi';
 import { Card, EmptyState } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 
 function Kpi({ label, value }: { label: string; value: number }) {
@@ -21,7 +22,6 @@ export default function WsiPage() {
   const enabled = isEnabled('WSI_VIEWER');
   const router = useRouter();
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [uploadOpen, setUploadOpen] = useState(false);
 
   const { data: summary } = useQuery<WsiSummary>({ queryKey: ['wsi-summary'], queryFn: () => api.get('/wsi/summary').then((r) => r.data), enabled });
@@ -29,8 +29,8 @@ export default function WsiPage() {
 
   const del = useMutation({
     mutationFn: (id: string) => api.delete(`/wsi/${id}`),
-    onSuccess: () => { message.success('Slide deleted'); ['wsi-slides', 'wsi-summary'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); },
-    onError: () => message.error('Could not delete slide'),
+    onSuccess: () => { notify.success('Slide deleted'); ['wsi-slides', 'wsi-summary'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); },
+    onError: () => notify.error('Could not delete slide'),
   });
 
   if (!enabled) {

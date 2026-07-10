@@ -14,6 +14,7 @@ import { ResultSheetModal } from '@/components/ResultSheetModal';
 import { RecordFormDrawer } from '@/components/RecordFormDrawer';
 import type { FormType } from '@/lib/specimen-types';
 import { Card, Button, IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 interface Rec {
   id: string;
@@ -193,9 +194,7 @@ export default function ResultSheetsPage() {
   const [editRec, setEditRec] = useState<Rec | null>(null);
   const [nextStatus, setNextStatus] = useState<string>();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ type: 'ok' | 'err' | 'info'; msg: string } | null>(null);
   const [confirm, setConfirm] = useState<{ title: string; content: string; okText: string; danger?: boolean; onOk: () => void } | null>(null);
-  const notify = (type: 'ok' | 'err' | 'info', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3000); };
 
   const { data, isFetching, isError, error, refetch } = useQuery({
     queryKey: ['records', 'result-sheets'],
@@ -207,13 +206,13 @@ export default function ResultSheetsPage() {
 
   const changeStatus = useMutation({
     mutationFn: (v: { id: string; status: string }) => api.patch(`/specimen/status/${v.id}`, { status: v.status }),
-    onSuccess: () => { notify('ok', 'Status updated'); qc.invalidateQueries({ queryKey: ['records'] }); setStatusRec(null); },
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Failed'),
+    onSuccess: () => { notify.success('Status updated'); qc.invalidateQueries({ queryKey: ['records'] }); setStatusRec(null); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Failed'),
   });
   const del = useMutation({
     mutationFn: (id: string) => api.delete(`/specimen/delete/${id}`),
-    onSuccess: () => { notify('ok', 'Record deleted'); qc.invalidateQueries({ queryKey: ['records'] }); },
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Delete failed'),
+    onSuccess: () => { notify.success('Record deleted'); qc.invalidateQueries({ queryKey: ['records'] }); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Delete failed'),
   });
   const isLocked = (r: Rec) => LOCKED.includes(r.status);
   const confirmEdit = (r: Rec) => setConfirm({ title: 'Edit this record?', content: `Editing ${r.labNumber ?? 'this record'} changes clinical form data.`, okText: 'Edit', onOk: () => setEditRec(r) });
@@ -590,7 +589,7 @@ export default function ResultSheetsPage() {
           </select>
           <div className="mt-6 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setStatusRec(null)}>Cancel</Button>
-            <Button disabled={!nextStatus || changeStatus.isPending} style={{ opacity: !nextStatus || changeStatus.isPending ? 0.5 : 1 }} onClick={() => statusRec && nextStatus && changeStatus.mutate({ id: statusRec.id, status: nextStatus })}>{changeStatus.isPending ? 'Updating…' : 'Update'}</Button>
+            <Button loading={changeStatus.isPending} disabled={!nextStatus || changeStatus.isPending} style={{ opacity: !nextStatus || changeStatus.isPending ? 0.5 : 1 }} onClick={() => statusRec && nextStatus && changeStatus.mutate({ id: statusRec.id, status: nextStatus })}>Update</Button>
           </div>
         </Overlay>
       )}
@@ -606,9 +605,7 @@ export default function ResultSheetsPage() {
         </Overlay>
       )}
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 font-label-md text-label-md text-white shadow-lg" style={{ background: toast.type === 'ok' ? '#166534' : toast.type === 'err' ? '#991B1B' : '#4F46E5' }}>{toast.msg}</div>
-      )}
+      
     </div>
   );
 }

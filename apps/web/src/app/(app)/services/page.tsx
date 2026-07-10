@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { DS } from '@/lib/drawer-styles';
 import { IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (cents: number) => '$' + ((cents ?? 0) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -46,8 +47,6 @@ export default function ServicesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editService, setEditService] = useState<Service | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3000); };
   const isEdit = !!editService;
 
   const { data } = useQuery<Paginated<Service>>({ queryKey: ['services'], queryFn: () => api.get('/services', { params: { pageSize: 200 } }).then((r) => r.data) });
@@ -56,13 +55,13 @@ export default function ServicesPage() {
 
   const toggleMut = useMutation({
     mutationFn: (s: Service) => api.put(`/services/update/${s.id}`, { active: !s.active }).then((r) => r.data),
-    onSuccess: (_d, s) => { notify('ok', s.active ? 'Service deactivated' : 'Service activated'); refetch(); },
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Update failed'),
+    onSuccess: (_d, s) => { notify.success(s.active ? 'Service deactivated' : 'Service activated'); refetch(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Update failed'),
   });
   const delMut = useMutation({
     mutationFn: (id: string) => api.delete(`/services/delete/${id}`).then((r) => r.data),
-    onSuccess: () => { notify('ok', 'Service deleted'); setConfirmId(null); refetch(); },
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Delete failed'),
+    onSuccess: () => { notify.success('Service deleted'); setConfirmId(null); refetch(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Delete failed'),
   });
 
   const activeCount = services.filter((s) => s.active).length;
@@ -194,9 +193,9 @@ export default function ServicesPage() {
         </div>
       </div>
 
-      <ServiceModal open={modalOpen} service={editService} isEdit={isEdit} onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); refetch(); notify('ok', isEdit ? 'Service updated' : 'Service created'); }} onError={(m) => notify('err', m)} />
+      <ServiceModal open={modalOpen} service={editService} isEdit={isEdit} onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); refetch(); notify.success(isEdit ? 'Service updated' : 'Service created'); }} onError={(m) => notify.error(m)} />
 
-      {toast && <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>{toast.msg}</div>}
+      
     </div>
   );
 }

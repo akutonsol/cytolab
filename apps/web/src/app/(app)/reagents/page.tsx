@@ -12,6 +12,7 @@ import {
   type ReagentDetail, type ReagentLot, type ReagentStats, type ReagentStatus,
 } from '@/lib/reagent';
 import { Card, IconAction, EmptyState } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 const F = ({ label, children }: { label: string; children: React.ReactNode }) => (<div className="mb-3"><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">{label}</label>{children}</div>);
@@ -24,13 +25,12 @@ function StatusBadge({ s }: { s: ReagentStatus }) {
 // ─── Add Reagent modal ───────────────────────────────────────────────────────
 function AddReagentModal({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [f, setF] = useState({ name: '', lotNumber: '', manufacturer: '', catalogNumber: '', expiryDate: '', quantity: '', unit: '', storageTemp: '', notes: '' });
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   const save = useMutation({
     mutationFn: () => api.post('/reagents', { name: f.name, lotNumber: f.lotNumber, manufacturer: f.manufacturer || undefined, catalogNumber: f.catalogNumber || undefined, expiryDate: f.expiryDate || undefined, quantity: f.quantity ? Number(f.quantity) : undefined, unit: f.unit || undefined, storageTemp: f.storageTemp || undefined, notes: f.notes || undefined }),
-    onSuccess: () => { message.success('Reagent lot added'); ['reagents', 'reagent-stats', 'reagents-expiring'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); onClose(); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not add lot'),
+    onSuccess: () => { notify.success('Reagent lot added'); ['reagents', 'reagent-stats', 'reagents-expiring'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); onClose(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not add lot'),
   });
   return createPortal(
     <div className="fixed inset-0 flex justify-end" style={{ zIndex: 2100, background: 'rgba(15,23,42,0.55)' }} onClick={onClose}>
@@ -54,7 +54,7 @@ function AddReagentModal({ onClose }: { onClose: () => void }) {
 // ─── Detail slide-over (info + log usage + history + quarantine) ─────────────
 function ReagentDetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
   const qc = useQueryClient();
-  const { message, modal } = AntdApp.useApp();
+  const { modal } = AntdApp.useApp();
   const [labNumber, setLabNumber] = useState('');
   const [batchId, setBatchId] = useState('');
   const [quantityUsed, setQty] = useState('');
@@ -67,13 +67,13 @@ function ReagentDetailPanel({ id, onClose }: { id: string; onClose: () => void }
   const invalidate = () => ['reagent', 'reagents', 'reagent-stats', 'reagents-expiring'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   const logUse = useMutation({
     mutationFn: () => api.post(`/reagents/${id}/use`, { recordId: recordId || undefined, batchId: batchId || undefined, quantityUsed: quantityUsed ? Number(quantityUsed) : undefined, notes: useNotes || undefined }),
-    onSuccess: () => { message.success('Usage logged'); setLabNumber(''); setBatchId(''); setQty(''); setUseNotes(''); invalidate(); },
-    onError: () => message.error('Could not log usage'),
+    onSuccess: () => { notify.success('Usage logged'); setLabNumber(''); setBatchId(''); setQty(''); setUseNotes(''); invalidate(); },
+    onError: () => notify.error('Could not log usage'),
   });
   const quarantine = useMutation({
     mutationFn: (reason: string) => api.post(`/reagents/${id}/quarantine`, { reason }),
-    onSuccess: (r: any) => { message.success(`Lot quarantined${r.data.affectedRecent ? ` — ${r.data.affectedRecent} recent record(s) affected` : ''}`); invalidate(); },
-    onError: () => message.error('Could not quarantine'),
+    onSuccess: (r: any) => { notify.success(`Lot quarantined${r.data.affectedRecent ? ` — ${r.data.affectedRecent} recent record(s) affected` : ''}`); invalidate(); },
+    onError: () => notify.error('Could not quarantine'),
   });
   const askQuarantine = () => {
     let reason = '';

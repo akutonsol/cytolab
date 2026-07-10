@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { App as AntdApp } from 'antd';
 import { useAuth } from '@/lib/auth';
+import { notify } from '@/lib/notify';
 
 /**
  * Route guard for the Security Center (TKT-2026-0003). The nav hides these links
@@ -20,7 +21,7 @@ export default function SecurityLayout({ children }: { children: React.ReactNode
 
   useEffect(() => {
     if (hydrated && claims && !allowed) {
-      message.error('Access denied');
+      notify.error('Access denied');
       router.replace('/dashboard');
     }
   }, [hydrated, claims, allowed, message, router]);

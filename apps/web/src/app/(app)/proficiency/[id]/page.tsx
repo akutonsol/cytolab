@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, Check, Plus, Trash2, X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -14,12 +13,12 @@ import {
   type CaseDifficulty, type ProfResults, type TestDetail,
 } from '@/lib/proficiency';
 import { Card, IconAction, TableEmpty } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 
 function AddCaseModal({ testId, onClose }: { testId: string; onClose: () => void }) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [specimenType, setSpecimen] = useState('');
   const [clinicalHistory, setHistory] = useState('');
   const [imageUrl, setImage] = useState('');
@@ -28,8 +27,8 @@ function AddCaseModal({ testId, onClose }: { testId: string; onClose: () => void
   const [difficulty, setDifficulty] = useState<CaseDifficulty>('Standard');
   const save = useMutation({
     mutationFn: () => api.post(`/proficiency/${testId}/cases`, { specimenType, clinicalHistory: clinicalHistory || undefined, imageUrl: imageUrl || undefined, expectedDiagnosis, expectedBethesda: expectedBethesda || undefined, difficulty }),
-    onSuccess: () => { message.success('Case added'); qc.invalidateQueries({ queryKey: ['proficiency', testId] }); onClose(); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not add case'),
+    onSuccess: () => { notify.success('Case added'); qc.invalidateQueries({ queryKey: ['proficiency', testId] }); onClose(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not add case'),
   });
   return createPortal(
     <div className="fixed inset-0 flex justify-end" style={{ zIndex: 2100, background: 'rgba(15,23,42,0.55)' }} onClick={onClose}>
@@ -56,7 +55,6 @@ export default function ProficiencyDetailPage() {
   const router = useRouter();
   const id = String(useParams().id);
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const { claims } = useAuth();
   const { isEnabled } = useFeatures();
   const isManager = claims?.isSuperRole || (claims?.permissions ?? []).includes('resultsheet:authorize');
@@ -68,8 +66,8 @@ export default function ProficiencyDetailPage() {
 
   const delCase = useMutation({
     mutationFn: (caseId: string) => api.delete(`/proficiency/${id}/cases/${caseId}`),
-    onSuccess: () => { message.success('Case removed'); qc.invalidateQueries({ queryKey: ['proficiency', id] }); },
-    onError: () => message.error('Could not remove case'),
+    onSuccess: () => { notify.success('Case removed'); qc.invalidateQueries({ queryKey: ['proficiency', id] }); },
+    onError: () => notify.error('Could not remove case'),
   });
 
   if (!isEnabled('PROFICIENCY_TESTING')) return <div className="min-h-full pt-6 text-[14px] text-[#475569]" style={{ background: '#F8FAFC' }}>Feature not enabled.</div>;

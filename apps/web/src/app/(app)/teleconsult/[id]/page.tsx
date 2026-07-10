@@ -3,19 +3,18 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Check, Copy, Mail, Send } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
 import { AGREEMENT_META, STATUS_META, TIMELINE, URGENCY_META, dateTime, shortDate, timelineIndex, type Consult } from '@/lib/teleconsult';
 import { Card } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 
 export default function ConsultDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const { isEnabled } = useFeatures();
   const [copied, setCopied] = useState(false);
 
@@ -23,15 +22,15 @@ export default function ConsultDetailPage() {
 
   const act = useMutation({
     mutationFn: (ep: string) => api.post(`/teleconsult/${id}/${ep}`).then((r) => r.data),
-    onSuccess: (_d, ep) => { message.success(ep === 'accept' ? 'Opinion accepted' : ep === 'decline' ? 'Opinion declined' : 'Access link resent'); qc.invalidateQueries({ queryKey: ['consult', id] }); qc.invalidateQueries({ queryKey: ['teleconsult'] }); },
-    onError: () => message.error('Action failed'),
+    onSuccess: (_d, ep) => { notify.success(ep === 'accept' ? 'Opinion accepted' : ep === 'decline' ? 'Opinion declined' : 'Access link resent'); qc.invalidateQueries({ queryKey: ['consult', id] }); qc.invalidateQueries({ queryKey: ['teleconsult'] }); },
+    onError: () => notify.error('Action failed'),
   });
 
   if (!isEnabled('TELECONSULTATION')) return <div className="grid h-[60vh] place-items-center text-[#475569]">Teleconsultation is disabled for this lab.</div>;
   if (isLoading || !c) return <div className="grid h-[60vh] place-items-center text-[#475569]">Loading…</div>;
 
   const publicLink = typeof window !== 'undefined' ? `${window.location.origin}/teleconsult/public/${c.accessToken}` : '';
-  const copyLink = () => { navigator.clipboard.writeText(publicLink); setCopied(true); message.success('Access link copied'); setTimeout(() => setCopied(false), 1500); };
+  const copyLink = () => { navigator.clipboard.writeText(publicLink); setCopied(true); notify.success('Access link copied'); setTimeout(() => setCopied(false), 1500); };
   const idx = timelineIndex(c.status);
   const shared = [c.sharedNarrative && 'Narrative report', c.sharedBethesda && 'Bethesda classification', c.sharedImages && 'Digital slide images'].filter(Boolean) as string[];
 

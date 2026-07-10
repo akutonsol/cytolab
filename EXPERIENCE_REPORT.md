@@ -527,3 +527,106 @@ scope-locked. `login/page.tsx`, `AiSettingsPane`, `ResultTemplateSelector` still
 `transition-all` — the first is a marketing surface, the other two carry pre-existing
 uncommitted changes. `records/[id]` keeps its decorative scanning scene (Tier-3 item 17);
 only its 11 **dead** keyframes were removed.
+
+---
+
+# Sprint 10 — Feedback System Completion
+
+One feedback language: every action and failure state acknowledged once, from one
+renderer, on a timer set by meaning. No screens redesigned; no business logic touched.
+
+## 1 · Renderer retirement — before / after
+
+| | before | after |
+|---|---|---|
+| antd `message.*` calls | 192 | **0** |
+| per-page `useState`+`setTimeout` toast renderers | 27 files | **2** (blocked — see exceptions) |
+| inline `{msg && …}` status spans tied to a mutation | 1 (`productivity`) | **0** |
+| canonical `notify.*` calls | 0 | **296** |
+
+`message.*` and the hand-rolled toasts collapsed into `lib/notify.ts` — a single keyed
+antd holder. Message **content and intent were preserved**; only the channel changed.
+
+## 2 · Mutation feedback — audit of all 198 `useMutation` sites
+
+| category | count |
+|---|---|
+| (a/b) speaks for itself — inline `notify` / inline error / self-evident state | 176 |
+| (b) covered by the global error-net (no local `onError`) | 2 |
+| (d) navigation whose success is self-evident | 10 |
+| (c) **explicitly documented** silent mode | 6 |
+| **silent, undocumented** (within committable scope) | **0** |
+
+The root cause of the pre-sprint silence: defining `onSuccess` purely to invalidate a
+query opts a mutation out of the global success-net. 18 subtle status transitions
+(approvals, rejections, deletes, clock in/out, timesheet actions, payroll processing)
+now emit an explicit `notify.success`; the genuinely self-evident and background ones
+carry an inline `// self-evident … no toast` note so silence is a decision, not a gap.
+**Server-provided errors are preserved** everywhere they were before — the global net
+routes through `errorMessage()` (server message wins) and inline handlers still read
+`err.response.data.message`. No error path was narrowed.
+
+## 3 · Pending actions — Button `loading` adoption
+
+23 hand-rolled `{m.isPending ? 'Saving…' : 'Save'}` text-swaps on Helix `<Button>` were
+converted to `loading={m.isPending}` (25 `loading=` sites total). This is
+**width-preserving** (spinner replaces the leading icon; label stays put — no layout
+shift), sets `aria-busy`, and disables the button (duplicate-submit prevention). Settled
+and disabled-state pixels are unchanged; only the in-flight frame differs, by design.
+
+23 further text-swaps live on **raw `<button>`** elements. Converting them means a
+component migration, which the locked decisions bar "just to adopt a primitive." Deferred
+and listed as convergence debt.
+
+## 4 · Undo
+
+No action qualifies. Every mutation audited is server-final (create / update / delete /
+approve / clock) with no rollback endpoint. Per the sprint rule — "do not add undo to
+destructive or server-final actions without real rollback support" — **no undo was
+added**. Revisit if/when the API grows compensating actions.
+
+## 5 · Dismiss timing — by meaning, not by page
+
+`NOTIFY_DURATION_S`: success/info 3s, warning 5s, error 6s, progress until resolved.
+These are **read-durations driven by a JS timer**, independent of the reduced-motion CSS
+backstop (which collapses only CSS animation/transition, never the auto-close timer). So
+`prefers-reduced-motion` shortens the entrance, never the time text stays legible.
+
+## 6 · Accessibility — browser-verified (`scripts/verify-feedback.mjs`)
+
+Drives real toasts through the chrome-wide Report-an-issue control against the live,
+themed antd holder on a production build:
+
+- ✅ error → `aria-live="assertive"`, success → `aria-live="polite"` (polarity by meaning)
+- ✅ `aria-atomic="false"` — the region is not re-read whole on each update
+- ✅ four rapid submits collapse to **one** toast (dedupe by key → no duplicate SR announce)
+- ✅ **Escape** dismisses all toasts (bound in `NotifierBridge`)
+- ✅ zero-orange: both success and error toasts scanned → **0** violating pixels
+  (theme sets `colorWarning:#a16207`, `colorError:#ef4444`, `colorSuccess:#22c55e`,
+  `colorInfo:#4f7df9`; `notify.warning` is unused)
+
+## Intentional silent exceptions (the complete list)
+
+Each carries an inline comment at its `useMutation`:
+
+- **messaging** — thread read-receipt on open (background; the unread badge clears)
+- **notifications / WorkforceNotificationDrawer** — single-item read (the row's unread dot clears in place)
+- **knowledge-base article feedback** — widget swaps to a "Thanks" state in place
+- **portal payment-method select** — the chosen method becomes the selected chip on refetch
+- **payroll AI assistant** — the reply renders in the answer pane
+- **portal reset-request** — identical response either way (anti-enumeration)
+
+## Verification — all green
+
+`tsc` clean · production build clean · `check:merge-contract` · `check:motion-grammar` ·
+`measure:experience` (cold 47ms / route 87ms / cue 102ms / interaction 61ms — all under
+budget) · `verify-feedback` (6/6) · zero-orange 0px on rendered toasts.
+
+## Blocked exceptions (not committed)
+
+Two files still run the legacy per-page toast — `change-requests/page.tsx` and
+`SettingsListPane.tsx`. Both carry **pre-existing uncommitted edits from the user**, and
+the toast lines interleave with those edits in the same diff hunks, so migrating them
+cannot be staged without also staging unrelated work. They are excluded from the Sprint 10
+commit; migrate them once their pending changes land. (They are not truly *silent* — they
+still acknowledge through the old renderer; they are just not yet on the canonical channel.)

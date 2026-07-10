@@ -3,18 +3,17 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckCircle2, XCircle, X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { AUTH_TYPES, EMR_SYSTEMS, EMR_META, type EMRSystem, type FHIRAuthType, type FhirEndpoint } from '@/lib/fhir';
 import { IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 const lbl = 'mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]';
 
 export function AddEndpointModal({ endpoint, onClose }: { endpoint?: FhirEndpoint; onClose: () => void }) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const editing = !!endpoint;
   const [name, setName] = useState(endpoint?.name ?? '');
   const [baseUrl, setBaseUrl] = useState(endpoint?.baseUrl ?? '');
@@ -34,8 +33,8 @@ export function AddEndpointModal({ endpoint, onClose }: { endpoint?: FhirEndpoin
 
   const save = useMutation({
     mutationFn: () => (editing ? api.patch(`/fhir/endpoints/${endpoint!.id}`, body()) : api.post('/fhir/endpoints', body())).then((r) => r.data),
-    onSuccess: () => { message.success(editing ? 'Endpoint updated' : 'Endpoint added'); invalidate(); onClose(); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not save endpoint'),
+    onSuccess: () => { notify.success(editing ? 'Endpoint updated' : 'Endpoint added'); invalidate(); onClose(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not save endpoint'),
   });
   const test = useMutation({
     mutationFn: () => api.post(`/fhir/endpoints/${endpoint!.id}/test`).then((r) => r.data),

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AlertTriangle, ArrowLeft, CheckCircle2, FlaskConical, Microscope } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
@@ -12,6 +11,7 @@ import {
   type CorrelationCase, type CorrelationResult, type HistologySource,
 } from '@/lib/correlation';
 import { Card } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 const Info = ({ label, value }: { label: string; value: React.ReactNode }) => (
@@ -22,7 +22,6 @@ export default function CorrelationDetailPage() {
   const router = useRouter();
   const id = String(useParams().id);
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const { isEnabled } = useFeatures();
   const [reviewNotes, setReviewNotes] = useState('');
   const [editOpen, setEditOpen] = useState(false);
@@ -33,8 +32,8 @@ export default function CorrelationDetailPage() {
   const invalidate = () => ['correlation', 'correlations', 'correlation-analytics'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   const review = useMutation({
     mutationFn: () => api.post(`/correlation/${id}/review`, { reviewNotes: reviewNotes || undefined }),
-    onSuccess: () => { message.success('Marked reviewed'); invalidate(); },
-    onError: () => message.error('Could not mark reviewed'),
+    onSuccess: () => { notify.success('Marked reviewed'); invalidate(); },
+    onError: () => notify.error('Could not mark reviewed'),
   });
 
   if (!isEnabled('CORRELATION_TRACKING')) {
@@ -102,7 +101,6 @@ export default function CorrelationDetailPage() {
 function GitCompareIcon() { return <AlertTriangle size={28} className="mx-auto text-[#9CA3AF]" />; }
 
 function UpdateForm({ caseId, current, onDone }: { caseId: string; current: CorrelationCase; onDone: () => void }) {
-  const { message } = AntdApp.useApp();
   const [histologyDate, setHistologyDate] = useState(current.histologyDate ? current.histologyDate.slice(0, 10) : '');
   const [histologyDiagnosis, setHistologyDiagnosis] = useState(current.histologyDiagnosis ?? '');
   const [histologySource, setHistologySource] = useState<HistologySource>(current.histologySource);
@@ -115,8 +113,8 @@ function UpdateForm({ caseId, current, onDone }: { caseId: string; current: Corr
       histologyDate: histologyDate || undefined, histologyDiagnosis: histologyDiagnosis || undefined, histologySource,
       correlationResult: correlationResult || undefined, discordanceReason: isDiscordant ? discordanceReason || undefined : undefined,
     }),
-    onSuccess: () => { message.success('Updated'); onDone(); },
-    onError: () => message.error('Update failed'),
+    onSuccess: () => { notify.success('Updated'); onDone(); },
+    onError: () => notify.error('Update failed'),
   });
 
   return (

@@ -8,6 +8,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 interface Field { id: string; fieldKey: string; label: string; fieldType: 'TEXT' | 'CHECKBOX'; showWhenPrinting: boolean; printGroupId: string | null; sortOrder: number; enabled: boolean }
 interface Group { id: string; name: string; sortOrder: number }
@@ -18,11 +19,6 @@ const PRETTY: Record<string, string> = { Gynecology: 'Gynecology', NonGynecology
 export default function EditFormPage() {
   const router = useRouter();
   const qc = useQueryClient();
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const message = {
-    success: (msg: string) => { setToast({ type: 'ok', msg }); setTimeout(() => setToast(null), 3000); },
-    error: (msg: string) => { setToast({ type: 'err', msg }); setTimeout(() => setToast(null), 3000); },
-  };
   const formType = String(useParams().formType);
 
   const { data } = useQuery<Config>({ queryKey: ['form-config', formType], queryFn: () => api.get(`/form-config/${formType}`).then((r) => r.data), enabled: !!formType });
@@ -44,17 +40,17 @@ export default function EditFormPage() {
   const patch = useMutation({
     mutationFn: ({ id, body }: { id: string; body: any }) => api.put(`/form-config/field/${id}`, body).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['form-config', formType] }),
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not update field'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not update field'),
   });
   const addGroup = useMutation({
     mutationFn: (name: string) => api.post(`/form-config/${formType}/print-group`, { name }).then((r) => r.data),
-    onSuccess: () => { setNewGroup(''); setGroupOpen(false); qc.invalidateQueries({ queryKey: ['form-config', formType] }); message.success('Print group added'); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not add print group'),
+    onSuccess: () => { setNewGroup(''); setGroupOpen(false); qc.invalidateQueries({ queryKey: ['form-config', formType] }); notify.success('Print group added'); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not add print group'),
   });
   const delGroup = useMutation({
     mutationFn: (id: string) => api.delete(`/form-config/print-group/${id}`).then((r) => r.data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['form-config', formType] }); message.success('Print group deleted'); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not delete print group'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['form-config', formType] }); notify.success('Print group deleted'); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not delete print group'),
   });
 
   // Drag-reorder fields, persisting sortOrder for the ones that moved.
@@ -72,8 +68,8 @@ export default function EditFormPage() {
 
   const saveAll = useMutation({
     mutationFn: () => Promise.all(fields.map((f, i) => api.put(`/form-config/field/${f.id}`, { label: f.label, sortOrder: i, showWhenPrinting: f.showWhenPrinting, printGroupId: f.printGroupId, enabled: f.enabled }))),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['form-config', formType] }); message.success('Form saved'); },
-    onError: () => message.error('Could not save form'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['form-config', formType] }); notify.success('Form saved'); },
+    onError: () => notify.error('Could not save form'),
   });
 
   const commitRename = (f: Field) => {
@@ -220,12 +216,7 @@ export default function EditFormPage() {
         )}
       </div>
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg"
-          style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>
-          {toast.msg}
-        </div>
-      )}
+      
     </div>
   );
 }

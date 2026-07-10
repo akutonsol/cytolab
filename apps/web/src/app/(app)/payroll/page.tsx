@@ -175,6 +175,7 @@ export default function PayrollDashboard() {
         return demoAnswer(q, a);
       }
     },
+    // Self-evident: the assistant's reply renders in the answer pane. No toast.
     onSuccess: (text) => setAiResponse(text),
   });
   const submitAsk = (q: string) => { const t = q.trim(); if (!t || ask.isPending) return; setAiInput(t); ask.mutate(t); };

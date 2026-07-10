@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { CATEGORIES, type ResultTemplate, type TemplateCategory } from '@/lib/result-templates';
 import { Button } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const blank = {
   name: '', shortCode: '', category: 'Cervical' as TemplateCategory, description: '', isActive: true,
@@ -20,8 +21,6 @@ export default function ResultTemplateEditPage() {
   const id = String(useParams().id);
   const isNew = id === 'new';
   const [f, setF] = useState({ ...blank });
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3200); };
   const set = (k: keyof typeof f, v: any) => setF((p) => ({ ...p, [k]: v }));
 
   const { data: existing } = useQuery({
@@ -48,16 +47,16 @@ export default function ResultTemplateEditPage() {
     },
     onSuccess: (r: any) => {
       qc.invalidateQueries({ queryKey: ['result-templates'] });
-      notify('ok', isNew ? 'Template created' : 'Template saved');
+      notify.success(isNew ? 'Template created' : 'Template saved');
       if (isNew) router.replace(`/result-templates/${r.data.id}`);
     },
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Save failed'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Save failed'),
   });
 
   const del = useMutation({
     mutationFn: () => api.delete(`/result-templates/${id}`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['result-templates'] }); router.push('/result-templates'); },
-    onError: () => notify('err', 'Delete failed'),
+    onError: () => notify.error('Delete failed'),
   });
 
   const canSave = !!f.name.trim() && !save.isPending;
@@ -76,7 +75,7 @@ export default function ResultTemplateEditPage() {
           <h1 className="text-3xl font-bold text-charcoal-heading">{isNew ? 'New Template' : 'Edit Template'}</h1>
           <div className="flex items-center gap-2">
             {!isNew && <Button variant="secondary" className="!text-error" onClick={() => del.mutate()} disabled={del.isPending}><Trash2 size={15} /> Delete</Button>}
-            <Button disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => save.mutate()}>{save.isPending ? 'Saving…' : 'Save Template'}</Button>
+            <Button loading={save.isPending} disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => save.mutate()}>Save Template</Button>
           </div>
         </div>
 
@@ -118,7 +117,7 @@ export default function ResultTemplateEditPage() {
         </div>
       </div>
 
-      {toast && <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>{toast.msg}</div>}
+      
     </div>
   );
 }

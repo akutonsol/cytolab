@@ -8,14 +8,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { CATEGORIES, composeNarrative, type ResultTemplate } from '@/lib/result-templates';
 import { Button, IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 export default function ResultTemplatesPage() {
   const router = useRouter();
   const qc = useQueryClient();
   const [category, setCategory] = useState<'All' | string>('All');
   const [search, setSearch] = useState('');
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3200); };
 
   const { data: templates = [] } = useQuery({
     queryKey: ['result-templates'],
@@ -24,8 +23,8 @@ export default function ResultTemplatesPage() {
 
   const toggleActive = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => api.patch(`/result-templates/${id}`, { isActive }),
-    onSuccess: (_d, v) => { qc.invalidateQueries({ queryKey: ['result-templates'] }); notify('ok', v.isActive ? 'Template activated' : 'Template deactivated'); },
-    onError: () => notify('err', 'Update failed'),
+    onSuccess: (_d, v) => { qc.invalidateQueries({ queryKey: ['result-templates'] }); notify.success(v.isActive ? 'Template activated' : 'Template deactivated'); },
+    onError: () => notify.error('Update failed'),
   });
 
   const filtered = useMemo(() => {
@@ -39,8 +38,8 @@ export default function ResultTemplatesPage() {
   const distinctCats = useMemo(() => new Set(templates.map((t) => t.category)).size, [templates]);
 
   const copyTemplate = async (t: ResultTemplate) => {
-    try { await navigator.clipboard.writeText(composeNarrative(t)); notify('ok', `“${t.name}” copied to clipboard`); }
-    catch { notify('err', 'Copy failed'); }
+    try { await navigator.clipboard.writeText(composeNarrative(t)); notify.success(`“${t.name}” copied to clipboard`); }
+    catch { notify.error('Copy failed'); }
   };
 
   return (
@@ -120,7 +119,7 @@ export default function ResultTemplatesPage() {
         )}
       </div>
 
-      {toast && <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>{toast.msg}</div>}
+      
     </div>
   );
 }

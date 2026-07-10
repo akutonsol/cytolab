@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Inbox, Play, CheckCircle2, XCircle, DollarSign } from 'lucide-react';
 import { api } from '@/lib/api';
+import { notify } from '@/lib/notify';
 
 interface Batch {
   id: string;
@@ -43,7 +44,7 @@ export function PendingBatchesTab({ can }: { can: (p: string) => boolean }) {
   const act = useMutation({
     mutationFn: (v: { id: string; action: string; body?: unknown }) =>
       api.patch(`/portal/internal/batches/${v.id}/${v.action}`, v.body ?? {}),
-    onSuccess: invalidate,
+    onSuccess: () => { invalidate(); notify.success('Batch updated'); },
   });
 
   const canAct = can('requisition:create');

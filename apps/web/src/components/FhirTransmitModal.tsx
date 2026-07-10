@@ -3,15 +3,14 @@
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Copy, Send, X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { type FhirEndpoint, type FhirPreview } from '@/lib/fhir';
 import { IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 export function FhirTransmitModal({ recordId, onClose }: { recordId: string; onClose: () => void }) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [endpointId, setEndpointId] = useState('');
   const [showJson, setShowJson] = useState(false);
 
@@ -21,10 +20,10 @@ export function FhirTransmitModal({ recordId, onClose }: { recordId: string; onC
 
   const transmit = useMutation({
     mutationFn: () => api.post(`/fhir/transmit/${recordId}`, { endpointId }).then((r) => r.data),
-    onSuccess: (r) => { message.success(`Transmitted (${r.status})`); ['fhir-transmissions', 'fhir-stats', 'fhir-record'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); onClose(); },
-    onError: () => message.error('Transmit failed'),
+    onSuccess: (r) => { notify.success(`Transmitted (${r.status})`); ['fhir-transmissions', 'fhir-stats', 'fhir-record'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); onClose(); },
+    onError: () => notify.error('Transmit failed'),
   });
-  const copyJson = () => { if (preview) { navigator.clipboard.writeText(JSON.stringify(preview.diagnosticReport, null, 2)); message.success('FHIR JSON copied'); } };
+  const copyJson = () => { if (preview) { navigator.clipboard.writeText(JSON.stringify(preview.diagnosticReport, null, 2)); notify.success('FHIR JSON copied'); } };
 
   return createPortal(
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2300, background: 'rgba(15,23,42,0.55)' }} onClick={onClose}>

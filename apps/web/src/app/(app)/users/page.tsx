@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Button, IconAction, Th, Td, TableEmpty } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 interface UserRow {
   id: string;
@@ -26,8 +27,6 @@ export default function UsersPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3000); };
 
   const { data, isFetching } = useQuery({
     queryKey: ['users'],
@@ -107,22 +106,16 @@ export default function UsersPage() {
       {modalOpen && (
         <NewUserModal
           onClose={() => setModalOpen(false)}
-          onCreated={() => { setModalOpen(false); qc.invalidateQueries({ queryKey: ['users'] }); notify('ok', 'User created'); }}
-          notify={notify}
+          onCreated={() => { setModalOpen(false); qc.invalidateQueries({ queryKey: ['users'] }); notify.success('User created'); }}
         />
       )}
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 font-label-md text-label-md text-white shadow-lg"
-          style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>
-          {toast.msg}
-        </div>
-      )}
+      
     </div>
   );
 }
 
-function NewUserModal({ onClose, onCreated, notify }: { onClose: () => void; onCreated: () => void; notify: (type: 'ok' | 'err', msg: string) => void }) {
+function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void; }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -137,7 +130,7 @@ function NewUserModal({ onClose, onCreated, notify }: { onClose: () => void; onC
   const create = useMutation({
     mutationFn: () => api.post('/users', { email: email.trim(), password, firstName: firstName.trim(), lastName: lastName.trim(), roleIds }),
     onSuccess: onCreated,
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Could not create user'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not create user'),
   });
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -192,8 +185,8 @@ function NewUserModal({ onClose, onCreated, notify }: { onClose: () => void; onC
 
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => create.mutate()}>
-            {create.isPending ? 'Creating…' : 'Create User'}
+          <Button loading={create.isPending} disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => create.mutate()}>
+            Create User
           </Button>
         </div>
       </div>

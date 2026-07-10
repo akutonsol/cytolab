@@ -14,6 +14,7 @@ import {
   type AlertType,
   type SecurityAlert,
 } from '@/lib/security';
+import { notify } from '@/lib/notify';
 
 const inputCls = 'h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-400';
 const TYPES: AlertType[] = ['IMPOSSIBLE_TRAVEL', 'BRUTE_FORCE', 'CREDENTIAL_STUFFING', 'SUSPICIOUS_IP', 'AFTER_HOURS', 'MASS_EXPORT'];
@@ -29,8 +30,8 @@ export default function SecurityAlertsPage() {
   const { data = [], isLoading } = useQuery({ queryKey: ['security-alerts', params], queryFn: () => securityApi.alerts(params) });
   const resolve = useMutation({
     mutationFn: (id: string) => securityApi.resolveAlert(id),
-    onSuccess: () => { message.success('Alert resolved'); qc.invalidateQueries({ queryKey: ['security-alerts'] }); },
-    onError: () => message.error('Could not resolve'),
+    onSuccess: () => { notify.success('Alert resolved'); qc.invalidateQueries({ queryKey: ['security-alerts'] }); },
+    onError: () => notify.error('Could not resolve'),
   });
 
   return (

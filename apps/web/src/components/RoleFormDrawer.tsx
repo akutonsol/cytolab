@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { DS } from '@/lib/drawer-styles';
 import { DrawerHeader, DrawerFooter, PremiumFormStyles } from '@/components/DrawerChrome';
+import { notify } from '@/lib/notify';
 
 interface Permission {
   id: string;
@@ -29,7 +30,6 @@ interface Props {
 }
 
 export function RoleFormDrawer({ open, onClose, role }: Props) {
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const [form] = Form.useForm();
   const isEdit = !!role;
@@ -69,11 +69,11 @@ export function RoleFormDrawer({ open, onClose, role }: Props) {
     mutationFn: (payload: Record<string, unknown>) =>
       isEdit ? api.put(`/roles/${role!.id}`, payload) : api.post('/roles', payload),
     onSuccess: () => {
-      message.success(isEdit ? 'Role updated' : 'Role created');
+      notify.success(isEdit ? 'Role updated' : 'Role created');
       qc.invalidateQueries({ queryKey: ['roles'] });
       onClose();
     },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Save failed'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Save failed'),
   });
 
   const onFinish = (values: any) =>

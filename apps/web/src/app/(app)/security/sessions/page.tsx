@@ -8,6 +8,7 @@ import { fmtDateTime, fullName, relTime, securityApi, type UserSession } from '@
 import { SecurityPage, Table, dangerBtn } from '@/components/security/ui';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
+import { notify } from '@/lib/notify';
 
 export default function SecuritySessionsPage() {
   // Sessions are returned as a whole array; fetch once and window client-side.
@@ -29,13 +30,13 @@ export default function SecuritySessionsPage() {
 
   const terminate = useMutation({
     mutationFn: (id: string) => securityApi.terminateSession(id),
-    onSuccess: () => { message.success('Session terminated'); reload(); },
-    onError: () => message.error('Could not terminate session'),
+    onSuccess: () => { notify.success('Session terminated'); reload(); },
+    onError: () => notify.error('Could not terminate session'),
   });
   const terminateAll = useMutation({
     mutationFn: (userId: string) => securityApi.terminateAllForUser(userId),
-    onSuccess: () => { message.success('All sessions terminated for user'); reload(); },
-    onError: () => message.error('Could not terminate sessions'),
+    onSuccess: () => { notify.success('All sessions terminated for user'); reload(); },
+    onError: () => notify.error('Could not terminate sessions'),
   });
 
   return (

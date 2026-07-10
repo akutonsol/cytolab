@@ -10,6 +10,7 @@ import { useMyEmployee, empName, fmtDate, daysBetweenInclusive, WF_STATUS } from
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { Card, Button, Th, Td, IconAction, TableEmpty } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
@@ -54,7 +55,7 @@ function RequestModal({ employeeId, onClose }: { employeeId: string; onClose: ()
         <label className="mb-1 block text-sm font-medium text-slate-600">Reason <span className="text-slate-500">(optional)</span></label>
         <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} className="mb-4 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-primary" placeholder="Add a note…" />
         {err && <div className="mb-2 text-sm text-error">{err}</div>}
-        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={() => submit.mutate()} disabled={!valid || submit.isPending}  style={{ opacity: !valid || submit.isPending ? 0.5 : 1 }}>{submit.isPending ? 'Submitting…' : 'Submit Request'}</Button></div>
+        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={submit.isPending} onClick={() => submit.mutate()} disabled={!valid || submit.isPending}  style={{ opacity: !valid || submit.isPending ? 0.5 : 1 }}>Submit Request</Button></div>
       </div>
     </div>
   );
@@ -159,10 +160,10 @@ function ManageLeaveTab() {
   const fetchFn = useCallback((p: number, ps: number) => Promise.resolve(clientPage(requests, p, ps)), [requests]);
   const { items: pageRows, loading, initialLoading, hasMore, sentinelRef } = useInfiniteScroll<any>({ fetchFn, pageSize: 20 });
   const invalidate = () => { qc.invalidateQueries({ queryKey: ['leave-requests'] }); qc.invalidateQueries({ queryKey: ['wf-notif-unread'] }); };
-  const approve = useMutation({ mutationFn: (id: string) => api.patch(`/workforce/leave/requests/${id}/approve`), onSuccess: invalidate });
+  const approve = useMutation({ mutationFn: (id: string) => api.patch(`/workforce/leave/requests/${id}/approve`), onSuccess: () => { invalidate(); notify.success('Leave request approved'); } });
   const reject = useMutation({
     mutationFn: ({ id, rejectionReason }: { id: string; rejectionReason: string }) => api.patch(`/workforce/leave/requests/${id}/reject`, { rejectionReason }),
-    onSuccess: () => { setRejecting(null); setReason(''); invalidate(); },
+    onSuccess: () => { setRejecting(null); setReason(''); invalidate(); notify.success('Leave request rejected'); },
   });
 
   return (

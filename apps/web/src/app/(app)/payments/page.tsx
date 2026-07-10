@@ -12,6 +12,7 @@ import { api, type Paginated } from '@/lib/api';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { Card, IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (cents: number) => '$' + ((cents ?? 0) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -68,8 +69,6 @@ export default function PaymentsPage() {
   const [timeframe, setTimeframe] = useState('all');
   const [period, setPeriod] = useState('Yearly');
   const [menuId, setMenuId] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-  const notify = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   const { data: summary } = useQuery<any>({ queryKey: ['payments-summary'], queryFn: () => api.get('/payments/summary').then((r) => r.data) });
   const { data: paymentsPage } = useQuery<Paginated<Payment>>({ queryKey: ['payments-all'], queryFn: () => api.get('/payments', { params: { pageSize: 200 } }).then((r) => r.data) });
@@ -81,8 +80,8 @@ export default function PaymentsPage() {
 
   const verify = useMutation({
     mutationFn: (id: string) => api.put(`/payment/verify/${id}`).then((r) => r.data),
-    onSuccess: () => { notify('Payment verified ✓'); qc.invalidateQueries({ queryKey: ['payments-all'] }); qc.invalidateQueries({ queryKey: ['payments-summary'] }); },
-    onError: (e: any) => notify(e?.response?.data?.message ?? 'Could not verify payment'),
+    onSuccess: () => { notify.success('Payment verified ✓'); qc.invalidateQueries({ queryKey: ['payments-all'] }); qc.invalidateQueries({ queryKey: ['payments-summary'] }); },
+    onError: (e: any) => notify.success(e?.response?.data?.message ?? 'Could not verify payment'),
   });
 
   // ── Aggregates + deltas ──
@@ -283,7 +282,7 @@ export default function PaymentsPage() {
                                   <div className="fixed inset-0 z-10" onClick={() => setMenuId(null)} />
                                   <div className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-xl border border-[#EEF2F7] bg-white py-1 shadow-lg">
                                     <button onClick={() => { setMenuId(null); router.push('/billing'); }} className="block w-full px-4 py-2 text-left text-[13px] text-[#374151] hover:bg-[#F5F7FF]">View Bill</button>
-                                    <button onClick={() => { setMenuId(null); navigator.clipboard?.writeText(p.referenceNo ?? p.bill?.referenceNo ?? ''); notify('Reference copied'); }} className="block w-full px-4 py-2 text-left text-[13px] text-[#374151] hover:bg-[#F5F7FF]">Copy Reference No.</button>
+                                    <button onClick={() => { setMenuId(null); navigator.clipboard?.writeText(p.referenceNo ?? p.bill?.referenceNo ?? ''); notify.success('Reference copied'); }} className="block w-full px-4 py-2 text-left text-[13px] text-[#374151] hover:bg-[#F5F7FF]">Copy Reference No.</button>
                                   </div>
                                 </>
                               )}
@@ -305,7 +304,7 @@ export default function PaymentsPage() {
         </Card>
       </div>
 
-      {toast && <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: '#16A34A' }}>{toast}</div>}
+      
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { message, Popconfirm, Switch } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BoolPill, SecurityPage, Table, dangerBtn } from '@/components/security/ui';
 import { relTime, securityApi, type MfaUser } from '@/lib/security';
+import { notify } from '@/lib/notify';
 
 export default function MfaManagementPage() {
   const qc = useQueryClient();
@@ -13,13 +14,13 @@ export default function MfaManagementPage() {
 
   const require = useMutation({
     mutationFn: ({ id, required }: { id: string; required: boolean }) => securityApi.requireMfa(id, required),
-    onSuccess: () => { message.success('Updated'); invalidate(); },
-    onError: () => message.error('Could not update'),
+    onSuccess: () => { notify.success('Updated'); invalidate(); },
+    onError: () => notify.error('Could not update'),
   });
   const reset = useMutation({
     mutationFn: (id: string) => securityApi.resetMfa(id),
-    onSuccess: () => { message.success('MFA reset — user must re-enrol'); invalidate(); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not reset MFA'),
+    onSuccess: () => { notify.success('MFA reset — user must re-enrol'); invalidate(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not reset MFA'),
   });
 
   return (

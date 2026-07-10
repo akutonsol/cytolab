@@ -36,6 +36,7 @@ function CodingStatusBadge({ recordId }: { recordId: string }) {
 import { DictationTextarea } from './DictationTextarea';
 import type { DictationButtonHandle } from './DictationButton';
 import { FeatureGate } from './FeatureGate';
+import { notify } from '@/lib/notify';
 
 interface RecordLite {
   id: string;
@@ -195,8 +196,8 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
 
   const save = useMutation({
     mutationFn: saveContent,
-    onSuccess: () => { message.success(authorized ? 'Saved — authorization revoked, re-sign to approve' : 'Saved'); if (draftKey) clearDraft(draftKey); invalidate(); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Save failed'),
+    onSuccess: () => { notify.success(authorized ? 'Saved — authorization revoked, re-sign to approve' : 'Saved'); if (draftKey) clearDraft(draftKey); invalidate(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Save failed'),
   });
 
   const signOff = useMutation({
@@ -208,12 +209,12 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
         await api.put('/users/me/signature', { signatureDataUri }).catch(() => {});
       }
     },
-    onSuccess: () => { message.success('Signed off — record Approved, report releasable'); if (draftKey) clearDraft(draftKey); invalidate(); onClose(); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Sign-off failed'),
+    onSuccess: () => { notify.success('Signed off — record Approved, report releasable'); if (draftKey) clearDraft(draftKey); invalidate(); onClose(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Sign-off failed'),
   });
 
   // ---- AI assist (strictly assistive; degrades to a message when unavailable) ----
-  const degraded = (reason?: string) => message.info(reason ?? 'AI is unavailable right now');
+  const degraded = (reason?: string) => notify.info(reason ?? 'AI is unavailable right now');
 
   const genNarrative = useMutation({
     mutationFn: () => api.post(`/resultsheet/${sheetId}/ai/narrative`).then((r) => r.data),
@@ -221,20 +222,20 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
       if (!res.available) return degraded(res.reason);
       setNarrative(res.data.output);
       setAiDraftId(res.data.id);
-      message.success('AI draft ready — review and edit before accepting');
+      notify.success('AI draft ready — review and edit before accepting');
     },
     onError: () => degraded(),
   });
 
   const acceptDraft = useMutation({
     mutationFn: () => api.put(`/resultsheet/${sheetId}/ai/narrative/${aiDraftId}/accept`, { finalText: narrative }),
-    onSuccess: () => { message.success('Accepted into report'); setAiDraftId(null); invalidate(); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Accept failed'),
+    onSuccess: () => { notify.success('Accepted into report'); setAiDraftId(null); invalidate(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Accept failed'),
   });
 
   const rejectDraft = useMutation({
     mutationFn: () => api.put(`/resultsheet/${sheetId}/ai/narrative/${aiDraftId}/reject`, {}),
-    onSuccess: () => { message.info('Draft rejected'); setAiDraftId(null); },
+    onSuccess: () => { notify.info('Draft rejected'); setAiDraftId(null); },
   });
 
   const suggest = useMutation({
@@ -257,7 +258,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
       return copy;
     });
     setSuggestions((prev) => (prev ?? []).filter((x) => x !== s));
-    message.info(`Added ${s.abbreviation} — Save to persist`);
+    notify.info(`Added ${s.abbreviation} — Save to persist`);
   };
 
   const confirmSignOff = () =>
@@ -275,7 +276,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
       window.open(url, '_blank');
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (e: any) {
-      message.error(e?.response?.data?.message ?? 'Report unavailable');
+      notify.error(e?.response?.data?.message ?? 'Report unavailable');
     }
   };
 
@@ -285,7 +286,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
   // content — confirm first when the narrative already has text.
   const applyTemplate = (t: ResultTemplate) => {
     const text = composeNarrative(t);
-    const done = () => { setNarrative(text); message.success(`Template “${t.name}” applied — review and adjust as needed.`); };
+    const done = () => { setNarrative(text); notify.success(`Template “${t.name}” applied — review and adjust as needed.`); };
     if (narrative.trim()) {
       modal.confirm({
         title: 'Replace the current narrative?',
@@ -298,7 +299,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
 
   // Apply a saved Bethesda classification's generated narrative into the report.
   const applyBethesda = (text: string, shortCode: string | null) => {
-    const done = () => { setNarrative(text); message.success(`Bethesda classification${shortCode ? ` (${shortCode})` : ''} applied to the report narrative.`); };
+    const done = () => { setNarrative(text); notify.success(`Bethesda classification${shortCode ? ` (${shortCode})` : ''} applied to the report narrative.`); };
     if (narrative.trim()) {
       modal.confirm({ title: 'Replace the current narrative?', content: 'The Bethesda narrative will overwrite the report narrative you have.', okText: 'Replace', cancelText: 'Keep mine', onOk: done });
     } else done();
@@ -400,7 +401,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
                   <button type="button" style={{ ...DS.btnOutline, padding: '7px 16px', fontSize: 13, opacity: aiBusy ? 0.6 : 1 }} disabled={aiBusy} onClick={() => genNarrative.mutate()}>Generate draft narrative</button>
                   <button type="button" style={{ ...DS.btnOutline, padding: '7px 16px', fontSize: 13, opacity: aiBusy ? 0.6 : 1 }} disabled={aiBusy} onClick={() => suggest.mutate()}>Suggest codes</button>
                   <button type="button" style={{ ...DS.btnOutline, padding: '7px 16px', fontSize: 13, opacity: aiBusy ? 0.6 : 1 }} disabled={aiBusy} onClick={() => consistency.mutate()}>Check consistency</button>
-                  <button type="button" style={{ ...DS.btnOutline, padding: '7px 16px', fontSize: 13 }} onClick={() => message.info('Similar cases view is coming soon')}>View Similar Cases</button>
+                  <button type="button" style={{ ...DS.btnOutline, padding: '7px 16px', fontSize: 13 }} onClick={() => notify.info('Similar cases view is coming soon')}>View Similar Cases</button>
                 </Space>
               </div>
 

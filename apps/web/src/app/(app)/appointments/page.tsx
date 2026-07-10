@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
@@ -13,6 +12,7 @@ import {
   type Appointment, type AppointmentStats,
 } from '@/lib/appointments';
 import { Card, IconAction, EmptyState } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -28,13 +28,12 @@ function StatusBadge({ status }: { status: string }) {
 // ── Reschedule modal ─────────────────────────────────────────────────────────
 function RescheduleModal({ appt, onClose }: { appt: Appointment; onClose: () => void }) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [date, setDate] = useState(dateKey(new Date(appt.scheduledAt)));
   const [time, setTime] = useState(new Date(appt.scheduledAt).toTimeString().slice(0, 5));
   const save = useMutation({
     mutationFn: () => api.post(`/appointments/${appt.id}/reschedule`, { newScheduledAt: new Date(`${date}T${time}`).toISOString() }).then((r) => r.data),
-    onSuccess: () => { message.success('Rescheduled'); ['appointments', 'appt-calendar', 'appt-stats'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); onClose(); },
-    onError: () => message.error('Could not reschedule'),
+    onSuccess: () => { notify.success('Rescheduled'); ['appointments', 'appt-calendar', 'appt-stats'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); onClose(); },
+    onError: () => notify.error('Could not reschedule'),
   });
   return createPortal(
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2400, background: 'rgba(15,23,42,0.55)' }} onClick={onClose}>
@@ -53,12 +52,11 @@ function RescheduleModal({ appt, onClose }: { appt: Appointment; onClose: () => 
 
 function useApptActions() {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   return useMutation({
     mutationFn: ({ id, action }: { id: string; action: string }) =>
       (action === 'cancel' ? api.delete(`/appointments/${id}`, { data: {} }) : api.post(`/appointments/${id}/${action}`, {})).then((r) => r.data),
-    onSuccess: (_d, v) => { message.success('Updated'); ['appointments', 'appt-calendar', 'appt-stats'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); },
-    onError: () => message.error('Action failed'),
+    onSuccess: (_d, v) => { notify.success('Updated'); ['appointments', 'appt-calendar', 'appt-stats'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); },
+    onError: () => notify.error('Action failed'),
   });
 }
 

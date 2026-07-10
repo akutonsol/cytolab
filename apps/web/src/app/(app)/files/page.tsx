@@ -9,6 +9,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Button, IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 interface Attachment {
   id: string;
@@ -70,8 +71,6 @@ export default function FilesPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [preview, setPreview] = useState<Attachment | null>(null);
   const [confirm, setConfirm] = useState<Attachment | null>(null);
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3200); };
 
   const { data: stats } = useQuery({
     queryKey: ['files-stats'],
@@ -98,8 +97,8 @@ export default function FilesPage() {
 
   const del = useMutation({
     mutationFn: (id: string) => api.delete(`/files/${id}`),
-    onSuccess: () => { notify('ok', 'File deleted'); setConfirm(null); refetch(); },
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Delete failed'),
+    onSuccess: () => { notify.success('File deleted'); setConfirm(null); refetch(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Delete failed'),
   });
 
   const download = (f: Attachment) => {
@@ -245,7 +244,7 @@ export default function FilesPage() {
         </div>
       </div>
 
-      {uploadOpen && <UploadModal onClose={() => setUploadOpen(false)} onUploaded={() => { refetch(); notify('ok', 'File uploaded'); }} onError={(m) => notify('err', m)} />}
+      {uploadOpen && <UploadModal onClose={() => setUploadOpen(false)} onUploaded={() => { refetch(); notify.success('File uploaded'); }} onError={(m) => notify.error(m)} />}
 
       {preview && <PreviewModal file={preview} onClose={() => setPreview(null)} onDownload={() => download(preview)} />}
 
@@ -262,9 +261,7 @@ export default function FilesPage() {
         </div>
       )}
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>{toast.msg}</div>
-      )}
+      
     </div>
   );
 }

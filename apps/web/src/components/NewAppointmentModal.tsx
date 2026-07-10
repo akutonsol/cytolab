@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { APPT_TYPES, TYPE_META, type AppointmentType } from '@/lib/appointments';
 import { IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 const lbl = 'mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]';
@@ -20,7 +20,6 @@ interface Props {
 
 export function NewAppointmentModal({ onClose, onCreated, defaults }: Props) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [patientId, setPatientId] = useState(defaults?.patientId ?? '');
   const [appointmentType, setType] = useState<AppointmentType>(defaults?.appointmentType ?? 'SpecimenCollection');
   const [date, setDate] = useState(defaults?.scheduledDate ?? '');
@@ -43,8 +42,8 @@ export function NewAppointmentModal({ onClose, onCreated, defaults }: Props) {
       doctorName: doctorName || undefined, assignedToId: assignedToId || undefined,
       recallRecordId: defaults?.recallRecordId, notes: notes || undefined,
     }).then((r) => r.data),
-    onSuccess: (a) => { message.success('Appointment scheduled'); ['appointments', 'appt-calendar', 'appt-stats'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); onCreated?.(a.id); onClose(); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not schedule appointment'),
+    onSuccess: (a) => { notify.success('Appointment scheduled'); ['appointments', 'appt-calendar', 'appt-stats'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); onCreated?.(a.id); onClose(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not schedule appointment'),
   });
 
   return createPortal(

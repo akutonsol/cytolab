@@ -6,6 +6,7 @@ import { Banknote, Pencil, Plus, Search, Trash2, UserPlus, Users, X } from 'luci
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { Button, IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 type EmploymentType = 'FullTime' | 'PartTime' | 'Contract';
 interface Employee {
@@ -49,8 +50,6 @@ export default function EmployeesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Employee | null>(null);
   const [confirm, setConfirm] = useState<Employee | null>(null);
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3200); };
 
   const { data } = useQuery({
     queryKey: ['employees'],
@@ -73,8 +72,8 @@ export default function EmployeesPage() {
 
   const del = useMutation({
     mutationFn: (id: string) => api.delete(`/employees/delete/${id}`),
-    onSuccess: () => { notify('ok', 'Employee removed'); setConfirm(null); refetch(); },
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Delete failed'),
+    onSuccess: () => { notify.success('Employee removed'); setConfirm(null); refetch(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Delete failed'),
   });
 
   const activeCount = all.filter((e) => e.isActive).length;
@@ -179,8 +178,8 @@ export default function EmployeesPage() {
 
       {modalOpen && (
         <EmployeeModal employee={editing} departments={departments} onClose={() => setModalOpen(false)}
-          onSaved={() => { setModalOpen(false); refetch(); notify('ok', editing ? 'Employee updated' : 'Employee created'); }}
-          onError={(m) => notify('err', m)} />
+          onSaved={() => { setModalOpen(false); refetch(); notify.success(editing ? 'Employee updated' : 'Employee created'); }}
+          onError={(m) => notify.error(m)} />
       )}
 
       {confirm && (
@@ -196,7 +195,7 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      {toast && <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>{toast.msg}</div>}
+      
     </div>
   );
 }
@@ -338,8 +337,8 @@ function EmployeeModal({ employee, departments, onClose, onSaved, onError }: {
 
         <div className="flex justify-end gap-2 border-t border-outline-variant/30 p-6 pt-4">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => save.mutate()}>
-            {save.isPending ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Employee'}
+          <Button loading={save.isPending} disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => save.mutate()}>
+            {isEdit ? 'Save Changes' : 'Create Employee'}
           </Button>
         </div>
       </div>

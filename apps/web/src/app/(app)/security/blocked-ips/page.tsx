@@ -6,6 +6,7 @@ import { message, Modal, Popconfirm } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge, SecurityPage, Table, dangerBtn, primaryBtn } from '@/components/security/ui';
 import { fmtDateTime, securityApi, type BlockedIp } from '@/lib/security';
+import { notify } from '@/lib/notify';
 
 const inputCls = 'h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-400';
 
@@ -25,13 +26,13 @@ export default function BlockedIpsPage() {
         expiresAt: form.permanent || !form.expiresAt ? undefined : new Date(form.expiresAt).toISOString(),
         permanent: form.permanent,
       }),
-    onSuccess: () => { message.success('IP blocked'); setOpen(false); setForm({ ipAddress: '', reason: '', expiresAt: '', permanent: false }); invalidate(); },
-    onError: (e: any) => message.error(e?.response?.data?.message?.[0] ?? 'Could not block IP'),
+    onSuccess: () => { notify.success('IP blocked'); setOpen(false); setForm({ ipAddress: '', reason: '', expiresAt: '', permanent: false }); invalidate(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message?.[0] ?? 'Could not block IP'),
   });
   const unblock = useMutation({
     mutationFn: (id: string) => securityApi.unblockIp(id),
-    onSuccess: () => { message.success('IP unblocked'); invalidate(); },
-    onError: () => message.error('Could not unblock'),
+    onSuccess: () => { notify.success('IP unblocked'); invalidate(); },
+    onError: () => notify.error('Could not unblock'),
   });
 
   return (

@@ -8,6 +8,7 @@ import { getArticle, submitFeedback } from '@/lib/knowledge-base';
 import { Markdown } from '@/components/knowledge-base/Markdown';
 import { useAuth } from '@/lib/auth';
 import { Card } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—');
 
@@ -27,6 +28,7 @@ export default function ArticleViewPage() {
   const [sentHelpful, setSentHelpful] = useState<boolean | null>(null);
   const feedback = useMutation({
     mutationFn: (helpful: boolean) => submitFeedback(slug, { helpful, comment: comment.trim() || undefined }),
+    // Self-evident: the widget swaps to a 'Thanks for your feedback' state in place.
     onSuccess: (_d, helpful) => setSentHelpful(helpful),
   });
 

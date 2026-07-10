@@ -11,6 +11,7 @@ import dynamic from 'next/dynamic';
 import { api, loadClaims } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { takeReturnTo, takeSessionEndReason } from '@/lib/session-drafts';
+import { notify } from '@/lib/notify';
 
 // WebGL specimen vial — the same premium PBR render used on the landing hero.
 // Browser-only (Three.js needs the DOM/GPU), so SSR is off. `bare` skips the
@@ -62,8 +63,6 @@ export default function LoginPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [mfa, setMfa] = useState<MfaState | null>(null);
   const [code, setCode] = useState('');
-  const [toast, setToast] = useState<string | null>(null);
-  const notify = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3500); };
 
   // Persistent banner when the app bounced us here from an expired/invalid session.
   // The reason may arrive as a URL param (layout redirect) or in sessionStorage
@@ -106,7 +105,7 @@ export default function LoginPage() {
   const sendEmailCode = useMutation({
     // Public endpoint: the mfaToken (body) authorises the OTP send during login.
     mutationFn: async () => api.post('/auth/mfa/challenge/email', { mfaToken: mfa!.mfaToken }),
-    onSuccess: () => notify('Code sent to your email'),
+    onSuccess: () => notify.success('Code sent to your email'),
     onError: () => setFormError('Could not send code'),
   });
 
@@ -308,11 +307,7 @@ export default function LoginPage() {
         </footer>
       </div>
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[120] rounded-xl bg-emerald-600 px-4 py-3 text-[13px] font-medium text-white shadow-lg">
-          {toast}
-        </div>
-      )}
+      
     </div>
   );
 }

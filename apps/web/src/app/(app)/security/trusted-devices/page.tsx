@@ -5,6 +5,7 @@ import { message, Popconfirm } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SecurityPage, Table, dangerBtn } from '@/components/security/ui';
 import { fmtDateTime, fullName, relTime, securityApi, type TrustedDevice } from '@/lib/security';
+import { notify } from '@/lib/notify';
 
 export default function TrustedDevicesPage() {
   const qc = useQueryClient();
@@ -12,8 +13,8 @@ export default function TrustedDevicesPage() {
 
   const revoke = useMutation({
     mutationFn: (id: string) => securityApi.revokeTrustedDevice(id),
-    onSuccess: () => { message.success('Device revoked'); qc.invalidateQueries({ queryKey: ['trusted-devices'] }); },
-    onError: () => message.error('Could not revoke device'),
+    onSuccess: () => { notify.success('Device revoked'); qc.invalidateQueries({ queryKey: ['trusted-devices'] }); },
+    onError: () => notify.error('Could not revoke device'),
   });
 
   return (

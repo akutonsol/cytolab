@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { GraduationCap, Plus, X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -14,11 +13,11 @@ import {
   type ProfAnalytics, type ProfTest, type ProfTestType,
 } from '@/lib/proficiency';
 import { Card, IconAction, EmptyState } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 
 function NewTestModal({ onClose }: { onClose: (id?: string) => void }) {
-  const { message } = AntdApp.useApp();
   const qc = useQueryClient();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -29,8 +28,8 @@ function NewTestModal({ onClose }: { onClose: (id?: string) => void }) {
 
   const save = useMutation({
     mutationFn: () => api.post('/proficiency', { name, description: description || undefined, testType, startDate, endDate, passingScore }).then((r) => r.data),
-    onSuccess: (d) => { message.success('Test created'); qc.invalidateQueries({ queryKey: ['proficiency'] }); onClose(d.id); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not create test'),
+    onSuccess: (d) => { notify.success('Test created'); qc.invalidateQueries({ queryKey: ['proficiency'] }); onClose(d.id); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not create test'),
   });
 
   return createPortal(
@@ -66,7 +65,6 @@ function Kpi({ label, value, fg = '#0F172A' }: { label: string; value: string | 
 export default function ProficiencyPage() {
   const router = useRouter();
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const { claims } = useAuth();
   const { isEnabled } = useFeatures();
   const enabled = isEnabled('PROFICIENCY_TESTING');
@@ -78,8 +76,8 @@ export default function ProficiencyPage() {
 
   const act = useMutation({
     mutationFn: ({ id, action }: { id: string; action: string }) => api.post(`/proficiency/${id}/${action}`).then((r) => r.data),
-    onSuccess: (_d, v) => { message.success(v.action === 'activate' ? 'Test activated' : v.action === 'close' ? 'Test closed for grading' : 'Test graded'); qc.invalidateQueries({ queryKey: ['proficiency'] }); qc.invalidateQueries({ queryKey: ['proficiency-analytics'] }); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Action failed'),
+    onSuccess: (_d, v) => { notify.success(v.action === 'activate' ? 'Test activated' : v.action === 'close' ? 'Test closed for grading' : 'Test graded'); qc.invalidateQueries({ queryKey: ['proficiency'] }); qc.invalidateQueries({ queryKey: ['proficiency-analytics'] }); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Action failed'),
   });
 
   if (!enabled) {

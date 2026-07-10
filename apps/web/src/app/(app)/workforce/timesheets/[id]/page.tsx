@@ -8,18 +8,21 @@ import { api } from '@/lib/api';
 import { FeatureGate } from '@/components/FeatureGate';
 import { fmtDate, fmtTime, SHIFT_CHIP } from '@/lib/workforce';
 import { Card, Button, TableEmpty } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const STATUS: Record<string, { bg: string; fg: string }> = {
   Draft: { bg: '#F1F5F9', fg: '#475569' }, Submitted: { bg: '#E0F2FE', fg: '#0284C7' }, UnderReview: { bg: '#EEF2FF', fg: '#4F46E5' },
   Approved: { bg: '#DCFCE7', fg: '#16A34A' }, Rejected: { bg: '#FEE2E2', fg: '#DC2626' }, PayrollLocked: { bg: '#F1F5F9', fg: '#334155' },
 };
 
+const TIMESHEET_ACK: Record<string, string> = { submit: 'Timesheet submitted', approve: 'Timesheet approved', reject: 'Timesheet rejected' };
+
 function Detail({ id }: { id: string }) {
   const qc = useQueryClient();
   const { data: ts, isLoading } = useQuery({ queryKey: ['timesheet', id], queryFn: () => api.get(`/workforce/timesheets/${id}`).then((r) => r.data) });
   const act = useMutation({
     mutationFn: ({ action, reason }: { action: string; reason?: string }) => api.post(`/workforce/timesheets/${id}/${action}`, reason ? { reason } : {}),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['timesheet', id] }),
+    onSuccess: (_d, { action }) => { qc.invalidateQueries({ queryKey: ['timesheet', id] }); notify.success(TIMESHEET_ACK[action] ?? 'Timesheet updated'); },
   });
 
   if (isLoading || !ts) return <div className="p-8 text-sm text-slate-500">Loading…</div>;

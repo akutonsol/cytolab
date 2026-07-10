@@ -11,6 +11,7 @@ import { api, type Paginated } from '@/lib/api';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { Card, IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 interface Summary { total: number; thisMonth: number; authorized: number; pending: number }
 interface Report {
@@ -49,12 +50,10 @@ function ReportsWorkspace() {
   const [search, setSearch] = useState('');
   const [formFilter, setFormFilter] = useState<'all' | 'Gynecology' | 'NonGynecology'>('all');
   const [dateFilter, setDateFilter] = useState<'all' | 'week' | 'month'>('all');
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const [releaseOpen, setReleaseOpen] = useState(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
 
-  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3200); };
 
   const { data: summary } = useQuery<Summary>({ queryKey: ['reports-summary'], queryFn: () => api.get('/reports/summary').then((r) => r.data) });
 
@@ -92,7 +91,7 @@ function ReportsWorkspace() {
       const res = await api.get(`/report/pdf/${recordId}`, { responseType: 'blob' });
       const url = URL.createObjectURL(res.data);
       if (win) win.location.href = url; else window.open(url, '_blank');
-    } catch { win?.close(); notify('err', 'Could not open PDF'); }
+    } catch { win?.close(); notify.error('Could not open PDF'); }
   };
   const downloadPdf = async (recordId: string, identifier: string) => {
     try {
@@ -101,7 +100,7 @@ function ReportsWorkspace() {
       const a = document.createElement('a');
       a.href = url; a.download = `report-${identifier}.pdf`; a.click();
       URL.revokeObjectURL(url);
-    } catch { notify('err', 'Could not download PDF'); }
+    } catch { notify.error('Could not download PDF'); }
   };
 
   // ?recordId= — open the release modal if no report yet, else highlight the row.
@@ -248,18 +247,16 @@ function ReportsWorkspace() {
           onClose={() => { setReleaseOpen(false); clearParam(); }}
           onReleased={() => {
             setReleaseOpen(false);
-            notify('ok', 'Report released successfully');
+            notify.success('Report released successfully');
             reset(); // reload the infinite-scroll list from page 1
             qc.invalidateQueries({ queryKey: ['reports-summary'] });
             clearParam();
           }}
-          onError={(m) => notify('err', m)}
+          onError={(m) => notify.error(m)}
         />
       )}
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[110] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>{toast.msg}</div>
-      )}
+      
     </div>
   );
 }

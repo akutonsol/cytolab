@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertTriangle, ClipboardList, Clock, Users2 } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -13,6 +12,7 @@ import {
   type AssignmentHistoryRow, type QueueRecord, type TatPriority, type WorkloadUser,
 } from '@/lib/workload';
 import { EmptyState } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 function PriorityBadge({ p }: { p: TatPriority }) {
   const m = PRIORITY_META[p];
@@ -51,7 +51,6 @@ function Avatar({ name, initials, size = 46 }: { name: string; initials: string;
 export default function WorkloadPage() {
   const router = useRouter();
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const { claims, can } = useAuth();
   const { isEnabled } = useFeatures();
   const enabled = isEnabled('CASE_ASSIGNMENT');
@@ -82,13 +81,13 @@ export default function WorkloadPage() {
   };
   const assign = useMutation({
     mutationFn: ({ recordId, userId }: { recordId: string; userId: string }) => api.patch(`/records/${recordId}/assign`, { assignedToId: userId }),
-    onSuccess: () => { message.success('Case assigned'); invalidate(); },
-    onError: () => message.error('Assignment failed'),
+    onSuccess: () => { notify.success('Case assigned'); invalidate(); },
+    onError: () => notify.error('Assignment failed'),
   });
   const bulkAssign = useMutation({
     mutationFn: ({ recordIds, userId }: { recordIds: string[]; userId: string }) => api.patch('/records/bulk-assign', { recordIds, assignedToId: userId }),
-    onSuccess: (r: any) => { message.success(`${r.data.assigned} cases assigned`); setSelected(new Set()); setBulkUser(''); invalidate(); },
-    onError: () => message.error('Bulk assignment failed'),
+    onSuccess: (r: any) => { notify.success(`${r.data.assigned} cases assigned`); setSelected(new Set()); setBulkUser(''); invalidate(); },
+    onError: () => notify.error('Bulk assignment failed'),
   });
 
   const toggle = (id: string) => setSelected((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });

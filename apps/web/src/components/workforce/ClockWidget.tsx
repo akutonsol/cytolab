@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useMyEmployee, greeting, fmtTime, empName, SHIFT_CHIP } from '@/lib/workforce';
 import { Button } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 function useNow(intervalMs = 1000) {
   const [now, setNow] = useState(() => new Date());
@@ -37,6 +38,8 @@ const to12h = (hm?: string | null) => {
 const mondayOf = (d: Date) => { const x = new Date(d); const day = (x.getDay() + 6) % 7; x.setDate(x.getDate() - day); x.setHours(0, 0, 0, 0); return x; };
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
+const CLOCK_ACK: Record<string, string> = { ClockIn: 'Clocked in', ClockOut: 'Clocked out', BreakStart: 'Break started', BreakEnd: 'Break ended' };
+
 export function ClockWidget({ compact = false, nav = false }: { compact?: boolean; nav?: boolean }) {
   const now = useNow();
   const qc = useQueryClient();
@@ -63,7 +66,7 @@ export function ClockWidget({ compact = false, nav = false }: { compact?: boolea
 
   const clock = useMutation({
     mutationFn: (type: string) => api.post('/workforce/clock', { employeeId: employee!.id, type, method: 'Desktop' }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['clock-status', employee?.id] }); qc.invalidateQueries({ queryKey: ['attendance-today'] }); },
+    onSuccess: (_d, type) => { qc.invalidateQueries({ queryKey: ['clock-status', employee?.id] }); qc.invalidateQueries({ queryKey: ['attendance-today'] }); notify.success(CLOCK_ACK[type] ?? 'Recorded'); },
   });
 
   if (isLoading) return nav ? null : <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm text-sm text-slate-500">Loading…</div>;

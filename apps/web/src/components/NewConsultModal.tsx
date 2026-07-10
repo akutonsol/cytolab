@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Eye, ShieldCheck, X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { URGENCY_META, type ConsultPrefill, type ConsultUrgency } from '@/lib/teleconsult';
 import { IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 const ta = 'w-full rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 text-[14px] outline-none focus:border-[#4F46E5]';
@@ -15,7 +15,6 @@ const lbl = 'mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[
 
 export function NewConsultModal({ recordId: fixedRecordId, onClose, onCreated }: { recordId?: string; onClose: () => void; onCreated?: (id: string) => void }) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [recordId, setRecordId] = useState(fixedRecordId ?? '');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -44,8 +43,8 @@ export function NewConsultModal({ recordId: fixedRecordId, onClose, onCreated }:
       clinicalSummary, specificQuestion, urgency, dueDate: dueDate || undefined,
       sharedNarrative, sharedBethesda, sharedImages,
     }).then((r) => r.data),
-    onSuccess: (c) => { message.success('Consultation request sent'); ['teleconsult', 'consult-analytics'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); onCreated?.(c.id); onClose(); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not send request'),
+    onSuccess: (c) => { notify.success('Consultation request sent'); ['teleconsult', 'consult-analytics'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); onCreated?.(c.id); onClose(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not send request'),
   });
 
   const valid = recordId && name && email && clinicalSummary && specificQuestion;

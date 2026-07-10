@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { SLIDE_FORMATS } from '@/lib/wsi';
 import { IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 
@@ -20,7 +20,6 @@ interface Props {
 
 export function AddSlideModal({ recordId: fixedRecordId, onClose, onSaved }: Props) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [recordId, setRecordId] = useState(fixedRecordId ?? '');
   const [slideUrl, setSlideUrl] = useState('');
   const [format, setFormat] = useState('image');
@@ -42,12 +41,12 @@ export function AddSlideModal({ recordId: fixedRecordId, onClose, onSaved }: Pro
       scanner: scanner || undefined,
     }).then((r) => r.data),
     onSuccess: (slide) => {
-      message.success('Slide added');
+      notify.success('Slide added');
       ['wsi-slides', 'wsi-summary', 'wsi-record'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
       onSaved?.(slide.id);
       onClose();
     },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not add slide'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not add slide'),
   });
 
   return createPortal(

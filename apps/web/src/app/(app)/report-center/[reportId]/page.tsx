@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Download, Printer } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import {
   Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
@@ -12,6 +11,7 @@ import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
 import { donutColor, fmtValue, getPath, reportById, toCsv } from '@/lib/report-center';
 import { Card, TableEmpty } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const STATUS_COLOR: Record<string, { fg: string; bg: string }> = {
@@ -23,7 +23,6 @@ const STATUS_COLOR: Record<string, { fg: string; bg: string }> = {
 export default function ReportRunnerPage() {
   const { reportId } = useParams<{ reportId: string }>();
   const router = useRouter();
-  const { message } = AntdApp.useApp();
   const { isEnabled } = useFeatures();
   const def = reportById(reportId);
 
@@ -43,11 +42,11 @@ export default function ReportRunnerPage() {
   const runReport = () => setApplied({ dateFrom, dateTo });
   const exportCsv = () => {
     const csv = toCsv(def, data);
-    if (!csv) { message.info('Nothing to export.'); return; }
+    if (!csv) { notify.info('Nothing to export.'); return; }
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `${def.id}.csv`; a.click(); URL.revokeObjectURL(url);
-    message.success('CSV downloaded');
+    notify.success('CSV downloaded');
   };
 
   const tableRows: any[] = def.table ? (getPath(data, def.table.rowsPath) ?? []) : [];

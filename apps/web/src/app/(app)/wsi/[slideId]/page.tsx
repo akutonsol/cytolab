@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, MapPin, Plus, Trash2 } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
 import { WSIViewer } from '@/components/WSIViewer';
 import { shortDate, type DigitalSlide } from '@/lib/wsi';
 import { useAuth } from '@/lib/auth';
+import { notify } from '@/lib/notify';
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
@@ -25,7 +25,6 @@ export default function SlideViewerPage() {
   const router = useRouter();
   const search = useSearchParams();
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const { isEnabled } = useFeatures();
   const { can } = useAuth();
   const canEdit = can('record:change');
@@ -42,13 +41,13 @@ export default function SlideViewerPage() {
 
   const addAnn = useMutation({
     mutationFn: (v: { x: number; y: number; color: string }) => api.post(`/wsi/${slideId}/annotations`, { x: v.x, y: v.y, color: v.color, label: `Annotation ${(slide?.annotations.length ?? 0) + 1}` }).then((r) => r.data),
-    onSuccess: () => { message.success('Annotation added'); qc.invalidateQueries({ queryKey: ['wsi-slide', slideId] }); qc.invalidateQueries({ queryKey: ['wsi-summary'] }); },
-    onError: () => message.error('Could not add annotation'),
+    onSuccess: () => { notify.success('Annotation added'); qc.invalidateQueries({ queryKey: ['wsi-slide', slideId] }); qc.invalidateQueries({ queryKey: ['wsi-summary'] }); },
+    onError: () => notify.error('Could not add annotation'),
   });
   const delAnn = useMutation({
     mutationFn: (id: string) => api.delete(`/wsi/annotations/${id}`),
-    onSuccess: () => { message.success('Annotation removed'); qc.invalidateQueries({ queryKey: ['wsi-slide', slideId] }); qc.invalidateQueries({ queryKey: ['wsi-summary'] }); },
-    onError: () => message.error('Could not remove annotation'),
+    onSuccess: () => { notify.success('Annotation removed'); qc.invalidateQueries({ queryKey: ['wsi-slide', slideId] }); qc.invalidateQueries({ queryKey: ['wsi-summary'] }); },
+    onError: () => notify.error('Could not remove annotation'),
   });
 
   if (!isEnabled('WSI_VIEWER')) {

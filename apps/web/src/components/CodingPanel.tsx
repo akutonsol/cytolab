@@ -3,13 +3,13 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, Plus, Search, Sparkles, Trash2, X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import {
   CODING_TYPES, SYSTEM_META, type CodeSystem, type CodingType, type MedicalCode, type RecordCoding, type Suggestion,
 } from '@/lib/coding';
 import { IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 function SystemBadge({ system }: { system: CodeSystem }) {
   const m = SYSTEM_META[system];
@@ -20,7 +20,6 @@ interface Meta { labNo?: string; patientInitials?: string; specimenType?: string
 
 export function CodingPanel({ recordId, meta, onClose }: { recordId: string; meta?: Meta; onClose: () => void }) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [search, setSearch] = useState('');
   const [addType, setAddType] = useState<CodingType>('Diagnosis');
 
@@ -32,13 +31,13 @@ export function CodingPanel({ recordId, meta, onClose }: { recordId: string; met
 
   const assign = useMutation({
     mutationFn: (v: { codeId: string; codeType: CodingType }) => api.post(`/coding/record/${recordId}`, v).then((r) => r.data),
-    onSuccess: () => { message.success('Code assigned'); invalidate(); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not assign code'),
+    onSuccess: () => { notify.success('Code assigned'); invalidate(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not assign code'),
   });
   const remove = useMutation({
     mutationFn: (codeId: string) => api.delete(`/coding/record/${recordId}/code/${codeId}`).then((r) => r.data),
-    onSuccess: () => { message.success('Code removed'); invalidate(); },
-    onError: () => message.error('Could not remove code'),
+    onSuccess: () => { notify.success('Code removed'); invalidate(); },
+    onError: () => notify.error('Could not remove code'),
   });
 
   const assignedIds = new Set(assigned.map((a) => a.code.id));

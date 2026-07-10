@@ -55,10 +55,47 @@ function useReducedMotion() {
   return reduced;
 }
 
-/** antd's `message` must come from App.useApp() to inherit theme + context. */
+/**
+ * antd's `message` must come from App.useApp() to inherit theme + context.
+ *
+ * This bridge also owns two things antd does not give us:
+ *
+ *   1. aria-live POLARITY. antd renders one container for every message and marks it
+ *      `aria-live="polite"`. Polite is right for a receipt ("Saved") and wrong for a
+ *      failure the user must act on. We flip the container to `assertive` while an error
+ *      is on screen and back to `polite` when it clears, so a success never interrupts
+ *      and an error never waits its turn.
+ *
+ *   2. Keyboard dismiss. antd toasts are mouse-dismissable only. Escape clears them.
+ *      Focus is untouched: the toasts are never focused, so nothing to restore.
+ */
 function NotifierBridge() {
   const { message } = AntdApp.useApp();
   useEffect(() => setNotifier(message), [message]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') notify.dismissAll();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  useEffect(() => {
+    const sync = () => {
+      const container = document.querySelector<HTMLElement>('.ant-message');
+      if (!container) return;
+      const hasError = !!container.querySelector('.ant-message-error');
+      container.setAttribute('aria-live', hasError ? 'assertive' : 'polite');
+      // `atomic=false` so a new notice is announced on its own, not the whole stack again.
+      container.setAttribute('aria-atomic', 'false');
+    };
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, { childList: true, subtree: true });
+    sync();
+    return () => observer.disconnect();
+  }, []);
+
   return null;
 }
 

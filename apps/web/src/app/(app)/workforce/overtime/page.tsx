@@ -10,6 +10,7 @@ import { useEmployees, empName, fmtDate, fmtHours, fmtMultiplier, WF_STATUS } fr
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { Card, Button, Th, Td, IconAction, TableEmpty } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
@@ -51,7 +52,7 @@ function CalculateModal({ onClose }: { onClose: () => void }) {
         </div>
         {result && <div className="mb-3 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">Created / updated <span className="font-semibold text-charcoal-heading">{result.daysWithOvertime}</span> overtime day(s).</div>}
         {err && <div className="mb-2 text-sm text-error">{err}</div>}
-        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>{result ? 'Close' : 'Cancel'}</Button><Button onClick={() => { setErr(''); calc.mutate(); }} disabled={!employeeId || calc.isPending}  style={{ opacity: !employeeId || calc.isPending ? 0.5 : 1 }}>{calc.isPending ? 'Calculating…' : 'Calculate'}</Button></div>
+        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>{result ? 'Close' : 'Cancel'}</Button><Button loading={calc.isPending} onClick={() => { setErr(''); calc.mutate(); }} disabled={!employeeId || calc.isPending}  style={{ opacity: !employeeId || calc.isPending ? 0.5 : 1 }}>Calculate</Button></div>
       </div>
     </div>
   );
@@ -96,7 +97,7 @@ function RuleModal({ onClose }: { onClose: () => void }) {
           <span className="text-sm text-slate-700">Requires approval</span>
         </label>
         {err && <div className="mb-2 text-sm text-error">{err}</div>}
-        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={() => { setErr(''); create.mutate(); }} disabled={!name.trim() || create.isPending}  style={{ opacity: !name.trim() || create.isPending ? 0.5 : 1 }}>{create.isPending ? 'Saving…' : 'Add Rule'}</Button></div>
+        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={create.isPending} onClick={() => { setErr(''); create.mutate(); }} disabled={!name.trim() || create.isPending}  style={{ opacity: !name.trim() || create.isPending ? 0.5 : 1 }}>Add Rule</Button></div>
       </div>
     </div>
   );
@@ -136,8 +137,8 @@ function OvertimePage() {
   });
 
   const invalidate = () => { qc.invalidateQueries({ queryKey: ['overtime-records'] }); qc.invalidateQueries({ queryKey: ['wf-notif-unread'] }); };
-  const approve = useMutation({ mutationFn: (id: string) => api.patch(`/workforce/overtime/records/${id}/approve`), onSuccess: invalidate });
-  const reject = useMutation({ mutationFn: (id: string) => api.patch(`/workforce/overtime/records/${id}/reject`), onSuccess: invalidate });
+  const approve = useMutation({ mutationFn: (id: string) => api.patch(`/workforce/overtime/records/${id}/approve`), onSuccess: () => { invalidate(); notify.success('Overtime approved'); } });
+  const reject = useMutation({ mutationFn: (id: string) => api.patch(`/workforce/overtime/records/${id}/reject`), onSuccess: () => { invalidate(); notify.success('Overtime rejected'); } });
 
   return (
     <div className="w-full">

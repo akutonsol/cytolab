@@ -10,6 +10,7 @@ import { useEmployees, empName, fmtHours } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { Card, Button, Th, Td, TableEmpty } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
@@ -47,7 +48,6 @@ function LogMetric() {
   const [reportsCompleted, setReports] = useState('0');
   const [averageTATMinutes, setTat] = useState('0');
   const [qualityScore, setQuality] = useState(80);
-  const [msg, setMsg] = useState('');
 
   const save = useMutation({
     mutationFn: () => api.post('/workforce/productivity/metrics', {
@@ -58,13 +58,12 @@ function LogMetric() {
       qualityScore,
     }),
     onSuccess: () => {
-      setMsg('Metric saved.');
       qc.invalidateQueries({ queryKey: ['prod-summary'] });
       qc.invalidateQueries({ queryKey: ['prod-leaderboard'] });
       qc.invalidateQueries({ queryKey: ['prod-benchmarks'] });
-      setTimeout(() => setMsg(''), 2500);
+      notify.success('Metric saved');
     },
-    onError: (e: any) => setMsg(e?.response?.data?.message ?? 'Failed to save'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Failed to save'),
   });
 
   return (
@@ -93,8 +92,7 @@ function LogMetric() {
             </div>
           </div>
           <div className="mt-4 flex items-center justify-end gap-3">
-            {msg && <span className="text-sm text-secondary">{msg}</span>}
-            <Button onClick={() => save.mutate()} disabled={!employeeId || save.isPending}  style={{ opacity: !employeeId || save.isPending ? 0.5 : 1 }}>{save.isPending ? 'Saving…' : 'Save Metric'}</Button>
+            <Button loading={save.isPending} onClick={() => save.mutate()} disabled={!employeeId || save.isPending}  style={{ opacity: !employeeId || save.isPending ? 0.5 : 1 }}>Save Metric</Button>
           </div>
         </div>
       )}

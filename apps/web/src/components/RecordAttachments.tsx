@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { Download, Loader2, Paperclip, Plus, Trash2 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { notify } from '@/lib/notify';
 
 interface Attachment {
   id: string;
@@ -33,7 +34,7 @@ export function RecordAttachments({ recordId }: { recordId: string }) {
 
   const del = useMutation({
     mutationFn: (id: string) => api.delete(`/files/${id}`),
-    onSuccess: refetch,
+    onSuccess: () => { refetch(); notify.success('Attachment removed'); },
   });
 
   const onPick = async (list: FileList | null) => {

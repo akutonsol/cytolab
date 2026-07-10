@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { LifeBuoy, X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 // Staff-facing "Report an Issue" surface. Any authenticated user can submit a
 // support ticket here — it POSTs /system/support/tickets with their auth token
@@ -38,7 +38,6 @@ export function ReportIssueButton({ className }: { className?: string }) {
 }
 
 function ReportIssueModal({ onClose }: { onClose: () => void }) {
-  const { message } = AntdApp.useApp();
   const [v, setV] = useState({ title: '', category: 'BUG', priority: 'MEDIUM', description: '' });
   const m = useMutation({
     mutationFn: () =>
@@ -49,10 +48,10 @@ function ReportIssueModal({ onClose }: { onClose: () => void }) {
         description: v.description.trim(),
       }),
     onSuccess: (r) => {
-      message.success(`Ticket ${(r.data as { ticketNumber?: string })?.ticketNumber ?? ''} submitted — our team will follow up.`);
+      notify.success(`Ticket ${(r.data as { ticketNumber?: string })?.ticketNumber ?? ''} submitted — our team will follow up.`);
       onClose();
     },
-    onError: () => message.error('Could not submit your ticket — please try again.'),
+    onError: () => notify.error('Could not submit your ticket — please try again.'),
   });
 
   // Portal to <body>: the trigger lives in the frosted top nav, whose

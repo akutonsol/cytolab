@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { ClientSelect } from '@/components/ClientSelect';
 import { Button, IconAction, TableEmpty } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 // The six folder swatches (keys mirror the backend CABINET_COLORS). Orange here is
 // only a user-chosen folder colour swatch — never used for a status/accent.
@@ -43,8 +44,6 @@ function StatusBadge({ status }: { status: string }) {
 export default function CabinetsPage() {
   const router = useRouter();
   const qc = useQueryClient();
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3000); };
   const [selectedId, setSelectedId] = useState<string>();
   const [surname, setSurname] = useState<string>();
   const [formType, setFormType] = useState<string>();
@@ -261,16 +260,10 @@ export default function CabinetsPage() {
       <CabinetFormModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onCreated={(c) => { qc.invalidateQueries({ queryKey: ['cabinets'] }); setSelectedId(c.id); notify('ok', 'Folder created'); }}
-        notify={notify}
+        onCreated={(c) => { qc.invalidateQueries({ queryKey: ['cabinets'] }); setSelectedId(c.id); notify.success('Folder created'); }}
       />
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 font-label-md text-label-md text-white shadow-lg"
-          style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>
-          {toast.msg}
-        </div>
-      )}
+      
     </div>
   );
 }
@@ -325,7 +318,7 @@ function FilterSelect({ value, onChange, placeholder, options }: { value?: strin
   );
 }
 
-function CabinetFormModal({ open, onClose, onCreated, notify }: { open: boolean; onClose: () => void; onCreated: (c: Cabinet) => void; notify: (type: 'ok' | 'err', msg: string) => void }) {
+function CabinetFormModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (c: Cabinet) => void; }) {
   const [label, setLabel] = useState('');
   const [clientId, setClientId] = useState<string | undefined>();
   const [color, setColor] = useState('blue');
@@ -334,7 +327,7 @@ function CabinetFormModal({ open, onClose, onCreated, notify }: { open: boolean;
   const save = useMutation({
     mutationFn: () => api.post('/cabinet/create', { label, color, clientId }).then((r) => r.data),
     onSuccess: (c: Cabinet) => { onCreated(c); reset(); onClose(); },
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Could not create folder'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not create folder'),
   });
 
   if (!open) return null;

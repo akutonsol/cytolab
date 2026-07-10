@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { CheckCircle2 } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
 import { CONFIDENCE_LEVELS, DIFFICULTY_META, type ConfidenceLevel, type MyResponse } from '@/lib/proficiency';
+import { notify } from '@/lib/notify';
 
 const inp = 'w-full rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 text-[15px] outline-none focus:border-[#4F46E5]';
 const BETHESDA_OPTIONS = ['', 'NILM', 'ASC-US', 'ASC-H', 'LSIL', 'HSIL', 'SCC', 'AGC', 'Adenocarcinoma', 'Unsatisfactory'];
@@ -16,7 +16,6 @@ export default function RespondPage() {
   const router = useRouter();
   const id = String(useParams().id);
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const { isEnabled } = useFeatures();
   const [idx, setIdx] = useState(0);
   const [diagnosis, setDiagnosis] = useState('');
@@ -42,7 +41,7 @@ export default function RespondPage() {
   const save = useMutation({
     mutationFn: () => api.post(`/proficiency/${id}/respond`, { caseId: current!.id, diagnosis, bethesdaAnswer: bethesdaAnswer || undefined, confidence, notes: notes || undefined }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['proficiency-mine', id] }),
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not save'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not save'),
   });
 
   if (!isEnabled('PROFICIENCY_TESTING')) return <div className="min-h-full pt-6 text-[14px] text-[#475569]" style={{ background: '#F8FAFC' }}>Feature not enabled.</div>;

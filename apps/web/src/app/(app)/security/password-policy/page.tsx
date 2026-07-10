@@ -6,6 +6,7 @@ import { message, Switch } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, SecurityPage } from '@/components/security/ui';
 import { securityApi, type PasswordPolicy } from '@/lib/security';
+import { notify } from '@/lib/notify';
 
 const numInput = 'h-9 w-24 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-400';
 
@@ -29,8 +30,8 @@ export default function PasswordPolicyPage() {
 
   const save = useMutation({
     mutationFn: (body: PasswordPolicy) => securityApi.updatePasswordPolicy(body),
-    onSuccess: () => { message.success('Password policy saved'); qc.invalidateQueries({ queryKey: ['password-policy'] }); },
-    onError: () => message.error('Could not save policy'),
+    onSuccess: () => { notify.success('Password policy saved'); qc.invalidateQueries({ queryKey: ['password-policy'] }); },
+    onError: () => notify.error('Could not save policy'),
   });
 
   if (!form) return <SecurityPage title="Password Policy" icon={<KeySquare size={20} />} back="/security"><div className="py-10 text-center text-slate-500">Loading…</div></SecurityPage>;

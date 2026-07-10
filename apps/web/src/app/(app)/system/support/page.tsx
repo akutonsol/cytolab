@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/auth';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { Card, IconAction, TableEmpty } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 // Stable empty fallback — a fresh [] each render would retrigger the
 // infinite-scroll fetchFn (which depends on the rows array identity).
@@ -93,7 +94,7 @@ export default function SupportPage() {
   const allowed = can('system:health');
   useEffect(() => {
     if (hydrated && claims && !allowed) {
-      message.error('Access denied');
+      notify.error('Access denied');
       router.replace('/dashboard');
     }
   }, [hydrated, claims, allowed, message, router]);
@@ -246,8 +247,8 @@ function NewTicketModal({ users, onClose }: { users: UserLite[]; onClose: () => 
   const [v, setV] = useState({ title: '', description: '', category: 'BUG', priority: 'MEDIUM', assignedToId: '' });
   const m = useMutation({
     mutationFn: () => api.post('/system/support/tickets', { ...v, assignedToId: v.assignedToId || undefined }),
-    onSuccess: () => { message.success('Ticket created'); qc.invalidateQueries({ queryKey: ['support-tickets'] }); qc.invalidateQueries({ queryKey: ['support-stats'] }); onClose(); },
-    onError: () => message.error('Could not create ticket'),
+    onSuccess: () => { notify.success('Ticket created'); qc.invalidateQueries({ queryKey: ['support-tickets'] }); qc.invalidateQueries({ queryKey: ['support-stats'] }); onClose(); },
+    onError: () => notify.error('Could not create ticket'),
   });
   return (
     <Modal title="New Ticket" onClose={onClose}>
@@ -277,13 +278,13 @@ function TicketDetail({ id, users, onClose }: { id: string; users: UserLite[]; o
   const userName = (uid?: string | null) => { const u = users.find((x) => x.id === uid); return u ? `${u.firstName} ${u.lastName}`.trim() : 'Unassigned'; };
 
   const refresh = () => { qc.invalidateQueries({ queryKey: ['support-ticket', id] }); qc.invalidateQueries({ queryKey: ['support-tickets'] }); qc.invalidateQueries({ queryKey: ['support-stats'] }); };
-  const patch = useMutation({ mutationFn: (body: any) => api.patch(`/system/support/tickets/${id}`, body), onSuccess: () => { refresh(); message.success('Updated'); }, onError: () => message.error('Update failed') });
-  const resolve = useMutation({ mutationFn: () => api.patch(`/system/support/tickets/${id}/resolve`, { resolutionNotes: t?.resolutionNotes ?? undefined }), onSuccess: () => { refresh(); message.success('Resolved'); } });
-  const close = useMutation({ mutationFn: () => api.patch(`/system/support/tickets/${id}/close`, {}), onSuccess: () => { refresh(); message.success('Closed'); } });
+  const patch = useMutation({ mutationFn: (body: any) => api.patch(`/system/support/tickets/${id}`, body), onSuccess: () => { refresh(); notify.success('Updated'); }, onError: () => notify.error('Update failed') });
+  const resolve = useMutation({ mutationFn: () => api.patch(`/system/support/tickets/${id}/resolve`, { resolutionNotes: t?.resolutionNotes ?? undefined }), onSuccess: () => { refresh(); notify.success('Resolved'); } });
+  const close = useMutation({ mutationFn: () => api.patch(`/system/support/tickets/${id}/close`, {}), onSuccess: () => { refresh(); notify.success('Closed'); } });
   const addComment = useMutation({
     mutationFn: () => api.post(`/system/support/tickets/${id}/comments`, { body: comment, isInternal: internal }),
     onSuccess: () => { setComment(''); setInternal(false); refresh(); },
-    onError: () => message.error('Could not add comment'),
+    onError: () => notify.error('Could not add comment'),
   });
 
   return (
@@ -370,7 +371,7 @@ function MaintenanceTab() {
   const now = Date.now();
   const upcoming = wins.filter((w) => new Date(w.scheduledAt).getTime() >= now && w.status !== 'CANCELLED' && w.status !== 'COMPLETED');
   const past = wins.filter((w) => !upcoming.includes(w));
-  const cancel = useMutation({ mutationFn: (id: string) => api.delete(`/system/support/maintenance-windows/${id}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ['support-windows'] }); message.success('Cancelled'); } });
+  const cancel = useMutation({ mutationFn: (id: string) => api.delete(`/system/support/maintenance-windows/${id}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ['support-windows'] }); notify.success('Cancelled'); } });
   const winStatus: Record<string, { bg: string; fg: string }> = { SCHEDULED: { bg: '#DBEAFE', fg: '#1D4ED8' }, IN_PROGRESS: { bg: '#EEF2FF', fg: '#4F46E5' }, COMPLETED: { bg: '#DCFCE7', fg: '#166534' }, CANCELLED: { bg: '#F1F5F9', fg: '#475569' } };
 
   return (
@@ -427,8 +428,8 @@ function ScheduleModal({ onClose }: { onClose: () => void }) {
   const [systems, setSystems] = useState<string[]>([]);
   const m = useMutation({
     mutationFn: () => api.post('/system/support/maintenance-windows', { ...v, durationMinutes: Number(v.durationMinutes), scheduledAt: new Date(v.scheduledAt).toISOString(), affectedSystems: systems }),
-    onSuccess: () => { message.success('Maintenance scheduled'); qc.invalidateQueries({ queryKey: ['support-windows'] }); onClose(); },
-    onError: () => message.error('Could not schedule'),
+    onSuccess: () => { notify.success('Maintenance scheduled'); qc.invalidateQueries({ queryKey: ['support-windows'] }); onClose(); },
+    onError: () => notify.error('Could not schedule'),
   });
   const toggle = (s: string) => setSystems((x) => (x.includes(s) ? x.filter((y) => y !== s) : [...x, s]));
   return (
@@ -464,7 +465,7 @@ function AnnouncementsTab() {
   const { message } = AntdApp.useApp();
   const [open, setOpen] = useState(false);
   const { data: list = [] } = useQuery({ queryKey: ['support-announcements'], queryFn: () => api.get<Announcement[]>('/system/support/announcements').then((r) => r.data) });
-  const toggle = useMutation({ mutationFn: (a: Announcement) => api.patch(`/system/support/announcements/${a.id}`, { isActive: !a.isActive }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['support-announcements'] }); message.success('Updated'); } });
+  const toggle = useMutation({ mutationFn: (a: Announcement) => api.patch(`/system/support/announcements/${a.id}`, { isActive: !a.isActive }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['support-announcements'] }); notify.success('Updated'); } });
 
   return (
     <div className="flex flex-col gap-5">
@@ -503,8 +504,8 @@ function NewAnnouncementModal({ onClose }: { onClose: () => void }) {
   const [v, setV] = useState({ title: '', body: '', type: 'INFO', showFrom: '', showUntil: '' });
   const m = useMutation({
     mutationFn: () => api.post('/system/support/announcements', { title: v.title, body: v.body, type: v.type, showFrom: v.showFrom ? new Date(v.showFrom).toISOString() : undefined, showUntil: v.showUntil ? new Date(v.showUntil).toISOString() : undefined }),
-    onSuccess: () => { message.success('Announcement created'); qc.invalidateQueries({ queryKey: ['support-announcements'] }); onClose(); },
-    onError: () => message.error('Could not create'),
+    onSuccess: () => { notify.success('Announcement created'); qc.invalidateQueries({ queryKey: ['support-announcements'] }); onClose(); },
+    onError: () => notify.error('Could not create'),
   });
   const c = ANN_TYPE[v.type] ?? ANN_TYPE.INFO;
   return (

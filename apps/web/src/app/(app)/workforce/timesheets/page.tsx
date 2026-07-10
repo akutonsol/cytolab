@@ -10,6 +10,7 @@ import { useEmployees, empName, fmtDate } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { Card, Button, IconAction, TableEmpty } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 // Stable empty fallback — a fresh [] each render would retrigger the
 // infinite-scroll fetchFn (which depends on the filtered array identity).
@@ -18,6 +19,8 @@ const STATUS: Record<string, { bg: string; fg: string }> = {
   Draft: { bg: '#F1F5F9', fg: '#475569' }, Submitted: { bg: '#E0F2FE', fg: '#0284C7' }, UnderReview: { bg: '#EEF2FF', fg: '#4F46E5' },
   Approved: { bg: '#DCFCE7', fg: '#16A34A' }, Rejected: { bg: '#FEE2E2', fg: '#DC2626' }, PayrollLocked: { bg: '#F1F5F9', fg: '#334155' },
 };
+
+const TIMESHEET_ACK: Record<string, string> = { submit: 'Timesheet submitted', approve: 'Timesheet approved', reject: 'Timesheet rejected' };
 
 function GenerateModal({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
@@ -46,7 +49,7 @@ function GenerateModal({ onClose }: { onClose: () => void }) {
           <div className="flex-1"><label className="mb-1 block text-sm font-medium text-slate-600">Period end</label><input type="date" value={periodEnd} onChange={(e) => setEnd(e.target.value)} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary" /></div>
         </div>
         {err && <div className="mb-2 text-sm text-error">{err}</div>}
-        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={() => gen.mutate()} disabled={!employeeId || gen.isPending}  style={{ opacity: !employeeId || gen.isPending ? 0.5 : 1 }}>{gen.isPending ? 'Generating…' : 'Generate'}</Button></div>
+        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={gen.isPending} onClick={() => gen.mutate()} disabled={!employeeId || gen.isPending}  style={{ opacity: !employeeId || gen.isPending ? 0.5 : 1 }}>Generate</Button></div>
       </div>
     </div>
   );
@@ -61,7 +64,7 @@ function List() {
 
   const act = useMutation({
     mutationFn: ({ id, action, reason }: { id: string; action: string; reason?: string }) => api.post(`/workforce/timesheets/${id}/${action}`, reason ? { reason } : {}),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['timesheets'] }),
+    onSuccess: (_d, { action }) => { qc.invalidateQueries({ queryKey: ['timesheets'] }); notify.success(TIMESHEET_ACK[action] ?? 'Timesheet updated'); },
   });
   const filtered = useMemo(() => rows.filter((r: any) => statusF === 'all' || r.status === statusF), [rows, statusF]);
 

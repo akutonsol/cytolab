@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Brain } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -12,6 +11,7 @@ import { ConfidenceRing } from '@/components/ConfidenceRing';
 import { ReviewScreeningModal } from '@/components/ReviewScreeningModal';
 import { LEVEL_META, SPECIMEN_LABEL, type AIAnalytics, type AIScreening } from '@/lib/ai-screening';
 import { Card, EmptyState } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 
 function Kpi({ label, value, fg = '#0F172A' }: { label: string; value: string; fg?: string }) {
@@ -38,7 +38,6 @@ export default function AIScreeningPage() {
   const enabled = isEnabled('AI_SCREENING');
   const router = useRouter();
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [review, setReview] = useState<AIScreening | null>(null);
 
   const { data: analytics } = useQuery<AIAnalytics>({ queryKey: ['ai-analytics'], queryFn: () => api.get('/ai-screening/analytics').then((r) => r.data), enabled });
@@ -50,8 +49,8 @@ export default function AIScreeningPage() {
       await Promise.all(targets.map((r) => api.post(`/ai-screening/record/${r.recordId}`)));
       return targets.length;
     },
-    onSuccess: (n) => { message.success(`Re-screening ${n} record${n === 1 ? '' : 's'}…`); setTimeout(() => { qc.invalidateQueries({ queryKey: ['ai-queue'] }); qc.invalidateQueries({ queryKey: ['ai-analytics'] }); }, 2500); },
-    onError: () => message.error('Batch screen failed'),
+    onSuccess: (n) => { notify.success(`Re-screening ${n} record${n === 1 ? '' : 's'}…`); setTimeout(() => { qc.invalidateQueries({ queryKey: ['ai-queue'] }); qc.invalidateQueries({ queryKey: ['ai-analytics'] }); }, 2500); },
+    onError: () => notify.error('Batch screen failed'),
   });
 
   if (!enabled) {

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Video } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
@@ -13,6 +12,7 @@ import {
   type Consult, type ConsultAnalytics, type ConsultStatus,
 } from '@/lib/teleconsult';
 import { Card, EmptyState } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const TABS: (ConsultStatus | 'all')[] = ['all', 'Pending', 'Responded', 'Accepted'];
 
@@ -41,7 +41,6 @@ export default function TeleconsultPage() {
   const enabled = isEnabled('TELECONSULTATION');
   const router = useRouter();
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [tab, setTab] = useState<ConsultStatus | 'all'>('all');
   const [newOpen, setNewOpen] = useState(false);
 
@@ -50,8 +49,8 @@ export default function TeleconsultPage() {
 
   const act = useMutation({
     mutationFn: ({ id, ep }: { id: string; ep: string }) => api.post(`/teleconsult/${id}/${ep}`).then((r) => r.data),
-    onSuccess: (_d, v) => { message.success(v.ep === 'accept' ? 'Opinion accepted' : v.ep === 'decline' ? 'Opinion declined' : 'Access link resent'); ['teleconsult', 'consult-analytics'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); },
-    onError: () => message.error('Action failed'),
+    onSuccess: (_d, v) => { notify.success(v.ep === 'accept' ? 'Opinion accepted' : v.ep === 'decline' ? 'Opinion declined' : 'Access link resent'); ['teleconsult', 'consult-analytics'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); },
+    onError: () => notify.error('Action failed'),
   });
 
   if (!enabled) {

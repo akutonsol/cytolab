@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { CORRELATION_RESULTS, HISTOLOGY_SOURCES, RESULT_META, type CorrelationResult, type HistologySource } from '@/lib/correlation';
 import { IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] text-[#0F172A] outline-none focus:border-[#4F46E5]';
 const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -16,7 +16,6 @@ const F = ({ label, children }: { label: string; children: React.ReactNode }) =>
 
 export function AddCorrelationModal({ onClose, defaultPatientId }: { onClose: () => void; defaultPatientId?: string }) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [patientId, setPatientId] = useState(defaultPatientId ?? '');
   const [cytologyRecordId, setCytologyRecordId] = useState('');
   const [cytologyDiagnosis, setCytologyDiagnosis] = useState('');
@@ -57,11 +56,11 @@ export function AddCorrelationModal({ onClose, defaultPatientId }: { onClose: ()
       discordanceReason: isDiscordant ? discordanceReason || undefined : undefined,
     }),
     onSuccess: () => {
-      message.success('Correlation case created');
+      notify.success('Correlation case created');
       ['correlations', 'correlation-analytics', 'correlations-patient'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
       onClose();
     },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not create case'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not create case'),
   });
 
   return createPortal(

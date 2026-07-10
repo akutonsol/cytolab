@@ -10,12 +10,12 @@ import { useAuth } from '@/lib/auth';
 import { useFeatures } from '@/lib/feature-context';
 import { EQUIPMENT_TYPES, type Equipment } from '@/lib/qc';
 import { IconAction, EmptyState } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] text-[#0F172A] outline-none focus:border-[#4F46E5]';
 
 function EquipmentModal({ item, onClose }: { item: Equipment | null; onClose: () => void }) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [name, setName] = useState(item?.name ?? '');
   const [type, setType] = useState(item?.type ?? 'Stainer');
   const [serialNumber, setSerial] = useState(item?.serialNumber ?? '');
@@ -27,8 +27,8 @@ function EquipmentModal({ item, onClose }: { item: Equipment | null; onClose: ()
       const body = { name, type, serialNumber: serialNumber || undefined, lastServiceDate: lastServiceDate || undefined, isActive };
       return item ? api.patch(`/equipment/${item.id}`, body) : api.post('/equipment', body);
     },
-    onSuccess: () => { message.success(item ? 'Equipment updated' : 'Equipment added'); qc.invalidateQueries({ queryKey: ['equipment-list'] }); qc.invalidateQueries({ queryKey: ['qc-equipment'] }); onClose(); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Save failed'),
+    onSuccess: () => { notify.success(item ? 'Equipment updated' : 'Equipment added'); qc.invalidateQueries({ queryKey: ['equipment-list'] }); qc.invalidateQueries({ queryKey: ['qc-equipment'] }); onClose(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Save failed'),
   });
 
   return createPortal(
@@ -62,7 +62,7 @@ export default function EquipmentPage() {
   const { can } = useAuth();
   const { isEnabled } = useFeatures();
   const qc = useQueryClient();
-  const { message, modal } = AntdApp.useApp();
+  const { modal } = AntdApp.useApp();
   const enabled = isEnabled('QC_MODULE');
   const canEdit = can('record:change');
   const [modalItem, setModalItem] = useState<Equipment | null | 'new'>(null);
@@ -70,8 +70,8 @@ export default function EquipmentPage() {
   const { data: list = [] } = useQuery<Equipment[]>({ queryKey: ['equipment-list'], queryFn: () => api.get('/equipment').then((r) => r.data), enabled });
   const del = useMutation({
     mutationFn: (id: string) => api.delete(`/equipment/${id}`),
-    onSuccess: () => { message.success('Equipment deactivated'); qc.invalidateQueries({ queryKey: ['equipment-list'] }); },
-    onError: () => message.error('Delete failed'),
+    onSuccess: () => { notify.success('Equipment deactivated'); qc.invalidateQueries({ queryKey: ['equipment-list'] }); },
+    onError: () => notify.error('Delete failed'),
   });
 
   if (!enabled) {

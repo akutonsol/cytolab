@@ -30,6 +30,7 @@ import { DrawerHeader, DrawerFooter, PremiumFormStyles } from '@/components/Draw
 import { DraftRestoreBanner } from '@/components/DraftRestoreBanner';
 import { useAutosaveDraft, loadDraft, clearDraft, type Draft } from '@/lib/session-drafts';
 import { encodeForm, decodeForm } from '@/lib/form-draft';
+import { notify } from '@/lib/notify';
 
 // Specimen type multi-select rendered as dark pill chips (legacy form language).
 // Integrates with Form.Item via the injected value/onChange props.
@@ -71,7 +72,7 @@ interface Props {
 }
 
 export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
-  const { message, modal } = App.useApp();
+  const { modal } = App.useApp();
   const qc = useQueryClient();
   const [form] = Form.useForm();
   const isGyn = formType === 'Gynecology';
@@ -246,23 +247,23 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
       return created;
     },
     onSuccess: (_r, opts) => {
-      message.success(isEdit ? 'Record updated' : opts.submit ? 'Record submitted to Cytolab' : 'Record saved');
+      notify.success(isEdit ? 'Record updated' : opts.submit ? 'Record submitted to Cytolab' : 'Record saved');
       if (draftKey) clearDraft(draftKey); // saved for real — drop the local draft
       qc.invalidateQueries({ queryKey: ['records'] });
       if (isEdit) qc.invalidateQueries({ queryKey: ['record', recordId] });
       onClose();
     },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Save failed'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Save failed'),
   });
 
   const del = useMutation({
     mutationFn: () => api.delete(`/specimen/delete/${recordId}`),
     onSuccess: () => {
-      message.success('Record deleted');
+      notify.success('Record deleted');
       qc.invalidateQueries({ queryKey: ['records'] });
       onClose();
     },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Delete failed'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Delete failed'),
   });
 
   const submitForm = (submit: boolean) =>

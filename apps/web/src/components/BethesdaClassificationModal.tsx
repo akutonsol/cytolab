@@ -13,6 +13,7 @@ import {
 } from '@/lib/bethesda';
 import { DictationButton } from './DictationButton';
 import { Button, IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 interface Props {
   open: boolean;
@@ -26,7 +27,6 @@ const empty: BethesdaSelections = { specimenAdequacy: 'Satisfactory', organisms:
 
 export function BethesdaClassificationModal({ open, onClose, recordId, onApply }: Props) {
   const [s, setS] = useState<BethesdaSelections>({ ...empty });
-  const [toast, setToast] = useState<string | null>(null);
   const set = <K extends keyof BethesdaSelections>(k: K, v: BethesdaSelections[K]) => setS((p) => ({ ...p, [k]: v }));
   // Append dictated text to a free-text field (functional update avoids stale reads on rapid chunks).
   const dictate = (k: 'unsatisfactoryReason' | 'glandularSubtype' | 'otherMalignancy' | 'recommendationNotes', text: string) =>
@@ -74,7 +74,7 @@ export function BethesdaClassificationModal({ open, onClose, recordId, onApply }
   const doSave = async (apply: boolean) => {
     const res = await save.mutateAsync();
     if (apply && onApply) { onApply(res.generatedNarrative ?? narrative, res.shortCode); onClose(); return; }
-    setToast('Classification saved'); setTimeout(() => setToast(null), 2500);
+    notify.success('Classification saved');
   };
 
   if (!open || typeof document === 'undefined') return null;
@@ -197,7 +197,7 @@ export function BethesdaClassificationModal({ open, onClose, recordId, onApply }
         </div>
       </div>
 
-      {toast && <div className="fixed bottom-6 right-6 z-[2200] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: '#16A34A' }}>{toast}</div>}
+      
     </div>,
     document.body,
   );

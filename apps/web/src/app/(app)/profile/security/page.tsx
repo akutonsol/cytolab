@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Badge, BoolPill, Card, SecurityPage, Table, dangerBtn, ghostBtn, primaryBtn } from '@/components/security/ui';
 import { fmtDateTime, relTime, type LoginAttempt, type UserSession } from '@/lib/security';
+import { notify } from '@/lib/notify';
 
 const inputCls = 'h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-400';
 
@@ -28,39 +29,39 @@ export default function ProfileSecurityPage() {
   const startSetup = useMutation({
     mutationFn: () => api.post('/auth/mfa/totp/setup').then((r) => r.data),
     onSuccess: (d) => { setSetup(d); setBackupCodes(null); },
-    onError: () => message.error('Could not start MFA setup'),
+    onError: () => notify.error('Could not start MFA setup'),
   });
   const verifySetup = useMutation({
     mutationFn: () => api.post('/auth/mfa/totp/verify', { code: code.trim() }).then((r) => r.data),
     onSuccess: (d: { backupCodes: string[] }) => {
       setBackupCodes(d.backupCodes); setSetup(null); setCode('');
-      message.success('Two-factor authentication enabled');
+      notify.success('Two-factor authentication enabled');
       qc.invalidateQueries({ queryKey: ['my-mfa'] });
     },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Invalid code'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Invalid code'),
   });
   const disableTotp = useMutation({
     mutationFn: (c: string) => api.post('/auth/mfa/totp/disable', { code: c }).then((r) => r.data),
-    onSuccess: () => { message.success('TOTP disabled'); qc.invalidateQueries({ queryKey: ['my-mfa'] }); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Invalid code'),
+    onSuccess: () => { notify.success('TOTP disabled'); qc.invalidateQueries({ queryKey: ['my-mfa'] }); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Invalid code'),
   });
   const [disableCode, setDisableCode] = useState('');
 
   // ── Sessions ────────────────────────────────────────────────────────────────
   const terminateOthers = useMutation({
     mutationFn: () => api.post('/auth/profile/sessions/terminate-others').then((r) => r.data),
-    onSuccess: () => { message.success('Other sessions signed out'); qc.invalidateQueries({ queryKey: ['my-sessions'] }); },
-    onError: () => message.error('Could not terminate sessions'),
+    onSuccess: () => { notify.success('Other sessions signed out'); qc.invalidateQueries({ queryKey: ['my-sessions'] }); },
+    onError: () => notify.error('Could not terminate sessions'),
   });
 
   // ── Password change ──────────────────────────────────────────────────────────
   const [pw, setPw] = useState({ current: '', next: '', confirm: '' });
   const changePw = useMutation({
     mutationFn: () => api.post('/auth/change-password', { currentPassword: pw.current, newPassword: pw.next }).then((r) => r.data),
-    onSuccess: () => { message.success('Password changed'); setPw({ current: '', next: '', confirm: '' }); },
+    onSuccess: () => { notify.success('Password changed'); setPw({ current: '', next: '', confirm: '' }); },
     onError: (e: any) => {
       const m = e?.response?.data?.message;
-      message.error(Array.isArray(m) ? m.join(' ') : m ?? 'Could not change password');
+      notify.error(Array.isArray(m) ? m.join(' ') : m ?? 'Could not change password');
     },
   });
   const pwMismatch = pw.next.length > 0 && pw.next !== pw.confirm;

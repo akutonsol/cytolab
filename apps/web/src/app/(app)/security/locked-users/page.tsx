@@ -5,6 +5,7 @@ import { message, Popconfirm } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge, SecurityPage, Table, dangerBtn, ghostBtn } from '@/components/security/ui';
 import { fmtDateTime, fullName, securityApi, type LockedUser } from '@/lib/security';
+import { notify } from '@/lib/notify';
 
 export default function LockedUsersPage() {
   const qc = useQueryClient();
@@ -13,13 +14,13 @@ export default function LockedUsersPage() {
 
   const unlock = useMutation({
     mutationFn: (id: string) => securityApi.unlockUser(id),
-    onSuccess: () => { message.success('Account unlocked'); invalidate(); },
-    onError: () => message.error('Could not unlock'),
+    onSuccess: () => { notify.success('Account unlocked'); invalidate(); },
+    onError: () => notify.error('Could not unlock'),
   });
   const forceReset = useMutation({
     mutationFn: (id: string) => securityApi.forceReset(id),
-    onSuccess: () => message.success('Password reset forced — user must set a new password'),
-    onError: () => message.error('Could not force reset'),
+    onSuccess: () => notify.success('Password reset forced — user must set a new password'),
+    onError: () => notify.error('Could not force reset'),
   });
 
   return (

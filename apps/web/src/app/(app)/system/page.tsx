@@ -11,6 +11,7 @@ import { Line, LineChart, ResponsiveContainer } from 'recharts';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Card, Button } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Status = 'ok' | 'warn' | 'error';
@@ -97,11 +98,6 @@ function Dot({ status }: { status: Status }) {
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function SystemHealthPage() {
   const router = useRouter();
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const message = {
-    success: (msg: string) => { setToast({ type: 'ok', msg }); setTimeout(() => setToast(null), 3500); },
-    error: (msg: string) => { setToast({ type: 'err', msg }); setTimeout(() => setToast(null), 3500); },
-  };
   const { can } = useAuth();
   const allowed = can('system:health');
   const qc = useQueryClient();
@@ -117,10 +113,10 @@ export default function SystemHealthPage() {
   const runMaint = useMutation({
     mutationFn: () => api.post('/system/maintenance').then((r) => r.data),
     onSuccess: (d: any) => {
-      message.success(`Maintenance complete — flagged ${d.flagged}, closed ${d.missedClosed} missed, archived ${d.archived}`);
+      notify.success(`Maintenance complete — flagged ${d.flagged}, closed ${d.missedClosed} missed, archived ${d.archived}`);
       qc.invalidateQueries({ queryKey: ['system-health'] });
     },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Maintenance failed'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Maintenance failed'),
   });
 
   // Deep Diagnostics — expensive; runs only on explicit click, result persists in state.
@@ -128,7 +124,7 @@ export default function SystemHealthPage() {
   const deepCheck = useMutation({
     mutationFn: () => api.post('/system/health/deep-check', undefined, { timeout: 60_000 }).then((r) => r.data as DeepCheckResult),
     onSuccess: (d) => setDeepResult(d),
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Deep check failed'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Deep check failed'),
   });
 
   const [lastBackup, setLastBackup] = useState<BackupResult | null>(null);
@@ -136,9 +132,9 @@ export default function SystemHealthPage() {
     mutationFn: () => api.post('/system/backup').then((r) => r.data as BackupResult),
     onSuccess: (d) => {
       setLastBackup(d);
-      message.success(d.skipped ? 'Backup skipped — BACKUP_SHEET_ID not configured' : 'Backup completed successfully');
+      notify.success(d.skipped ? 'Backup skipped — BACKUP_SHEET_ID not configured' : 'Backup completed successfully');
     },
-    onError: () => message.error('Backup failed'),
+    onError: () => notify.error('Backup failed'),
   });
 
   if (!allowed) {
@@ -393,12 +389,7 @@ export default function SystemHealthPage() {
         </>
       )}
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg"
-          style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>
-          {toast.msg}
-        </div>
-      )}
+      
     </div>
   );
 }

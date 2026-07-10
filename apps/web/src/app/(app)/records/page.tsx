@@ -18,6 +18,7 @@ import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import type { FormType } from '@/lib/specimen-types';
 import { Card, Button, IconAction, SkeletonStat, SkeletonRows, SkeletonText } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 interface Rec {
   id: string; labNumber?: string | null; identifier?: string; formType?: string | null; status: string; urgent: boolean;
@@ -172,8 +173,6 @@ export default function SamplesPage() {
   const [labelSel, setLabelSel] = useState<Set<string>>(new Set());
   const [printIds, setPrintIds] = useState<string[] | null>(null);
   const [confirmDel, setConfirmDel] = useState<Rec | null>(null);
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3000); };
 
   const { data, isLoading: recordsLoading } = useQuery({
     queryKey: ['records-all'],
@@ -199,8 +198,8 @@ export default function SamplesPage() {
 
   const del = useMutation({
     mutationFn: (id: string) => api.delete(`/specimen/delete/${id}`),
-    onSuccess: () => { notify('ok', 'Sample deleted'); qc.invalidateQueries({ queryKey: ['records-all'] }); setConfirmDel(null); },
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Could not delete'),
+    onSuccess: () => { notify.success('Sample deleted'); qc.invalidateQueries({ queryKey: ['records-all'] }); setConfirmDel(null); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not delete'),
   });
 
   const showAssignee = isEnabled('CASE_ASSIGNMENT');
@@ -627,7 +626,7 @@ export default function SamplesPage() {
       {drawer && <RecordFormDrawer open onClose={() => { setDrawer(null); qc.invalidateQueries({ queryKey: ['records-all'] }); }} formType={drawer.formType} recordId={drawer.recordId} />}
       {printIds && <PrintLabelsModal recordIds={printIds} onClose={() => setPrintIds(null)} />}
 
-      {toast && <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? C_DONE : 'var(--red-600)' }}>{toast.msg}</div>}
+      
     </div>
   );
 }

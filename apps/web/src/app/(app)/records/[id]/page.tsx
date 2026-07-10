@@ -29,6 +29,7 @@ import { SYSTEM_META, type RecordCoding } from '@/lib/coding';
 import { FhirTransmitModal } from '@/components/FhirTransmitModal';
 import { STATUS_META as FHIR_STATUS_META, type FhirTransmission } from '@/lib/fhir';
 import { SPECIMEN_LABELS, type FormType } from '@/lib/specimen-types';
+import { notify } from '@/lib/notify';
 
 // ─── Status + step maps (zero-orange) ────────────────────────────────────────
 const STATUS: Record<string, { bg: string; fg: string }> = {
@@ -200,7 +201,6 @@ export default function RecordDetailPage() {
   const qc = useQueryClient();
   const id = String(useParams().id);
 
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const [confirm, setConfirm] = useState<{ title: string; desc: string; run: () => void } | null>(null);
   const [drawer, setDrawer] = useState(false);
   const [sheetModal, setSheetModal] = useState(false);
@@ -212,7 +212,6 @@ export default function RecordDetailPage() {
   const [showAllFeatures, setShowAllFeatures] = useState(false);
   const [showAllActivity, setShowAllActivity] = useState(false);
 
-  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3200); };
 
   const { data: record, isLoading } = useQuery<any>({ queryKey: ['record-detail', id], queryFn: () => api.get(`/specimens/${id}`).then((r) => r.data), enabled: !!id });
   const { data: sheetsPage } = useQuery<Paginated<any>>({ queryKey: ['record-sheets', id], queryFn: () => api.get('/resultsheets', { params: { recordId: id } }).then((r) => r.data), enabled: !!id });
@@ -243,16 +242,16 @@ export default function RecordDetailPage() {
   const { data: team = [] } = useQuery<WorkloadUser[]>({ queryKey: ['workload-summary'], enabled: canAssign, queryFn: () => api.get('/workload/summary').then((r) => r.data) });
   const assignMut = useMutation({
     mutationFn: (userId: string | null) => api.patch(`/records/${id}/assign`, { assignedToId: userId }).then((r) => r.data),
-    onSuccess: () => { notify('ok', 'Assignment updated'); refetchAll(); qc.invalidateQueries({ queryKey: ['workload-summary'] }); },
-    onError: () => notify('err', 'Could not update assignment'),
+    onSuccess: () => { notify.success('Assignment updated'); refetchAll(); qc.invalidateQueries({ queryKey: ['workload-summary'] }); },
+    onError: () => notify.error('Could not update assignment'),
   });
 
   const refetchAll = () => { qc.invalidateQueries({ queryKey: ['record-detail', id] }); qc.invalidateQueries({ queryKey: ['record-sheets', id] }); };
 
   const statusMut = useMutation({
     mutationFn: (v: { status: string; notes?: string }) => api.patch(`/specimen/status/${id}`, v).then((r) => r.data),
-    onSuccess: (_d, v) => { notify('ok', `Status updated to ${v.status}`); refetchAll(); },
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Could not update status'),
+    onSuccess: (_d, v) => { notify.success(`Status updated to ${v.status}`); refetchAll(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not update status'),
   });
   const go = (status: string, c?: { title: string; desc: string }) => {
     if (c) setConfirm({ title: c.title, desc: c.desc, run: () => { setConfirm(null); statusMut.mutate({ status }); } });
@@ -661,7 +660,7 @@ export default function RecordDetailPage() {
         </div>
       )}
 
-      {toast && <div className="fixed bottom-6 right-6 z-[110] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>{toast.msg}</div>}
+      
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { jmd, fmtDate } from '@/lib/payroll';
 import { fmtHours, empName } from '@/lib/workforce';
 import { Card, Button, Th, Td, IconAction, TableEmpty } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const periodName = (month: number, year: number) => `${MONTHS[month - 1]} ${year}`;
@@ -55,7 +56,7 @@ function NewPeriodModal({ onClose }: { onClose: () => void }) {
         <label className="mb-1 block text-sm font-medium text-slate-600">Year</label>
         <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="mb-4 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary" />
         {err && <div className="mb-2 text-sm text-error">{err}</div>}
-        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={() => { setErr(''); create.mutate(); }} disabled={create.isPending}>{create.isPending ? 'Creating…' : 'Create'}</Button></div>
+        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={create.isPending} onClick={() => { setErr(''); create.mutate(); }} disabled={create.isPending}>Create</Button></div>
       </div>
     </div>
   );
@@ -150,7 +151,7 @@ export function PayrollEngine() {
   const { data: periods = [] } = useQuery({ queryKey: ['payroll-periods'], queryFn: () => api.get('/workforce/payroll/periods').then((r) => r.data) });
   const process = useMutation({
     mutationFn: (id: string) => api.post(`/workforce/payroll/periods/${id}/process`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['payroll-periods'] }); setConfirm(null); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['payroll-periods'] }); setConfirm(null); notify.success('Payroll period processed'); },
   });
 
   return (
@@ -202,7 +203,7 @@ export function PayrollEngine() {
             <p className="mb-5 text-sm text-secondary">This will calculate payroll for all active employees for <span className="font-semibold text-charcoal-heading">{periodName(confirm.month, confirm.year)}</span>. Continue?</p>
             <div className="flex justify-end gap-2">
               <Button variant="secondary" onClick={() => setConfirm(null)} disabled={process.isPending}>Cancel</Button>
-              <Button onClick={() => process.mutate(confirm.id)} disabled={process.isPending}>{process.isPending ? 'Processing…' : 'Process Payroll'}</Button>
+              <Button loading={process.isPending} onClick={() => process.mutate(confirm.id)} disabled={process.isPending}>Process Payroll</Button>
             </div>
             {process.isError && <div className="mt-2 text-sm text-error">Processing failed — please try again.</div>}
           </div>

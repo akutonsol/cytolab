@@ -36,6 +36,7 @@ import { DrawerHeader, DrawerFooter, PremiumFormStyles } from '@/components/Draw
 import { DraftRestoreBanner } from '@/components/DraftRestoreBanner';
 import { useAutosaveDraft, loadDraft, clearDraft, type Draft } from '@/lib/session-drafts';
 import { encodeForm, decodeForm } from '@/lib/form-draft';
+import { notify } from '@/lib/notify';
 
 export interface PatientRecord {
   id: string;
@@ -74,7 +75,6 @@ interface Props {
 }
 
 export function PatientFormDrawer({ open, onClose, patient, onCreated }: Props) {
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const [form] = Form.useForm();
   const isEdit = !!patient;
@@ -93,8 +93,8 @@ export function PatientFormDrawer({ open, onClose, patient, onCreated }: Props) 
     const file = e.target.files?.[0];
     e.target.value = ''; // allow re-picking the same file
     if (!file) return;
-    if (!file.type.startsWith('image/')) { message.error('Please choose an image file'); return; }
-    if (file.size > 10 * 1024 * 1024) { message.error('Image must be under 10MB'); return; }
+    if (!file.type.startsWith('image/')) { notify.error('Please choose an image file'); return; }
+    if (file.size > 10 * 1024 * 1024) { notify.error('Image must be under 10MB'); return; }
     setUploading(true);
     try {
       const fd = new FormData();
@@ -102,7 +102,7 @@ export function PatientFormDrawer({ open, onClose, patient, onCreated }: Props) 
       const res = await api.post('/files/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       setAvatarUrl((res.data as { storageUrl: string }).storageUrl);
     } catch (err: any) {
-      message.error(err?.response?.data?.message ?? 'Photo upload failed');
+      notify.error(err?.response?.data?.message ?? 'Photo upload failed');
     } finally {
       setUploading(false);
     }
@@ -149,13 +149,13 @@ export function PatientFormDrawer({ open, onClose, patient, onCreated }: Props) 
       return res.data as PatientRecord;
     },
     onSuccess: (saved) => {
-      message.success(isEdit ? 'Patient updated' : 'Patient created');
+      notify.success(isEdit ? 'Patient updated' : 'Patient created');
       if (draftKey) clearDraft(draftKey); // saved for real — drop the local draft
       qc.invalidateQueries({ queryKey: ['patients'] });
       if (!isEdit && onCreated) onCreated(saved);
       onClose();
     },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Save failed'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Save failed'),
   });
 
   const initialClientOption = patient?.client

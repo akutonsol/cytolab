@@ -24,6 +24,7 @@ import { api } from '@/lib/api';
 import { ClientSelect } from '@/components/ClientSelect';
 import { DS } from '@/lib/drawer-styles';
 import { DrawerHeader, PremiumFormStyles } from '@/components/DrawerChrome';
+import { notify } from '@/lib/notify';
 
 interface Props {
   open: boolean;
@@ -33,7 +34,6 @@ interface Props {
 const money = (n?: number) => `$${(Number(n) || 0).toFixed(2)}`;
 
 export function RequisitionFormDrawer({ open, onClose }: Props) {
-  const { message } = App.useApp();
   const qc = useQueryClient();
   const [form] = Form.useForm();
 
@@ -62,11 +62,11 @@ export function RequisitionFormDrawer({ open, onClose }: Props) {
         })),
       }),
     onSuccess: () => {
-      message.success('Requisition created');
+      notify.success('Requisition created');
       qc.invalidateQueries({ queryKey: ['requisitions'] });
       onClose();
     },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Save failed'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Save failed'),
   });
 
   return (

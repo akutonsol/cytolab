@@ -12,6 +12,7 @@ import {
   type FhirEndpoint, type FhirPreview, type FhirStats, type FhirTransmission,
 } from '@/lib/fhir';
 import { Card, EmptyState } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 
 function Kpi({ label, value, fg = '#0F172A' }: { label: string; value: string; fg?: string }) {
@@ -37,20 +38,20 @@ export default function FhirPage() {
   const test = useMutation({
     mutationFn: (id: string) => api.post(`/fhir/endpoints/${id}/test`).then((r) => r.data),
     onSuccess: (r) => { message[r.ok ? 'success' : 'error'](r.ok ? `Connected: ${r.status}` : `Test failed: ${r.status}`); qc.invalidateQueries({ queryKey: ['fhir-endpoints'] }); },
-    onError: () => message.error('Test request failed'),
+    onError: () => notify.error('Test request failed'),
   });
   const retry = useMutation({
     mutationFn: (recordId: string) => api.post(`/fhir/transmit/${recordId}/retry`).then((r) => r.data),
-    onSuccess: () => { message.success('Retransmitted'); invalidate(); },
-    onError: () => message.error('Retry failed'),
+    onSuccess: () => { notify.success('Retransmitted'); invalidate(); },
+    onError: () => notify.error('Retry failed'),
   });
   const transmit = useMutation({
     mutationFn: (v: { recordId: string; endpointId: string }) => api.post(`/fhir/transmit/${v.recordId}`, { endpointId: v.endpointId }).then((r) => r.data),
-    onSuccess: (r) => { message.success(`Transmitted (${r.status})`); invalidate(); },
-    onError: () => message.error('Transmit failed'),
+    onSuccess: (r) => { notify.success(`Transmitted (${r.status})`); invalidate(); },
+    onError: () => notify.error('Transmit failed'),
   });
 
-  const copyJson = () => { if (preview) { navigator.clipboard.writeText(JSON.stringify(preview.diagnosticReport, null, 2)); message.success('FHIR JSON copied'); } };
+  const copyJson = () => { if (preview) { navigator.clipboard.writeText(JSON.stringify(preview.diagnosticReport, null, 2)); notify.success('FHIR JSON copied'); } };
 
   if (!enabled) {
     return (

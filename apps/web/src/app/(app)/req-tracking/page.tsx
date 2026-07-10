@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowRight, PackageSearch, ScanLine, X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -14,6 +13,7 @@ import {
 } from '@/lib/req-tracking';
 import { PrintLabelsModal } from '@/components/PrintLabelsModal';
 import { IconAction, EmptyState } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 function StageBadge({ stage }: { stage: keyof typeof STAGE_META }) {
   const m = STAGE_META[stage];
@@ -23,7 +23,6 @@ function StageBadge({ stage }: { stage: keyof typeof STAGE_META }) {
 // ─── Detail drawer (timeline + stage actions) ────────────────────────────────
 function DetailDrawer({ requisitionId, onClose }: { requisitionId: string; onClose: () => void }) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const { can } = useAuth();
   const canEdit = can('requisition:change');
   const [fileLocation, setFileLocation] = useState('');
@@ -33,8 +32,8 @@ function DetailDrawer({ requisitionId, onClose }: { requisitionId: string; onClo
 
   const act = useMutation({
     mutationFn: ({ endpoint, body }: { endpoint: string; body?: any }) => api.post(`/req-tracking/${requisitionId}/${endpoint}`, body ?? {}).then((r) => r.data),
-    onSuccess: () => { message.success('Stage updated'); ['req-tracking', 'req-tracking-list', 'req-tracking-stats'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); setNotes(''); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Action failed'),
+    onSuccess: () => { notify.success('Stage updated'); ['req-tracking', 'req-tracking-list', 'req-tracking-stats'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); setNotes(''); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Action failed'),
   });
 
   const next = data ? NEXT_ACTION[data.currentStage] : undefined;
@@ -109,7 +108,6 @@ function DetailDrawer({ requisitionId, onClose }: { requisitionId: string; onClo
 // ─── Barcode scanner modal ───────────────────────────────────────────────────
 function ScannerModal({ onClose, onOpenDetail }: { onClose: () => void; onOpenDetail: (id: string) => void }) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState('');
   const [result, setResult] = useState<any>(null);
@@ -118,12 +116,12 @@ function ScannerModal({ onClose, onOpenDetail }: { onClose: () => void; onOpenDe
   const scan = useMutation({
     mutationFn: (v: string) => api.post('/req-tracking/scan', { barcodeValue: v }).then((r) => r.data),
     onSuccess: (r) => setResult(r),
-    onError: () => message.error('Scan failed'),
+    onError: () => notify.error('Scan failed'),
   });
   const advance = useMutation({
     mutationFn: ({ id, endpoint }: { id: string; endpoint: string }) => api.post(`/req-tracking/${id}/${endpoint}`, {}).then((r) => r.data),
-    onSuccess: () => { message.success('Stage advanced'); ['req-tracking-list', 'req-tracking-stats'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); onClose(); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not advance'),
+    onSuccess: () => { notify.success('Stage advanced'); ['req-tracking-list', 'req-tracking-stats'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); onClose(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not advance'),
   });
 
   return createPortal(
@@ -171,7 +169,6 @@ function Kpi({ label, value, fg, bg }: { label: string; value: number; fg: strin
 
 export default function ReqTrackingPage() {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const { can } = useAuth();
   const { isEnabled } = useFeatures();
   const enabled = isEnabled('REQUISITION_TRACKING');
@@ -198,7 +195,7 @@ export default function ReqTrackingPage() {
       // Natural workflow: specimen arrives at bench → offer to print slide labels.
       if (vars.endpoint === 'receive-bench' && labelsEnabled) setBenchPromptReq(vars.id);
     },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not advance'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not advance'),
   });
 
   // On "Yes", resolve the requisition's linked records and open the print modal.
@@ -207,9 +204,9 @@ export default function ReqTrackingPage() {
     try {
       const res = await api.get('/specimens/requisition', { params: { requisitionId } });
       const ids = (res.data?.data ?? []).map((r: any) => r.id).filter(Boolean);
-      if (ids.length === 0) { message.info('No records linked to this requisition yet.'); return; }
+      if (ids.length === 0) { notify.info('No records linked to this requisition yet.'); return; }
       setPrintRecordIds(ids);
-    } catch { message.error('Could not load records for label printing.'); }
+    } catch { notify.error('Could not load records for label printing.'); }
   };
 
   const byStage = useMemo(() => {

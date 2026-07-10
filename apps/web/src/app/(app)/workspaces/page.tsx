@@ -5,6 +5,7 @@ import { Building2, FileText, Layers, MoreHorizontal, Pencil, Plus, Trash2, User
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { Button, IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 interface Workspace {
   id: string;
@@ -33,8 +34,6 @@ export default function WorkspacesPage() {
   const [editing, setEditing] = useState<Workspace | null>(null);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<Workspace | null>(null);
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3200); };
 
   const { data } = useQuery({
     queryKey: ['workspaces'],
@@ -45,8 +44,8 @@ export default function WorkspacesPage() {
 
   const del = useMutation({
     mutationFn: (id: string) => api.delete(`/workspaces/delete/${id}`),
-    onSuccess: () => { notify('ok', 'Workspace deleted'); setConfirm(null); refetch(); },
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Delete failed'),
+    onSuccess: () => { notify.success('Workspace deleted'); setConfirm(null); refetch(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Delete failed'),
   });
 
   const totalUsers = workspaces.reduce((s, w) => s + w._count.users, 0);
@@ -161,8 +160,8 @@ export default function WorkspacesPage() {
         <WorkspaceModal
           workspace={editing}
           onClose={() => setModalOpen(false)}
-          onSaved={() => { setModalOpen(false); refetch(); notify('ok', editing ? 'Workspace updated' : 'Workspace created'); }}
-          onError={(m) => notify('err', m)}
+          onSaved={() => { setModalOpen(false); refetch(); notify.success(editing ? 'Workspace updated' : 'Workspace created'); }}
+          onError={(m) => notify.error(m)}
         />
       )}
 
@@ -187,9 +186,7 @@ export default function WorkspacesPage() {
         </div>
       )}
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>{toast.msg}</div>
-      )}
+      
     </div>
   );
 }
@@ -220,8 +217,8 @@ function WorkspaceModal({ workspace, onClose, onSaved, onError }: { workspace: W
           className="h-11 w-full rounded-xl border border-outline-variant/40 bg-white px-3.5 font-body-sm text-body-sm text-on-surface outline-none transition-colors focus:border-primary" />
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => save.mutate()}>
-            {save.isPending ? 'Saving…' : workspace ? 'Save Changes' : 'Create Workspace'}
+          <Button loading={save.isPending} disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => save.mutate()}>
+            {workspace ? 'Save Changes' : 'Create Workspace'}
           </Button>
         </div>
       </div>

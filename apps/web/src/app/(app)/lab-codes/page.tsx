@@ -10,6 +10,7 @@ import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { useAuth } from '@/lib/auth';
 import { Card, Button, IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 interface LabCode {
   id: string;
@@ -98,8 +99,8 @@ function LabCodeModal({ editing, onClose }: { editing: LabCode | 'new'; onClose:
         {err && <div className="mb-2 text-sm text-error">{err}</div>}
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => save.mutate()} disabled={!code.trim() || save.isPending}  style={{ opacity: !code.trim() || save.isPending ? 0.5 : 1 }}>
-            {save.isPending ? 'Saving…' : 'Save'}
+          <Button loading={save.isPending} onClick={() => save.mutate()} disabled={!code.trim() || save.isPending}  style={{ opacity: !code.trim() || save.isPending ? 0.5 : 1 }}>
+            Save
           </Button>
         </div>
       </div>
@@ -125,7 +126,7 @@ function LabCodesTab() {
 
   const del = useMutation({
     mutationFn: (id: string) => api.delete(`/labcodes/delete/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['labcodes'] }); setConfirmId(null); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['labcodes'] }); setConfirmId(null); notify.success('Lab code deleted'); },
   });
 
   // KPIs (all real; every existing code is treated as Active — no draft/archived concept).
@@ -381,8 +382,8 @@ function CodeSlideOver({ cfg, editing, onClose }: { cfg: typeof CATALOG_CFG[keyo
         </div>
         <div className="flex justify-end gap-2 border-t border-slate-100 px-6 py-4">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => save.mutate()} disabled={!abbr.trim() || save.isPending}  style={{ opacity: !abbr.trim() || save.isPending ? 0.5 : 1 }}>
-            {save.isPending ? 'Saving…' : 'Save'}
+          <Button loading={save.isPending} onClick={() => save.mutate()} disabled={!abbr.trim() || save.isPending}  style={{ opacity: !abbr.trim() || save.isPending ? 0.5 : 1 }}>
+            Save
           </Button>
         </div>
       </div>
@@ -405,7 +406,7 @@ function CodeCatalogTab({ variant }: { variant: 'sheets' | 'findings' }) {
 
   const del = useMutation({
     mutationFn: (id: string) => api.delete(`${cfg.base}/delete/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: [cfg.queryKey] }); setConfirmId(null); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: [cfg.queryKey] }); setConfirmId(null); notify.success('Deleted'); },
   });
 
   const total = rows.length;

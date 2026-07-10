@@ -10,6 +10,7 @@ import { useEmployees, useMyEmployee, empName, fmtDate } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { Card, Button, Th, Td, IconAction, TableEmpty } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
@@ -78,7 +79,7 @@ function NewReviewModal({ onClose }: { onClose: () => void }) {
         <label className="mb-1 block text-sm font-medium text-slate-600">Comments</label>
         <textarea value={comments} onChange={(e) => setComments(e.target.value)} rows={3} className="mb-4 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-primary" />
         {err && <div className="mb-2 text-sm text-error">{err}</div>}
-        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={() => { setErr(''); create.mutate(); }} disabled={!employeeId || !period.trim() || create.isPending}  style={{ opacity: !employeeId || !period.trim() || create.isPending ? 0.5 : 1 }}>{create.isPending ? 'Saving…' : 'Save Draft'}</Button></div>
+        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={create.isPending} onClick={() => { setErr(''); create.mutate(); }} disabled={!employeeId || !period.trim() || create.isPending}  style={{ opacity: !employeeId || !period.trim() || create.isPending ? 0.5 : 1 }}>Save Draft</Button></div>
       </div>
     </div>
   );
@@ -95,7 +96,8 @@ function ReviewDrawer({ id, onClose }: { id: string; onClose: () => void }) {
 
   const act = useMutation({
     mutationFn: (action: 'submit' | 'acknowledge') => api.patch(`/workforce/performance/reviews/${id}/${action}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['perf-reviews'] }); qc.invalidateQueries({ queryKey: ['perf-review', id] }); qc.invalidateQueries({ queryKey: ['wf-notif-unread'] }); },
+    onSuccess: (_d, action) => {
+      notify.success(action === 'submit' ? 'Review submitted' : 'Review acknowledged'); qc.invalidateQueries({ queryKey: ['perf-reviews'] }); qc.invalidateQueries({ queryKey: ['perf-review', id] }); qc.invalidateQueries({ queryKey: ['wf-notif-unread'] }); },
   });
   const isMine = !!me && r?.employeeId === me.id;
 
@@ -244,7 +246,7 @@ function NewGoalModal({ onClose }: { onClose: () => void }) {
         <label className="mb-1 block text-sm font-medium text-slate-600">Target date</label>
         <input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} className="mb-4 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary" />
         {err && <div className="mb-2 text-sm text-error">{err}</div>}
-        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={() => { setErr(''); create.mutate(); }} disabled={!employeeId || !title.trim() || !targetDate || create.isPending}  style={{ opacity: !employeeId || !title.trim() || !targetDate || create.isPending ? 0.5 : 1 }}>{create.isPending ? 'Saving…' : 'Create Goal'}</Button></div>
+        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={create.isPending} onClick={() => { setErr(''); create.mutate(); }} disabled={!employeeId || !title.trim() || !targetDate || create.isPending}  style={{ opacity: !employeeId || !title.trim() || !targetDate || create.isPending ? 0.5 : 1 }}>Create Goal</Button></div>
       </div>
     </div>
   );
@@ -268,7 +270,7 @@ function GoalEditor({ goal, onClose }: { goal: any; onClose: () => void }) {
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="mb-5 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary">
           {['ACTIVE', 'COMPLETED', 'MISSED'].map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={() => save.mutate()} disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save'}</Button></div>
+        <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={save.isPending} onClick={() => save.mutate()} disabled={save.isPending}>Save</Button></div>
       </div>
     </div>
   );

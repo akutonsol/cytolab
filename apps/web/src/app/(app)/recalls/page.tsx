@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, CalendarClock, ClipboardCopy, Download, Plus, X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
@@ -15,6 +14,7 @@ import {
   type Recall, type RecallListRow, type RecallStatus, type RecallSummary,
 } from '@/lib/recall';
 import { Card, IconAction, EmptyState } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 
@@ -30,15 +30,14 @@ function Kpi({ label, value, fg = '#0F172A' }: { label: string; value: number; f
 function RecallDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const router = useRouter();
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [notes, setNotes] = useState('');
   const [bookOpen, setBookOpen] = useState(false);
   const { data: r } = useQuery<Recall>({ queryKey: ['recall', id], queryFn: () => api.get(`/recalls/${id}`).then((res) => res.data) });
   const invalidate = () => ['recall', 'recalls', 'recall-summary'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   const act = useMutation({
     mutationFn: ({ ep, body }: { ep: string; body?: any }) => api.post(`/recalls/${id}/${ep}`, body ?? {}).then((res) => res.data),
-    onSuccess: (_d, v) => { message.success(v.ep === 'complete' ? 'Marked completed' : v.ep === 'notify-client' ? 'Client notified' : v.ep === 'cancel' ? 'Cancelled' : 'Declined'); invalidate(); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Action failed'),
+    onSuccess: (_d, v) => { notify.success(v.ep === 'complete' ? 'Marked completed' : v.ep === 'notify-client' ? 'Client notified' : v.ep === 'cancel' ? 'Cancelled' : 'Declined'); invalidate(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Action failed'),
   });
   const m = r ? STATUS_META[r.status] : null;
   const isOpen = r ? ['Pending', 'Due', 'Overdue'].includes(r.status) : false;
@@ -115,11 +114,10 @@ const TL = ({ label, at, on }: { label: string; at: string | null; on: boolean }
 
 // ─── Generate List modal ─────────────────────────────────────────────────────
 function GenerateListModal({ onClose }: { onClose: () => void }) {
-  const { message } = AntdApp.useApp();
   const [status, setStatus] = useState('');
   const [dueBefore, setDueBefore] = useState('');
   const { data: rows = [] } = useQuery<RecallListRow[]>({ queryKey: ['recall-genlist', status, dueBefore], queryFn: () => api.get('/recalls/generate-list', { params: { ...(status && { status }), ...(dueBefore && { dueBefore }) } }).then((r) => r.data) });
-  const copy = () => { navigator.clipboard.writeText(rows.map((r) => `${r.patientName}\t${shortDate(r.dueDate)}\t${r.lastResult}`).join('\n')); message.success('List copied to clipboard'); };
+  const copy = () => { navigator.clipboard.writeText(rows.map((r) => `${r.patientName}\t${shortDate(r.dueDate)}\t${r.lastResult}`).join('\n')); notify.success('List copied to clipboard'); };
   return createPortal(
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2200, background: 'rgba(15,23,42,0.55)' }} onClick={onClose}>
       <style dangerouslySetInnerHTML={{ __html: '@media print { body * { visibility: hidden !important; } .recall-print-area, .recall-print-area * { visibility: visible !important; } .recall-print-area { position: absolute !important; left: 0; top: 0; width: 100%; } @page { margin: 16mm; } }' }} />
@@ -154,7 +152,6 @@ function GenerateListModal({ onClose }: { onClose: () => void }) {
 // ─── Manual recall modal ─────────────────────────────────────────────────────
 function ManualRecallModal({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [patientId, setPatientId] = useState('');
   const [triggerRecordId, setRecordId] = useState('');
   const [intervalMonths, setInterval] = useState(12);
@@ -163,8 +160,8 @@ function ManualRecallModal({ onClose }: { onClose: () => void }) {
   const { data: recsPage } = useQuery<Paginated<any>>({ queryKey: ['recall-records', patientId], enabled: !!patientId, queryFn: () => api.get('/specimens/patient', { params: { patientId, pageSize: 100 } }).then((r) => r.data) });
   const save = useMutation({
     mutationFn: () => api.post('/recalls/manual', { patientId, triggerRecordId, intervalMonths, notes: notes || undefined }),
-    onSuccess: () => { message.success('Recall created'); ['recalls', 'recall-summary'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); onClose(); },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Could not create recall'),
+    onSuccess: () => { notify.success('Recall created'); ['recalls', 'recall-summary'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); onClose(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not create recall'),
   });
   return createPortal(
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2200, background: 'rgba(15,23,42,0.55)' }} onClick={onClose}>

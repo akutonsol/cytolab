@@ -13,6 +13,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { FEATURES, TIER_META, type FeatureKey } from '@/lib/features';
 import { EmptyState } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 // ─── Types (mirror the API's FeatureRow) ─────────────────────────────────────
 interface FeatureRow {
@@ -56,7 +57,7 @@ function Toggle({ on, disabled, onChange }: { on: boolean; disabled?: boolean; o
 export default function FeaturesPage() {
   const router = useRouter();
   const { claims } = useAuth();
-  const { message, modal } = AntdApp.useApp();
+  const { modal } = AntdApp.useApp();
   const qc = useQueryClient();
   const isSuper = claims?.isSuperRole === true;
 
@@ -100,10 +101,10 @@ export default function FeaturesPage() {
     },
     onError: (_e, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(['lab-features-all'], ctx.prev);
-      message.error('Could not update feature — reverted.');
+      notify.error('Could not update feature — reverted.');
     },
     onSuccess: (_d, vars) => {
-      message.success(`${FEATURES[vars.featureKey].name} ${vars.isEnabled ? 'enabled' : 'disabled'}.`);
+      notify.success(`${FEATURES[vars.featureKey].name} ${vars.isEnabled ? 'enabled' : 'disabled'}.`);
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['lab-features-all'] });

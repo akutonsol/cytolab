@@ -2,17 +2,16 @@
 
 import { useState } from 'react';
 import { Brain, Check, Loader2, X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { ConfidenceRing } from '@/components/ConfidenceRing';
 import { ReviewScreeningModal } from '@/components/ReviewScreeningModal';
 import { LEVEL_META, shortDate, type AIScreening } from '@/lib/ai-screening';
+import { notify } from '@/lib/notify';
 
 export function AIScreeningCard({ recordId }: { recordId: string }) {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const { can } = useAuth();
   const canRun = can('record:change');
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -27,7 +26,7 @@ export function AIScreeningCard({ recordId }: { recordId: string }) {
   const run = useMutation({
     mutationFn: () => api.post(`/ai-screening/record/${recordId}`).then((r) => r.data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['ai-record', recordId] }); },
-    onError: () => message.error('Could not start screening'),
+    onError: () => notify.error('Could not start screening'),
   });
 
   const Shell = ({ children }: { children: React.ReactNode }) => (

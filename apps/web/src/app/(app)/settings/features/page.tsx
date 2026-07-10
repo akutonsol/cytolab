@@ -2,12 +2,12 @@
 
 import { useMemo, useState } from 'react';
 import { AlertTriangle, ShieldCheck, X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { FEATURES, isBuilt, type FeatureKey } from '@/lib/features';
 import { IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 // Per-lab feature row from GET /lab-features (superuser).
 interface FeatureRow {
@@ -40,7 +40,6 @@ const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleString(undefined
 
 export default function ModuleManagementPage() {
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const { claims } = useAuth();
   const [pending, setPending] = useState<{ key: FeatureKey; next: boolean } | null>(null);
 
@@ -71,9 +70,9 @@ export default function ModuleManagementPage() {
     },
     onError: (_e, _v, ctx) => {
       if (ctx?.prev) qc.setQueryData(['lab-features-list'], ctx.prev);
-      message.error('Could not update the module — please try again.');
+      notify.error('Could not update the module — please try again.');
     },
-    onSuccess: (_d, v) => message.success(`${FEATURES[v.key].name} ${v.next ? 'enabled' : 'disabled'}.`),
+    onSuccess: (_d, v) => notify.success(`${FEATURES[v.key].name} ${v.next ? 'enabled' : 'disabled'}.`),
     // Refresh the app-wide feature context so nav/UI gating updates immediately.
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['lab-features-list'] });

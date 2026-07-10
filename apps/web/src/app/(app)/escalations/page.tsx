@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, Bell, CheckCircle2, ClipboardCheck, Eye, ShieldAlert, X } from 'lucide-react';
-import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
@@ -13,6 +12,7 @@ import {
   type EscalationRow, type EscalationSeverity, type EscalationStatus, type EscalationSummary,
 } from '@/lib/escalations';
 import { IconAction, EmptyState } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 const SEVERITIES: EscalationSeverity[] = ['Abnormal', 'HighGrade', 'Malignant'];
 const STATUSES: EscalationStatus[] = ['Pending', 'Acknowledged', 'UnderReview', 'Resolved'];
@@ -35,7 +35,6 @@ function StatusBadge({ status }: { status: EscalationStatus }) {
 function EscalationDetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
   const router = useRouter();
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [notes, setNotes] = useState('');
 
   const { data } = useQuery<EscalationRow>({
@@ -46,12 +45,12 @@ function EscalationDetailPanel({ id, onClose }: { id: string; onClose: () => voi
   const act = useMutation({
     mutationFn: ({ action, body }: { action: string; body?: any }) => api.patch(`/escalations/${id}/${action}`, body).then((r) => r.data),
     onSuccess: (_d, v) => {
-      message.success(`Escalation ${v.action === 'acknowledge' ? 'acknowledged' : v.action === 'review' ? 'moved to review' : v.action === 'resolve' ? 'resolved' : 'dismissed'}.`);
+      notify.success(`Escalation ${v.action === 'acknowledge' ? 'acknowledged' : v.action === 'review' ? 'moved to review' : v.action === 'resolve' ? 'resolved' : 'dismissed'}.`);
       qc.invalidateQueries({ queryKey: ['escalation', id] });
       qc.invalidateQueries({ queryKey: ['escalations'] });
       qc.invalidateQueries({ queryKey: ['escalation-summary'] });
     },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Action failed'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Action failed'),
   });
 
   const m = data ? SEVERITY_META[data.severity] : null;
@@ -213,7 +212,6 @@ function Kpi({ icon, label, value, fg, bg }: { icon: React.ReactNode; label: str
 export default function EscalationsPage() {
   const { isEnabled } = useFeatures();
   const qc = useQueryClient();
-  const { message } = AntdApp.useApp();
   const [severity, setSeverity] = useState<EscalationSeverity | 'all'>('all');
   const [status, setStatus] = useState<EscalationStatus | 'all'>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -236,7 +234,7 @@ export default function EscalationsPage() {
       qc.invalidateQueries({ queryKey: ['escalations'] });
       qc.invalidateQueries({ queryKey: ['escalation-summary'] });
     },
-    onError: (e: any) => message.error(e?.response?.data?.message ?? 'Action failed'),
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Action failed'),
   });
 
   const sorted = useMemo(() => rows, [rows]);

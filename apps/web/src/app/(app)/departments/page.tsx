@@ -5,6 +5,7 @@ import { Building2, MoreHorizontal, Pencil, Plus, Trash2, UserCircle, Users, X }
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { Button, IconAction } from '@/components/ui';
+import { notify } from '@/lib/notify';
 
 interface Dept {
   id: string;
@@ -30,8 +31,6 @@ export default function DepartmentsPage() {
   const [editing, setEditing] = useState<Dept | null>(null);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<Dept | null>(null);
-  const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
-  const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3200); };
 
   const { data } = useQuery({
     queryKey: ['departments'],
@@ -42,8 +41,8 @@ export default function DepartmentsPage() {
 
   const del = useMutation({
     mutationFn: (id: string) => api.delete(`/departments/delete/${id}`),
-    onSuccess: () => { notify('ok', 'Department deleted'); setConfirm(null); refetch(); },
-    onError: (e: any) => notify('err', e?.response?.data?.message ?? 'Delete failed'),
+    onSuccess: () => { notify.success('Department deleted'); setConfirm(null); refetch(); },
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Delete failed'),
   });
 
   const totalEmployees = depts.reduce((s, d) => s + d._count.employees, 0);
@@ -134,8 +133,8 @@ export default function DepartmentsPage() {
 
       {modalOpen && (
         <DeptModal dept={editing} onClose={() => setModalOpen(false)}
-          onSaved={() => { setModalOpen(false); refetch(); notify('ok', editing ? 'Department updated' : 'Department created'); }}
-          onError={(m) => notify('err', m)} />
+          onSaved={() => { setModalOpen(false); refetch(); notify.success(editing ? 'Department updated' : 'Department created'); }}
+          onError={(m) => notify.error(m)} />
       )}
 
       {confirm && (
@@ -156,7 +155,7 @@ export default function DepartmentsPage() {
         </div>
       )}
 
-      {toast && <div className="fixed bottom-6 right-6 z-[120] rounded-xl px-4 py-3 text-[14px] font-semibold text-white shadow-lg" style={{ background: toast.type === 'ok' ? '#16A34A' : '#DC2626' }}>{toast.msg}</div>}
+      
     </div>
   );
 }
@@ -204,8 +203,8 @@ function DeptModal({ dept, onClose, onSaved, onError }: { dept: Dept | null; onC
         </div>
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => save.mutate()}>
-            {save.isPending ? 'Saving…' : dept ? 'Save Changes' : 'Create Department'}
+          <Button loading={save.isPending} disabled={!canSave} style={{ opacity: canSave ? 1 : 0.5 }} onClick={() => save.mutate()}>
+            {dept ? 'Save Changes' : 'Create Department'}
           </Button>
         </div>
       </div>
