@@ -784,11 +784,17 @@ export default function DashboardPage() {
 
         <div style={{ marginTop: 12, background: 'transparent', marginLeft: -16, marginRight: -16, marginBottom: -40, paddingLeft: 16, paddingRight: 16, paddingTop: 20, paddingBottom: 40 }} className="flex flex-col gap-5">
           {/* ═══ LIVE STATUS RIBBON (slim single-line status between nav + Action Center) ═══ */}
-          <LiveStatusRibbon stats={{ activeSpecimens: d.priorityRecords?.length || 0, escalations: d.priorityRecords?.filter((r: any) => r.urgent).length || 0, aiQueue: kpis?.pendingRequisitions || 0 }} />
+          <LiveStatusRibbon stats={{ activeSpecimens: d.priorityRecords?.length || 0, escalations: d.priorityRecords?.filter((r: any) => r.urgent).length || 0, aiQueue: kpis?.pendingRequisitions || 0, throughputDelta: d.throughput?.deltaPct }} />
           {/* ═══ ACTIVITY TRAY (consolidates escalation / AI review / FHIR alerts) ═══ */}
           <ActivityTray />
 
-          {/* ═══ SECTION 1: KPI STRIP ═══ */}
+          {/* ═══ SECTION 1: LABORATORY VITALS (evolved from the KPI strip) ═══ */}
+          {/* The vital signs beneath Lab State — the five KPIs reframed as the lab's
+              vitals (Flow / Pressure / Timeliness / Attention / effectiveness). */}
+          <div className="-mb-1 flex items-center gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Laboratory Vitals</span>
+            <div className="h-px flex-1 bg-gray-100" />
+          </div>
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(5, 1fr)',
