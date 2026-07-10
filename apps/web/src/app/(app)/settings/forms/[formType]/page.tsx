@@ -234,7 +234,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
   return (
     <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)}
       className="relative h-6 w-11 shrink-0 rounded-full transition-colors" style={{ background: checked ? '#4F46E5' : '#c7c4d8' }}>
-      <span className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all" style={{ left: checked ? 22 : 2 }} />
+      <span className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-[background-color,border-color,color,box-shadow,transform,opacity]" style={{ left: checked ? 22 : 2 }} />
     </button>
   );
 }

@@ -242,7 +242,7 @@ export default function MessagingPage() {
                     value={msgQ}
                     onChange={(e) => setMsgQ(e.target.value)}
                     placeholder="Search…"
-                    className="w-24 border-none bg-transparent text-[13px] text-[#111827] outline-none placeholder:text-[#9ca3af] focus:w-36 transition-all"
+                    className="w-24 border-none bg-transparent text-[13px] text-[#111827] outline-none placeholder:text-[#9ca3af] focus:w-36 transition-[background-color,border-color,color,box-shadow,transform,opacity]"
                   />
                 </div>
                 <IconAction icon={<MoreHorizontal size={17} />} tone="faint" size="lg" shape="circle" hover={false} className="border border-[#eef2f7] hover:text-[#111827]" aria-label="More" />

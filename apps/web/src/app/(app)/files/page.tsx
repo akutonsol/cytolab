@@ -435,7 +435,7 @@ function UploadModal({ onClose, onUploaded, onError }: { onClose: () => void; on
         {uploading && (
           <div className="mt-4">
             <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container-low">
-              <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, background: '#4F46E5' }} />
+              <div className="h-full rounded-full transition-[background-color,border-color,color,box-shadow,transform,opacity]" style={{ width: `${progress}%`, background: '#4F46E5' }} />
             </div>
             <div className="mt-1 text-right font-label-sm text-label-sm text-secondary">{progress}%</div>
           </div>

@@ -117,7 +117,7 @@ function SearchWorkspace() {
         </div>
 
         {/* Search bar */}
-        <div className="flex h-14 items-center gap-3 rounded-full bg-white px-5 transition-all focus-within:!border-[#4F46E5]"
+        <div className="flex h-14 items-center gap-3 rounded-full bg-white px-5 transition-[background-color,border-color,color,box-shadow,transform,opacity] focus-within:!border-[#4F46E5]"
           style={{ border: '2px solid transparent', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
           <Search size={20} className="shrink-0 text-[#475569]" />
           <input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Escape') clear(); }}

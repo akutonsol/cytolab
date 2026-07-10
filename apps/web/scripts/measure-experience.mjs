@@ -115,7 +115,22 @@ for (const r of ['/records', '/billing']) {
   await page.goto(`${BASE}/dashboard`, { waitUntil: 'networkidle' }).catch(() => {});
   const t1 = Date.now();
   page.goto(`${BASE}/records`, { waitUntil: 'commit' }).catch(() => {});
-  const cue = await waitFor(page, () => document.querySelectorAll('.skeleton-shimmer').length > 0, 15_000);
+  // Presence in the DOM is not a cue. A page-enter animation once faded the skeleton in,
+  // leaving it invisible for 205ms while this check reported 94ms. Require it to be
+  // actually legible: >= 50% effective opacity through all ancestors.
+  const cue = await waitFor(
+    page,
+    () => {
+      const sk = document.querySelector('.skeleton-shimmer');
+      if (!sk) return false;
+      let opacity = 1;
+      for (let el = sk; el && el !== document.body; el = el.parentElement) {
+        opacity *= parseFloat(getComputedStyle(el).opacity || '1');
+      }
+      return opacity >= 0.5;
+    },
+    15_000,
+  );
   record('2 route loading', `commit → loading cue (API +${LATENCY}ms)`, cue, BUDGET.routeCueMs);
 
   // and the invariant that actually matters: no confident zeros while loading

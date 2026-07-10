@@ -122,16 +122,35 @@ export function Td({ density = 'default', tone = 'cell', family = 'slate', nowra
 export interface TrProps extends HTMLAttributes<HTMLTableRowElement> {
   /** Hover affordance + pointer, for rows that navigate. */
   interactive?: boolean;
+  /**
+   * Animate the row in. Use when rows *arrive* (first load, appended page) — not on
+   * every re-render, or a filter keystroke makes the whole table flicker.
+   *
+   * `index` staggers the arrival. It is capped at 8 rows (~160ms): beyond that a stagger
+   * reads as lag rather than choreography, and rows below the fold animate unseen.
+   */
+  enter?: boolean;
+  index?: number;
   children?: ReactNode;
 }
 
-export function Tr({ interactive, className, children, ...rest }: TrProps) {
+/** ~20ms apart, never more than 160ms total. */
+const STAGGER_MS = 20;
+const MAX_STAGGERED = 8;
+
+export function Tr({ interactive, enter, index = 0, className, style, children, ...rest }: TrProps) {
   return (
     <tr
       className={cn(
         interactive && 'cursor-pointer transition-colors duration-fast ease-standard hover:bg-surface-alt',
+        enter && 'helix-row-enter',
         className,
       )}
+      style={
+        enter && index > 0
+          ? { animationDelay: `${Math.min(index, MAX_STAGGERED) * STAGGER_MS}ms`, ...style }
+          : style
+      }
       {...rest}
     >
       {children}

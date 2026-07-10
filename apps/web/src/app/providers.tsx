@@ -10,6 +10,51 @@ import { DictationProvider } from '@/lib/dictation-context';
 import { FeatureProvider } from '@/lib/feature-context';
 import { ThemeProvider } from '@/lib/theme-context';
 
+/**
+ * The product's modals and drawers are antd's, and antd shipped its own motion:
+ * 300ms with the browser-default `ease` curve, plus six bespoke easings
+ * (Circ/Back/Quint). None of it came from our tokens — the single most-animated surface
+ * in the app was outside the motion system (EXPERIENCE_REPORT §1.2).
+ *
+ * These map antd's motion vocabulary onto ours. antd derives
+ * motionDurationFast/Mid/Slow from motionBase + motionUnit, so both are set explicitly.
+ *
+ *   --duration-fast  120ms   --duration-base 200ms   --duration-slow 320ms
+ *   --ease-standard   (0.22, 0.8, 0.2, 1)   state changes
+ *   --ease-emphasized (0.22, 1, 0.36, 1)    entrances
+ *
+ * The Back/Quint/Circ curves are deliberately collapsed onto those two: a modal must not
+ * overshoot in a way nothing else in the product does.
+ */
+const ANTD_MOTION = {
+  motionUnit: 0.04,
+  motionBase: 0.08,
+  motionDurationFast: '0.12s',
+  motionDurationMid: '0.2s',
+  motionDurationSlow: '0.32s',
+  motionEaseInOut: 'cubic-bezier(0.22, 0.8, 0.2, 1)',
+  motionEaseOut: 'cubic-bezier(0.22, 1, 0.36, 1)',
+  motionEaseInOutCirc: 'cubic-bezier(0.22, 0.8, 0.2, 1)',
+  motionEaseOutCirc: 'cubic-bezier(0.22, 1, 0.36, 1)',
+  motionEaseOutBack: 'cubic-bezier(0.22, 1, 0.36, 1)',
+  motionEaseInBack: 'cubic-bezier(0.4, 0, 1, 1)',
+  motionEaseInQuint: 'cubic-bezier(0.4, 0, 1, 1)',
+  motionEaseOutQuint: 'cubic-bezier(0.22, 1, 0.36, 1)',
+} as const;
+
+/** Live `prefers-reduced-motion`. antd motion is switched off entirely, not merely sped up. */
+function useReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const sync = () => setReduced(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+  return reduced;
+}
+
 /** antd's `message` must come from App.useApp() to inherit theme + context. */
 function NotifierBridge() {
   const { message } = AntdApp.useApp();
@@ -18,6 +63,7 @@ function NotifierBridge() {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const reducedMotion = useReducedMotion();
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -99,6 +145,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
             fontSize: 16,
             controlHeight: 48,
             boxShadow: '0 12px 30px rgba(16,24,40,0.05)',
+            // One motion vocabulary for the whole application.
+            ...ANTD_MOTION,
+            motion: !reducedMotion,
           },
           components: {
             Button: { borderRadius: 14, controlHeight: 48, fontWeight: 600 },

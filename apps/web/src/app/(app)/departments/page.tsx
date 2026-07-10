@@ -91,7 +91,7 @@ export default function DepartmentsPage() {
             {depts.map((d) => {
               const t = tintFor(d.name);
               return (
-                <div key={d.id} className="glass-card rounded-2xl p-6 transition-all hover:border-primary/30">
+                <div key={d.id} className="glass-card rounded-2xl p-6 transition-[background-color,border-color,color,box-shadow,transform,opacity] hover:border-primary/30">
                   <div className="flex items-start justify-between">
                     <div className="flex min-w-0 items-center gap-3">
                       <span style={{ background: t.bg, color: t.fg }} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl font-label-md text-label-md font-bold">{initials(d.name)}</span>

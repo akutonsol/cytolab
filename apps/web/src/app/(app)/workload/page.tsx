@@ -33,7 +33,7 @@ function ProgressBar({ value, target }: { value: number; target: number }) {
         <span className="font-semibold" style={{ color: progressColor(ratio) }}>{pct}%</span>
       </div>
       <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-[#F1F5F9]">
-        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: progressColor(ratio) }} />
+        <div className="h-full rounded-full transition-[background-color,border-color,color,box-shadow,transform,opacity]" style={{ width: `${pct}%`, background: progressColor(ratio) }} />
       </div>
     </div>
   );

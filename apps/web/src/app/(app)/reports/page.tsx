@@ -143,7 +143,7 @@ function ReportsWorkspace() {
               <button onClick={() => setSearch('')}><X size={14} className="text-secondary" /></button>
             )}
           </div>
-          <button className="flex h-11 items-center gap-2 rounded-xl border border-outline-variant/30 bg-white px-4 font-label-md text-label-md text-secondary transition-all hover:bg-surface-container-low"><Filter size={15} /> Filters</button>
+          <button className="flex h-11 items-center gap-2 rounded-xl border border-outline-variant/30 bg-white px-4 font-label-md text-label-md text-secondary transition-[background-color,border-color,color,box-shadow,transform,opacity] hover:bg-surface-container-low"><Filter size={15} /> Filters</button>
         </div>
       </div>
 
@@ -185,7 +185,7 @@ function ReportsWorkspace() {
             <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">No reports yet</h3>
             <p className="max-w-xs text-center font-body-sm text-body-sm text-secondary">Reports appear here once result sheets are authorized and released.</p>
             <button onClick={() => router.push('/authorizer')}
-              className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-label-md text-label-md text-on-primary transition-all hover:brightness-110">
+              className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-label-md text-label-md text-on-primary transition-[background-color,border-color,color,box-shadow,transform,opacity] hover:brightness-110">
               Go to Authorizer <ChevronDown size={14} className="rotate-[-90deg]" />
             </button>
           </div>
@@ -283,7 +283,7 @@ function Kpi({ icon: Icon, label, value, accent }: { icon: any; label: string; v
 
 function IconBtn({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button title={title} onClick={onClick} className="grid h-8 w-8 place-items-center rounded-lg border border-outline-variant/20 bg-white text-secondary transition-all hover:bg-surface-container-low hover:text-primary">{children}</button>
+    <button title={title} onClick={onClick} className="grid h-8 w-8 place-items-center rounded-lg border border-outline-variant/20 bg-white text-secondary transition-[background-color,border-color,color,box-shadow,transform,opacity] hover:bg-surface-container-low hover:text-primary">{children}</button>
   );
 }
 

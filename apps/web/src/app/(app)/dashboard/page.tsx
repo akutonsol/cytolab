@@ -578,7 +578,7 @@ export default function DashboardPage() {
                     <span className={`text-[13px] font-black ${displayConf >= 80 ? 'text-emerald-600' : displayConf >= 60 ? 'text-amber-800' : 'text-red-600'}`}>{displayConf}%</span>
                   </div>
                   <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
-                    <div className={`h-full rounded-full transition-all duration-1000 ${displayConf >= 80 ? 'bg-emerald-500' : displayConf >= 60 ? 'bg-yellow-400' : 'bg-red-500'}`} style={{ width: `${targetConf}%` }} />
+                    <div className={`h-full rounded-full transition-[background-color,border-color,color,box-shadow,transform,opacity] duration-1000 ${displayConf >= 80 ? 'bg-emerald-500' : displayConf >= 60 ? 'bg-yellow-400' : 'bg-red-500'}`} style={{ width: `${targetConf}%` }} />
                   </div>
                   <div className="mt-1 flex items-start justify-between">
                     <span className="text-[10px] text-gray-400">Based on {eff?.specimensProcessed ?? 0} specimens</span>
@@ -598,7 +598,7 @@ export default function DashboardPage() {
                   <div className="flex h-12 items-end gap-1.5">
                     {[{ time: '08:41', value: 61 }, { time: '08:42', value: 72 }, { time: '08:43', value: 79 }, { time: '08:44', value: 84 }].map((point) => (
                       <div key={point.time} className="flex flex-1 flex-col items-center gap-1">
-                        <div className="w-full rounded-sm bg-indigo-200 transition-all duration-500" style={{ height: `${(point.value / 100) * 40}px` }} />
+                        <div className="w-full rounded-sm bg-indigo-200 transition-[background-color,border-color,color,box-shadow,transform,opacity] duration-500" style={{ height: `${(point.value / 100) * 40}px` }} />
                         <span className="text-[9px] text-gray-400">{point.time}</span>
                       </div>
                     ))}
@@ -916,7 +916,7 @@ export default function DashboardPage() {
             {/* Trigger — enters the Clinical Review Workstation overlay. */}
             <button
               onClick={() => setWorkstationOpen(true)}
-              className="group absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 bg-white/80 shadow-sm backdrop-blur-sm transition-all duration-200 hover:border-indigo-200 hover:bg-indigo-50"
+              className="group absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 bg-white/80 shadow-sm backdrop-blur-sm transition-[background-color,border-color,color,box-shadow,transform,opacity] duration-200 hover:border-indigo-200 hover:bg-indigo-50"
               aria-label="Enter focus mode"
               title="Enter Focus Mode"
             >

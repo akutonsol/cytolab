@@ -392,7 +392,7 @@ export default function ResultSheetsPage() {
         <div className="flex items-center gap-3">
           <span className="text-sm text-secondary">Client folders</span>
           <button role="switch" aria-label="Group result sheets by client" aria-checked={groupByClient} onClick={() => setGroupByClient((v) => !v)} className="relative h-6 w-11 rounded-full transition-colors" style={{ background: groupByClient ? '#4F46E5' : '#c7c4d8' }}>
-            <span className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all" style={{ left: groupByClient ? 22 : 2 }} />
+            <span className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-[background-color,border-color,color,box-shadow,transform,opacity]" style={{ left: groupByClient ? 22 : 2 }} />
           </button>
           {urgentCount > 0 && <span className="rounded-full bg-error-container px-3 py-1 text-xs font-bold text-error">{urgentCount} URGENT</span>}
         </div>

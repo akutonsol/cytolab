@@ -181,6 +181,8 @@ export function IconAction({
         ICON_SIZE[size],
         ICON_SHAPE[shape],
         'transition-colors duration-fast ease-standard',
+        // shared press gesture — see globals.css "THE MOTION GRAMMAR"
+        'helix-press',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]',
         'disabled:cursor-not-allowed disabled:opacity-50',
         ICON_FG[tone],

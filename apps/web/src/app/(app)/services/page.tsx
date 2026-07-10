@@ -99,7 +99,7 @@ export default function ServicesPage() {
         <p className="mb-6 text-[16px] text-[#6B7280]">Lab test services and pricing.</p>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {services.slice(0, 4).map((s) => (
-            <button key={s.id} onClick={() => openEdit(s)} className="rounded-3xl border border-[#EDEDED] bg-white p-6 text-left shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
+            <button key={s.id} onClick={() => openEdit(s)} className="rounded-3xl border border-[#EDEDED] bg-white p-6 text-left shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-[background-color,border-color,color,box-shadow,transform,opacity] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
               <div className="flex items-center gap-3.5">
                 <Avatar service={s} size={46} />
                 <div className="min-w-0">

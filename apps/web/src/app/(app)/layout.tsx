@@ -383,7 +383,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="dashboard page-container">
           {/* Fade + slide the page content in on each route change. */}
           <RealtimeProvider>
-            <div key={pathname} className="animate-fade-slide-in">{children}</div>
+            {/* Page transition lives in (app)/template.tsx, which Next re-mounts on every
+                navigation. This wrapper previously ran its own `animate-fade-slide-in`
+                (0.3s ease-out, opacity 0 → 1) — a second, hand-timed page transition that
+                fought the first and, because it faded from 0, kept the loading skeleton
+                invisible for ~250ms. The `key` stays: it resets page state on navigation. */}
+            <div key={pathname}>{children}</div>
           </RealtimeProvider>
         </div>
       </main>

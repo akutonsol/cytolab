@@ -498,6 +498,154 @@
   --identity-6: var(--purple-600);
 }
 
+/* ════════════════════════════════════════════════════════════════════════════
+ * THE MOTION GRAMMAR
+ *
+ * Every product motion is a sentence in this grammar. Two curves, six durations, all
+ * from tokens. Nothing here invents a timing.
+ *
+ *   --ease-standard    state changes (hover, press, colour)
+ *   --ease-emphasized  entrances (page, drawer, modal, row)
+ *
+ * Rules:
+ *   1. Never animate `all`. Name the property, or the browser animates layout too.
+ *   2. Every animation takes its duration from a --duration-* token, so
+ *      `prefers-reduced-motion` reaches it. (Before Sprint 9, 102 of 103 keyframes
+ *      did not — the setting was decorative.)
+ *   3. Motion explains state. If removing it costs the user no information, it goes.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+/* Page enters — used by (app)/template.tsx on every route change.
+ *
+ * NO OPACITY. The first version faded from 0, and measurement showed it pushed the
+ * loading skeleton's *visible* appearance to 205ms — past the 200ms cue budget Sprint 8
+ * exists to protect. The page transition was hiding information in order to decorate it.
+ *
+ * Principle §1: information appears before decoration. The page rises; it never fades in.
+ * Every pixel is legible on the first frame. */
+@keyframes helix-page-enter {
+  from { transform: translate3d(0, 8px, 0); }
+  to   { transform: none; }
+}
+.helix-page {
+  animation: helix-page-enter var(--duration-base) var(--ease-emphasized) both;
+}
+
+/* Table rows arrive. Staggered by the caller via `animation-delay`, capped: a delay
+ * over 200ms reads as lag, not choreography. */
+@keyframes helix-row-enter {
+  from { opacity: 0; transform: translate3d(0, 4px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+.helix-row-enter {
+  animation: helix-row-enter var(--duration-quick) var(--ease-emphasized) both;
+}
+
+/* Skeleton → content. The content fades in over the space the skeleton held, so nothing
+ * jumps (Principle §6: no layout shift on arrival). */
+@keyframes helix-content-enter {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.helix-content-enter {
+  animation: helix-content-enter var(--duration-quick) var(--ease-standard) both;
+}
+
+/* Success pulse — one beat, then rest. Never loops. */
+@keyframes helix-pulse-once {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+.helix-pulse-once {
+  animation: helix-pulse-once var(--duration-quick) var(--ease-standard) 1;
+}
+
+/* Press. The one gesture the product almost entirely lacked (21 `active:` states against
+ * 622 hovers). Applied to every interactive primitive, not per screen. */
+.helix-press {
+  transition: transform var(--motion-press);
+}
+.helix-press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Card lift on hover. Shadow only — never `all`, never size. */
+.helix-lift {
+  transition: box-shadow var(--motion-hover);
+}
+
+/* ── antd modals & drawers speak the grammar ─────────────────────────────────
+ * The ConfigProvider tokens give antd our *durations*, but rc-motion hardcodes
+ * `transition: all … ease` on its enter/leave classes: the browser-default curve, and
+ * `all`, which animates layout alongside transform. Both are fixed here.
+ *
+ * Drawer: the panel slides from the edge it is anchored to (Principle §4 — things enter
+ * from where they came from). Only `transform` moves; the mask only fades. */
+.ant-drawer .ant-drawer-panel-motion-left-enter-active,
+.ant-drawer .ant-drawer-panel-motion-left-appear-active,
+.ant-drawer .ant-drawer-panel-motion-right-enter-active,
+.ant-drawer .ant-drawer-panel-motion-right-appear-active,
+.ant-drawer .ant-drawer-panel-motion-top-enter-active,
+.ant-drawer .ant-drawer-panel-motion-top-appear-active,
+.ant-drawer .ant-drawer-panel-motion-bottom-enter-active,
+.ant-drawer .ant-drawer-panel-motion-bottom-appear-active {
+  transition: transform var(--duration-slow) var(--ease-emphasized) !important;
+}
+.ant-drawer .ant-drawer-panel-motion-left-leave-active,
+.ant-drawer .ant-drawer-panel-motion-right-leave-active,
+.ant-drawer .ant-drawer-panel-motion-top-leave-active,
+.ant-drawer .ant-drawer-panel-motion-bottom-leave-active {
+  transition: transform var(--duration-quick) var(--ease-in) !important;
+}
+.ant-drawer .ant-drawer-mask-motion-enter-active,
+.ant-drawer .ant-drawer-mask-motion-appear-active {
+  transition: opacity var(--duration-slow) var(--ease-standard) !important;
+}
+.ant-drawer .ant-drawer-mask-motion-leave-active {
+  transition: opacity var(--duration-quick) var(--ease-in) !important;
+}
+
+/* Modal: scales up from the page, fades out toward it. */
+.ant-zoom-big-enter.ant-zoom-big-enter-active,
+.ant-zoom-big-appear.ant-zoom-big-appear-active {
+  animation-duration: var(--duration-slow) !important;
+  animation-timing-function: var(--ease-emphasized) !important;
+}
+.ant-zoom-big-leave.ant-zoom-big-leave-active {
+  animation-duration: var(--duration-quick) !important;
+  animation-timing-function: var(--ease-in) !important;
+}
+.ant-fade-enter.ant-fade-enter-active,
+.ant-fade-appear.ant-fade-appear-active {
+  animation-duration: var(--duration-slow) !important;
+  animation-timing-function: var(--ease-standard) !important;
+}
+.ant-fade-leave.ant-fade-leave-active {
+  animation-duration: var(--duration-quick) !important;
+  animation-timing-function: var(--ease-in) !important;
+}
+
+/* ── Reduced motion: the whole grammar, and everything else ──────────────────
+ * The tokens already collapse to 1ms, but 102 keyframes were hand-timed and ignored
+ * them. This is the backstop: under `prefers-reduced-motion` nothing in the product
+ * animates, including third-party CSS we do not own.
+ *
+ * `1ms` rather than `0s` so that `animationend` / `transitionend` listeners still fire —
+ * several components wait on them, and 0s silently never resolves in some browsers. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ── Loading shimmer ──────────────────────────────────────────
  * The ONLY animation in the product driven by a duration token, which is the point:
  * `prefers-reduced-motion` collapses --duration-* to 1ms, so this stops. The other 99
@@ -901,7 +1049,6 @@ select option {
   transition: filter var(--motion-hover), transform var(--motion-press);
 }
 .btn-primary:hover { filter: brightness(1.1); }
-.btn-primary:active { transform: scale(0.97); }
 
 .btn-secondary {
   background: var(--color-surface);
@@ -920,6 +1067,24 @@ select option {
   transition: background var(--motion-hover), border-color var(--motion-hover);
 }
 .btn-secondary:hover { background: var(--gray-50); border-color: var(--gray-300); }
+
+/* Press. Was defined only on .btn-primary; a press is a property of "button", not of
+ * one variant. transform-only, --motion-press (80ms). */
+.btn-primary,
+.btn-secondary,
+.btn-ghost,
+.btn-outline {
+  transition-property: filter, background, border-color, transform;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-standard);
+}
+.btn-primary:active:not(:disabled),
+.btn-secondary:active:not(:disabled),
+.btn-ghost:active:not(:disabled),
+.btn-outline:active:not(:disabled) {
+  transform: scale(0.97);
+  transition: transform var(--motion-press);
+}
 
 .btn-primary:focus-visible,
 .btn-secondary:focus-visible,
@@ -1250,13 +1415,6 @@ select option {
 }
 
 /* Login page: form-card entrance. */
-@keyframes fadeSlideIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-slide-in {
-  animation: fadeSlideIn 0.3s ease-out forwards;
-}
 
 /* Focus Mode — staggered panel entrance. */
 @keyframes focusPanelIn {

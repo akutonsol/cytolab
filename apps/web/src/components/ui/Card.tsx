@@ -124,8 +124,10 @@ export function Card({
     <Comp
       className={cn(
         cardClass({ radius, elevation, border, padding, surface }),
-        interactive &&
-          'cursor-pointer transition-shadow duration-fast ease-standard hover:shadow-card-hover',
+        // Card lift: shadow only. Never `all`, never size — a card that grows on hover
+        // reflows its neighbours. See globals.css "THE MOTION GRAMMAR".
+        interactive && 'cursor-pointer helix-lift hover:shadow-card-hover',
+        interactive && Comp === 'button' && 'helix-press',
         className,
       )}
       {...buttonProps}

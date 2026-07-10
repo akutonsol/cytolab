@@ -61,6 +61,25 @@ behind "detector-safe" comments. Use `--color-warning` (`#A16207`) on white/ambe
 Check a foreground against **its actual background, at every alpha**.
 **Run the pixel detector after every UI change; it must report 0.**
 
+## The motion grammar (one application, one vocabulary)
+Two curves, six durations, all from tokens. `cd apps/web && npm run check:motion-grammar`
+(needs a **production** build on :3100).
+
+- `--ease-standard` for state changes; `--ease-emphasized` for entrances. Nothing else.
+- **Never animate `all`.** Name the property, or the browser animates layout too.
+- Every `@keyframes` takes its duration from a `--duration-*` token, so
+  `prefers-reduced-motion` reaches it. A global backstop in globals.css collapses
+  everything (including third-party CSS) to 1ms — `1ms`, not `0s`, so `transitionend`
+  still fires.
+- antd owns the modals and drawers. It takes our duration tokens via `ConfigProvider`,
+  but hardcodes `transition: all .3s ease` on its enter classes; globals.css overrides
+  that. Don't remove those overrides.
+- **Motion never withholds information.** The page transition rises, it does not fade in:
+  a fade from `opacity: 0` kept the loading skeleton invisible for 254ms and blew the
+  200ms cue budget. Information appears before decoration.
+- The page transition lives in `(app)/template.tsx` — the one place Next re-mounts on
+  navigation. There must be exactly one.
+
 ## Experience budgets (three independent latency classes)
 Never collapse these into one number. Different causes, different fixes; a good score in
 one hides a bad score in another. `cd apps/web && npm run measure:experience` (needs a

@@ -453,3 +453,77 @@ side-effect free*: the first version clicked "Mark all read", which is **disable
 everything is read**, so the budget silently became a no-op. It now clicks the notification
 bell — present on every authenticated screen, always enabled, writes nothing. And if the
 trigger is ever missing it fails loudly rather than passing vacuously.
+
+
+---
+
+# Sprint 9 — implementation record (motion language)
+
+## What the audit predicted, and what was actually there
+
+Sprint 7 counted four uncoordinated motion sources. It missed a fifth: **the product
+already had a page transition.** `(app)/layout.tsx` wrapped every route in
+`<div key={pathname} className="animate-fade-slide-in">` — a hand-timed `0.3s ease-out`
+fade. It never appeared in the "page transitions: 0" count because it was a CSS class, not
+a `template.tsx`.
+
+That mattered. It faded from `opacity: 0`, so **the loading skeleton Sprint 8 shipped was
+invisible for ~250ms** while the DOM check reported it present at 94ms. Sprint 8's cue
+budget was green against a screen the user could not yet read.
+
+## The grammar
+
+| gesture | token | property | verified |
+|---|---|---|---|
+| page enters | `--duration-base` · `--ease-emphasized` | `transform` only | ✅ |
+| drawer opens | `--duration-slow` · `--ease-emphasized` | `transform` only | ✅ |
+| drawer/modal mask | `--duration-slow` · `--ease-standard` | `opacity` | ✅ |
+| modal scales | `--duration-slow` · `--ease-emphasized` | `transform`, `opacity` | ✅ |
+| card lifts | `--motion-hover` | `box-shadow` only | ✅ |
+| press | `--motion-press` (80ms) | `transform` only | ✅ |
+| row arrives | `--duration-quick` · staggered ≤160ms | `transform`, `opacity` | ✅ |
+| loading shimmer | `--duration-shimmer` | `background-position` | ✅ |
+
+## Scoreboard (product scope)
+
+| | before | after |
+|---|---:|---:|
+| `transition-all` | 16 | **0** |
+| dead `@keyframes` | 11 | **0** |
+| page transitions defined | **2** | 1 |
+| antd motion mapped to tokens | 0 | 1 |
+| `@keyframes` driven by a token | 1 | 5 |
+| button families with a press gesture | 1 | 4 |
+| global reduced-motion backstop | 0 | 1 |
+
+Nine dead keyframes remain, all in landing/hero (scope-locked).
+
+## The correction this sprint forced
+
+**The page transition originally faded.** It measured beautifully and it was wrong:
+the cue became visible at 254ms against a 200ms budget. Motion was withholding information
+in order to decorate it — the exact inversion of Principle §1.
+
+The fix was not to relax the budget. It was to delete the fade (the page now *rises*, every
+pixel legible on frame one) and to delete the duplicate transition in `layout.tsx`. Then
+the cue became visible at **91ms — the same instant it entered the DOM.**
+
+The budget harness was also hardened: it now requires the skeleton to be **≥50% effective
+opacity through all ancestors**, not merely present in the DOM. Presence is not a cue.
+
+## Both guards are proven able to fail
+
+- `check:motion-grammar` — reverting the antd override to `all … ease` produced
+  `❌ drawer easing`, `❌ drawer animates transform only`. Restored → green.
+- `measure:experience` — the visibility check caught the fade regression that the old
+  presence check missed.
+
+A check that cannot fail is not a check.
+
+## Scope
+
+Landing/marketing keeps its own motion (51 `<motion.*>`, 9 dead keyframes) and is
+scope-locked. `login/page.tsx`, `AiSettingsPane`, `ResultTemplateSelector` still use
+`transition-all` — the first is a marketing surface, the other two carry pre-existing
+uncommitted changes. `records/[id]` keeps its decorative scanning scene (Tier-3 item 17);
+only its 11 **dead** keyframes were removed.

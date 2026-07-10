@@ -81,7 +81,7 @@ const relTime = (iso?: string | null) => {
 // Button styles — rectangular (rounded rectangle), padded, with an icon.
 // Action buttons — side-by-side pills. Primary = indigo gradient, secondary =
 // light-blue gradient (glassy) with navy text, matching the reference chip.
-const ACTION_BTN = 'flex min-w-[150px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-2xl px-4 py-3 text-[14px] font-bold transition-all hover:brightness-[0.97] active:scale-[0.99] disabled:opacity-60';
+const ACTION_BTN = 'flex min-w-[150px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-2xl px-4 py-3 text-[14px] font-bold transition-[background-color,border-color,color,box-shadow,transform,opacity] hover:brightness-[0.97] active:scale-[0.99] disabled:opacity-60';
 const PRIM_STYLE = { background: 'linear-gradient(135deg,#4F46E5 0%,#4338CA 100%)', color: '#FFFFFF', boxShadow: '0 6px 16px rgba(79,70,229,0.28)' } as const;
 const SEC_STYLE = { background: 'linear-gradient(135deg,#EFF4FD 0%,#D7E5F8 100%)', color: '#1E40AF', border: '1px solid #C7D7EF', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7), 0 2px 8px rgba(30,64,175,0.10)' } as const;
 const rightBtn = 'flex w-full items-center justify-center gap-2 rounded-xl bg-[#F1F5F9] px-3 py-3.5 text-[15px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#E2E8F0]';
@@ -113,17 +113,6 @@ const GLOWS = [
 ];
 
 const ANIM_CSS = `
-@keyframes glowPulse{0%,100%{opacity:.45;transform:scale(1)}50%{opacity:1;transform:scale(1.4)}}
-@keyframes scanLine{0%{top:0%;opacity:0}8%{opacity:1}92%{opacity:1}100%{top:100%;opacity:0}}
-@keyframes colorDrift{0%{background:rgba(99,102,241,.02)}25%{background:rgba(99,102,241,.13)}50%{background:rgba(129,140,248,.18)}75%{background:rgba(167,139,250,.13)}100%{background:rgba(99,102,241,.02)}}
-@keyframes drift1{0%{transform:translate(0,0) scale(1);opacity:.6}25%{transform:translate(48px,-58px) scale(1.5);opacity:1}50%{transform:translate(-36px,-22px) scale(.75);opacity:.55}75%{transform:translate(28px,44px) scale(1.25);opacity:.9}100%{transform:translate(0,0) scale(1);opacity:.6}}
-@keyframes drift2{0%{transform:translate(0,0) scale(1);opacity:.6}25%{transform:translate(-54px,38px) scale(1.55);opacity:1}50%{transform:translate(24px,-48px) scale(.8);opacity:.5}75%{transform:translate(-28px,-30px) scale(1.25);opacity:.85}100%{transform:translate(0,0) scale(1);opacity:.6}}
-@keyframes drift3{0%{transform:translate(0,0) scale(1);opacity:.5}25%{transform:translate(60px,40px) scale(1.4);opacity:.95}50%{transform:translate(-40px,-50px) scale(.72);opacity:.45}75%{transform:translate(34px,-28px) scale(1.2);opacity:.85}100%{transform:translate(0,0) scale(1);opacity:.5}}
-@keyframes drift4{0%{transform:translate(0,0) scale(1);opacity:.7}25%{transform:translate(-48px,-44px) scale(1.55);opacity:1}50%{transform:translate(38px,30px) scale(.78);opacity:.55}75%{transform:translate(-24px,48px) scale(1.2);opacity:.9}100%{transform:translate(0,0) scale(1);opacity:.7}}
-@keyframes drift5{0%{transform:translate(0,0) scale(1);opacity:.65}25%{transform:translate(42px,54px) scale(1.4);opacity:1}50%{transform:translate(-50px,-22px) scale(.8);opacity:.5}75%{transform:translate(28px,-44px) scale(1.25);opacity:.85}100%{transform:translate(0,0) scale(1);opacity:.65}}
-@keyframes drift6{0%{transform:translate(0,0) scale(1);opacity:.6}25%{transform:translate(-38px,-54px) scale(1.55);opacity:1}50%{transform:translate(48px,24px) scale(.7);opacity:.5}75%{transform:translate(-30px,42px) scale(1.2);opacity:.85}100%{transform:translate(0,0) scale(1);opacity:.6}}
-@keyframes drift7{0%{transform:translate(0,0) scale(1);opacity:.5}25%{transform:translate(54px,-34px) scale(1.45);opacity:.95}50%{transform:translate(-34px,44px) scale(.75);opacity:.45}75%{transform:translate(40px,20px) scale(1.2);opacity:.85}100%{transform:translate(0,0) scale(1);opacity:.5}}
-@keyframes drift8{0%{transform:translate(0,0) scale(1);opacity:.7}25%{transform:translate(-58px,30px) scale(1.4);opacity:1}50%{transform:translate(34px,-42px) scale(.8);opacity:.55}75%{transform:translate(-28px,-30px) scale(1.25);opacity:.85}100%{transform:translate(0,0) scale(1);opacity:.7}}
 @keyframes microDrift{0%{transform:translate(0px,0px) scale(1.02)}25%{transform:translate(-10px,7px) scale(1.05)}50%{transform:translate(8px,-6px) scale(1.03)}75%{transform:translate(-6px,-9px) scale(1.06)}100%{transform:translate(0px,0px) scale(1.02)}}
 @keyframes ringSpin{to{transform:rotate(360deg)}}
 `;

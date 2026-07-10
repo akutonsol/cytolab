@@ -98,7 +98,7 @@ export default function WorkspacesPage() {
             {workspaces.map((w) => {
               const t = tintFor(w.name);
               return (
-                <div key={w.id} className="glass-card rounded-2xl p-6 transition-all hover:border-primary/30">
+                <div key={w.id} className="glass-card rounded-2xl p-6 transition-[background-color,border-color,color,box-shadow,transform,opacity] hover:border-primary/30">
                   {/* Top */}
                   <div className="flex items-start justify-between">
                     <div className="flex min-w-0 items-center gap-3">
