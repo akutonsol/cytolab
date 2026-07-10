@@ -17,7 +17,7 @@ import { useFeatures } from '@/lib/feature-context';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import type { FormType } from '@/lib/specimen-types';
-import { Card, Button, IconAction } from '@/components/ui';
+import { Card, Button, IconAction, SkeletonStat, SkeletonRows, SkeletonText } from '@/components/ui';
 
 interface Rec {
   id: string; labNumber?: string | null; identifier?: string; formType?: string | null; status: string; urgent: boolean;
@@ -175,7 +175,7 @@ export default function SamplesPage() {
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const notify = (type: 'ok' | 'err', msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3000); };
 
-  const { data } = useQuery({
+  const { data, isLoading: recordsLoading } = useQuery({
     queryKey: ['records-all'],
     queryFn: () => api.get<Paginated<Rec>>('/specimens', { params: { page: 1, pageSize: 500 } }).then((r) => r.data),
   });
@@ -323,6 +323,14 @@ export default function SamplesPage() {
       <div className="flex flex-col gap-6 xl:flex-row">
         <div className="flex min-w-0 flex-1 flex-col gap-6">
           {/* KPI strip */}
+          {/* A zero here is indistinguishable from "not loaded". Show the shape, not a lie. */}
+          {recordsLoading ? (
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Card key={i} radius="sm" elevation="sm" border="subtle" className="p-5"><SkeletonStat /></Card>
+              ))}
+            </div>
+          ) : (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
             <KpiCard icon={<FlaskConical size={18} />} iconClass="bg-indigo-50 text-indigo-600" label="New Samples" value={newSamples} sub={`+${newToday} today`} subColor={C_DONE} spark={C_PRIMARY} sparkData={newSeries} />
             <KpiCard icon={<CheckCircle2 size={18} />} iconClass="bg-green-50 text-green-700" label="Completed" value={completedCount} sub={`${accuracy}% authorized`} subColor={C_DONE} spark={C_DONE} sparkData={completedSeries} />
@@ -330,16 +338,18 @@ export default function SamplesPage() {
             <KpiCard icon={<Settings size={18} />} iconClass="bg-blue-50 text-blue-600" label="Processing" value={processingCount} sub="Active in lab" subColor={C_PROCESSING_KPI} spark={C_PROCESSING_KPI} sparkData={processingSeries} />
             <KpiCard icon={<Activity size={18} />} iconClass="bg-teal-50 text-teal-600" label="Avg TAT" value={avgTat != null ? `${avgTat} hrs` : '—'} sub={avgTat != null ? 'avg turnaround' : 'no data yet'} subColor={C_MUTED} spark={C_TAT} sparkData={completedSeries} />
           </div>
+          )}
 
           {/* Urgent Flagged + Automation */}
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.4fr_1fr]">
             <Card radius="sm" elevation="sm" border="subtle" className="p-5">
               <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2"><span className="text-base font-semibold text-charcoal-heading">Urgent Flagged Cases</span><span className="rounded-full bg-error-container px-2 py-0.5 text-xs font-bold text-error">{urgentAll.length}</span></div>
+                <div className="flex items-center gap-2"><span className="text-base font-semibold text-charcoal-heading">Urgent Flagged Cases</span>{!recordsLoading && <span className="rounded-full bg-error-container px-2 py-0.5 text-xs font-bold text-error">{urgentAll.length}</span>}</div>
                 <button onClick={() => setTab('urgent')} className="text-xs font-semibold text-primary hover:underline">View all urgent →</button>
               </div>
               <div className="flex flex-col gap-2">
-                {urgentAll.length === 0 && <div className="py-6 text-center text-sm font-semibold text-green-700">✓ No urgent cases</div>}
+                {recordsLoading && <div className="flex flex-col gap-3 py-4"><SkeletonText lines={3} /></div>}
+                {!recordsLoading && urgentAll.length === 0 && <div className="py-6 text-center text-sm font-semibold text-green-700">✓ No urgent cases</div>}
                 {urgentAll.slice(0, 4).map((r) => (
                   <div key={r.id} onClick={() => router.push(`/records/${r.id}`)} className="flex cursor-pointer items-center gap-3 rounded-lg border-l-4 bg-red-50/60 px-3 py-2.5 hover:bg-red-50" style={{ borderColor: C_URGENT }}>
                     {(() => { const { Icon } = specUI(r.specimens?.[0]?.type); return (
@@ -376,14 +386,14 @@ export default function SamplesPage() {
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full" style={{ width: `${tatPct}%`, background: C_DONE }} /></div>
                 <span className="text-sm font-bold text-charcoal-heading">{avgTat != null ? `${avgTat} hrs` : '—'}</span>
               </div>
-              <div className="mt-2 text-xs text-slate-500">{tatHours.length > 0 ? `${tatPct}% of ${tatHours.length} authorized within 72h` : 'No completed turnaround data yet'}</div>
+              <div className="mt-2 text-xs text-slate-500">{recordsLoading ? '\u00a0' : tatHours.length > 0 ? `${tatPct}% of ${tatHours.length} authorized within 72h` : 'No completed turnaround data yet'}</div>
             </Card>
           </div>
 
           {/* Active Worklist */}
           <Card radius="sm" elevation="sm" border="subtle" className="p-0">
             <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5">
-              <span className="text-base font-semibold text-charcoal-heading">Active Worklist ({tabCount('all')})</span>
+              <span className="text-base font-semibold text-charcoal-heading">Active Worklist{recordsLoading ? '' : ` (${tabCount('all')})`}</span>
               <div className="flex items-center gap-2">
                 <div className="flex h-9 w-56 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-slate-500"><Search size={15} /><input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search by patient, ID, accession..." className="w-full border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-500" /></div>
                 <div className="relative">
@@ -443,7 +453,8 @@ export default function SamplesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {!initialLoading && pageRows.length === 0 && <tr><td colSpan={8} className="px-5 py-14 text-center text-sm text-slate-500">No samples found.</td></tr>}
+                  {recordsLoading && <SkeletonRows rows={8} columns={8} />}
+                  {!recordsLoading && !initialLoading && pageRows.length === 0 && <tr><td colSpan={8} className="px-5 py-14 text-center text-sm text-slate-500">No samples found.</td></tr>}
                   {pageRows.map((r) => {
                     const name = patientName(r);
                     const age = ageOf(r.patient?.dateOfBirth);
@@ -516,6 +527,7 @@ export default function SamplesPage() {
         <div className="flex w-full shrink-0 flex-col gap-6 xl:w-[300px]">
           {/* Sample Summary */}
           <Card radius="sm" elevation="sm" border="subtle" className="p-5">
+            {recordsLoading ? <div className="flex flex-col gap-3"><SkeletonText lines={4} /></div> : <>
             <div className="mb-2 flex items-center justify-between"><span className="text-sm font-semibold text-charcoal-heading">Sample Summary</span><span className="rounded-full border border-slate-200 px-2 py-0.5 text-xs text-slate-500">Last 7 days</span></div>
             <div className="text-4xl font-bold text-charcoal-heading">{all.length.toLocaleString()}</div>
             <div className="text-xs text-slate-500">Total samples</div>
@@ -533,10 +545,12 @@ export default function SamplesPage() {
                 </div>
               ))}
             </div>
+          </>}
           </Card>
 
           {/* Completion Rate */}
           <Card radius="sm" elevation="sm" border="subtle" className="p-5">
+            {recordsLoading ? <div className="flex flex-col gap-3"><SkeletonText lines={4} /></div> : <>
             <div className="mb-3 text-sm font-semibold text-charcoal-heading">Completion Rate</div>
             <div className="flex items-center gap-4">
               <div className="relative shrink-0">
@@ -547,6 +561,7 @@ export default function SamplesPage() {
                 {completionSegs.map((s) => <div key={s.label} className="flex items-center justify-between text-xs"><span className="flex items-center gap-1.5 text-slate-600"><span className="h-2 w-2 rounded-full" style={{ background: s.color }} /> {s.label}</span><span className="font-semibold text-charcoal-heading">{s.value}</span></div>)}
               </div>
             </div>
+          </>}
           </Card>
 
           {/* Specimen Distribution */}
@@ -604,7 +619,7 @@ export default function SamplesPage() {
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-1 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Delete this sample?</h3><IconAction icon={<X size={16} />} onClick={() => setConfirmDel(null)} /></div>
             <p className="mt-1 text-sm text-secondary">{confirmDel.labNumber ?? 'This sample'} will be permanently deleted.</p>
-            <div className="mt-5 flex justify-end gap-2"><Button variant="secondary" onClick={() => setConfirmDel(null)}>Cancel</Button><Button style={{ background: 'var(--red-600)' }} disabled={del.isPending} onClick={() => del.mutate(confirmDel.id)}>{del.isPending ? 'Deleting…' : 'Delete'}</Button></div>
+            <div className="mt-5 flex justify-end gap-2"><Button variant="secondary" onClick={() => setConfirmDel(null)}>Cancel</Button><Button style={{ background: 'var(--red-600)' }} loading={del.isPending} loadingLabel="Deleting…" onClick={() => del.mutate(confirmDel.id)}>Delete</Button></div>
           </div>
         </div>
       )}

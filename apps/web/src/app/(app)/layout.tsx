@@ -22,6 +22,7 @@ import { SessionTimeoutProvider } from '@/components/SessionTimeoutProvider';
 import { saveReturnTo, clearReturnTo } from '@/lib/session-drafts';
 import { useAuth, useAuthStore } from '@/lib/auth';
 import { api, refreshSession, validatePersistedSession } from '@/lib/api';
+import { GlobalProgress } from '@/components/GlobalProgress';
 
 interface Announcement { id: string; title: string; body: string; type: string }
 // Announcement banner palette (zero-orange: WARNING uses amber #A16207).
@@ -269,6 +270,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');`}</style>
 
       {/* Idle-timeout warning + auto-draft of open work (authed app only). */}
+      <GlobalProgress />
       <SessionTimeoutProvider />
 
       <header className="top-navigation">

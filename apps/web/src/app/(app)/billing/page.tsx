@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
-import { Card, IconAction } from '@/components/ui';
+import { Card, IconAction, SkeletonRows } from '@/components/ui';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (cents: number) => '$' + ((cents ?? 0) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -64,7 +64,7 @@ function BillingWorkspace() {
 
   const { data: overview } = useQuery<any>({ queryKey: ['patients-overview'], queryFn: () => api.get('/patients/overview').then((r) => r.data) });
   const { data: summary } = useQuery<any>({ queryKey: ['bills-summary'], queryFn: () => api.get('/bills/summary').then((r) => r.data) });
-  const { data: billsPage } = useQuery<Paginated<Bill>>({ queryKey: ['bills-all'], queryFn: () => api.get('/bills', { params: { pageSize: 500 } }).then((r) => r.data) });
+  const { data: billsPage, isLoading: billsLoading } = useQuery<Paginated<Bill>>({ queryKey: ['bills-all'], queryFn: () => api.get('/bills', { params: { pageSize: 500 } }).then((r) => r.data) });
   const allBills = billsPage?.data ?? [];
 
   const refetch = () => { qc.invalidateQueries({ queryKey: ['bills-all'] }); qc.invalidateQueries({ queryKey: ['bills-summary'] }); if (drawerId) qc.invalidateQueries({ queryKey: ['bill', drawerId] }); };
@@ -213,6 +213,7 @@ function BillingWorkspace() {
                 </tr>
               </thead>
               <tbody>
+                {billsLoading && <SkeletonRows rows={8} columns={8} />}
                 {pageRows.map((b) => {
                   const out = outstandingOf(b); const over = isOverdue(b);
                   return (

@@ -26,4 +26,5 @@ export { Input, fieldClass, type InputProps, type FieldStyle } from './Input';
 export { Badge, type BadgeProps } from './Badge';
 export { Th, Td, Tr, type ThProps, type TdProps, type TrProps } from './Table';
 export { EmptyState, TableEmpty, type EmptyStateProps, type TableEmptyProps } from './EmptyState';
+export { Skeleton, SkeletonText, SkeletonRows, SkeletonStat, type SkeletonProps } from './Skeleton';
 export { SectionContainer, type SectionContainerProps } from './SectionContainer';

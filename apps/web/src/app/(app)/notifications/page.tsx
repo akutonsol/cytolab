@@ -11,6 +11,7 @@ import { api } from '@/lib/api';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { Button, IconAction } from '@/components/ui';
+import { notify, errorMessage } from '@/lib/notify';
 
 // ── Unified notification model (merges /notifications + /workforce/notifications) ─
 interface UItem {
@@ -136,10 +137,38 @@ export default function NotificationsPage() {
   };
   const markRead = useMutation({
     mutationFn: (n: UItem) => (n.source === 'wf' ? api.patch(`/workforce/notifications/${n.id}/read`) : api.put(`/notifications/${n.id}/read`)),
-    onSuccess: invalidate,
+    /**
+     * Optimistic: the unread badge drops on click, not on round-trip.
+     *
+     * Only the badge is optimistic. The *list* is left to invalidate normally: the row
+     * a user just clicked is still on screen either way, so guessing at the list adds
+     * risk for no perceived benefit. The badge is what the eye is on.
+     * (Experience Principle §7 — feedback inside 100ms.)
+     */
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ['notifications-unread'] });
+      const previous = qc.getQueryData<number>(['notifications-unread']);
+      qc.setQueryData<number>(['notifications-unread'], (n) => Math.max((n ?? 1) - 1, 0));
+      return { previous };
+    },
+    onError: (error, _n, ctx) => {
+      if (ctx?.previous !== undefined) qc.setQueryData(['notifications-unread'], ctx.previous);
+      notify.error(errorMessage(error, 'Could not mark that as read.'));
+    },
+    onSettled: invalidate,
   });
   const markAll = useMutation({
-    mutationFn: () => Promise.all([api.put('/notifications/read-all').catch(() => {}), api.patch('/workforce/notifications/read-all').catch(() => {})]),
+    // Both endpoints are independent; `allSettled` lets one succeed if the other 404s,
+    // but a total failure must still reach TanStack. The previous `.catch(() => {})`
+    // swallowed every error, so a failed "mark all read" looked exactly like a success —
+    // no global error net can catch what never rejects.
+    mutationFn: async () => {
+      const results = await Promise.allSettled([
+        api.put('/notifications/read-all'),
+        api.patch('/workforce/notifications/read-all'),
+      ]);
+      if (results.every((r) => r.status === 'rejected')) throw (results[0] as PromiseRejectedResult).reason;
+    },
     onSuccess: invalidate,
   });
 

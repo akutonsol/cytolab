@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { Loader2 } from 'lucide-react';
 import { cn } from './cn';
 
 /**
@@ -38,6 +39,16 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: ReactNode;
   /** Stretch to the container width. */
   block?: boolean;
+  /**
+   * In-flight. Swaps the leading icon for a spinner and disables the button.
+   *
+   * The label is NOT replaced with "Saving…": the button must not change width
+   * mid-click, or the pointer ends up over a different control (Experience
+   * Principle §6, no layout shift). Callers that want a verb change should pass
+   * `loadingLabel`.
+   */
+  loading?: boolean;
+  loadingLabel?: ReactNode;
   children?: ReactNode;
 }
 
@@ -46,6 +57,9 @@ export function Button({
   size = 'md',
   icon,
   block,
+  loading = false,
+  loadingLabel,
+  disabled,
   className,
   type = 'button',
   children,
@@ -54,6 +68,8 @@ export function Button({
   return (
     <button
       type={type}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
       className={cn(
         VARIANT[variant],
         SIZE[size],
@@ -63,8 +79,8 @@ export function Button({
       )}
       {...rest}
     >
-      {icon}
-      {children}
+      {loading ? <Loader2 aria-hidden className="h-4 w-4 animate-spin" /> : icon}
+      {loading && loadingLabel ? loadingLabel : children}
     </button>
   );
 }

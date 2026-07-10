@@ -498,6 +498,36 @@
   --identity-6: var(--purple-600);
 }
 
+/* ── Loading shimmer ──────────────────────────────────────────
+ * The ONLY animation in the product driven by a duration token, which is the point:
+ * `prefers-reduced-motion` collapses --duration-* to 1ms, so this stops. The other 99
+ * @keyframes in the codebase animate regardless of the user's setting.
+ * Under reduced motion the skeleton still renders — it just does not sweep. */
+:root { --duration-shimmer: 1400ms; }
+@media (prefers-reduced-motion: reduce) { :root { --duration-shimmer: 0ms; } }
+
+@keyframes helix-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.65) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: helix-shimmer var(--duration-shimmer) linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer { animation: none; background-image: none; }
+}
+
 /* Minimal base (Tailwind preflight is disabled so AntD's reset stays intact).
    We still need Tailwind's border reset: without it the `border` utility sets a
    width + color but no border-style, so card borders render invisible. This

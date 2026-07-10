@@ -1,13 +1,21 @@
 'use client';
 
 import '@/lib/sentry.client'; // guarded Sentry init (no-op without DSN)
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 import { App as AntdApp, ConfigProvider, theme } from 'antd';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, MutationCache, QueryCache } from '@tanstack/react-query';
+import { notify, setNotifier, errorMessage } from '@/lib/notify';
 import { DictationProvider } from '@/lib/dictation-context';
 import { FeatureProvider } from '@/lib/feature-context';
 import { ThemeProvider } from '@/lib/theme-context';
+
+/** antd's `message` must come from App.useApp() to inherit theme + context. */
+function NotifierBridge() {
+  const { message } = AntdApp.useApp();
+  useEffect(() => setNotifier(message), [message]);
+  return null;
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -16,6 +24,46 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultOptions: {
           queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 30_000 },
         },
+        /**
+         * Global safety net (Experience Principle §8: zero silent actions).
+         *
+         * 27 files ran mutations with no success/error handling at all — a failed save
+         * looked exactly like a successful one. These caches guarantee that *any*
+         * unhandled failure is spoken aloud, without touching a single call site.
+         *
+         * A per-call `onError` still wins: if the mutation defines one, we stay quiet and
+         * let the screen say something more specific.
+         */
+        mutationCache: new MutationCache({
+          onError: (error, _vars, _ctx, mutation) => {
+            if (mutation.options.onError) return;
+            notify.error(errorMessage(error));
+          },
+          /**
+           * Zero silent actions. 54 mutations across 27 files acknowledged nothing —
+           * a save and a no-op looked identical.
+           *
+           * A mutation speaks for itself if it defines `onSuccess`. Otherwise this says
+           * something generic. Two escape hatches, because a blanket "Saved" is
+           * occasionally wrong (e.g. a mutation whose whole job is to navigate):
+           *
+           *   meta: { silent: true }              → say nothing, deliberately
+           *   meta: { successMessage: 'Sent' }    → say this instead
+           */
+          onSuccess: (_data, _vars, _ctx, mutation) => {
+            if (mutation.options.onSuccess) return;
+            const meta = mutation.meta as { silent?: boolean; successMessage?: string } | undefined;
+            if (meta?.silent) return;
+            notify.success(meta?.successMessage ?? 'Saved');
+          },
+        }),
+        queryCache: new QueryCache({
+          onError: (error, query) => {
+            // Background refetches fail quietly; only a visible, first-load failure speaks.
+            if (query.state.data !== undefined) return;
+            notify.error(errorMessage(error, 'Could not load this data. Please retry.'));
+          },
+        }),
       }),
   );
 
@@ -65,6 +113,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         }}
       >
         <AntdApp>
+          <NotifierBridge />
           <QueryClientProvider client={queryClient}>
             <FeatureProvider>
               <ThemeProvider>
