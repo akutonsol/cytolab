@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, empName, SHIFT_CHIP } from '@/lib/workforce';
-import { Card } from '@/components/ui';
+import { Card, IconAction } from '@/components/ui';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 // Plain LOCAL calendar date (YYYY-MM-DD) — built from local components, never
@@ -85,9 +85,9 @@ function Grid() {
 
       <Card radius="sm" elevation="sm" border="subtle" className="mb-4 flex flex-wrap items-center justify-between gap-3 p-3">
         <div className="flex items-center gap-2">
-          <button onClick={() => setWeekStart(new Date(+weekStart - 7 * 86_400_000))} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"><ChevronLeft size={16} /></button>
+          <IconAction icon={<ChevronLeft size={16} />} size="lg" className="hover:bg-slate-50 border border-slate-200" onClick={() => setWeekStart(new Date(+weekStart - 7 * 86_400_000))} />
           <span className="min-w-[190px] text-center text-sm font-semibold text-charcoal-heading">{rangeLabel}</span>
-          <button onClick={() => setWeekStart(new Date(+weekStart + 7 * 86_400_000))} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"><ChevronRight size={16} /></button>
+          <IconAction icon={<ChevronRight size={16} />} size="lg" className="hover:bg-slate-50 border border-slate-200" onClick={() => setWeekStart(new Date(+weekStart + 7 * 86_400_000))} />
           <button onClick={() => setWeekStart(mondayOf(new Date()))} className="ml-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50">This week</button>
         </div>
         <select value={deptId} onChange={(e) => setDeptId(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary">
@@ -143,7 +143,7 @@ function Grid() {
       {picker && (
         <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={closePicker}>
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">{picker.current ? 'Change Shift' : 'Assign Shift'}</h3><button onClick={closePicker} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>
+            <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">{picker.current ? 'Change Shift' : 'Assign Shift'}</h3><IconAction icon={<X size={18} />} onClick={closePicker} /></div>
             <div className="mb-3 text-sm text-slate-500">{empName(rows.find((r) => r.id === picker.employeeId))} · {parseLocal(picker.date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</div>
             <div className="flex flex-col gap-2">
               {shifts.map((s: any) => {

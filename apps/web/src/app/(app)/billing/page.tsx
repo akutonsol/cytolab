@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
-import { Card } from '@/components/ui';
+import { Card, IconAction } from '@/components/ui';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (cents: number) => '$' + ((cents ?? 0) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -463,7 +463,7 @@ function BillDrawer({ id, onClose, onPay, onChanged, notify }: { id: string; onC
             <span className="font-mono text-[13px] text-[var(--color-text-secondary)]">{bill?.referenceNo ?? '…'}</span>
             {bill && <StatusBadge status={bill.status} />}
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[var(--color-text-muted)] hover:bg-[var(--gray-100)]"><X size={18} /></button>
+          <IconAction icon={<X size={18} />} tone="faint" className="hover:bg-[var(--gray-100)]" onClick={onClose} />
         </div>
 
         {!bill ? <div className="grid flex-1 place-items-center text-[13px] text-[var(--color-text-muted)]">Loading…</div> : (
@@ -615,7 +615,7 @@ function CreateInvoiceModal({ presetRecordId, onClose, onCreated, notify }: { pr
       <div className="premium-scroll max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between">
           <div><div className="text-[20px] font-bold text-[var(--slate-900)]">Create Invoice</div><div className="mt-0.5 text-[14px] text-[var(--color-text-secondary)]">Bill an approved record.</div></div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[var(--color-text-muted)] hover:bg-[var(--gray-100)]"><X size={18} /></button>
+          <IconAction icon={<X size={18} />} tone="faint" className="hover:bg-[var(--gray-100)]" onClick={onClose} />
         </div>
 
         <div className="mt-5 flex flex-col gap-4">
@@ -711,7 +711,7 @@ function PaymentModal({ bill, onClose, onPaid, notify }: { bill: Bill; onClose: 
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between">
           <div><div className="text-[20px] font-bold text-[var(--slate-900)]">Record Payment</div><div className="mt-0.5 text-[14px] text-[var(--color-text-secondary)]">{bill.referenceNo} · Outstanding {fmt(out)}</div></div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[var(--color-text-muted)] hover:bg-[var(--gray-100)]"><X size={18} /></button>
+          <IconAction icon={<X size={18} />} tone="faint" className="hover:bg-[var(--gray-100)]" onClick={onClose} />
         </div>
         <div className="mt-5 flex flex-col gap-4">
           <label className="flex flex-col gap-1.5"><span className={label}>Amount</span>

@@ -32,6 +32,10 @@ changes. Companion docs: **ARCHITECTURE.md**, **DESIGN_SYSTEM.md**,
   class strings. Primitives consume Tier-2/2.5 + **motion tokens** only. Never write a
   raw duration or easing curve — use `--motion-hover/-press/-focus/-entrance/-modal`.
   Don't rewrite a stable screen just to adopt a primitive. (DESIGN_SYSTEM §6, §8.)
+- **`cn()` + custom font sizes:** `tailwind-merge` classifies our non-t-shirt sizes
+  (`text-body-sm`, `text-label-sm`, `text-hero`, …) as *colours*, so a later `text-<colour>`
+  silently evicts them — no type error, no build error, just the wrong size. `ui/cn.ts`
+  declares them via `extendTailwindMerge`; **keep that list in sync with tailwind.config.ts**.
 - **Keep custom auth, GCS storage, and the Claude-based AI reporting path** (see
   ARCHITECTURE §4). Don't replace them to match the target doc literally.
 

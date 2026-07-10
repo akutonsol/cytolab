@@ -12,7 +12,7 @@ import { api, type Paginated } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Card } from '@/components/ui';
+import { Card, IconAction } from '@/components/ui';
 
 // Stable empty fallback — a fresh [] each render would retrigger the
 // infinite-scroll fetchFn (which depends on the rows array identity).
@@ -296,7 +296,7 @@ function TicketDetail({ id, users, onClose }: { id: string; users: UserLite[]; o
             <h2 className="mt-1 text-[18px] font-bold text-[#0F172A]">{t?.title ?? 'Loading…'}</h2>
             {t && <div className="mt-1 text-[13px] text-[#475569]">{t.submitterName} · {t.submitterType} · {fmtDate(t.createdAt)}</div>}
           </div>
-          <button onClick={onClose} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-[#475569] hover:bg-[#F1F5F9]"><X size={18} /></button>
+          <IconAction icon={<X size={18} />} tone="strong" size="lg" shape="circle" className="hover:bg-[#F1F5F9]" onClick={onClose} aria-label="Close" />
         </div>
 
         {t && (
@@ -633,7 +633,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
       <div className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-full max-w-[560px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-[18px] font-bold text-[#0F172A]">{title}</h2>
-          <button onClick={onClose} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-[#475569] hover:bg-[#F1F5F9]"><X size={18} /></button>
+          <IconAction icon={<X size={18} />} tone="strong" size="lg" shape="circle" className="hover:bg-[#F1F5F9]" onClick={onClose} aria-label="Close" />
         </div>
         {children}
       </div>

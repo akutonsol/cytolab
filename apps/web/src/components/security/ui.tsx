@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { Badge as UiBadge } from '@/components/ui';
+import { Badge as UiBadge, IconAction } from '@/components/ui';
 
 /** Page shell used by every Security Center screen — consistent header + body. */
 export function SecurityPage({
@@ -26,13 +26,7 @@ export function SecurityPage({
     <div className="mx-auto w-full max-w-[1200px]">
       <div className="mb-5 flex items-center gap-3">
         {back && (
-          <button
-            onClick={() => router.push(back)}
-            className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-900"
-            aria-label="Back"
-          >
-            <ArrowLeft size={16} />
-          </button>
+          <IconAction icon={<ArrowLeft size={16} />} size="lg" hover={false} className="border border-slate-200 bg-white hover:text-slate-900" onClick={() => router.push(back)} aria-label="Back" />
         )}
         {icon && (
           <div className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-50 text-indigo-600">{icon}</div>

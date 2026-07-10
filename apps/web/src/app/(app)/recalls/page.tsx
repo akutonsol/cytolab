@@ -14,7 +14,7 @@ import {
   FILTER_TABS, STATUS_META, dueColor, dueLabel, shortDate,
   type Recall, type RecallListRow, type RecallStatus, type RecallSummary,
 } from '@/lib/recall';
-import { Card } from '@/components/ui';
+import { Card, IconAction } from '@/components/ui';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 
@@ -48,7 +48,7 @@ function RecallDetail({ id, onClose }: { id: string; onClose: () => void }) {
       <div className="flex h-full w-full max-w-[600px] flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between border-b border-slate-200 p-5">
           <div><h3 className="text-[18px] font-bold text-[#0F172A]">{r?.patientName ?? 'Loading…'}</h3>{r && <p className="mt-0.5 text-[13px] text-[#475569]">{r.patient?.registrationNo ?? ''} · {r.triggerDiagnosis} recall</p>}</div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" onClick={onClose} />
         </div>
         {r && (
           <div className="flex-1 overflow-y-auto p-5">
@@ -124,7 +124,7 @@ function GenerateListModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2200, background: 'rgba(15,23,42,0.55)' }} onClick={onClose}>
       <style dangerouslySetInnerHTML={{ __html: '@media print { body * { visibility: hidden !important; } .recall-print-area, .recall-print-area * { visibility: visible !important; } .recall-print-area { position: absolute !important; left: 0; top: 0; width: 100%; } @page { margin: 16mm; } }' }} />
       <div className="flex max-h-[88vh] w-full max-w-[720px] flex-col rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-slate-200 p-5"><h3 className="text-[18px] font-bold text-[#0F172A]">Generate Recall List</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button></div>
+        <div className="flex items-center justify-between border-b border-slate-200 p-5"><h3 className="text-[18px] font-bold text-[#0F172A]">Generate Recall List</h3><IconAction icon={<X size={16} />} tone="strong" onClick={onClose} /></div>
         <div className="flex flex-wrap items-center gap-3 border-b border-[#EEF2F7] p-4">
           <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 rounded-lg border border-[#E2E8F0] px-2 text-[13px]"><option value="">Due + Overdue</option>{['Pending', 'Due', 'Overdue', 'Completed'].map((s) => <option key={s} value={s}>{s}</option>)}</select>
           <label className="flex items-center gap-2 text-[13px] text-[#475569]">Due before<input type="date" value={dueBefore} onChange={(e) => setDueBefore(e.target.value)} className="h-9 rounded-lg border border-[#E2E8F0] px-2 text-[13px]" /></label>
@@ -169,7 +169,7 @@ function ManualRecallModal({ onClose }: { onClose: () => void }) {
   return createPortal(
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2200, background: 'rgba(15,23,42,0.55)' }} onClick={onClose}>
       <div className="w-full max-w-[460px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-[18px] font-bold text-[#0F172A]">Manual Recall</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-[18px] font-bold text-[#0F172A]">Manual Recall</h3><IconAction icon={<X size={16} />} tone="strong" onClick={onClose} /></div>
         <div className="flex flex-col gap-3">
           <select value={patientId} onChange={(e) => { setPatientId(e.target.value); setRecordId(''); }} className={inp}><option value="">Select patient…</option>{(patientsPage?.data ?? []).map((p: any) => <option key={p.id} value={p.id}>{p.firstName} {p.lastName}{p.registrationNo ? ` (${p.registrationNo})` : ''}</option>)}</select>
           <select value={triggerRecordId} onChange={(e) => setRecordId(e.target.value)} disabled={!patientId} className={inp}><option value="">{patientId ? 'Select triggering record…' : 'Select a patient first'}</option>{(recsPage?.data ?? []).map((r: any) => <option key={r.id} value={r.id}>{r.labNumber ?? r.identifier} · {new Date(r.specimenDate ?? r.createdAt).toLocaleDateString()}</option>)}</select>

@@ -6,6 +6,7 @@ import { LifeBuoy, X } from 'lucide-react';
 import { App as AntdApp } from 'antd';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { IconAction } from '@/components/ui';
 
 // Staff-facing "Report an Issue" surface. Any authenticated user can submit a
 // support ticket here — it POSTs /system/support/tickets with their auth token
@@ -65,7 +66,7 @@ function ReportIssueModal({ onClose }: { onClose: () => void }) {
       <div className="fixed left-1/2 top-1/2 z-[71] max-h-[90vh] w-full max-w-[520px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
         <div className="mb-1 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-[18px] font-bold text-[#0F172A]"><LifeBuoy size={18} className="text-[#4F46E5]" /> Report an Issue</h2>
-          <button onClick={onClose} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-[#475569] hover:bg-[#F1F5F9]"><X size={18} /></button>
+          <IconAction icon={<X size={18} />} tone="strong" size="lg" shape="circle" className="hover:bg-[#F1F5F9]" onClick={onClose} aria-label="Close" />
         </div>
         <p className="mb-5 text-[13px] text-[#475569]">Describe the problem or request and the support team will pick it up.</p>
 

@@ -9,7 +9,7 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, empName, fmtDate, fmtHours, fmtMultiplier, WF_STATUS } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Card, Button, Th, Td } from '@/components/ui';
+import { Card, Button, Th, Td, IconAction } from '@/components/ui';
 
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
@@ -39,7 +39,7 @@ function CalculateModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Calculate Overtime</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Calculate Overtime</h3><IconAction icon={<X size={18} />} onClick={onClose} /></div>
         <label className="mb-1 block text-sm font-medium text-slate-600">Employee</label>
         <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} className="mb-4 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary">
           <option value="">Select employee…</option>
@@ -82,7 +82,7 @@ function RuleModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Add Overtime Rule</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Add Overtime Rule</h3><IconAction icon={<X size={18} />} onClick={onClose} /></div>
         <label className="mb-1 block text-sm font-medium text-slate-600">Name</label>
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Standard OT" className="mb-4 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary" />
         <div className="mb-4 flex gap-3">

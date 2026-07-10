@@ -17,6 +17,14 @@ type Density = 'compact' | 'cozy' | 'default' | 'roomy';
 /** Header type size. The app ships two: an 11px micro-label and a 14px label. */
 type ThSize = 'xs' | 'sm';
 /**
+ * Two typography families coexist in this codebase:
+ *   `slate`     — text-sm / tracking-wide / --color-table-header (9 tables)
+ *   `reference` — font-label-sm / tracking-wider / text-secondary (3 tables)
+ * Neither is canonical yet; choosing one is a design decision, not a migration.
+ * The axis exists so both adopt the primitive pixel-identically. See DESIGN_SYSTEM §8i.
+ */
+type Family = 'slate' | 'reference';
+/**
  * Cell text colour. `cell` is --color-table-cell (slate-700); `inherit` leaves the
  * colour to the row, which the workforce tables rely on. Not a style choice —
  * convergence debt, documented in DESIGN_SYSTEM §8d.
@@ -40,19 +48,32 @@ const TD_DENSITY: Record<Density, string> = {
 export interface ThProps extends ThHTMLAttributes<HTMLTableCellElement> {
   density?: Density;
   size?: ThSize;
+  family?: Family;
   children?: ReactNode;
 }
 
 const TH_SIZE: Record<ThSize, string> = { xs: 'text-[11px]', sm: 'text-sm' };
 
+const TH_FAMILY: Record<Family, string> = {
+  slate: 'font-semibold tracking-wide text-table-header',
+  reference: 'font-label-sm text-label-sm tracking-wider text-secondary',
+};
+
+const TD_FAMILY: Record<Family, string> = {
+  slate: 'text-table-cell',
+  reference: 'font-body-sm text-body-sm text-on-surface',
+};
+
 /** Column header: uppercase, tracked, muted. */
-export function Th({ density = 'default', size = 'sm', className, children, ...rest }: ThProps) {
+export function Th({ density = 'default', size = 'sm', family = 'slate', className, children, ...rest }: ThProps) {
   return (
     <th
       className={cn(
         TH_DENSITY[density],
-        TH_SIZE[size],
-        'whitespace-nowrap text-left font-semibold uppercase tracking-wide text-table-header',
+        // the reference family sets its own size via font-label-sm/text-label-sm
+        family === 'slate' && TH_SIZE[size],
+        'whitespace-nowrap text-left uppercase',
+        TH_FAMILY[family],
         className,
       )}
       {...rest}
@@ -65,18 +86,19 @@ export function Th({ density = 'default', size = 'sm', className, children, ...r
 export interface TdProps extends TdHTMLAttributes<HTMLTableCellElement> {
   density?: Density;
   tone?: TdTone;
+  family?: Family;
   /** Prevent wrapping (IDs, dates, status columns). */
   nowrap?: boolean;
   children?: ReactNode;
 }
 
-export function Td({ density = 'default', tone = 'cell', nowrap, className, children, ...rest }: TdProps) {
+export function Td({ density = 'default', tone = 'cell', family = 'slate', nowrap, className, children, ...rest }: TdProps) {
   return (
     <td
       className={cn(
         TD_DENSITY[density],
         'align-middle',
-        tone === 'cell' && 'text-table-cell',
+        tone === 'cell' && TD_FAMILY[family],
         nowrap && 'whitespace-nowrap',
         className,
       )}

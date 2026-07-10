@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Banknote, Pencil, Plus, Search, Trash2, UserPlus, Users, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
-import { Button } from '@/components/ui';
+import { Button, IconAction } from '@/components/ui';
 
 type EmploymentType = 'FullTime' | 'PartTime' | 'Contract';
 interface Employee {
@@ -164,8 +164,8 @@ export default function EmployeesPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <button onClick={() => { setEditing(e); setModalOpen(true); }} title="Edit" className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low hover:text-primary"><Pencil size={15} /></button>
-                          <button onClick={() => setConfirm(e)} title="Remove" className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-error-container hover:text-error"><Trash2 size={15} /></button>
+                          <IconAction icon={<Pencil size={15} />} tone="strong" className="hover:bg-surface-container-low text-secondary hover:text-primary" onClick={() => { setEditing(e); setModalOpen(true); }} title="Edit" />
+                          <IconAction icon={<Trash2 size={15} />} tone="strong" className="hover:bg-error-container text-secondary hover:text-error" onClick={() => setConfirm(e)} title="Remove" />
                         </div>
                       </td>
                     </tr>
@@ -270,7 +270,7 @@ function EmployeeModal({ employee, departments, onClose, onSaved, onError }: {
       <div className="flex max-h-[88vh] w-full max-w-[640px] flex-col rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-outline-variant/30 p-6 pb-4">
           <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">{isEdit ? `Edit ${employee!.user.firstName} ${employee!.user.lastName}` : 'New Employee'}</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" className="hover:bg-surface-container-low text-secondary" onClick={onClose} />
         </div>
 
         <div className="overflow-y-auto px-6 py-4">

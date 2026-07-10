@@ -12,7 +12,7 @@ import {
   APPT_TYPES, STATUS_META, TYPE_META, dateKey, longDate, normStatus, normType, timeOf,
   type Appointment, type AppointmentStats,
 } from '@/lib/appointments';
-import { Card } from '@/components/ui';
+import { Card, IconAction } from '@/components/ui';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -39,7 +39,7 @@ function RescheduleModal({ appt, onClose }: { appt: Appointment; onClose: () => 
   return createPortal(
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2400, background: 'rgba(15,23,42,0.55)' }} onClick={onClose}>
       <div className="w-full max-w-[380px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-[17px] font-bold text-[#0F172A]">Reschedule</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-[17px] font-bold text-[#0F172A]">Reschedule</h3><IconAction icon={<X size={16} />} tone="strong" onClick={onClose} /></div>
         <div className="flex gap-2">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-10 flex-1 rounded-lg border border-[#E2E8F0] px-3 text-[14px]" />
           <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="h-10 rounded-lg border border-[#E2E8F0] px-3 text-[14px]" />
@@ -160,9 +160,9 @@ export default function AppointmentsPage() {
         <Card radius="md" elevation="soft" border="hairline" className="p-4">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <button onClick={() => setCursor(new Date(year, month - 2, 1))} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E2E8F0] text-[#475569] hover:bg-slate-50"><ChevronLeft size={16} /></button>
+              <IconAction icon={<ChevronLeft size={16} />} tone="strong" className="hover:bg-slate-50 border border-[#E2E8F0]" onClick={() => setCursor(new Date(year, month - 2, 1))} />
               <span className="min-w-[180px] text-center text-[16px] font-bold text-[#0F172A]">{cursor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
-              <button onClick={() => setCursor(new Date(year, month, 1))} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E2E8F0] text-[#475569] hover:bg-slate-50"><ChevronRight size={16} /></button>
+              <IconAction icon={<ChevronRight size={16} />} tone="strong" className="hover:bg-slate-50 border border-[#E2E8F0]" onClick={() => setCursor(new Date(year, month, 1))} />
             </div>
             <button onClick={() => { const d = new Date(); d.setDate(1); setCursor(d); }} className="rounded-lg border border-[#E2E8F0] px-3 py-1.5 text-[13px] font-semibold text-[#475569]">Today</button>
           </div>
@@ -230,7 +230,7 @@ export default function AppointmentsPage() {
           <div className="flex h-full w-full max-w-[500px] flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-slate-200 p-5">
               <h3 className="text-[17px] font-bold text-[#0F172A]">{longDate(new Date(`${daySel}T00:00`))}</h3>
-              <button onClick={() => setDaySel(null)} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
+              <IconAction icon={<X size={16} />} tone="strong" onClick={() => setDaySel(null)} />
             </div>
             <div className="flex-1 overflow-y-auto p-5">
               {daySelAppts.length === 0 ? (

@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { FEATURES, isBuilt, type FeatureKey } from '@/lib/features';
+import { IconAction } from '@/components/ui';
 
 // Per-lab feature row from GET /lab-features (superuser).
 interface FeatureRow {
@@ -163,7 +164,7 @@ export default function ModuleManagementPage() {
           <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-2xl">
             <div className="mb-1 flex items-center justify-between">
               <h2 className="text-[18px] font-bold text-[#0F172A]">{pending.next ? 'Enable' : 'Disable'} {pendingDef.name}?</h2>
-              <button onClick={() => setPending(null)} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-[#475569] hover:bg-[#F1F5F9]"><X size={18} /></button>
+              <IconAction icon={<X size={18} />} tone="strong" size="lg" shape="circle" className="hover:bg-[#F1F5F9]" onClick={() => setPending(null)} aria-label="Close" />
             </div>
             <p className="mt-2 text-[14px] leading-relaxed text-[#475569]">
               {pending.next

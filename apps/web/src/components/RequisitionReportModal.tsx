@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Mail, Printer, RefreshCw, X } from 'lucide-react';
 import { api } from '@/lib/api';
-import { Button } from '@/components/ui';
+import { Button, IconAction } from '@/components/ui';
 
 interface Props {
   open: boolean;
@@ -87,7 +87,7 @@ export function RequisitionReportModal({ open, onClose, clients }: Props) {
         {/* Chrome (hidden when printing) */}
         <div className="no-print flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <h3 className="text-lg font-bold text-charcoal-heading">Requisition Report</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button>
+          <IconAction icon={<X size={18} />} onClick={onClose} />
         </div>
 
         {/* Controls */}
@@ -116,7 +116,7 @@ export function RequisitionReportModal({ open, onClose, clients }: Props) {
             </select>
           </div>
           <Button onClick={run} disabled={loading}  style={{ opacity: loading ? 0.6 : 1 }}>Run Report</Button>
-          <button onClick={reset} aria-label="Reset" title="Reset to defaults" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button>
+          <IconAction icon={<RefreshCw size={16} className={loading ? 'animate-spin' : ''} />} size="xl" shape="soft" className="hover:bg-slate-50 border border-slate-200" onClick={reset} aria-label="Reset" title="Reset to defaults" />
         </div>
 
         {error && <div className="no-print mx-6 mb-4 rounded-xl border border-error/20 bg-error-container p-3 text-sm text-error">{error}</div>}
@@ -132,8 +132,8 @@ export function RequisitionReportModal({ open, onClose, clients }: Props) {
                 <div className="text-xs text-slate-500">Generated: {fmtDT(report.generatedAt)}</div>
               </div>
               <div className="no-print flex items-center gap-1.5">
-                <button onClick={email} aria-label="Email" title="Email" className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-primary"><Mail size={16} /></button>
-                <button onClick={() => window.print()} aria-label="Print" title="Print" className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-primary"><Printer size={16} /></button>
+                <IconAction icon={<Mail size={16} />} size="lg" className="hover:bg-slate-50 border border-slate-200 hover:text-primary" onClick={email} aria-label="Email" title="Email" />
+                <IconAction icon={<Printer size={16} />} size="lg" className="hover:bg-slate-50 border border-slate-200 hover:text-primary" onClick={() => window.print()} aria-label="Print" title="Print" />
               </div>
             </div>
 

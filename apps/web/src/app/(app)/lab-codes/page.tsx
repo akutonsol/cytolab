@@ -9,7 +9,7 @@ import { api } from '@/lib/api';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { useAuth } from '@/lib/auth';
-import { Card, Button } from '@/components/ui';
+import { Card, Button, IconAction } from '@/components/ui';
 
 interface LabCode {
   id: string;
@@ -87,7 +87,7 @@ function LabCodeModal({ editing, onClose }: { editing: LabCode | 'new'; onClose:
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-bold text-charcoal-heading">{isNew ? 'New Lab Code' : 'Edit Lab Code'}</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button>
+          <IconAction icon={<X size={18} />} onClick={onClose} />
         </div>
         <label className="mb-1 block text-sm font-medium text-slate-600">Code</label>
         <input autoFocus value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="CODE"
@@ -242,7 +242,7 @@ function LabCodesTab() {
                     <td className={CELL}>
                       <div className="flex items-center justify-end gap-1.5">
                         {canEdit && (
-                          <button aria-label="Edit" onClick={() => setModal(c)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-primary"><Pencil size={15} /></button>
+                          <IconAction icon={<Pencil size={15} />} size="lg" className="hover:bg-slate-50 border border-slate-200 hover:text-primary" aria-label="Edit" onClick={() => setModal(c)} />
                         )}
                         {canDelete && (
                           confirmId === c.id ? (
@@ -251,7 +251,7 @@ function LabCodesTab() {
                               <button onClick={() => setConfirmId(null)} className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-500">Cancel</button>
                             </span>
                           ) : (
-                            <button aria-label="Delete" onClick={() => setConfirmId(c.id)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-error-container hover:text-error"><Trash2 size={15} /></button>
+                            <IconAction icon={<Trash2 size={15} />} size="lg" className="hover:bg-error-container border border-slate-200 hover:text-error" aria-label="Delete" onClick={() => setConfirmId(c.id)} />
                           )
                         )}
                       </div>
@@ -368,7 +368,7 @@ function CodeSlideOver({ cfg, editing, onClose }: { cfg: typeof CATALOG_CFG[keyo
       <div className="flex h-full w-full max-w-md flex-col bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <h3 className="text-lg font-bold text-charcoal-heading">{isNew ? cfg.addLabel : `Edit ${cfg.codeLabel}`}</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button>
+          <IconAction icon={<X size={18} />} onClick={onClose} />
         </div>
         <div className="flex-1 overflow-y-auto p-6">
           <label className="mb-1 block text-sm font-medium text-slate-600">{cfg.codeLabel}</label>
@@ -471,14 +471,14 @@ function CodeCatalogTab({ variant }: { variant: 'sheets' | 'findings' }) {
                   <td className={CELL}><span className="text-sm text-charcoal-heading">{fmtDate(r.createdAt)}</span></td>
                   <td className={CELL}>
                     <div className="flex items-center justify-end gap-1.5">
-                      <button aria-label="Edit" onClick={() => setSlideOver(r)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-primary"><Pencil size={15} /></button>
+                      <IconAction icon={<Pencil size={15} />} size="lg" className="hover:bg-slate-50 border border-slate-200 hover:text-primary" aria-label="Edit" onClick={() => setSlideOver(r)} />
                       {confirmId === r.id ? (
                         <span className="flex items-center gap-1">
                           <button onClick={() => del.mutate(r.id)} disabled={del.isPending} className="rounded-lg bg-error px-2.5 py-1.5 text-xs font-semibold text-white">Delete</button>
                           <button onClick={() => setConfirmId(null)} className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-500">Cancel</button>
                         </span>
                       ) : (
-                        <button aria-label="Delete" onClick={() => setConfirmId(r.id)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-error-container hover:text-error"><Trash2 size={15} /></button>
+                        <IconAction icon={<Trash2 size={15} />} size="lg" className="hover:bg-error-container border border-slate-200 hover:text-error" aria-label="Delete" onClick={() => setConfirmId(r.id)} />
                       )}
                     </div>
                   </td>

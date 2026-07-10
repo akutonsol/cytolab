@@ -7,6 +7,7 @@ import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { SLIDE_FORMATS } from '@/lib/wsi';
+import { IconAction } from '@/components/ui';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 
@@ -54,7 +55,7 @@ export function AddSlideModal({ recordId: fixedRecordId, onClose, onSaved }: Pro
       <div className="w-full max-w-[480px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-[18px] font-bold text-[#0F172A]">Add Digital Slide</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" onClick={onClose} />
         </div>
         <div className="flex flex-col gap-3">
           {!fixedRecordId && (

@@ -13,7 +13,7 @@ import { useFeatures } from '@/lib/feature-context';
 import { FeatureGate } from '@/components/FeatureGate';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Card } from '@/components/ui';
+import { Card, IconAction } from '@/components/ui';
 
 interface Rec {
   id: string;
@@ -272,10 +272,7 @@ export default function AuthorizerPage() {
               </button>
             )}
           </FeatureGate>
-          <button onClick={() => qc.invalidateQueries({ queryKey: ['records', 'authorizer'] })} title="Refresh"
-            className="grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 hover:text-primary">
-            <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
-          </button>
+          <IconAction icon={<RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />} size="xl" shape="circle" className="hover:bg-slate-50 border border-slate-200 bg-white hover:text-primary" onClick={() => qc.invalidateQueries({ queryKey: ['records', 'authorizer'] })} title="Refresh" />
           <div className="inline-flex gap-1 rounded-full bg-slate-100 p-1">
             {([['awaiting', 'Awaiting'], ['approved', 'Approved']] as const).map(([v, l]) => (
               <button key={v} onClick={() => { setTab(v); }} className="rounded-full px-5 py-2 text-sm transition-colors"
@@ -414,8 +411,8 @@ export default function AuthorizerPage() {
                               {tab === 'awaiting'
                                 ? <button onClick={() => setAuthorizeRec(r)} className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"><CheckCircle2 size={15} /> Authorize</button>
                                 : <button onClick={() => setAuthorizeRec(r)} className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-primary hover:bg-indigo-50"><Eye size={15} /> Review</button>}
-                              <button aria-label="View record" onClick={() => router.push(`/records/${r.id}`)} className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-primary"><Eye size={16} /></button>
-                              <button aria-label="More actions" onClick={() => router.push(`/records/${r.id}`)} className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreVertical size={16} /></button>
+                              <IconAction icon={<Eye size={16} />} size="lg" className="hover:text-primary" aria-label="View record" onClick={() => router.push(`/records/${r.id}`)} />
+                              <IconAction icon={<MoreVertical size={16} />} size="lg" className="hover:text-slate-600" aria-label="More actions" onClick={() => router.push(`/records/${r.id}`)} />
                             </div>
                           </td>
                         </tr>

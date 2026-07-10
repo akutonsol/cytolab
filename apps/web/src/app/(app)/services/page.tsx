@@ -8,6 +8,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { DS } from '@/lib/drawer-styles';
+import { IconAction } from '@/components/ui';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (cents: number) => '$' + ((cents ?? 0) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -178,9 +179,9 @@ export default function ServicesPage() {
                           </div>
                         ) : (
                           <div className="flex items-center justify-end gap-2">
-                            <button title="Edit" onClick={() => openEdit(s)} className="grid h-9 w-9 place-items-center rounded-xl border border-[#EEF0EE] text-[#475569] transition-colors hover:bg-[#F5F7FF] hover:text-[#4F46E5]"><Pencil size={15} /></button>
+                            <IconAction icon={<Pencil size={15} />} tone="strong" size="lg" shape="soft" className="hover:bg-[#F5F7FF] border border-[#EEF0EE] hover:text-[#4F46E5]" title="Edit" onClick={() => openEdit(s)} />
                             <button title={s.active ? 'Deactivate' : 'Activate'} onClick={() => toggleMut.mutate(s)} disabled={toggleMut.isPending} className="grid h-9 w-9 place-items-center rounded-xl border border-[#EEF0EE] transition-colors hover:bg-[#F5F7FF]" style={{ color: s.active ? '#4F46E5' : '#475569' }}>{s.active ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}</button>
-                            <button title="Delete" onClick={() => setConfirmId(s.id)} className="grid h-9 w-9 place-items-center rounded-xl border border-[#EEF0EE] text-[#475569] transition-colors hover:bg-[#FEF2F2] hover:text-[#DC2626]"><Trash2 size={15} /></button>
+                            <IconAction icon={<Trash2 size={15} />} tone="strong" size="lg" shape="soft" className="hover:bg-[#FEF2F2] border border-[#EEF0EE] hover:text-[#DC2626]" title="Delete" onClick={() => setConfirmId(s.id)} />
                           </div>
                         )}
                       </td>

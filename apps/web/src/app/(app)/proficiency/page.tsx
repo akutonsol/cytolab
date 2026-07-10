@@ -13,7 +13,7 @@ import {
   STATUS_META, TEST_TYPES, TYPE_META, scoreColor, shortDate,
   type ProfAnalytics, type ProfTest, type ProfTestType,
 } from '@/lib/proficiency';
-import { Card } from '@/components/ui';
+import { Card, IconAction } from '@/components/ui';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 
@@ -36,7 +36,7 @@ function NewTestModal({ onClose }: { onClose: (id?: string) => void }) {
   return createPortal(
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2200, background: 'rgba(15,23,42,0.55)' }} onClick={() => onClose()}>
       <div className="w-full max-w-[480px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-[18px] font-bold text-[#0F172A]">New Proficiency Test</h3><button onClick={() => onClose()} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-[18px] font-bold text-[#0F172A]">New Proficiency Test</h3><IconAction icon={<X size={16} />} tone="strong" onClick={() => onClose()} /></div>
         <div className="flex flex-col gap-3">
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Test name, e.g. Q3 2026 CAP Survey" className={inp} />
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Description (optional)" className={inp} />

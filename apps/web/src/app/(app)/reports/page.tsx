@@ -10,7 +10,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Card } from '@/components/ui';
+import { Card, IconAction } from '@/components/ui';
 
 interface Summary { total: number; thisMonth: number; authorized: number; pending: number }
 interface Report {
@@ -312,7 +312,7 @@ function ReleaseModal({ record, onClose, onReleased, onError }: { record: any; o
             <div className="text-[20px] font-bold text-[#0F172A]">Release Report</div>
             <div className="mt-0.5 text-[14px] text-[#6B7280]">{record.labNumber ?? record.identifier} · {record.patient?.firstName} {record.patient?.lastName}</div>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#9CA3AF] hover:bg-[#F3F4F6]"><X size={18} /></button>
+          <IconAction icon={<X size={18} />} tone="faint" className="hover:bg-[#F3F4F6]" onClick={onClose} />
         </div>
         {!resultSheetId ? (
           <div className="mt-5 rounded-xl bg-[#FEF2F2] p-4 text-[13px] text-[#991B1B]">This record has no authorized result sheet to release.</div>

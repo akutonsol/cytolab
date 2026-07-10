@@ -14,7 +14,7 @@ import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { RequisitionFormDrawer } from '@/components/RequisitionFormDrawer';
 import { RequisitionReportModal } from '@/components/RequisitionReportModal';
 import { PendingBatchesTab } from '@/components/requisitions/PendingBatchesTab';
-import { Card, Button } from '@/components/ui';
+import { Card, Button, IconAction } from '@/components/ui';
 
 interface RequisitionLine { id: string; isCompleted: boolean }
 interface Requisition {
@@ -227,8 +227,8 @@ export default function RequisitionsPage() {
                         <td className={CELL}><div className="text-sm font-semibold text-charcoal-heading">{fmtDate(r.dateReceived ?? r.createdAt)}</div><div className="text-[11px] text-slate-500">{fmtTime(r.dateReceived ?? r.createdAt)}</div></td>
                         <td className={CELL}>
                           <div className="flex items-center justify-end gap-1.5">
-                            <button aria-label="View" className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-primary"><Eye size={16} /></button>
-                            <button aria-label="More" className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreHorizontal size={16} /></button>
+                            <IconAction icon={<Eye size={16} />} size="lg" className="hover:bg-slate-50 border border-slate-200 hover:text-primary" aria-label="View" />
+                            <IconAction icon={<MoreHorizontal size={16} />} size="lg" className="border border-slate-200 hover:text-slate-600" aria-label="More" />
                           </div>
                         </td>
                       </tr>

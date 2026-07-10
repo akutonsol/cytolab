@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Crosshair, Loader2, Maximize2, Minus, Plus } from 'lucide-react';
+import { IconAction } from '@/components/ui';
 
 export interface SlideAnnotation {
   id?: string;
@@ -121,9 +122,9 @@ export function WSIViewer({ slideUrl, format, annotations, readOnly = false, onA
     <div className={`relative h-full w-full overflow-hidden bg-black ${className ?? ''}`}>
       {/* Toolbar */}
       <div className="absolute left-3 top-3 z-20 flex items-center gap-2 rounded-xl bg-slate-900/90 px-2 py-1.5 shadow-lg ring-1 ring-white/10 backdrop-blur">
-        <button onClick={() => zoomBy(1.4)} title="Zoom in" className="grid h-8 w-8 place-items-center rounded-lg text-white hover:bg-white/10"><Plus size={16} /></button>
-        <button onClick={() => zoomBy(1 / 1.4)} title="Zoom out" className="grid h-8 w-8 place-items-center rounded-lg text-white hover:bg-white/10"><Minus size={16} /></button>
-        <button onClick={resetView} title="Reset view" className="grid h-8 w-8 place-items-center rounded-lg text-white hover:bg-white/10"><Maximize2 size={15} /></button>
+        <IconAction icon={<Plus size={16} />} tone="inverse" onClick={() => zoomBy(1.4)} title="Zoom in" />
+        <IconAction icon={<Minus size={16} />} tone="inverse" onClick={() => zoomBy(1 / 1.4)} title="Zoom out" />
+        <IconAction icon={<Maximize2 size={15} />} tone="inverse" onClick={resetView} title="Reset view" />
         {!readOnly && onAddAnnotation && (
           <>
             <span className="mx-0.5 h-5 w-px bg-white/15" />

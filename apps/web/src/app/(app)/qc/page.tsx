@@ -15,6 +15,7 @@ import {
   CHECK_TYPES, RESULT_META, checkTypeLabel,
   type Equipment, type QCAlert, type QCCheck, type QCResult, type QCStats,
 } from '@/lib/qc';
+import { IconAction } from '@/components/ui';
 
 function ResultBadge({ r }: { r: QCResult }) {
   const m = RESULT_META[r];
@@ -84,7 +85,7 @@ function LogQCModal({ equipment, onClose }: { equipment: Equipment[]; onClose: (
       <div className="flex h-full w-full max-w-[520px] flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-200 p-5">
           <h3 className="text-[18px] font-bold text-[#0F172A]">Log QC Check</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" onClick={onClose} />
         </div>
         <div className="flex-1 overflow-y-auto p-5">
           <Field label="Check Type">
@@ -158,7 +159,7 @@ function ResolveModal({ alert, onClose }: { alert: QCAlert; onClose: () => void 
       <div className="flex h-full w-full max-w-[480px] flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-200 p-5">
           <h3 className="text-[18px] font-bold text-[#0F172A]">Resolve QC Failure</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" onClick={onClose} />
         </div>
         <div className="flex-1 overflow-y-auto p-5">
           <div className="rounded-xl border px-4 py-3" style={{ background: '#FEF2F2', borderColor: '#FECACA' }}>

@@ -9,7 +9,7 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, empName, fmtDate } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Card, Button } from '@/components/ui';
+import { Card, Button, IconAction } from '@/components/ui';
 
 // Stable empty fallback — a fresh [] each render would retrigger the
 // infinite-scroll fetchFn (which depends on the filtered array identity).
@@ -35,7 +35,7 @@ function GenerateModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Generate Timesheet</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Generate Timesheet</h3><IconAction icon={<X size={18} />} onClick={onClose} /></div>
         <label className="mb-1 block text-sm font-medium text-slate-600">Employee</label>
         <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} className="mb-4 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary">
           <option value="">Select employee…</option>
@@ -109,7 +109,7 @@ function List() {
                     <td className={CELL}>
                       <div className="flex items-center justify-end gap-1.5">
                         <Link href={`/workforce/timesheets/${r.id}`} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-primary" title="View"><Eye size={16} /></Link>
-                        {r.status === 'Draft' && <button onClick={() => act.mutate({ id: r.id, action: 'submit' })} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50" title="Submit"><Send size={15} /></button>}
+                        {r.status === 'Draft' && <IconAction icon={<Send size={15} />} size="lg" className="hover:bg-slate-50 border border-slate-200" onClick={() => act.mutate({ id: r.id, action: 'submit' })} title="Submit" />}
                         {['Submitted', 'UnderReview'].includes(r.status) && <>
                           <button onClick={() => act.mutate({ id: r.id, action: 'approve' })} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-green-700 hover:bg-green-50" title="Approve"><Check size={16} /></button>
                           <button onClick={() => { const reason = window.prompt('Reason for rejection?'); if (reason) act.mutate({ id: r.id, action: 'reject', reason }); }} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-red-600 hover:bg-red-50" title="Reject"><X size={16} /></button>

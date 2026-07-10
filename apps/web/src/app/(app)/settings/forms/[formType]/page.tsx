@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { IconAction } from '@/components/ui';
 
 interface Field { id: string; fieldKey: string; label: string; fieldType: 'TEXT' | 'CHECKBOX'; showWhenPrinting: boolean; printGroupId: string | null; sortOrder: number; enabled: boolean }
 interface Group { id: string; name: string; sortOrder: number }
@@ -150,7 +151,7 @@ export default function EditFormPage() {
                         <span className="text-[11px] uppercase tracking-wide text-[#9CA3AF]">Type</span>
                         <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#F3F4F6]" style={{ color: f.fieldType === 'CHECKBOX' ? '#4F46E5' : '#6B7280' }}><Icon size={16} /></span>
                       </div>
-                      <button onClick={() => setExpandedId(open ? undefined : f.id)} className="grid h-8 w-8 place-items-center rounded-lg text-[#9CA3AF] hover:bg-[#F3F4F6] hover:text-[#4F46E5]"><Pencil size={15} /></button>
+                      <IconAction icon={<Pencil size={15} />} tone="faint" className="hover:bg-[#F3F4F6] hover:text-[#4F46E5]" onClick={() => setExpandedId(open ? undefined : f.id)} />
                       <Toggle checked={f.enabled} onChange={(v) => { setFields((s) => s.map((x) => x.id === f.id ? { ...x, enabled: v } : x)); patch.mutate({ id: f.id, body: { enabled: v } }); }} />
                     </div>
                     {open && (

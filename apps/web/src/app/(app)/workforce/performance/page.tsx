@@ -9,7 +9,7 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, useMyEmployee, empName, fmtDate } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Card, Button, Th, Td } from '@/components/ui';
+import { Card, Button, Th, Td, IconAction } from '@/components/ui';
 
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
@@ -62,7 +62,7 @@ function NewReviewModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={onClose}>
       <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">New Performance Review</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">New Performance Review</h3><IconAction icon={<X size={18} />} onClick={onClose} /></div>
         <label className="mb-1 block text-sm font-medium text-slate-600">Employee</label>
         <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} className="mb-4 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary">
           <option value="">Select employee…</option>{employees.map((e) => <option key={e.id} value={e.id}>{empName(e)}</option>)}
@@ -107,7 +107,7 @@ function ReviewDrawer({ id, onClose }: { id: string; onClose: () => void }) {
             <div className="text-lg font-bold text-charcoal-heading">{r ? empName(r.employee) : 'Review'}</div>
             <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">{r && <Badge status={r.status} map={REVIEW_STATUS} />}<span>{r?.period}</span></div>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button>
+          <IconAction icon={<X size={18} />} onClick={onClose} />
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-6">
@@ -232,7 +232,7 @@ function NewGoalModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">New Goal</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">New Goal</h3><IconAction icon={<X size={18} />} onClick={onClose} /></div>
         <label className="mb-1 block text-sm font-medium text-slate-600">Employee</label>
         <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} className="mb-4 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary">
           <option value="">Select employee…</option>{employees.map((e) => <option key={e.id} value={e.id}>{empName(e)}</option>)}
@@ -261,7 +261,7 @@ function GoalEditor({ goal, onClose }: { goal: any; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">{goal.title}</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">{goal.title}</h3><IconAction icon={<X size={18} />} onClick={onClose} /></div>
         <label className="mb-1 flex items-center justify-between text-sm font-medium text-slate-600">Progress <span className="font-bold text-primary">{progress}%</span></label>
         <input type="range" min="0" max="100" value={progress} onChange={(e) => setProgress(Number(e.target.value))} className="mb-4 w-full accent-primary" />
         <label className="mb-1 block text-sm font-medium text-slate-600">Status</label>

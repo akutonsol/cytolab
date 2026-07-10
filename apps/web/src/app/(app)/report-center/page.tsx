@@ -12,7 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
 import { CATEGORIES, REPORTS, fmtValue, type ReportCategory, type ReportDef } from '@/lib/report-center';
-import { Card } from '@/components/ui';
+import { Card, IconAction } from '@/components/ui';
 
 
 // ── Category coding (color + icon + full label) ──────────────────────────────
@@ -370,9 +370,7 @@ function FeaturedCard({ r, runs, onRun }: { r: ReportDef; runs: number; onRun: (
           <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color }}>Most Used · {numFmt(runs)}</div>
           <div className="text-[11px] text-[#475569]">Updated {relTime(updatedFor(r.id))}</div>
         </div>
-        <button aria-label={`Run ${r.name}`} onClick={onRun} className="grid h-9 w-9 place-items-center rounded-full text-white transition-transform hover:scale-105" style={{ background: color }}>
-          <ArrowUpRight size={16} />
-        </button>
+        <IconAction icon={<ArrowUpRight size={16} />} tone="inverse" size="lg" shape="circle" hover={false} className="transition-transform hover:scale-105" aria-label={`Run ${r.name}`} onClick={onRun} style={{ background: color }} />
       </div>
     </Card>
   );
@@ -397,7 +395,7 @@ function ReportCard({ r, runs, fav, menuOpen, onRun, onCustomize, onShare, onTog
       <div className="mt-3 flex items-center justify-between">
         <span className="text-[12px] font-medium text-[#475569]">{numFmt(runs)} runs</span>
         <div className="relative">
-          <button aria-label="More actions" onClick={onMenu} className="grid h-7 w-7 place-items-center rounded-lg text-[#475569] hover:bg-slate-100 hover:text-[#475569]"><MoreVertical size={15} /></button>
+          <IconAction icon={<MoreVertical size={15} />} tone="strong" size="sm" className="hover:text-[#475569]" aria-label="More actions" onClick={onMenu} />
           {menuOpen && (
             <div className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-xl border border-[#EEF2F7] bg-white py-1 shadow-lg" onClick={(e) => e.stopPropagation()}>
               <MenuItem icon={<Play size={13} />} label="Run" onClick={onRun} />

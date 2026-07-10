@@ -11,7 +11,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Card } from '@/components/ui';
+import { Card, IconAction } from '@/components/ui';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (cents: number) => '$' + ((cents ?? 0) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -273,11 +273,11 @@ export default function PaymentsPage() {
                         <td className="px-4 py-3.5 text-[13px] text-[#475569]">Recorded</td>
                         <td className="px-4 py-3.5">
                           <div className="flex items-center justify-end gap-1.5">
-                            <button title="Download receipt" className="grid h-8 w-8 place-items-center rounded-full border border-[#E2E8F0] text-[#475569] transition-colors hover:bg-[#F5F7FF]"><Download size={14} /></button>
-                            <button title="Open bill" onClick={() => router.push('/billing')} className="grid h-8 w-8 place-items-center rounded-full border border-[#E2E8F0] text-[#475569] transition-colors hover:bg-[#F5F7FF] hover:text-[#4F46E5]"><ExternalLink size={14} /></button>
+                            <IconAction icon={<Download size={14} />} tone="strong" shape="circle" className="hover:bg-[#F5F7FF] border border-[#E2E8F0]" title="Download receipt" />
+                            <IconAction icon={<ExternalLink size={14} />} tone="strong" shape="circle" className="hover:bg-[#F5F7FF] border border-[#E2E8F0] hover:text-[#4F46E5]" title="Open bill" onClick={() => router.push('/billing')} />
                             <button title={p.verified ? 'Verified' : 'Verify payment'} disabled={p.verified || verify.isPending} onClick={() => verify.mutate(p.id)} className="grid h-8 w-8 place-items-center rounded-full border border-[#E2E8F0] transition-colors hover:bg-[#F5F7FF]" style={{ color: p.verified ? '#CBD5E1' : '#4F46E5', cursor: p.verified ? 'default' : 'pointer' }}><CheckCircle2 size={14} /></button>
                             <div className="relative">
-                              <button title="More" onClick={() => setMenuId(menuId === p.id ? null : p.id)} className="grid h-8 w-8 place-items-center rounded-full border border-[#E2E8F0] text-[#475569] transition-colors hover:bg-[#F5F7FF]"><MoreHorizontal size={14} /></button>
+                              <IconAction icon={<MoreHorizontal size={14} />} tone="strong" shape="circle" className="hover:bg-[#F5F7FF] border border-[#E2E8F0]" title="More" onClick={() => setMenuId(menuId === p.id ? null : p.id)} />
                               {menuId === p.id && (
                                 <>
                                   <div className="fixed inset-0 z-10" onClick={() => setMenuId(null)} />

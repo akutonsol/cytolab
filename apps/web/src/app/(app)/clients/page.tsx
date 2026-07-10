@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { ClientFormDrawer, type ClientRecord } from '@/components/ClientFormDrawer';
-import { Th, Td, Badge, Button } from '@/components/ui';
+import { Th, Td, Badge, Button, IconAction } from '@/components/ui';
 
 
 // Deterministic avatar colour from the client name (sum of char codes % palette).
@@ -250,7 +250,7 @@ export default function ClientsPage() {
                     <Td density="roomy" className="text-base">
                       <div className="flex items-center gap-2">
                         <Button variant="secondary" onClick={() => openEdit(r)}><Pencil size={14} /> Edit</Button>
-                        <button aria-label="More actions" className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreVertical size={16} /></button>
+                        <IconAction icon={<MoreVertical size={16} />} size="lg" className="hover:text-slate-600" aria-label="More actions" />
                       </div>
                     </Td>
                   )}

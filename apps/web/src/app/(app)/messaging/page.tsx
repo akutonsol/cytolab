@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { ClientSelect } from '@/components/ClientSelect';
+import { IconAction } from '@/components/ui';
 
 // Brand avatar palette (no orange). Colour picked deterministically by name hash.
 const BRAND = ['#4f7df9', '#6366f1', '#0d9488', '#16a34a', '#9333ea', '#0ea5e9'];
@@ -183,8 +184,8 @@ export default function MessagingPage() {
             <ChevronDown size={16} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-text-secondary" />
           </div>
           <div className="flex items-center gap-2">
-            <button aria-label="Filter" className="grid h-8 w-8 place-items-center rounded-full border border-[#eef2f7] text-[#9ca3af] transition-colors hover:text-[#111827]"><Filter size={15} /></button>
-            <button aria-label="Search" className="grid h-8 w-8 place-items-center rounded-full border border-[#eef2f7] text-[#9ca3af] transition-colors hover:text-[#111827]"><Search size={15} /></button>
+            <IconAction icon={<Filter size={15} />} tone="faint" shape="circle" hover={false} className="border border-[#eef2f7] hover:text-[#111827]" aria-label="Filter" />
+            <IconAction icon={<Search size={15} />} tone="faint" shape="circle" hover={false} className="border border-[#eef2f7] hover:text-[#111827]" aria-label="Search" />
           </div>
         </div>
 
@@ -244,7 +245,7 @@ export default function MessagingPage() {
                     className="w-24 border-none bg-transparent text-[13px] text-[#111827] outline-none placeholder:text-[#9ca3af] focus:w-36 transition-all"
                   />
                 </div>
-                <button aria-label="More" className="grid h-9 w-9 place-items-center rounded-full border border-[#eef2f7] text-[#9ca3af] hover:text-[#111827]"><MoreHorizontal size={17} /></button>
+                <IconAction icon={<MoreHorizontal size={17} />} tone="faint" size="lg" shape="circle" hover={false} className="border border-[#eef2f7] hover:text-[#111827]" aria-label="More" />
               </div>
             </div>
 
@@ -309,8 +310,8 @@ export default function MessagingPage() {
       {thread && (
         <aside className="premium-scroll hidden w-[300px] shrink-0 flex-col overflow-y-auto rounded-2xl border border-card bg-surface p-5 shadow-card xl:flex">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <button aria-label="Collapse panel" className="grid h-9 w-9 place-items-center rounded-full border border-[#eef2f7] text-[#9ca3af] hover:text-[#111827]"><ChevronDown size={16} className="rotate-90" /></button>
-            <button aria-label="Video call" className="grid h-9 w-9 place-items-center rounded-full bg-primary-soft text-primary"><Video size={16} /></button>
+            <IconAction icon={<ChevronDown size={16} className="rotate-90" />} tone="faint" size="lg" shape="circle" hover={false} className="border border-[#eef2f7] hover:text-[#111827]" aria-label="Collapse panel" />
+            <IconAction icon={<Video size={16} />} tone="primary" size="lg" shape="circle" hover={false} className="bg-primary-soft" aria-label="Video call" />
           </div>
           <div className="flex flex-col items-center text-center">
             <div className="rounded-full p-1 ring-1 ring-[#c9d8ff]">

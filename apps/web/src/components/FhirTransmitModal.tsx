@@ -7,6 +7,7 @@ import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { type FhirEndpoint, type FhirPreview } from '@/lib/fhir';
+import { IconAction } from '@/components/ui';
 
 export function FhirTransmitModal({ recordId, onClose }: { recordId: string; onClose: () => void }) {
   const qc = useQueryClient();
@@ -30,7 +31,7 @@ export function FhirTransmitModal({ recordId, onClose }: { recordId: string; onC
       <div className="flex max-h-[88vh] w-full max-w-[640px] flex-col rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-200 p-5">
           <h3 className="text-[18px] font-bold text-[#0F172A]">Transmit to EMR</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" onClick={onClose} />
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">

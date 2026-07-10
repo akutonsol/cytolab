@@ -7,6 +7,7 @@ import { App as AntdApp } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { APPT_TYPES, TYPE_META, type AppointmentType } from '@/lib/appointments';
+import { IconAction } from '@/components/ui';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 const lbl = 'mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]';
@@ -51,7 +52,7 @@ export function NewAppointmentModal({ onClose, onCreated, defaults }: Props) {
       <div className="w-full max-w-[520px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-[18px] font-bold text-[#0F172A]">New Appointment</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" onClick={onClose} />
         </div>
         <div className="flex flex-col gap-3">
           {!defaults?.patientId ? (

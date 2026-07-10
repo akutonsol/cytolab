@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { LabelPreview } from './LabelPreview';
 import { LABEL_FORMATS, expandLabels, formatById, type LabelData, type LabelFormatId } from '@/lib/labels';
+import { IconAction } from '@/components/ui';
 
 interface Props {
   recordIds: string[];
@@ -53,7 +54,7 @@ export function PrintLabelsModal({ recordIds, onClose }: Props) {
       <div className="flex max-h-[90vh] w-full max-w-[720px] flex-col rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-200 p-5">
           <h3 className="flex items-center gap-2 text-[18px] font-bold text-[#0F172A]"><Printer size={20} className="text-[#4F46E5]" /> Print Slide Labels</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" onClick={onClose} />
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
@@ -75,9 +76,9 @@ export function PrintLabelsModal({ recordIds, onClose }: Props) {
           <div className="mb-4 flex items-center gap-3">
             <span className="text-[12px] font-semibold uppercase tracking-wide text-[#475569]">Copies per record</span>
             <div className="flex items-center gap-2">
-              <button onClick={() => setCopies((c) => Math.max(1, c - 1))} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E2E8F0] text-[#475569]"><Minus size={14} /></button>
+              <IconAction icon={<Minus size={14} />} tone="strong" hover={false} className="border border-[#E2E8F0]" onClick={() => setCopies((c) => Math.max(1, c - 1))} />
               <span className="w-6 text-center text-[15px] font-bold text-[#0F172A]">{copies}</span>
-              <button onClick={() => setCopies((c) => Math.min(5, c + 1))} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E2E8F0] text-[#475569]"><Plus size={14} /></button>
+              <IconAction icon={<Plus size={14} />} tone="strong" hover={false} className="border border-[#E2E8F0]" onClick={() => setCopies((c) => Math.min(5, c + 1))} />
             </div>
           </div>
 

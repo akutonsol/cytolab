@@ -2,7 +2,7 @@
 
 import { createPortal } from 'react-dom';
 import { Mic, MicOff, X } from 'lucide-react';
-import { Button } from '@/components/ui';
+import { Button, IconAction } from '@/components/ui';
 
 interface Props {
   open: boolean;
@@ -26,7 +26,7 @@ export function MicPermissionPrompt({ open, mode, onAllow, onClose }: Props) {
             </span>
             <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">{mode === 'ask' ? 'Enable voice dictation' : 'Microphone blocked'}</h3>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" className="text-secondary" onClick={onClose} />
         </div>
 
         {mode === 'ask' ? (

@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import {
   CODING_TYPES, SYSTEM_META, type CodeSystem, type CodingType, type MedicalCode, type RecordCoding, type Suggestion,
 } from '@/lib/coding';
+import { IconAction } from '@/components/ui';
 
 function SystemBadge({ system }: { system: CodeSystem }) {
   const m = SYSTEM_META[system];
@@ -53,7 +54,7 @@ export function CodingPanel({ recordId, meta, onClose }: { recordId: string; met
               {meta?.patientInitials ? ` · ${meta.patientInitials}` : ''}{meta?.specimenType ? ` · ${meta.specimenType}` : ''}{meta?.bethesda ? ` · ${meta.bethesda}` : ''}
             </p>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" onClick={onClose} />
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">

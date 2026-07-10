@@ -17,7 +17,7 @@ import { useFeatures } from '@/lib/feature-context';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import type { FormType } from '@/lib/specimen-types';
-import { Card, Button } from '@/components/ui';
+import { Card, Button, IconAction } from '@/components/ui';
 
 interface Rec {
   id: string; labNumber?: string | null; identifier?: string; formType?: string | null; status: string; urgent: boolean;
@@ -481,7 +481,7 @@ export default function SamplesPage() {
                         <td className={CELL}><div className="text-sm text-charcoal-heading">{dateFmt(r.specimenDate ?? r.createdAt)}</div><div className="text-[11px] text-slate-500">{clock(r.specimenDate ?? r.createdAt)}</div></td>
                         <td className={CELL}>
                           <div className="relative flex justify-end">
-                            <button aria-label="Details" onClick={() => setMenuId(menuId === r.id ? null : r.id)} className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreHorizontal size={16} /></button>
+                            <IconAction icon={<MoreHorizontal size={16} />} size="lg" className="hover:text-slate-600" aria-label="Details" onClick={() => setMenuId(menuId === r.id ? null : r.id)} />
                             {menuId === r.id && (
                               <>
                                 <div className="fixed inset-0 z-10" onClick={() => setMenuId(null)} />
@@ -602,7 +602,7 @@ export default function SamplesPage() {
       {confirmDel && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setConfirmDel(null)}>
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-1 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Delete this sample?</h3><button onClick={() => setConfirmDel(null)} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={16} /></button></div>
+            <div className="mb-1 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Delete this sample?</h3><IconAction icon={<X size={16} />} onClick={() => setConfirmDel(null)} /></div>
             <p className="mt-1 text-sm text-secondary">{confirmDel.labNumber ?? 'This sample'} will be permanently deleted.</p>
             <div className="mt-5 flex justify-end gap-2"><Button variant="secondary" onClick={() => setConfirmDel(null)}>Cancel</Button><Button style={{ background: 'var(--red-600)' }} disabled={del.isPending} onClick={() => del.mutate(confirmDel.id)}>{del.isPending ? 'Deleting…' : 'Delete'}</Button></div>
           </div>

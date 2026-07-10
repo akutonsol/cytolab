@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { AlertTriangle, CalendarClock, FileText, History, Stethoscope, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { IconAction } from '@/components/ui';
 
 interface HistoryRecord {
   id: string;
@@ -126,7 +127,7 @@ export function PriorHistoryPanel({ open, onClose, patientId, excludeRecordId }:
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" className="text-secondary" onClick={onClose} />
         </div>
 
         {/* Filters (client-side; combine with AND) */}

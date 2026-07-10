@@ -6,7 +6,7 @@ import { ArrowUpRight, ChevronDown, Folder, MoreHorizontal, Plus, Search, Slider
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { ClientSelect } from '@/components/ClientSelect';
-import { Button } from '@/components/ui';
+import { Button, IconAction } from '@/components/ui';
 
 // The six folder swatches (keys mirror the backend CABINET_COLORS). Orange here is
 // only a user-chosen folder colour swatch — never used for a status/accent.
@@ -179,7 +179,7 @@ export default function CabinetsPage() {
                     </div>
                   ) : <div className="mt-2 text-small font-medium text-text-secondary">No urgent records in this folder.</div>}
                   <div className="mt-4 flex justify-end">
-                    <button onClick={() => setStatus(undefined)} aria-label="Open" className="grid h-10 w-10 place-items-center rounded-full bg-text text-white hover:bg-text/90"><ArrowUpRight size={18} /></button>
+                    <IconAction icon={<ArrowUpRight size={18} />} tone="inverse" size="xl" shape="circle" className="hover:bg-text/90 bg-text" onClick={() => setStatus(undefined)} aria-label="Open" />
                   </div>
                 </div>
               </div>
@@ -290,7 +290,7 @@ function StatBig({ tint, label, value, labelColor, onClick }: { tint: string; la
     <div className="col-span-1 flex flex-col justify-between rounded-card p-5" style={{ background: tint }}>
       <div className="flex items-start justify-between">
         <div className={`text-caption font-bold uppercase tracking-wide ${labelColor}`}>{label}</div>
-        <button onClick={onClick} aria-label={label} className="grid h-9 w-9 place-items-center rounded-full bg-white/70 text-text-secondary hover:text-text"><ArrowUpRight size={16} /></button>
+        <IconAction icon={<ArrowUpRight size={16} />} size="lg" shape="circle" hover={false} className="text-text-secondary bg-white/70 hover:text-text" onClick={onClick} aria-label={label} />
       </div>
       <div className="mt-6 text-[40px] font-extrabold leading-none tracking-tight text-text">{value}</div>
     </div>

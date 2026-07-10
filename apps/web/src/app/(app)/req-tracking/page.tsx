@@ -13,6 +13,7 @@ import {
   type TrackingCard, type TrackingDetail, type TrackingStats,
 } from '@/lib/req-tracking';
 import { PrintLabelsModal } from '@/components/PrintLabelsModal';
+import { IconAction } from '@/components/ui';
 
 function StageBadge({ stage }: { stage: keyof typeof STAGE_META }) {
   const m = STAGE_META[stage];
@@ -46,7 +47,7 @@ function DetailDrawer({ requisitionId, onClose }: { requisitionId: string; onClo
             <h3 className="text-[18px] font-bold text-[#0F172A]">Requisition {data?.referenceNo ?? ''}</h3>
             <p className="mt-0.5 text-[13px] text-[#475569]">{data ? `${data.clientName} · ${data.patientName}` : 'Loading…'}</p>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" onClick={onClose} />
         </div>
 
         {data && (
@@ -130,7 +131,7 @@ function ScannerModal({ onClose, onOpenDetail }: { onClose: () => void; onOpenDe
       <div className="w-full max-w-[460px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-[18px] font-bold text-[#0F172A]"><ScanLine size={20} className="text-[#4F46E5]" /> Scan Barcode</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" onClick={onClose} />
         </div>
         <form onSubmit={(e) => { e.preventDefault(); if (value.trim()) scan.mutate(value.trim()); }}>
           <input ref={inputRef} value={value} onChange={(e) => setValue(e.target.value)} placeholder="Scan or type barcode / req number…"

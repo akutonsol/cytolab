@@ -13,7 +13,7 @@ import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { ResultSheetModal } from '@/components/ResultSheetModal';
 import { RecordFormDrawer } from '@/components/RecordFormDrawer';
 import type { FormType } from '@/lib/specimen-types';
-import { Card, Button } from '@/components/ui';
+import { Card, Button, IconAction } from '@/components/ui';
 
 interface Rec {
   id: string;
@@ -352,9 +352,9 @@ export default function ResultSheetsPage() {
         <td className={CELL}><span className="rounded-full px-2.5 py-1 text-[10px] font-bold" style={{ background: up.bg, color: up.fg }}>{urg}</span></td>
         <td className={CELL}>
           <div className="flex items-center justify-end gap-1.5">
-            <button aria-label="View" onClick={() => setViewRec(r)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-primary"><Eye size={16} /></button>
+            <IconAction icon={<Eye size={16} />} size="lg" className="hover:bg-slate-50 border border-slate-200 hover:text-primary" aria-label="View" onClick={() => setViewRec(r)} />
             <div className="relative">
-              <button aria-label="More" onClick={() => setOpenMenu(openMenu === r.id ? null : r.id)} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreHorizontal size={16} /></button>
+              <IconAction icon={<MoreHorizontal size={16} />} size="lg" className="border border-slate-200 hover:text-slate-600" aria-label="More" onClick={() => setOpenMenu(openMenu === r.id ? null : r.id)} />
               {openMenu === r.id && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setOpenMenu(null)} />
@@ -435,7 +435,7 @@ export default function ResultSheetsPage() {
             <select aria-label="Filter by AI confidence" className={SELECT} value={confF} onChange={(e) => { setConfF(e.target.value); }}><option value="all">AI Confidence</option><option value="High">High</option><option value="Moderate">Moderate</option><option value="Low">Low</option></select>
             <button className="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 hover:bg-slate-50"><SlidersHorizontal size={15} /> Filters</button>
             <Button onClick={() => setSheetFor(all[0] ?? null)}><Plus size={16} /> New Result Sheet</Button>
-            <button aria-label="Export" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50"><Download size={16} /></button>
+            <IconAction icon={<Download size={16} />} size="xl" shape="soft" className="hover:bg-slate-50 border border-slate-200" aria-label="Export" />
           </Card>
 
           {isError && (
@@ -564,7 +564,7 @@ export default function ResultSheetsPage() {
         <Overlay onClose={() => setViewRec(null)}>
           <div className="mb-5 flex items-center justify-between">
             <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">Record details</h3>
-            <button onClick={() => setViewRec(null)} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low"><X size={16} /></button>
+            <IconAction icon={<X size={16} />} tone="strong" className="hover:bg-surface-container-low text-secondary" onClick={() => setViewRec(null)} />
           </div>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
             <Field label="Lab No." value={viewRec.labNumber ?? '—'} />
@@ -582,7 +582,7 @@ export default function ResultSheetsPage() {
         <Overlay onClose={() => setStatusRec(null)}>
           <div className="mb-5 flex items-center justify-between">
             <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">Change Status — {statusRec.labNumber ?? ''}</h3>
-            <button onClick={() => setStatusRec(null)} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low"><X size={16} /></button>
+            <IconAction icon={<X size={16} />} tone="strong" className="hover:bg-surface-container-low text-secondary" onClick={() => setStatusRec(null)} />
           </div>
           <select aria-label="New status" className={`${SELECT} w-full`} value={nextStatus ?? ''} onChange={(e) => setNextStatus(e.target.value || undefined)}>
             <option value="">Next status</option>

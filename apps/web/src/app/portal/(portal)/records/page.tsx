@@ -14,9 +14,8 @@ const DOT: Record<string, string> = {
 const dotColor = (t?: string | null) => (t && DOT[t]) || hueFor(t || 'x');
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
+import { IconAction, Th, Td } from '@/components/ui';
 
-const TH = 'px-4 py-3 text-left font-label-sm text-label-sm text-secondary uppercase tracking-wider whitespace-nowrap';
-const CELL = 'px-4 py-3.5 font-body-sm text-body-sm text-on-surface align-middle';
 const PAGE_SIZE = 10;
 
 export default function PortalRecordsPage() {
@@ -113,19 +112,19 @@ export default function PortalRecordsPage() {
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-outline-variant/20">
-                <th className={TH}>Lab#</th>
-                <th className={TH}>Specimen</th>
-                <th className={TH}>Status</th>
-                <th className={TH}>Received</th>
-                <th className={`${TH} text-right`}>Actions</th>
+                <Th density="compact" family="reference">Lab#</Th>
+                <Th density="compact" family="reference">Specimen</Th>
+                <Th density="compact" family="reference">Status</Th>
+                <Th density="compact" family="reference">Received</Th>
+                <Th density="compact" family="reference" className="text-right">Actions</Th>
               </tr>
             </thead>
             <tbody>
               {isFetching && all.length === 0 && Array.from({ length: 6 }).map((_, i) => (
-                <tr key={i} className="border-b border-outline-variant/10"><td colSpan={5} className="px-4 py-3"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></td></tr>
+                <tr key={i} className="border-b border-outline-variant/10"><Td colSpan={5} className="px-4 py-3"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></Td></tr>
               ))}
               {!isFetching && !initialLoading && rows.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">No records found.</td></tr>
+                <tr><Td colSpan={5} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">No records found.</Td></tr>
               )}
               {rows.map((r) => {
                 const auth = isAuthorized(r.status);
@@ -133,23 +132,23 @@ export default function PortalRecordsPage() {
                   <tr key={r.id}
                     onClick={auth ? () => setSelected(r) : undefined}
                     className={`border-b border-outline-variant/10 transition-colors hover:bg-surface-container-low/60 ${auth ? 'cursor-pointer' : ''}`}>
-                    <td className={`${CELL} font-mono font-bold`}>{r.labNumber ?? r.identifier}</td>
-                    <td className={CELL}>
+                    <Td density="compact" family="reference" className="py-3.5 font-mono font-bold">{r.labNumber ?? r.identifier}</Td>
+                    <Td density="compact" family="reference" className="py-3.5">
                       <span className="inline-flex items-center gap-2">
                         <span style={{ background: dotColor(r.specimens?.[0]?.type) }} className="h-2 w-2 shrink-0 rounded-full" />
                         {specLabel(r.specimens?.[0]?.type)}
                       </span>
-                    </td>
-                    <td className={CELL}><StatusBadge status={r.status} /></td>
-                    <td className={`${CELL} whitespace-nowrap`}>{fmtDate(r.dateStatus ?? r.createdAt)}</td>
-                    <td className={CELL}>
+                    </Td>
+                    <Td density="compact" family="reference" className="py-3.5"><StatusBadge status={r.status} /></Td>
+                    <Td density="compact" family="reference" className="py-3.5 whitespace-nowrap">{fmtDate(r.dateStatus ?? r.createdAt)}</Td>
+                    <Td density="compact" family="reference" className="py-3.5">
                       <div className="flex items-center justify-end gap-1.5">
-                        <button title="View" onClick={(e) => { e.stopPropagation(); router.push(`/portal/records/${r.id}`); }} className="grid h-9 w-9 place-items-center rounded-xl border border-outline-variant/30 text-secondary transition-colors hover:bg-surface-container-low hover:text-primary"><Eye size={15} /></button>
+                        <IconAction icon={<Eye size={15} />} tone="strong" size="lg" shape="soft" className="hover:bg-surface-container-low text-secondary border border-outline-variant/30 hover:text-primary" title="View" onClick={(e) => { e.stopPropagation(); router.push(`/portal/records/${r.id}`); }} />
                         {auth && (
-                          <button title="Download report" onClick={(e) => { e.stopPropagation(); download(r); }} className="grid h-9 w-9 place-items-center rounded-xl border border-outline-variant/30 text-secondary transition-colors hover:bg-surface-container-low hover:text-primary"><Download size={15} /></button>
+                          <IconAction icon={<Download size={15} />} tone="strong" size="lg" shape="soft" className="hover:bg-surface-container-low text-secondary border border-outline-variant/30 hover:text-primary" title="Download report" onClick={(e) => { e.stopPropagation(); download(r); }} />
                         )}
                       </div>
-                    </td>
+                    </Td>
                   </tr>
                 );
               })}

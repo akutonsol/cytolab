@@ -500,6 +500,57 @@ convergence.
   debt, absorbing two legacy files and the workforce tables pixel-identically. Do not
   reach for them in new code.
 
+### 8h. `IconAction` and the icon-tone convergence debt
+178 icon-only buttons used **five** grey values. Resolved and sorted by relative
+luminance they form three clear tiers — the gaps *within* a tier are imperceptible,
+the gap *between* tiers is not:
+
+| tier | canonical | also seen | ΔL within | gap to next tier |
+|---|---|---|---|---|
+| strong | `#475569` ×40 | `#49607e` ×29 (Tailwind `secondary`) | 0.024 | 0.054 |
+| muted | `#64748b` ×42 | `#6b7280` ×7 | 0.003 | 0.189 |
+| faint | `#9ca3af` ×10 | `#94a3b8` ×2 | 0.004 | — |
+
+The tiers became `--color-icon-strong / -muted / -faint`. The canonical value per tier
+is the **most frequent** one, which minimises overrides. **31 call sites remain
+off-tier** and carry an explicit `className` so Sprint 6 is pixel-identical:
+
+| override | tier | current → canonical | maxΔ/255 | sites |
+|---|---|---|---|---|
+| `text-secondary` | strong | `#49607e` → `#475569` | 21 | 28 |
+| `text-text-secondary` | muted | `#6b7280` → `#64748b` | 11 | 2 |
+| `text-slate-400` | faint | `#94a3b8` → `#9ca3af` | 9 | 1 |
+
+Converging them is a **single isolated recolour commit**; nothing depends on it.
+`hover` is a separate axis because 16 of these buttons never had a hover fill.
+
+### 8i. Two typography families (unresolved)
+`Th`/`Td` carry a `family` axis, not because two families are desirable, but because
+two exist and picking one is a **design decision, not a migration**:
+
+| family | used by | classes |
+|---|---|---|
+| `slate` (default) | 9 tables | `text-sm` · `tracking-wide` · `--color-table-header` / `--color-table-cell` |
+| `reference` | `roles`, `users`, `portal/records` | `font-label-sm` · `tracking-wider` · `text-secondary` / `text-on-surface` |
+
+App-wide the reference family is not a small pocket: `font-label-sm` ×125,
+`text-label-sm` ×126, `text-body-sm` ×186, `text-on-surface` ×86. Reconciling it is
+its own sprint. With the axis in place the **Table rollout is 100%** — zero `const TH`
+or `const CELL` remain.
+
+### 8j. ⚠️ `cn()` must know our custom font sizes
+`theme.fontSize` defines non-t-shirt keys (`body-sm`, `label-sm`, `hero`, `stat`, …).
+`tailwind-merge` cannot know these are sizes, so it files them under `text-color` —
+and a later colour class then **silently evicts them**.
+
+This was live: `<Th family="reference">` emitted `text-label-sm … text-secondary`,
+twMerge dropped `text-label-sm`, and the roles/users tables rendered at 16px instead
+of 12px. `DataTable` had the same latent bug (`text-label` + `text-text-secondary`).
+
+`ui/cn.ts` now calls `extendTailwindMerge` and declares every custom size.
+**Keep that list in sync with `tailwind.config.ts`.** A missing entry fails silently —
+no type error, no build error, just the wrong font size.
+
 ### 8g. Duplicate implementations
 `components/security/ui.tsx` shipped a parallel micro-design-system: its own `Badge`,
 `Card`, `Table`, and `primaryBtn`/`ghostBtn`/`dangerBtn` class constants.

@@ -10,6 +10,7 @@ import { api, type Paginated } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
 import { PRIORITY_META, type TatPriority } from '@/lib/workload';
 import { SPECIMEN_LABELS } from '@/lib/specimen-types';
+import { IconAction } from '@/components/ui';
 
 interface BatchCase {
   id: string; labNo: string; patientName: string; formType: string | null; specimenType: string | null;
@@ -256,7 +257,7 @@ export default function BatchAuthorizePage() {
           <div className="w-full max-w-[460px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-[18px] font-bold text-[#0F172A]">Authorize {selected.size} cases?</h3>
-              <button onClick={() => setConfirmOpen(false)} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
+              <IconAction icon={<X size={16} />} tone="strong" onClick={() => setConfirmOpen(false)} />
             </div>
             <p className="text-[14px] text-[#475569]">You are about to authorize {selected.size} case{selected.size === 1 ? '' : 's'}.</p>
             <div className="mt-3 rounded-lg bg-[#F8FAFC] p-3 text-[13px] text-[#334155]">

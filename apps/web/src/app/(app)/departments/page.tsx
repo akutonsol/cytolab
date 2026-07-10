@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Building2, MoreHorizontal, Pencil, Plus, Trash2, UserCircle, Users, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
-import { Button } from '@/components/ui';
+import { Button, IconAction } from '@/components/ui';
 
 interface Dept {
   id: string;
@@ -98,7 +98,7 @@ export default function DepartmentsPage() {
                       <span className="truncate font-headline-sm text-headline-sm text-charcoal-heading">{d.name}</span>
                     </div>
                     <div className="relative shrink-0">
-                      <button onClick={() => setMenuId(menuId === d.id ? null : d.id)} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low"><MoreHorizontal size={16} /></button>
+                      <IconAction icon={<MoreHorizontal size={16} />} tone="strong" className="hover:bg-surface-container-low text-secondary" onClick={() => setMenuId(menuId === d.id ? null : d.id)} />
                       {menuId === d.id && (
                         <>
                           <div className="fixed inset-0 z-10" onClick={() => setMenuId(null)} />
@@ -186,7 +186,7 @@ function DeptModal({ dept, onClose, onSaved, onError }: { dept: Dept | null; onC
       <div className="w-full max-w-[480px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">{dept ? 'Edit Department' : 'New Department'}</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" className="hover:bg-surface-container-low text-secondary" onClick={onClose} />
         </div>
         <div className="flex flex-col gap-4">
           <Field label="Name" required>

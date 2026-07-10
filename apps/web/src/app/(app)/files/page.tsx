@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Button } from '@/components/ui';
+import { Button, IconAction } from '@/components/ui';
 
 interface Attachment {
   id: string;
@@ -230,9 +230,9 @@ export default function FilesPage() {
                         <td className="px-4 py-3 font-body-sm text-body-sm text-secondary" title={new Date(f.createdAt).toLocaleString()}>{relTime(f.createdAt)}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
-                            <button onClick={() => setPreview(f)} title="Preview" className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low hover:text-primary"><Eye size={15} /></button>
-                            <button onClick={() => download(f)} title="Download" className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low hover:text-primary"><Download size={15} /></button>
-                            <button onClick={() => setConfirm(f)} title="Delete" className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-error-container hover:text-error"><Trash2 size={15} /></button>
+                            <IconAction icon={<Eye size={15} />} tone="strong" className="hover:bg-surface-container-low text-secondary hover:text-primary" onClick={() => setPreview(f)} title="Preview" />
+                            <IconAction icon={<Download size={15} />} tone="strong" className="hover:bg-surface-container-low text-secondary hover:text-primary" onClick={() => download(f)} title="Download" />
+                            <IconAction icon={<Trash2 size={15} />} tone="strong" className="hover:bg-error-container text-secondary hover:text-error" onClick={() => setConfirm(f)} title="Delete" />
                           </div>
                         </td>
                       </tr>
@@ -281,8 +281,8 @@ function PreviewModal({ file, onClose, onDownload }: { file: Attachment; onClose
             <span className="truncate font-headline-sm text-headline-sm text-charcoal-heading">{file.filename}</span>
           </div>
           <div className="flex items-center gap-1">
-            <button onClick={onDownload} title="Download" className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low"><Download size={16} /></button>
-            <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low"><X size={16} /></button>
+            <IconAction icon={<Download size={16} />} tone="strong" className="hover:bg-surface-container-low text-secondary" onClick={onDownload} title="Download" />
+            <IconAction icon={<X size={16} />} tone="strong" className="hover:bg-surface-container-low text-secondary" onClick={onClose} />
           </div>
         </div>
         <div className="min-h-[240px] overflow-auto p-4">
@@ -370,7 +370,7 @@ function UploadModal({ onClose, onUploaded, onError }: { onClose: () => void; on
       <div className="w-full max-w-[520px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">Upload File</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" className="hover:bg-surface-container-low text-secondary" onClick={onClose} />
         </div>
 
         <input ref={inputRef} type="file" hidden accept={ALLOWED.join(',')} onChange={(e) => handleFiles(e.target.files)} />
@@ -397,7 +397,7 @@ function UploadModal({ onClose, onUploaded, onError }: { onClose: () => void; on
               <div className="truncate font-body-sm text-body-sm font-semibold text-charcoal-heading">{file.name}</div>
               <div className="font-label-sm text-label-sm text-secondary">{(file.size / 1024).toFixed(0)} KB</div>
             </div>
-            {!uploading && <button onClick={() => setFile(null)} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-white"><X size={15} /></button>}
+            {!uploading && <IconAction icon={<X size={15} />} tone="strong" className="hover:bg-white text-secondary" onClick={() => setFile(null)} />}
           </div>
         )}
 

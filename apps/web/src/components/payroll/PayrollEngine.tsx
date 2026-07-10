@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { jmd, fmtDate } from '@/lib/payroll';
 import { fmtHours, empName } from '@/lib/workforce';
-import { Card, Button, Th, Td } from '@/components/ui';
+import { Card, Button, Th, Td, IconAction } from '@/components/ui';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const periodName = (month: number, year: number) => `${MONTHS[month - 1]} ${year}`;
@@ -47,7 +47,7 @@ function NewPeriodModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={onClose}>
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">New Payroll Period</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">New Payroll Period</h3><IconAction icon={<X size={18} />} onClick={onClose} /></div>
         <label className="mb-1 block text-sm font-medium text-slate-600">Month</label>
         <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="mb-4 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary">
           {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
@@ -93,7 +93,7 @@ function PeriodDrawer({ id, onClose }: { id: string; onClose: () => void }) {
               {p?.processedAt && <span>Processed {fmtDate(p.processedAt)}{p.processedBy ? ` · ${p.processedBy.firstName} ${p.processedBy.lastName}` : ''}</span>}
             </div>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button>
+          <IconAction icon={<X size={18} />} onClick={onClose} />
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-6">

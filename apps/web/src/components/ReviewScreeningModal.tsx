@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { ConfidenceRing } from '@/components/ConfidenceRing';
 import { LEVEL_META, shortDate, type AIScreening } from '@/lib/ai-screening';
+import { IconAction } from '@/components/ui';
 
 export function ReviewScreeningModal({ result, onClose, readOnly = false }: { result: AIScreening; onClose: () => void; readOnly?: boolean }) {
   const qc = useQueryClient();
@@ -37,7 +38,7 @@ export function ReviewScreeningModal({ result, onClose, readOnly = false }: { re
             <h3 className="text-[18px] font-bold text-[#0F172A]">Review AI Findings</h3>
             <p className="mt-0.5 text-[13px] text-[#475569]">{result.patientName} · <span className="font-mono">{result.labNo}</span></p>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" onClick={onClose} />
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">

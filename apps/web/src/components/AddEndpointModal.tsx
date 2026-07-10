@@ -7,6 +7,7 @@ import { App as AntdApp } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { AUTH_TYPES, EMR_SYSTEMS, EMR_META, type EMRSystem, type FHIRAuthType, type FhirEndpoint } from '@/lib/fhir';
+import { IconAction } from '@/components/ui';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 const lbl = 'mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]';
@@ -50,7 +51,7 @@ export function AddEndpointModal({ endpoint, onClose }: { endpoint?: FhirEndpoin
       <div className="flex h-full w-full max-w-[560px] flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-200 p-5">
           <h3 className="text-[18px] font-bold text-[#0F172A]">{editing ? 'Edit Endpoint' : 'Add Endpoint'}</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" onClick={onClose} />
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">

@@ -12,7 +12,7 @@ import {
   type GlandularCategory, type HPVResult, type SquamousCategory,
 } from '@/lib/bethesda';
 import { DictationButton } from './DictationButton';
-import { Button } from '@/components/ui';
+import { Button, IconAction } from '@/components/ui';
 
 interface Props {
   open: boolean;
@@ -89,7 +89,7 @@ export function BethesdaClassificationModal({ open, onClose, recordId, onApply }
             <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">TBS 2014</span>
             {shortCode && <span className="rounded-md bg-indigo-100 px-2 py-0.5 font-mono text-xs font-semibold text-indigo-700">{shortCode}</span>}
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" className="text-secondary" onClick={onClose} />
         </div>
 
         <div className="flex min-h-0 flex-1">

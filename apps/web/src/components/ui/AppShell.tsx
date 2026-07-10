@@ -16,6 +16,7 @@ import {
 import { cn } from './cn';
 import { Avatar } from './Avatar';
 import { ChevronDown } from './icons';
+import { IconAction } from '@/components/ui';
 
 export interface RailItem {
   key: string;
@@ -208,9 +209,7 @@ export function AppShell({
         <header className="flex items-center gap-4 border-b border-border bg-surface px-6 py-3">
           <SearchBar placeholder={searchPlaceholder} />
           <div className="ml-auto flex items-center gap-3">
-            <button className="grid h-10 w-10 place-items-center rounded-full text-text-secondary hover:bg-bg hover:text-text">
-              <BellOutlined />
-            </button>
+            <IconAction icon={<BellOutlined />} size="xl" shape="circle" className="hover:bg-bg text-text-secondary hover:text-text" />
             {user && <UserChipView user={user} />}
           </div>
         </header>

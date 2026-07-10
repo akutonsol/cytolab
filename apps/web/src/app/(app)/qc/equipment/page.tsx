@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useFeatures } from '@/lib/feature-context';
 import { EQUIPMENT_TYPES, type Equipment } from '@/lib/qc';
+import { IconAction } from '@/components/ui';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] text-[#0F172A] outline-none focus:border-[#4F46E5]';
 
@@ -35,7 +36,7 @@ function EquipmentModal({ item, onClose }: { item: Equipment | null; onClose: ()
       <div className="flex h-full w-full max-w-[460px] flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-200 p-5">
           <h3 className="text-[18px] font-bold text-[#0F172A]">{item ? 'Edit Equipment' : 'Add Equipment'}</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" onClick={onClose} />
         </div>
         <div className="flex-1 overflow-y-auto p-5">
           <F label="Name"><input value={name} onChange={(e) => setName(e.target.value)} className={inp} placeholder="e.g. Stainer Unit 2" /></F>

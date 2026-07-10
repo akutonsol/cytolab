@@ -6,6 +6,7 @@ import { Loader2, Search, X } from 'lucide-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { CATEGORIES, type ResultTemplate } from '@/lib/result-templates';
+import { IconAction } from '@/components/ui';
 
 interface Props {
   open: boolean;
@@ -46,7 +47,7 @@ export function ResultTemplateSelector({ open, onClose, onSelect }: Props) {
             <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">Choose a Result Template</h3>
             <p className="mt-0.5 font-body-sm text-body-sm text-secondary">Applying a template pre-fills the report narrative — review before signing.</p>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" className="text-secondary" onClick={onClose} />
         </div>
 
         {/* Filters */}

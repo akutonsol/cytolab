@@ -12,6 +12,7 @@ import {
   OPEN_STATUSES, SEVERITY_META, STATUS_META, findingLabel, patientName,
   type EscalationRow, type EscalationSeverity, type EscalationStatus, type EscalationSummary,
 } from '@/lib/escalations';
+import { IconAction } from '@/components/ui';
 
 const SEVERITIES: EscalationSeverity[] = ['Abnormal', 'HighGrade', 'Malignant'];
 const STATUSES: EscalationStatus[] = ['Pending', 'Acknowledged', 'UnderReview', 'Resolved'];
@@ -78,7 +79,7 @@ function EscalationDetailPanel({ id, onClose }: { id: string; onClose: () => voi
               <p className="mt-0.5 text-[13px] text-[#475569]">{data ? `Lab# ${data.record.labNumber ?? data.record.identifier} · ${patientName(data)}` : 'Loading…'}</p>
             </div>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" onClick={onClose} />
         </div>
 
         {data && (

@@ -11,7 +11,7 @@ import {
   STATUS_META, daysUntil, expiryColor, isExpiringSoon, relTime, shortDate,
   type ReagentDetail, type ReagentLot, type ReagentStats, type ReagentStatus,
 } from '@/lib/reagent';
-import { Card } from '@/components/ui';
+import { Card, IconAction } from '@/components/ui';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 const F = ({ label, children }: { label: string; children: React.ReactNode }) => (<div className="mb-3"><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">{label}</label>{children}</div>);
@@ -35,7 +35,7 @@ function AddReagentModal({ onClose }: { onClose: () => void }) {
   return createPortal(
     <div className="fixed inset-0 flex justify-end" style={{ zIndex: 2100, background: 'rgba(15,23,42,0.55)' }} onClick={onClose}>
       <div className="flex h-full w-full max-w-[480px] flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-slate-200 p-5"><h3 className="text-[18px] font-bold text-[#0F172A]">Add Reagent Lot</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button></div>
+        <div className="flex items-center justify-between border-b border-slate-200 p-5"><h3 className="text-[18px] font-bold text-[#0F172A]">Add Reagent Lot</h3><IconAction icon={<X size={16} />} tone="strong" onClick={onClose} /></div>
         <div className="flex-1 overflow-y-auto p-5">
           <F label="Reagent Name"><input value={f.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Papanicolaou Stain" className={inp} /></F>
           <F label="Lot Number"><input value={f.lotNumber} onChange={(e) => set('lotNumber', e.target.value)} className={`${inp} font-mono`} /></F>
@@ -94,7 +94,7 @@ function ReagentDetailPanel({ id, onClose }: { id: string; onClose: () => void }
             <h3 className="text-[18px] font-bold text-[#0F172A]">{lot?.name ?? 'Loading…'}</h3>
             {lot && <p className="mt-0.5 flex items-center gap-2 text-[13px]"><span className="font-mono text-[#4F46E5]">{lot.lotNumber}</span> <StatusBadge s={lot.status} /></p>}
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" onClick={onClose} />
         </div>
         {lot && (
           <div className="flex-1 overflow-y-auto p-5">

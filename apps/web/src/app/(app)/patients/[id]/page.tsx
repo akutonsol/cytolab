@@ -14,7 +14,7 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { AddCorrelationModal } from '@/components/AddCorrelationModal';
 import { RESULT_META as CORR_META, shortDate as corrDate, type CorrelationCase } from '@/lib/correlation';
 import { STATUS_META as RECALL_META, dueColor, dueLabel, shortDate as recallDate, type Recall } from '@/lib/recall';
-import { Card } from '@/components/ui';
+import { Card, IconAction } from '@/components/ui';
 
 const STAGE: Record<string, { label: string; pct: number }> = {
   Pending: { label: 'Intake', pct: 10 }, Submitted: { label: 'Intake', pct: 25 },
@@ -310,7 +310,7 @@ export default function PatientProfilePage() {
                 <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Search.." className="w-32 border-none bg-transparent text-[13px] text-[#111827] outline-none placeholder:text-[#9CA3AF]" />
               </div>
               <button aria-label="Filter" className={`h-10 w-10 ${iconBtn} border border-[#E5E7EB] text-[#6b7280] hover:text-[#111827]`}><Filter size={16} /></button>
-              <button aria-label="Add" className="grid h-10 w-10 place-items-center rounded-full bg-[#4f46e5] text-white hover:bg-[#4338ca]"><Plus size={17} /></button>
+              <IconAction icon={<Plus size={17} />} tone="inverse" size="xl" shape="circle" className="hover:bg-[#4338ca] bg-[#4f46e5]" aria-label="Add" />
             </div>
           </div>
 
@@ -332,7 +332,7 @@ export default function PatientProfilePage() {
                     <td className="px-3 py-3"><StatusBadge s={r.status} /></td>
                     <td className="px-3 py-3 text-[13px] text-[#6b7280]">{STAGE[r.status]?.label ?? '—'}</td>
                     <td className="px-3 py-3 text-[13px] text-[#6b7280]">{doctor(r)}</td>
-                    <td className="px-2 py-3"><button onClick={() => router.push(`/records/${r.id}`)} aria-label="Open record" className="grid h-8 w-8 place-items-center rounded-full text-[#9CA3AF] hover:bg-[#eef2ff] hover:text-[#4f46e5]"><Download size={16} /></button></td>
+                    <td className="px-2 py-3"><IconAction icon={<Download size={16} />} tone="faint" shape="circle" className="hover:bg-[#eef2ff] hover:text-[#4f46e5]" onClick={() => router.push(`/records/${r.id}`)} aria-label="Open record" /></td>
                   </tr>
                 ))}
               </tbody>
@@ -406,7 +406,7 @@ export default function PatientProfilePage() {
         <Card as="section" radius="lg" elevation="glow" border="hairline" surface={false} className="flex flex-col p-5" style={{ background: '#F0F0FF' }}>
           <div className="flex items-center justify-between">
             <h2 className="text-[18px] font-bold text-[#111827]">Current examinations</h2>
-            <button aria-label="Add examination" className="grid h-8 w-8 place-items-center rounded-full bg-[#111827] text-white hover:bg-black"><Plus size={16} /></button>
+            <IconAction icon={<Plus size={16} />} tone="inverse" shape="circle" className="hover:bg-black bg-[#111827]" aria-label="Add examination" />
           </div>
           <div className="mt-3 flex flex-col">
             {exams.length === 0 && <div className="py-8 text-center text-[13px] text-[#9CA3AF]">No examinations yet.</div>}

@@ -10,7 +10,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Button } from '@/components/ui';
+import { Button, IconAction } from '@/components/ui';
 
 // ── Unified notification model (merges /notifications + /workforce/notifications) ─
 interface UItem {
@@ -187,7 +187,7 @@ export default function NotificationsPage() {
           <div className="flex items-center gap-2">
             <button className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"><SlidersHorizontal size={15} /> Filter</button>
             <button onClick={() => markAll.mutate()} disabled={markAll.isPending || counts.unread === 0} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"><Check size={15} /> Mark all as read</button>
-            <button aria-label="More options" className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"><MoreHorizontal size={16} /></button>
+            <IconAction icon={<MoreHorizontal size={16} />} size="lg" shape="soft" className="hover:bg-slate-50 border border-slate-200 bg-white" aria-label="More options" />
           </div>
         </div>
 
@@ -269,7 +269,7 @@ function Detail({ n, onClose, onView, onMarkRead }: { n: UItem; onClose: () => v
     <div className="flex h-full flex-col rounded-2xl border border-slate-100 bg-white p-6">
       <div className="mb-4 flex items-center justify-between">
         <span className="font-mono text-sm text-slate-500">{tkt ?? humanType(n.type)}</span>
-        <button onClick={onClose} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><X size={18} /></button>
+        <IconAction icon={<X size={18} />} tone="faint" className="text-slate-400" onClick={onClose} aria-label="Close" />
       </div>
 
       <div className="mb-3 flex items-center gap-2">

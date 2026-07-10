@@ -6,11 +6,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { RoleFormDrawer, type RoleRecord } from '@/components/RoleFormDrawer';
-import { Button } from '@/components/ui';
+import { Button, IconAction, Th, Td } from '@/components/ui';
 
 const BADGE = 'inline-flex items-center rounded-full px-3 py-1 font-label-sm text-label-sm';
-const TH = 'px-4 py-3 text-left font-label-sm text-label-sm text-secondary uppercase tracking-wider whitespace-nowrap';
-const CELL = 'px-4 py-3 font-body-sm text-body-sm text-on-surface align-middle';
 
 export default function RolesPage() {
   const { can } = useAuth();
@@ -78,38 +76,38 @@ export default function RolesPage() {
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-outline-variant/20">
-                <th className={TH}>Name</th>
-                <th className={TH}>Description</th>
-                <th className={TH}>Scope</th>
-                <th className={TH}>Super role</th>
-                <th className={TH}>Permissions</th>
-                {hasActions && <th className={TH}></th>}
+                <Th density="compact" family="reference">Name</Th>
+                <Th density="compact" family="reference">Description</Th>
+                <Th density="compact" family="reference">Scope</Th>
+                <Th density="compact" family="reference">Super role</Th>
+                <Th density="compact" family="reference">Permissions</Th>
+                {hasActions && <Th density="compact" family="reference"></Th>}
               </tr>
             </thead>
             <tbody>
               {isFetching && !isError && rows.length === 0 && (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b border-outline-variant/10">
-                    <td colSpan={colCount} className="px-4 py-3"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></td>
+                    <Td colSpan={colCount} className="px-4 py-3"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></Td>
                   </tr>
                 ))
               )}
               {!isFetching && rows.length === 0 && !isError && (
-                <tr><td colSpan={colCount} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">No roles found.</td></tr>
+                <tr><Td colSpan={colCount} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">No roles found.</Td></tr>
               )}
               {rows.map((r) => (
                 <tr key={r.id} className="border-b border-outline-variant/10 transition-colors hover:bg-surface-container-low/60">
-                  <td className={`${CELL} font-medium`}>{r.name}</td>
-                  <td className={CELL}>{r.description ?? '—'}</td>
-                  <td className={CELL}><span className={`${BADGE} bg-surface-container text-secondary`}>{r.scope}</span></td>
-                  <td className={CELL}>
+                  <Td density="compact" family="reference" className="font-medium">{r.name}</Td>
+                  <Td density="compact" family="reference">{r.description ?? '—'}</Td>
+                  <Td density="compact" family="reference"><span className={`${BADGE} bg-surface-container text-secondary`}>{r.scope}</span></Td>
+                  <Td density="compact" family="reference">
                     {r.isSuperRole
                       ? <span className={`${BADGE} bg-primary-fixed text-primary`}>Yes</span>
                       : <span className={`${BADGE} bg-surface-container text-secondary`}>No</span>}
-                  </td>
-                  <td className={CELL}>{r.isSuperRole ? 'All (bypass)' : r.permissions?.length ?? 0}</td>
+                  </Td>
+                  <Td density="compact" family="reference">{r.isSuperRole ? 'All (bypass)' : r.permissions?.length ?? 0}</Td>
                   {hasActions && (
-                    <td className={CELL}>
+                    <Td density="compact" family="reference">
                       {confirmId === r.id ? (
                         <div className="flex items-center gap-2">
                           <span className="font-body-sm text-body-sm text-secondary">Delete?</span>
@@ -120,11 +118,11 @@ export default function RolesPage() {
                         <div className="flex items-center gap-2">
                           {can('permission:change') && <Button variant="secondary" onClick={() => openEdit(r)}><Pencil size={14} /> Edit</Button>}
                           {can('permission:delete') && (
-                            <button onClick={() => setConfirmId(r.id)} className="grid h-9 w-9 place-items-center rounded-xl border border-outline-variant/30 text-secondary transition-colors hover:bg-error-container hover:text-error"><Trash2 size={15} /></button>
+                            <IconAction icon={<Trash2 size={15} />} tone="strong" size="lg" shape="soft" className="hover:bg-error-container text-secondary border border-outline-variant/30 hover:text-error" onClick={() => setConfirmId(r.id)} />
                           )}
                         </div>
                       )}
-                    </td>
+                    </Td>
                   )}
                 </tr>
               ))}

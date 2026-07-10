@@ -2,6 +2,7 @@
 
 import { Mail, Printer } from 'lucide-react';
 import { money, moneyDash, monthYear, ytdNet, totalDeductions, type SlipData } from '@/lib/payroll';
+import { IconAction } from '@/components/ui';
 
 const INDIGO = '#4F46E5';
 // "Oct 09, 2023"
@@ -29,7 +30,7 @@ export function PayslipCard({ slip, showActions = false }: { slip: SlipData; sho
           <div className="no-print flex items-center gap-2">
             <a href={`mailto:?subject=${encodeURIComponent(`Payslip — ${fullName} — ${monthYear(period)}`)}`}
               title="Email" className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-[#F5F7FF] hover:text-[#4F46E5]"><Mail size={16} /></a>
-            <button onClick={() => window.print()} title="Print" className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-[#F5F7FF] hover:text-[#4F46E5]"><Printer size={16} /></button>
+            <IconAction icon={<Printer size={16} />} size="lg" className="hover:bg-[#F5F7FF] border border-slate-200 hover:text-[#4F46E5]" onClick={() => window.print()} title="Print" />
           </div>
         )}
       </div>

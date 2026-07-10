@@ -70,32 +70,85 @@ export function Button({
 }
 
 /**
- * Square icon action — the `grid h-8 w-8 place-items-center rounded-lg` shape
- * repeated ~45 times. Distinct from `IconButton`, which is circular.
+ * Icon-only action button — the `grid h-N w-N place-items-center rounded-*` shape
+ * repeated 178 times across the app. Distinct from `IconButton` (fixed circle) and
+ * from the 141 *decorative* icon tiles, which are spans and not interactive.
+ *
+ * The tone axis is three luminance tiers, measured from the real call sites:
+ * five grey values were in use, but they cluster into strong / muted / faint
+ * (ΔL within a tier = 0.004, imperceptible; across tiers 0.275, clearly visible).
+ * 21 call sites sit slightly off-tier (`#64748b`, `#94a3b8`); they carry an explicit
+ * `className` override so this migration is pixel-identical. Converging them is a
+ * separate, reviewable recolour pass — see DESIGN_SYSTEM §8h.
  */
-type IconTone = 'muted' | 'primary' | 'danger';
+type IconTone = 'strong' | 'muted' | 'faint' | 'primary' | 'danger' | 'inverse';
+type IconSize = 'sm' | 'md' | 'lg' | 'xl';
+type IconShape = 'square' | 'soft' | 'circle';
 
-const ICON_TONE: Record<IconTone, string> = {
-  muted: 'text-slate-600 hover:bg-slate-100',
-  primary: 'text-primary hover:bg-primary-soft',
-  danger: 'text-danger hover:bg-danger-soft',
+/** Foreground only. The hover fill is a separate axis: 16 of the 159 icon buttons
+ *  in the app have no hover fill at all, and baking one in would change behaviour. */
+const ICON_FG: Record<IconTone, string> = {
+  strong: 'text-icon-strong',
+  muted: 'text-icon-muted',
+  faint: 'text-icon-faint',
+  primary: 'text-primary',
+  danger: 'text-danger',
+  inverse: 'text-white',
+};
+
+const ICON_HOVER: Record<IconTone, string> = {
+  strong: 'hover:bg-icon-hover',
+  muted: 'hover:bg-icon-hover',
+  faint: 'hover:bg-icon-hover',
+  primary: 'hover:bg-primary-soft',
+  danger: 'hover:bg-danger-soft',
+  inverse: 'hover:bg-white/10',
+};
+
+const ICON_SIZE: Record<IconSize, string> = {
+  sm: 'h-7 w-7',
+  md: 'h-8 w-8',
+  lg: 'h-9 w-9',
+  xl: 'h-10 w-10',
+};
+
+const ICON_SHAPE: Record<IconShape, string> = {
+  square: 'rounded-lg',
+  soft: 'rounded-xl',
+  circle: 'rounded-full',
 };
 
 export interface IconActionProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon: ReactNode;
   tone?: IconTone;
+  size?: IconSize;
+  shape?: IconShape;
+  /** Tinted background on hover. `false` for the 16 call sites that never had one. */
+  hover?: boolean;
 }
 
-export function IconAction({ icon, tone = 'muted', className, type = 'button', ...rest }: IconActionProps) {
+export function IconAction({
+  icon,
+  tone = 'muted',
+  size = 'md',
+  shape = 'square',
+  hover = true,
+  className,
+  type = 'button',
+  ...rest
+}: IconActionProps) {
   return (
     <button
       type={type}
       className={cn(
-        'grid h-8 w-8 place-items-center rounded-lg',
+        'grid place-items-center',
+        ICON_SIZE[size],
+        ICON_SHAPE[shape],
         'transition-colors duration-fast ease-standard',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]',
         'disabled:cursor-not-allowed disabled:opacity-50',
-        ICON_TONE[tone],
+        ICON_FG[tone],
+        hover && ICON_HOVER[tone],
         className,
       )}
       {...rest}

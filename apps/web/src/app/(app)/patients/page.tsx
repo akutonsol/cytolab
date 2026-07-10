@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { PatientFormDrawer, type PatientRecord } from '@/components/PatientFormDrawer';
-import { Th, Td, Button, Badge } from '@/components/ui';
+import { Th, Td, Button, Badge, IconAction } from '@/components/ui';
 
 // The list endpoint enriches each patient with these two computed fields.
 type PatientListRow = PatientRecord & {
@@ -282,7 +282,7 @@ export default function PatientsPage() {
                     {hasEdit && (
                       <Td density="roomy" className="text-base">
                         <div className="relative flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
-                          <button aria-label="Row actions" onClick={() => setMenuId(menuId === p.id ? null : p.id)} className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-600"><MoreVertical size={16} /></button>
+                          <IconAction icon={<MoreVertical size={16} />} size="lg" className="hover:text-slate-600" aria-label="Row actions" onClick={() => setMenuId(menuId === p.id ? null : p.id)} />
                           {menuId === p.id && (
                             <>
                               <div className="fixed inset-0 z-40" onClick={() => setMenuId(null)} />

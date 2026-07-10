@@ -6,7 +6,7 @@ import { AlarmClock, Check, CheckCircle2, Clock, Pencil, Plus, RefreshCw, Settin
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { SPECIMEN_LABELS } from '@/lib/specimen-types';
-import { Button } from '@/components/ui';
+import { Button, IconAction } from '@/components/ui';
 
 type Level = 'Approaching' | 'Breached';
 type Status = 'Open' | 'Acknowledged' | 'Resolved';
@@ -160,8 +160,8 @@ export default function TatPage() {
                     <td className="px-4 py-3">{c.isActive ? <span className="rounded-full px-2 py-0.5 font-label-sm text-label-sm font-medium" style={{ background: '#F0FDF4', color: '#16A34A' }}>Active</span> : <span className="rounded-full bg-slate-100 px-2 py-0.5 font-label-sm text-label-sm text-slate-500">Off</span>}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => setCfgModal({ mode: 'edit', config: c })} title="Edit" className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low hover:text-primary"><Pencil size={14} /></button>
-                        <button onClick={() => delCfg.mutate(c.id)} title="Delete" className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-error-container hover:text-error"><Trash2 size={14} /></button>
+                        <IconAction icon={<Pencil size={14} />} tone="strong" className="hover:bg-surface-container-low text-secondary hover:text-primary" onClick={() => setCfgModal({ mode: 'edit', config: c })} title="Edit" />
+                        <IconAction icon={<Trash2 size={14} />} tone="strong" className="hover:bg-error-container text-secondary hover:text-error" onClick={() => delCfg.mutate(c.id)} title="Delete" />
                       </div>
                     </td>
                   </tr>
@@ -218,7 +218,7 @@ function ConfigModal({ mode, config, onClose, onSaved, onError }: { mode: 'new' 
       <div className="w-full max-w-[480px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">{mode === 'new' ? 'New TAT Threshold' : 'Edit Threshold'}</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" className="hover:bg-surface-container-low text-secondary" onClick={onClose} />
         </div>
         <div className="flex flex-col gap-4">
           <F label="Name" required><input autoFocus value={f.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Routine Pap" className={inp} /></F>

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Building2, FileText, Layers, MoreHorizontal, Pencil, Plus, Trash2, Users, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
-import { Button } from '@/components/ui';
+import { Button, IconAction } from '@/components/ui';
 
 interface Workspace {
   id: string;
@@ -106,7 +106,7 @@ export default function WorkspacesPage() {
                       <span className="truncate font-headline-sm text-headline-sm text-charcoal-heading">{w.name}</span>
                     </div>
                     <div className="relative shrink-0">
-                      <button onClick={() => setMenuId(menuId === w.id ? null : w.id)} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low"><MoreHorizontal size={16} /></button>
+                      <IconAction icon={<MoreHorizontal size={16} />} tone="strong" className="hover:bg-surface-container-low text-secondary" onClick={() => setMenuId(menuId === w.id ? null : w.id)} />
                       {menuId === w.id && (
                         <>
                           <div className="fixed inset-0 z-10" onClick={() => setMenuId(null)} />
@@ -212,7 +212,7 @@ function WorkspaceModal({ workspace, onClose, onSaved, onError }: { workspace: W
       <div className="w-full max-w-[460px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">{workspace ? 'Edit Workspace' : 'New Workspace'}</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" className="hover:bg-surface-container-low text-secondary" onClick={onClose} />
         </div>
         <label className="mb-1.5 block font-label-md text-label-md text-on-surface">Workspace Name<span className="text-error"> *</span></label>
         <input autoFocus value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && canSave) save.mutate(); }}

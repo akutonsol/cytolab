@@ -5,7 +5,7 @@ import { Plus, Search, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { Button } from '@/components/ui';
+import { Button, IconAction, Th, Td } from '@/components/ui';
 
 interface UserRow {
   id: string;
@@ -20,8 +20,6 @@ interface RoleOption { id: string; name: string }
 
 const BADGE = 'inline-flex items-center rounded-full px-3 py-1 font-label-sm text-label-sm';
 const CHIP = 'inline-flex items-center rounded-md bg-surface-container px-2 py-0.5 font-label-sm text-label-sm text-secondary';
-const TH = 'px-4 py-3 text-left font-label-sm text-label-sm text-secondary uppercase tracking-wider whitespace-nowrap';
-const CELL = 'px-4 py-3 font-body-sm text-body-sm text-on-surface align-middle';
 
 export default function UsersPage() {
   const { can } = useAuth();
@@ -66,39 +64,39 @@ export default function UsersPage() {
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-outline-variant/20">
-                <th className={TH}>Email</th>
-                <th className={TH}>Name</th>
-                <th className={TH}>Roles</th>
-                <th className={TH}>Active</th>
-                <th className={TH}>Created</th>
+                <Th density="compact" family="reference">Email</Th>
+                <Th density="compact" family="reference">Name</Th>
+                <Th density="compact" family="reference">Roles</Th>
+                <Th density="compact" family="reference">Active</Th>
+                <Th density="compact" family="reference">Created</Th>
               </tr>
             </thead>
             <tbody>
               {isFetching && rows.length === 0 && (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="border-b border-outline-variant/10">
-                    <td colSpan={5} className="px-4 py-3"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></td>
+                    <Td colSpan={5} className="px-4 py-3"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></Td>
                   </tr>
                 ))
               )}
               {!isFetching && rows.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">No users found.</td></tr>
+                <tr><Td colSpan={5} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">No users found.</Td></tr>
               )}
               {rows.map((u) => (
                 <tr key={u.id} className="border-b border-outline-variant/10 transition-colors hover:bg-surface-container-low/60">
-                  <td className={`${CELL} font-medium`}>{u.email}</td>
-                  <td className={CELL}>{u.firstName} {u.lastName}</td>
-                  <td className={CELL}>
+                  <Td density="compact" family="reference" className="font-medium">{u.email}</Td>
+                  <Td density="compact" family="reference">{u.firstName} {u.lastName}</Td>
+                  <Td density="compact" family="reference">
                     {u.roles?.length
                       ? <div className="flex flex-wrap gap-1">{u.roles.map((role) => <span key={role.id} className={CHIP}>{role.name}</span>)}</div>
                       : '—'}
-                  </td>
-                  <td className={CELL}>
+                  </Td>
+                  <Td density="compact" family="reference">
                     {u.isActive
                       ? <span className={`${BADGE} bg-status-sage/10 text-status-sage`}>Active</span>
                       : <span className={`${BADGE} bg-error-container text-error`}>Disabled</span>}
-                  </td>
-                  <td className={`${CELL} whitespace-nowrap`}>{new Date(u.createdAt).toLocaleDateString()}</td>
+                  </Td>
+                  <Td density="compact" family="reference" className="whitespace-nowrap">{new Date(u.createdAt).toLocaleDateString()}</Td>
                 </tr>
               ))}
             </tbody>
@@ -153,7 +151,7 @@ function NewUserModal({ onClose, onCreated, notify }: { onClose: () => void; onC
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">New User</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low"><X size={16} /></button>
+          <IconAction icon={<X size={16} />} tone="strong" className="hover:bg-surface-container-low text-secondary" onClick={onClose} />
         </div>
 
         <div className="flex flex-col gap-4">

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AlertTriangle, Bell, CalendarOff, CheckCheck, FileClock, Timer, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { IconAction } from '@/components/ui';
 
 interface WFNotification {
   id: string;
@@ -99,7 +100,7 @@ export function WorkforceNotificationBell() {
                 <span className="text-base font-bold text-charcoal-heading">Notifications</span>
                 {count > 0 && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{count} new</span>}
               </div>
-              <button onClick={() => setOpen(false)} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button>
+              <IconAction icon={<X size={18} />} onClick={() => setOpen(false)} />
             </div>
 
             <div className="flex items-center justify-end border-b border-slate-100 px-5 py-2">

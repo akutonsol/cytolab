@@ -12,7 +12,7 @@ import {
   STATUS_META, SYSTEM_META, shortDate,
   type CodeSystem, type CodingRecordRow, type CodingStats, type ExportData, type MedicalCode,
 } from '@/lib/coding';
-import { Card } from '@/components/ui';
+import { Card, IconAction } from '@/components/ui';
 
 const TABS = ['Records', 'Code Dictionary', 'Export'] as const;
 type Tab = typeof TABS[number];
@@ -42,7 +42,7 @@ function AddCodeModal({ onClose }: { onClose: () => void }) {
   return createPortal(
     <div className="fixed inset-0 flex items-center justify-center p-4" style={{ zIndex: 2300, background: 'rgba(15,23,42,0.55)' }} onClick={onClose}>
       <div className="w-full max-w-[440px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-[18px] font-bold text-[#0F172A]">Add Code</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-[#475569] hover:bg-slate-100"><X size={16} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-[18px] font-bold text-[#0F172A]">Add Code</h3><IconAction icon={<X size={16} />} tone="strong" onClick={onClose} /></div>
         <div className="flex flex-col gap-3">
           <select value={system} onChange={(e) => setSystem(e.target.value as CodeSystem)} className={inp}>{(['LOINC', 'SNOMED_CT', 'ICD10', 'CPT'] as CodeSystem[]).map((s) => <option key={s} value={s}>{SYSTEM_META[s].label}</option>)}</select>
           <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Code (e.g. 10524-7)" className={inp} />

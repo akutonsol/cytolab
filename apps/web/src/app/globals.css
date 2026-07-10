@@ -214,6 +214,22 @@
    * their own tokens rather than a recolour. */
   --color-table-header: var(--slate-500);
   --color-table-cell: var(--slate-700);
+
+  /* Icon actions. The 178 icon buttons in the app used 5 grey values that collapse
+   * into 3 luminance tiers (ΔL within a tier = 0.004 — imperceptible; across tiers
+   * 0.275 — clearly visible). The tiers are the tokens. The off-tier call sites keep
+   * an explicit className override so Sprint 6 stays pixel-identical; converging them
+   * is a separate, reviewable recolour pass. See DESIGN_SYSTEM §8h. */
+  /* Canonical value per tier = the most frequent one in the wild, so the fewest
+   * call sites need an override:
+   *   strong #475569 x40   (off-tier: #49607e x29 — Tailwind `secondary`)
+   *   muted  #64748b x42   (off-tier: #6b7280 x7)
+   *   faint  #9ca3af x10   (off-tier: #94a3b8 x2)
+   * 38 off-tier sites keep an explicit className; converging them is a separate pass. */
+  --color-icon-strong: var(--slate-600);   /* #475569 */
+  --color-icon-muted:  var(--slate-500);   /* #64748b */
+  --color-icon-faint:  var(--gray-400);    /* #9ca3af */
+  --color-icon-hover:  var(--slate-100);   /* #f1f5f9 — the dominant hover fill */
   --color-border-card: #e5e3dc; /* the 1px border on cards */
   --color-border-strong: #d4d2cc;
   --color-text: var(--gray-900); /* primary */

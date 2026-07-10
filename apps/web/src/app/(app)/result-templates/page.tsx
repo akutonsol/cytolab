@@ -7,7 +7,7 @@ import { ClipboardList, Copy, Layers, Pencil, Plus, Search, TrendingUp } from 'l
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { CATEGORIES, composeNarrative, type ResultTemplate } from '@/lib/result-templates';
-import { Button } from '@/components/ui';
+import { Button, IconAction } from '@/components/ui';
 
 export default function ResultTemplatesPage() {
   const router = useRouter();
@@ -110,7 +110,7 @@ export default function ResultTemplatesPage() {
                     <div className="truncate font-label-sm text-label-sm text-secondary">{t.createdBy ? `${t.createdBy.firstName} ${t.createdBy.lastName}` : 'System'}</div>
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
-                    <button onClick={() => router.push(`/result-templates/${t.id}`)} title="Edit" className="grid h-8 w-8 place-items-center rounded-lg text-secondary hover:bg-surface-container-low hover:text-primary"><Pencil size={15} /></button>
+                    <IconAction icon={<Pencil size={15} />} tone="strong" className="hover:bg-surface-container-low text-secondary hover:text-primary" onClick={() => router.push(`/result-templates/${t.id}`)} title="Edit" />
                     <Button onClick={() => copyTemplate(t)} className="!h-8 !px-3 !text-[13px]"><Copy size={13} /> Use</Button>
                   </div>
                 </div>
