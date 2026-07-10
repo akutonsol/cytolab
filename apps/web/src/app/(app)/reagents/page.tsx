@@ -11,7 +11,7 @@ import {
   STATUS_META, daysUntil, expiryColor, isExpiringSoon, relTime, shortDate,
   type ReagentDetail, type ReagentLot, type ReagentStats, type ReagentStatus,
 } from '@/lib/reagent';
-import { Card, IconAction } from '@/components/ui';
+import { Card, IconAction, EmptyState } from '@/components/ui';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 const F = ({ label, children }: { label: string; children: React.ReactNode }) => (<div className="mb-3"><label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-[#475569]">{label}</label>{children}</div>);
@@ -174,11 +174,11 @@ export default function ReagentsPage() {
   if (!enabled) {
     return (
       <div className="min-h-full pt-4" style={{ background: '#F8FAFC' }}>
-        <div className="mx-auto mt-16 max-w-md rounded-2xl border border-[#EEF2F7] bg-white p-8 text-center shadow-sm">
-          <FlaskConical size={28} className="mx-auto text-[#9CA3AF]" />
-          <div className="mt-3 text-[18px] font-bold text-[#0F172A]">Feature not enabled</div>
-          <div className="mt-1 text-[14px] text-[#6B7280]">Reagent Tracking is disabled for this lab.</div>
-        </div>
+        <EmptyState className="mt-16"
+              icon={<FlaskConical size={28} />}
+              title={<>Feature not enabled</>}
+              description={<>Reagent Tracking is disabled for this lab.</>}
+            />
       </div>
     );
   }

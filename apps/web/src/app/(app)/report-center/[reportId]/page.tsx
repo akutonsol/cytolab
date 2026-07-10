@@ -11,7 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
 import { donutColor, fmtValue, getPath, reportById, toCsv } from '@/lib/report-center';
-import { Card } from '@/components/ui';
+import { Card, TableEmpty } from '@/components/ui';
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const STATUS_COLOR: Record<string, { fg: string; bg: string }> = {
@@ -149,7 +149,7 @@ export default function ReportRunnerPage() {
                   </tr></thead>
                   <tbody>
                     {tableRows.length === 0 ? (
-                      <tr><td colSpan={def.table.columns.length} className="px-3 py-12 text-center text-[#475569]">No data for this period.</td></tr>
+                      <TableEmpty colSpan={def.table.columns.length} pad="sm" tone="strong">No data for this period.</TableEmpty>
                     ) : tableRows.map((row, i) => (
                       <tr key={i} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC]">
                         {def.table!.columns.map((c, ci) => (

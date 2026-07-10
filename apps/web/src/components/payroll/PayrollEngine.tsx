@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { jmd, fmtDate } from '@/lib/payroll';
 import { fmtHours, empName } from '@/lib/workforce';
-import { Card, Button, Th, Td, IconAction } from '@/components/ui';
+import { Card, Button, Th, Td, IconAction, TableEmpty } from '@/components/ui';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const periodName = (month: number, year: number) => `${MONTHS[month - 1]} ${year}`;
@@ -115,7 +115,7 @@ function PeriodDrawer({ id, onClose }: { id: string; onClose: () => void }) {
               <table className="w-full border-collapse">
                 <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs" className="text-right">Reg Hrs</Th><Th density="compact" size="xs" className="text-right">OT Hrs</Th><Th density="compact" size="xs" className="text-right">Gross</Th><Th density="compact" size="xs" className="text-right">NIS</Th><Th density="compact" size="xs" className="text-right">NHT</Th><Th density="compact" size="xs" className="text-right">Ed Tax</Th><Th density="compact" size="xs" className="text-right">PAYE</Th><Th density="compact" size="xs" className="text-right">Net</Th></tr></thead>
                 <tbody>
-                  {entries.length === 0 && <tr><Td colSpan={9} className="px-4 py-10 text-center text-sm text-slate-500">No entries — process this period to generate payroll.</Td></tr>}
+                  {entries.length === 0 && <TableEmpty colSpan={9} tight>No entries — process this period to generate payroll.</TableEmpty>}
                   {entries.map((e) => (
                     <tr key={e.id} className="border-b border-slate-100">
                       <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{empName(e.employee)}</Td>
@@ -165,7 +165,7 @@ export function PayrollEngine() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Period</Th><Th density="compact" size="xs" className="text-right">Employees</Th><Th density="compact" size="xs" className="text-right">Gross</Th><Th density="compact" size="xs" className="text-right">Net</Th><Th density="compact" size="xs" className="text-right">Taxes</Th><Th density="compact" size="xs">Status</Th><Th density="compact" size="xs" className="text-right">Actions</Th></tr></thead>
             <tbody>
-              {periods.length === 0 && <tr><Td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-500">No payroll periods yet.</Td></tr>}
+              {periods.length === 0 && <TableEmpty colSpan={7}>No payroll periods yet.</TableEmpty>}
               {periods.map((p: any) => (
                 <tr key={p.id} className="cursor-pointer border-b border-slate-100 hover:bg-slate-50" onClick={() => setDetailId(p.id)}>
                   <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{periodName(p.month, p.year)}</Td>

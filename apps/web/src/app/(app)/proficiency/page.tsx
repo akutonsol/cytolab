@@ -13,7 +13,7 @@ import {
   STATUS_META, TEST_TYPES, TYPE_META, scoreColor, shortDate,
   type ProfAnalytics, type ProfTest, type ProfTestType,
 } from '@/lib/proficiency';
-import { Card, IconAction } from '@/components/ui';
+import { Card, IconAction, EmptyState } from '@/components/ui';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 
@@ -85,11 +85,11 @@ export default function ProficiencyPage() {
   if (!enabled) {
     return (
       <div className="min-h-full pt-4" style={{ background: '#F8FAFC' }}>
-        <div className="mx-auto mt-16 max-w-md rounded-2xl border border-[#EEF2F7] bg-white p-8 text-center shadow-sm">
-          <GraduationCap size={28} className="mx-auto text-[#9CA3AF]" />
-          <div className="mt-3 text-[18px] font-bold text-[#0F172A]">Feature not enabled</div>
-          <div className="mt-1 text-[14px] text-[#6B7280]">Proficiency Testing is disabled for this lab.</div>
-        </div>
+        <EmptyState className="mt-16"
+              icon={<GraduationCap size={28} />}
+              title={<>Feature not enabled</>}
+              description={<>Proficiency Testing is disabled for this lab.</>}
+            />
       </div>
     );
   }

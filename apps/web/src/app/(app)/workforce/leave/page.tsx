@@ -9,7 +9,7 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useMyEmployee, empName, fmtDate, daysBetweenInclusive, WF_STATUS } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Card, Button, Th, Td, IconAction } from '@/components/ui';
+import { Card, Button, Th, Td, IconAction, TableEmpty } from '@/components/ui';
 
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
@@ -115,7 +115,7 @@ function MyLeaveTab() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Type</Th><Th density="compact" size="xs">Start</Th><Th density="compact" size="xs">End</Th><Th density="compact" size="xs" className="text-right">Days</Th><Th density="compact" size="xs">Status</Th></tr></thead>
             <tbody>
-              {!initialLoading && requests.length === 0 && <tr><Td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-500">No leave requests yet.</Td></tr>}
+              {!initialLoading && requests.length === 0 && <TableEmpty colSpan={5}>No leave requests yet.</TableEmpty>}
               {pageRows.map((r: any) => (
                 <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{r.leaveType?.name ?? '—'}</Td>
@@ -181,7 +181,7 @@ function ManageLeaveTab() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs">Type</Th><Th density="compact" size="xs">Dates</Th><Th density="compact" size="xs" className="text-right">Days</Th><Th density="compact" size="xs">Reason</Th><Th density="compact" size="xs">Status</Th><Th density="compact" size="xs" className="text-right">Actions</Th></tr></thead>
             <tbody>
-              {!initialLoading && requests.length === 0 && <tr><Td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-500">No leave requests match these filters.</Td></tr>}
+              {!initialLoading && requests.length === 0 && <TableEmpty colSpan={7}>No leave requests match these filters.</TableEmpty>}
               {pageRows.map((r: any) => (
                 <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{empName(r.employee)}</Td>

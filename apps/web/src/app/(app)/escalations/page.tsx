@@ -12,7 +12,7 @@ import {
   OPEN_STATUSES, SEVERITY_META, STATUS_META, findingLabel, patientName,
   type EscalationRow, type EscalationSeverity, type EscalationStatus, type EscalationSummary,
 } from '@/lib/escalations';
-import { IconAction } from '@/components/ui';
+import { IconAction, EmptyState } from '@/components/ui';
 
 const SEVERITIES: EscalationSeverity[] = ['Abnormal', 'HighGrade', 'Malignant'];
 const STATUSES: EscalationStatus[] = ['Pending', 'Acknowledged', 'UnderReview', 'Resolved'];
@@ -244,11 +244,11 @@ export default function EscalationsPage() {
   if (!isEnabled('ABNORMAL_ESCALATION')) {
     return (
       <div className="min-h-full pt-4" style={{ background: '#F8FAFC' }}>
-        <div className="mx-auto mt-16 max-w-md rounded-2xl border border-[#EEF2F7] bg-white p-8 text-center shadow-sm">
-          <ShieldAlert size={28} className="mx-auto text-[#9CA3AF]" />
-          <div className="mt-3 text-[18px] font-bold text-[#0F172A]">Feature not enabled</div>
-          <div className="mt-1 text-[14px] text-[#6B7280]">Abnormal Result Escalation is disabled for this lab.</div>
-        </div>
+        <EmptyState className="mt-16"
+              icon={<ShieldAlert size={28} />}
+              title={<>Feature not enabled</>}
+              description={<>Abnormal Result Escalation is disabled for this lab.</>}
+            />
       </div>
     );
   }

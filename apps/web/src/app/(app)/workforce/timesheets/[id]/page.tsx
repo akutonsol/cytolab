@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FeatureGate } from '@/components/FeatureGate';
 import { fmtDate, fmtTime, SHIFT_CHIP } from '@/lib/workforce';
-import { Card, Button } from '@/components/ui';
+import { Card, Button, TableEmpty } from '@/components/ui';
 
 const STATUS: Record<string, { bg: string; fg: string }> = {
   Draft: { bg: '#F1F5F9', fg: '#475569' }, Submitted: { bg: '#E0F2FE', fg: '#0284C7' }, UnderReview: { bg: '#EEF2FF', fg: '#4F46E5' },
@@ -56,7 +56,7 @@ function Detail({ id }: { id: string }) {
           <table className="w-full border-collapse">
             <thead><tr className="border-y border-slate-100"><th className={TH}>Date</th><th className={TH}>Shift</th><th className={TH}>Clock In</th><th className={TH}>Clock Out</th><th className={`${TH} text-right`}>Break</th><th className={`${TH} text-right`}>Regular</th><th className={`${TH} text-right`}>OT</th><th className={TH}>Notes</th></tr></thead>
             <tbody>
-              {(ts.entries ?? []).length === 0 && <tr><td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-500">No clock activity in this period.</td></tr>}
+              {(ts.entries ?? []).length === 0 && <TableEmpty colSpan={8} tight>No clock activity in this period.</TableEmpty>}
               {(ts.entries ?? []).map((e: any) => (
                 <tr key={e.id} className="border-b border-slate-100">
                   <td className={`${CELL} font-medium text-charcoal-heading`}>{fmtDate(e.date)}</td>

@@ -12,7 +12,7 @@ import { api, type Paginated } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Card, IconAction } from '@/components/ui';
+import { Card, IconAction, TableEmpty } from '@/components/ui';
 
 // Stable empty fallback — a fresh [] each render would retrigger the
 // infinite-scroll fetchFn (which depends on the rows array identity).
@@ -210,8 +210,8 @@ function TicketsTab() {
               </tr>
             </thead>
             <tbody>
-              {(isFetching || initialLoading) && rows.length === 0 && <tr><td colSpan={9} className="px-4 py-10 text-center text-[#475569]">Loading…</td></tr>}
-              {!isFetching && !initialLoading && rows.length === 0 && <tr><td colSpan={9} className="px-4 py-12 text-center text-[#475569]">No tickets found.</td></tr>}
+              {(isFetching || initialLoading) && rows.length === 0 && <TableEmpty colSpan={9} tone="strong" tight>Loading…</TableEmpty>}
+              {!isFetching && !initialLoading && rows.length === 0 && <TableEmpty colSpan={9} tone="strong">No tickets found.</TableEmpty>}
               {ticketRows.map((t) => (
                 <tr key={t.id} onClick={() => setOpenId(t.id)} className="cursor-pointer border-b border-[#F1F5F9] transition-colors hover:bg-[#F8FAFC]">
                   <td className="px-4 py-3.5 font-mono text-[13px] font-bold text-[#0F172A]">{t.ticketNumber}</td>

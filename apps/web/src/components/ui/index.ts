@@ -25,5 +25,5 @@ export { Button, IconAction, type ButtonProps, type IconActionProps } from './Bu
 export { Input, fieldClass, type InputProps, type FieldStyle } from './Input';
 export { Badge, type BadgeProps } from './Badge';
 export { Th, Td, Tr, type ThProps, type TdProps, type TrProps } from './Table';
-export { EmptyState, type EmptyStateProps } from './EmptyState';
+export { EmptyState, TableEmpty, type EmptyStateProps, type TableEmptyProps } from './EmptyState';
 export { SectionContainer, type SectionContainerProps } from './SectionContainer';

@@ -13,7 +13,7 @@ import {
   DIFFICULTIES, DIFFICULTY_META, STATUS_META, passBadge, scoreColor,
   type CaseDifficulty, type ProfResults, type TestDetail,
 } from '@/lib/proficiency';
-import { Card, IconAction } from '@/components/ui';
+import { Card, IconAction, TableEmpty } from '@/components/ui';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 
@@ -105,7 +105,7 @@ export default function ProficiencyDetailPage() {
             <table className="w-full text-left text-[13px]">
               <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]"><th className="px-4 py-2.5 font-semibold">#</th><th className="px-4 py-2.5 font-semibold">Specimen</th><th className="px-4 py-2.5 font-semibold">Difficulty</th><th className="px-4 py-2.5 font-semibold">Expected Dx</th><th className="px-4 py-2.5 font-semibold">Responses</th>{isManager && test.status === 'Draft' && <th className="px-4 py-2.5" />}</tr></thead>
               <tbody>
-                {test.cases.length === 0 ? <tr><td colSpan={6} className="px-4 py-10 text-center text-[#475569]">No cases yet.</td></tr> : test.cases.map((c) => {
+                {test.cases.length === 0 ? <TableEmpty colSpan={6} tone="strong" tight>No cases yet.</TableEmpty> : test.cases.map((c) => {
                   const dm = DIFFICULTY_META[c.difficulty];
                   return (
                     <tr key={c.id} className="border-b border-[#F1F5F9]">
@@ -132,7 +132,7 @@ export default function ProficiencyDetailPage() {
             <table className="w-full text-left text-[13px]">
               <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]"><th className="px-4 py-2.5 font-semibold">Pathologist</th><th className="px-4 py-2.5 font-semibold">Cases Completed</th><th className="px-4 py-2.5 font-semibold">Score</th><th className="px-4 py-2.5 font-semibold">Status</th></tr></thead>
               <tbody>
-                {test.responseSummary.length === 0 ? <tr><td colSpan={4} className="px-4 py-10 text-center text-[#475569]">No responses yet.</td></tr> : test.responseSummary.map((r) => (
+                {test.responseSummary.length === 0 ? <TableEmpty colSpan={4} tone="strong" tight>No responses yet.</TableEmpty> : test.responseSummary.map((r) => (
                   <tr key={r.userId} className="border-b border-[#F1F5F9]">
                     <td className="px-4 py-2.5 font-semibold text-[#0F172A]">{r.name}</td>
                     <td className="px-4 py-2.5 text-[#334155]">{r.casesCompleted} / {test.totalCases}</td>

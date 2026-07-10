@@ -6,7 +6,7 @@ import { ArrowUpRight, ChevronDown, Folder, MoreHorizontal, Plus, Search, Slider
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { ClientSelect } from '@/components/ClientSelect';
-import { Button, IconAction } from '@/components/ui';
+import { Button, IconAction, TableEmpty } from '@/components/ui';
 
 // The six folder swatches (keys mirror the backend CABINET_COLORS). Orange here is
 // only a user-chosen folder colour swatch — never used for a status/accent.
@@ -220,10 +220,10 @@ export default function CabinetsPage() {
                   </thead>
                   <tbody>
                     {isFetching && view.length === 0 && (
-                      <tr><td colSpan={8} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">Loading records…</td></tr>
+                      <TableEmpty colSpan={8} tone="reference" tight>Loading records…</TableEmpty>
                     )}
                     {!isFetching && view.length === 0 && (
-                      <tr><td colSpan={8} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">{surname ? `No patients with surname “${surname}”` : 'No records filed here yet.'}</td></tr>
+                      <TableEmpty colSpan={8} tone="reference" tight>{surname ? `No patients with surname “${surname}”` : 'No records filed here yet.'}</TableEmpty>
                     )}
                     {view.map((r) => (
                       <tr key={r.id} className="border-b border-outline-variant/10 transition-colors hover:bg-surface-container-low/60">

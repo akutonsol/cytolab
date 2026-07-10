@@ -14,7 +14,7 @@ import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { RequisitionFormDrawer } from '@/components/RequisitionFormDrawer';
 import { RequisitionReportModal } from '@/components/RequisitionReportModal';
 import { PendingBatchesTab } from '@/components/requisitions/PendingBatchesTab';
-import { Card, Button, IconAction } from '@/components/ui';
+import { Card, Button, IconAction, TableEmpty } from '@/components/ui';
 
 interface RequisitionLine { id: string; isCompleted: boolean }
 interface Requisition {
@@ -205,7 +205,7 @@ export default function RequisitionsPage() {
                   {isFetching && all.length === 0 && Array.from({ length: 6 }).map((_, i) => (
                     <tr key={i} className="border-b border-slate-100"><td colSpan={8} className="px-5 py-4"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></td></tr>
                   ))}
-                  {!isFetching && !initialLoading && filtered.length === 0 && <tr><td colSpan={8} className="px-5 py-12 text-center text-sm text-slate-500">No requisitions found.</td></tr>}
+                  {!isFetching && !initialLoading && filtered.length === 0 && <TableEmpty colSpan={8} pad="lg">No requisitions found.</TableEmpty>}
                   {pageRows.map((r) => {
                     const name = clientName(r);
                     return (

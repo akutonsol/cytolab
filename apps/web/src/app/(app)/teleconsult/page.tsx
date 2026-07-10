@@ -12,7 +12,7 @@ import {
   AGREEMENT_META, STATUS_META, TIMELINE, URGENCY_META, shortDate, timelineIndex,
   type Consult, type ConsultAnalytics, type ConsultStatus,
 } from '@/lib/teleconsult';
-import { Card } from '@/components/ui';
+import { Card, EmptyState } from '@/components/ui';
 
 const TABS: (ConsultStatus | 'all')[] = ['all', 'Pending', 'Responded', 'Accepted'];
 
@@ -57,11 +57,11 @@ export default function TeleconsultPage() {
   if (!enabled) {
     return (
       <div className="min-h-full pt-4" style={{ background: '#F8FAFC' }}>
-        <div className="mx-auto mt-16 max-w-md rounded-2xl border border-[#EEF2F7] bg-white p-8 text-center shadow-sm">
-          <Video size={28} className="mx-auto text-[#9CA3AF]" />
-          <div className="mt-3 text-[18px] font-bold text-[#0F172A]">Feature not enabled</div>
-          <div className="mt-1 text-[14px] text-[#6B7280]">Teleconsultation is disabled for this lab.</div>
-        </div>
+        <EmptyState className="mt-16"
+              icon={<Video size={28} />}
+              title={<>Feature not enabled</>}
+              description={<>Teleconsultation is disabled for this lab.</>}
+            />
       </div>
     );
   }

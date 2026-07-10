@@ -9,7 +9,7 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, empName, fmtDate, fmtHours, fmtMultiplier, WF_STATUS } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Card, Button, Th, Td, IconAction } from '@/components/ui';
+import { Card, Button, Th, Td, IconAction, TableEmpty } from '@/components/ui';
 
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
@@ -169,7 +169,7 @@ function OvertimePage() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs">Date</Th><Th density="compact" size="xs" className="text-right">Regular Hrs</Th><Th density="compact" size="xs" className="text-right">Overtime Hrs</Th><Th density="compact" size="xs" className="text-right">Rate</Th><Th density="compact" size="xs">Status</Th>{isManager && <Th density="compact" size="xs" className="text-right">Actions</Th>}</tr></thead>
             <tbody>
-              {!initialLoading && records.length === 0 && <tr><Td colSpan={isManager ? 7 : 6} className="px-4 py-12 text-center text-sm text-slate-500">No overtime records. Use “Calculate Overtime” to generate them.</Td></tr>}
+              {!initialLoading && records.length === 0 && <TableEmpty colSpan={isManager ? 7 : 6}>No overtime records. Use “Calculate Overtime” to generate them.</TableEmpty>}
               {pageRows.map((r: any) => (
                 <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{empName(r.employee)}</Td>

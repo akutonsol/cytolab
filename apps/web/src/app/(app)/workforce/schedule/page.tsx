@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, empName, SHIFT_CHIP } from '@/lib/workforce';
-import { Card, IconAction } from '@/components/ui';
+import { Card, IconAction, TableEmpty } from '@/components/ui';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 // Plain LOCAL calendar date (YYYY-MM-DD) — built from local components, never
@@ -104,7 +104,7 @@ function Grid() {
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-500">No employees.</td></tr>}
+            {rows.length === 0 && <TableEmpty colSpan={8}>No employees.</TableEmpty>}
             {rows.map((e) => (
               <tr key={e.id} className="border-b border-slate-100">
                 <td className="sticky left-0 z-10 bg-white px-4 py-3 text-sm font-medium text-charcoal-heading">{empName(e)}</td>

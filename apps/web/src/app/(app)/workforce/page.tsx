@@ -8,7 +8,7 @@ import { api } from '@/lib/api';
 import { FeatureGate } from '@/components/FeatureGate';
 import { ClockWidget } from '@/components/workforce/ClockWidget';
 import { ATT_STATUS, SHIFT_CHIP, fmtTime } from '@/lib/workforce';
-import { Card } from '@/components/ui';
+import { Card, TableEmpty } from '@/components/ui';
 
 
 function Kpi({ icon, iconClass, label, value, sub, subColor }: { icon: React.ReactNode; iconClass: string; label: string; value: React.ReactNode; sub?: string; subColor?: string }) {
@@ -74,7 +74,7 @@ function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {roster.length === 0 && <tr><td colSpan={7} className="px-5 py-12 text-center text-sm text-slate-500">No staff found.</td></tr>}
+                  {roster.length === 0 && <TableEmpty colSpan={7} pad="lg">No staff found.</TableEmpty>}
                   {roster.map((r: any) => (
                     <tr key={r.employeeId} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className={`${CELL} font-medium text-charcoal-heading`}>{r.name}</td>

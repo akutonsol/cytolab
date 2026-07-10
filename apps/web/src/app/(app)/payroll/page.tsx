@@ -10,7 +10,7 @@ import { api } from '@/lib/api';
 import { jmd, monthYear, fmtDate } from '@/lib/payroll';
 import { useFeatures } from '@/lib/feature-context';
 import { PayrollEngine } from '@/components/payroll/PayrollEngine';
-import { Button } from '@/components/ui';
+import { Button, TableEmpty } from '@/components/ui';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Money4 { nis: number; nht: number; edTax: number; paye: number }
@@ -283,7 +283,7 @@ export default function PayrollDashboard() {
                       </tr>
                     );
                   })}
-                  {(a?.recentRuns ?? []).length === 0 && <tr><td colSpan={7} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">No payroll runs yet.</td></tr>}
+                  {(a?.recentRuns ?? []).length === 0 && <TableEmpty colSpan={7} tone="reference" tight>No payroll runs yet.</TableEmpty>}
                 </tbody>
               </table>
             </div>

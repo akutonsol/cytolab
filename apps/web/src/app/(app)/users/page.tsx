@@ -5,7 +5,7 @@ import { Plus, Search, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { Button, IconAction, Th, Td } from '@/components/ui';
+import { Button, IconAction, Th, Td, TableEmpty } from '@/components/ui';
 
 interface UserRow {
   id: string;
@@ -80,7 +80,7 @@ export default function UsersPage() {
                 ))
               )}
               {!isFetching && rows.length === 0 && (
-                <tr><Td colSpan={5} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">No users found.</Td></tr>
+                <TableEmpty colSpan={5} tone="reference" tight>No users found.</TableEmpty>
               )}
               {rows.map((u) => (
                 <tr key={u.id} className="border-b border-outline-variant/10 transition-colors hover:bg-surface-container-low/60">

@@ -14,7 +14,7 @@ const DOT: Record<string, string> = {
 const dotColor = (t?: string | null) => (t && DOT[t]) || hueFor(t || 'x');
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { IconAction, Th, Td } from '@/components/ui';
+import { IconAction, Th, Td, TableEmpty } from '@/components/ui';
 
 const PAGE_SIZE = 10;
 
@@ -124,7 +124,7 @@ export default function PortalRecordsPage() {
                 <tr key={i} className="border-b border-outline-variant/10"><Td colSpan={5} className="px-4 py-3"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></Td></tr>
               ))}
               {!isFetching && !initialLoading && rows.length === 0 && (
-                <tr><Td colSpan={5} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">No records found.</Td></tr>
+                <TableEmpty colSpan={5} tone="reference" tight>No records found.</TableEmpty>
               )}
               {rows.map((r) => {
                 const auth = isAuthorized(r.status);

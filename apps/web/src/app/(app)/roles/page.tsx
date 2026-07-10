@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { RoleFormDrawer, type RoleRecord } from '@/components/RoleFormDrawer';
-import { Button, IconAction, Th, Td } from '@/components/ui';
+import { Button, IconAction, Th, Td, TableEmpty } from '@/components/ui';
 
 const BADGE = 'inline-flex items-center rounded-full px-3 py-1 font-label-sm text-label-sm';
 
@@ -93,7 +93,7 @@ export default function RolesPage() {
                 ))
               )}
               {!isFetching && rows.length === 0 && !isError && (
-                <tr><Td colSpan={colCount} className="px-4 py-10 text-center font-body-sm text-body-sm text-secondary">No roles found.</Td></tr>
+                <TableEmpty colSpan={colCount} tone="reference" tight>No roles found.</TableEmpty>
               )}
               {rows.map((r) => (
                 <tr key={r.id} className="border-b border-outline-variant/10 transition-colors hover:bg-surface-container-low/60">

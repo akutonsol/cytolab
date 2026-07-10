@@ -235,6 +235,9 @@
    * neither matches --color-border-strong (#d4d2cc, warm) or --color-text (#111827). */
   --color-field-border: var(--slate-200);  /* #e2e8f0 */
   --color-field-text:   var(--slate-900);  /* #0f172a */
+  /* A darker body text than --color-text-secondary (#6b7280). 30+ empty-table rows and
+   * several inline captions use it. Named for the role, not the hue. */
+  --color-text-strong:  var(--slate-600);  /* #475569 */
   --color-border-card: #e5e3dc; /* the 1px border on cards */
   --color-border-strong: #d4d2cc;
   --color-text: var(--gray-900); /* primary */

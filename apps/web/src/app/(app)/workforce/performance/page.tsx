@@ -9,7 +9,7 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, useMyEmployee, empName, fmtDate } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Card, Button, Th, Td, IconAction } from '@/components/ui';
+import { Card, Button, Th, Td, IconAction, TableEmpty } from '@/components/ui';
 
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
@@ -190,7 +190,7 @@ function ReviewsTab() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs">Period</Th><Th density="compact" size="xs" className="text-right">Overall</Th><Th density="compact" size="xs" className="text-right">Attend.</Th><Th density="compact" size="xs" className="text-right">Prod.</Th><Th density="compact" size="xs" className="text-right">Quality</Th><Th density="compact" size="xs">Status</Th><Th density="compact" size="xs">Reviewer</Th></tr></thead>
             <tbody>
-              {!initialLoading && reviews.length === 0 && <tr><Td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-500">No reviews match these filters.</Td></tr>}
+              {!initialLoading && reviews.length === 0 && <TableEmpty colSpan={8}>No reviews match these filters.</TableEmpty>}
               {pageRows.map((r: any) => (
                 <tr key={r.id} className="cursor-pointer border-b border-slate-100 hover:bg-slate-50" onClick={() => setDetailId(r.id)}>
                   <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{empName(r.employee)}</Td>
@@ -306,7 +306,7 @@ function GoalsTab() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs">Title</Th><Th density="compact" size="xs">Target Date</Th><Th density="compact" size="xs">Progress</Th><Th density="compact" size="xs">Status</Th></tr></thead>
             <tbody>
-              {!initialLoading && goals.length === 0 && <tr><Td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-500">No goals match these filters.</Td></tr>}
+              {!initialLoading && goals.length === 0 && <TableEmpty colSpan={5}>No goals match these filters.</TableEmpty>}
               {pageRows.map((g: any) => (
                 <tr key={g.id} className="cursor-pointer border-b border-slate-100 hover:bg-slate-50" onClick={() => setEditing(g)}>
                   <Td density="compact" tone="inherit" className="text-sm text-slate-600">{empName(g.employee)}</Td>

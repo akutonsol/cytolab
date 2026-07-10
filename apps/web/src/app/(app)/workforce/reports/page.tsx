@@ -9,7 +9,7 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, fmtHours, fmtMoney, fmtMultiplier, rateColor, WARN_FG } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Card, Button, Th, Td } from '@/components/ui';
+import { Card, Button, Th, Td, TableEmpty } from '@/components/ui';
 
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
@@ -75,7 +75,7 @@ function AttendanceTab() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs">Department</Th><Th density="compact" size="xs" className="text-right">Total Days</Th><Th density="compact" size="xs" className="text-right">Present</Th><Th density="compact" size="xs" className="text-right">Absent</Th><Th density="compact" size="xs" className="text-right">Late</Th><Th density="compact" size="xs" className="text-right">On Leave</Th><Th density="compact" size="xs" className="text-right">Attendance Rate</Th></tr></thead>
             <tbody>
-              {!initialLoading && rows.length === 0 && <tr><Td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-500">No data for this range.</Td></tr>}
+              {!initialLoading && rows.length === 0 && <TableEmpty colSpan={8}>No data for this range.</TableEmpty>}
               {pageRows.map((r: any) => (
                 <tr key={r.employeeId} className="border-b border-slate-100 hover:bg-slate-50">
                   <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{r.name}</Td>
@@ -108,7 +108,7 @@ function LeaveLiabilityTab() {
         <table className="w-full border-collapse">
           <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs">Leave Type</Th><Th density="compact" size="xs" className="text-right">Entitlement</Th><Th density="compact" size="xs" className="text-right">Used</Th><Th density="compact" size="xs" className="text-right">Pending</Th><Th density="compact" size="xs" className="text-right">Remaining</Th><Th density="compact" size="xs" className="text-right">Est. Cost</Th></tr></thead>
           <tbody>
-            {rows.length === 0 && <tr><Td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-500">No leave balances for this year.</Td></tr>}
+            {rows.length === 0 && <TableEmpty colSpan={7}>No leave balances for this year.</TableEmpty>}
             {rows.map((r: any, i: number) => (
               <tr key={`${r.employeeId}-${r.leaveType}-${i}`} className="border-b border-slate-100 hover:bg-slate-50">
                 <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{r.name}</Td>
@@ -161,7 +161,7 @@ function OvertimeCostTab() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs" className="text-right">Total OT Hours</Th><Th density="compact" size="xs" className="text-right">Rate</Th><Th density="compact" size="xs" className="text-right">Est. Cost</Th></tr></thead>
             <tbody>
-              {rows.length === 0 && <tr><Td colSpan={4} className="px-4 py-12 text-center text-sm text-slate-500">No overtime in this range.</Td></tr>}
+              {rows.length === 0 && <TableEmpty colSpan={4}>No overtime in this range.</TableEmpty>}
               {rows.map((r: any) => (
                 <tr key={r.employeeId} className="border-b border-slate-100 hover:bg-slate-50">
                   <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{r.name}</Td>
@@ -197,7 +197,7 @@ function TimesheetSummaryTab() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs" className="text-right">Regular Hrs</Th><Th density="compact" size="xs" className="text-right">OT Hrs</Th><Th density="compact" size="xs" className="text-right">Submitted</Th><Th density="compact" size="xs" className="text-right">Approved</Th><Th density="compact" size="xs" className="text-right">Pending</Th></tr></thead>
             <tbody>
-              {rows.length === 0 && <tr><Td colSpan={6} className="px-4 py-12 text-center text-sm text-slate-500">No timesheets in this range.</Td></tr>}
+              {rows.length === 0 && <TableEmpty colSpan={6}>No timesheets in this range.</TableEmpty>}
               {rows.map((r: any) => (
                 <tr key={r.employeeId} className="border-b border-slate-100 hover:bg-slate-50">
                   <Td density="compact" tone="inherit" className="text-sm font-medium text-charcoal-heading">{r.name}</Td>

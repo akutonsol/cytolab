@@ -12,6 +12,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { FEATURES, TIER_META, type FeatureKey } from '@/lib/features';
+import { EmptyState } from '@/components/ui';
 
 // ─── Types (mirror the API's FeatureRow) ─────────────────────────────────────
 interface FeatureRow {
@@ -129,11 +130,11 @@ export default function FeaturesPage() {
   if (!claims || !isSuper) {
     return (
       <div className="min-h-full pt-4" style={{ background: '#F8FAFC' }}>
-        <div className="mx-auto mt-16 max-w-md rounded-2xl border border-[#EEF2F7] bg-white p-8 text-center shadow-sm">
-          <Shield size={28} className="mx-auto text-[#9CA3AF]" />
-          <div className="mt-3 text-[18px] font-bold text-[#0F172A]">Access restricted</div>
-          <div className="mt-1 text-[14px] text-[#6B7280]">Feature Management is available to superusers only.</div>
-        </div>
+        <EmptyState className="mt-16"
+              icon={<Shield size={28} />}
+              title={<>Access restricted</>}
+              description={<>Feature Management is available to superusers only.</>}
+            />
       </div>
     );
   }

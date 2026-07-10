@@ -9,7 +9,7 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, empName, fmtDate } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Card, Button, IconAction } from '@/components/ui';
+import { Card, Button, IconAction, TableEmpty } from '@/components/ui';
 
 // Stable empty fallback — a fresh [] each render would retrigger the
 // infinite-scroll fetchFn (which depends on the filtered array identity).
@@ -94,7 +94,7 @@ function List() {
           <table className="w-full border-collapse">
             <thead><tr className="border-b border-slate-100"><th className={TH}>Employee</th><th className={TH}>Period</th><th className={`${TH} text-right`}>Regular Hrs</th><th className={`${TH} text-right`}>OT Hrs</th><th className={`${TH} text-right`}>Total</th><th className={TH}>Status</th><th className={`${TH} text-right`}>Actions</th></tr></thead>
             <tbody>
-              {!initialLoading && filtered.length === 0 && <tr><td colSpan={7} className="px-5 py-12 text-center text-sm text-slate-500">No timesheets yet. Generate one from clock events.</td></tr>}
+              {!initialLoading && filtered.length === 0 && <TableEmpty colSpan={7} pad="lg">No timesheets yet. Generate one from clock events.</TableEmpty>}
               {pageRows.map((r: any) => {
                 const s = STATUS[r.status] ?? STATUS.Draft;
                 const name = r.employee?.user ? `${r.employee.user.firstName} ${r.employee.user.lastName}` : '—';

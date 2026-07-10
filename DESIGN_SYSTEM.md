@@ -564,6 +564,60 @@ of 12px. `DataTable` had the same latent bug (`text-label` + `text-text-secondar
 >    group **and** its `conflictingClassGroups`;
 > 3. verify with a pixel diff on a screen that uses it — nothing else will tell you.
 
+### 8k. `Input` — focus is an interaction state, not a screenshot
+
+The app's fields styled focus with a border colour only (~116 sites). The primitive keeps
+that and adds a ring.
+
+> **`:focus-visible` matches a text input on a mouse click**, not only on keyboard focus —
+> browsers always show a focus indicator for text entry. The ring is therefore visible to
+> every user. This is the approved focus-state change; do not describe it as keyboard-only.
+
+Focus, hover, disabled, readOnly, invalid, valid, autofill, tab order and ARIA are
+**invisible to a screenshot diff** (nothing is focused in a screenshot). They are verified
+by driving the state and asserting computed style — 19 assertions, run against
+`/portal/login`. `disabled` and `readOnly` are deliberately left to native rendering:
+none of the migrated fields styled them, and inventing styling would be a redesign.
+
+`fieldClass()` is exported for `<select>` / `<textarea>`, which share the identical shell —
+the same escape hatch as `cardClass()` for `next/link`.
+
+**A latent bug this exposed.** `ArticleEditor`'s markdown textarea wrote `text-[13px]` but
+rendered at **14px**: the un-merged class string carried both `text-[14px]` (from `INPUT`)
+and `text-[13px]`, and Tailwind's source order won. `cn()` resolves it correctly, which
+would have silently shrunk the editor. The shipped 14px is **preserved**; the bug is
+documented in place for the visual-refinement sprint.
+
+### 8l. `EmptyState` and `TableEmpty` are different components
+
+| | shape | sites | status |
+|---|---|---|---|
+| `EmptyState` | centred card: icon 28 → 18px bold title → 14px description | 21 | **19 migrated, pixel-identical** |
+| `TableEmpty` | `<tr><td colSpan>` empty row | 71 | **28 migrated**, 22 documented exceptions |
+
+`EmptyState` is built on `Card` (`radius="md" elevation="sm" border="hairline" padding="xl"`).
+Every colour resolved to an existing token, so there is no raw hex: `#9CA3AF` →
+`--color-icon-faint`, `#0F172A` → `--slate-900`, `#6B7280` → `--color-text-secondary`,
+`#475569` → the new `--color-text-strong`. Layout (`mt-16`) stays at the call site: it
+positions the card in its page and is not a property of the empty state.
+
+**Why `TableEmpty` is not at 100%.** The 71 empty rows use **31 distinct class combinations**
+(px-3…px-8 × py-3…py-20 × nine text treatments). Reducing all of them to axes would encode
+the drift into the API rather than remove it. So the primitive exposes a small semantic set
+(`pad` sm·md·lg, `tight`, `tone` muted·strong·reference) and only the sites it reproduces
+**exactly** were converted. The migrator asserts *set equality* of the emitted class list
+against the original before touching a site.
+
+Two skipped `EmptyState` sites (`correlation/[id]`, `proficiency/[id]/respond`) inline the
+card on a single `return` line; the migrator refused rather than guess.
+
+> **Empty rows only render when a table has no rows**, so a screenshot diff cannot verify
+> them. Equivalence is proven at the class-string level instead — CSS source order, not
+> class-attribute order, decides rendering, so an identical class *set* is an identical render.
+
+The remaining 22 rows across 18 combos are convergence debt: collapsing them onto the
+semantic set is a visual decision for the refinement sprint, not a migration.
+
 ### 8g. Duplicate implementations
 `components/security/ui.tsx` shipped a parallel micro-design-system: its own `Badge`,
 `Card`, `Table`, and `primaryBtn`/`ghostBtn`/`dangerBtn` class constants.
