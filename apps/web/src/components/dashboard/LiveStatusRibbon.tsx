@@ -19,6 +19,8 @@ export interface LiveStatusStats {
   fhirConnected?: boolean;
   /** Throughput change vs prior period; gives Flow a direction (Foresight). */
   throughputDelta?: number;
+  /** A validated, explainable degradation: turnaround worsening this period vs last. */
+  timelinessAtRisk?: boolean;
 }
 
 type State = 'Calm' | 'Watch' | 'Strained' | 'Critical';
@@ -42,6 +44,9 @@ function deriveState(s: LiveStatusStats): { state: State; reason: string } {
   if (q >= 20) return { state: 'Strained', reason: `${q} cases in the AI queue` };
   if (esc >= 1) return { state: 'Watch', reason: `${esc} escalation${esc > 1 ? 's' : ''} to clear` };
   if (q >= 8) return { state: 'Watch', reason: `AI queue building — ${q} remaining` };
+  // Otherwise Calm — unless a validated direction says turnaround is slipping.
+  // Deterministic and explainable: it consumes the Timeliness vital's real trend.
+  if (s.timelinessAtRisk) return { state: 'Watch', reason: 'turnaround slipping vs last period' };
   return { state: 'Calm', reason: 'All vitals nominal' };
 }
 

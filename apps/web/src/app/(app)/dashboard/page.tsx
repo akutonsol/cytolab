@@ -21,6 +21,20 @@ import { ClinicalWorkstation } from '@/components/dashboard/ClinicalWorkstation'
 import { PerformanceArea, SubscriptionBars } from './charts';
 
 const GREEN = '#166534', BLUE = '#4F46E5';
+
+// ── Per-vital Foresight ──────────────────────────────────────────────────────
+// A vital reading carries a direction, not just a value. Every direction is
+// derived from real /analytics/home data (30d current-vs-previous `radar`, or the
+// 42-day throughput `series`); nothing is hardcoded. When there is no real history
+// to compare, the direction is "No trend yet" — never invented.
+// Zero-orange: tones reuse the existing emerald / red / slate only. The word and
+// glyph carry meaning without colour; the glyph reflects direction, the colour
+// reflects whether that direction is good.
+type FTone = 'good' | 'bad' | 'neutral';
+type FDir = 'up' | 'down' | 'flat' | 'none';
+interface Foresight { text: string; dir: FDir; tone: FTone }
+const FS_COLOR: Record<FTone, string> = { good: '#059669', bad: '#EF4444', neutral: '#64748B' };
+const FS_GLYPH: Record<FDir, string> = { up: '▲', down: '▼', flat: '▬', none: '' };
 // The page is transparent so it shows the layout's single shared canvas gradient
 // (top bar + content are one continuous surface, no seam). The DNA PNG has a
 // transparent background, so it overlays the gradient directly.
@@ -262,6 +276,47 @@ export default function DashboardPage() {
   const eff = d.effectiveness;
   const kpis = ov?.kpis;
   const totalSpecimens = d.throughput.series?.reduce((s: any, i: any) => s + (i.value || 0), 0) || 0;
+
+  // Foresight directions, derived only from real data (see FTone above).
+  const radarDim = (name: string) => (d.radar ?? []).find((r: any) => r.dim === name);
+  // A radar dim exposes `current` and `previous` (this 30d vs prior 30d). A move
+  // inside the dead band reads flat; `previous <= 0` means no real baseline yet.
+  const radarDir = (
+    name: string, upText: string, flatText: string, downText: string,
+    valence: 'good-up' | 'neutral', band = 2,
+  ): Foresight => {
+    const r = radarDim(name);
+    if (!r || typeof r.previous !== 'number' || r.previous <= 0) return { text: 'No trend yet', dir: 'none', tone: 'neutral' };
+    const delta = r.current - r.previous;
+    if (Math.abs(delta) <= band) return { text: flatText, dir: 'flat', tone: 'neutral' };
+    const rising = delta > 0;
+    const tone: FTone = valence === 'neutral' ? 'neutral' : rising ? 'good' : 'bad';
+    return { text: rising ? upText : downText, dir: rising ? 'up' : 'down', tone };
+  };
+  // Cases Today pace: today's intake vs the trailing daily average, same source.
+  const casesForesight: Foresight = (() => {
+    const s: any[] = d.throughput?.series ?? [];
+    if (s.length < 8) return { text: 'No trend yet', dir: 'none', tone: 'neutral' };
+    const today = s[s.length - 1]?.value ?? 0;
+    const prior = s.slice(0, -1).map((x) => x.value || 0);
+    const base = prior.reduce((a: number, b: number) => a + b, 0) / prior.length;
+    if (base <= 0) return { text: 'No trend yet', dir: 'none', tone: 'neutral' };
+    const ratio = today / base;
+    if (ratio >= 1.15) return { text: 'Ahead of normal', dir: 'up', tone: 'neutral' };
+    if (ratio <= 0.85) return { text: 'Below expected', dir: 'down', tone: 'neutral' };
+    return { text: 'On pace', dir: 'flat', tone: 'neutral' };
+  })();
+  const foresights = {
+    flow: radarDir('Volume', 'Rising', 'Steady', 'Easing', 'neutral'),
+    cases: casesForesight,
+    // Turnaround radar score is higher-is-better (target/avg), so a rise is improving.
+    timeliness: radarDir('Turnaround', 'Improving', 'Stable', 'At risk', 'good-up'),
+    // No historical backlog series exists — do not invent a pressure trend.
+    pressure: { text: 'No trend yet', dir: 'none', tone: 'neutral' } as Foresight,
+    auth: radarDir('Authorization', 'Improving', 'Stable', 'Declining', 'good-up'),
+  };
+  // Lab State may consume a validated, explainable direction (turnaround slipping).
+  const timelinessAtRisk = foresights.timeliness.text === 'At risk';
 
   // Monthly Case Volume — bucket the throughput series into 6 months; `gap`
   // fills each capsule up to a soft target. Reused by the chart + stat tiles.
@@ -784,7 +839,7 @@ export default function DashboardPage() {
 
         <div style={{ marginTop: 12, background: 'transparent', marginLeft: -16, marginRight: -16, marginBottom: -40, paddingLeft: 16, paddingRight: 16, paddingTop: 20, paddingBottom: 40 }} className="flex flex-col gap-5">
           {/* ═══ LIVE STATUS RIBBON (slim single-line status between nav + Action Center) ═══ */}
-          <LiveStatusRibbon stats={{ activeSpecimens: d.priorityRecords?.length || 0, escalations: d.priorityRecords?.filter((r: any) => r.urgent).length || 0, aiQueue: kpis?.pendingRequisitions || 0, throughputDelta: d.throughput?.deltaPct }} />
+          <LiveStatusRibbon stats={{ activeSpecimens: d.priorityRecords?.length || 0, escalations: d.priorityRecords?.filter((r: any) => r.urgent).length || 0, aiQueue: kpis?.pendingRequisitions || 0, throughputDelta: d.throughput?.deltaPct, timelinessAtRisk }} />
           {/* ═══ ACTIVITY TRAY (consolidates escalation / AI review / FHIR alerts) ═══ */}
           <ActivityTray />
 
@@ -810,7 +865,7 @@ export default function DashboardPage() {
                 subColor: '#991B1B',
                 isPriority: true,
                 isPrimary: true,
-                trend: 8,
+                foresight: foresights.flow,
                 spark: [3, 4, 4, 5, 4, 5, 6],
               },
               {
@@ -819,7 +874,7 @@ export default function DashboardPage() {
                 countTo: ov?.today?.requisitionsToday || 0, suffix: '',
                 sub: 'received today',
                 subColor: '#475569',
-                trend: -12,
+                foresight: foresights.cases,
                 spark: [5, 6, 4, 5, 3, 2, 0],
               },
               {
@@ -828,8 +883,7 @@ export default function DashboardPage() {
                 value: kpis?.avgTat ? `${kpis.avgTat}d` : '—',
                 sub: kpis?.avgTat <= 3 ? 'Within target' : 'Above target',
                 subColor: kpis?.avgTat <= 3 ? '#166534' : '#991B1B',
-                trend: -4,
-                trendInverted: true, // lower TAT is better
+                foresight: foresights.timeliness,
                 spark: [3.1, 2.9, 2.8, 2.7, 2.6, 2.5, 2.4],
               },
               {
@@ -839,7 +893,7 @@ export default function DashboardPage() {
                 sub: `${d.priorityRecords?.filter((r: any) => r.urgent).length || 0} high priority`,
                 subColor: '#475569',
                 isPriority: true,
-                trend: 15,
+                foresight: foresights.pressure,
                 spark: [1, 2, 2, 1, 2, 3, 3],
               },
               {
@@ -848,10 +902,10 @@ export default function DashboardPage() {
                 countTo: eff?.authorization || 0, suffix: '%',
                 sub: eff?.authorization >= 80 ? 'On target' : 'Below target',
                 subColor: eff?.authorization >= 80 ? '#166534' : '#991B1B',
-                trend: 2,
+                foresight: foresights.auth,
                 spark: [78, 80, 79, 82, 83, 83, 84],
               },
-            ].map(({ icon, label, value, countTo, suffix, sub, subColor, isPriority, isPrimary, trend, trendInverted, spark }: any, i) => (
+            ].map(({ icon, label, value, countTo, suffix, sub, subColor, isPriority, isPrimary, foresight, spark }: any, i) => (
               <div key={i} style={{
                 background: 'white',
                 borderRadius: 18,
@@ -895,17 +949,15 @@ export default function DashboardPage() {
                     fontSize: 12.5, fontWeight: 600,
                     color: subColor, marginTop: 4,
                   }}>{sub}</div>
-                  {typeof trend === 'number' && (() => {
-                    // Zero-orange: up/down trends use emerald/red only. TAT inverts
-                    // (a lower number is the good direction).
-                    const good = trendInverted ? trend < 0 : trend > 0;
-                    return (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 5, fontSize: 11, fontWeight: 600, color: good ? '#059669' : '#EF4444' }}>
-                        <span>{trend > 0 ? '▲' : '▼'}{Math.abs(trend)}%</span>
-                        <span style={{ color: '#9ca3af', fontWeight: 400 }}>vs yesterday</span>
-                      </div>
-                    );
-                  })()}
+                  {foresight && (
+                    // Per-vital Foresight: one truthful direction, derived from real
+                    // data. Word + glyph carry meaning without colour; "No trend yet"
+                    // when there is no real baseline. Same row/size as before — no shift.
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 5, fontSize: 11, fontWeight: 600, color: FS_COLOR[(foresight.tone as FTone)] }}>
+                      {foresight.dir !== 'none' && <span aria-hidden>{FS_GLYPH[(foresight.dir as FDir)]}</span>}
+                      <span>{foresight.text}</span>
+                    </div>
+                  )}
                   {Array.isArray(spark) && <Sparkline data={spark} />}
                 </div>
               </div>
