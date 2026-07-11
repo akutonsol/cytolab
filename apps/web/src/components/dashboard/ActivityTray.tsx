@@ -24,6 +24,14 @@ type Chip = {
   onClick: () => void;
   /** Pulse the status dot to draw the eye to active alerts. */
   pulse?: boolean;
+  /**
+   * Stable dynamic prioritization (Phase 1): a documented, deterministic rank so
+   * the most urgent alert leads the row. 1 escalation (clinical urgency) · 2
+   * quality alerts (QC failures) · 3 AI reviews (routine) · 4 FHIR (informational).
+   * Emphasis before position: chips stay in this row, only their order reflects
+   * priority; the label is the reason for the promotion.
+   */
+  rank: number;
 };
 
 export function ActivityTray() {
@@ -60,18 +68,22 @@ export function ActivityTray() {
 
   const chips: Chip[] = [];
   if (escCount > 0) {
-    chips.push({ key: 'esc', chipBg: 'bg-red-50 hover:bg-red-100', dot: 'bg-red-500', text: 'text-red-700', label: 'Escalation', count: escCount, onClick: () => router.push('/results?filter=escalated'), pulse: true });
+    chips.push({ key: 'esc', rank: 1, chipBg: 'bg-red-50 hover:bg-red-100', dot: 'bg-red-500', text: 'text-red-700', label: 'Escalation', count: escCount, onClick: () => router.push('/results?filter=escalated'), pulse: true });
   }
   if (aiCount > 0) {
-    chips.push({ key: 'ai', chipBg: 'bg-indigo-50 hover:bg-indigo-100', dot: 'bg-indigo-500', text: 'text-indigo-700', label: 'AI Reviews', count: aiCount, onClick: () => router.push('/results?filter=ai-pending'), pulse: true });
+    chips.push({ key: 'ai', rank: 3, chipBg: 'bg-indigo-50 hover:bg-indigo-100', dot: 'bg-indigo-500', text: 'text-indigo-700', label: 'AI Reviews', count: aiCount, onClick: () => router.push('/results?filter=ai-pending'), pulse: true });
   }
   if (qcCount > 0) {
     // Zero-orange: QC warnings use rose (not amber) to stay off the detector.
-    chips.push({ key: 'qc', chipBg: 'bg-rose-50 hover:bg-rose-100', dot: 'bg-rose-500', text: 'text-rose-700', label: 'Quality Alerts', count: qcCount, onClick: () => router.push('/qc'), pulse: true });
+    chips.push({ key: 'qc', rank: 2, chipBg: 'bg-rose-50 hover:bg-rose-100', dot: 'bg-rose-500', text: 'text-rose-700', label: 'Quality Alerts', count: qcCount, onClick: () => router.push('/qc'), pulse: true });
   }
   if (fhirCount > 0) {
-    chips.push({ key: 'fhir', chipBg: 'bg-emerald-50 hover:bg-emerald-100', dot: 'bg-emerald-500', text: 'text-emerald-700', label: 'FHIR Sent', count: fhirCount, onClick: () => router.push('/settings/fhir') });
+    chips.push({ key: 'fhir', rank: 4, chipBg: 'bg-emerald-50 hover:bg-emerald-100', dot: 'bg-emerald-500', text: 'text-emerald-700', label: 'FHIR Sent', count: fhirCount, onClick: () => router.push('/settings/fhir') });
   }
+
+  // Deterministic priority order; Array.sort is stable, so equal-rank chips keep
+  // insertion order and never shuffle between refreshes.
+  chips.sort((a, b) => a.rank - b.rank);
 
   if (chips.length === 0) return null;
 

@@ -35,6 +35,23 @@ type FDir = 'up' | 'down' | 'flat' | 'none';
 interface Foresight { text: string; dir: FDir; tone: FTone }
 const FS_COLOR: Record<FTone, string> = { good: '#059669', bad: '#EF4444', neutral: '#64748B' };
 const FS_GLYPH: Record<FDir, string> = { up: '▲', down: '▼', flat: '▬', none: '' };
+
+// ── Stable dynamic prioritization (Phase 1) ──────────────────────────────────
+// Priority may change emphasis before it changes position. The queue is ordered
+// by a deterministic, documented comparator using ONLY recorded fields. The full
+// 7-level scale is: 1 critical/breached · 2 urgent/STAT · 3 approaching SLA ·
+// 4 blocked · 5 unassigned · 6 oldest waiting · 7 normal. On these records only
+// `urgent` (STAT) and `date` (age) are recorded — levels 1, 3, 4, 5 have no data
+// and are never inferred. So: STAT first, then oldest waiting, then a stable
+// tie-break by id (equal-priority items never shuffle between refreshes).
+const queueRank = (r: any): number => (r?.urgent ? 2 : 7);
+const compareQueue = (a: any, b: any): number => {
+  const ra = queueRank(a), rb = queueRank(b);
+  if (ra !== rb) return ra - rb;
+  const ad = +new Date(a?.date), bd = +new Date(b?.date);
+  if (ad !== bd) return ad - bd; // oldest waiting first
+  return String(a?.id ?? '').localeCompare(String(b?.id ?? '')); // stable tie-break
+};
 // The page is transparent so it shows the layout's single shared canvas gradient
 // (top bar + content are one continuous surface, no seam). The DNA PNG has a
 // transparent background, so it overlays the gradient directly.
@@ -383,7 +400,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="premium-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, overflowY: 'auto', minHeight: 0 }}>
-                {(d.priorityRecords || []).slice(0, 6).map((r: any) => {
+                {[...(d.priorityRecords || [])].sort(compareQueue).slice(0, 6).map((r: any) => {
                   const sel = selectedRecord?.id === r.id;
                   // Priority → small colored dot beside the lab number (no left
                   // stripe — the dot alone conveys it, softer/enterprise look).
