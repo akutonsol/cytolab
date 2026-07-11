@@ -1,4 +1,5 @@
 import {
+  Activity,
   AlertTriangle,
   AppWindow,
   Award,
@@ -73,6 +74,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Lab',
     icon: FlaskConical,
     items: [
+      { label: 'Operations', path: '/operations', permission: 'record:view', icon: Activity },
       { label: 'Patients', path: '/patients', permission: 'patient:view' },
       { label: 'Clients', path: '/clients', permission: 'client:view' },
       { label: 'Requisitions', path: '/requisitions', permission: 'requisition:view' },
