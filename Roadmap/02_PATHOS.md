@@ -67,6 +67,48 @@ Depth and reliability on what already ships.
   (see [07_TECHNICAL_DEBT.md](07_TECHNICAL_DEBT.md)).
 - Migrate the two blocked files and resolve the `overflow-x` decision.
 
+### Phase 2A — Operations Workspace (status)
+
+Design contract: [../docs/PATHOS_OPERATIONS_WORKSPACE.md](../docs/PATHOS_OPERATIONS_WORKSPACE.md);
+experience layer: [../docs/PATHOS_OPERATIONS_EXPERIENCE.md](../docs/PATHOS_OPERATIONS_EXPERIENCE.md).
+
+**Delivered (built on truthful recorded data):**
+
+- Operations Overview
+- Pipeline Board
+- SLA Risk
+- Integration Health
+- Quality Alerts
+
+**Intentionally declined** — the data model could not support a truthful module, so none was built
+(prefer no feature over a misleading one). Each references its audit as justification:
+
+- IHC Return Queue — [../docs/PATHOS_IHC_RETURN_QUEUE_AUDIT.md](../docs/PATHOS_IHC_RETURN_QUEUE_AUDIT.md)
+  (no ancillary-order model; recorded `AncillaryOrder` as a deferred future capability).
+- Frozen Section — [../docs/PATHOS_FROZEN_SECTION_AUDIT.md](../docs/PATHOS_FROZEN_SECTION_AUDIT.md)
+  (out of the cytology domain; no designation, OR field, or minute-level timer).
+- Cytology Batch — [../docs/PATHOS_CYTOLOGY_BATCH_AUDIT.md](../docs/PATHOS_CYTOLOGY_BATCH_AUDIT.md)
+  (a persistent requisition/billing batch exists, but no cytology *screening* batch).
+- Operational AI — [../docs/PATHOS_OPERATIONAL_AI_AUDIT.md](../docs/PATHOS_OPERATIONAL_AI_AUDIT.md)
+  (only deterministic insight is supported, and it is already surfaced; AI-grade forecasting and
+  recommendation are not trustworthy on current data).
+
+**Operational AI is retired as a product concept** and replaced by the future concept
+**Operational Intelligence**: *the collection of trustworthy operational insight, forecasting,
+optimization, and recommendation capabilities built only from recorded laboratory evidence.*
+This capability **requires additional recorded operational signals before implementation** and is
+**not promoted to active development** (no timelines). Required future evidence: longer operational
+history, staffing capacity, qualifications/subspecialties, ancillary dependency tracking, and
+richer operational events. See [../docs/PATHOS_OPERATIONS_WORKSPACE.md](../docs/PATHOS_OPERATIONS_WORKSPACE.md) §8.
+
+### Phase 2A — next direction (deepen, do not add)
+
+The Operations Workspace now has its truthful operational foundation. The next engineering effort
+strengthens the modules that genuinely exist rather than inventing more — using **only existing
+recorded laboratory data**. No new modules, no UI redesign, no Helix changes, no new abstractions.
+Focus areas: workflow continuity, cross-module navigation, drill-down depth, contextual
+explanations, evidence traceability, and operational timelines.
+
 ## Phase 3 goals (product)
 
 The pathologist workstation as the center of gravity.

@@ -383,33 +383,38 @@ skeletons, never false zeros; steady states are true states.
 
 ---
 
-## 8. Operational AI
+## 8. Operational Intelligence (future capability — not implemented)
 
-The AI here assists **operations**, never diagnosis. It is assistive by architecture (the operational
-analogue of [docs/PATHOS_v2.md](PATHOS_v2.md) §6 and [../Roadmap/06_DECISIONS.md](../Roadmap/06_DECISIONS.md)
-ADR-008): it recommends; the manager approves; it never silently reroutes clinical work. It degrades
-gracefully — the board is fully usable without it, and its recommendations are additive.
+**Naming correction (architectural).** What this section previously called "Operational AI" is
+retired as a product concept. The feasibility audit
+([PATHOS_OPERATIONAL_AI_AUDIT.md](PATHOS_OPERATIONAL_AI_AUDIT.md)) established that what PathOS can
+produce truthfully today is **deterministic operational insight** (rules over recorded state), not
+AI. Calling deterministic thresholds "AI" would mislabel them, so the concept is renamed.
 
-- **Predicted SLA breach.** Forecast which in-flight cases will breach and when, with lead time, so
-  the manager acts before the deadline rather than after. Feeds SLA Risk and the Attention Rail.
-- **Suggested redistribution.** When load is unbalanced, propose specific reassignments (move N
-  cases from an overloaded to an under-loaded, subspecialty-matched pathologist). The manager
-  accepts, edits, or declines; nothing moves without confirmation.
-- **Instrument bottleneck detection.** Identify where an instrument or reagent constraint is
-  throttling flow before it becomes a backlog.
-- **Staff overload.** Detect a person or role trending toward overload and surface it while there is
-  still time to rebalance.
-- **Case prioritization.** Recommend an ordering for a queue that best protects SLA and clinical
-  urgency; the manager remains the authority.
-- **Future queue prediction.** Forecast inflow over the next hours from historical and in-flight
-  signal, so staffing and capacity are planned ahead, not reacted to.
+**Operational Intelligence** is the future umbrella concept: *the collection of trustworthy
+operational insight, forecasting, optimization, and recommendation capabilities built only from
+recorded laboratory evidence.* It may eventually contain deterministic operational insights,
+forecasting, workload optimization, recommendation systems, and machine learning — **but only when
+the supporting recorded evidence exists.**
 
-Every recommendation states its basis (why the AI thinks so) and its confidence, presented through
-the domain token layer, consistent with the blueprint's evidence-first stance. A declined
-recommendation is recorded; the operational AI, like the diagnostic AI, earns trust through a
-visible track record.
+**Status: not implemented.** This capability requires additional recorded operational signals
+before implementation. The deterministic operational insight PathOS can prove today is already
+surfaced by the delivered modules (SLA Risk, Pipeline, Integration Health, Quality Alerts, and the
+`/workload` view); no separate module is built, and no deterministic rule is labelled "AI". The
+recommendation and forecasting behaviors described in earlier drafts (predicted breach beyond a
+deterministic countdown, suggested redistribution, staff-overload, queue forecast) are **not
+supported by the current data** and are deferred.
 
-- **Backed by:** `analytics`, `ai`, `workload`, `tat`.
+**Required future evidence** (each a separately-approved data-model evolution — no timelines, not
+promoted to active development):
+
+- longer, seasonality-aware operational history (throughput and TAT at daily/finer granularity);
+- staffing **capacity** (a recorded per-role/person caseload or throughput target);
+- **qualifications / subspecialties** on users and cases (to prove a reassignment target is competent);
+- **ancillary dependency tracking** (the [AncillaryOrder](PATHOS_IHC_RETURN_QUEUE_AUDIT.md) proposal);
+- richer operational events.
+
+Human approval remains mandatory for any future suggested action; no automated decisions.
 
 ---
 
