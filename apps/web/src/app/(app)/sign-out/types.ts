@@ -167,6 +167,35 @@ export interface CorrelationSection {
   items: CorrelationEvidence[];
 }
 
+// Prior-aware review — patient-linked prior records and correlation cases (never the
+// anchor). `resultSummary` is a stored value only; nothing is an inferred trend.
+export type PriorSource = 'record' | 'correlation';
+export interface PriorEntry {
+  source: PriorSource;
+  id: string;
+  identity: string | null;
+  sourceType: string;
+  formType: string | null;
+  status: string | null;
+  date: string | null;
+  createdAt: string | null;
+  resultSummary: string | null;
+  hasReport: boolean;
+  amended: boolean;
+  authorizedAt: string | null;
+  ownerPath: string;
+}
+export interface PriorsSourceHealth {
+  records: 'ready' | 'error' | 'forbidden';
+  correlation: 'ready' | 'error' | 'forbidden';
+}
+export interface PriorsSection {
+  count: number;
+  items: PriorEntry[];
+  sources: PriorsSourceHealth;
+  truncated: boolean;
+}
+
 export interface EffectivePermissions {
   viewCase: boolean;
   viewSlide: boolean;
@@ -192,7 +221,7 @@ export interface SignOutCaseAggregate {
   ai: Section<AIEvidence>;
   bethesda: Section<BethesdaEvidence>;
   correlation: Section<CorrelationSection>;
-  priors: Section<null>;
+  priors: Section<PriorsSection>;
   attachments: Section<null>;
   resultSheets: Section<null>;
   timeline: Section<null>;

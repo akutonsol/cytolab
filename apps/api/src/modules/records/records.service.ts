@@ -159,6 +159,39 @@ export class RecordsService {
     return this.list({ ...query, patientId });
   }
 
+  /**
+   * Prior records for a patient — a LEAN, bounded projection for composition by the
+   * Sign-Out aggregate (prior-aware review). Excludes the anchor record. Carries only
+   * recorded prior attributes: identity, lifecycle, dates, the prior Bethesda selections
+   * (for the owner's shortCode), whether a report was released, result-sheet authorization,
+   * and amendment events. No interpretation, no trend. Owned here so record query logic is
+   * never duplicated in the aggregate.
+   */
+  async priorsByPatient(patientId: string, excludeRecordId: string) {
+    return this.prisma.record.findMany({
+      where: { patientId, id: { not: excludeRecordId } },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: {
+        id: true, identifier: true, labNumber: true, formType: true, status: true,
+        specimenDate: true, dateStatus: true, createdAt: true,
+        bethesdaResult: {
+          select: {
+            specimenAdequacy: true, generalCategory: true, squamousCategory: true,
+            ascSubtype: true, glandularCategory: true, glandularSubtype: true,
+          },
+        },
+        resultSheets: {
+          select: {
+            authorized: true, authorizedAt: true,
+            reports: { select: { id: true }, take: 1 },
+            events: { select: { type: true } },
+          },
+        },
+      },
+    });
+  }
+
   async findRecent(query: RecordQueryDto) {
     const pageSize = query.pageSize ?? 10;
     const data = await this.prisma.record.findMany({

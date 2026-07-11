@@ -17,10 +17,12 @@ import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
 import type {
   AIEvidence,
   BethesdaEvidence,
+  CaseIdentity,
   CorrelationEvidence,
   EffectivePermissions,
   GynHistory,
   NonGynHistory,
+  PriorEntry,
   SectionStatus,
   SignOutCaseAggregate,
   SlideMeta,
@@ -32,7 +34,6 @@ const fmtDate = (iso: string | null | undefined): string => (iso ? new Date(iso)
 const val = (s: string | null | undefined): string => (s && s.trim() ? s : NR);
 
 const DEFERRED_REGIONS: { key: string; title: string; responsibility: string }[] = [
-  { key: 'priors', title: 'Prior cases & reports', responsibility: 'Prior cases and prior reports for this patient.' },
   { key: 'attachments', title: 'Attachments', responsibility: 'Supporting documents for this case.' },
   { key: 'report', title: 'Result sheet & report', responsibility: 'The result sheet and report, edited in the existing editor.' },
   { key: 'timeline', title: 'Case timeline', responsibility: 'A unified timeline assembled from recorded events.' },
@@ -218,6 +219,15 @@ export default function SignOutWorkspacePage() {
           <AIEvidencePanel section={data?.ai} loading={isLoading} />
           <BethesdaEvidencePanel section={data?.bethesda} loading={isLoading} />
           <CorrelationEvidencePanel section={data?.correlation} loading={isLoading} onOpen={(path) => router.push(path)} />
+
+          {/* Prior-aware review — real patient-linked priors. The current case is shown
+              distinctly at the top; priors never override it. Read-only, no trend. */}
+          <PriorsPanel
+            section={data?.priors}
+            loading={isLoading}
+            current={data?.case?.status === 'ready' ? data.case.data : null}
+            onOpen={(path) => router.push(path)}
+          />
 
           {/* Deferred regions — truthful, distinct from loading and empty data */}
           {DEFERRED_REGIONS.map((r) => (
@@ -574,6 +584,95 @@ function CorrelationRow({ c, onOpen }: { c: CorrelationEvidence; onOpen: () => v
           {c.reviewNotes ? ` — ${c.reviewNotes}` : ''}
         </p>
       )}
+    </div>
+  );
+}
+
+const priorTone = (r: string | null): 'success' | 'danger' | 'neutral' =>
+  r === 'Concordant' ? 'success' : r === 'MajorDiscordant' ? 'danger' : 'neutral';
+
+// Prior-aware review. The current case sits distinctly at the top (primary-tinted, "Current"
+// badge); priors are read-only rows below. Result summaries are stored values only — no
+// trend, progression, or longitudinal conclusion is drawn.
+function PriorsPanel({
+  section,
+  loading,
+  current,
+  onOpen,
+}: {
+  section?: SignOutCaseAggregate['priors'];
+  loading: boolean;
+  current: CaseIdentity | null;
+  onOpen: (ownerPath: string) => void;
+}) {
+  const status = section?.status;
+  const data = status === 'ready' ? section?.data : null;
+  const degraded = data?.sources
+    ? [data.sources.records === 'error' && 'prior cases', data.sources.correlation === 'error' && 'correlation history'].filter(Boolean)
+    : [];
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-3 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">Prior history</h2>
+        {status === 'ready' && <Badge tone="neutral" size="xs">{data?.count} prior{data?.count === 1 ? '' : 's'}</Badge>}
+      </div>
+
+      {/* Current case — always distinct from priors, never overridden by them. */}
+      {current && (
+        <div className="mb-3 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2.5">
+          <div className="mb-1 flex items-center gap-2">
+            <Badge tone="primary" size="xs">Current case</Badge>
+            <span className="text-sm font-semibold text-text">{current.labNumber ?? current.identifier}</span>
+          </div>
+          <div className="text-meta text-text-tertiary">
+            {[current.formType, current.status, current.specimenDate ? fmtDate(current.specimenDate) : null].filter(Boolean).join(' · ')}
+          </div>
+        </div>
+      )}
+
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-48" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-6" title="No access" description="You do not have permission to view prior history." />
+      ) : status === 'error' ? (
+        <EmptyState bare className="px-0 py-6" title="Unavailable" description="Prior history could not be loaded." />
+      ) : status === 'empty' || !data?.items.length ? (
+        <EmptyState bare className="px-0 py-6" title="No prior history" description="No other records or correlation cases are recorded for this patient." />
+      ) : (
+        <div className="space-y-2">
+          {degraded.length > 0 && (
+            <p className="text-meta text-text-tertiary">Some sources unavailable: {degraded.join(', ')}.</p>
+          )}
+          {data.items.map((pr) => <PriorRow key={`${pr.source}-${pr.id}`} pr={pr} onOpen={() => onOpen(pr.ownerPath)} />)}
+          {data.truncated && (
+            <p className="pt-1 text-meta text-text-tertiary">Showing the 25 most recent prior entries.</p>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function PriorRow({ pr, onOpen }: { pr: PriorEntry; onOpen: () => void }) {
+  const meta = [
+    pr.date ? fmtDate(pr.date) : null,
+    pr.sourceType,
+    pr.formType && pr.formType !== pr.sourceType ? pr.formType : null,
+    pr.status,
+  ].filter(Boolean).join(' · ');
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-lightgray px-3 py-2.5">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold text-text">{val(pr.identity)}</span>
+          {pr.resultSummary && <Badge tone={pr.source === 'correlation' ? priorTone(pr.resultSummary) : 'neutral'} size="xs">{pr.resultSummary}</Badge>}
+          {pr.amended && <Badge tone="danger" size="xs">Amended</Badge>}
+          {pr.hasReport && <Badge tone="neutral" size="xs">Report</Badge>}
+        </div>
+        <div className="mt-0.5 text-meta text-text-tertiary">{meta}</div>
+        {pr.authorizedAt && <div className="text-meta text-text-tertiary">Authorized {fmtDate(pr.authorizedAt)}</div>}
+      </div>
+      <Button variant="secondary" size="sm" onClick={onOpen}>Open</Button>
     </div>
   );
 }

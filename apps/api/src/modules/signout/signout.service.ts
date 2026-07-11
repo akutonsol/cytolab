@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { RecordsService } from '../records/records.service';
 import { WsiService } from '../wsi/wsi.service';
 import { AIScreeningService } from '../ai-screening/ai-screening.service';
-import { BethesdaService } from '../bethesda/bethesda.service';
+import { BethesdaService, deriveShortCode } from '../bethesda/bethesda.service';
 import { CorrelationService } from '../correlation/correlation.service';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 
@@ -186,6 +186,41 @@ export interface CorrelationSection {
   items: CorrelationEvidence[];
 }
 
+// ── Prior-aware review (read-only, patient-linked) ──
+// A prior is a real patient-linked record or correlation case (never the anchor record).
+// Nothing here infers a longitudinal trend, progression, recurrence, or clinical relation
+// beyond sharing the patient. `resultSummary` is a stored value only (prior Bethesda
+// shortCode for a record; stored correlationResult for a correlation) — never inferred.
+export type PriorSource = 'record' | 'correlation';
+export interface PriorEntry {
+  source: PriorSource;
+  id: string;
+  identity: string | null;
+  sourceType: string;
+  formType: string | null;
+  status: string | null;
+  date: string | null;
+  createdAt: string | null;
+  resultSummary: string | null;
+  hasReport: boolean;
+  amended: boolean;
+  authorizedAt: string | null;
+  ownerPath: string;
+}
+// Per-source health so one failing source (records vs correlation) is marked unavailable
+// without collapsing the others.
+export interface PriorsSourceHealth {
+  records: 'ready' | 'error' | 'forbidden';
+  correlation: 'ready' | 'error' | 'forbidden';
+}
+export interface PriorsSection {
+  count: number;
+  items: PriorEntry[];
+  sources: PriorsSourceHealth;
+  /** True only when more than the 25-entry cap existed and the list was trimmed. */
+  truncated: boolean;
+}
+
 export interface EffectivePermissions {
   viewCase: boolean;
   viewSlide: boolean;
@@ -211,8 +246,8 @@ export interface SignOutCaseAggregate {
   ai: Section<AIEvidence>;
   bethesda: Section<BethesdaEvidence>;
   correlation: Section<CorrelationSection>;
+  priors: Section<PriorsSection>;
   // Deferred until later checkpoints. The contract is stable now.
-  priors: Section<null>;
   attachments: Section<null>;
   resultSheets: Section<null>;
   timeline: Section<null>;
@@ -255,6 +290,10 @@ export class SignoutService {
     let caseSec: Section<CaseIdentity>;
     let patientSec: Section<PatientSummary>;
     let clinicalSec: Section<ClinicalContext>;
+    // Priors are keyed by patientId, which only the record read yields — so they resolve
+    // after it (not in the evidence Promise.all above). If the case itself fails, priors
+    // cannot be derived and are marked unavailable alongside the case-derived sections.
+    let priorsSec: Section<PriorsSection>;
 
     try {
       // Reuse the existing record read — no duplicated query, tenancy is enforced
@@ -266,6 +305,7 @@ export class SignoutService {
         ? { status: 'ready', data: pickPatient(rec.patient) }
         : { status: 'empty', data: null, reason: 'No patient linked' };
       clinicalSec = { status: 'ready', data: pickClinical(rec) };
+      priorsSec = await this.loadPriors(rec.patientId ?? null, recordId, perms);
     } catch (err) {
       if (err instanceof NotFoundException) throw err; // no case at all → 404, not a partial failure
       // A real downstream failure: mark only the case-derived sections unavailable;
@@ -274,6 +314,7 @@ export class SignoutService {
       caseSec = { status: 'error', data: null, reason };
       patientSec = { status: 'error', data: null, reason };
       clinicalSec = { status: 'error', data: null, reason };
+      priorsSec = { status: 'error', data: null, reason };
     }
 
     return {
@@ -287,7 +328,7 @@ export class SignoutService {
       ai,
       bethesda,
       correlation,
-      priors: deferred(),
+      priors: priorsSec,
       attachments: deferred(),
       resultSheets: deferred(),
       timeline: deferred(),
@@ -420,6 +461,117 @@ export class SignoutService {
       return { status: 'error', data: null, reason: 'Correlation failed to load' };
     }
   }
+
+  // Prior-aware review — composes two owner sources (records + correlation) keyed by
+  // patientId, excluding the anchor record. Each source resolves independently: if one
+  // fails, its `sources` flag is marked 'error' while the other's entries survive. Nothing
+  // is inferred — no trend, progression, recurrence, or clinical relation beyond the shared
+  // patient. Prior Bethesda summary is included only with resultentry:view.
+  private async loadPriors(
+    patientId: string | null,
+    currentRecordId: string,
+    perms: EffectivePermissions,
+  ): Promise<Section<PriorsSection>> {
+    // Prior RECORDS are gated by record:view (the endpoint gate), so forbidden cannot
+    // occur here in practice; the guard is kept for the contract.
+    if (!perms.viewCase) return { status: 'forbidden', data: null };
+    if (!patientId) return { status: 'empty', data: null };
+
+    const sources: PriorsSourceHealth = {
+      records: 'ready',
+      correlation: perms.viewCorrelation ? 'ready' : 'forbidden',
+    };
+    let recordItems: PriorEntry[] = [];
+    let corrItems: PriorEntry[] = [];
+
+    try {
+      const rows = await this.records.priorsByPatient(patientId, currentRecordId);
+      recordItems = rows.map((r) => mapRecordPrior(r, perms.viewBethesda));
+    } catch {
+      sources.records = 'error';
+    }
+
+    if (perms.viewCorrelation) {
+      try {
+        const rows = await this.correlation.byPatient(patientId);
+        corrItems = rows
+          .filter((c: any) => c.cytologyRecordId !== currentRecordId)
+          .map(mapCorrelationPrior);
+      } catch {
+        sources.correlation = 'error';
+      }
+    }
+
+    const merged = [...recordItems, ...corrItems].sort(priorSort);
+    const truncated = merged.length > 25;
+    const items = merged.slice(0, 25);
+    const data: PriorsSection = { count: items.length, items, sources, truncated };
+
+    if (!items.length) {
+      // No entries: distinguish a real failure (all attempted sources errored) from a
+      // truthful empty (sources ok, patient simply has no priors).
+      const correlationDead = sources.correlation !== 'ready';
+      if (sources.records === 'error' && correlationDead) {
+        return { status: 'error', data, reason: 'Prior history failed to load' };
+      }
+      return { status: 'empty', data };
+    }
+    return { status: 'ready', data };
+  }
+}
+
+// Deterministic prior ordering: most recent recorded clinical date, then created date,
+// then a stable id tie-break. Missing clinical dates sort last (they carry no time claim).
+function priorSort(a: PriorEntry, b: PriorEntry): number {
+  const t = (s: string | null) => (s ? new Date(s).getTime() : -Infinity);
+  return (
+    t(b.date) - t(a.date) ||
+    t(b.createdAt) - t(a.createdAt) ||
+    (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+  );
+}
+
+function mapRecordPrior(r: any, includeBethesda: boolean): PriorEntry {
+  const sheets: any[] = Array.isArray(r.resultSheets) ? r.resultSheets : [];
+  const amended = sheets.some((s) =>
+    (s.events ?? []).some((e: any) => e.type === 'Deauthorized' || e.type === 'Reauthorized'),
+  );
+  const hasReport = sheets.some((s) => (s.reports?.length ?? 0) > 0);
+  const authSheet = sheets.find((s) => s.authorized && s.authorizedAt) ?? sheets.find((s) => s.authorizedAt);
+  const shortCode = includeBethesda && r.bethesdaResult ? (deriveShortCode(r.bethesdaResult) ?? null) : null;
+  return {
+    source: 'record',
+    id: r.id,
+    identity: r.labNumber ?? r.identifier ?? null,
+    sourceType: amended ? 'Amended report' : 'Cytology',
+    formType: r.formType ?? null,
+    status: r.status ?? null,
+    date: iso(r.specimenDate),
+    createdAt: iso(r.createdAt),
+    resultSummary: shortCode,
+    hasReport,
+    amended,
+    authorizedAt: iso(authSheet?.authorizedAt ?? null),
+    ownerPath: `/records/${r.id}`,
+  };
+}
+
+function mapCorrelationPrior(c: any): PriorEntry {
+  return {
+    source: 'correlation',
+    id: c.id,
+    identity: c.cytologyRecord ? (c.cytologyRecord.labNumber ?? c.cytologyRecord.identifier ?? null) : null,
+    sourceType: 'Correlation',
+    formType: c.cytologyRecord?.formType ?? null,
+    status: c.correlationResult ?? 'Unresolved',
+    date: iso(c.cytologyDate),
+    createdAt: iso(c.createdAt),
+    resultSummary: c.correlationResult ?? null,
+    hasReport: false,
+    amended: false,
+    authorizedAt: iso(c.reviewedAt),
+    ownerPath: `/correlation/${c.id}`,
+  };
 }
 
 function buildPermissions(user: AuthUser): EffectivePermissions {
