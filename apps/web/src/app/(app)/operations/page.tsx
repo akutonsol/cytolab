@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { RefreshCw } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -48,6 +49,12 @@ export default function OperationsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <Link
+            href="/operations/integration-health"
+            className="text-sm font-semibold text-primary hover:underline"
+          >
+            Integration health →
+          </Link>
           {asOf && <span className="text-sm text-text-tertiary">Updated {asOf}</span>}
           <IconAction
             icon={<RefreshCw size={16} className={isFetching ? 'animate-spin' : undefined} />}

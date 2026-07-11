@@ -87,3 +87,60 @@ export interface SlaRiskDetail {
 export function formatTimeToBreach(item: Pick<SlaRiskItem, 'remainingHours' | 'overHours'>): string {
   return item.remainingHours > 0 ? `in ${formatAge(item.remainingHours)}` : `${formatAge(item.overHours)} overdue`;
 }
+
+// ── D6 · Integration Health ─────────────────────────────────────────────────
+// Health is derived from real signals only. Environment is a separate axis (metadata),
+// never a health value: configuration is not health.
+export type InterfaceHealth = 'operational' | 'degraded' | 'unknown' | 'disabled';
+export type InterfaceEnvironment = 'production' | 'sandbox';
+
+export interface IntegrationInterface {
+  id: string;
+  name: string;
+  type: 'FHIR';
+  system: string;
+  health: InterfaceHealth;
+  /** Deployment target — metadata, NOT a health signal. */
+  environment: InterfaceEnvironment;
+  isActive: boolean;
+  lastSuccessAt: string | null;
+  lastActivityAt: string | null;
+  lastTest: { at: string | null; status: string | null; failed: boolean };
+  counts: { total: number; success: number; failed: number };
+  lastError: { message: string | null; responseCode: number | null; at: string } | null;
+  affectedWorkflow: string;
+  detail: string;
+  action: { label: string; route: string };
+}
+
+export interface ActivitySignal {
+  key: 'portal' | 'wsi';
+  label: string;
+  lastActivityAt: string | null;
+  note: string;
+}
+
+export interface IntegrationHealthReport {
+  asOf: string;
+  overall: 'operational' | 'degraded' | 'unknown' | 'none';
+  summary: {
+    total: number;
+    // Health counts (a sandbox interface is still counted by its real health).
+    operational: number; degraded: number; unknown: number; disabled: number;
+    // Environment counts (metadata).
+    production: number; sandbox: number;
+  };
+  interfaces: IntegrationInterface[];
+  activity: ActivitySignal[];
+  note: string;
+}
+
+/**
+ * Relative age measured against the report's own `asOf` (both server-provided), so
+ * it is deterministic and SSR-safe. Null → the truthful "no activity" string.
+ */
+export function formatSince(iso: string | null, asOf: string): string {
+  if (!iso) return 'No recent activity recorded';
+  const hours = Math.max(0, Math.round((new Date(asOf).getTime() - new Date(iso).getTime()) / 3_600_000));
+  return `${formatAge(hours)} ago`;
+}

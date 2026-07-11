@@ -22,4 +22,11 @@ export class OperationsController {
   slaRisk() {
     return this.operations.slaRisk();
   }
+
+  /** D6 — Integration Health: real external-interface health (FHIR), honest states. */
+  @Get('integration-health')
+  @RequirePermissions('record:view')
+  integrationHealth() {
+    return this.operations.integrationHealth();
+  }
 }
