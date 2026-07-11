@@ -239,6 +239,12 @@ export interface ResultSheetMeta {
   createdAt: string | null;
   reportCount: number;
   entryCount: number;
+  // Authorization/amendment history, derived only from recorded owner events.
+  deauthorized: boolean;
+  reauthorized: boolean;
+  amended: boolean;
+  lastEventType: string | null;
+  lastEventAt: string | null;
 }
 export interface ResultSheetsSection {
   count: number;

@@ -16,6 +16,7 @@ import { useAuth } from '@/lib/auth';
 import { deriveAge } from '@/lib/age';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
 import { ResultSheetModal } from '@/components/ResultSheetModal';
+import { AuthorizationModal } from '@/components/AuthorizationModal';
 import type {
   AIEvidence,
   AiDraftMeta,
@@ -67,6 +68,10 @@ export default function SignOutWorkspacePage() {
   // full record (specimen ids etc.), which the aggregate does not carry — so fetch the
   // record from its owner route only when the editor opens.
   const [sheetOpen, setSheetOpen] = useState(false);
+  // B11: the EXISTING authorization/re-authorization owner flow (AuthorizationModal),
+  // reused unchanged. Amendment = editing an authorized sheet (deauthorizes) via the
+  // result-sheet editor above; there is no separate deauthorize action in the owner.
+  const [authOpen, setAuthOpen] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['signout-case', recordId],
@@ -78,17 +83,19 @@ export default function SignOutWorkspacePage() {
     // The record-by-id REST route is /specimens/:id (records are "specimens" in the API).
     queryKey: ['signout-record', recordId],
     queryFn: () => api.get(`/specimens/${recordId}`).then((r) => r.data),
-    enabled: hydrated && can('record:view') && sheetOpen,
+    enabled: hydrated && can('record:view') && (sheetOpen || authOpen),
   });
 
   if (!hydrated) return null;
 
-  const closeSheet = () => {
-    setSheetOpen(false);
-    // After the owner flow closes/saves, refresh the aggregate (and the record).
+  const refreshAggregate = () => {
+    // After a successful owner action, refresh the aggregate — result-sheet metadata,
+    // authorization state, and the timeline all re-hydrate through the existing endpoint.
     qc.invalidateQueries({ queryKey: ['signout-case', recordId] });
     qc.invalidateQueries({ queryKey: ['signout-record', recordId] });
   };
+  const closeSheet = () => { setSheetOpen(false); refreshAggregate(); };
+  const closeAuth = () => { setAuthOpen(false); refreshAggregate(); };
 
   const backToWorklist = (
     <Link
@@ -273,7 +280,10 @@ export default function SignOutWorkspacePage() {
             section={data?.resultSheets}
             loading={isLoading}
             canCreate={permsSec?.status === 'ready' ? !!permsSec.data?.createResultSheet : false}
+            canAuthorize={permsSec?.status === 'ready' ? !!permsSec.data?.authorize : false}
+            canAmend={permsSec?.status === 'ready' ? !!permsSec.data?.amend : false}
             onCreate={() => setSheetOpen(true)}
+            onAuthorize={() => setAuthOpen(true)}
             onOpenRecord={() => router.push(`/records/${recordId}`)}
           />
 
@@ -305,6 +315,9 @@ export default function SignOutWorkspacePage() {
       {/* The EXISTING result-sheet editor, reused unchanged. Rendered once at page level;
           on close/save the aggregate section is invalidated and refreshed. */}
       <ResultSheetModal open={sheetOpen && !!recordForSheet} onClose={closeSheet} record={recordForSheet ?? null} />
+      {/* The EXISTING authorization/amendment owner flow, reused unchanged: it edits
+          (deauthorizes), authorizes, and re-authorizes through the owner endpoints. */}
+      <AuthorizationModal open={authOpen && !!recordForSheet} onClose={closeAuth} record={recordForSheet ?? null} />
     </div>
   );
 }
@@ -871,13 +884,19 @@ function ResultSheetsPanel({
   section,
   loading,
   canCreate,
+  canAuthorize,
+  canAmend,
   onCreate,
+  onAuthorize,
   onOpenRecord,
 }: {
   section?: SignOutCaseAggregate['resultSheets'];
   loading: boolean;
   canCreate: boolean;
+  canAuthorize: boolean;
+  canAmend: boolean;
   onCreate: () => void;
+  onAuthorize: () => void;
   onOpenRecord: () => void;
 }) {
   const status = section?.status;
@@ -908,9 +927,12 @@ function ResultSheetsPanel({
           </div>
         </div>
       ) : (
-        // One or more sheets exist — show recorded metadata; view/edit on the owner surface.
+        // One or more sheets exist — show recorded metadata + the real authorization/amend
+        // action (the existing owner AuthorizationModal); view fallback on the owner surface.
         <div className="space-y-2">
-          {data.items.map((s) => <ResultSheetRow key={s.id} s={s} />)}
+          {data.items.map((s) => (
+            <ResultSheetRow key={s.id} s={s} canAuthorize={canAuthorize} canAmend={canAmend} onAuthorize={onAuthorize} />
+          ))}
           <div className="flex justify-end pt-1">{openRecord}</div>
         </div>
       )}
@@ -918,17 +940,48 @@ function ResultSheetsPanel({
   );
 }
 
-function ResultSheetRow({ s }: { s: ResultSheetMeta }) {
+// Truthful authorization-state label from recorded values only.
+function authState(s: ResultSheetMeta): { label: string; tone: 'success' | 'neutral' } {
+  if (s.authorized) return { label: s.reauthorized ? 'Reauthorized' : 'Authorized', tone: 'success' };
+  if (s.deauthorized) return { label: 'Deauthorized', tone: 'neutral' };
+  return { label: 'Not authorized', tone: 'neutral' };
+}
+
+function ResultSheetRow({
+  s,
+  canAuthorize,
+  canAmend,
+  onAuthorize,
+}: {
+  s: ResultSheetMeta;
+  canAuthorize: boolean;
+  canAmend: boolean;
+  onAuthorize: () => void;
+}) {
   const meta = [
     s.createdAt ? `Created ${fmtDate(s.createdAt)}` : null,
     s.entryCount > 0 ? `${s.entryCount} entr${s.entryCount === 1 ? 'y' : 'ies'}` : null,
     s.reportCount > 0 ? `${s.reportCount} report${s.reportCount === 1 ? '' : 's'}` : null,
   ].filter(Boolean).join(' · ');
+  const st = authState(s);
+  // Only offer an action the user can actually complete (owner endpoints re-enforce):
+  //  • not authorized + resultsheet:authorize → Authorize / sign out (or Re-authorize if revoked)
+  //  • authorized + amend (resultentry:change AND resultsheet:authorize) → Amend (edit→revoke→re-sign)
+  const action =
+    !s.authorized && canAuthorize
+      ? <Button variant="secondary" size="sm" onClick={onAuthorize}>{s.deauthorized ? 'Re-authorize' : 'Authorize / sign out'}</Button>
+      : s.authorized && canAmend
+      ? <Button variant="secondary" size="sm" onClick={onAuthorize}>Amend</Button>
+      : null;
   return (
     <div className="rounded-lg border border-lightgray px-3 py-2.5">
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge tone={s.authorized ? 'success' : 'neutral'} size="xs">{s.authorized ? 'Authorized' : 'Not authorized'}</Badge>
-        {s.reportCount > 0 && <Badge tone="neutral" size="xs">Report released</Badge>}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge tone={st.tone} size="xs">{st.label}</Badge>
+          {s.amended && !s.reauthorized && <Badge tone="neutral" size="xs">Amended</Badge>}
+          {s.reportCount > 0 && <Badge tone="neutral" size="xs">Report released</Badge>}
+        </div>
+        {action}
       </div>
       {meta && <div className="mt-1.5 text-meta text-text-tertiary">{meta}</div>}
       {s.authorized && (

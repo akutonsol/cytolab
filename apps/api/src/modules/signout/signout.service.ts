@@ -276,6 +276,13 @@ export interface ResultSheetMeta {
   createdAt: string | null;
   reportCount: number;
   entryCount: number;
+  // Authorization/amendment history — derived ONLY from recorded ResultSheetEvent rows
+  // (the owner's real events), never inferred from a generic edit.
+  deauthorized: boolean; // currently not authorized AND a Deauthorized event exists (revoked)
+  reauthorized: boolean; // a Reauthorized event exists (re-signed after an edit)
+  amended: boolean; // any Deauthorized/Reauthorized event exists (went through an amend cycle)
+  lastEventType: string | null; // latest recorded result-sheet event, if any
+  lastEventAt: string | null;
 }
 export interface ResultSheetsSection {
   count: number;
@@ -593,17 +600,36 @@ export class SignoutService {
     try {
       const rows = await this.resultSheets.metaByRecord(recordId);
       if (!rows.length) return { status: 'empty', data: null };
-      const items: ResultSheetMeta[] = rows.map((s) => ({
-        id: s.id,
-        recordId: s.recordId,
-        authorized: !!s.authorized,
-        authorizedAt: iso(s.authorizedAt),
-        authorizerName: userName(s.authorizedBy),
-        viewed: !!s.viewed,
-        createdAt: iso(s.createdAt),
-        reportCount: s._count?.reports ?? 0,
-        entryCount: s._count?.resultEntries ?? 0,
-      }));
+      // Compose the owner's recorded events to derive amendment history per sheet.
+      // No status-transition rule is duplicated — these are read-only projections of
+      // events the result-sheet owner already created.
+      let events: any[] = [];
+      try {
+        events = await this.resultSheets.eventsByRecord(recordId);
+      } catch {
+        events = []; // event read failing must not collapse the sheet metadata
+      }
+      const items: ResultSheetMeta[] = rows.map((s) => {
+        const evs = events.filter((e) => e.resultSheetId === s.id);
+        const has = (t: string) => evs.some((e) => String(e.type) === t);
+        const last = evs.length ? evs[evs.length - 1] : null; // eventsByRecord is oldest-first
+        return {
+          id: s.id,
+          recordId: s.recordId,
+          authorized: !!s.authorized,
+          authorizedAt: iso(s.authorizedAt),
+          authorizerName: userName(s.authorizedBy),
+          viewed: !!s.viewed,
+          createdAt: iso(s.createdAt),
+          reportCount: s._count?.reports ?? 0,
+          entryCount: s._count?.resultEntries ?? 0,
+          deauthorized: !s.authorized && has('Deauthorized'),
+          reauthorized: has('Reauthorized'),
+          amended: has('Deauthorized') || has('Reauthorized'),
+          lastEventType: last ? String(last.type) : null,
+          lastEventAt: last ? iso(last.createdAt) : null,
+        };
+      });
       return { status: 'ready', data: { count: items.length, items } };
     } catch {
       return { status: 'error', data: null, reason: 'Result sheets failed to load' };

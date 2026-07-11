@@ -156,7 +156,7 @@ export class ResultSheetsService {
       where: { resultSheet: { recordId } },
       orderBy: { createdAt: 'asc' },
       select: {
-        id: true, type: true, createdAt: true,
+        id: true, resultSheetId: true, type: true, createdAt: true,
         user: { select: { firstName: true, lastName: true } },
       },
     });
