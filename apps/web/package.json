@@ -3,8 +3,9 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3000 --turbo",
-    "dev:webpack": "next dev -p 3000",
+    "dev": "node scripts/dev-warmup.mjs",
+    "dev:plain": "next dev -p 3000",
+    "dev:turbo": "next dev -p 3000 --turbo",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
