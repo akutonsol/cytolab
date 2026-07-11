@@ -49,6 +49,7 @@ import { LabFeaturesModule } from './modules/lab-features/lab-features.module';
 import { EscalationModule } from './modules/escalation/escalation.module';
 import { WorkloadModule } from './modules/workload/workload.module';
 import { OperationsModule } from './modules/operations/operations.module';
+import { SignoutModule } from './modules/signout/signout.module';
 import { QcModule } from './modules/qc/qc.module';
 import { BatchModule } from './modules/batch/batch.module';
 import { ReqTrackingModule } from './modules/req-tracking/req-tracking.module';
@@ -138,6 +139,7 @@ import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.mod
     EscalationModule,
     WorkloadModule,
     OperationsModule,
+    SignoutModule,
     QcModule,
     BatchModule,
     ReqTrackingModule,
