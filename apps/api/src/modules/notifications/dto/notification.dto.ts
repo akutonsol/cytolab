@@ -11,6 +11,19 @@ export class NotificationQueryDto extends PaginationDto {
   read?: boolean;
 }
 
+// Settings > General > Notification — per-user delivery preferences. Every
+// field optional so the pane can save any subset of toggles.
+export class UpdateNotificationPreferencesDto {
+  @IsBoolean() @IsOptional() recordsInApp?: boolean;
+  @IsBoolean() @IsOptional() recordsEmail?: boolean;
+  @IsBoolean() @IsOptional() requestsInApp?: boolean;
+  @IsBoolean() @IsOptional() requestsEmail?: boolean;
+  @IsBoolean() @IsOptional() paymentsInApp?: boolean;
+  @IsBoolean() @IsOptional() paymentsEmail?: boolean;
+  @IsBoolean() @IsOptional() systemInApp?: boolean;
+  @IsBoolean() @IsOptional() systemEmail?: boolean;
+}
+
 // Internal payload for NotificationsHelper.create — never bound to a public route.
 export class CreateNotificationDto {
   @IsString() userId!: string;

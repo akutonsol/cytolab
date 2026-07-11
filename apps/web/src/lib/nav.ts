@@ -120,7 +120,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Billing', path: '/billing', permission: 'bill:view', phase: 4 },
       { label: 'Payments', path: '/payments', permission: 'payment:view', phase: 4 },
       { label: 'Services', path: '/services', permission: 'service:view', phase: 4 },
-      { label: 'Taxes', path: '/taxes', permission: 'tax:view', phase: 4 },
     ],
   },
   {

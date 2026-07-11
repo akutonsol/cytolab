@@ -171,22 +171,25 @@ enum ScanStatus {
 // ---- F1: Multi-lab tenancy (every tenant-owned model carries labId) ----
 
 model Lab {
-  id                      String                   @id @default(uuid())
+  id                      String                       @id @default(uuid())
   name                    String
-  slug                    String                   @unique
+  slug                    String                       @unique
   logoUrl                 String?
+  // Short brand tagline shown beside the lab name on the dashboard/login shell
+  // (Settings > General > Company). Falls back to a default when unset.
+  tagline                 String?
   // Branding shown on rendered report PDFs (Phase 3.5).
   address                 String?
   phone                   String?
   email                   String?
-  currency                String                   @default("JMD")
-  isActive                Boolean                  @default(true)
+  currency                String                       @default("JMD")
+  isActive                Boolean                      @default(true)
   // Analytics targets. targetTatDays: expected turnaround (Submitted->Approved);
   // monthlyVolumeTarget: expected specimens/month (null -> derived from history).
-  targetTatDays           Int                      @default(3)
+  targetTatDays           Int                          @default(3)
   monthlyVolumeTarget     Int?
-  createdAt               DateTime                 @default(now())
-  updatedAt               DateTime                 @updatedAt
+  createdAt               DateTime                     @default(now())
+  updatedAt               DateTime                     @updatedAt
   accounts                Account[]
   users                   User[]
   workspaces              Workspace[]
@@ -234,6 +237,7 @@ model Lab {
   appointments            Appointment[]
   formConfigs             FormConfig[]
   notifications           Notification[]
+  notificationPreferences UserNotificationPreference[]
   departments             Department[]
   employees               Employee[]
   payrollRuns             PayrollRun[]
@@ -296,9 +300,9 @@ model Workspace {
 }
 
 model User {
-  id                      String                  @id @default(uuid())
+  id                      String                      @id @default(uuid())
   labId                   String
-  lab                     Lab                     @relation(fields: [labId], references: [id])
+  lab                     Lab                         @relation(fields: [labId], references: [id])
   email                   String
   passwordHash            String
   firstName               String
@@ -309,70 +313,71 @@ model User {
   // Professional designation for staff who authorize result sheets (legacy
   // Authorizer.type). Null for non-authorizer staff; rendered on the report.
   authorizerDesignation   AuthorizerDesignation?
-  isActive                Boolean                 @default(true)
+  isActive                Boolean                     @default(true)
   accountId               String
-  account                 Account                 @relation(fields: [accountId], references: [id])
+  account                 Account                     @relation(fields: [accountId], references: [id])
   workspaceId             String?
-  workspace               Workspace?              @relation(fields: [workspaceId], references: [id])
+  workspace               Workspace?                  @relation(fields: [workspaceId], references: [id])
   roles                   UserRole[]
   authAttempts            AuthAttempt[]
   recordStatusEvents      RecordStatusEvent[]
-  authorizedResultSheets  ResultSheet[]           @relation("ResultSheetAuthorizer")
-  authoredReports         Report[]                @relation("ReportAuthor")
+  authorizedResultSheets  ResultSheet[]               @relation("ResultSheetAuthorizer")
+  authoredReports         Report[]                    @relation("ReportAuthor")
   resultSheetEvents       ResultSheetEvent[]
-  aiDraftsCreated         AiDraft[]               @relation("AiDraftCreatedBy")
-  aiDraftsAccepted        AiDraft[]               @relation("AiDraftAcceptedBy")
-  aiScreeningsReviewed    AIScreeningResult[]     @relation("AIScreeningReviewer")
-  consultRequests         ConsultRequest[]        @relation("ConsultRequester")
+  aiDraftsCreated         AiDraft[]                   @relation("AiDraftCreatedBy")
+  aiDraftsAccepted        AiDraft[]                   @relation("AiDraftAcceptedBy")
+  aiScreeningsReviewed    AIScreeningResult[]         @relation("AIScreeningReviewer")
+  consultRequests         ConsultRequest[]            @relation("ConsultRequester")
   recordCodings           RecordCoding[]
-  assignedChangeRequests  ChangeRequest[]         @relation("ChangeRequestAssignee")
-  changeRequestMessages   ChangeRequestMessage[]  @relation("ChangeRequestMessageStaffAuthor")
-  changeRequestEvents     ChangeRequestEvent[]    @relation("ChangeRequestEventStaffActor")
+  assignedChangeRequests  ChangeRequest[]             @relation("ChangeRequestAssignee")
+  changeRequestMessages   ChangeRequestMessage[]      @relation("ChangeRequestMessageStaffAuthor")
+  changeRequestEvents     ChangeRequestEvent[]        @relation("ChangeRequestEventStaffActor")
   threadParticipants      ThreadParticipant[]
   authoredMessages        Message[]
-  assignedAppointments    Appointment[]           @relation("AppointmentAssignee")
-  createdAppointments     Appointment[]           @relation("AppointmentCreator")
+  assignedAppointments    Appointment[]               @relation("AppointmentAssignee")
+  createdAppointments     Appointment[]               @relation("AppointmentCreator")
   notifications           Notification[]
+  notificationPreference  UserNotificationPreference?
   typingIndicators        TypingIndicator[]
   // HR / Payroll (Phase 7)
-  employeeProfile         Employee?               @relation("EmployeeUser")
-  managedDepartments      Department[]            @relation("DepartmentManager")
-  processedPayrollRuns    PayrollRun[]            @relation("PayrollProcessor")
-  approvedPayrollRuns     PayrollRun[]            @relation("PayrollApprover")
-  resultTemplates         ResultTemplate[]        @relation("ResultTemplateCreator")
-  bethesdaResults         BethesdaResult[]        @relation("BethesdaReporter")
-  acknowledgedTatAlerts   TATAlert[]              @relation("TATAcknowledger")
-  toggledFeatures         LabFeature[]            @relation("LabFeatureToggler")
-  escalationsAssigned     EscalationRecord[]      @relation("EscalationAssignee")
-  escalationsReviewed     EscalationRecord[]      @relation("EscalationReviewer")
-  assignedRecords         Record[]                @relation("RecordAssignee")
+  employeeProfile         Employee?                   @relation("EmployeeUser")
+  managedDepartments      Department[]                @relation("DepartmentManager")
+  processedPayrollRuns    PayrollRun[]                @relation("PayrollProcessor")
+  approvedPayrollRuns     PayrollRun[]                @relation("PayrollApprover")
+  resultTemplates         ResultTemplate[]            @relation("ResultTemplateCreator")
+  bethesdaResults         BethesdaResult[]            @relation("BethesdaReporter")
+  acknowledgedTatAlerts   TATAlert[]                  @relation("TATAcknowledger")
+  toggledFeatures         LabFeature[]                @relation("LabFeatureToggler")
+  escalationsAssigned     EscalationRecord[]          @relation("EscalationAssignee")
+  escalationsReviewed     EscalationRecord[]          @relation("EscalationReviewer")
+  assignedRecords         Record[]                    @relation("RecordAssignee")
   workloadTarget          WorkloadTarget?
   qcChecks                QCCheck[]
-  formsReceived           RequisitionTracking[]   @relation("FormReceiver")
-  benchReceived           RequisitionTracking[]   @relation("BenchReceiver")
-  formsVerified           RequisitionTracking[]   @relation("FormVerifier")
-  formsFiled              RequisitionTracking[]   @relation("FormFiler")
-  trackingEvents          TrackingEvent[]         @relation("TrackingEventActor")
-  correlationsReviewed    CorrelationCase[]       @relation("CorrelationReviewer")
-  correlationsCreated     CorrelationCase[]       @relation("CorrelationCreator")
-  proficiencyTests        ProficiencyTest[]       @relation("ProfTestCreator")
-  proficiencyResponses    ProficiencyResponse[]   @relation("ProfResponder")
-  reagentLotsCreated      ReagentLot[]            @relation("ReagentCreator")
-  reagentUsages           ReagentUsage[]          @relation("ReagentUser")
-  clockEventEdits         ClockEvent[]            @relation("ClockEventEditor")
-  timesheetsReviewed      Timesheet[]             @relation("TimesheetReviewer")
-  leaveRequestsApproved   LeaveRequest[]          @relation("LeaveApprover")
-  overtimeRecordsApproved OvertimeRecord[]        @relation("OvertimeApprover")
-  workforceNotifications  WorkforceNotification[] @relation("WorkforceNotificationRecipient")
-  payrollPeriodsProcessed PayrollPeriod[]         @relation("PayrollPeriodProcessor")
-  performanceReviewsGiven PerformanceReview[]     @relation("PerformanceReviewer")
+  formsReceived           RequisitionTracking[]       @relation("FormReceiver")
+  benchReceived           RequisitionTracking[]       @relation("BenchReceiver")
+  formsVerified           RequisitionTracking[]       @relation("FormVerifier")
+  formsFiled              RequisitionTracking[]       @relation("FormFiler")
+  trackingEvents          TrackingEvent[]             @relation("TrackingEventActor")
+  correlationsReviewed    CorrelationCase[]           @relation("CorrelationReviewer")
+  correlationsCreated     CorrelationCase[]           @relation("CorrelationCreator")
+  proficiencyTests        ProficiencyTest[]           @relation("ProfTestCreator")
+  proficiencyResponses    ProficiencyResponse[]       @relation("ProfResponder")
+  reagentLotsCreated      ReagentLot[]                @relation("ReagentCreator")
+  reagentUsages           ReagentUsage[]              @relation("ReagentUser")
+  clockEventEdits         ClockEvent[]                @relation("ClockEventEditor")
+  timesheetsReviewed      Timesheet[]                 @relation("TimesheetReviewer")
+  leaveRequestsApproved   LeaveRequest[]              @relation("LeaveApprover")
+  overtimeRecordsApproved OvertimeRecord[]            @relation("OvertimeApprover")
+  workforceNotifications  WorkforceNotification[]     @relation("WorkforceNotificationRecipient")
+  payrollPeriodsProcessed PayrollPeriod[]             @relation("PayrollPeriodProcessor")
+  performanceReviewsGiven PerformanceReview[]         @relation("PerformanceReviewer")
   // Enterprise security (Phase 1) — password lifecycle, MFA, login protection.
   passwordChangedAt       DateTime?
   passwordExpiresAt       DateTime?
-  mfaRequired             Boolean                 @default(false)
+  mfaRequired             Boolean                     @default(false)
   lastLoginAt             DateTime?
   lastLoginIp             String?
-  failedLoginCount        Int                     @default(0)
+  failedLoginCount        Int                         @default(0)
   failedLoginAt           DateTime?
   refreshTokens           RefreshToken[]
   userSessions            UserSession[]
@@ -380,8 +385,8 @@ model User {
   trustedDevices          TrustedDevice[]
   mfaConfig               MfaConfig?
   passwordHistory         PasswordHistory[]
-  createdAt               DateTime                @default(now())
-  updatedAt               DateTime                @updatedAt
+  createdAt               DateTime                    @default(now())
+  updatedAt               DateTime                    @updatedAt
 
   @@unique([labId, email])
   @@index([accountId])
@@ -1652,6 +1657,29 @@ enum NotificationType {
   PAYMENT_RECEIVED
   APPOINTMENT_REMINDER
   SYSTEM_ALERT
+}
+
+// Per-user delivery preferences for in-app notifications (Settings > General >
+// Notification). One row per user; missing row = all channels default-on for
+// in-app, off for email. Categories mirror the notification inbox grouping.
+model UserNotificationPreference {
+  id            String   @id @default(cuid())
+  labId         String
+  lab           Lab      @relation(fields: [labId], references: [id])
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  recordsInApp  Boolean  @default(true)
+  recordsEmail  Boolean  @default(false)
+  requestsInApp Boolean  @default(true)
+  requestsEmail Boolean  @default(false)
+  paymentsInApp Boolean  @default(true)
+  paymentsEmail Boolean  @default(false)
+  systemInApp   Boolean  @default(true)
+  systemEmail   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([labId])
 }
 
 // ─── Phase 7: HR / Payroll ───────────────────────────────────────────────────

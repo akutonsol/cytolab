@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { Inbox, Loader2, Save, Trash2 } from 'lucide-react';
 import { SettingsListPane, type PaneField } from '@/components/SettingsListPane';
 import { AiSettingsPane } from '@/components/AiSettingsPane';
+import { CompanySettingsPane } from '@/components/settings/CompanySettingsPane';
+import { NotificationSettingsPane } from '@/components/settings/NotificationSettingsPane';
+import { DepartmentsSettingsPane } from '@/components/settings/DepartmentsSettingsPane';
 import { DrawPad } from '@/components/DrawPad';
 import { api } from '@/lib/api';
 import { Card, Button } from '@/components/ui';
@@ -157,6 +160,12 @@ export default function SettingsPage() {
         return <AiSettingsPane />;
       case 'signature':
         return <SignatureSettings />;
+      case 'company':
+        return <CompanySettingsPane />;
+      case 'notification':
+        return <NotificationSettingsPane />;
+      case 'departments':
+        return <DepartmentsSettingsPane />;
       default: {
         const label = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.id === active)?.label ?? 'Settings';
         return <ComingSoon label={label} />;

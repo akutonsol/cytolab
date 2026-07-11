@@ -39,6 +39,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     const onAttendance = () => invalidateWhere(['workforce', 'attendance', 'roster', 'wf-']);
     // Superuser support desk.
     const onTicket = () => invalidateWhere(['support', 'ticket']);
+    // Company branding (logo/name/tagline) → app shell + settings pane refetch.
+    const onBranding = () => invalidate([['lab-branding'], ['lab-profile']]);
 
     const bindings: [string, () => void][] = [
       ['specimen:new', onDashboard],
@@ -52,6 +54,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       ['attendance:clockout', onAttendance],
       ['attendance:update', onAttendance],
       ['ticket:new', onTicket],
+      ['lab:branding-updated', onBranding],
     ];
 
     const onConnect = () => { setConnected(true); console.debug('[Realtime] connected'); };

@@ -82,6 +82,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     enabled: isAuthed,
   });
 
+  // Lab branding for the shell (logo/name/tagline). Auth-only endpoint so every
+  // staff user sees their lab's identity; falls back to the CYTOLAB default.
+  const { data: branding } = useQuery<{ name: string; tagline: string | null; logoUrl: string | null }>({
+    queryKey: ['lab-branding'],
+    queryFn: () => api.get('/lab/branding').then((r) => r.data),
+    enabled: isAuthed,
+    staleTime: 300_000,
+  });
+  const brandName = branding?.name?.trim() || 'CYTOLAB';
+  const brandTagline = branding?.tagline?.trim() || 'Cytology & Pathology Laboratory System';
+  const brandLogo = branding?.logoUrl || null;
+
   // Active system announcements → slim dismissible banner below the nav.
   const { data: announcements = [] } = useQuery({
     queryKey: ['active-announcements'],
@@ -280,12 +292,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div style={{ position: 'relative', zIndex: 40, display: 'flex', alignItems: 'center', gap: 16, minHeight: 44 }}>
             <div className="logo">
               {!showCenter && <button aria-label="Menu" onClick={() => setDrawerOpen(true)} className={iconBtnCls}><MenuOutlined /></button>}
-              <span style={{ display: 'grid', placeItems: 'center', width: 36, height: 36, borderRadius: 11, background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)', color: '#fff', boxShadow: '0 6px 16px rgba(79,70,229,0.3)', flexShrink: 0 }}>
-                <Microscope size={20} strokeWidth={1.9} />
-              </span>
+              {brandLogo ? (
+                <span style={{ display: 'grid', placeItems: 'center', width: 36, height: 36, borderRadius: 11, background: '#EEF2FF', overflow: 'hidden', flexShrink: 0 }}>
+                  <img src={brandLogo} alt={brandName} style={{ width: 36, height: 36, objectFit: 'contain' }} />
+                </span>
+              ) : (
+                <span style={{ display: 'grid', placeItems: 'center', width: 36, height: 36, borderRadius: 11, background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)', color: '#fff', boxShadow: '0 6px 16px rgba(79,70,229,0.3)', flexShrink: 0 }}>
+                  <Microscope size={20} strokeWidth={1.9} />
+                </span>
+              )}
               <div style={{ lineHeight: 1.1 }}>
-                <div style={{ fontFamily: 'Geist, sans-serif', fontSize: 20, fontWeight: 700, letterSpacing: 0.6, color: '#111827' }}>CYTOLAB</div>
-                {screens.sm && <div style={{ fontSize: 13, fontWeight: 500, color: '#1f2937', marginTop: 1 }}>Cytology &amp; Pathology Laboratory System</div>}
+                <div style={{ fontFamily: 'Geist, sans-serif', fontSize: 20, fontWeight: 700, letterSpacing: 0.6, color: '#111827' }}>{brandName}</div>
+                {screens.sm && <div style={{ fontSize: 13, fontWeight: 500, color: '#1f2937', marginTop: 1 }}>{brandTagline}</div>}
               </div>
             </div>
 

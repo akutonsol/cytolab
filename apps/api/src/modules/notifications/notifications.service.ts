@@ -4,7 +4,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
-import { CreateNotificationDto, NotificationQueryDto } from './dto/notification.dto';
+import { CreateNotificationDto, NotificationQueryDto, UpdateNotificationPreferencesDto } from './dto/notification.dto';
 
 const notificationSelect = {
   id: true,
@@ -62,6 +62,35 @@ export class NotificationsService {
   async markAllRead(userId: string) {
     const res = await this.prisma.notification.updateMany({ where: { userId, read: false }, data: { read: true, readAt: new Date() } });
     return { ok: true, updated: res.count };
+  }
+
+  // ── Delivery preferences (Settings > General > Notification) ──────────────
+  // Defaults when a user has no saved row: in-app on, email off, everywhere.
+  private readonly defaultPreferences = {
+    recordsInApp: true, recordsEmail: false,
+    requestsInApp: true, requestsEmail: false,
+    paymentsInApp: true, paymentsEmail: false,
+    systemInApp: true, systemEmail: false,
+  };
+
+  async getPreferences(userId: string) {
+    const row = await this.prisma.userNotificationPreference.findUnique({ where: { userId } });
+    if (!row) return { ...this.defaultPreferences };
+    const { recordsInApp, recordsEmail, requestsInApp, requestsEmail, paymentsInApp, paymentsEmail, systemInApp, systemEmail } = row;
+    return { recordsInApp, recordsEmail, requestsInApp, requestsEmail, paymentsInApp, paymentsEmail, systemInApp, systemEmail };
+  }
+
+  async updatePreferences(userId: string, dto: UpdateNotificationPreferencesDto) {
+    await this.prisma.userNotificationPreference.upsert({
+      where: { userId },
+      update: { ...dto },
+      create: tenantCreate<Prisma.UserNotificationPreferenceUncheckedCreateInput>({
+        userId,
+        ...this.defaultPreferences,
+        ...dto,
+      }),
+    });
+    return this.getPreferences(userId);
   }
 
   /** Internal only — stamps labId from the ambient tenant context. */
