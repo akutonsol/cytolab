@@ -17,16 +17,33 @@ export interface Section<T> {
   reason?: string;
 }
 
+export interface Referral {
+  doctor: string | null;
+  clientName: string | null;
+  clientType: string | null;
+  accountNo: string | null;
+}
+
+export interface SpecimenDetail {
+  type: string | null;
+  label: string | null;
+  vialColour: string | null;
+  bloodGroup: string | null;
+  receivedAt: string | null;
+}
+
 export interface CaseIdentity {
   id: string;
   identifier: string;
   labNumber: string | null;
   status: string;
+  statusChangedAt: string | null;
   formType: string | null;
   urgent: boolean;
   specimenDate: string | null;
-  doctor: string | null;
-  specimenTypes: string[];
+  receivedAt: string | null;
+  referral: Referral | null;
+  specimens: SpecimenDetail[];
 }
 
 export interface PatientSummary {
@@ -37,11 +54,38 @@ export interface PatientSummary {
   dateOfBirth: string | null;
 }
 
+export interface Therapy {
+  hormone: boolean;
+  radiation: boolean;
+  surgical: boolean;
+  other: string | null;
+}
+
+export interface GynHistory {
+  routineCheck: boolean;
+  previousCytology: boolean;
+  lmp: string | null;
+  pregnant: boolean;
+  pregnancies: number | null;
+  menopause: boolean;
+  dateOfMenopause: string | null;
+  cervixAppearance: string | null;
+  pelvicAbnormalities: string | null;
+  leucorrhea: string | null;
+  lengthOfCycle: string | null;
+}
+
+export interface NonGynHistory {
+  sampleDescription: string | null;
+  natureAndSource: string | null;
+}
+
 export interface ClinicalContext {
-  clinicalDiagnosis: string | null;
-  medicalEntry: string | null;
-  hasGynFeatures: boolean;
-  hasNonGynFeatures: boolean;
+  reason: string | null;
+  note: string | null;
+  therapy: Therapy | null;
+  gyn: GynHistory | null;
+  nonGyn: NonGynHistory | null;
 }
 
 export interface EffectivePermissions {
@@ -158,12 +202,37 @@ function pickCase(rec: any): CaseIdentity {
     identifier: rec.identifier,
     labNumber: rec.labNumber ?? null,
     status: rec.status,
+    statusChangedAt: iso(rec.dateStatus),
     formType: rec.formType ?? null,
     urgent: !!rec.urgent,
     specimenDate: iso(rec.specimenDate),
-    doctor: rec.doctor ?? null,
-    specimenTypes: Array.isArray(rec.specimens) ? rec.specimens.map((s: any) => s.type).filter(Boolean) : [],
+    receivedAt: iso(rec.createdAt),
+    referral: pickReferral(rec),
+    specimens: pickSpecimens(rec),
   };
+}
+
+function pickReferral(rec: any): Referral | null {
+  const c = rec.client;
+  const clientName = c ? (c.officeName || `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim() || null) : null;
+  if (!rec.doctor && !clientName) return null;
+  return {
+    doctor: rec.doctor ?? null,
+    clientName,
+    clientType: c?.clientType?.type ?? null,
+    accountNo: c?.accountNo ?? null,
+  };
+}
+
+function pickSpecimens(rec: any): SpecimenDetail[] {
+  if (!Array.isArray(rec.specimens)) return [];
+  return rec.specimens.map((s: any) => ({
+    type: s.type ?? null,
+    label: s.label ?? null,
+    vialColour: s.vialColour ?? null,
+    bloodGroup: s.bloodGroup ?? null,
+    receivedAt: iso(s.dateReceived),
+  }));
 }
 
 function pickPatient(p: any): PatientSummary {
@@ -178,9 +247,36 @@ function pickPatient(p: any): PatientSummary {
 
 function pickClinical(rec: any): ClinicalContext {
   return {
-    clinicalDiagnosis: rec.clinicalDiagnosis ?? null,
-    medicalEntry: rec.medicalEntry ?? null,
-    hasGynFeatures: !!rec.gynFeatures,
-    hasNonGynFeatures: !!rec.nonGynFeatures,
+    reason: rec.clinicalDiagnosis ?? null,
+    note: rec.medicalEntry ?? null,
+    therapy: rec.therapy
+      ? {
+          hormone: !!rec.therapy.hormone,
+          radiation: !!rec.therapy.radiation,
+          surgical: !!rec.therapy.surgical,
+          other: rec.therapy.other ?? null,
+        }
+      : null,
+    gyn: rec.gynFeatures
+      ? {
+          routineCheck: !!rec.gynFeatures.routineCheck,
+          previousCytology: !!rec.gynFeatures.previousCytology,
+          lmp: iso(rec.gynFeatures.lmp),
+          pregnant: !!rec.gynFeatures.nowPregnant,
+          pregnancies: rec.gynFeatures.pregnancies ?? null,
+          menopause: !!rec.gynFeatures.menopause,
+          dateOfMenopause: iso(rec.gynFeatures.dateOfMenopause),
+          cervixAppearance: rec.gynFeatures.clinicalAppearanceOfCervix ?? null,
+          pelvicAbnormalities: rec.gynFeatures.pelvicAbnormalities ?? null,
+          leucorrhea: rec.gynFeatures.leucorrhea ?? null,
+          lengthOfCycle: rec.gynFeatures.lengthOfCycle ?? null,
+        }
+      : null,
+    nonGyn: rec.nonGynFeatures
+      ? {
+          sampleDescription: rec.nonGynFeatures.sampleDescription ?? null,
+          natureAndSource: rec.nonGynFeatures.natureAndSource ?? null,
+        }
+      : null,
   };
 }

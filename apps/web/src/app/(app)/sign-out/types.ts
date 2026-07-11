@@ -1,6 +1,7 @@
 // Client mirror of GET /signout/case/:recordId (apps/api signout module).
 // Read-only orchestration aggregate; every section carries its own status so the
-// workspace hydrates progressively without changing this contract.
+// workspace hydrates progressively without changing this contract. Patient age is
+// derived with the canonical helper (@/lib/age deriveAge), never recomputed here.
 
 export type SectionStatus = 'ready' | 'deferred' | 'forbidden' | 'error' | 'empty';
 
@@ -10,16 +11,33 @@ export interface Section<T> {
   reason?: string;
 }
 
+export interface Referral {
+  doctor: string | null;
+  clientName: string | null;
+  clientType: string | null;
+  accountNo: string | null;
+}
+
+export interface SpecimenDetail {
+  type: string | null;
+  label: string | null;
+  vialColour: string | null;
+  bloodGroup: string | null;
+  receivedAt: string | null;
+}
+
 export interface CaseIdentity {
   id: string;
   identifier: string;
   labNumber: string | null;
   status: string;
+  statusChangedAt: string | null;
   formType: string | null;
   urgent: boolean;
   specimenDate: string | null;
-  doctor: string | null;
-  specimenTypes: string[];
+  receivedAt: string | null;
+  referral: Referral | null;
+  specimens: SpecimenDetail[];
 }
 
 export interface PatientSummary {
@@ -30,11 +48,38 @@ export interface PatientSummary {
   dateOfBirth: string | null;
 }
 
+export interface Therapy {
+  hormone: boolean;
+  radiation: boolean;
+  surgical: boolean;
+  other: string | null;
+}
+
+export interface GynHistory {
+  routineCheck: boolean;
+  previousCytology: boolean;
+  lmp: string | null;
+  pregnant: boolean;
+  pregnancies: number | null;
+  menopause: boolean;
+  dateOfMenopause: string | null;
+  cervixAppearance: string | null;
+  pelvicAbnormalities: string | null;
+  leucorrhea: string | null;
+  lengthOfCycle: string | null;
+}
+
+export interface NonGynHistory {
+  sampleDescription: string | null;
+  natureAndSource: string | null;
+}
+
 export interface ClinicalContext {
-  clinicalDiagnosis: string | null;
-  medicalEntry: string | null;
-  hasGynFeatures: boolean;
-  hasNonGynFeatures: boolean;
+  reason: string | null;
+  note: string | null;
+  therapy: Therapy | null;
+  gyn: GynHistory | null;
+  nonGyn: NonGynHistory | null;
 }
 
 export interface EffectivePermissions {
@@ -65,15 +110,4 @@ export interface SignOutCaseAggregate {
   attachments: Section<null>;
   resultSheets: Section<null>;
   timeline: Section<null>;
-}
-
-/** Compact patient age from an ISO DOB against a fixed reference (SSR-safe: pass asOf). */
-export function ageFrom(dobIso: string | null, asOfIso: string): string | null {
-  if (!dobIso) return null;
-  const dob = new Date(dobIso);
-  const asOf = new Date(asOfIso);
-  let years = asOf.getFullYear() - dob.getFullYear();
-  const m = asOf.getMonth() - dob.getMonth();
-  if (m < 0 || (m === 0 && asOf.getDate() < dob.getDate())) years -= 1;
-  return years >= 0 && years < 200 ? `${years}y` : null;
 }
