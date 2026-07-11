@@ -4,6 +4,7 @@ import { WsiService } from '../wsi/wsi.service';
 import { AIScreeningService } from '../ai-screening/ai-screening.service';
 import { BethesdaService, deriveShortCode } from '../bethesda/bethesda.service';
 import { CorrelationService } from '../correlation/correlation.service';
+import { FilesService } from '../files/files.service';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 
 // ── Sign-Out aggregate (orchestration only) ──────────────────────────────────
@@ -221,6 +222,22 @@ export interface PriorsSection {
   truncated: boolean;
 }
 
+// ── Attachments (read-only metadata projection of RecordAttachment) ──
+// Metadata ONLY — never storageUrl. In fallback mode storageUrl is a base64 data URI
+// (the file bytes); the aggregate must not carry bytes. `kind` is the stored type as the
+// file owner recorded it (no invented category). The file owner still serves the bytes.
+export interface AttachmentMeta {
+  id: string;
+  filename: string | null;
+  kind: string | null;
+  uploadedAt: string | null;
+  recordId: string;
+}
+export interface AttachmentsSection {
+  count: number;
+  items: AttachmentMeta[];
+}
+
 export interface EffectivePermissions {
   viewCase: boolean;
   viewSlide: boolean;
@@ -247,8 +264,8 @@ export interface SignOutCaseAggregate {
   bethesda: Section<BethesdaEvidence>;
   correlation: Section<CorrelationSection>;
   priors: Section<PriorsSection>;
+  attachments: Section<AttachmentsSection>;
   // Deferred until later checkpoints. The contract is stable now.
-  attachments: Section<null>;
   resultSheets: Section<null>;
   timeline: Section<null>;
 }
@@ -263,6 +280,7 @@ export class SignoutService {
     private readonly ai: AIScreeningService,
     private readonly bethesda: BethesdaService,
     private readonly correlation: CorrelationService,
+    private readonly files: FilesService,
   ) {}
 
   async caseAggregate(recordId: string, user: AuthUser): Promise<SignOutCaseAggregate> {
@@ -280,11 +298,12 @@ export class SignoutService {
     // Each diagnostic-evidence section resolves independently from its own owner
     // service; one failing (or being empty/forbidden) never affects the others or the
     // case context (partial-failure tolerance). Run them together — they are unrelated.
-    const [slides, ai, bethesda, correlation] = await Promise.all([
+    const [slides, ai, bethesda, correlation, attachments] = await Promise.all([
       this.loadSlides(recordId, perms.viewSlide),
       this.loadAI(recordId, perms.viewAI),
       this.loadBethesda(recordId, perms.viewBethesda),
       this.loadCorrelation(recordId, perms.viewCorrelation),
+      this.loadAttachments(recordId, perms.viewAttachments),
     ]);
 
     let caseSec: Section<CaseIdentity>;
@@ -329,7 +348,7 @@ export class SignoutService {
       bethesda,
       correlation,
       priors: priorsSec,
-      attachments: deferred(),
+      attachments,
       resultSheets: deferred(),
       timeline: deferred(),
     };
@@ -459,6 +478,27 @@ export class SignoutService {
       return { status: 'ready', data: { count: items.length, items } };
     } catch {
       return { status: 'error', data: null, reason: 'Correlation failed to load' };
+    }
+  }
+
+  // Composes the file owner's per-record attachment read — METADATA ONLY. storageUrl is
+  // deliberately dropped: in fallback mode it is a base64 data URI (the file bytes), and
+  // the aggregate must never carry bytes. The file owner still serves the file itself.
+  private async loadAttachments(recordId: string, viewAttachments: boolean): Promise<Section<AttachmentsSection>> {
+    if (!viewAttachments) return { status: 'forbidden', data: null };
+    try {
+      const rows = await this.files.getRecordAttachments(recordId);
+      if (!rows.length) return { status: 'empty', data: null };
+      const items: AttachmentMeta[] = rows.map((a) => ({
+        id: a.id,
+        filename: a.filename ?? null,
+        kind: a.kind ?? null,
+        uploadedAt: iso(a.createdAt),
+        recordId,
+      }));
+      return { status: 'ready', data: { count: items.length, items } };
+    } catch {
+      return { status: 'error', data: null, reason: 'Attachments failed to load' };
     }
   }
 

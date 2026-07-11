@@ -196,6 +196,20 @@ export interface PriorsSection {
   truncated: boolean;
 }
 
+// Attachments — read-only metadata only (never storageUrl / file bytes). `kind` is the
+// stored type as the file owner recorded it. Bytes are served by the file owner.
+export interface AttachmentMeta {
+  id: string;
+  filename: string | null;
+  kind: string | null;
+  uploadedAt: string | null;
+  recordId: string;
+}
+export interface AttachmentsSection {
+  count: number;
+  items: AttachmentMeta[];
+}
+
 export interface EffectivePermissions {
   viewCase: boolean;
   viewSlide: boolean;
@@ -222,7 +236,7 @@ export interface SignOutCaseAggregate {
   bethesda: Section<BethesdaEvidence>;
   correlation: Section<CorrelationSection>;
   priors: Section<PriorsSection>;
-  attachments: Section<null>;
+  attachments: Section<AttachmentsSection>;
   resultSheets: Section<null>;
   timeline: Section<null>;
 }

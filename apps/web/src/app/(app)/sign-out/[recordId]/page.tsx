@@ -16,6 +16,7 @@ import { deriveAge } from '@/lib/age';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
 import type {
   AIEvidence,
+  AttachmentMeta,
   BethesdaEvidence,
   CaseIdentity,
   CorrelationEvidence,
@@ -34,7 +35,6 @@ const fmtDate = (iso: string | null | undefined): string => (iso ? new Date(iso)
 const val = (s: string | null | undefined): string => (s && s.trim() ? s : NR);
 
 const DEFERRED_REGIONS: { key: string; title: string; responsibility: string }[] = [
-  { key: 'attachments', title: 'Attachments', responsibility: 'Supporting documents for this case.' },
   { key: 'report', title: 'Result sheet & report', responsibility: 'The result sheet and report, edited in the existing editor.' },
   { key: 'timeline', title: 'Case timeline', responsibility: 'A unified timeline assembled from recorded events.' },
 ];
@@ -227,6 +227,14 @@ export default function SignOutWorkspacePage() {
             loading={isLoading}
             current={data?.case?.status === 'ready' ? data.case.data : null}
             onOpen={(path) => router.push(path)}
+          />
+
+          {/* Attachments — real recorded metadata only (never file bytes). The file owner
+              serves the files; this lists them and opens the record's owner surface. */}
+          <AttachmentsPanel
+            section={data?.attachments}
+            loading={isLoading}
+            onOpenRecord={() => router.push(`/records/${recordId}`)}
           />
 
           {/* Deferred regions — truthful, distinct from loading and empty data */}
@@ -673,6 +681,67 @@ function PriorRow({ pr, onOpen }: { pr: PriorEntry; onOpen: () => void }) {
         {pr.authorizedAt && <div className="text-meta text-text-tertiary">Authorized {fmtDate(pr.authorizedAt)}</div>}
       </div>
       <Button variant="secondary" size="sm" onClick={onOpen}>Open</Button>
+    </div>
+  );
+}
+
+// Short display label for a stored mime type — formatting only, never content inference.
+function fileTypeLabel(kind: string | null): string {
+  if (!kind) return 'File';
+  if (kind.includes('pdf')) return 'PDF';
+  if (kind.startsWith('image/')) return (kind.split('/')[1] || 'image').toUpperCase();
+  if (kind.includes('word') || kind.includes('msword')) return 'Word';
+  return kind;
+}
+
+// Attachments — read-only metadata list (never file bytes). One real action opens the
+// record's owner surface, where the existing, unchanged downloader serves the files.
+function AttachmentsPanel({
+  section,
+  loading,
+  onOpenRecord,
+}: {
+  section?: SignOutCaseAggregate['attachments'];
+  loading: boolean;
+  onOpenRecord: () => void;
+}) {
+  const status = section?.status;
+  const data = status === 'ready' ? section?.data : null;
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-3 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">Attachments</h2>
+        {status === 'ready' && <Badge tone="neutral" size="xs">{data?.count} file{data?.count === 1 ? '' : 's'}</Badge>}
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-48" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-6" title="No access" description="You do not have permission to view attachments." />
+      ) : status === 'error' ? (
+        <EmptyState bare className="px-0 py-6" title="Unavailable" description="Attachments could not be loaded." />
+      ) : status === 'empty' || !data?.items.length ? (
+        <EmptyState bare className="px-0 py-6" title="No attachments" description="No files are attached to this case." />
+      ) : (
+        <div className="space-y-2">
+          {data.items.map((a) => <AttachmentRow key={a.id} a={a} />)}
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <p className="text-meta text-text-tertiary">Files are downloaded from the record.</p>
+            <Button variant="secondary" size="sm" onClick={onOpenRecord}>Open in record</Button>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function AttachmentRow({ a }: { a: AttachmentMeta }) {
+  const meta = [fileTypeLabel(a.kind), a.uploadedAt ? `Uploaded ${fmtDate(a.uploadedAt)}` : null].filter(Boolean).join(' · ');
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-lightgray px-3 py-2">
+      <div className="min-w-0">
+        <div className="truncate text-sm font-semibold text-text">{a.filename ?? 'Unnamed file'}</div>
+        <div className="text-meta text-text-tertiary">{meta}</div>
+      </div>
     </div>
   );
 }
