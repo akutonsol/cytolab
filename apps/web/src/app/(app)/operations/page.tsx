@@ -50,6 +50,12 @@ export default function OperationsPage() {
         </div>
         <div className="flex items-center gap-3">
           <Link
+            href="/operations/quality-alerts"
+            className="text-sm font-semibold text-primary hover:underline"
+          >
+            Quality alerts →
+          </Link>
+          <Link
             href="/operations/integration-health"
             className="text-sm font-semibold text-primary hover:underline"
           >

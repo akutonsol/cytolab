@@ -144,3 +144,29 @@ export function formatSince(iso: string | null, asOf: string): string {
   const hours = Math.max(0, Math.round((new Date(asOf).getTime() - new Date(iso).getTime()) / 3_600_000));
   return `${formatAge(hours)} ago`;
 }
+
+// ── Q · Quality Alerts ──────────────────────────────────────────────────────
+// Recorded, open quality events only; nothing inferred from generic status/delay.
+export type QualityAlertKind = 'qc-failure' | 'diagnostic-discordance';
+export type QualitySeverity = 'high' | 'medium';
+
+export interface QualityAlertItem {
+  id: string;
+  kind: QualityAlertKind;
+  title: string;
+  detail: string;
+  severity: QualitySeverity | null;
+  caseRef: string | null;
+  equipmentRef: string | null;
+  owner: string | null;
+  occurredAt: string;
+  action: { label: string; route: string };
+}
+
+export interface QualityAlertsReport {
+  asOf: string;
+  summary: { total: number; qcFailures: number; discordances: number; high: number };
+  items: QualityAlertItem[];
+  sources: { kind: QualityAlertKind; label: string; note: string }[];
+  note: string;
+}

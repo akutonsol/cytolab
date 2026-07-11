@@ -29,4 +29,11 @@ export class OperationsController {
   integrationHealth() {
     return this.operations.integrationHealth();
   }
+
+  /** Q — Quality Alerts: recorded, open operational quality events (read-only). */
+  @Get('quality-alerts')
+  @RequirePermissions('record:view')
+  qualityAlerts() {
+    return this.operations.qualityAlerts();
+  }
 }

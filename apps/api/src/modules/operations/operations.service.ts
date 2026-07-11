@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RecordStatus, TransmissionStatus } from '@prisma/client';
+import { CorrelationResult, RecordStatus, TransmissionStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { LabContext } from '../../common/tenancy/lab-context';
 import { hoursElapsed, tatPriority, TAT_PRIORITY_RANK, type TatPriority } from '../../common/util/tat-priority';
@@ -193,6 +193,43 @@ export interface IntegrationHealthReport {
   activity: ActivitySignal[];
   note: string;
 }
+
+// ── Q · Quality Alerts ───────────────────────────────────────────────────────
+// Only recorded, CONFIRMED quality events with an OPEN/actionable state are shown.
+// Nothing is inferred from a generic error, OnHold, Failed, urgent flag, or delay.
+export type QualityAlertKind = 'qc-failure' | 'diagnostic-discordance';
+export type QualitySeverity = 'high' | 'medium';
+
+export interface QualityAlertItem {
+  id: string;
+  kind: QualityAlertKind;
+  title: string; // what happened
+  detail: string; // the recorded specifics
+  severity: QualitySeverity | null; // only if recorded
+  caseRef: string | null; // labNumber of the affected case, if recorded
+  equipmentRef: string | null; // affected equipment, if recorded
+  owner: string | null; // if recorded
+  occurredAt: string; // when
+  action: { label: string; route: string }; // real next action, existing route
+}
+
+export interface QualityAlertsReport {
+  asOf: string;
+  summary: { total: number; qcFailures: number; discordances: number; high: number };
+  items: QualityAlertItem[];
+  sources: { kind: QualityAlertKind; label: string; note: string }[];
+  note: string;
+}
+
+const QC_TYPE_LABEL: Record<string, string> = {
+  SlidePreparation: 'slide preparation',
+  StainingQuality: 'staining quality',
+  FixationAdequacy: 'fixation adequacy',
+  CellularityCheck: 'cellularity',
+  EquipmentCalibration: 'equipment calibration',
+  ReagentCheck: 'reagent check',
+  ExternalQC: 'external QC',
+};
 
 @Injectable()
 export class OperationsService {
@@ -544,6 +581,113 @@ export class OperationsService {
       interfaces,
       activity,
       note: 'Only FHIR (outbound EMR) is instrumented for message-level health. HL7 v2, DICOM, and generic LIS interfaces are defined in the roadmap but not yet modeled, so they are not shown.',
+    };
+  }
+
+  /**
+   * Quality Alerts — recorded, confirmed operational quality events that are still
+   * OPEN. Two first-class, unambiguous sources only:
+   *  - QC failure alerts: an unresolved QCFailureAlert on a Fail/Marginal QCCheck.
+   *  - Diagnostic discordance awaiting review: a CorrelationCase where BOTH the
+   *    cytology and histology diagnoses AND their relationship (correlationResult)
+   *    are recorded, marked review-required, and not yet reviewed — so discordance
+   *    is recorded, never inferred.
+   * Nothing else is turned into a quality alert. All reads are lab-scoped by the
+   * tenancy extension on the injected Prisma client.
+   */
+  async qualityAlerts(): Promise<QualityAlertsReport> {
+    const now = Date.now();
+
+    const [qcAlerts, discordances] = await Promise.all([
+      this.prisma.qCFailureAlert.findMany({
+        where: { status: { not: 'Resolved' } },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        select: {
+          id: true,
+          qcCheck: {
+            select: {
+              checkType: true,
+              result: true,
+              failureReason: true,
+              performedAt: true,
+              record: { select: { labNumber: true, identifier: true } },
+              equipment: { select: { name: true } },
+              performedBy: { select: { firstName: true, lastName: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.correlationCase.findMany({
+        where: {
+          reviewRequired: true,
+          reviewedAt: null,
+          correlationResult: { in: [CorrelationResult.MinorDiscordant, CorrelationResult.MajorDiscordant] },
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 100,
+        select: {
+          id: true,
+          correlationResult: true,
+          discordanceReason: true,
+          cytologyDiagnosis: true,
+          histologyDiagnosis: true,
+          updatedAt: true,
+          cytologyRecord: { select: { labNumber: true, identifier: true } },
+          createdBy: { select: { firstName: true, lastName: true } },
+        },
+      }),
+    ]);
+
+    const qcItems: QualityAlertItem[] = qcAlerts.map((a) => {
+      const c = a.qcCheck;
+      const severity: QualitySeverity | null = c.result === 'Fail' ? 'high' : c.result === 'Marginal' ? 'medium' : null;
+      return {
+        id: a.id,
+        kind: 'qc-failure',
+        title: `QC ${String(c.result).toLowerCase()} — ${QC_TYPE_LABEL[c.checkType] ?? c.checkType}`,
+        detail: c.failureReason ?? 'No failure reason recorded.',
+        severity,
+        caseRef: c.record?.labNumber ?? c.record?.identifier ?? null,
+        equipmentRef: c.equipment?.name ?? null,
+        owner: assigneeName(c.performedBy),
+        occurredAt: new Date(c.performedAt).toISOString(),
+        action: { label: 'Review in QC console', route: '/qc' },
+      };
+    });
+
+    const discItems: QualityAlertItem[] = discordances.map((d) => {
+      const major = d.correlationResult === CorrelationResult.MajorDiscordant;
+      return {
+        id: d.id,
+        kind: 'diagnostic-discordance' as const,
+        title: `${major ? 'Major' : 'Minor'} cytology–histology discordance`,
+        detail: d.discordanceReason ?? `Cytology: ${d.cytologyDiagnosis} · Histology: ${d.histologyDiagnosis ?? '—'}`,
+        severity: (major ? 'high' : 'medium') as QualitySeverity,
+        caseRef: d.cytologyRecord?.labNumber ?? d.cytologyRecord?.identifier ?? null,
+        equipmentRef: null,
+        owner: assigneeName(d.createdBy),
+        occurredAt: new Date(d.updatedAt).toISOString(),
+        action: { label: 'Review correlation', route: '/correlation' },
+      };
+    });
+
+    const items = [...qcItems, ...discItems].sort((a, b) => +new Date(b.occurredAt) - +new Date(a.occurredAt));
+
+    return {
+      asOf: new Date(now).toISOString(),
+      summary: {
+        total: items.length,
+        qcFailures: qcItems.length,
+        discordances: discItems.length,
+        high: items.filter((i) => i.severity === 'high').length,
+      },
+      items,
+      sources: [
+        { kind: 'qc-failure', label: 'QC failure alerts', note: 'An unresolved QCFailureAlert on a Fail/Marginal QC check.' },
+        { kind: 'diagnostic-discordance', label: 'Diagnostic discordance', note: 'A cytology–histology correlation recorded as discordant and awaiting review.' },
+      ],
+      note: 'Only recorded, open quality events are shown. Unsatisfactory specimens, report amendments, and proficiency results are recorded quality events too, but are history rather than open alerts and are not surfaced here.',
     };
   }
 }
