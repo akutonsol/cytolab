@@ -210,6 +210,23 @@ export interface AttachmentsSection {
   items: AttachmentMeta[];
 }
 
+// Unified timeline — recorded, timestamped events only. A null actor renders as
+// "Actor not recorded". Ordered chronologically by the server; never reordered here.
+export interface TimelineEvent {
+  id: string;
+  type: string;
+  timestamp: string;
+  actor: string | null;
+  source: string;
+  description: string;
+  ownerPath: string | null;
+}
+export interface TimelineSection {
+  count: number;
+  items: TimelineEvent[];
+  unavailable: string[];
+}
+
 export interface EffectivePermissions {
   viewCase: boolean;
   viewSlide: boolean;
@@ -219,6 +236,7 @@ export interface EffectivePermissions {
   viewBethesda: boolean;
   viewCorrelation: boolean;
   viewPriors: boolean;
+  viewResultSheet: boolean;
   editResultSheet: boolean;
   authorize: boolean;
   amend: boolean;
@@ -237,6 +255,6 @@ export interface SignOutCaseAggregate {
   correlation: Section<CorrelationSection>;
   priors: Section<PriorsSection>;
   attachments: Section<AttachmentsSection>;
+  timeline: Section<TimelineSection>;
   resultSheets: Section<null>;
-  timeline: Section<null>;
 }

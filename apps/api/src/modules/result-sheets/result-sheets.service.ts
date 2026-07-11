@@ -146,6 +146,23 @@ export class ResultSheetsService {
   }
 
   /**
+   * Recorded result-sheet events for a record (authorized / deauthorized / reauthorized /
+   * AI-draft), oldest first — for composition by the Sign-Out timeline. Real recorded
+   * events only (type, timestamp, actor); no state is invented. Owned here so result-sheet
+   * event query logic is never duplicated in the aggregate.
+   */
+  async eventsByRecord(recordId: string) {
+    return this.prisma.resultSheetEvent.findMany({
+      where: { resultSheet: { recordId } },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true, type: true, createdAt: true,
+        user: { select: { firstName: true, lastName: true } },
+      },
+    });
+  }
+
+  /**
    * Replace entries/lines and/or update flags. Any change to the result content
    * re-opens the sheet (de-authorizes it): a previously authorized sheet must be
    * re-authorized before a new report can be released. Already-released reports

@@ -5,6 +5,7 @@ import { AIScreeningService } from '../ai-screening/ai-screening.service';
 import { BethesdaService, deriveShortCode } from '../bethesda/bethesda.service';
 import { CorrelationService } from '../correlation/correlation.service';
 import { FilesService } from '../files/files.service';
+import { ResultSheetsService } from '../result-sheets/result-sheets.service';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 
 // ── Sign-Out aggregate (orchestration only) ──────────────────────────────────
@@ -238,6 +239,27 @@ export interface AttachmentsSection {
   items: AttachmentMeta[];
 }
 
+// ── Unified timeline (composed only from recorded events across owners) ──
+// Every item is a real recorded, timestamped event. No event is invented from a state,
+// no actor or timestamp is inferred, and generic updatedAt fields are never used. Items
+// carry their source so users can tell where each came from; a null actor renders as
+// "Actor not recorded". Ordering is chronological (see timelineSort).
+export interface TimelineEvent {
+  id: string;
+  type: string;
+  timestamp: string;
+  actor: string | null;
+  source: string;
+  description: string;
+  ownerPath: string | null;
+}
+export interface TimelineSection {
+  count: number;
+  items: TimelineEvent[];
+  /** Human labels of sources that could not be included (failed or not permitted). */
+  unavailable: string[];
+}
+
 export interface EffectivePermissions {
   viewCase: boolean;
   viewSlide: boolean;
@@ -247,6 +269,7 @@ export interface EffectivePermissions {
   viewBethesda: boolean;
   viewCorrelation: boolean;
   viewPriors: boolean;
+  viewResultSheet: boolean;
   editResultSheet: boolean;
   authorize: boolean;
   amend: boolean;
@@ -265,9 +288,9 @@ export interface SignOutCaseAggregate {
   correlation: Section<CorrelationSection>;
   priors: Section<PriorsSection>;
   attachments: Section<AttachmentsSection>;
+  timeline: Section<TimelineSection>;
   // Deferred until later checkpoints. The contract is stable now.
   resultSheets: Section<null>;
-  timeline: Section<null>;
 }
 
 const deferred = (): Section<null> => ({ status: 'deferred', data: null });
@@ -281,6 +304,7 @@ export class SignoutService {
     private readonly bethesda: BethesdaService,
     private readonly correlation: CorrelationService,
     private readonly files: FilesService,
+    private readonly resultSheets: ResultSheetsService,
   ) {}
 
   async caseAggregate(recordId: string, user: AuthUser): Promise<SignOutCaseAggregate> {
@@ -313,6 +337,10 @@ export class SignoutService {
     // after it (not in the evidence Promise.all above). If the case itself fails, priors
     // cannot be derived and are marked unavailable alongside the case-derived sections.
     let priorsSec: Section<PriorsSection>;
+    // The timeline composes recorded events from the record read + the already-loaded
+    // sections (inheriting their per-source permission/error state) + one result-sheet
+    // event read. It needs the record, so it resolves here; if the case fails, so does it.
+    let timelineSec: Section<TimelineSection>;
 
     try {
       // Reuse the existing record read — no duplicated query, tenancy is enforced
@@ -325,6 +353,7 @@ export class SignoutService {
         : { status: 'empty', data: null, reason: 'No patient linked' };
       clinicalSec = { status: 'ready', data: pickClinical(rec) };
       priorsSec = await this.loadPriors(rec.patientId ?? null, recordId, perms);
+      timelineSec = await this.loadTimeline(rec, { slides, ai, bethesda, correlation, attachments }, perms);
     } catch (err) {
       if (err instanceof NotFoundException) throw err; // no case at all → 404, not a partial failure
       // A real downstream failure: mark only the case-derived sections unavailable;
@@ -334,6 +363,7 @@ export class SignoutService {
       patientSec = { status: 'error', data: null, reason };
       clinicalSec = { status: 'error', data: null, reason };
       priorsSec = { status: 'error', data: null, reason };
+      timelineSec = { status: 'error', data: null, reason };
     }
 
     return {
@@ -349,8 +379,8 @@ export class SignoutService {
       correlation,
       priors: priorsSec,
       attachments,
+      timeline: timelineSec,
       resultSheets: deferred(),
-      timeline: deferred(),
     };
   }
 
@@ -502,6 +532,90 @@ export class SignoutService {
     }
   }
 
+  // Unified timeline — composes ONLY recorded, timestamped events. Reuses the already-
+  // loaded sections (so per-source permission/error state is inherited, not recomputed)
+  // plus the record's own events, plus one result-sheet event read. Every item is real;
+  // nothing is invented from a state, no actor/timestamp is inferred, no updatedAt is used.
+  private async loadTimeline(
+    rec: any,
+    sections: {
+      slides: Section<SlidesSection>;
+      ai: Section<AIEvidence>;
+      bethesda: Section<BethesdaEvidence>;
+      correlation: Section<CorrelationSection>;
+      attachments: Section<AttachmentsSection>;
+    },
+    perms: EffectivePermissions,
+  ): Promise<Section<TimelineSection>> {
+    const events: TimelineEvent[] = [];
+    const unavailable: string[] = [];
+    const recordPath = `/records/${rec.id}`;
+
+    // Record: creation + status transitions (RecordStatusEvent, actor recorded).
+    if (rec.createdAt) {
+      events.push({ id: `record-created-${rec.id}`, type: 'record', timestamp: iso(rec.createdAt)!, actor: null, source: 'Record', description: 'Case created', ownerPath: recordPath });
+    }
+    for (const h of Array.isArray(rec.statusHistory) ? rec.statusHistory : []) {
+      if (!h.createdAt) continue;
+      events.push({
+        id: `status-${h.id}`, type: 'status', timestamp: iso(h.createdAt)!,
+        actor: userName(h.user), source: 'Record status',
+        description: `Status set to ${h.status}${h.notes ? ` — ${h.notes}` : ''}`, ownerPath: recordPath,
+      });
+    }
+
+    // Result-sheet events (authorization / amendment) — real event model, actor recorded.
+    if (perms.viewResultSheet) {
+      try {
+        const rse = await this.resultSheets.eventsByRecord(rec.id);
+        for (const e of rse) {
+          if (!e.createdAt) continue;
+          events.push({ id: `rse-${e.id}`, type: 'resultsheet', timestamp: iso(e.createdAt)!, actor: userName(e.user), source: 'Result sheet', description: RSE_TEXT[e.type] ?? String(e.type), ownerPath: recordPath });
+        }
+      } catch {
+        unavailable.push('Result sheet');
+      }
+    } else {
+      unavailable.push('Result sheet');
+    }
+
+    // AI screening timestamps (from the loaded section).
+    pushFromSection(sections.ai, 'AI screening', unavailable, (d) => {
+      const out: TimelineEvent[] = [];
+      if (d.processedAt) out.push({ id: `ai-processed-${d.id}`, type: 'ai', timestamp: d.processedAt, actor: null, source: 'AI screening', description: 'AI screening completed', ownerPath: null });
+      if (d.reviewedAt) out.push({ id: `ai-reviewed-${d.id}`, type: 'ai', timestamp: d.reviewedAt, actor: d.reviewerName, source: 'AI screening', description: 'AI screening reviewed', ownerPath: null });
+      return out;
+    }, events);
+
+    // Bethesda report timestamp.
+    pushFromSection(sections.bethesda, 'Bethesda', unavailable, (d) => (
+      d.reportedAt ? [{ id: `beth-${d.id}`, type: 'bethesda', timestamp: d.reportedAt, actor: d.reporterName, source: 'Bethesda', description: 'Bethesda result reported', ownerPath: null }] : []
+    ), events);
+
+    // Digital-slide uploads (uploader not name-resolvable on the model → actor null).
+    pushFromSection(sections.slides, 'Digital slides', unavailable, (d) => (
+      d.items.filter((s) => s.uploadedAt).map((s) => ({ id: `slide-${s.id}`, type: 'slide', timestamp: s.uploadedAt!, actor: null, source: 'Digital slide', description: 'Digital slide uploaded', ownerPath: s.viewerPath }))
+    ), events);
+
+    // Attachment uploads (no uploader recorded → actor null).
+    pushFromSection(sections.attachments, 'Attachments', unavailable, (d) => (
+      d.items.filter((a) => a.uploadedAt).map((a) => ({ id: `att-${a.id}`, type: 'attachment', timestamp: a.uploadedAt!, actor: null, source: 'Attachment', description: `Attachment uploaded${a.filename ? `: ${a.filename}` : ''}`, ownerPath: recordPath }))
+    ), events);
+
+    // Correlation created / reviewed.
+    pushFromSection(sections.correlation, 'Correlation', unavailable, (d) => {
+      const out: TimelineEvent[] = [];
+      for (const c of d.items) {
+        if (c.createdAt) out.push({ id: `corr-created-${c.id}`, type: 'correlation', timestamp: c.createdAt, actor: c.createdByName, source: 'Correlation', description: 'Correlation created', ownerPath: c.ownerPath });
+        if (c.reviewedAt) out.push({ id: `corr-reviewed-${c.id}`, type: 'correlation', timestamp: c.reviewedAt, actor: c.reviewerName, source: 'Correlation', description: 'Correlation reviewed', ownerPath: c.ownerPath });
+      }
+      return out;
+    }, events);
+
+    events.sort(timelineSort);
+    return { status: events.length ? 'ready' : 'empty', data: { count: events.length, items: events, unavailable } };
+  }
+
   // Prior-aware review — composes two owner sources (records + correlation) keyed by
   // patientId, excluding the anchor record. Each source resolves independently: if one
   // fails, its `sources` flag is marked 'error' while the other's entries survive. Nothing
@@ -625,6 +739,7 @@ function buildPermissions(user: AuthUser): EffectivePermissions {
     viewBethesda: has('resultentry:view'),
     viewCorrelation: has('record:view'),
     viewPriors: has('resultentry:view'),
+    viewResultSheet: has('resultsheet:view'),
     editResultSheet: has('resultentry:change'),
     authorize: has('resultsheet:authorize'),
     amend: has('resultentry:change') && has('resultsheet:authorize'),
@@ -632,6 +747,50 @@ function buildPermissions(user: AuthUser): EffectivePermissions {
 }
 
 const iso = (d: Date | string | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
+
+const userName = (u: { firstName?: string | null; lastName?: string | null } | null | undefined): string | null =>
+  u ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || null : null;
+
+// Factual labels for recorded result-sheet events — no interpretation.
+const RSE_TEXT: Record<string, string> = {
+  Authorized: 'Result sheet authorized',
+  Deauthorized: 'Result sheet deauthorized',
+  Reauthorized: 'Result sheet re-authorized',
+  AiDrafted: 'AI draft created',
+  AiAccepted: 'AI draft accepted',
+};
+
+// Only used to break EXACT timestamp ties — never to reorder events chronologically.
+const SOURCE_PRIORITY: Record<string, number> = {
+  record: 0, status: 1, slide: 2, attachment: 3, ai: 4, bethesda: 5, resultsheet: 6, correlation: 7,
+};
+
+// Chronological: timestamp ascending, then source priority for exact ties, then stable id.
+function timelineSort(a: TimelineEvent, b: TimelineEvent): number {
+  const ta = new Date(a.timestamp).getTime();
+  const tb = new Date(b.timestamp).getTime();
+  if (ta !== tb) return ta - tb;
+  const pa = SOURCE_PRIORITY[a.type] ?? 99;
+  const pb = SOURCE_PRIORITY[b.type] ?? 99;
+  if (pa !== pb) return pa - pb;
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+
+// Pull timeline events from an already-loaded section, inheriting its status: ready →
+// include mapped events; forbidden/error → mark the source unavailable; empty → nothing.
+function pushFromSection<T>(
+  section: Section<T>,
+  label: string,
+  unavailable: string[],
+  map: (data: T) => TimelineEvent[],
+  out: TimelineEvent[],
+): void {
+  if (section.status === 'ready' && section.data) {
+    out.push(...map(section.data));
+  } else if (section.status === 'forbidden' || section.status === 'error') {
+    unavailable.push(label);
+  }
+}
 
 function pickCase(rec: any): CaseIdentity {
   return {

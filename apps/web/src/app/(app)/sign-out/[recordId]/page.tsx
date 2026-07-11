@@ -25,6 +25,7 @@ import type {
   NonGynHistory,
   PriorEntry,
   SectionStatus,
+  TimelineEvent,
   SignOutCaseAggregate,
   SlideMeta,
   Therapy,
@@ -36,7 +37,6 @@ const val = (s: string | null | undefined): string => (s && s.trim() ? s : NR);
 
 const DEFERRED_REGIONS: { key: string; title: string; responsibility: string }[] = [
   { key: 'report', title: 'Result sheet & report', responsibility: 'The result sheet and report, edited in the existing editor.' },
-  { key: 'timeline', title: 'Case timeline', responsibility: 'A unified timeline assembled from recorded events.' },
 ];
 
 const PERMISSION_LABELS: { key: keyof EffectivePermissions; label: string }[] = [
@@ -236,6 +236,9 @@ export default function SignOutWorkspacePage() {
             loading={isLoading}
             onOpenRecord={() => router.push(`/records/${recordId}`)}
           />
+
+          {/* Unified timeline — recorded events only, chronological, source-labelled. */}
+          <TimelinePanel section={data?.timeline} loading={isLoading} onOpen={(path) => router.push(path)} />
 
           {/* Deferred regions — truthful, distinct from loading and empty data */}
           {DEFERRED_REGIONS.map((r) => (
@@ -743,6 +746,67 @@ function AttachmentRow({ a }: { a: AttachmentMeta }) {
         <div className="text-meta text-text-tertiary">{meta}</div>
       </div>
     </div>
+  );
+}
+
+const fmtDateTime = (iso: string): string => {
+  const d = new Date(iso);
+  return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+};
+
+// Unified timeline — recorded events only, in the server's chronological order (never
+// reordered here). Each row shows its source and a factual description; a missing actor
+// is stated honestly. No summaries, milestones, or reconstructed narrative.
+function TimelinePanel({
+  section,
+  loading,
+  onOpen,
+}: {
+  section?: SignOutCaseAggregate['timeline'];
+  loading: boolean;
+  onOpen: (ownerPath: string) => void;
+}) {
+  const status = section?.status;
+  const data = status === 'ready' ? section?.data : null;
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-3 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">Case timeline</h2>
+        {status === 'ready' && <Badge tone="neutral" size="xs">{data?.count} event{data?.count === 1 ? '' : 's'}</Badge>}
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-48" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-6" title="No access" description="You do not have permission to view this timeline." />
+      ) : status === 'error' ? (
+        <EmptyState bare className="px-0 py-6" title="Unavailable" description="The timeline could not be loaded." />
+      ) : status === 'empty' || !data?.items.length ? (
+        <EmptyState bare className="px-0 py-6" title="No recorded events" description="No timestamped events are recorded for this case." />
+      ) : (
+        <div>
+          {data.unavailable.length > 0 && (
+            <p className="mb-2 text-meta text-text-tertiary">Some sources unavailable: {data.unavailable.join(', ')}.</p>
+          )}
+          <ol className="space-y-2">
+            {data.items.map((e) => <TimelineRow key={e.id} e={e} onOpen={e.ownerPath ? () => onOpen(e.ownerPath!) : undefined} />)}
+          </ol>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function TimelineRow({ e, onOpen }: { e: TimelineEvent; onOpen?: () => void }) {
+  return (
+    <li className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-lightgray px-3 py-2">
+      <div className="min-w-0">
+        <div className="text-sm font-semibold text-text">{e.description}</div>
+        <div className="mt-0.5 text-meta text-text-tertiary">
+          {fmtDateTime(e.timestamp)} · {e.source} · {e.actor ?? 'Actor not recorded'}
+        </div>
+      </div>
+      {onOpen && <Button variant="secondary" size="sm" onClick={onOpen}>Open</Button>}
+    </li>
   );
 }
 
