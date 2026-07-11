@@ -15,6 +15,9 @@ import { useAuth } from '@/lib/auth';
 import { deriveAge } from '@/lib/age';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
 import type {
+  AIEvidence,
+  BethesdaEvidence,
+  CorrelationEvidence,
   EffectivePermissions,
   GynHistory,
   NonGynHistory,
@@ -29,7 +32,6 @@ const fmtDate = (iso: string | null | undefined): string => (iso ? new Date(iso)
 const val = (s: string | null | undefined): string => (s && s.trim() ? s : NR);
 
 const DEFERRED_REGIONS: { key: string; title: string; responsibility: string }[] = [
-  { key: 'evidence', title: 'AI findings, Bethesda & correlation', responsibility: 'Real AI findings and regions, Bethesda, and correlation.' },
   { key: 'priors', title: 'Prior cases & reports', responsibility: 'Prior cases and prior reports for this patient.' },
   { key: 'attachments', title: 'Attachments', responsibility: 'Supporting documents for this case.' },
   { key: 'report', title: 'Result sheet & report', responsibility: 'The result sheet and report, edited in the existing editor.' },
@@ -41,6 +43,7 @@ const PERMISSION_LABELS: { key: keyof EffectivePermissions; label: string }[] = 
   { key: 'viewSlide', label: 'View slides' },
   { key: 'viewAI', label: 'View AI' },
   { key: 'viewBethesda', label: 'View Bethesda' },
+  { key: 'viewCorrelation', label: 'View correlation' },
   { key: 'viewPriors', label: 'View priors' },
   { key: 'viewAttachments', label: 'View attachments' },
   { key: 'editResultSheet', label: 'Edit result sheet' },
@@ -209,6 +212,13 @@ export default function SignOutWorkspacePage() {
               The viewer owns image delivery; this only lists and links. */}
           <SlidesPanel section={data?.slides} loading={isLoading} onOpen={(path) => router.push(path)} />
 
+          {/* Diagnostic evidence already recorded for this case. Read-only projections of
+              the AI-screening, Bethesda, and correlation owners. Evidence leads; recorded
+              model confidence is shown only as secondary context. */}
+          <AIEvidencePanel section={data?.ai} loading={isLoading} />
+          <BethesdaEvidencePanel section={data?.bethesda} loading={isLoading} />
+          <CorrelationEvidencePanel section={data?.correlation} loading={isLoading} onOpen={(path) => router.push(path)} />
+
           {/* Deferred regions — truthful, distinct from loading and empty data */}
           {DEFERRED_REGIONS.map((r) => (
             <Card key={r.key} radius="md" elevation="soft" border="hairline" padding="lg">
@@ -319,6 +329,251 @@ function SlideRow({ slide, onOpen }: { slide: SlideMeta; onOpen: () => void }) {
         <div className="text-meta text-text-tertiary">{[uploaded, size].filter(Boolean).join(' · ')}</div>
       </div>
       <Button variant="secondary" size="sm" onClick={onOpen}>Open in viewer</Button>
+    </div>
+  );
+}
+
+// Shared shell for the diagnostic-evidence panels: one status contract, one set of
+// truthful non-ready states. `emptyDescription` names what "empty" means for the owner.
+function EvidenceCard({
+  title,
+  badge,
+  status,
+  loading,
+  emptyTitle,
+  emptyDescription,
+  children,
+}: {
+  title: string;
+  badge?: React.ReactNode;
+  status?: SectionStatus;
+  loading: boolean;
+  emptyTitle: string;
+  emptyDescription: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-3 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">{title}</h2>
+        {status === 'ready' && badge}
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2">
+          <Skeleton shape="text" width="w-48" />
+          <Skeleton shape="text" width="w-40" />
+        </div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-6" title="No access" description="You do not have permission to view this evidence." />
+      ) : status === 'error' ? (
+        <EmptyState bare className="px-0 py-6" title="Unavailable" description="This evidence could not be loaded." />
+      ) : status === 'empty' ? (
+        <EmptyState bare className="px-0 py-6" title={emptyTitle} description={emptyDescription} />
+      ) : (
+        children
+      )}
+    </Card>
+  );
+}
+
+const aiStatusTone = (s: string): 'success' | 'danger' | 'neutral' =>
+  s === 'Completed' ? 'success' : s === 'Failed' ? 'danger' : 'neutral';
+
+// AI screening — evidence first (primary finding, then recorded regions), with recorded
+// model confidence and the recorded review outcome shown only as secondary context.
+// Nothing here is a diagnosis, a recommendation, or a quantification claim.
+function AIEvidencePanel({ section, loading }: { section?: SignOutCaseAggregate['ai']; loading: boolean }) {
+  const d = section?.status === 'ready' ? section.data : null;
+  return (
+    <EvidenceCard
+      title="AI screening"
+      status={section?.status}
+      loading={loading}
+      emptyTitle="No AI screening"
+      emptyDescription="No AI screening result has been recorded for this case."
+      badge={d ? <Badge tone={aiStatusTone(d.status)} size="xs">{d.status}</Badge> : null}
+    >
+      {d && (
+        <div className="space-y-4">
+          <div>
+            <SubHeading>Primary finding</SubHeading>
+            <p className="text-sm text-text">{val(d.primaryFinding)}</p>
+          </div>
+          <div>
+            <SubHeading>Flagged regions{d.regions.length ? ` (${d.regions.length})` : ''}</SubHeading>
+            {d.regions.length ? (
+              <ul className="space-y-1.5">
+                {d.regions.map((r, i) => (
+                  <li key={i} className="flex flex-wrap items-baseline justify-between gap-2 rounded-lg border border-lightgray px-3 py-2">
+                    <span className="text-sm text-text">
+                      <span className="font-semibold">{val(r.region)}</span>
+                      {r.finding ? <span className="text-text-secondary"> — {r.finding}</span> : null}
+                    </span>
+                    {r.confidence != null && (
+                      <span className="text-meta text-text-tertiary">confidence {Math.round(r.confidence)}%</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-text-tertiary">{d.flaggedAreas > 0 ? `${d.flaggedAreas} flagged` : 'None recorded'}</p>
+            )}
+          </div>
+          {(d.confidence != null || d.confidenceLevel) && (
+            <p className="text-meta text-text-tertiary">
+              Recorded model confidence:{' '}
+              {d.confidence != null ? `${Math.round(d.confidence)}%` : '—'}
+              {d.confidenceLevel ? ` (${d.confidenceLevel})` : ''}
+            </p>
+          )}
+          <div>
+            <SubHeading>Pathologist review</SubHeading>
+            {d.reviewedAt ? (
+              <p className="text-sm text-text">
+                {d.agreedWithAI == null ? 'Reviewed' : d.agreedWithAI ? 'Agreed with AI' : 'Disagreed with AI'}
+                {d.reviewerName ? ` · ${d.reviewerName}` : ''} · {fmtDate(d.reviewedAt)}
+                {d.pathologistNote ? <span className="mt-1 block text-text-secondary">{d.pathologistNote}</span> : null}
+              </p>
+            ) : (
+              <p className="text-sm text-text-tertiary">Not yet reviewed</p>
+            )}
+          </div>
+          {d.processedAt && <p className="text-meta text-text-tertiary">Screened {fmtDate(d.processedAt)}</p>}
+        </div>
+      )}
+    </EvidenceCard>
+  );
+}
+
+// Bethesda — the owner's recorded TBS classification, stored narrative, and reporter.
+// shortCode is the owner's deterministic mapping of stored fields, never inferred here.
+function BethesdaEvidencePanel({ section, loading }: { section?: SignOutCaseAggregate['bethesda']; loading: boolean }) {
+  const d = section?.status === 'ready' ? section.data : null;
+  const interpretation = d ? bethesdaInterpretation(d) : [];
+  return (
+    <EvidenceCard
+      title="Bethesda classification"
+      status={section?.status}
+      loading={loading}
+      emptyTitle="No Bethesda result"
+      emptyDescription="No Bethesda classification has been recorded for this case."
+      badge={d?.shortCode ? <Badge tone="neutral" size="xs">{d.shortCode}</Badge> : null}
+    >
+      {d && (
+        <div className="space-y-4">
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-3">
+            <Field label="Specimen adequacy" value={val(d.specimenAdequacy)} />
+            {d.unsatisfactoryReason ? <Field label="Adequacy reason" value={d.unsatisfactoryReason} /> : null}
+            {d.generalCategory ? <Field label="General category" value={d.generalCategory} /> : null}
+            {d.hpvResult ? <Field label="HPV" value={d.hpvGenotype ? `${d.hpvResult} (${d.hpvGenotype})` : d.hpvResult} /> : null}
+          </dl>
+          {interpretation.length > 0 && (
+            <div>
+              <SubHeading>Interpretation / result</SubHeading>
+              <ul className="list-disc space-y-1 pl-5 text-sm text-text">
+                {interpretation.map((t, i) => <li key={i}>{t}</li>)}
+              </ul>
+            </div>
+          )}
+          {(d.organisms.length > 0 || d.otherNonNeoplastic.length > 0) && (
+            <div>
+              <SubHeading>Additional findings</SubHeading>
+              <p className="text-sm text-text">{[...d.organisms, ...d.otherNonNeoplastic].join(', ')}</p>
+            </div>
+          )}
+          {d.recommendation && (
+            <div>
+              <SubHeading>Recommendation</SubHeading>
+              <p className="text-sm text-text">{d.recommendation}{d.recommendationNotes ? ` — ${d.recommendationNotes}` : ''}</p>
+            </div>
+          )}
+          {d.narrative && (
+            <div>
+              <SubHeading>Recorded narrative</SubHeading>
+              <p className="whitespace-pre-wrap text-sm text-text-secondary">{d.narrative}</p>
+            </div>
+          )}
+          <p className="text-meta text-text-tertiary">
+            {d.reporterName ? `Reported by ${d.reporterName}` : 'Reporter not recorded'}
+            {d.reportedAt ? ` · ${fmtDate(d.reportedAt)}` : ''}
+          </p>
+        </div>
+      )}
+    </EvidenceCard>
+  );
+}
+
+function bethesdaInterpretation(d: BethesdaEvidence): string[] {
+  const out: string[] = [];
+  if (d.squamousCategory) out.push(d.ascSubtype ? `${d.squamousCategory} (${d.ascSubtype})` : d.squamousCategory);
+  if (d.glandularCategory) out.push(d.glandularSubtype ? `${d.glandularCategory} — ${d.glandularSubtype}` : d.glandularCategory);
+  if (d.otherMalignancy) out.push(d.otherMalignancy);
+  return out;
+}
+
+const correlationTone = (r: string | null): 'success' | 'danger' | 'neutral' =>
+  r === 'Concordant' ? 'success' : r === 'MajorDiscordant' ? 'danger' : 'neutral';
+const correlationLabel = (r: string | null): string =>
+  r === 'MinorDiscordant' ? 'Minor discordant' : r === 'MajorDiscordant' ? 'Major discordant' : r || 'Unresolved';
+
+// Cytology–histology correlation — stored relationship only. Discordance is displayed
+// solely when the stored correlationResult carries it; nothing is inferred, and no
+// quality alert is manufactured here. Opens the existing correlation surface per case.
+function CorrelationEvidencePanel({
+  section,
+  loading,
+  onOpen,
+}: {
+  section?: SignOutCaseAggregate['correlation'];
+  loading: boolean;
+  onOpen: (ownerPath: string) => void;
+}) {
+  const data = section?.status === 'ready' ? section.data : null;
+  return (
+    <EvidenceCard
+      title="Cytology–histology correlation"
+      status={section?.status}
+      loading={loading}
+      emptyTitle="No correlation"
+      emptyDescription="No cytology–histology correlation has been recorded for this case."
+      badge={data ? <Badge tone="neutral" size="xs">{data.count} case{data.count === 1 ? '' : 's'}</Badge> : null}
+    >
+      {data && (
+        <div className="space-y-2">
+          {data.items.map((c) => <CorrelationRow key={c.id} c={c} onOpen={() => onOpen(c.ownerPath)} />)}
+        </div>
+      )}
+    </EvidenceCard>
+  );
+}
+
+function CorrelationRow({ c, onOpen }: { c: CorrelationEvidence; onOpen: () => void }) {
+  return (
+    <div className="rounded-lg border border-lightgray px-3 py-2.5">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Badge tone={correlationTone(c.correlationResult)} size="xs">{correlationLabel(c.correlationResult)}</Badge>
+          {c.reviewRequired && !c.reviewedAt && <Badge tone="danger" size="xs">Review required</Badge>}
+        </div>
+        <Button variant="secondary" size="sm" onClick={onOpen}>Open correlation</Button>
+      </div>
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-2">
+        <Field label="Cytology" value={val(c.cytologyDiagnosis)} sub={c.cytologyDate ? fmtDate(c.cytologyDate) : undefined} />
+        <Field
+          label={`Histology${c.histologySource && c.histologySource !== 'Internal' ? ` (${c.histologySource})` : ''}`}
+          value={val(c.histologyDiagnosis)}
+          sub={c.histologyDate ? fmtDate(c.histologyDate) : undefined}
+        />
+      </dl>
+      {c.discordanceReason && (
+        <p className="mt-2 text-sm text-text-secondary"><span className="font-semibold text-text">Discordance:</span> {c.discordanceReason}</p>
+      )}
+      {c.reviewedAt && (
+        <p className="mt-1.5 text-meta text-text-tertiary">
+          Reviewed {c.reviewerName ? `by ${c.reviewerName} ` : ''}· {fmtDate(c.reviewedAt)}
+          {c.reviewNotes ? ` — ${c.reviewNotes}` : ''}
+        </p>
+      )}
     </div>
   );
 }

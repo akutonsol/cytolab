@@ -7,5 +7,6 @@ import { CorrelationService } from './correlation.service';
   imports: [PrismaModule],
   controllers: [CorrelationController],
   providers: [CorrelationService],
+  exports: [CorrelationService],
 })
 export class CorrelationModule {}

@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { RecordsService } from '../records/records.service';
 import { WsiService } from '../wsi/wsi.service';
+import { AIScreeningService } from '../ai-screening/ai-screening.service';
+import { BethesdaService } from '../bethesda/bethesda.service';
+import { CorrelationService } from '../correlation/correlation.service';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 
 // ── Sign-Out aggregate (orchestration only) ──────────────────────────────────
@@ -106,6 +109,83 @@ export interface SlidesSection {
   items: SlideMeta[];
 }
 
+// ── AI screening evidence (read-only projection of the owner's recorded result) ──
+// Every field is a stored value from AIScreeningResult. `regions` mirrors the recorded
+// findings JSON — it is recorded evidence, NOT a quantification. `confidence` is the
+// model's recorded confidence, NOT a diagnosis. `agreedWithAI` is a recorded review
+// outcome, NOT proof that interpretation preceded the AI (no temporal claim).
+export interface AIRegion {
+  region: string | null;
+  finding: string | null;
+  confidence: number | null;
+}
+export interface AIEvidence {
+  id: string;
+  status: string;
+  primaryFinding: string | null;
+  regions: AIRegion[];
+  flaggedAreas: number;
+  confidence: number | null;
+  confidenceLevel: string | null;
+  agreedWithAI: boolean | null;
+  pathologistNote: string | null;
+  reviewerName: string | null;
+  processedAt: string | null;
+  reviewedAt: string | null;
+  createdAt: string | null;
+}
+
+// ── Bethesda evidence (read-only projection of the owner's recorded result) ──
+// shortCode is the owner's deterministic mapping of the stored classification, not an
+// inference from free text. Narrative is the owner's stored generatedNarrative.
+export interface BethesdaEvidence {
+  id: string;
+  specimenAdequacy: string;
+  unsatisfactoryReason: string | null;
+  generalCategory: string | null;
+  squamousCategory: string | null;
+  ascSubtype: string | null;
+  glandularCategory: string | null;
+  glandularSubtype: string | null;
+  otherMalignancy: string | null;
+  organisms: string[];
+  otherNonNeoplastic: string[];
+  hpvResult: string | null;
+  hpvGenotype: string | null;
+  recommendation: string | null;
+  recommendationNotes: string | null;
+  narrative: string | null;
+  shortCode: string | null;
+  reporterName: string | null;
+  reportedAt: string | null;
+}
+
+// ── Cytology–histology correlation evidence (read-only projection) ──
+// correlationResult (incl. discordance) is shown ONLY as stored; discordance is never
+// inferred here. ownerPath opens the existing correlation surface for this case.
+export interface CorrelationEvidence {
+  id: string;
+  cytologyDiagnosis: string;
+  histologyDiagnosis: string | null;
+  histologySource: string;
+  externalLabName: string | null;
+  correlationResult: string | null;
+  discordanceReason: string | null;
+  reviewRequired: boolean;
+  reviewedAt: string | null;
+  reviewNotes: string | null;
+  reviewerName: string | null;
+  createdByName: string | null;
+  cytologyDate: string | null;
+  histologyDate: string | null;
+  createdAt: string | null;
+  ownerPath: string;
+}
+export interface CorrelationSection {
+  count: number;
+  items: CorrelationEvidence[];
+}
+
 export interface EffectivePermissions {
   viewCase: boolean;
   viewSlide: boolean;
@@ -113,6 +193,7 @@ export interface EffectivePermissions {
   viewAttachments: boolean;
   viewAudit: boolean;
   viewBethesda: boolean;
+  viewCorrelation: boolean;
   viewPriors: boolean;
   editResultSheet: boolean;
   authorize: boolean;
@@ -127,10 +208,10 @@ export interface SignOutCaseAggregate {
   clinicalContext: Section<ClinicalContext>;
   permissions: Section<EffectivePermissions>;
   slides: Section<SlidesSection>;
+  ai: Section<AIEvidence>;
+  bethesda: Section<BethesdaEvidence>;
+  correlation: Section<CorrelationSection>;
   // Deferred until later checkpoints. The contract is stable now.
-  ai: Section<null>;
-  bethesda: Section<null>;
-  correlation: Section<null>;
   priors: Section<null>;
   attachments: Section<null>;
   resultSheets: Section<null>;
@@ -144,6 +225,9 @@ export class SignoutService {
   constructor(
     private readonly records: RecordsService,
     private readonly wsi: WsiService,
+    private readonly ai: AIScreeningService,
+    private readonly bethesda: BethesdaService,
+    private readonly correlation: CorrelationService,
   ) {}
 
   async caseAggregate(recordId: string, user: AuthUser): Promise<SignOutCaseAggregate> {
@@ -158,7 +242,15 @@ export class SignoutService {
     // failure marks only this section, never the case context. Metadata only — the
     // viewer owns image delivery. Access is covered by record:view (the endpoint gate),
     // so `forbidden` cannot occur here in practice; the guard is kept for the contract.
-    const slides = await this.loadSlides(recordId, perms.viewSlide);
+    // Each diagnostic-evidence section resolves independently from its own owner
+    // service; one failing (or being empty/forbidden) never affects the others or the
+    // case context (partial-failure tolerance). Run them together — they are unrelated.
+    const [slides, ai, bethesda, correlation] = await Promise.all([
+      this.loadSlides(recordId, perms.viewSlide),
+      this.loadAI(recordId, perms.viewAI),
+      this.loadBethesda(recordId, perms.viewBethesda),
+      this.loadCorrelation(recordId, perms.viewCorrelation),
+    ]);
 
     let caseSec: Section<CaseIdentity>;
     let patientSec: Section<PatientSummary>;
@@ -192,9 +284,9 @@ export class SignoutService {
       clinicalContext: clinicalSec,
       permissions,
       slides,
-      ai: deferred(),
-      bethesda: deferred(),
-      correlation: deferred(),
+      ai,
+      bethesda,
+      correlation,
       priors: deferred(),
       attachments: deferred(),
       resultSheets: deferred(),
@@ -223,6 +315,111 @@ export class SignoutService {
       return { status: 'error', data: null, reason: 'Slide metadata failed to load' };
     }
   }
+
+  // Composes the AI-screening owner's per-record read. Projects only recorded fields;
+  // no interpretation, no recommendation, no quantification claim.
+  private async loadAI(recordId: string, viewAI: boolean): Promise<Section<AIEvidence>> {
+    if (!viewAI) return { status: 'forbidden', data: null };
+    try {
+      const r: any = await this.ai.getByRecord(recordId);
+      if (!r) return { status: 'empty', data: null };
+      const regions: AIRegion[] = Array.isArray(r.findings)
+        ? r.findings.map((f: any) => ({
+            region: f?.region ?? null,
+            finding: f?.finding ?? null,
+            confidence: typeof f?.confidence === 'number' ? f.confidence : null,
+          }))
+        : [];
+      return {
+        status: 'ready',
+        data: {
+          id: r.id,
+          status: r.status,
+          primaryFinding: r.primaryFinding ?? null,
+          regions,
+          flaggedAreas: r.flaggedAreas ?? 0,
+          confidence: r.confidence ?? null,
+          confidenceLevel: r.confidenceLevel ?? null,
+          agreedWithAI: r.agreedWithAI ?? null,
+          pathologistNote: r.pathologistNote ?? null,
+          reviewerName: r.reviewerName ?? null,
+          processedAt: iso(r.processedAt),
+          reviewedAt: iso(r.reviewedAt),
+          createdAt: iso(r.createdAt),
+        },
+      };
+    } catch {
+      return { status: 'error', data: null, reason: 'AI screening failed to load' };
+    }
+  }
+
+  // Composes the Bethesda owner's per-record read. Projects only recorded classification
+  // and the owner's stored narrative/shortCode; nothing is inferred from free text.
+  private async loadBethesda(recordId: string, viewBethesda: boolean): Promise<Section<BethesdaEvidence>> {
+    if (!viewBethesda) return { status: 'forbidden', data: null };
+    try {
+      const r: any = await this.bethesda.getByRecord(recordId);
+      if (!r) return { status: 'empty', data: null };
+      const reporter = r.reportedBy ? `${r.reportedBy.firstName ?? ''} ${r.reportedBy.lastName ?? ''}`.trim() : null;
+      return {
+        status: 'ready',
+        data: {
+          id: r.id,
+          specimenAdequacy: r.specimenAdequacy,
+          unsatisfactoryReason: r.unsatisfactoryReason ?? null,
+          generalCategory: r.generalCategory ?? null,
+          squamousCategory: r.squamousCategory ?? null,
+          ascSubtype: r.ascSubtype ?? null,
+          glandularCategory: r.glandularCategory ?? null,
+          glandularSubtype: r.glandularSubtype ?? null,
+          otherMalignancy: r.otherMalignancy ?? null,
+          organisms: Array.isArray(r.organisms) ? r.organisms : [],
+          otherNonNeoplastic: Array.isArray(r.otherNonNeoplastic) ? r.otherNonNeoplastic : [],
+          hpvResult: r.hpvResult ?? null,
+          hpvGenotype: r.hpvGenotype ?? null,
+          recommendation: r.recommendation ?? null,
+          recommendationNotes: r.recommendationNotes ?? null,
+          narrative: r.generatedNarrative ?? null,
+          shortCode: r.shortCode ?? null,
+          reporterName: reporter || null,
+          reportedAt: iso(r.reportedAt),
+        },
+      };
+    } catch {
+      return { status: 'error', data: null, reason: 'Bethesda result failed to load' };
+    }
+  }
+
+  // Composes the correlation owner's per-record read. Discordance is shown only as
+  // stored (never inferred). ownerPath opens the existing correlation surface.
+  private async loadCorrelation(recordId: string, viewCorrelation: boolean): Promise<Section<CorrelationSection>> {
+    if (!viewCorrelation) return { status: 'forbidden', data: null };
+    try {
+      const rows: any[] = await this.correlation.byCytologyRecord(recordId);
+      if (!rows.length) return { status: 'empty', data: null };
+      const items: CorrelationEvidence[] = rows.map((c) => ({
+        id: c.id,
+        cytologyDiagnosis: c.cytologyDiagnosis,
+        histologyDiagnosis: c.histologyDiagnosis ?? null,
+        histologySource: c.histologySource,
+        externalLabName: c.externalLabName ?? null,
+        correlationResult: c.correlationResult ?? null,
+        discordanceReason: c.discordanceReason ?? null,
+        reviewRequired: !!c.reviewRequired,
+        reviewedAt: iso(c.reviewedAt),
+        reviewNotes: c.reviewNotes ?? null,
+        reviewerName: c.reviewedBy ? `${c.reviewedBy.firstName ?? ''} ${c.reviewedBy.lastName ?? ''}`.trim() || null : null,
+        createdByName: c.createdBy ? `${c.createdBy.firstName ?? ''} ${c.createdBy.lastName ?? ''}`.trim() || null : null,
+        cytologyDate: iso(c.cytologyDate),
+        histologyDate: iso(c.histologyDate),
+        createdAt: iso(c.createdAt),
+        ownerPath: `/correlation/${c.id}`,
+      }));
+      return { status: 'ready', data: { count: items.length, items } };
+    } catch {
+      return { status: 'error', data: null, reason: 'Correlation failed to load' };
+    }
+  }
 }
 
 function buildPermissions(user: AuthUser): EffectivePermissions {
@@ -234,6 +431,7 @@ function buildPermissions(user: AuthUser): EffectivePermissions {
     viewAttachments: has('record:view'),
     viewAudit: has('record:view'),
     viewBethesda: has('resultentry:view'),
+    viewCorrelation: has('record:view'),
     viewPriors: has('resultentry:view'),
     editResultSheet: has('resultentry:change'),
     authorize: has('resultsheet:authorize'),

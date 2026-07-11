@@ -80,6 +80,12 @@ export class CorrelationService {
     return this.prisma.correlationCase.findMany({ where: { patientId }, select: caseSelect, orderBy: { cytologyDate: 'desc' } });
   }
 
+  /** Correlation cases whose cytology side is this record — for composition by the
+   *  Sign-Out aggregate. Owned here so correlation query logic is never duplicated. */
+  byCytologyRecord(recordId: string) {
+    return this.prisma.correlationCase.findMany({ where: { cytologyRecordId: recordId }, select: caseSelect, orderBy: { cytologyDate: 'desc' } });
+  }
+
   // ── Update (add histology / set result) ───────────────────────────────
   async update(id: string, dto: UpdateCorrelationDto) {
     const existing = await this.prisma.correlationCase.findFirst({ where: { id }, select: { id: true, reviewedAt: true } });

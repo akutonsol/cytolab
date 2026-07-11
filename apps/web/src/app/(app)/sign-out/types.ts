@@ -98,6 +98,75 @@ export interface SlidesSection {
   items: SlideMeta[];
 }
 
+// AI screening — read-only projection of recorded evidence. `regions` mirrors the stored
+// findings JSON (evidence, not quantification); `confidence` is recorded model confidence
+// (not a diagnosis); `agreedWithAI` is a recorded review outcome (not proof of sequence).
+export interface AIRegion {
+  region: string | null;
+  finding: string | null;
+  confidence: number | null;
+}
+export interface AIEvidence {
+  id: string;
+  status: string;
+  primaryFinding: string | null;
+  regions: AIRegion[];
+  flaggedAreas: number;
+  confidence: number | null;
+  confidenceLevel: string | null;
+  agreedWithAI: boolean | null;
+  pathologistNote: string | null;
+  reviewerName: string | null;
+  processedAt: string | null;
+  reviewedAt: string | null;
+  createdAt: string | null;
+}
+
+export interface BethesdaEvidence {
+  id: string;
+  specimenAdequacy: string;
+  unsatisfactoryReason: string | null;
+  generalCategory: string | null;
+  squamousCategory: string | null;
+  ascSubtype: string | null;
+  glandularCategory: string | null;
+  glandularSubtype: string | null;
+  otherMalignancy: string | null;
+  organisms: string[];
+  otherNonNeoplastic: string[];
+  hpvResult: string | null;
+  hpvGenotype: string | null;
+  recommendation: string | null;
+  recommendationNotes: string | null;
+  narrative: string | null;
+  shortCode: string | null;
+  reporterName: string | null;
+  reportedAt: string | null;
+}
+
+export interface CorrelationEvidence {
+  id: string;
+  cytologyDiagnosis: string;
+  histologyDiagnosis: string | null;
+  histologySource: string;
+  externalLabName: string | null;
+  correlationResult: string | null;
+  discordanceReason: string | null;
+  reviewRequired: boolean;
+  reviewedAt: string | null;
+  reviewNotes: string | null;
+  reviewerName: string | null;
+  createdByName: string | null;
+  cytologyDate: string | null;
+  histologyDate: string | null;
+  createdAt: string | null;
+  ownerPath: string;
+}
+export interface CorrelationSection {
+  count: number;
+  items: CorrelationEvidence[];
+}
+
 export interface EffectivePermissions {
   viewCase: boolean;
   viewSlide: boolean;
@@ -105,6 +174,7 @@ export interface EffectivePermissions {
   viewAttachments: boolean;
   viewAudit: boolean;
   viewBethesda: boolean;
+  viewCorrelation: boolean;
   viewPriors: boolean;
   editResultSheet: boolean;
   authorize: boolean;
@@ -119,9 +189,9 @@ export interface SignOutCaseAggregate {
   clinicalContext: Section<ClinicalContext>;
   permissions: Section<EffectivePermissions>;
   slides: Section<SlidesSection>;
-  ai: Section<null>;
-  bethesda: Section<null>;
-  correlation: Section<null>;
+  ai: Section<AIEvidence>;
+  bethesda: Section<BethesdaEvidence>;
+  correlation: Section<CorrelationSection>;
   priors: Section<null>;
   attachments: Section<null>;
   resultSheets: Section<null>;

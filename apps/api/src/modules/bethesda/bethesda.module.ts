@@ -10,5 +10,6 @@ import { BethesdaAnalyticsService } from './bethesda-analytics.service';
   imports: [PrismaModule, EscalationModule, RecallModule],
   controllers: [BethesdaController],
   providers: [BethesdaService, BethesdaAnalyticsService],
+  exports: [BethesdaService],
 })
 export class BethesdaModule {}
