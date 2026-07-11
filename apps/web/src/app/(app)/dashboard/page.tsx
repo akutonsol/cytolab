@@ -866,7 +866,7 @@ export default function DashboardPage() {
                 isPriority: true,
                 isPrimary: true,
                 foresight: foresights.flow,
-                spark: [3, 4, 4, 5, 4, 5, 6],
+                spark: null, // Active-specimens count is a snapshot; no matching daily series.
               },
               {
                 icon: <FlaskConical size={24} color="#4F46E5" />,
@@ -875,7 +875,7 @@ export default function DashboardPage() {
                 sub: 'received today',
                 subColor: '#475569',
                 foresight: foresights.cases,
-                spark: [5, 6, 4, 5, 3, 2, 0],
+                spark: (d.throughput?.series ?? []).map((x: any) => x.value ?? 0), // real daily intake
               },
               {
                 icon: <Clock size={24} color="#4F46E5" />,
@@ -884,7 +884,7 @@ export default function DashboardPage() {
                 sub: kpis?.avgTat <= 3 ? 'Within target' : 'Above target',
                 subColor: kpis?.avgTat <= 3 ? '#166534' : '#991B1B',
                 foresight: foresights.timeliness,
-                spark: [3.1, 2.9, 2.8, 2.7, 2.6, 2.5, 2.4],
+                spark: null, // Only current-vs-previous TAT exists; no daily series.
               },
               {
                 icon: <Activity size={24} color="#4F46E5" />,
@@ -894,7 +894,7 @@ export default function DashboardPage() {
                 subColor: '#475569',
                 isPriority: true,
                 foresight: foresights.pressure,
-                spark: [1, 2, 2, 1, 2, 3, 3],
+                spark: null, // No historical backlog series exists.
               },
               {
                 icon: <CheckCircle2 size={24} color="#4F46E5" />,
@@ -903,7 +903,7 @@ export default function DashboardPage() {
                 sub: eff?.authorization >= 80 ? 'On target' : 'Below target',
                 subColor: eff?.authorization >= 80 ? '#166534' : '#991B1B',
                 foresight: foresights.auth,
-                spark: [78, 80, 79, 82, 83, 83, 84],
+                spark: null, // Only current-vs-previous auth rate exists; no daily series.
               },
             ].map(({ icon, label, value, countTo, suffix, sub, subColor, isPriority, isPrimary, foresight, spark }: any, i) => (
               <div key={i} style={{
@@ -958,7 +958,7 @@ export default function DashboardPage() {
                       <span>{foresight.text}</span>
                     </div>
                   )}
-                  {Array.isArray(spark) && <Sparkline data={spark} />}
+                  <Sparkline data={Array.isArray(spark) ? spark : null} />
                 </div>
               </div>
             ))}
@@ -1183,7 +1183,19 @@ const confidenceLabel = (pct: number) =>
 
 // Tiny indigo sparkline (last-7-days trend) under a KPI value. The line draws in
 // once on mount via the `.sparkline-animate` clip-path keyframe (see globals.css).
-function Sparkline({ data }: { data: number[] }) {
+// A vital's trend line is drawn ONLY from a real historical series. With no valid
+// series we keep the card geometry identical and say so plainly — never a fabricated,
+// smoothed, or repeated-value line. `type="linear"` plots the real points straight,
+// so no interpolation can change the direction the foresight already stated.
+function Sparkline({ data }: { data: number[] | null }) {
+  const valid = Array.isArray(data) && data.length >= 3 && data.some((v) => v !== data[0]);
+  if (!valid) {
+    return (
+      <div className="mt-2 flex h-8 items-center" role="img" aria-label="Trend unavailable — no historical data for this metric">
+        <span className="text-[10px] font-medium italic text-slate-300">Trend unavailable</span>
+      </div>
+    );
+  }
   const rows = data.map((value, i) => ({ i, value }));
   return (
     <div className="mt-2 h-8">
@@ -1196,7 +1208,7 @@ function Sparkline({ data }: { data: number[] }) {
               <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <Area type="monotone" dataKey="value" stroke="#6366f1" strokeWidth={1.5} fill="url(#sparkGradient)" dot={false} isAnimationActive={false} />
+          <Area type="linear" dataKey="value" stroke="#6366f1" strokeWidth={1.5} fill="url(#sparkGradient)" dot={false} isAnimationActive={false} />
         </AreaChart>
       </ResponsiveContainer>
       </div>
