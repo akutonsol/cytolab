@@ -55,3 +55,35 @@ export const SEVERITY_DOMAIN: Record<Severity, string> = {
   high: 'priority-high',
   medium: 'priority-medium',
 };
+
+// ── C2 · SLA Risk detail ────────────────────────────────────────────────────
+export type RiskLevel = 'breached' | 'at-risk';
+
+export interface SlaRiskItem {
+  id: string;
+  caseRef: string;
+  stage: string;
+  urgent: boolean;
+  risk: RiskLevel;
+  ageHours: number;
+  /** Signed hours to breach; negative → already breached. */
+  remainingHours: number;
+  overHours: number;
+  budgetPct: number;
+  reason: string;
+  owner: string | null;
+  blocker: string | null;
+  action: { label: string; route: string };
+}
+
+export interface SlaRiskDetail {
+  asOf: string;
+  thresholdHours: number;
+  summary: { breached: number; atRisk: number; withinTarget: number; inFlight: number };
+  items: SlaRiskItem[];
+}
+
+/** "in 6h" before breach · "14h overdue" once past. */
+export function formatTimeToBreach(item: Pick<SlaRiskItem, 'remainingHours' | 'overHours'>): string {
+  return item.remainingHours > 0 ? `in ${formatAge(item.remainingHours)}` : `${formatAge(item.overHours)} overdue`;
+}

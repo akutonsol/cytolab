@@ -15,4 +15,11 @@ export class OperationsController {
   overview() {
     return this.operations.overview();
   }
+
+  /** C2 — SLA Risk detail: ranked breached + at-risk cases with owner, blocker, action. */
+  @Get('sla-risk')
+  @RequirePermissions('record:view')
+  slaRisk() {
+    return this.operations.slaRisk();
+  }
 }

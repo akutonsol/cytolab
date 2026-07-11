@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { ChevronRight, ShieldCheck } from 'lucide-react';
 import { Badge, Card, IconAction } from '@/components/ui';
 import { formatAge, SEVERITY_DOMAIN, type OperationsOverview } from './types';
@@ -22,11 +23,19 @@ export function AttentionRail({
     <Card radius="md" elevation="soft" border="hairline" padding="lg">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-base font-bold text-text">Needs attention</h2>
-        {!attention.allClear && (
-          <Badge domain="priority-high" size="sm">
-            {attention.totalAtRisk} case{attention.totalAtRisk === 1 ? '' : 's'}
-          </Badge>
-        )}
+        <div className="flex items-center gap-3">
+          {!attention.allClear && (
+            <Badge domain="priority-high" size="sm">
+              {attention.totalAtRisk} case{attention.totalAtRisk === 1 ? '' : 's'}
+            </Badge>
+          )}
+          <Link
+            href="/operations/sla-risk"
+            className="text-sm font-semibold text-primary hover:underline"
+          >
+            SLA risk detail →
+          </Link>
+        </div>
       </div>
 
       {attention.allClear ? (

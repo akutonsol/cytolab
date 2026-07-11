@@ -7,17 +7,18 @@ import { hoursElapsed, tatPriority, TAT_PRIORITY_RANK, type TatPriority } from '
 /**
  * Laboratory Operations Workspace (Phase 2A) — read-only aggregation.
  *
- * Backs B1 Pipeline Board and A1 Attention Rail (docs/PATHOS_OPERATIONS_WORKSPACE.md
- * §4). It recomposes the EXISTING record lifecycle — it invents no new status, stage,
+ * Backs B1 Pipeline Board + A1 Attention Rail (overview) and C2 SLA Risk detail.
+ * It recomposes the EXISTING record lifecycle — it invents no new status, stage,
  * or SLA field. The lifecycle grouping mirrors patients.service STAGE
  * (Intake → Processing → Review); the SLA/priority derivation reuses the shared
- * tatPriority() helper and the lab's targetTatDays budget, exactly as WorkloadService.
+ * tatPriority()/hoursElapsed() helpers and the lab's targetTatDays budget, exactly
+ * as WorkloadService. Every surface shares ONE enrichment pass (loadInFlight) so
+ * TAT/priority is computed in a single place and never duplicated.
  *
  * Note (traceability): the blueprint's finer sub-stages (Scan/QC/AI as distinct
- * queues) are NOT expressible from RecordStatus alone; that granularity needs
- * pre-analytic tracking the data model does not yet carry. This surface reports the
- * real six in-flight statuses truthfully rather than fabricating sub-queues — see
- * Roadmap/05_HELIX_v1_1.md candidacy in the pilot notes.
+ * queues) and an explicit per-case blocker/dependency are NOT expressible from the
+ * current data model. These surfaces report what is truly recorded and state
+ * "No blocking dependency recorded" rather than inferring.
  */
 
 /** Ordered in-flight pipeline: the six pre-Approved statuses, grouped by lifecycle. */
@@ -54,13 +55,26 @@ const STATUS_DOMAIN: Partial<Record<RecordStatus, string>> = {
 
 const MAX_ATTENTION = 8;
 
-/** Severity buckets map the TAT priority onto the client's badge tone. */
 type Severity = 'critical' | 'high' | 'medium';
 const SEVERITY: Record<Exclude<TatPriority, 'Routine'>, Severity> = {
   Stat: 'critical',
   Urgent: 'high',
   Priority: 'medium',
 };
+
+/** A record enriched once with its age, TAT priority, and remaining SLA budget. */
+interface EnrichedRecord {
+  id: string;
+  status: RecordStatus;
+  urgent: boolean;
+  labNumber: string | null;
+  identifier: string;
+  assignedTo: { firstName: string | null; lastName: string | null } | null;
+  ageHours: number;
+  priority: TatPriority;
+  /** thresholdHours − ageHours; negative once breached. */
+  remainingHours: number;
+}
 
 export interface PipelineStage {
   status: RecordStatus;
@@ -95,9 +109,36 @@ export interface OperationsOverview {
     totalAtRisk: number;
     urgentCount: number;
     inFlight: number;
-    /** True steady state — the rail shows a calm, real "all clear", never a false zero. */
     allClear: boolean;
   };
+}
+
+export type RiskLevel = 'breached' | 'at-risk';
+
+export interface SlaRiskItem {
+  id: string;
+  caseRef: string;
+  stage: string;
+  urgent: boolean;
+  risk: RiskLevel;
+  ageHours: number;
+  /** Signed: hours remaining before breach; negative → already breached. */
+  remainingHours: number;
+  overHours: number;
+  budgetPct: number;
+  reason: string;
+  /** Assignee display name, or null → the client shows "Unassigned". */
+  owner: string | null;
+  /** A recorded blocking dependency, or null → "No blocking dependency recorded". */
+  blocker: string | null;
+  action: { label: string; route: string };
+}
+
+export interface SlaRiskDetail {
+  asOf: string;
+  thresholdHours: number;
+  summary: { breached: number; atRisk: number; withinTarget: number; inFlight: number };
+  items: SlaRiskItem[];
 }
 
 @Injectable()
@@ -116,11 +157,15 @@ export class OperationsService {
     return (lab?.targetTatDays ?? 3) * 24;
   }
 
-  async overview(): Promise<OperationsOverview> {
+  /**
+   * The single enrichment pass shared by every operations surface. One tenant-scoped
+   * read of the in-flight records (labId auto-applied), with age, TAT priority, and
+   * remaining budget derived once via the shared helpers.
+   */
+  private async loadInFlight(): Promise<{ enriched: EnrichedRecord[]; thresholdHours: number; now: number }> {
     const now = Date.now();
     const thresholdHours = await this.thresholdHours();
 
-    // One tenant-scoped pass over the in-flight records (labId auto-applied).
     const records = await this.prisma.record.findMany({
       where: { status: { in: IN_FLIGHT } },
       select: {
@@ -135,17 +180,32 @@ export class OperationsService {
       },
     });
 
-    // Derive age + priority once per record (receipt time = specimenDate ?? createdAt).
-    const enriched = records.map((r) => {
+    const enriched: EnrichedRecord[] = records.map((r) => {
       const startedAt = r.specimenDate ?? r.createdAt;
       const ageHours = hoursElapsed(startedAt, now);
       const priority = tatPriority({ urgent: r.urgent, startedAt, thresholdHours, now });
-      return { ...r, ageHours, priority };
+      return {
+        id: r.id,
+        status: r.status,
+        urgent: r.urgent,
+        labNumber: r.labNumber,
+        identifier: r.identifier,
+        assignedTo: r.assignedTo,
+        ageHours,
+        priority,
+        remainingHours: thresholdHours - ageHours,
+      };
     });
+
+    return { enriched, thresholdHours, now };
+  }
+
+  async overview(): Promise<OperationsOverview> {
+    const { enriched, thresholdHours, now } = await this.loadInFlight();
 
     const stages: PipelineStage[] = PIPELINE.map(({ status, group }) => {
       const inStage = enriched.filter((r) => r.status === status);
-      const oldest = inStage.reduce<(typeof inStage)[number] | null>(
+      const oldest = inStage.reduce<EnrichedRecord | null>(
         (acc, r) => (!acc || r.ageHours > acc.ageHours ? r : acc),
         null,
       );
@@ -169,12 +229,8 @@ export class OperationsService {
       );
 
     const items: AttentionItem[] = atRisk.slice(0, MAX_ATTENTION).map((r) => {
-      const overHours = Math.max(0, r.ageHours - thresholdHours);
+      const overHours = Math.max(0, -r.remainingHours);
       const budgetPct = thresholdHours > 0 ? Math.round((r.ageHours / thresholdHours) * 100) : 0;
-      const assignee =
-        r.assignedTo && (r.assignedTo.firstName || r.assignedTo.lastName)
-          ? `${r.assignedTo.firstName ?? ''} ${r.assignedTo.lastName ?? ''}`.trim()
-          : null;
       return {
         id: r.id,
         caseRef: r.labNumber ?? r.identifier,
@@ -185,7 +241,7 @@ export class OperationsService {
         overHours,
         budgetPct,
         reason: reasonFor(r.priority, overHours, budgetPct),
-        assignee,
+        assignee: assigneeName(r.assignedTo),
       };
     });
 
@@ -200,6 +256,75 @@ export class OperationsService {
         inFlight: enriched.length,
         allClear: atRisk.length === 0,
       },
+    };
+  }
+
+  /**
+   * C2 — SLA Risk detail. The full ranked list of breached + approaching cases,
+   * each with why, how much time remains, who owns it, its blocker, and one real
+   * clearing action. Shares loadInFlight() with overview() — no duplicated math.
+   */
+  async slaRisk(): Promise<SlaRiskDetail> {
+    const { enriched, thresholdHours, now } = await this.loadInFlight();
+
+    const classify = (r: EnrichedRecord): RiskLevel | 'within-target' => {
+      if (r.remainingHours <= 0) return 'breached';
+      return r.priority !== 'Routine' ? 'at-risk' : 'within-target';
+    };
+
+    const classified = enriched.map((r) => ({ r, level: classify(r) }));
+
+    const summary = {
+      breached: classified.filter((c) => c.level === 'breached').length,
+      atRisk: classified.filter((c) => c.level === 'at-risk').length,
+      withinTarget: classified.filter((c) => c.level === 'within-target').length,
+      inFlight: enriched.length,
+    };
+
+    const list = classified.filter((c) => c.level !== 'within-target');
+
+    // Deterministic ranking: breached → urgent → least time remaining → oldest.
+    list.sort((a, b) => {
+      const breach = Number(b.level === 'breached') - Number(a.level === 'breached');
+      if (breach) return breach;
+      const urgent = Number(b.r.urgent) - Number(a.r.urgent);
+      if (urgent) return urgent;
+      const remaining = a.r.remainingHours - b.r.remainingHours; // least (most negative) first
+      if (remaining) return remaining;
+      return b.r.ageHours - a.r.ageHours; // oldest first
+    });
+
+    const items: SlaRiskItem[] = list.map(({ r, level }) => {
+      const overHours = Math.max(0, -r.remainingHours);
+      const budgetPct = thresholdHours > 0 ? Math.round((r.ageHours / thresholdHours) * 100) : 0;
+      const assigned = !!assigneeName(r.assignedTo);
+      return {
+        id: r.id,
+        caseRef: r.labNumber ?? r.identifier,
+        stage: STATUS_LABEL[r.status] ?? r.status,
+        urgent: r.urgent,
+        risk: level as RiskLevel,
+        ageHours: r.ageHours,
+        remainingHours: r.remainingHours,
+        overHours,
+        budgetPct,
+        reason: reasonFor(r.priority, overHours, budgetPct),
+        owner: assigneeName(r.assignedTo),
+        // The only recorded blocking fact available: an unassigned case cannot advance
+        // to review. No other dependency (IHC/molecular/instrument) is stored, so we
+        // state that plainly rather than infer one.
+        blocker: assigned ? null : 'Awaiting reviewer assignment',
+        action: assigned
+          ? { label: 'Review case', route: '/records' }
+          : { label: 'Assign reviewer', route: '/workload' },
+      };
+    });
+
+    return {
+      asOf: new Date(now).toISOString(),
+      thresholdHours,
+      summary,
+      items,
     };
   }
 }
@@ -218,4 +343,10 @@ function reasonFor(priority: TatPriority, overHours: number, budgetPct: number):
     default:
       return `${budgetPct}% of turnaround budget used`;
   }
+}
+
+function assigneeName(a: { firstName: string | null; lastName: string | null } | null): string | null {
+  if (!a) return null;
+  const name = `${a.firstName ?? ''} ${a.lastName ?? ''}`.trim();
+  return name || null;
 }
