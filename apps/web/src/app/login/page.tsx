@@ -28,9 +28,9 @@ interface MfaState {
 }
 
 const FEATURES = [
-  { Icon: LineChart, label: 'Smarter Insights', desc: 'AI-powered analytics for accurate, data-driven decisions.' },
-  { Icon: ShieldCheck, label: 'Secure & Compliant', desc: 'Built with enterprise-grade security and HIPAA compliance.' },
-  { Icon: Users, label: 'Collaborate Effortlessly', desc: 'Seamless communication between labs, clinicians, and clients.' },
+  { Icon: LineChart, label: 'AI-Assisted Screening', desc: 'Surface abnormal cytology and prioritize the cases that need a pathologist first.' },
+  { Icon: ShieldCheck, label: 'HIPAA-Grade Security', desc: 'CLIA-ready workflows, complete audit trails, and encryption on every specimen record.' },
+  { Icon: Users, label: 'Lab-to-Clinician Handoff', desc: 'Accession, sign out, and deliver results across pathologists and referring clinics.' },
 ];
 
 const TRUST = [
@@ -124,13 +124,13 @@ export default function LoginPage() {
   };
   const onKey = (ev: React.KeyboardEvent) => { if (ev.key === 'Enter') submit(); };
 
-  const inputCls = 'block w-full rounded-2xl border-2 border-dashed border-slate-200 bg-white py-5 pl-14 pr-14 font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-solid focus:border-[#1d35d1] focus:ring-2 focus:ring-[#1d35d1]/10';
+  const inputCls = 'block w-full rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 py-5 pl-14 pr-14 font-medium text-slate-800 outline-none transition-[border-color,box-shadow,background-color] duration-fast ease-standard placeholder:text-slate-400 focus:border-solid focus:border-[#1d35d1] focus:bg-white focus:ring-2 focus:ring-[#1d35d1]/10';
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden text-white" style={{ background: 'var(--login-bg, #1435d1)' }}>
       {/* Background layers */}
       <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
-        <div className="login-dots absolute inset-0 opacity-40" />
+        <div className="login-dots absolute inset-0 opacity-25" />
         <div className="absolute -left-52 -top-52 h-[800px] w-[800px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)' }} />
         <div className="absolute -bottom-72 -right-24 h-[1000px] w-[1000px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%)' }} />
         <PillBackdrop />
@@ -153,7 +153,7 @@ export default function LoginPage() {
               <div className="mt-0.5 text-[15px] font-medium leading-snug text-white/85">Cytology &amp; Pathology<br />Laboratory System</div>
             </div>
           </div>
-          <a href="mailto:support@cytolab.local" className="flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-80">
+          <a href="mailto:support@cytolab.local" className="flex items-center gap-2 text-sm font-semibold transition-opacity duration-fast ease-standard hover:opacity-80">
             <HelpCircle size={20} /> <span className="hidden sm:inline">Need help?</span>
           </a>
         </header>
@@ -166,9 +166,9 @@ export default function LoginPage() {
               Don&rsquo;t Just Test.<br />Optimize.
             </h1>
             <p className="mb-10 max-w-xl text-lg leading-relaxed text-blue-50/90">
-              A next-generation diagnostics experience that transforms lab results into actionable
-              intelligence. By combining clinical data with AI-driven analysis, we deliver precise
-              insights that support proactive, personalized health optimization.
+              The operating system for the modern pathology lab. Track every specimen from accession
+              to signed-out report, orchestrate cytology and histology workflows, and surface the
+              cases that need a pathologist first — with the traceability diagnostic teams depend on.
             </p>
             <div className="space-y-7">
               {FEATURES.map((f) => (
@@ -186,7 +186,7 @@ export default function LoginPage() {
           {/* Right: login card */}
           <div className="col-span-12 flex justify-center lg:col-span-5 lg:justify-end">
             <div className="w-full max-w-[560px] rounded-[40px] bg-white p-8 text-slate-900 shadow-2xl sm:p-12">
-              <div className="mb-8 text-center">
+              <div className="mb-10 text-center">
                 <h2 className="mb-2 text-3xl font-extrabold sm:text-4xl">{mfa ? 'Two-Factor Verification' : 'Welcome Back'}</h2>
                 <p className="font-medium text-slate-500">
                   {mfa ? 'Enter the verification code to continue' : 'Sign in to continue to your account'}
@@ -230,7 +230,7 @@ export default function LoginPage() {
                         className={`${inputCls} ${errors.password ? '!border-red-300' : ''}`}
                       />
                       <button type="button" aria-label={showPw ? 'Hide password' : 'Show password'} onClick={() => setShowPw((v) => !v)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors duration-fast ease-standard hover:text-slate-600">
                         {showPw ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
                     </div>
@@ -248,7 +248,7 @@ export default function LoginPage() {
 
                   <button
                     type="button" onClick={submit} disabled={login.isPending}
-                    className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#1d35d1] py-4 text-lg font-bold text-white shadow-xl shadow-[#1d35d1]/20 transition-all hover:bg-[#1628a8] active:scale-[0.98] disabled:opacity-60"
+                    className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#1d35d1] py-4 text-lg font-bold text-white shadow-xl shadow-[#1d35d1]/20 transition-[background-color,transform] duration-fast ease-standard hover:bg-[#1628a8] active:scale-[0.98] disabled:opacity-60"
                   >
                     {login.isPending ? 'Signing in…' : 'Sign In'} <ArrowRight size={20} />
                   </button>
@@ -269,11 +269,11 @@ export default function LoginPage() {
                     id="mfa-code" inputMode="text" autoComplete="one-time-code" placeholder="Verification code"
                     value={code} onChange={(e) => setCode(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') challenge.mutate(); }}
-                    className="block w-full rounded-2xl border-2 border-dashed border-slate-200 bg-white px-4 py-5 text-center text-[16px] tracking-[0.3em] text-slate-800 outline-none focus:border-solid focus:border-[#1d35d1] focus:ring-2 focus:ring-[#1d35d1]/10"
+                    className="block w-full rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-center text-[16px] tracking-[0.3em] text-slate-800 outline-none transition-[border-color,box-shadow,background-color] duration-fast ease-standard focus:border-solid focus:border-[#1d35d1] focus:bg-white focus:ring-2 focus:ring-[#1d35d1]/10"
                   />
                   <button
                     type="button" onClick={() => { setFormError(null); challenge.mutate(); }} disabled={challenge.isPending || !code.trim()}
-                    className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#1d35d1] py-4 text-lg font-bold text-white shadow-xl shadow-[#1d35d1]/20 transition-all hover:bg-[#1628a8] active:scale-[0.98] disabled:opacity-60"
+                    className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#1d35d1] py-4 text-lg font-bold text-white shadow-xl shadow-[#1d35d1]/20 transition-[background-color,transform] duration-fast ease-standard hover:bg-[#1628a8] active:scale-[0.98] disabled:opacity-60"
                   >
                     {challenge.isPending ? 'Verifying…' : 'Verify'} <ArrowRight size={20} />
                   </button>
@@ -284,7 +284,7 @@ export default function LoginPage() {
                     </button>
                   )}
                   <button type="button" onClick={() => { setMfa(null); setCode(''); setFormError(null); }}
-                    className="w-full text-sm font-medium text-slate-500 hover:text-slate-800">← Back to sign in</button>
+                    className="w-full text-sm font-medium text-slate-500 transition-colors duration-fast ease-standard hover:text-slate-800">← Back to sign in</button>
                 </div>
               )}
             </div>
@@ -292,14 +292,14 @@ export default function LoginPage() {
         </main>
 
         {/* Footer trust bar */}
-        <footer className="px-6 py-8 sm:px-12">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-8 border-t border-white/10 pt-8">
+        <footer className="px-6 py-6 sm:px-12">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-8 gap-y-4 border-t border-white/10 pt-6">
             {TRUST.map((t) => (
               <div key={t.label} className="flex min-w-[200px] items-center gap-3">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/20 bg-white/10 text-white"><t.Icon size={20} /></span>
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/20 bg-white/10 text-white"><t.Icon size={18} /></span>
                 <div className="leading-tight">
-                  <div className="text-base font-bold">{t.label}</div>
-                  <div className="text-sm text-blue-100/80">{t.desc}</div>
+                  <div className="text-sm font-bold">{t.label}</div>
+                  <div className="text-xs text-blue-100/80">{t.desc}</div>
                 </div>
               </div>
             ))}
