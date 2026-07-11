@@ -163,6 +163,24 @@ export class ResultSheetsService {
   }
 
   /**
+   * Result-sheet METADATA for a record (no entries/lines content) — for composition by the
+   * Sign-Out aggregate. Recorded fields only: authorization state, authorizer, timestamps,
+   * and report/entry counts. The result-sheet owner remains the sole owner of editing,
+   * validation, and report generation. Owned here so this query is never duplicated.
+   */
+  async metaByRecord(recordId: string) {
+    return this.prisma.resultSheet.findMany({
+      where: { recordId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true, recordId: true, authorized: true, authorizedAt: true, viewed: true, createdAt: true,
+        authorizedBy: { select: { firstName: true, lastName: true } },
+        _count: { select: { reports: true, resultEntries: true } },
+      },
+    });
+  }
+
+  /**
    * Replace entries/lines and/or update flags. Any change to the result content
    * re-opens the sheet (de-authorizes it): a previously authorized sheet must be
    * re-authorized before a new report can be released. Already-released reports

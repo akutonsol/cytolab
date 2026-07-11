@@ -6,14 +6,16 @@
 // uses the canonical @/lib/age helper. Other regions remain visibly deferred.
 // Contract: docs/PATHOS_SIGNOUT_IMPLEMENTATION_PLAN.md (Orchestration Rule, §3/§4).
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { deriveAge } from '@/lib/age';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
+import { ResultSheetModal } from '@/components/ResultSheetModal';
 import type {
   AIEvidence,
   AttachmentMeta,
@@ -24,6 +26,7 @@ import type {
   GynHistory,
   NonGynHistory,
   PriorEntry,
+  ResultSheetMeta,
   SectionStatus,
   TimelineEvent,
   SignOutCaseAggregate,
@@ -35,9 +38,7 @@ const NR = 'Not recorded';
 const fmtDate = (iso: string | null | undefined): string => (iso ? new Date(iso).toLocaleDateString() : NR);
 const val = (s: string | null | undefined): string => (s && s.trim() ? s : NR);
 
-const DEFERRED_REGIONS: { key: string; title: string; responsibility: string }[] = [
-  { key: 'report', title: 'Result sheet & report', responsibility: 'The result sheet and report, edited in the existing editor.' },
-];
+const DEFERRED_REGIONS: { key: string; title: string; responsibility: string }[] = [];
 
 const PERMISSION_LABELS: { key: keyof EffectivePermissions; label: string }[] = [
   { key: 'viewCase', label: 'View case' },
@@ -47,6 +48,8 @@ const PERMISSION_LABELS: { key: keyof EffectivePermissions; label: string }[] = 
   { key: 'viewCorrelation', label: 'View correlation' },
   { key: 'viewPriors', label: 'View priors' },
   { key: 'viewAttachments', label: 'View attachments' },
+  { key: 'viewResultSheet', label: 'View result sheet' },
+  { key: 'createResultSheet', label: 'Create result sheet' },
   { key: 'editResultSheet', label: 'Edit result sheet' },
   { key: 'authorize', label: 'Authorize / sign out' },
   { key: 'amend', label: 'Amend' },
@@ -56,6 +59,11 @@ export default function SignOutWorkspacePage() {
   const { recordId } = useParams<{ recordId: string }>();
   const router = useRouter();
   const { can, hydrated } = useAuth();
+  const qc = useQueryClient();
+  // Invoke the EXISTING result-sheet editor (ResultSheetModal) unchanged. It needs the
+  // full record (specimen ids etc.), which the aggregate does not carry — so fetch the
+  // record from its owner route only when the editor opens.
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['signout-case', recordId],
@@ -63,7 +71,21 @@ export default function SignOutWorkspacePage() {
     enabled: hydrated && can('record:view'),
   });
 
+  const { data: recordForSheet } = useQuery({
+    // The record-by-id REST route is /specimens/:id (records are "specimens" in the API).
+    queryKey: ['signout-record', recordId],
+    queryFn: () => api.get(`/specimens/${recordId}`).then((r) => r.data),
+    enabled: hydrated && can('record:view') && sheetOpen,
+  });
+
   if (!hydrated) return null;
+
+  const closeSheet = () => {
+    setSheetOpen(false);
+    // After the owner flow closes/saves, refresh the aggregate (and the record).
+    qc.invalidateQueries({ queryKey: ['signout-case', recordId] });
+    qc.invalidateQueries({ queryKey: ['signout-record', recordId] });
+  };
 
   const backToWorklist = (
     <Link
@@ -240,6 +262,18 @@ export default function SignOutWorkspacePage() {
           {/* Unified timeline — recorded events only, chronological, source-labelled. */}
           <TimelinePanel section={data?.timeline} loading={isLoading} onOpen={(path) => router.push(path)} />
 
+          {/* Result sheets — recorded metadata; creation invokes the EXISTING create
+              modal only when none exists. The result-sheet system owns entries,
+              validation, and report generation. Create is mirrored from the aggregate's
+              createResultSheet (resultsheet:create); the endpoint stays the authority. */}
+          <ResultSheetsPanel
+            section={data?.resultSheets}
+            loading={isLoading}
+            canCreate={permsSec?.status === 'ready' ? !!permsSec.data?.createResultSheet : false}
+            onCreate={() => setSheetOpen(true)}
+            onOpenRecord={() => router.push(`/records/${recordId}`)}
+          />
+
           {/* Deferred regions — truthful, distinct from loading and empty data */}
           {DEFERRED_REGIONS.map((r) => (
             <Card key={r.key} radius="md" elevation="soft" border="hairline" padding="lg">
@@ -252,6 +286,10 @@ export default function SignOutWorkspacePage() {
           ))}
         </div>
       )}
+
+      {/* The EXISTING result-sheet editor, reused unchanged. Rendered once at page level;
+          on close/save the aggregate section is invalidated and refreshed. */}
+      <ResultSheetModal open={sheetOpen && !!recordForSheet} onClose={closeSheet} record={recordForSheet ?? null} />
     </div>
   );
 }
@@ -807,6 +845,83 @@ function TimelineRow({ e, onOpen }: { e: TimelineEvent; onOpen?: () => void }) {
       </div>
       {onOpen && <Button variant="secondary" size="sm" onClick={onOpen}>Open</Button>}
     </li>
+  );
+}
+
+// Result sheets — recorded metadata only. When none exists, creation is offered by
+// invoking the EXISTING create modal (ResultSheetModal is a create-only owner flow).
+// When sheets already exist, they are shown read-only and viewing/editing happens on
+// the sheet's owner surface (the record) — the shell never edits sheets itself.
+function ResultSheetsPanel({
+  section,
+  loading,
+  canCreate,
+  onCreate,
+  onOpenRecord,
+}: {
+  section?: SignOutCaseAggregate['resultSheets'];
+  loading: boolean;
+  canCreate: boolean;
+  onCreate: () => void;
+  onOpenRecord: () => void;
+}) {
+  const status = section?.status;
+  const data = status === 'ready' ? section?.data : null;
+  // Existing sheets are viewed/edited on their owner surface (the record page),
+  // never through the create modal.
+  const openRecord = <Button variant="secondary" size="sm" onClick={onOpenRecord}>Open in record</Button>;
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-3 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">Result sheet</h2>
+        {status === 'ready' && <Badge tone="neutral" size="xs">{data?.count} sheet{data?.count === 1 ? '' : 's'}</Badge>}
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-48" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-6" title="No access" description="You do not have permission to view result sheets." />
+      ) : status === 'error' ? (
+        <EmptyState bare className="px-0 py-6" title="Unavailable" description="Result sheets could not be loaded." />
+      ) : status === 'empty' || !data?.items.length ? (
+        // No sheet yet — offer creation via the existing create modal, only when permitted.
+        <div>
+          <EmptyState bare className="px-0 py-6" title="No result sheet" description="No result sheet has been created for this case yet." />
+          <div className="flex justify-end">
+            {canCreate
+              ? <Button variant="secondary" size="sm" onClick={onCreate}>Add result sheet</Button>
+              : openRecord}
+          </div>
+        </div>
+      ) : (
+        // One or more sheets exist — show recorded metadata; view/edit on the owner surface.
+        <div className="space-y-2">
+          {data.items.map((s) => <ResultSheetRow key={s.id} s={s} />)}
+          <div className="flex justify-end pt-1">{openRecord}</div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function ResultSheetRow({ s }: { s: ResultSheetMeta }) {
+  const meta = [
+    s.createdAt ? `Created ${fmtDate(s.createdAt)}` : null,
+    s.entryCount > 0 ? `${s.entryCount} entr${s.entryCount === 1 ? 'y' : 'ies'}` : null,
+    s.reportCount > 0 ? `${s.reportCount} report${s.reportCount === 1 ? '' : 's'}` : null,
+  ].filter(Boolean).join(' · ');
+  return (
+    <div className="rounded-lg border border-lightgray px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge tone={s.authorized ? 'success' : 'neutral'} size="xs">{s.authorized ? 'Authorized' : 'Not authorized'}</Badge>
+        {s.reportCount > 0 && <Badge tone="neutral" size="xs">Report released</Badge>}
+      </div>
+      {meta && <div className="mt-1.5 text-meta text-text-tertiary">{meta}</div>}
+      {s.authorized && (
+        <div className="text-meta text-text-tertiary">
+          Authorized {s.authorizedAt ? fmtDate(s.authorizedAt) : ''}{s.authorizerName ? ` · ${s.authorizerName}` : ' · Authorizer not recorded'}
+        </div>
+      )}
+    </div>
   );
 }
 

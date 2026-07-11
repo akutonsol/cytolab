@@ -227,6 +227,24 @@ export interface TimelineSection {
   unavailable: string[];
 }
 
+// Result sheets — read-only metadata only (never entries/lines). `authorized` is the
+// recorded state; no status/draft is inferred. The result-sheet owner owns editing.
+export interface ResultSheetMeta {
+  id: string;
+  recordId: string;
+  authorized: boolean;
+  authorizedAt: string | null;
+  authorizerName: string | null;
+  viewed: boolean;
+  createdAt: string | null;
+  reportCount: number;
+  entryCount: number;
+}
+export interface ResultSheetsSection {
+  count: number;
+  items: ResultSheetMeta[];
+}
+
 export interface EffectivePermissions {
   viewCase: boolean;
   viewSlide: boolean;
@@ -237,6 +255,7 @@ export interface EffectivePermissions {
   viewCorrelation: boolean;
   viewPriors: boolean;
   viewResultSheet: boolean;
+  createResultSheet: boolean;
   editResultSheet: boolean;
   authorize: boolean;
   amend: boolean;
@@ -256,5 +275,5 @@ export interface SignOutCaseAggregate {
   priors: Section<PriorsSection>;
   attachments: Section<AttachmentsSection>;
   timeline: Section<TimelineSection>;
-  resultSheets: Section<null>;
+  resultSheets: Section<ResultSheetsSection>;
 }

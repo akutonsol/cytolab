@@ -260,6 +260,27 @@ export interface TimelineSection {
   unavailable: string[];
 }
 
+// ── Result sheets (read-only metadata projection) ──
+// Metadata ONLY — never result entries/lines content. The result-sheet system remains
+// the sole owner of editing, validation, save behaviour, and report generation. `authorized`
+// is the recorded state; no status or draft is inferred. reportCount/entryCount are safe
+// counts, not content.
+export interface ResultSheetMeta {
+  id: string;
+  recordId: string;
+  authorized: boolean;
+  authorizedAt: string | null;
+  authorizerName: string | null;
+  viewed: boolean;
+  createdAt: string | null;
+  reportCount: number;
+  entryCount: number;
+}
+export interface ResultSheetsSection {
+  count: number;
+  items: ResultSheetMeta[];
+}
+
 export interface EffectivePermissions {
   viewCase: boolean;
   viewSlide: boolean;
@@ -270,6 +291,7 @@ export interface EffectivePermissions {
   viewCorrelation: boolean;
   viewPriors: boolean;
   viewResultSheet: boolean;
+  createResultSheet: boolean;
   editResultSheet: boolean;
   authorize: boolean;
   amend: boolean;
@@ -289,8 +311,7 @@ export interface SignOutCaseAggregate {
   priors: Section<PriorsSection>;
   attachments: Section<AttachmentsSection>;
   timeline: Section<TimelineSection>;
-  // Deferred until later checkpoints. The contract is stable now.
-  resultSheets: Section<null>;
+  resultSheets: Section<ResultSheetsSection>;
 }
 
 const deferred = (): Section<null> => ({ status: 'deferred', data: null });
@@ -322,12 +343,13 @@ export class SignoutService {
     // Each diagnostic-evidence section resolves independently from its own owner
     // service; one failing (or being empty/forbidden) never affects the others or the
     // case context (partial-failure tolerance). Run them together — they are unrelated.
-    const [slides, ai, bethesda, correlation, attachments] = await Promise.all([
+    const [slides, ai, bethesda, correlation, attachments, resultSheets] = await Promise.all([
       this.loadSlides(recordId, perms.viewSlide),
       this.loadAI(recordId, perms.viewAI),
       this.loadBethesda(recordId, perms.viewBethesda),
       this.loadCorrelation(recordId, perms.viewCorrelation),
       this.loadAttachments(recordId, perms.viewAttachments),
+      this.loadResultSheets(recordId, perms.viewResultSheet),
     ]);
 
     let caseSec: Section<CaseIdentity>;
@@ -380,7 +402,7 @@ export class SignoutService {
       priors: priorsSec,
       attachments,
       timeline: timelineSec,
-      resultSheets: deferred(),
+      resultSheets,
     };
   }
 
@@ -529,6 +551,31 @@ export class SignoutService {
       return { status: 'ready', data: { count: items.length, items } };
     } catch {
       return { status: 'error', data: null, reason: 'Attachments failed to load' };
+    }
+  }
+
+  // Composes the result-sheet owner's per-record metadata read. Metadata only — no result
+  // entries/lines, no editing/validation logic. `authorized` is the recorded state; no
+  // status or draft is inferred. The owner remains the sole owner of the editor and reports.
+  private async loadResultSheets(recordId: string, viewResultSheet: boolean): Promise<Section<ResultSheetsSection>> {
+    if (!viewResultSheet) return { status: 'forbidden', data: null };
+    try {
+      const rows = await this.resultSheets.metaByRecord(recordId);
+      if (!rows.length) return { status: 'empty', data: null };
+      const items: ResultSheetMeta[] = rows.map((s) => ({
+        id: s.id,
+        recordId: s.recordId,
+        authorized: !!s.authorized,
+        authorizedAt: iso(s.authorizedAt),
+        authorizerName: userName(s.authorizedBy),
+        viewed: !!s.viewed,
+        createdAt: iso(s.createdAt),
+        reportCount: s._count?.reports ?? 0,
+        entryCount: s._count?.resultEntries ?? 0,
+      }));
+      return { status: 'ready', data: { count: items.length, items } };
+    } catch {
+      return { status: 'error', data: null, reason: 'Result sheets failed to load' };
     }
   }
 
@@ -740,6 +787,9 @@ function buildPermissions(user: AuthUser): EffectivePermissions {
     viewCorrelation: has('record:view'),
     viewPriors: has('resultentry:view'),
     viewResultSheet: has('resultsheet:view'),
+    // Mirrors the create endpoint's guard (resultsheet:create). The result-sheet
+    // endpoint remains the enforcement authority; this is descriptive only.
+    createResultSheet: has('resultsheet:create'),
     editResultSheet: has('resultentry:change'),
     authorize: has('resultsheet:authorize'),
     amend: has('resultentry:change') && has('resultsheet:authorize'),
