@@ -54,4 +54,4 @@ async function warm() {
   console.log('[warmup] done — routes are compiled and cached.\n');
 }
 
-warm();
+warm().catch(() => {});
