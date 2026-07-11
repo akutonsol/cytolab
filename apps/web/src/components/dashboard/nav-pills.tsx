@@ -1,6 +1,6 @@
 'use client';
 
-import { createElement } from 'react';
+import { createElement, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Dropdown } from 'antd';
 import { useQuery } from '@tanstack/react-query';
@@ -49,9 +49,22 @@ export function NavPills({ justify = 'flex-end' }: { justify?: React.CSSProperti
   const analyticsVisible = can(ANALYTICS_ITEM.permission);
   const groupActive = (items: any[]) => items.some((i: any) => i.path === pathname);
 
-  const Pill = (isActive: boolean, icon: React.ReactNode, label: string, onClick?: () => void) => (
+  // Prefetch route bundles so navigation is instant (prod). The always-visible
+  // top-level pills are prefetched on mount; each group's routes are prefetched
+  // the moment the user hovers the group pill — before they pick a menu item.
+  // (Next disables prefetch in dev, so this is a no-op there.)
+  const prefetch = (path?: string) => { if (path) router.prefetch(path); };
+  useEffect(() => {
+    if (can(HOME_ITEM.permission)) prefetch(HOME_ITEM.path);
+    if (analyticsVisible) prefetch(ANALYTICS_ITEM.path);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const prefetchGroup = (items: any[]) => items.forEach((i: any) => prefetch(i.path));
+
+  const Pill = (isActive: boolean, icon: React.ReactNode, label: string, onClick?: () => void, onMouseEnter?: () => void) => (
     <button
       onClick={onClick}
+      onMouseEnter={onMouseEnter}
       className={`nav-item whitespace-nowrap text-base font-semibold ${isActive ? 'active text-white' : 'text-gray-700'}`}
     >
       <span className={`inline-flex ${isActive ? 'text-white' : 'text-indigo-500'}`}>{icon}</span>
@@ -62,13 +75,13 @@ export function NavPills({ justify = 'flex-end' }: { justify?: React.CSSProperti
 
   return (
     <div className="navigation-menu" style={{ flexWrap: 'nowrap', justifyContent: justify }}>
-      {can(HOME_ITEM.permission) && Pill(pathname === HOME_ITEM.path, createElement(HOME_ITEM.icon!, { size: 20, strokeWidth: 1.9 }), HOME_ITEM.label, () => router.push(HOME_ITEM.path))}
+      {can(HOME_ITEM.permission) && Pill(pathname === HOME_ITEM.path, createElement(HOME_ITEM.icon!, { size: 20, strokeWidth: 1.9 }), HOME_ITEM.label, () => router.push(HOME_ITEM.path), () => prefetch(HOME_ITEM.path))}
       {centerGroups.map((g) => (
         <Dropdown key={g.key} trigger={['hover', 'click']} menu={{ items: g.visible.map((i: any) => ({ key: i.path, label: itemLabel(i) })), onClick: ({ key }) => router.push(key) }}>
-          {Pill(groupActive(g.visible), createElement(g.icon as any, { size: 20, strokeWidth: 1.9 }), g.label)}
+          {Pill(groupActive(g.visible), createElement(g.icon as any, { size: 20, strokeWidth: 1.9 }), g.label, undefined, () => prefetchGroup(g.visible))}
         </Dropdown>
       ))}
-      {analyticsVisible && Pill(pathname === ANALYTICS_ITEM.path, createElement(ANALYTICS_ITEM.icon!, { size: 20, strokeWidth: 1.9 }), ANALYTICS_ITEM.label, () => router.push(ANALYTICS_ITEM.path))}
+      {analyticsVisible && Pill(pathname === ANALYTICS_ITEM.path, createElement(ANALYTICS_ITEM.icon!, { size: 20, strokeWidth: 1.9 }), ANALYTICS_ITEM.label, () => router.push(ANALYTICS_ITEM.path), () => prefetch(ANALYTICS_ITEM.path))}
     </div>
   );
 }
