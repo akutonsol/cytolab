@@ -245,6 +245,27 @@ export interface ResultSheetsSection {
   items: ResultSheetMeta[];
 }
 
+// AI drafts — read-only metadata only (never model output, accepted finalText, or prompt
+// contents). `status`/`model`/`promptVersion` are recorded provenance (never inferred);
+// `hasStructuredDiff` is availability, not the diff. The AI reporting system owns everything.
+export interface AiDraftMeta {
+  id: string;
+  resultSheetId: string;
+  kind: string;
+  status: string;
+  model: string | null;
+  promptVersion: string | null;
+  createdAt: string | null;
+  createdByName: string | null;
+  acceptedAt: string | null;
+  reviewerName: string | null;
+  hasStructuredDiff: boolean;
+}
+export interface AiDraftsSection {
+  count: number;
+  items: AiDraftMeta[];
+}
+
 export interface EffectivePermissions {
   viewCase: boolean;
   viewSlide: boolean;
@@ -257,6 +278,8 @@ export interface EffectivePermissions {
   viewResultSheet: boolean;
   createResultSheet: boolean;
   editResultSheet: boolean;
+  viewAiDraft: boolean;
+  createAiDraft: boolean;
   authorize: boolean;
   amend: boolean;
 }
@@ -276,4 +299,5 @@ export interface SignOutCaseAggregate {
   attachments: Section<AttachmentsSection>;
   timeline: Section<TimelineSection>;
   resultSheets: Section<ResultSheetsSection>;
+  aiDraft: Section<AiDraftsSection>;
 }

@@ -18,6 +18,7 @@ import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
 import { ResultSheetModal } from '@/components/ResultSheetModal';
 import type {
   AIEvidence,
+  AiDraftMeta,
   AttachmentMeta,
   BethesdaEvidence,
   CaseIdentity,
@@ -51,6 +52,8 @@ const PERMISSION_LABELS: { key: keyof EffectivePermissions; label: string }[] = 
   { key: 'viewResultSheet', label: 'View result sheet' },
   { key: 'createResultSheet', label: 'Create result sheet' },
   { key: 'editResultSheet', label: 'Edit result sheet' },
+  { key: 'viewAiDraft', label: 'View AI drafts' },
+  { key: 'createAiDraft', label: 'Create AI draft' },
   { key: 'authorize', label: 'Authorize / sign out' },
   { key: 'amend', label: 'Amend' },
 ];
@@ -271,6 +274,18 @@ export default function SignOutWorkspacePage() {
             loading={isLoading}
             canCreate={permsSec?.status === 'ready' ? !!permsSec.data?.createResultSheet : false}
             onCreate={() => setSheetOpen(true)}
+            onOpenRecord={() => router.push(`/records/${recordId}`)}
+          />
+
+          {/* AI drafts — recorded metadata only (never model output, finalText, or prompt
+              contents). The AI reporting system owns generation, prompting, persistence,
+              acceptance, and the structured diff; the shell only lists metadata and links
+              to the existing owner surface (the record's report/authorizer flow) where AI
+              drafting happens. No AI is generated or decided here. */}
+          <AiDraftsPanel
+            section={data?.aiDraft}
+            loading={isLoading}
+            canGenerate={permsSec?.status === 'ready' ? !!permsSec.data?.createAiDraft : false}
             onOpenRecord={() => router.push(`/records/${recordId}`)}
           />
 
@@ -919,6 +934,77 @@ function ResultSheetRow({ s }: { s: ResultSheetMeta }) {
       {s.authorized && (
         <div className="text-meta text-text-tertiary">
           Authorized {s.authorizedAt ? fmtDate(s.authorizedAt) : ''}{s.authorizerName ? ` · ${s.authorizerName}` : ' · Authorizer not recorded'}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// AI drafts — recorded metadata only. No generation, prompting, acceptance, or diff review
+// here; the AI reporting system owns all of that. The single action links to the existing
+// owner surface (the record's report/authorizer flow) where AI drafting happens.
+function AiDraftsPanel({
+  section,
+  loading,
+  canGenerate,
+  onOpenRecord,
+}: {
+  section?: SignOutCaseAggregate['aiDraft'];
+  loading: boolean;
+  canGenerate: boolean;
+  onOpenRecord: () => void;
+}) {
+  const status = section?.status;
+  const data = status === 'ready' ? section?.data : null;
+  const openOwner = <Button variant="secondary" size="sm" onClick={onOpenRecord}>Open in record</Button>;
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-3 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">AI draft</h2>
+        {status === 'ready' && <Badge tone="neutral" size="xs">{data?.count} draft{data?.count === 1 ? '' : 's'}</Badge>}
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-48" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-6" title="No access" description="You do not have permission to view AI drafts." />
+      ) : status === 'error' ? (
+        <EmptyState bare className="px-0 py-6" title="Unavailable" description="AI drafts could not be loaded." />
+      ) : status === 'empty' || !data?.items.length ? (
+        // No draft yet — AI drafting is assistive and on-demand, done on the owner surface.
+        <div>
+          <EmptyState bare className="px-0 py-6" title="No AI draft" description="No AI draft has been generated for this case yet." />
+          {canGenerate && <div className="flex justify-end">{openOwner}</div>}
+        </div>
+      ) : (
+        // Drafts exist — show recorded metadata; review/generate on the owner surface.
+        <div className="space-y-2">
+          {data.items.map((d) => <AiDraftRow key={d.id} d={d} />)}
+          <div className="flex justify-end pt-1">{openOwner}</div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function AiDraftRow({ d }: { d: AiDraftMeta }) {
+  const tone = d.status === 'Accepted' ? 'success' : d.status === 'Rejected' ? 'danger' : 'neutral';
+  const meta = [
+    d.createdAt ? `Generated ${fmtDate(d.createdAt)}` : null,
+    d.createdByName ? `by ${d.createdByName}` : null,
+    d.model || null,
+    d.promptVersion || null,
+  ].filter(Boolean).join(' · ');
+  return (
+    <div className="rounded-lg border border-lightgray px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge tone="neutral" size="xs">{d.kind}</Badge>
+        <Badge tone={tone} size="xs">{d.status}</Badge>
+        {d.hasStructuredDiff && <Badge tone="neutral" size="xs">Diff recorded</Badge>}
+      </div>
+      {meta && <div className="mt-1.5 text-meta text-text-tertiary">{meta}</div>}
+      {d.acceptedAt && (
+        <div className="text-meta text-text-tertiary">
+          Accepted {fmtDate(d.acceptedAt)}{d.reviewerName ? ` · ${d.reviewerName}` : ''}
         </div>
       )}
     </div>

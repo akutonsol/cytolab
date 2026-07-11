@@ -6,6 +6,7 @@ import { BethesdaService, deriveShortCode } from '../bethesda/bethesda.service';
 import { CorrelationService } from '../correlation/correlation.service';
 import { FilesService } from '../files/files.service';
 import { ResultSheetsService } from '../result-sheets/result-sheets.service';
+import { AiReportingService } from '../ai/ai-reporting.service';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 
 // ── Sign-Out aggregate (orchestration only) ──────────────────────────────────
@@ -281,6 +282,30 @@ export interface ResultSheetsSection {
   items: ResultSheetMeta[];
 }
 
+// ── AI drafts (read-only metadata projection) ──
+// Metadata ONLY — never the model `output` or accepted `finalText` (the drafted content),
+// and no prompt contents. The AI reporting system remains the sole owner of generation,
+// prompting, persistence, acceptance, regeneration, edit history, and the structured diff.
+// `status` is the recorded draft state (never inferred); `model`/`promptVersion` are the
+// recorded provenance (never inferred); `hasStructuredDiff` is availability, not content.
+export interface AiDraftMeta {
+  id: string;
+  resultSheetId: string; // owner invocation identifier (the sheet the draft belongs to)
+  kind: string; // Narrative | CodeSuggestion | ConsistencyCheck (recorded)
+  status: string; // Generated | Accepted | Rejected | Superseded (recorded)
+  model: string | null; // recorded model id, if recorded
+  promptVersion: string | null; // recorded prompt version, if recorded
+  createdAt: string | null; // generated timestamp
+  createdByName: string | null; // who generated it
+  acceptedAt: string | null; // when accepted, if accepted
+  reviewerName: string | null; // human reviewer who accepted, if recorded
+  hasStructuredDiff: boolean; // structured diff availability (never the diff content)
+}
+export interface AiDraftsSection {
+  count: number;
+  items: AiDraftMeta[];
+}
+
 export interface EffectivePermissions {
   viewCase: boolean;
   viewSlide: boolean;
@@ -293,6 +318,8 @@ export interface EffectivePermissions {
   viewResultSheet: boolean;
   createResultSheet: boolean;
   editResultSheet: boolean;
+  viewAiDraft: boolean;
+  createAiDraft: boolean;
   authorize: boolean;
   amend: boolean;
 }
@@ -312,6 +339,7 @@ export interface SignOutCaseAggregate {
   attachments: Section<AttachmentsSection>;
   timeline: Section<TimelineSection>;
   resultSheets: Section<ResultSheetsSection>;
+  aiDraft: Section<AiDraftsSection>;
 }
 
 const deferred = (): Section<null> => ({ status: 'deferred', data: null });
@@ -326,6 +354,7 @@ export class SignoutService {
     private readonly correlation: CorrelationService,
     private readonly files: FilesService,
     private readonly resultSheets: ResultSheetsService,
+    private readonly aiReporting: AiReportingService,
   ) {}
 
   async caseAggregate(recordId: string, user: AuthUser): Promise<SignOutCaseAggregate> {
@@ -343,13 +372,14 @@ export class SignoutService {
     // Each diagnostic-evidence section resolves independently from its own owner
     // service; one failing (or being empty/forbidden) never affects the others or the
     // case context (partial-failure tolerance). Run them together — they are unrelated.
-    const [slides, ai, bethesda, correlation, attachments, resultSheets] = await Promise.all([
+    const [slides, ai, bethesda, correlation, attachments, resultSheets, aiDraft] = await Promise.all([
       this.loadSlides(recordId, perms.viewSlide),
       this.loadAI(recordId, perms.viewAI),
       this.loadBethesda(recordId, perms.viewBethesda),
       this.loadCorrelation(recordId, perms.viewCorrelation),
       this.loadAttachments(recordId, perms.viewAttachments),
       this.loadResultSheets(recordId, perms.viewResultSheet),
+      this.loadAiDrafts(recordId, perms.viewAiDraft),
     ]);
 
     let caseSec: Section<CaseIdentity>;
@@ -403,6 +433,7 @@ export class SignoutService {
       attachments,
       timeline: timelineSec,
       resultSheets,
+      aiDraft,
     };
   }
 
@@ -576,6 +607,34 @@ export class SignoutService {
       return { status: 'ready', data: { count: items.length, items } };
     } catch {
       return { status: 'error', data: null, reason: 'Result sheets failed to load' };
+    }
+  }
+
+  // Composes the AI reporting owner's per-record draft METADATA read. Metadata only — no
+  // model output, no accepted finalText, no prompt contents. `status`/`model`/`promptVersion`
+  // are recorded provenance (never inferred); `hasStructuredDiff` is availability, not the
+  // diff. The AI reporting system remains the sole owner of generation and acceptance.
+  private async loadAiDrafts(recordId: string, viewAiDraft: boolean): Promise<Section<AiDraftsSection>> {
+    if (!viewAiDraft) return { status: 'forbidden', data: null };
+    try {
+      const rows = await this.aiReporting.draftsByRecord(recordId);
+      if (!rows.length) return { status: 'empty', data: null };
+      const items: AiDraftMeta[] = rows.map((d) => ({
+        id: d.id,
+        resultSheetId: d.resultSheetId,
+        kind: String(d.kind),
+        status: String(d.status),
+        model: d.model ?? null,
+        promptVersion: d.promptVersion ?? null,
+        createdAt: iso(d.createdAt),
+        createdByName: userName(d.createdBy),
+        acceptedAt: iso(d.acceptedAt),
+        reviewerName: userName(d.acceptedBy),
+        hasStructuredDiff: d.editedDiff != null,
+      }));
+      return { status: 'ready', data: { count: items.length, items } };
+    } catch {
+      return { status: 'error', data: null, reason: 'AI drafts failed to load' };
     }
   }
 
@@ -791,6 +850,11 @@ function buildPermissions(user: AuthUser): EffectivePermissions {
     // endpoint remains the enforcement authority; this is descriptive only.
     createResultSheet: has('resultsheet:create'),
     editResultSheet: has('resultentry:change'),
+    // AI reporting drafts (assistive). Mirror the AI Draft system's real permissions:
+    // aidraft:view gates reading the section; aidraft:create gates generation (enforced by
+    // the AI reporting endpoints — the shell only mirrors to hide/disable).
+    viewAiDraft: has('aidraft:view'),
+    createAiDraft: has('aidraft:create'),
     authorize: has('resultsheet:authorize'),
     amend: has('resultentry:change') && has('resultsheet:authorize'),
   };

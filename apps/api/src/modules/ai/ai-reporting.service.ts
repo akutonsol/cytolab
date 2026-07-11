@@ -73,6 +73,32 @@ export class AiReportingService {
     return this.getSettings();
   }
 
+  // ---- Read: recorded draft METADATA for a record (Sign-Out aggregate composition) ----
+  // Metadata ONLY — never the model `output` or the accepted `finalText` (the drafted
+  // content). Drafts hang off the result sheet, so this reads through resultSheet.recordId.
+  // The AI reporting system remains the sole owner of generation, prompting, persistence,
+  // and acceptance; this is a read so that query is never duplicated elsewhere. Tenancy is
+  // enforced by the injected Prisma client (AiDraft carries labId).
+  async draftsByRecord(recordId: string) {
+    return this.prisma.aiDraft.findMany({
+      where: { resultSheet: { recordId } },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        resultSheetId: true,
+        kind: true,
+        status: true,
+        model: true,
+        promptVersion: true,
+        createdAt: true,
+        createdBy: { select: { firstName: true, lastName: true } },
+        acceptedAt: true,
+        acceptedBy: { select: { firstName: true, lastName: true } },
+        editedDiff: true, // read for presence only; the projection exposes a boolean
+      },
+    });
+  }
+
   // ---- Capabilities (all on-demand; never auto-fired) ----
   async generateNarrative(sheetId: string, userId: string): Promise<AiCapabilityResult<any>> {
     return this.run('Narrative', sheetId, userId, false, async (output, ctx, promptVersion, policy, digest, model) => {
