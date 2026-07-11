@@ -241,7 +241,7 @@ export default function LandingPage() {
       </div>
 
       {/* WORKFLOW TITLE — white background, above the dark card */}
-      <section style={{ background: '#fff', padding: '84px 88px 40px' }}>
+      <section style={{ background: '#fff', padding: '112px 88px 48px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#94a3b8', marginBottom: 20 }}>
             One system. End to end.
@@ -457,7 +457,7 @@ export default function LandingPage() {
       </section>
 
       {/* SECTION B — AI SCREENING */}
-      <section style={{ padding: '80px 40px', marginTop: 0, background: '#f8f7ff' }}>
+      <section style={{ padding: '128px 40px 96px', marginTop: 0, background: '#f8f7ff' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '30% minmax(0, 1fr)', gap: '64px', alignItems: 'start' }}>
           {/* Left column */}
           <div>
@@ -742,7 +742,7 @@ export default function LandingPage() {
       <LivingScienceSection />
 
       {/* SECTION C — TRUSTED BY (logo wall) */}
-      <section style={{ padding: '76px 32px 58px', background: 'white' }}>
+      <section style={{ padding: '112px 32px 64px', background: 'white' }}>
         <div style={{ textAlign: 'center', fontSize: 13, fontWeight: 700, letterSpacing: '0.2em', color: '#8f8fb8', marginBottom: 62, textTransform: 'uppercase' }}>
           Trusted by Leading Labs and Health Systems
         </div>
@@ -826,7 +826,7 @@ export default function LandingPage() {
       </section>
 
       {/* SECTION D — STATS BAR */}
-      <section style={{ padding: '24px 32px 96px', background: 'white' }}>
+      <section style={{ padding: '64px 32px 112px', background: 'white' }}>
         {/* Shared violet→magenta gradient for the stat icons */}
         <svg width={0} height={0} style={{ position: 'absolute' }} aria-hidden>
           <defs>
@@ -868,7 +868,7 @@ export default function LandingPage() {
       </section>
 
       {/* PRICING */}
-      <section id="pricing" style={{ background: '#fff', padding: '80px 64px' }}>
+      <section id="pricing" style={{ background: '#fff', padding: '112px 64px 104px' }}>
         <style dangerouslySetInnerHTML={{ __html: `@keyframes badge-breathe { 0%,100% { box-shadow: 0 4px 14px rgba(230,57,70,0.35); } 50% { box-shadow: 0 7px 24px rgba(230,57,70,0.6); } }` }} />
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <Reveal>
