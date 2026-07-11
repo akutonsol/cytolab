@@ -6,9 +6,8 @@
 // uses the canonical @/lib/age helper. Other regions remain visibly deferred.
 // Contract: docs/PATHOS_SIGNOUT_IMPLEMENTATION_PLAN.md (Orchestration Rule, §3/§4).
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -36,6 +35,28 @@ import type {
   Therapy,
 } from '../types';
 
+// Only an internal, same-origin path may be a return target — reject external and
+// protocol-relative URLs (open-redirect protection). No new nav system: this mirrors the
+// internal-path guard already used by lib/session-drafts (saveReturnTo/takeReturnTo).
+function safeReturnTo(raw: string | null): string | null {
+  if (!raw) return null;
+  let p: string;
+  try { p = decodeURIComponent(raw); } catch { return null; }
+  if (!p.startsWith('/')) return null; // must be an absolute internal path
+  if (p.startsWith('//')) return null; // protocol-relative (//evil.com)
+  if (/[\\\x00-\x1f]/.test(p)) return null; // backslash / control chars
+  if (/^\/(login|portal\/login)\b/.test(p)) return null; // never bounce to auth pages
+  return p;
+}
+
+// True while the user is typing in a form control — keyboard shortcuts must not fire here.
+function isTypingTarget(t: EventTarget | null): boolean {
+  const el = t as HTMLElement | null;
+  if (!el || !el.tagName) return false;
+  const tag = el.tagName.toLowerCase();
+  return tag === 'input' || tag === 'textarea' || tag === 'select' || el.isContentEditable;
+}
+
 const NR = 'Not recorded';
 const fmtDate = (iso: string | null | undefined): string => (iso ? new Date(iso).toLocaleDateString() : NR);
 const val = (s: string | null | undefined): string => (s && s.trim() ? s : NR);
@@ -62,8 +83,16 @@ const PERMISSION_LABELS: { key: keyof EffectivePermissions; label: string }[] = 
 export default function SignOutWorkspacePage() {
   const { recordId } = useParams<{ recordId: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { can, hydrated } = useAuth();
   const qc = useQueryClient();
+  // Deterministic return: honor a validated internal ?returnTo=, else fall back to the
+  // worklist. Survives owner-flow round-trips (query is part of the URL; browser-back and
+  // the modals both preserve it), so we don't rely on browser history alone.
+  const returnTo = safeReturnTo(searchParams.get('returnTo')) ?? '/records';
+  const goBack = () => router.push(returnTo);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const [showHints, setShowHints] = useState(false);
   // Invoke the EXISTING result-sheet editor (ResultSheetModal) unchanged. It needs the
   // full record (specimen ids etc.), which the aggregate does not carry — so fetch the
   // record from its owner route only when the editor opens.
@@ -86,6 +115,33 @@ export default function SignOutWorkspacePage() {
     enabled: hydrated && can('record:view') && (sheetOpen || authOpen),
   });
 
+  // Move keyboard focus to the workspace heading once on entry — a meaningful landing
+  // point for keyboard/AT users. Guarded by a one-shot ref so data refetches never steal
+  // focus. (Depends on `hydrated` because the heading only mounts after hydration.)
+  const focusedOnce = useRef(false);
+  useEffect(() => {
+    if (hydrated && !focusedOnce.current && headingRef.current) {
+      focusedOnce.current = true;
+      headingRef.current.focus({ preventScroll: true });
+    }
+  }, [hydrated]);
+
+  // Restrained, discoverable keyboard workflow. Never fires inside form controls, never
+  // with a command modifier, never while an owner modal is open, and never mutates.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isTypingTarget(e.target)) return;
+      if (sheetOpen || authOpen) return; // let the owner modal own the keyboard
+      if (e.key === '?') { e.preventDefault(); setShowHints((v) => !v); return; }
+      if (e.key === 'w' || e.key === 'W') { e.preventDefault(); router.push(returnTo); return; }
+      if (e.key === 'c' || e.key === 'C') { e.preventDefault(); headingRef.current?.focus({ preventScroll: false }); return; }
+      if (e.key === 'Escape' && showHints) { setShowHints(false); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [returnTo, sheetOpen, authOpen, showHints, router]);
+
   if (!hydrated) return null;
 
   const refreshAggregate = () => {
@@ -97,13 +153,17 @@ export default function SignOutWorkspacePage() {
   const closeSheet = () => { setSheetOpen(false); refreshAggregate(); };
   const closeAuth = () => { setAuthOpen(false); refreshAggregate(); };
 
+  // Deterministic return to the recorded internal source (validated), else the worklist.
   const backToWorklist = (
-    <Link
-      href="/records"
+    <button
+      type="button"
+      onClick={goBack}
       className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-primary"
+      title="Return to worklist (W)"
     >
       <ArrowLeft size={15} /> Worklist
-    </Link>
+      <kbd className="ml-1 rounded border border-lightgray px-1 text-[10px] font-semibold text-text-tertiary">W</kbd>
+    </button>
   );
 
   if (!can('record:view')) {
@@ -126,9 +186,27 @@ export default function SignOutWorkspacePage() {
   return (
     <div className="w-full">
       <div className="mb-6">
-        {backToWorklist}
+        <div className="flex items-center justify-between gap-3">
+          {backToWorklist}
+          <button
+            type="button"
+            onClick={() => setShowHints((v) => !v)}
+            className="mb-2 inline-flex items-center gap-1.5 text-meta font-medium text-text-tertiary hover:text-primary"
+            aria-expanded={showHints}
+            title="Keyboard shortcuts"
+          >
+            <kbd className="rounded border border-lightgray px-1 text-[10px] font-semibold">?</kbd> Shortcuts
+          </button>
+        </div>
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h1 className="text-[30px] font-bold leading-tight tracking-tight text-charcoal-heading">Sign-Out</h1>
+          <h1
+            ref={headingRef}
+            tabIndex={-1}
+            id="signout-heading"
+            className="text-[30px] font-bold leading-tight tracking-tight text-charcoal-heading outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            Sign-Out
+          </h1>
           <span className="font-mono text-sm text-text-secondary">{c ? (c.labNumber ?? c.identifier) : `Case ${recordId}`}</span>
           {c?.urgent && <Badge tone="danger" size="sm">Urgent</Badge>}
         </div>
@@ -136,6 +214,13 @@ export default function SignOutWorkspacePage() {
           One workspace for reading, evidence, priors, reporting, and sign-out — composed from the
           existing PathOS surfaces around this case.
         </p>
+        {showHints && (
+          <div role="region" aria-label="Keyboard shortcuts" className="mt-3 flex flex-wrap gap-x-6 gap-y-1.5 rounded-lg border border-lightgray bg-surface-subtle px-3 py-2 text-meta text-text-secondary">
+            <span><kbd className="rounded border border-lightgray px-1 font-semibold">W</kbd> Worklist</span>
+            <span><kbd className="rounded border border-lightgray px-1 font-semibold">C</kbd> Focus case</span>
+            <span><kbd className="rounded border border-lightgray px-1 font-semibold">?</kbd> Toggle this</span>
+          </div>
+        )}
       </div>
 
       {isError ? (
