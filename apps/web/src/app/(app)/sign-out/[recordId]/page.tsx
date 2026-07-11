@@ -7,7 +7,7 @@
 // Contract: docs/PATHOS_SIGNOUT_IMPLEMENTATION_PLAN.md (Orchestration Rule, §3/§4).
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -20,6 +20,7 @@ import type {
   NonGynHistory,
   SectionStatus,
   SignOutCaseAggregate,
+  SlideMeta,
   Therapy,
 } from '../types';
 
@@ -28,7 +29,6 @@ const fmtDate = (iso: string | null | undefined): string => (iso ? new Date(iso)
 const val = (s: string | null | undefined): string => (s && s.trim() ? s : NR);
 
 const DEFERRED_REGIONS: { key: string; title: string; responsibility: string }[] = [
-  { key: 'slides', title: 'Digital slides & WSI', responsibility: 'Digital slides and the existing whole-slide viewer.' },
   { key: 'evidence', title: 'AI findings, Bethesda & correlation', responsibility: 'Real AI findings and regions, Bethesda, and correlation.' },
   { key: 'priors', title: 'Prior cases & reports', responsibility: 'Prior cases and prior reports for this patient.' },
   { key: 'attachments', title: 'Attachments', responsibility: 'Supporting documents for this case.' },
@@ -50,6 +50,7 @@ const PERMISSION_LABELS: { key: keyof EffectivePermissions; label: string }[] = 
 
 export default function SignOutWorkspacePage() {
   const { recordId } = useParams<{ recordId: string }>();
+  const router = useRouter();
   const { can, hydrated } = useAuth();
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -204,6 +205,10 @@ export default function SignOutWorkspacePage() {
             )}
           </SectionCard>
 
+          {/* Digital slides & WSI — real metadata + a path into the existing viewer.
+              The viewer owns image delivery; this only lists and links. */}
+          <SlidesPanel section={data?.slides} loading={isLoading} onOpen={(path) => router.push(path)} />
+
           {/* Deferred regions — truthful, distinct from loading and empty data */}
           {DEFERRED_REGIONS.map((r) => (
             <Card key={r.key} radius="md" elevation="soft" border="hairline" padding="lg">
@@ -252,6 +257,69 @@ function ClinicalHistory({ gyn, nonGyn }: { gyn: GynHistory | null; nonGyn: NonG
         <Field key={it.label} label={it.label} value={it.value} />
       ))}
     </dl>
+  );
+}
+
+function fmtSize(bytes: number | null): string | null {
+  if (bytes == null || bytes <= 0) return null;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function SlidesPanel({
+  section,
+  loading,
+  onOpen,
+}: {
+  section?: SignOutCaseAggregate['slides'];
+  loading: boolean;
+  onOpen: (viewerPath: string) => void;
+}) {
+  const status = section?.status;
+  const count = status === 'ready' && section?.data ? section.data.count : 0;
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-3 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">Digital slides &amp; WSI</h2>
+        {status === 'ready' && <Badge tone="neutral" size="xs">{count} slide{count === 1 ? '' : 's'}</Badge>}
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2">
+          <Skeleton shape="text" width="w-48" />
+          <Skeleton shape="text" width="w-40" />
+        </div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-6" title="No access" description="You do not have permission to view slides." />
+      ) : status === 'error' ? (
+        <EmptyState bare className="px-0 py-6" title="Unavailable" description="Slide metadata could not be loaded." />
+      ) : status === 'empty' || !section?.data?.items.length ? (
+        <EmptyState bare className="px-0 py-6" title="No digital slides" description="No slides have been uploaded for this case." />
+      ) : (
+        <div className="space-y-2">
+          {section.data.items.map((s) => (
+            <SlideRow key={s.id} slide={s} onOpen={() => onOpen(s.viewerPath)} />
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function SlideRow({ slide, onOpen }: { slide: SlideMeta; onOpen: () => void }) {
+  const identity =
+    [slide.stain, slide.magnification, slide.scanner, slide.format && slide.format !== 'image' ? slide.format : null]
+      .filter(Boolean)
+      .join(' · ') || 'Slide';
+  const size = fmtSize(slide.fileSizeBytes);
+  const uploaded = slide.uploadedAt ? `Uploaded ${new Date(slide.uploadedAt).toLocaleDateString()}` : 'Upload date not recorded';
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-lightgray px-3 py-2">
+      <div className="min-w-0">
+        <div className="text-sm font-semibold text-text">{identity}</div>
+        <div className="text-meta text-text-tertiary">{[uploaded, size].filter(Boolean).join(' · ')}</div>
+      </div>
+      <Button variant="secondary" size="sm" onClick={onOpen}>Open in viewer</Button>
+    </div>
   );
 }
 

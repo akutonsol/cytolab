@@ -57,6 +57,22 @@ export class WsiService {
     return slide ? this.toRow(slide) : null;
   }
 
+  /**
+   * All slides for a record — METADATA ONLY (no slideUrl), latest first. For composition
+   * by the Sign-Out aggregate; the viewer remains the sole owner of image delivery. Owned
+   * here so slide query logic is never duplicated elsewhere.
+   */
+  async listByRecordMeta(recordId: string) {
+    return this.prisma.digitalSlide.findMany({
+      where: { recordId },
+      orderBy: { uploadedAt: 'desc' },
+      select: {
+        id: true, format: true, magnification: true, stain: true, scanner: true,
+        fileSizeBytes: true, uploadedAt: true,
+      },
+    });
+  }
+
   async list() {
     const rows = await this.prisma.digitalSlide.findMany({ orderBy: { uploadedAt: 'desc' }, select: slideSelect, take: 500 });
     return rows.map((s) => this.toRow(s));

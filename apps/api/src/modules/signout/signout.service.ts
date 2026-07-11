@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { RecordsService } from '../records/records.service';
+import { WsiService } from '../wsi/wsi.service';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 
 // ── Sign-Out aggregate (orchestration only) ──────────────────────────────────
@@ -88,6 +89,23 @@ export interface ClinicalContext {
   nonGyn: NonGynHistory | null;
 }
 
+export interface SlideMeta {
+  id: string;
+  format: string | null;
+  magnification: string | null;
+  stain: string | null;
+  scanner: string | null;
+  fileSizeBytes: number | null;
+  uploadedAt: string | null;
+  /** The existing viewer route — the viewer owns image delivery, not this aggregate. */
+  viewerPath: string;
+}
+
+export interface SlidesSection {
+  count: number;
+  items: SlideMeta[];
+}
+
 export interface EffectivePermissions {
   viewCase: boolean;
   viewSlide: boolean;
@@ -108,8 +126,8 @@ export interface SignOutCaseAggregate {
   patient: Section<PatientSummary>;
   clinicalContext: Section<ClinicalContext>;
   permissions: Section<EffectivePermissions>;
-  // Deferred until later checkpoints (B3+). The contract is stable now.
-  slides: Section<null>;
+  slides: Section<SlidesSection>;
+  // Deferred until later checkpoints. The contract is stable now.
   ai: Section<null>;
   bethesda: Section<null>;
   correlation: Section<null>;
@@ -123,17 +141,24 @@ const deferred = (): Section<null> => ({ status: 'deferred', data: null });
 
 @Injectable()
 export class SignoutService {
-  constructor(private readonly records: RecordsService) {}
+  constructor(
+    private readonly records: RecordsService,
+    private readonly wsi: WsiService,
+  ) {}
 
   async caseAggregate(recordId: string, user: AuthUser): Promise<SignOutCaseAggregate> {
     const asOf = new Date().toISOString();
 
     // Permissions resolve independently of the case load, so they survive a
     // downstream failure (partial-failure tolerance).
-    const permissions: Section<EffectivePermissions> = {
-      status: 'ready',
-      data: buildPermissions(user),
-    };
+    const perms = buildPermissions(user);
+    const permissions: Section<EffectivePermissions> = { status: 'ready', data: perms };
+
+    // Slides resolve independently of the case read (partial-failure): a slide-metadata
+    // failure marks only this section, never the case context. Metadata only — the
+    // viewer owns image delivery. Access is covered by record:view (the endpoint gate),
+    // so `forbidden` cannot occur here in practice; the guard is kept for the contract.
+    const slides = await this.loadSlides(recordId, perms.viewSlide);
 
     let caseSec: Section<CaseIdentity>;
     let patientSec: Section<PatientSummary>;
@@ -166,7 +191,7 @@ export class SignoutService {
       patient: patientSec,
       clinicalContext: clinicalSec,
       permissions,
-      slides: deferred(),
+      slides,
       ai: deferred(),
       bethesda: deferred(),
       correlation: deferred(),
@@ -175,6 +200,28 @@ export class SignoutService {
       resultSheets: deferred(),
       timeline: deferred(),
     };
+  }
+
+  private async loadSlides(recordId: string, viewSlide: boolean): Promise<Section<SlidesSection>> {
+    if (!viewSlide) return { status: 'forbidden', data: null };
+    try {
+      // Composes the WSI owner's metadata-only read — no duplicated query, no slideUrl.
+      const rows = await this.wsi.listByRecordMeta(recordId);
+      if (!rows.length) return { status: 'empty', data: null };
+      const items: SlideMeta[] = rows.map((s) => ({
+        id: s.id,
+        format: s.format ?? null,
+        magnification: s.magnification ?? null,
+        stain: s.stain ?? null,
+        scanner: s.scanner ?? null,
+        fileSizeBytes: s.fileSizeBytes ?? null,
+        uploadedAt: iso(s.uploadedAt),
+        viewerPath: `/wsi/${s.id}`,
+      }));
+      return { status: 'ready', data: { count: items.length, items } };
+    } catch {
+      return { status: 'error', data: null, reason: 'Slide metadata failed to load' };
+    }
   }
 }
 

@@ -82,6 +82,22 @@ export interface ClinicalContext {
   nonGyn: NonGynHistory | null;
 }
 
+export interface SlideMeta {
+  id: string;
+  format: string | null;
+  magnification: string | null;
+  stain: string | null;
+  scanner: string | null;
+  fileSizeBytes: number | null;
+  uploadedAt: string | null;
+  viewerPath: string;
+}
+
+export interface SlidesSection {
+  count: number;
+  items: SlideMeta[];
+}
+
 export interface EffectivePermissions {
   viewCase: boolean;
   viewSlide: boolean;
@@ -102,7 +118,7 @@ export interface SignOutCaseAggregate {
   patient: Section<PatientSummary>;
   clinicalContext: Section<ClinicalContext>;
   permissions: Section<EffectivePermissions>;
-  slides: Section<null>;
+  slides: Section<SlidesSection>;
   ai: Section<null>;
   bethesda: Section<null>;
   correlation: Section<null>;
