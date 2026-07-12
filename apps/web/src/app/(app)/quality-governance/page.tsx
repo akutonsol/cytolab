@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { BenchmarkMetric, CorrelationCaseRow, EffectiveQualityPermissions, EscalationRow, OverviewSource, ProficiencyTestRow, QcAlertRow, QcCheckRow, QualityOverviewAggregate, RecallRow, SectionStatus } from './types';
+import type { BenchmarkMetric, CorrelationCaseRow, EffectiveQualityPermissions, EscalationRow, OverviewSource, OversightItem, ProficiencyTestRow, QcAlertRow, QcCheckRow, QualityOverviewAggregate, RecallRow, SectionStatus } from './types';
 
 // Only an internal, same-origin path may be a return target — reject external and
 // protocol-relative URLs (open-redirect protection). Mirrors the Sign-Out routing guard.
@@ -34,10 +34,9 @@ function safeReturnTo(raw: string | null): string | null {
 // section key; the Correlation & Discordance region reflects the `correlation` section
 // (the `discordance` section joins it at C4). `permissions` renders the descriptive map.
 type EvidenceKey =
-  | 'medicalDirector' | 'governance';
+  | 'governance';
 
 const EVIDENCE_REGIONS: { key: EvidenceKey; title: string; responsibility: string }[] = [
-  { key: 'medicalDirector', title: 'Medical Director', responsibility: 'Attention, review, and oversight queues from recorded owner states.' },
   { key: 'governance', title: 'Governance Trail', responsibility: 'A source-labelled assembly of recorded events — not a canonical audit ledger.' },
 ];
 
@@ -162,6 +161,10 @@ export default function QualityGovernanceWorkspacePage() {
           {/* Benchmarks — owner-computed metrics shown verbatim; detail on the report-center
               owner surface. No global score, chart, or synthetic status. */}
           <BenchmarksPanel section={data?.benchmarks} loading={isLoading} onOpen={() => router.push('/report-center')} />
+
+          {/* Medical Director — owner-recorded open/review-required states only; each item
+              acts on its own owner surface. No risk score, priority, or ranking. */}
+          <MedicalDirectorPanel section={data?.medicalDirector} loading={isLoading} onOpen={(path) => router.push(path)} />
 
           {/* The remaining evidence regions — truthfully deferred; each reflects its own
               aggregate section status, so a future failure isolates to its region. */}
@@ -677,6 +680,69 @@ function BenchmarkRow({ metric }: { metric: BenchmarkMetric }) {
         <span className="text-sm font-semibold text-text">{val}</span>
         {metric.status && <Badge tone={benchmarkTone(metric.status)} size="xs">{metric.status}</Badge>}
       </div>
+    </div>
+  );
+}
+
+// Medical Director oversight — a flat, source-labeled list of owner-recorded open/review-
+// required states, ordered by the server (workflow-state + age only). No risk/priority/
+// severity score, no cross-domain ranking, no "most critical" language, no new review form.
+// Each row acts on its own owner surface. Forbidden when the caller lacks the permission.
+function MedicalDirectorPanel({
+  section,
+  loading,
+  onOpen,
+}: {
+  section?: QualityOverviewAggregate['medicalDirector'];
+  loading: boolean;
+  onOpen: (ownerPath: string) => void;
+}) {
+  const status = section?.status;
+  const d = status === 'ready' ? section?.data : null;
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-3 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">Medical Director</h2>
+        {status === 'ready' && <Badge tone="neutral" size="xs">{d?.count} for oversight</Badge>}
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-48" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-6" title="No access" description="This oversight queue requires the result-sheet authorization permission." />
+      ) : status === 'error' ? (
+        <EmptyState bare className="px-0 py-6" title="Unavailable" description="The oversight queue could not be loaded." />
+      ) : status === 'empty' || !d || !d.items.length ? (
+        <div>
+          <EmptyState bare className="px-0 py-6" title="Nothing awaiting oversight" description="No owner-recorded items currently require authorized review." />
+          {d && d.unavailable.length > 0 && (
+            <p className="text-meta text-text-tertiary">Sources unavailable: {d.unavailable.join(', ')}.</p>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {d.items.map((it) => <OversightRow key={it.id} item={it} onOpen={() => onOpen(it.ownerPath)} />)}
+          {d.unavailable.length > 0 && (
+            <p className="pt-1 text-meta text-text-tertiary">Sources unavailable: {d.unavailable.join(', ')}.</p>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function OversightRow({ item, onOpen }: { item: OversightItem; onOpen: () => void }) {
+  const meta = [item.identity, item.actor, item.timestamp ? fmtDate(item.timestamp) : null].filter(Boolean).join(' · ');
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-lightgray px-3 py-2.5">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge tone="neutral" size="xs">{item.sourceLabel}</Badge>
+          <span className="text-sm font-semibold text-text">{item.state}</span>
+        </div>
+        {meta && <div className="mt-0.5 text-meta text-text-tertiary">{meta}</div>}
+        {item.reason && <div className="mt-0.5 text-sm text-text-secondary">{item.reason}</div>}
+      </div>
+      {item.actionLabel && <Button variant="secondary" size="sm" onClick={onOpen}>{item.actionLabel}</Button>}
     </div>
   );
 }

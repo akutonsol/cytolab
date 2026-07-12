@@ -233,6 +233,32 @@ export interface BenchmarksSection {
   unavailable: string[]; // owner sources that failed
 }
 
+// ── Medical Director oversight (C9) ──────────────────────────────────────────
+// A bounded queue assembled ONLY from owner-recorded open/review-required states, gated by
+// the descriptive `medicalDirector` permission (= resultsheet:authorize; permission-based,
+// never a role name). Each item is a recorded owner state that already carries a review/
+// grade/resolve action on its own owner surface. Nothing is ranked by urgency, severity,
+// malignancy, benchmark, or staff — ordering is workflow-state + age only. No risk score,
+// no cross-domain priority, no "attention level", no CAPA. Historical closed items are
+// never surfaced as open attention.
+export interface OversightItem {
+  id: string; // source-prefixed unique id
+  sourceDomain: string; // 'correlation' | 'escalation' | 'qc' | 'proficiency'
+  sourceLabel: string;
+  state: string; // recorded owner state
+  reason: string | null; // factual recorded reason/note
+  identity: string | null; // record/case/test identity
+  actor: string | null; // owner/assignee where recorded
+  timestamp: string | null; // created/review/due
+  ownerPath: string;
+  actionLabel: string | null; // only when a real owner action exists
+}
+export interface MedicalDirectorSection {
+  count: number;
+  items: OversightItem[];
+  unavailable: string[]; // owner sources that failed or are not permitted
+}
+
 export interface QualityOverviewAggregate {
   asOf: string;
   permissions: Section<EffectiveQualityPermissions>;
@@ -244,9 +270,9 @@ export interface QualityOverviewAggregate {
   escalations: Section<EscalationSection>;
   recall: Section<RecallSection>;
   benchmarks: Section<BenchmarksSection>;
-  // The remaining two evidence sections stay deferred at C8. Each carries its own status
-  // so a future section failure isolates to it and never collapses permissions or siblings.
-  medicalDirector: Section<null>;
+  medicalDirector: Section<MedicalDirectorSection>;
+  // The last evidence section stays deferred at C9. It carries its own status so a future
+  // section failure isolates to it and never collapses permissions or siblings.
   governance: Section<null>;
 }
 
@@ -269,7 +295,7 @@ export class QualityGovernanceService {
     const perms = buildPermissions(user);
     // Sections resolve independently (partial-failure isolation): a correlation failure
     // never collapses the overview or sibling sections.
-    const [overview, corr, qc, proficiency, escalations, recall, benchmarks] = await Promise.all([
+    const [overview, corr, qc, proficiency, escalations, recall, benchmarks, medicalDirector] = await Promise.all([
       this.loadOverview(perms),
       this.loadCorrelationSections(perms),
       this.loadQc(perms),
@@ -277,6 +303,7 @@ export class QualityGovernanceService {
       this.loadEscalations(perms, user.userId),
       this.loadRecall(perms),
       this.loadBenchmarks(perms),
+      this.loadMedicalDirector(perms, user.userId),
     ]);
     return {
       asOf: new Date().toISOString(),
@@ -289,7 +316,7 @@ export class QualityGovernanceService {
       escalations,
       recall,
       benchmarks,
-      medicalDirector: deferred(),
+      medicalDirector,
       governance: deferred(),
     };
   }
@@ -587,6 +614,80 @@ export class QualityGovernanceService {
     metrics.sort(benchmarkOrder);
     return { status: 'ready', data: { asOf: new Date().toISOString(), metrics, unavailable } };
   }
+
+  // Medical Director oversight — a bounded queue of owner-recorded open/review-required
+  // states. Gated by the descriptive `medicalDirector` permission (resultsheet:authorize).
+  // Each owner source is re-read with its OWN review-required/open filter so only currently
+  // actionable states appear (never historical closed items), and each resolves independently
+  // (source failure/forbidden isolates to `unavailable`). No urgency/severity/risk ranking.
+  private async loadMedicalDirector(perms: EffectiveQualityPermissions, userId: string): Promise<Section<MedicalDirectorSection>> {
+    if (!perms.medicalDirector) return { status: 'forbidden', data: null };
+    const items: OversightItem[] = [];
+    const unavailable: string[] = [];
+
+    // Correlation — cases the owner recorded as reviewRequired (owner-filtered).
+    if (perms.viewRecord) {
+      try {
+        const rows: any[] = await this.correlation.list({ reviewRequired: true } as any);
+        for (const c of Array.isArray(rows) ? rows : []) {
+          if (c.reviewedAt) continue; // owner-reviewed → not open oversight
+          items.push({
+            id: `correlation-${c.id}`, sourceDomain: 'correlation', sourceLabel: 'Correlation',
+            state: 'Review required', reason: c.discordanceReason ?? c.correlationResult ?? null,
+            identity: c.cytologyRecord ? (c.cytologyRecord.labNumber ?? c.cytologyRecord.identifier ?? null) : null,
+            actor: null, timestamp: iso(c.cytologyDate ?? c.createdAt), ownerPath: `/correlation/${c.id}`, actionLabel: 'Review',
+          });
+        }
+      } catch { unavailable.push('Correlation'); }
+    } else unavailable.push('Correlation');
+
+    // Escalations — the owner's OPEN lifecycle states (owner-filtered).
+    if (perms.viewRecord) {
+      try {
+        const rows: any[] = await this.escalation.list({ open: true } as any, userId);
+        for (const e of Array.isArray(rows) ? rows : []) {
+          items.push({
+            id: `escalation-${e.id}`, sourceDomain: 'escalation', sourceLabel: 'Escalation',
+            state: String(e.status), reason: e.trigger ? String(e.trigger) : null,
+            identity: e.record ? (e.record.labNumber ?? e.record.identifier ?? null) : null,
+            actor: personName(e.assignedTo), timestamp: iso(e.createdAt), ownerPath: '/escalations', actionLabel: 'Review',
+          });
+        }
+      } catch { unavailable.push('Escalations'); }
+    } else unavailable.push('Escalations');
+
+    // Quality Control — the owner's OPEN (not-Resolved) failure alerts.
+    if (perms.viewRecord) {
+      try {
+        const rows: any[] = await this.qc.alerts();
+        for (const a of Array.isArray(rows) ? rows : []) {
+          items.push({
+            id: `qc-${a.id}`, sourceDomain: 'qc', sourceLabel: 'Quality Control',
+            state: String(a.status), reason: a.qcCheck?.failureReason ?? null,
+            identity: a.qcCheck ? String(a.qcCheck.checkType) : null,
+            actor: null, timestamp: iso(a.createdAt), ownerPath: '/qc', actionLabel: 'Resolve',
+          });
+        }
+      } catch { unavailable.push('Quality Control'); }
+    } else unavailable.push('Quality Control');
+
+    // Proficiency — tests in the owner's recorded Grading state (awaiting grading).
+    if (perms.viewRecord) {
+      try {
+        const rows: any[] = await this.proficiency.list({} as any);
+        for (const t of (Array.isArray(rows) ? rows : []).filter((x) => String(x.status) === 'Grading')) {
+          items.push({
+            id: `proficiency-${t.id}`, sourceDomain: 'proficiency', sourceLabel: 'Proficiency',
+            state: 'Grading', reason: null, identity: t.name ?? null,
+            actor: personName(t.createdBy), timestamp: iso(t.endDate ?? t.createdAt), ownerPath: `/proficiency/${t.id}`, actionLabel: 'Grade',
+          });
+        }
+      } catch { unavailable.push('Proficiency'); }
+    } else unavailable.push('Proficiency');
+
+    const bounded = items.sort(oversightSort).slice(0, 30);
+    return { status: 'ready', data: { count: bounded.length, items: bounded, unavailable } };
+  }
 }
 
 // Deterministic ordering from recorded fields only. reviewRequired first is the OWNER's
@@ -624,6 +725,21 @@ const iso = (d: Date | string | null | undefined): string | null => (d ? new Dat
 const personName = (u: { firstName?: string | null; lastName?: string | null } | null | undefined): string | null =>
   u ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || null : null;
 const numOrNull = (v: unknown): number | null => (typeof v === 'number' && !Number.isNaN(v) ? v : null);
+
+// Medical Director oversight ordering: every item is already an owner-recorded open/
+// review-required state (criterion 1), so ordering is oldest-open first (age), then a fixed
+// source order only for EXACT timestamp ties, then a stable id. This reflects recorded
+// workflow state and age only — it is NOT a PathOS-generated urgency, severity, or risk
+// ranking, and never orders by malignancy, cross-domain severity, benchmark, or staff.
+const OVERSIGHT_SOURCE_ORDER: Record<string, number> = { correlation: 0, escalation: 1, qc: 2, proficiency: 3 };
+function oversightSort(x: OversightItem, y: OversightItem): number {
+  const t = (s: string | null) => (s ? new Date(s).getTime() : Infinity);
+  return (
+    t(x.timestamp) - t(y.timestamp) ||
+    (OVERSIGHT_SOURCE_ORDER[x.sourceDomain] ?? 99) - (OVERSIGHT_SOURCE_ORDER[y.sourceDomain] ?? 99) ||
+    (x.id < y.id ? -1 : x.id > y.id ? 1 : 0)
+  );
+}
 
 // Deterministic benchmark ordering: a FIXED source/domain order (documented here), then
 // the owner metric key. Never ordered by best/worst or inferred importance.

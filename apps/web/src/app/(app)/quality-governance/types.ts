@@ -196,6 +196,26 @@ export interface BenchmarksSection {
   unavailable: string[];
 }
 
+// Medical Director oversight — owner-recorded open/review-required states only. No urgency,
+// severity, risk, or cross-domain ranking; every item links to its owner surface.
+export interface OversightItem {
+  id: string;
+  sourceDomain: string;
+  sourceLabel: string;
+  state: string;
+  reason: string | null;
+  identity: string | null;
+  actor: string | null;
+  timestamp: string | null;
+  ownerPath: string;
+  actionLabel: string | null;
+}
+export interface MedicalDirectorSection {
+  count: number;
+  items: OversightItem[];
+  unavailable: string[];
+}
+
 export interface QualityOverviewAggregate {
   asOf: string;
   permissions: Section<EffectiveQualityPermissions>;
@@ -207,6 +227,6 @@ export interface QualityOverviewAggregate {
   escalations: Section<EscalationSection>;
   recall: Section<RecallSection>;
   benchmarks: Section<BenchmarksSection>;
-  medicalDirector: Section<null>;
+  medicalDirector: Section<MedicalDirectorSection>;
   governance: Section<null>;
 }
