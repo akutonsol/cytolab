@@ -65,6 +65,7 @@ import { FhirModule } from './modules/fhir/fhir.module';
 import { ReportCenterModule } from './modules/report-center/report-center.module';
 import { KnowledgeBaseModule } from './modules/knowledge-base/knowledge-base.module';
 import { LabModule } from './modules/lab/lab.module';
+import { QualityGovernanceModule } from './modules/quality-governance/quality-governance.module';
 
 /**
  * Cytolab modular monolith.
@@ -156,6 +157,7 @@ import { LabModule } from './modules/lab/lab.module';
     ReportCenterModule,
     KnowledgeBaseModule,
     LabModule,
+    QualityGovernanceModule,
   ],
   controllers: [HealthController],
   providers: [
