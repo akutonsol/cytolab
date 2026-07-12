@@ -175,6 +175,9 @@ export default function EnterpriseAdministrationWorkspacePage() {
           if (s.key === 'roles') return <RolesPanel key={s.key} section={data?.roles} loading={isLoading} onOpen={() => router.push('/roles')} />;
           if (s.key === 'permissions') return <PermissionsPanel key={s.key} section={data?.permissions} loading={isLoading} onOpen={() => router.push('/roles')} />;
           if (s.key === 'security') return <SecurityPanel key={s.key} section={data?.security} loading={isLoading} onOpen={() => router.push('/security')} />;
+          if (s.key === 'clients') return <ClientsPanel key={s.key} section={data?.clients} loading={isLoading} onOpen={() => router.push('/clients')} />;
+          if (s.key === 'labCodes') return <LabCodesPanel key={s.key} section={data?.labCodes} loading={isLoading} onOpen={() => router.push('/lab-codes')} />;
+          if (s.key === 'codeSheets') return <CodeSheetsPanel key={s.key} section={data?.codeSheets} loading={isLoading} onOpen={() => router.push('/lab-codes')} />;
           return (
             <AdminSection
               key={s.key}
@@ -527,3 +530,91 @@ function SecurityPanel({ section, loading, onOpen }: { section?: EnterpriseAdmin
 
 const fmtDateTime = (iso: string | null): string =>
   iso ? new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+
+// Clients — recorded directory. Contact/location/portal status shown as owner facts only. No editor,
+// no portal manager, no billing controls, no inferred standing.
+function ClientsPanel({ section, loading, onOpen }: { section?: EnterpriseAdminOverview['clients']; loading: boolean; onOpen: () => void }) {
+  return (
+    <SectionShell
+      title="Clients"
+      section={section}
+      loading={loading}
+      emptyText="No clients are recorded."
+      badge={section?.data ? <Badge tone="neutral" size="xs">{section.data.total} recorded</Badge> : undefined}
+    >
+      {(d) => (
+        <div className="space-y-2">
+          {d.items.map((c) => {
+            const meta = [c.accountNumber ? `Acct ${c.accountNumber}` : null, c.clientType, c.location, c.contact].filter(Boolean).join(' · ');
+            return (
+              <div key={c.id} className="flex flex-wrap items-start justify-between gap-2 rounded-lg border border-lightgray px-3 py-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-text">{c.name ?? '—'}</div>
+                  {meta && <div className="mt-0.5 text-meta text-text-tertiary">{meta}</div>}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {c.portalAccountConfigured && <Badge tone="neutral" size="xs" title="Portal account configured">Portal account configured</Badge>}
+                  <Badge tone={c.active ? 'success' : 'neutral'} size="xs">{c.active ? 'Active' : 'Inactive'}</Badge>
+                </div>
+              </div>
+            );
+          })}
+          <OpenOwner label="Open clients" onOpen={onOpen} />
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+// Lab Codes — recorded codes. `clientsUsing` shown as an owner count (not a priority). No editor.
+function LabCodesPanel({ section, loading, onOpen }: { section?: EnterpriseAdminOverview['labCodes']; loading: boolean; onOpen: () => void }) {
+  return (
+    <SectionShell
+      title="Lab Codes"
+      section={section}
+      loading={loading}
+      emptyText="No lab codes are recorded."
+      badge={section?.data ? <Badge tone="neutral" size="xs">{section.data.total} recorded</Badge> : undefined}
+    >
+      {(d) => (
+        <div className="space-y-1.5">
+          {d.items.map((lc) => {
+            const meta = [lc.region, lc.clientsUsing != null ? `${lc.clientsUsing} client${lc.clientsUsing === 1 ? '' : 's'}` : null].filter(Boolean).join(' · ');
+            return (
+              <div key={lc.id} className="flex flex-wrap items-baseline justify-between gap-2 border-b border-lightgray py-1.5 last:border-0">
+                <span className="font-mono text-sm text-text">{lc.code}</span>
+                <span className="text-meta text-text-tertiary">{meta || '—'}</span>
+              </div>
+            );
+          })}
+          <OpenOwner label="Open code vault" onOpen={onOpen} />
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+// Code Sheets — recorded reference sheets. Owner fields only. No editor.
+function CodeSheetsPanel({ section, loading, onOpen }: { section?: EnterpriseAdminOverview['codeSheets']; loading: boolean; onOpen: () => void }) {
+  return (
+    <SectionShell
+      title="Code Sheets"
+      section={section}
+      loading={loading}
+      emptyText="No code sheets are recorded."
+      badge={section?.data ? <Badge tone="neutral" size="xs">{section.data.total} recorded</Badge> : undefined}
+    >
+      {(d) => (
+        <div className="space-y-2">
+          {d.items.map((cs) => (
+            <div key={cs.id} className="rounded-lg border border-lightgray px-3 py-2">
+              <div className="text-sm font-semibold text-text">{cs.name}</div>
+              {cs.description && <div className="mt-0.5 text-sm text-text-secondary">{cs.description}</div>}
+            </div>
+          ))}
+          <OpenOwner label="Open code vault" onOpen={onOpen} />
+        </div>
+      )}
+    </SectionShell>
+  );
+}

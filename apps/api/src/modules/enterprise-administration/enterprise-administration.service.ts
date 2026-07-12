@@ -5,6 +5,9 @@ import { DepartmentsService } from '../departments/departments.service';
 import { UsersService } from '../users/users.service';
 import { RolesService } from '../roles/roles.service';
 import { SecurityService } from '../security/security.service';
+import { ClientsService } from '../clients/clients.service';
+import { LabCodesService } from '../lab-codes/lab-codes.service';
+import { CodeSheetsService } from '../code-sheets/code-sheets.service';
 
 // ── Enterprise Administration aggregate (orchestration only) ──────────────────
 // A2: a THIN read-only aggregate. It owns no persistence, runs no Prisma query, calls no
@@ -179,6 +182,64 @@ export interface SecuritySection {
   ownerPath: string;
 }
 
+// ── Clients (A6) ─────────────────────────────────────────────────────────────
+// Recorded clients from `ClientsService.findAll` — owner fields only. `contact` is the owner's own
+// business email/phone (exposed under client:view). `portalAccountConfigured` is a STATUS boolean that
+// reflects ONLY the presence of one or more related PortalUser records — it proves a portal account
+// record exists, NOT that access is enabled, login is permitted, credentials are valid, onboarding is
+// complete, the account is unlocked, or portal authorization is active. Never the portal usernames/
+// emails/2FA/tokens (that is the deferred Portal Access section). No inferred billing/credit/engagement/
+// eligibility, no facility classification beyond the recorded client type. Gated by `client:view`.
+export interface ClientRow {
+  id: string;
+  name: string | null;
+  accountNumber: string | null;
+  clientType: string | null;
+  contact: string | null;
+  location: string | null;
+  active: boolean;
+  portalAccountConfigured: boolean;
+  createdAt: string | null;
+  ownerPath: string;
+}
+export interface ClientsSection {
+  total: number;
+  items: ClientRow[];
+}
+
+// ── Lab Codes (A6) ───────────────────────────────────────────────────────────
+// Recorded lab codes from `LabCodesService.findAll`. The owner model records only `code`/`region`;
+// `clientsUsing` is the owner-computed `_count.clients` (a factual count, not a usage priority). No
+// clinical meaning is inferred. Gated by `labcode:view`.
+export interface LabCodeRow {
+  id: string;
+  code: string;
+  region: string | null;
+  clientsUsing: number | null;
+  createdAt: string | null;
+  ownerPath: string;
+}
+export interface LabCodesSection {
+  total: number;
+  items: LabCodeRow[];
+}
+
+// ── Code Sheets (A6) ─────────────────────────────────────────────────────────
+// Recorded code sheets from `CodeSheetsService.findCodeSheets`. Owner fields only (abbreviation as
+// name, description, created date). The owner read exposes no membership count and no linked form, so
+// neither is surfaced (no recompute). Gated by `codesheet:view`.
+export interface CodeSheetRow {
+  id: string;
+  name: string;
+  description: string | null;
+  createdAt: string | null;
+  ownerPath: string;
+}
+export interface CodeSheetsSection {
+  total: number;
+  items: CodeSheetRow[];
+}
+
 // The remaining evidence sections stay deferred. Each carries its own status so a future section
 // failure isolates to it and never collapses `permissionMatrix`, siblings, or the shell.
 export interface EnterpriseAdminOverview {
@@ -191,9 +252,12 @@ export interface EnterpriseAdminOverview {
   roles: Section<RolesSection>;
   permissions: Section<PermissionsSection>;
   security: Section<SecuritySection>;
-  clients: Section<null>;
-  labCodes: Section<null>;
-  codeSheets: Section<null>;
+  clients: Section<ClientsSection>;
+  labCodes: Section<LabCodesSection>;
+  codeSheets: Section<CodeSheetsSection>;
+  // Forms stays deferred: FormConfig exposes no mutation-free read (every read path routes through
+  // getOrCreate, which persists a default config), so it cannot be composed under the orchestration-
+  // only contract without a side-effect. See the A6 report.
   forms: Section<null>;
   fhir: Section<null>;
   notifications: Section<null>;
@@ -258,6 +322,9 @@ export class EnterpriseAdministrationService {
     private readonly users: UsersService,
     private readonly roles: RolesService,
     private readonly security: SecurityService,
+    private readonly clients: ClientsService,
+    private readonly labCodes: LabCodesService,
+    private readonly codeSheets: CodeSheetsService,
   ) {}
 
   async overview(user: AuthUser): Promise<EnterpriseAdminOverview> {
@@ -265,7 +332,7 @@ export class EnterpriseAdministrationService {
     // downstream failure. Sections resolve independently (partial-failure isolation): one owner
     // failing marks only its section and never collapses the permission map or siblings.
     const perms = buildPermissions(user);
-    const [laboratory, branding, departments, users, roles, permissions, security] = await Promise.all([
+    const [laboratory, branding, departments, users, roles, permissions, security, clients, labCodes, codeSheets] = await Promise.all([
       this.loadLaboratory(perms),
       this.loadBranding(perms),
       this.loadDepartments(perms),
@@ -273,6 +340,9 @@ export class EnterpriseAdministrationService {
       this.loadRoles(perms),
       this.loadPermissions(perms),
       this.loadSecurity(perms),
+      this.loadClients(perms),
+      this.loadLabCodes(perms),
+      this.loadCodeSheets(perms),
     ]);
     return {
       asOf: new Date().toISOString(),
@@ -284,9 +354,9 @@ export class EnterpriseAdministrationService {
       roles,
       permissions,
       security,
-      clients: deferred(),
-      labCodes: deferred(),
-      codeSheets: deferred(),
+      clients,
+      labCodes,
+      codeSheets,
       forms: deferred(),
       fhir: deferred(),
       notifications: deferred(),
@@ -467,6 +537,111 @@ export class EnterpriseAdministrationService {
       return { status: 'error', data: null, reason: 'Security posture failed to load' };
     }
   }
+
+  // Clients — recorded directory from the owner. `contact` is the owner's business email/phone;
+  // `portalAccountConfigured` is a STATUS boolean = a related PortalUser record exists (no portal PII;
+  // NOT proof of enabled access/login/creds). No inferred billing/credit/engagement/eligibility.
+  // Bounded. Gated by `client:view`.
+  private async loadClients(perms: EffectiveAdminPermissions): Promise<Section<ClientsSection>> {
+    if (!perms.viewClient) return { status: 'forbidden', data: null };
+    try {
+      const page: any = await this.clients.findAll({ pageSize: 100 } as any);
+      const rows: any[] = Array.isArray(page?.data) ? page.data : Array.isArray(page) ? page : [];
+      if (!rows.length) return { status: 'empty', data: null };
+      const items: ClientRow[] = rows.map((c) => {
+        const addr = Array.isArray(c.addresses) ? c.addresses[0] : null;
+        return {
+          id: c.id,
+          name: c.officeName || `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim() || null,
+          accountNumber: c.accountNo ?? null,
+          clientType: c.clientType?.name ?? null,
+          contact: c.email ?? c.phoneNumber ?? c.mobileNumber ?? null,
+          location: addr ? [addr.city, addr.region, addr.country].filter(Boolean).join(', ') || null : null,
+          active: !!c.active,
+          // Presence of a related PortalUser record only — never proof of enabled access/login/creds.
+          portalAccountConfigured: Array.isArray(c.portalUsers) && c.portalUsers.length > 0,
+          createdAt: iso(c.createdAt),
+          ownerPath: '/clients',
+        };
+      });
+      items.sort(clientSort);
+      return { status: 'ready', data: { total: typeof page?.total === 'number' ? page.total : items.length, items: items.slice(0, 100) } };
+    } catch {
+      return { status: 'error', data: null, reason: 'Clients failed to load' };
+    }
+  }
+
+  // Lab codes — recorded codes from the owner. `clientsUsing` is the owner-computed `_count.clients`
+  // (a factual count, never a usage priority). No clinical meaning inferred. Bounded. Gated by `labcode:view`.
+  private async loadLabCodes(perms: EffectiveAdminPermissions): Promise<Section<LabCodesSection>> {
+    if (!perms.viewLabCode) return { status: 'forbidden', data: null };
+    try {
+      const rows: any[] = await this.labCodes.findAll();
+      if (!Array.isArray(rows) || !rows.length) return { status: 'empty', data: null };
+      const items: LabCodeRow[] = rows.map((r) => ({
+        id: r.id,
+        code: String(r.code),
+        region: r.region ?? null,
+        clientsUsing: typeof r.clientsUsing === 'number' ? r.clientsUsing : null,
+        createdAt: iso(r.createdAt),
+        ownerPath: '/lab-codes',
+      }));
+      items.sort(labCodeSort);
+      return { status: 'ready', data: { total: items.length, items: items.slice(0, 200) } };
+    } catch {
+      return { status: 'error', data: null, reason: 'Lab codes failed to load' };
+    }
+  }
+
+  // Code sheets — recorded reference sheets from the owner. Owner fields only (abbreviation as name,
+  // description, created date); no membership count or linked form (unexposed). Bounded. Gated by `codesheet:view`.
+  private async loadCodeSheets(perms: EffectiveAdminPermissions): Promise<Section<CodeSheetsSection>> {
+    if (!perms.viewCodeSheet) return { status: 'forbidden', data: null };
+    try {
+      const rows: any[] = await this.codeSheets.findCodeSheets();
+      if (!Array.isArray(rows) || !rows.length) return { status: 'empty', data: null };
+      const items: CodeSheetRow[] = rows.map((r) => ({
+        id: r.id,
+        name: String(r.abbreviation),
+        description: r.description ?? null,
+        createdAt: iso(r.createdAt),
+        ownerPath: '/lab-codes',
+      }));
+      items.sort(codeSheetSort);
+      return { status: 'ready', data: { total: items.length, items: items.slice(0, 100) } };
+    } catch {
+      return { status: 'error', data: null, reason: 'Code sheets failed to load' };
+    }
+  }
+}
+
+const iso = (d: Date | string | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
+
+// ── Configuration deterministic ordering (recorded fields only) ──────────────
+// Clients: recorded active state first, then display name, then account number, then a stable id.
+function clientSort(x: ClientRow, y: ClientRow): number {
+  if (x.active !== y.active) return x.active ? -1 : 1;
+  const kx = (x.name ?? '').toLowerCase();
+  const ky = (y.name ?? '').toLowerCase();
+  if (kx !== ky) return kx < ky ? -1 : 1;
+  const ax = x.accountNumber ?? '';
+  const ay = y.accountNumber ?? '';
+  if (ax !== ay) return ax < ay ? -1 : 1;
+  return x.id < y.id ? -1 : x.id > y.id ? 1 : 0;
+}
+
+// Lab codes: code, then a stable id (the model records no label/name). Never by usage.
+function labCodeSort(x: LabCodeRow, y: LabCodeRow): number {
+  if (x.code !== y.code) return x.code < y.code ? -1 : 1;
+  return x.id < y.id ? -1 : x.id > y.id ? 1 : 0;
+}
+
+// Code sheets: name (abbreviation), then a stable id.
+function codeSheetSort(x: CodeSheetRow, y: CodeSheetRow): number {
+  const kx = x.name.toLowerCase();
+  const ky = y.name.toLowerCase();
+  if (kx !== ky) return kx < ky ? -1 : 1;
+  return x.id < y.id ? -1 : x.id > y.id ? 1 : 0;
 }
 
 // ── Identity & Access deterministic ordering (recorded fields only) ──────────

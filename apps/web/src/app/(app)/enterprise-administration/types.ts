@@ -145,6 +145,53 @@ export interface SecuritySection {
   ownerPath: string;
 }
 
+// Clients — recorded directory (owner: ClientsService.findAll). `contact` is the owner's business
+// email/phone; `portalAccountConfigured` is a status boolean reflecting only the presence of a related
+// PortalUser record — not enabled access/login/credentials/2FA (no portal PII). No inferred eligibility.
+export interface ClientRow {
+  id: string;
+  name: string | null;
+  accountNumber: string | null;
+  clientType: string | null;
+  contact: string | null;
+  location: string | null;
+  active: boolean;
+  portalAccountConfigured: boolean;
+  createdAt: string | null;
+  ownerPath: string;
+}
+export interface ClientsSection {
+  total: number;
+  items: ClientRow[];
+}
+
+// Lab codes — recorded codes (owner: LabCodesService.findAll). `clientsUsing` is the owner _count.
+export interface LabCodeRow {
+  id: string;
+  code: string;
+  region: string | null;
+  clientsUsing: number | null;
+  createdAt: string | null;
+  ownerPath: string;
+}
+export interface LabCodesSection {
+  total: number;
+  items: LabCodeRow[];
+}
+
+// Code sheets — recorded sheets (owner: CodeSheetsService.findCodeSheets). Owner fields only.
+export interface CodeSheetRow {
+  id: string;
+  name: string;
+  description: string | null;
+  createdAt: string | null;
+  ownerPath: string;
+}
+export interface CodeSheetsSection {
+  total: number;
+  items: CodeSheetRow[];
+}
+
 export interface EnterpriseAdminOverview {
   asOf: string;
   permissionMatrix: Section<EffectiveAdminPermissions>;
@@ -155,9 +202,9 @@ export interface EnterpriseAdminOverview {
   roles: Section<RolesSection>;
   permissions: Section<PermissionsSection>;
   security: Section<SecuritySection>;
-  clients: Section<null>;
-  labCodes: Section<null>;
-  codeSheets: Section<null>;
+  clients: Section<ClientsSection>;
+  labCodes: Section<LabCodesSection>;
+  codeSheets: Section<CodeSheetsSection>;
   forms: Section<null>;
   fhir: Section<null>;
   notifications: Section<null>;
