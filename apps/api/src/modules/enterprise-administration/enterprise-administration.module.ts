@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
+import { LabModule } from '../lab/lab.module';
+import { DepartmentsModule } from '../departments/departments.module';
 import { EnterpriseAdministrationController } from './enterprise-administration.controller';
 import { EnterpriseAdministrationService } from './enterprise-administration.service';
 
 // Thin orchestration module for the Enterprise Administration & Controls Workspace. It owns no
-// persistence and holds no Prisma. A2 imports NO owner module (the permission map is built from
-// the caller's claims only); later checkpoints (A3–A9) add owner-module imports as each section lands.
+// persistence and holds no Prisma. A3 imports the owner modules whose recorded configuration the
+// Laboratory/Branding/Departments sections read (each owner module exports its service). Later
+// checkpoints add more owner-module imports as each section lands.
 @Module({
+  imports: [LabModule, DepartmentsModule],
   controllers: [EnterpriseAdministrationController],
   providers: [EnterpriseAdministrationService],
 })

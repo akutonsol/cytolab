@@ -166,10 +166,12 @@ export default function EnterpriseAdministrationWorkspacePage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {ADMIN_SECTIONS.map((s) =>
-          s.key === 'permissionMatrix' ? (
-            <PermissionMatrixPanel key={s.key} section={data?.permissionMatrix} loading={isLoading} />
-          ) : (
+        {ADMIN_SECTIONS.map((s) => {
+          if (s.key === 'permissionMatrix') return <PermissionMatrixPanel key={s.key} section={data?.permissionMatrix} loading={isLoading} />;
+          if (s.key === 'laboratory') return <LaboratoryPanel key={s.key} section={data?.laboratory} loading={isLoading} />;
+          if (s.key === 'branding') return <BrandingPanel key={s.key} section={data?.branding} loading={isLoading} />;
+          if (s.key === 'departments') return <DepartmentsPanel key={s.key} section={data?.departments} loading={isLoading} />;
+          return (
             <AdminSection
               key={s.key}
               title={s.title}
@@ -177,8 +179,8 @@ export default function EnterpriseAdministrationWorkspacePage() {
               status={data?.[s.key]?.status}
               loading={isLoading}
             />
-          ),
-        )}
+          );
+        })}
       </div>
     </div>
   );
@@ -262,5 +264,125 @@ function PermissionMatrixPanel({
         <EmptyState bare className="px-0 py-6" title="Unavailable" description="The permission map could not be loaded." />
       )}
     </Card>
+  );
+}
+
+// Shared section shell for a hydrated admin panel — renders the frozen states truthfully and hands
+// `ready` data to `children`. No fabricated values: `forbidden`/`error`/`empty` show honest text.
+function SectionShell<T>({
+  title,
+  section,
+  loading,
+  emptyText,
+  badge,
+  children,
+}: {
+  title: string;
+  section?: { status: SectionStatus; data: T | null };
+  loading: boolean;
+  emptyText: string;
+  badge?: React.ReactNode;
+  children: (data: T) => React.ReactNode;
+}) {
+  const status = section?.status;
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-3 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">{title}</h2>
+        {status === 'ready' && badge}
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-48" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-6" title="No access" description="You do not have permission to view this section." />
+      ) : status === 'error' ? (
+        <EmptyState bare className="px-0 py-6" title="Unavailable" description="This section could not be loaded." />
+      ) : status === 'empty' || !section?.data ? (
+        <EmptyState bare className="px-0 py-6" title="Nothing recorded" description={emptyText} />
+      ) : (
+        <>{children(section.data as T)}</>
+      )}
+    </Card>
+  );
+}
+
+// One recorded field: label + owner value (or "—" when the owner records no value). Never a warning.
+function Field({ label, value }: { label: string; value: string | null }) {
+  return (
+    <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-lightgray py-1.5 last:border-0">
+      <span className="text-meta uppercase tracking-wide text-text-tertiary">{label}</span>
+      <span className="text-sm text-text">{value ?? '—'}</span>
+    </div>
+  );
+}
+
+const fmtDate = (iso: string | null): string => (iso ? new Date(iso).toLocaleDateString() : '—');
+
+// Laboratory — recorded profile fields, verbatim from the lab owner.
+function LaboratoryPanel({ section, loading }: { section?: EnterpriseAdminOverview['laboratory']; loading: boolean }) {
+  return (
+    <SectionShell title="Laboratory" section={section} loading={loading} emptyText="No laboratory profile is recorded.">
+      {(d) => (
+        <div>
+          <Field label="Name" value={d.name} />
+          <Field label="Tagline" value={d.tagline} />
+          <Field label="Address" value={d.address} />
+          <Field label="Phone" value={d.phone} />
+          <Field label="Email" value={d.email} />
+          <Field label="Currency" value={d.currency} />
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+// Branding — recorded name/tagline + logo PRESENCE only (never the asset URL or upload credential).
+function BrandingPanel({ section, loading }: { section?: EnterpriseAdminOverview['branding']; loading: boolean }) {
+  return (
+    <SectionShell title="Branding" section={section} loading={loading} emptyText="No branding is recorded.">
+      {(d) => (
+        <div>
+          <Field label="Name" value={d.name} />
+          <Field label="Tagline" value={d.tagline} />
+          <div className="flex items-center justify-between gap-2 py-1.5">
+            <span className="text-meta uppercase tracking-wide text-text-tertiary">Logo</span>
+            <Badge tone={d.logoConfigured ? 'success' : 'neutral'} size="xs">{d.logoConfigured ? 'Configured' : 'Not configured'}</Badge>
+          </div>
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+// Departments — recorded rows only (name, description, member count, manager, created). No active
+// state (unrecorded), no hierarchy (never calculated).
+function DepartmentsPanel({ section, loading }: { section?: EnterpriseAdminOverview['departments']; loading: boolean }) {
+  return (
+    <SectionShell
+      title="Departments"
+      section={section}
+      loading={loading}
+      emptyText="No departments are recorded."
+      badge={section?.data ? <Badge tone="neutral" size="xs">{section.data.total} recorded</Badge> : undefined}
+    >
+      {(d) => (
+        <div className="space-y-2">
+          {d.items.map((dept) => {
+            const meta = [
+              dept.memberCount != null ? `${dept.memberCount} member${dept.memberCount === 1 ? '' : 's'}` : null,
+              dept.managerName,
+              dept.createdAt ? `since ${fmtDate(dept.createdAt)}` : null,
+            ].filter(Boolean).join(' · ');
+            return (
+              <div key={dept.id} className="rounded-lg border border-lightgray px-3 py-2">
+                <div className="text-sm font-semibold text-text">{dept.name}</div>
+                {meta && <div className="mt-0.5 text-meta text-text-tertiary">{meta}</div>}
+                {dept.description && <div className="mt-0.5 text-sm text-text-secondary">{dept.description}</div>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </SectionShell>
   );
 }

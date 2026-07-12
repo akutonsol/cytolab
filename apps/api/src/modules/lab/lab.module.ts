@@ -8,5 +8,8 @@ import { LabService } from './lab.service';
   imports: [PrismaModule, FilesModule],
   controllers: [LabController],
   providers: [LabService],
+  // Read-only composition by the Enterprise Administration workspace (Laboratory/Branding).
+  // Enforcement authority stays with the lab controller (applicationprefs:view/change).
+  exports: [LabService],
 })
 export class LabModule {}

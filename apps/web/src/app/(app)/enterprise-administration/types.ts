@@ -52,12 +52,46 @@ export interface EffectiveAdminPermissions {
   isSuperRole: boolean;
 }
 
+// Laboratory — recorded lab profile (owner: LabService.getProfile), shown verbatim. No computed
+// status, no fabricated missing-config warning.
+export interface LaboratorySection {
+  name: string | null;
+  tagline: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  currency: string | null;
+}
+
+// Branding — recorded name/tagline + logo PRESENCE only (owner: LabService.getBranding). The logo
+// URL and any storage/upload credential are never surfaced; colours are not recorded, so omitted.
+export interface BrandingSection {
+  name: string | null;
+  tagline: string | null;
+  logoConfigured: boolean;
+}
+
+// Departments — recorded rows (owner: DepartmentsService.findAll). Owner fields only; no active
+// state (unrecorded) and no hierarchy (never calculated).
+export interface DepartmentRow {
+  id: string;
+  name: string;
+  description: string | null;
+  memberCount: number | null;
+  managerName: string | null;
+  createdAt: string | null;
+}
+export interface DepartmentsSection {
+  total: number;
+  items: DepartmentRow[];
+}
+
 export interface EnterpriseAdminOverview {
   asOf: string;
   permissionMatrix: Section<EffectiveAdminPermissions>;
-  laboratory: Section<null>;
-  branding: Section<null>;
-  departments: Section<null>;
+  laboratory: Section<LaboratorySection>;
+  branding: Section<BrandingSection>;
+  departments: Section<DepartmentsSection>;
   users: Section<null>;
   roles: Section<null>;
   permissions: Section<null>;
