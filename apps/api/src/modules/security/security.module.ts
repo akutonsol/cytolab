@@ -45,6 +45,9 @@ import { SessionService } from './session.service';
     SessionService,
     LoginProtectionService,
     MfaService,
+    // Read-only composition by the Quality & Governance workspace (security access history).
+    // Enforcement authority stays with the security controllers (system:security).
+    SecurityService,
   ],
 })
 export class SecurityModule {}

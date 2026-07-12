@@ -5,6 +5,9 @@ import { EscalationModule } from '../escalation/escalation.module';
 import { RecallModule } from '../recall/recall.module';
 import { ProficiencyModule } from '../proficiency/proficiency.module';
 import { ReportCenterModule } from '../report-center/report-center.module';
+import { ResultSheetsModule } from '../result-sheets/result-sheets.module';
+import { SecurityModule } from '../security/security.module';
+import { ChangeRequestsModule } from '../change-requests/change-requests.module';
 import { QualityGovernanceController } from './quality-governance.controller';
 import { QualityGovernanceService } from './quality-governance.service';
 
@@ -13,7 +16,7 @@ import { QualityGovernanceService } from './quality-governance.service';
 // service). C3 imports the owner modules whose recorded summaries the Overview reads.
 // Later checkpoints add more owner-module imports as each evidence section lands.
 @Module({
-  imports: [CorrelationModule, QcModule, EscalationModule, RecallModule, ProficiencyModule, ReportCenterModule],
+  imports: [CorrelationModule, QcModule, EscalationModule, RecallModule, ProficiencyModule, ReportCenterModule, ResultSheetsModule, SecurityModule, ChangeRequestsModule],
   controllers: [QualityGovernanceController],
   providers: [QualityGovernanceService],
 })

@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { BenchmarkMetric, CorrelationCaseRow, EffectiveQualityPermissions, EscalationRow, OverviewSource, OversightItem, ProficiencyTestRow, QcAlertRow, QcCheckRow, QualityOverviewAggregate, RecallRow, SectionStatus } from './types';
+import type { BenchmarkMetric, CorrelationCaseRow, EffectiveQualityPermissions, EscalationRow, GovernanceEvent, OverviewSource, OversightItem, ProficiencyTestRow, QcAlertRow, QcCheckRow, QualityOverviewAggregate, RecallRow } from './types';
 
 // Only an internal, same-origin path may be a return target — reject external and
 // protocol-relative URLs (open-redirect protection). Mirrors the Sign-Out routing guard.
@@ -29,16 +29,6 @@ function safeReturnTo(raw: string | null): string | null {
   if (/^\/(login|portal\/login)\b/.test(p)) return null;
   return p;
 }
-
-// The approved information architecture. Each evidence region maps to its aggregate
-// section key; the Correlation & Discordance region reflects the `correlation` section
-// (the `discordance` section joins it at C4). `permissions` renders the descriptive map.
-type EvidenceKey =
-  | 'governance';
-
-const EVIDENCE_REGIONS: { key: EvidenceKey; title: string; responsibility: string }[] = [
-  { key: 'governance', title: 'Governance Trail', responsibility: 'A source-labelled assembly of recorded events — not a canonical audit ledger.' },
-];
 
 // Descriptive permission map labels (permission-aware presentation; not quality evidence).
 const PERMISSION_LABELS: { key: keyof EffectiveQualityPermissions; label: string }[] = [
@@ -166,17 +156,10 @@ export default function QualityGovernanceWorkspacePage() {
               acts on its own owner surface. No risk score, priority, or ranking. */}
           <MedicalDirectorPanel section={data?.medicalDirector} loading={isLoading} onOpen={(path) => router.push(path)} />
 
-          {/* The remaining evidence regions — truthfully deferred; each reflects its own
-              aggregate section status, so a future failure isolates to its region. */}
-          {EVIDENCE_REGIONS.map((r) => (
-            <EvidenceRegion
-              key={r.key}
-              title={r.title}
-              responsibility={r.responsibility}
-              status={data?.[r.key]?.status}
-              loading={isLoading}
-            />
-          ))}
+          {/* Governance Trail — a source-labelled, explicitly NON-CANONICAL assembly of recorded
+              events from owner services. Not an audit ledger; partial when a source is
+              unavailable; detail lives on each event's own owner surface. */}
+          <GovernancePanel section={data?.governance} loading={isLoading} onOpen={(path) => router.push(path)} />
         </div>
       )}
     </div>
@@ -234,6 +217,8 @@ function OverviewRow({ source }: { source: OverviewSource }) {
 }
 
 const fmtDate = (iso: string | null): string => (iso ? new Date(iso).toLocaleDateString() : '—');
+const fmtDateTime = (iso: string | null): string =>
+  iso ? new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—';
 // Owner-stored correlation-result label + tone (no synthetic severity; tones avoid amber).
 const resultTone = (r: string | null): 'success' | 'danger' | 'neutral' =>
   r === 'Concordant' ? 'success' : r === 'MajorDiscordant' ? 'danger' : 'neutral';
@@ -778,37 +763,83 @@ function PermissionsPanel({
   );
 }
 
-// One evidence region. At C2 every section is `deferred`; the region distinguishes
-// loading / deferred / forbidden / error truthfully. No evidence, counters, or metrics.
-function EvidenceRegion({
-  title,
-  responsibility,
-  status,
+// Governance Trail — a source-labelled, explicitly NON-CANONICAL assembly of recorded events.
+// The non-canonical disclosure is ALWAYS visible (ready or empty). Each event shows its source
+// label, event type, factual description, date/time, actor or "Actor not recorded", and a real
+// owner link where one exists. Unavailable sources are named truthfully. No audit console,
+// compliance/health score, violation detector, editor, or acknowledgement workflow.
+function GovernancePanel({
+  section,
   loading,
+  onOpen,
 }: {
-  title: string;
-  responsibility: string;
-  status?: SectionStatus;
+  section?: QualityOverviewAggregate['governance'];
   loading: boolean;
+  onOpen: (ownerPath: string) => void;
 }) {
-  const stateBadge =
-    status === 'forbidden' ? 'No access' : status === 'error' ? 'Unavailable' : 'Not yet loaded';
+  const status = section?.status;
+  const d = status === 'ready' || status === 'empty' ? section?.data : null;
+  const disclosure = (
+    <p className="mb-3 text-meta text-text-tertiary">
+      A source-labelled assembly of recorded events from existing owner systems — not a canonical audit ledger, and partial when a source is unavailable.
+    </p>
+  );
   return (
-    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+    <Card radius="md" elevation="soft" border="hairline" padding="lg" className="lg:col-span-2">
       <div className="mb-1 flex items-center gap-2">
-        <h2 className="text-base font-bold text-text">{title}</h2>
-        {!loading && status && <Badge tone="neutral" size="xs">{stateBadge}</Badge>}
+        <h2 className="text-base font-bold text-text">Governance Trail</h2>
+        {status === 'ready' && d && <Badge tone="neutral" size="xs">{d.events.length} recorded events</Badge>}
       </div>
       {loading || !status ? (
         <div className="space-y-2"><Skeleton shape="text" width="w-48" /><Skeleton shape="text" width="w-40" /></div>
       ) : status === 'forbidden' ? (
-        <EmptyState bare className="px-0 py-8" title="No access" description="You do not have permission to view this section." />
+        <>
+          {disclosure}
+          <EmptyState bare className="px-0 py-6" title="No access" description="You do not have permission to view any governance source (result sheets, security access, or change requests)." />
+        </>
       ) : status === 'error' ? (
-        <EmptyState bare className="px-0 py-8" title="Unavailable" description="This section could not be loaded." />
+        <>
+          {disclosure}
+          <EmptyState bare className="px-0 py-6" title="Unavailable" description="The governance trail could not be loaded." />
+        </>
+      ) : status === 'empty' || !d || !d.events.length ? (
+        <>
+          {disclosure}
+          <EmptyState bare className="px-0 py-6" title="No recorded events" description="No governance events are recorded in the readable sources." />
+          {d && d.unavailable.length > 0 && (
+            <p className="text-meta text-text-tertiary">Sources unavailable: {d.unavailable.join(', ')}.</p>
+          )}
+        </>
       ) : (
-        // deferred (and, defensively, empty/ready which cannot occur until later checkpoints)
-        <EmptyState bare className="px-0 py-8" title="Not yet loaded" description={responsibility} />
+        <>
+          {disclosure}
+          <div className="space-y-2">
+            {d.events.map((e) => (
+              <GovernanceEventRow key={e.id} event={e} onOpen={e.ownerPath ? () => onOpen(e.ownerPath as string) : undefined} />
+            ))}
+          </div>
+          {d.unavailable.length > 0 && (
+            <p className="pt-2 text-meta text-text-tertiary">Sources unavailable: {d.unavailable.join(', ')}.</p>
+          )}
+        </>
       )}
     </Card>
+  );
+}
+
+function GovernanceEventRow({ event, onOpen }: { event: GovernanceEvent; onOpen?: () => void }) {
+  const meta = [event.actor ?? 'Actor not recorded', event.timestamp ? fmtDateTime(event.timestamp) : null].filter(Boolean).join(' · ');
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-lightgray px-3 py-2.5">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge tone="neutral" size="xs">{event.sourceLabel}</Badge>
+          <span className="text-sm font-semibold text-text">{event.eventType}</span>
+        </div>
+        <div className="mt-0.5 text-meta text-text-tertiary">{meta}</div>
+        <div className="mt-0.5 text-sm text-text-secondary">{event.description}</div>
+      </div>
+      {onOpen && <Button variant="secondary" size="sm" onClick={onOpen}>Open</Button>}
+    </div>
   );
 }

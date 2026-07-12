@@ -216,6 +216,30 @@ export interface MedicalDirectorSection {
   unavailable: string[];
 }
 
+// Governance trail — a bounded, source-labeled, explicitly NON-CANONICAL assembly of recorded
+// governance events (result-sheet authorizations, security access, change-request creation),
+// each composed from an owner service gated by its own permission. Never an audit ledger, never
+// complete when a source is unavailable. `actor: null` renders as "Actor not recorded"; every
+// event is `historical` and is never presented as a current attention item.
+export interface GovernanceEvent {
+  id: string;
+  sourceDomain: string;
+  sourceLabel: string;
+  eventType: string;
+  timestamp: string;
+  actor: string | null;
+  description: string;
+  ownerPath: string | null;
+  historical: true;
+  sourceAvailable: true;
+}
+export interface GovernanceSection {
+  asOf: string;
+  events: GovernanceEvent[];
+  unavailable: string[];
+  nonCanonical: true;
+}
+
 export interface QualityOverviewAggregate {
   asOf: string;
   permissions: Section<EffectiveQualityPermissions>;
@@ -228,5 +252,5 @@ export interface QualityOverviewAggregate {
   recall: Section<RecallSection>;
   benchmarks: Section<BenchmarksSection>;
   medicalDirector: Section<MedicalDirectorSection>;
-  governance: Section<null>;
+  governance: Section<GovernanceSection>;
 }

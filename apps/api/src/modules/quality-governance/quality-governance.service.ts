@@ -5,6 +5,9 @@ import { EscalationService } from '../escalation/escalation.service';
 import { RecallService } from '../recall/recall.service';
 import { ProficiencyService } from '../proficiency/proficiency.service';
 import { ReportCenterService } from '../report-center/report-center.service';
+import { ResultSheetsService } from '../result-sheets/result-sheets.service';
+import { SecurityService } from '../security/security.service';
+import { ChangeRequestsService } from '../change-requests/change-requests.service';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 
 // ── Quality & Governance aggregate (orchestration only) ──────────────────────
@@ -259,6 +262,35 @@ export interface MedicalDirectorSection {
   unavailable: string[]; // owner sources that failed or are not permitted
 }
 
+// ── Governance trail (C10) ───────────────────────────────────────────────────
+// A bounded, SOURCE-LABELED, explicitly NON-CANONICAL trail of recorded governance events,
+// composed ONLY from owner services that expose a lab-wide recorded read (no direct Prisma).
+// It is NOT an audit ledger and never claims completeness: each source is gated by its OWN
+// real permission and isolates on failure (its label joins `unavailable`). Only three sources
+// have a genuine lab-wide owner feed — result-sheet authorizations (resultsheet:view), security
+// access history (system:security), change-request creation (changerequest:view). No event is
+// invented; no actor or timestamp is inferred; `updatedAt` is never used as an event; delivery
+// is never treated as acknowledgement; no severity/urgency ranking is applied; and no historical
+// event becomes a current attention item (every event carries `historical: true`).
+export interface GovernanceEvent {
+  id: string;
+  sourceDomain: string;
+  sourceLabel: string;
+  eventType: string;
+  timestamp: string; // an owner-DEFINED event timestamp (authorizedAt/createdAt) — never a generic updatedAt
+  actor: string | null; // recorded actor identity, or null → UI shows "Actor not recorded"
+  description: string; // factual, built only from recorded fields
+  ownerPath: string | null; // a real owner surface, or null when none exists
+  historical: true; // always historical — never re-presented as a current attention item
+  sourceAvailable: true; // the source that produced this event was readable
+}
+export interface GovernanceSection {
+  asOf: string;
+  events: GovernanceEvent[];
+  unavailable: string[]; // sources the caller cannot view, or that failed to load
+  nonCanonical: true; // fixed disclosure: a partial, source-labeled assembly — not an audit ledger
+}
+
 export interface QualityOverviewAggregate {
   asOf: string;
   permissions: Section<EffectiveQualityPermissions>;
@@ -271,12 +303,10 @@ export interface QualityOverviewAggregate {
   recall: Section<RecallSection>;
   benchmarks: Section<BenchmarksSection>;
   medicalDirector: Section<MedicalDirectorSection>;
-  // The last evidence section stays deferred at C9. It carries its own status so a future
-  // section failure isolates to it and never collapses permissions or siblings.
-  governance: Section<null>;
+  // Source-labeled governance trail (C10). Carries its own status so a source failure isolates
+  // to it and never collapses permissions or siblings.
+  governance: Section<GovernanceSection>;
 }
-
-const deferred = (): Section<null> => ({ status: 'deferred', data: null });
 
 @Injectable()
 export class QualityGovernanceService {
@@ -287,6 +317,9 @@ export class QualityGovernanceService {
     private readonly recall: RecallService,
     private readonly proficiency: ProficiencyService,
     private readonly reportCenter: ReportCenterService,
+    private readonly resultSheets: ResultSheetsService,
+    private readonly security: SecurityService,
+    private readonly changeRequests: ChangeRequestsService,
   ) {}
 
   async overview(user: AuthUser): Promise<QualityOverviewAggregate> {
@@ -295,7 +328,7 @@ export class QualityGovernanceService {
     const perms = buildPermissions(user);
     // Sections resolve independently (partial-failure isolation): a correlation failure
     // never collapses the overview or sibling sections.
-    const [overview, corr, qc, proficiency, escalations, recall, benchmarks, medicalDirector] = await Promise.all([
+    const [overview, corr, qc, proficiency, escalations, recall, benchmarks, medicalDirector, governance] = await Promise.all([
       this.loadOverview(perms),
       this.loadCorrelationSections(perms),
       this.loadQc(perms),
@@ -304,6 +337,7 @@ export class QualityGovernanceService {
       this.loadRecall(perms),
       this.loadBenchmarks(perms),
       this.loadMedicalDirector(perms, user.userId),
+      this.loadGovernance(perms),
     ]);
     return {
       asOf: new Date().toISOString(),
@@ -317,7 +351,7 @@ export class QualityGovernanceService {
       recall,
       benchmarks,
       medicalDirector,
-      governance: deferred(),
+      governance,
     };
   }
 
@@ -688,6 +722,91 @@ export class QualityGovernanceService {
     const bounded = items.sort(oversightSort).slice(0, 30);
     return { status: 'ready', data: { count: bounded.length, items: bounded, unavailable } };
   }
+
+  // Source-labeled governance trail — composed ONLY from owner services that expose a lab-wide
+  // recorded read, each gated by its REAL permission (so we never surface more than the owner
+  // would). Sources without a lab-wide owner feed (record-status events, which the owner exposes
+  // only per-record / inside a dashboard aggregate; system/job maintenance, exposed only through
+  // the superuser system log) and notification delivery (a delivery is not proof a person acted)
+  // are deliberately NOT composed — see the C10 report. Every source resolves independently: a
+  // permission-lack or a failure names the source in `unavailable` and preserves the others.
+  private async loadGovernance(perms: EffectiveQualityPermissions): Promise<Section<GovernanceSection>> {
+    // Governance has no single permission gate — it is the union of per-source reads. If the
+    // caller can view NONE of the composable sources, the whole section is truthfully forbidden.
+    if (!perms.viewResultSheet && !perms.security && !perms.viewChangeRequest) {
+      return { status: 'forbidden', data: null };
+    }
+    const events: GovernanceEvent[] = [];
+    const unavailable: string[] = [];
+
+    // Result-sheet authorizations (resultsheet:view). `authorizedAt` is an owner-DEFINED event
+    // timestamp (not a generic updatedAt). The lab-wide owner read exposes no authorizer, so the
+    // actor is truthfully null → "Actor not recorded" (never inferred from another field).
+    if (perms.viewResultSheet) {
+      try {
+        const page: any = await this.resultSheets.findAll({ pageSize: 25 } as any);
+        const rows: any[] = Array.isArray(page?.data) ? page.data : Array.isArray(page) ? page : [];
+        for (const s of rows) {
+          if (!s.authorized || !s.authorizedAt) continue; // surface only the recorded authorization event
+          events.push({
+            id: `resultsheet-${s.id}`, sourceDomain: 'result-sheet', sourceLabel: 'Result sheets',
+            eventType: 'Result sheet authorized', timestamp: new Date(s.authorizedAt).toISOString(),
+            actor: null, description: `Result sheet authorized for ${s.record?.identifier ?? 'record'}`,
+            ownerPath: s.recordId ? `/records/${s.recordId}` : null, historical: true, sourceAvailable: true,
+          });
+        }
+      } catch { unavailable.push('Result sheets'); }
+    } else unavailable.push('Result sheets');
+
+    // Security access history (system:security). Login success/failure exactly as recorded —
+    // never treated as anything more. Actor is the recorded email identity (or null).
+    if (perms.security) {
+      try {
+        const rows: any[] = await this.security.listLoginAttempts({ take: 25 });
+        for (const a of Array.isArray(rows) ? rows : []) {
+          const place = [a.city, a.country].filter(Boolean).join(', ');
+          events.push({
+            id: `security-${a.id}`, sourceDomain: 'security', sourceLabel: 'Security access',
+            eventType: a.success ? 'Login succeeded' : 'Login failed',
+            timestamp: new Date(a.createdAt).toISOString(), actor: a.email ?? null,
+            description: a.success
+              ? `Successful sign-in${place ? ` from ${place}` : ''}`
+              : `Failed sign-in attempt${a.failReason ? ` — ${a.failReason}` : ''}`,
+            ownerPath: '/security', historical: true, sourceAvailable: true,
+          });
+        }
+      } catch { unavailable.push('Security access'); }
+    } else unavailable.push('Security access');
+
+    // Change-request creation (changerequest:view). `createdAt` is the recorded creation event;
+    // the lab-wide owner read resolves no staff actor for creation, so the actor is null. The
+    // originating client office is factual context only, never presented as an inferred person.
+    if (perms.viewChangeRequest) {
+      try {
+        const page: any = await this.changeRequests.findAll({ pageSize: 25 } as any);
+        const rows: any[] = Array.isArray(page?.data) ? page.data : Array.isArray(page) ? page : [];
+        for (const c of rows) {
+          const office = c.client?.officeName ?? null;
+          events.push({
+            id: `changerequest-${c.id}`, sourceDomain: 'change-request', sourceLabel: 'Change requests',
+            eventType: 'Change request opened', timestamp: new Date(c.createdAt).toISOString(), actor: null,
+            description: `${c.subject ?? 'Change request'} — status ${c.status ?? 'Open'}${office ? ` (from ${office})` : ''}`,
+            ownerPath: '/change-requests', historical: true, sourceAvailable: true,
+          });
+        }
+      } catch { unavailable.push('Change requests'); }
+    } else unavailable.push('Change requests');
+
+    const bounded = events.sort(governanceSort).slice(0, 40);
+    const asOf = new Date().toISOString();
+    // No events → still 'empty' with every unavailable source NAMED (never a false "clean"
+    // completeness claim). Source failures isolate to `unavailable`; there is no whole-section
+    // error path, because one source failing never invalidates the others.
+    if (!bounded.length) {
+      return { status: 'empty', data: { asOf, events: [], unavailable, nonCanonical: true } };
+    }
+    return { status: 'ready', data: { asOf, events: bounded, unavailable, nonCanonical: true } };
+  }
 }
 
 // Deterministic ordering from recorded fields only. reviewRequired first is the OWNER's
@@ -737,6 +856,19 @@ function oversightSort(x: OversightItem, y: OversightItem): number {
   return (
     t(x.timestamp) - t(y.timestamp) ||
     (OVERSIGHT_SOURCE_ORDER[x.sourceDomain] ?? 99) - (OVERSIGHT_SOURCE_ORDER[y.sourceDomain] ?? 99) ||
+    (x.id < y.id ? -1 : x.id > y.id ? 1 : 0)
+  );
+}
+
+// Governance trail ordering: strict reverse chronology (newest recorded event first), then a
+// FIXED source order ONLY for exact timestamp ties, then a stable id. Chronology only — never
+// reordered to create a cleaner narrative, and never ranked by severity or inferred importance.
+const GOVERNANCE_SOURCE_ORDER: Record<string, number> = { 'result-sheet': 0, security: 1, 'change-request': 2 };
+function governanceSort(x: GovernanceEvent, y: GovernanceEvent): number {
+  const t = (s: string) => new Date(s).getTime();
+  return (
+    t(y.timestamp) - t(x.timestamp) ||
+    (GOVERNANCE_SOURCE_ORDER[x.sourceDomain] ?? 99) - (GOVERNANCE_SOURCE_ORDER[y.sourceDomain] ?? 99) ||
     (x.id < y.id ? -1 : x.id > y.id ? 1 : 0)
   );
 }
