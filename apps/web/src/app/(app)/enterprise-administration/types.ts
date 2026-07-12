@@ -86,15 +86,62 @@ export interface DepartmentsSection {
   items: DepartmentRow[];
 }
 
+// Users — recorded directory (owner: UsersService.findAll). Owner fields only; no password hash /
+// token / MFA secret / department / last-login (unexposed). `active` is the recorded isActive flag,
+// never an inferred risk level.
+export interface UserRow {
+  id: string;
+  name: string | null;
+  email: string;
+  active: boolean;
+  roles: string[];
+  createdAt: string | null;
+  ownerPath: string;
+}
+export interface UsersSection {
+  total: number;
+  items: UserRow[];
+}
+
+// Roles — recorded roles (owner: RolesService.findRoles). `isSuperRole` is the stored flag (not a
+// role name used for authority); `permissionCount` is the owner-included permission-set length.
+export interface RoleRow {
+  id: string;
+  name: string;
+  description: string | null;
+  isSuperRole: boolean;
+  permissionCount: number;
+  ownerPath: string;
+}
+export interface RolesSection {
+  total: number;
+  items: RoleRow[];
+}
+
+// Permissions — the current catalog (owner: RolesService.findPermissions). object/action split from
+// `code`; description is the owner `label`. No per-permission provenance flag (unrecorded), and
+// roles-that-hold is not exposed, so both are omitted (no inferred access).
+export interface PermissionRow {
+  code: string;
+  object: string;
+  action: string;
+  description: string | null;
+  ownerPath: string;
+}
+export interface PermissionsSection {
+  total: number;
+  items: PermissionRow[];
+}
+
 export interface EnterpriseAdminOverview {
   asOf: string;
   permissionMatrix: Section<EffectiveAdminPermissions>;
   laboratory: Section<LaboratorySection>;
   branding: Section<BrandingSection>;
   departments: Section<DepartmentsSection>;
-  users: Section<null>;
-  roles: Section<null>;
-  permissions: Section<null>;
+  users: Section<UsersSection>;
+  roles: Section<RolesSection>;
+  permissions: Section<PermissionsSection>;
   security: Section<null>;
   clients: Section<null>;
   labCodes: Section<null>;

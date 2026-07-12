@@ -14,7 +14,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { Badge, Card, EmptyState, Skeleton } from '@/components/ui';
+import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
 import type { EffectiveAdminPermissions, EnterpriseAdminOverview, SectionStatus } from './types';
 
 // Only an internal, same-origin path may be a return target — reject external and
@@ -171,6 +171,9 @@ export default function EnterpriseAdministrationWorkspacePage() {
           if (s.key === 'laboratory') return <LaboratoryPanel key={s.key} section={data?.laboratory} loading={isLoading} />;
           if (s.key === 'branding') return <BrandingPanel key={s.key} section={data?.branding} loading={isLoading} />;
           if (s.key === 'departments') return <DepartmentsPanel key={s.key} section={data?.departments} loading={isLoading} />;
+          if (s.key === 'users') return <UsersPanel key={s.key} section={data?.users} loading={isLoading} onOpen={() => router.push('/users')} />;
+          if (s.key === 'roles') return <RolesPanel key={s.key} section={data?.roles} loading={isLoading} onOpen={() => router.push('/roles')} />;
+          if (s.key === 'permissions') return <PermissionsPanel key={s.key} section={data?.permissions} loading={isLoading} onOpen={() => router.push('/roles')} />;
           return (
             <AdminSection
               key={s.key}
@@ -381,6 +384,107 @@ function DepartmentsPanel({ section, loading }: { section?: EnterpriseAdminOverv
               </div>
             );
           })}
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+// A small owner-invocation link — navigates to the real owner screen; the workspace never edits.
+function OpenOwner({ label, onOpen }: { label: string; onOpen: () => void }) {
+  return (
+    <div className="mt-3 text-right">
+      <Button variant="secondary" size="sm" onClick={onOpen}>{label}</Button>
+    </div>
+  );
+}
+
+// Users — recorded directory. Identity + account state + assigned roles + created date, verbatim.
+// No editor, no invite/reset/lock action, no inferred risk. Active state shown as a text badge.
+function UsersPanel({ section, loading, onOpen }: { section?: EnterpriseAdminOverview['users']; loading: boolean; onOpen: () => void }) {
+  return (
+    <SectionShell
+      title="Users"
+      section={section}
+      loading={loading}
+      emptyText="No users are recorded."
+      badge={section?.data ? <Badge tone="neutral" size="xs">{section.data.total} recorded</Badge> : undefined}
+    >
+      {(d) => (
+        <div className="space-y-2">
+          {d.items.map((u) => {
+            const meta = [u.email, u.roles.length ? u.roles.join(', ') : 'No roles', u.createdAt ? `since ${fmtDate(u.createdAt)}` : null].filter(Boolean).join(' · ');
+            return (
+              <div key={u.id} className="flex flex-wrap items-start justify-between gap-2 rounded-lg border border-lightgray px-3 py-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-text">{u.name ?? u.email}</div>
+                  <div className="mt-0.5 text-meta text-text-tertiary">{meta}</div>
+                </div>
+                <Badge tone={u.active ? 'success' : 'neutral'} size="xs">{u.active ? 'Active' : 'Inactive'}</Badge>
+              </div>
+            );
+          })}
+          <OpenOwner label="Open users" onOpen={onOpen} />
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+// Roles — recorded roles. Stored super-role flag + permission count + description. No editor, no
+// assignment. Super-role is a stored flag shown as a text badge, never used as authority here.
+function RolesPanel({ section, loading, onOpen }: { section?: EnterpriseAdminOverview['roles']; loading: boolean; onOpen: () => void }) {
+  return (
+    <SectionShell
+      title="Roles"
+      section={section}
+      loading={loading}
+      emptyText="No roles are recorded."
+      badge={section?.data ? <Badge tone="neutral" size="xs">{section.data.total} recorded</Badge> : undefined}
+    >
+      {(d) => (
+        <div className="space-y-2">
+          {d.items.map((r) => (
+            <div key={r.id} className="flex flex-wrap items-start justify-between gap-2 rounded-lg border border-lightgray px-3 py-2">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-semibold text-text">{r.name}</span>
+                  {r.isSuperRole && <Badge tone="primary" size="xs">Super role</Badge>}
+                </div>
+                <div className="mt-0.5 text-meta text-text-tertiary">
+                  {`${r.permissionCount} permission${r.permissionCount === 1 ? '' : 's'}`}
+                </div>
+                {r.description && <div className="mt-0.5 text-sm text-text-secondary">{r.description}</div>}
+              </div>
+            </div>
+          ))}
+          <OpenOwner label="Open roles" onOpen={onOpen} />
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+// Permissions — the current catalog. Exact code + description only. No per-permission seeded/
+// provenance claim, no invented grouping or severity; roles-that-hold is not owner-exposed, so not shown.
+function PermissionsPanel({ section, loading, onOpen }: { section?: EnterpriseAdminOverview['permissions']; loading: boolean; onOpen: () => void }) {
+  return (
+    <SectionShell
+      title="Permissions"
+      section={section}
+      loading={loading}
+      emptyText="No permissions are recorded."
+      badge={section?.data ? <Badge tone="neutral" size="xs">{section.data.total} in catalog</Badge> : undefined}
+    >
+      {(d) => (
+        <div className="space-y-1.5">
+          {d.items.map((p) => (
+            <div key={p.code} className="flex flex-wrap items-baseline justify-between gap-2 border-b border-lightgray py-1.5 last:border-0">
+              <span className="font-mono text-sm text-text">{p.code}</span>
+              <span className="text-meta text-text-tertiary">{p.description}</span>
+            </div>
+          ))}
+          <OpenOwner label="Open roles &amp; permissions" onOpen={onOpen} />
         </div>
       )}
     </SectionShell>

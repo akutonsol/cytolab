@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { LabService } from '../lab/lab.service';
 import { DepartmentsService } from '../departments/departments.service';
+import { UsersService } from '../users/users.service';
+import { RolesService } from '../roles/roles.service';
 
 // ── Enterprise Administration aggregate (orchestration only) ──────────────────
 // A2: a THIN read-only aggregate. It owns no persistence, runs no Prisma query, calls no
@@ -105,6 +107,60 @@ export interface DepartmentsSection {
   items: DepartmentRow[];
 }
 
+// ── Users (A4) ───────────────────────────────────────────────────────────────
+// Recorded users from `UsersService.findAll` — owner fields only (identity, account state, assigned
+// roles, created date). The owner read exposes NO password hash / token / MFA secret / department /
+// last-login, so none is surfaced. No inferred account risk, trust, or effective access. Gated by
+// `user:view`.
+export interface UserRow {
+  id: string;
+  name: string | null;
+  email: string;
+  active: boolean; // recorded isActive flag (account state) — never an inferred risk level
+  roles: string[]; // owner-assigned role names only
+  createdAt: string | null;
+  ownerPath: string;
+}
+export interface UsersSection {
+  total: number;
+  items: UserRow[];
+}
+
+// ── Roles (A4) ───────────────────────────────────────────────────────────────
+// Recorded roles from `RolesService.findRoles`. `isSuperRole` is the stored FLAG (never a role name
+// used for authority). `permissionCount` is the length of the owner-included permission set. The
+// owner read exposes no assigned-user count, so it is omitted. Gated by `role:view`.
+export interface RoleRow {
+  id: string;
+  name: string;
+  description: string | null;
+  isSuperRole: boolean;
+  permissionCount: number;
+  ownerPath: string;
+}
+export interface RolesSection {
+  total: number;
+  items: RoleRow[];
+}
+
+// ── Permissions (A4) ─────────────────────────────────────────────────────────
+// The current permission catalog from `RolesService.findPermissions`. `object`/`action` are split
+// from the owner `code`; `description` is the owner `label`. The owner records no per-permission
+// provenance, so no seeded flag is claimed. Which roles hold each permission is not exposed by this
+// read, so it is omitted — no inferred effective access, no synthetic grouping, no severity. Gated by
+// `permission:view`.
+export interface PermissionRow {
+  code: string;
+  object: string;
+  action: string;
+  description: string | null;
+  ownerPath: string;
+}
+export interface PermissionsSection {
+  total: number;
+  items: PermissionRow[];
+}
+
 // The remaining evidence sections stay deferred. Each carries its own status so a future section
 // failure isolates to it and never collapses `permissionMatrix`, siblings, or the shell.
 export interface EnterpriseAdminOverview {
@@ -113,9 +169,9 @@ export interface EnterpriseAdminOverview {
   laboratory: Section<LaboratorySection>;
   branding: Section<BrandingSection>;
   departments: Section<DepartmentsSection>;
-  users: Section<null>;
-  roles: Section<null>;
-  permissions: Section<null>;
+  users: Section<UsersSection>;
+  roles: Section<RolesSection>;
+  permissions: Section<PermissionsSection>;
   security: Section<null>;
   clients: Section<null>;
   labCodes: Section<null>;
@@ -181,6 +237,8 @@ export class EnterpriseAdministrationService {
   constructor(
     private readonly lab: LabService,
     private readonly departments: DepartmentsService,
+    private readonly users: UsersService,
+    private readonly roles: RolesService,
   ) {}
 
   async overview(user: AuthUser): Promise<EnterpriseAdminOverview> {
@@ -188,10 +246,13 @@ export class EnterpriseAdministrationService {
     // downstream failure. Sections resolve independently (partial-failure isolation): one owner
     // failing marks only its section and never collapses the permission map or siblings.
     const perms = buildPermissions(user);
-    const [laboratory, branding, departments] = await Promise.all([
+    const [laboratory, branding, departments, users, roles, permissions] = await Promise.all([
       this.loadLaboratory(perms),
       this.loadBranding(perms),
       this.loadDepartments(perms),
+      this.loadUsers(perms),
+      this.loadRoles(perms),
+      this.loadPermissions(perms),
     ]);
     return {
       asOf: new Date().toISOString(),
@@ -199,9 +260,9 @@ export class EnterpriseAdministrationService {
       laboratory,
       branding,
       departments,
-      users: deferred(),
-      roles: deferred(),
-      permissions: deferred(),
+      users,
+      roles,
+      permissions,
       security: deferred(),
       clients: deferred(),
       labCodes: deferred(),
@@ -280,4 +341,99 @@ export class EnterpriseAdministrationService {
       return { status: 'error', data: null, reason: 'Departments failed to load' };
     }
   }
+
+  // Users — recorded directory from the owner. Owner fields only; no password hash / token / MFA
+  // secret / department / last-login (the read exposes none). Bounded. Gated by `user:view`.
+  private async loadUsers(perms: EffectiveAdminPermissions): Promise<Section<UsersSection>> {
+    if (!perms.viewUser) return { status: 'forbidden', data: null };
+    try {
+      const rows: any[] = await this.users.findAll();
+      if (!Array.isArray(rows) || !rows.length) return { status: 'empty', data: null };
+      const items: UserRow[] = rows.map((u) => ({
+        id: u.id,
+        name: `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || null,
+        email: u.email,
+        active: !!u.isActive,
+        roles: Array.isArray(u.roles) ? u.roles.map((r: any) => r?.name).filter(Boolean) : [],
+        createdAt: u.createdAt ? new Date(u.createdAt).toISOString() : null,
+        ownerPath: '/users',
+      }));
+      items.sort(userSort);
+      return { status: 'ready', data: { total: items.length, items: items.slice(0, 200) } };
+    } catch {
+      return { status: 'error', data: null, reason: 'Users failed to load' };
+    }
+  }
+
+  // Roles — recorded roles from the owner. `isSuperRole` is the stored flag; `permissionCount` is the
+  // owner-included permission-set length. No assigned-user count (unexposed). Gated by `role:view`.
+  private async loadRoles(perms: EffectiveAdminPermissions): Promise<Section<RolesSection>> {
+    if (!perms.viewRole) return { status: 'forbidden', data: null };
+    try {
+      const rows: any[] = await this.roles.findRoles();
+      if (!Array.isArray(rows) || !rows.length) return { status: 'empty', data: null };
+      const items: RoleRow[] = rows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        description: r.description ?? null,
+        isSuperRole: !!r.isSuperRole,
+        permissionCount: Array.isArray(r.permissions) ? r.permissions.length : 0,
+        ownerPath: '/roles',
+      }));
+      items.sort(roleSort);
+      return { status: 'ready', data: { total: items.length, items: items.slice(0, 100) } };
+    } catch {
+      return { status: 'error', data: null, reason: 'Roles failed to load' };
+    }
+  }
+
+  // Permissions — the catalog from the owner. `object`/`action` split from the owner `code`;
+  // `description` is the owner `label`; roles-that-hold is not exposed by this read, so it is omitted
+  // (no inferred effective access). Bounded. Gated by `permission:view`.
+  private async loadPermissions(perms: EffectiveAdminPermissions): Promise<Section<PermissionsSection>> {
+    if (!perms.viewPermission) return { status: 'forbidden', data: null };
+    try {
+      const rows: any[] = await this.roles.findPermissions();
+      if (!Array.isArray(rows) || !rows.length) return { status: 'empty', data: null };
+      const items: PermissionRow[] = rows.map((p) => {
+        const [object, action] = String(p.code).split(':');
+        return {
+          code: String(p.code),
+          object: object ?? String(p.code),
+          action: action ?? '',
+          description: p.label ?? null,
+          ownerPath: '/roles',
+        };
+      });
+      items.sort(permissionSort);
+      return { status: 'ready', data: { total: items.length, items: items.slice(0, 300) } };
+    } catch {
+      return { status: 'error', data: null, reason: 'Permissions failed to load' };
+    }
+  }
+}
+
+// ── Identity & Access deterministic ordering (recorded fields only) ──────────
+// Users: recorded active state first (owner `isActive`), then display name/email, then a stable id.
+// Reflects the recorded account flag only — never inferred privilege, trust, or risk.
+function userSort(x: UserRow, y: UserRow): number {
+  if (x.active !== y.active) return x.active ? -1 : 1;
+  const kx = (x.name ?? x.email).toLowerCase();
+  const ky = (y.name ?? y.email).toLowerCase();
+  return kx < ky ? -1 : kx > ky ? 1 : x.id < y.id ? -1 : x.id > y.id ? 1 : 0;
+}
+
+// Roles: stored super-role flag first, then name, then a stable id. From the stored flag only.
+function roleSort(x: RoleRow, y: RoleRow): number {
+  if (x.isSuperRole !== y.isSuperRole) return x.isSuperRole ? -1 : 1;
+  const kx = x.name.toLowerCase();
+  const ky = y.name.toLowerCase();
+  return kx < ky ? -1 : kx > ky ? 1 : x.id < y.id ? -1 : x.id > y.id ? 1 : 0;
+}
+
+// Permissions: object/domain, then action, then code. Never by inferred privilege or importance.
+function permissionSort(x: PermissionRow, y: PermissionRow): number {
+  return x.object < y.object ? -1 : x.object > y.object ? 1
+    : x.action < y.action ? -1 : x.action > y.action ? 1
+    : x.code < y.code ? -1 : x.code > y.code ? 1 : 0;
 }
