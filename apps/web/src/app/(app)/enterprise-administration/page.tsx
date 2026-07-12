@@ -174,6 +174,7 @@ export default function EnterpriseAdministrationWorkspacePage() {
           if (s.key === 'users') return <UsersPanel key={s.key} section={data?.users} loading={isLoading} onOpen={() => router.push('/users')} />;
           if (s.key === 'roles') return <RolesPanel key={s.key} section={data?.roles} loading={isLoading} onOpen={() => router.push('/roles')} />;
           if (s.key === 'permissions') return <PermissionsPanel key={s.key} section={data?.permissions} loading={isLoading} onOpen={() => router.push('/roles')} />;
+          if (s.key === 'security') return <SecurityPanel key={s.key} section={data?.security} loading={isLoading} onOpen={() => router.push('/security')} />;
           return (
             <AdminSection
               key={s.key}
@@ -490,3 +491,39 @@ function PermissionsPanel({ section, loading, onOpen }: { section?: EnterpriseAd
     </SectionShell>
   );
 }
+
+// One safe security count: label + owner-recorded number. Never a score, meter, or risk framing.
+function CountRow({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-baseline justify-between gap-2 border-b border-lightgray py-1.5 last:border-0">
+      <span className="text-meta uppercase tracking-wide text-text-tertiary">{label}</span>
+      <span className="text-sm font-semibold text-text">{value}</span>
+    </div>
+  );
+}
+
+// Security — safe owner-recorded posture COUNTS + newest event time. No MFA/password/unlock/session
+// action, no policy editor, no risk/threat/score. The detail (event lists) lives on /security.
+function SecurityPanel({ section, loading, onOpen }: { section?: EnterpriseAdminOverview['security']; loading: boolean; onOpen: () => void }) {
+  return (
+    <SectionShell title="Security" section={section} loading={loading} emptyText="No security posture is recorded.">
+      {(d) => (
+        <div>
+          <CountRow label="Active sessions" value={d.activeSessions} />
+          <CountRow label="Failed logins (24h)" value={d.failedLogins24h} />
+          <CountRow label="Locked accounts" value={d.lockedAccounts} />
+          <CountRow label="Open security alerts" value={d.openAlerts} />
+          <CountRow label="Blocked IPs" value={d.blockedIps} />
+          <div className="flex items-baseline justify-between gap-2 py-1.5">
+            <span className="text-meta uppercase tracking-wide text-text-tertiary">Last recorded event</span>
+            <span className="text-sm text-text">{d.lastEventAt ? fmtDateTime(d.lastEventAt) : '—'}</span>
+          </div>
+          <OpenOwner label="Open security" onOpen={onOpen} />
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+const fmtDateTime = (iso: string | null): string =>
+  iso ? new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—';

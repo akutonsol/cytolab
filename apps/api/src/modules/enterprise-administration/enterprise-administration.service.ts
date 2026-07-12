@@ -4,6 +4,7 @@ import { LabService } from '../lab/lab.service';
 import { DepartmentsService } from '../departments/departments.service';
 import { UsersService } from '../users/users.service';
 import { RolesService } from '../roles/roles.service';
+import { SecurityService } from '../security/security.service';
 
 // ── Enterprise Administration aggregate (orchestration only) ──────────────────
 // A2: a THIN read-only aggregate. It owns no persistence, runs no Prisma query, calls no
@@ -161,6 +162,23 @@ export interface PermissionsSection {
   items: PermissionRow[];
 }
 
+// ── Security posture (A5) ────────────────────────────────────────────────────
+// Safe, owner-recorded security indicators from `SecurityService.getDashboard` — COUNTS only (active
+// sessions, failed logins in 24h, locked accounts, open alerts, blocked IPs) plus the most recent
+// recorded security-event timestamp. The owner's raw recent-login/alert rows (which carry email/IP)
+// are NOT surfaced; the detail lives on the `/security` owner surface. No password/token/MFA/backup
+// material ever enters the payload. No derived compromise/account/trust/threat/grade/compliance score.
+// Gated by `system:security`.
+export interface SecuritySection {
+  activeSessions: number;
+  failedLogins24h: number;
+  lockedAccounts: number;
+  openAlerts: number;
+  blockedIps: number;
+  lastEventAt: string | null; // newest recorded security-event time (owner login/alert); safe timestamp
+  ownerPath: string;
+}
+
 // The remaining evidence sections stay deferred. Each carries its own status so a future section
 // failure isolates to it and never collapses `permissionMatrix`, siblings, or the shell.
 export interface EnterpriseAdminOverview {
@@ -172,7 +190,7 @@ export interface EnterpriseAdminOverview {
   users: Section<UsersSection>;
   roles: Section<RolesSection>;
   permissions: Section<PermissionsSection>;
-  security: Section<null>;
+  security: Section<SecuritySection>;
   clients: Section<null>;
   labCodes: Section<null>;
   codeSheets: Section<null>;
@@ -239,6 +257,7 @@ export class EnterpriseAdministrationService {
     private readonly departments: DepartmentsService,
     private readonly users: UsersService,
     private readonly roles: RolesService,
+    private readonly security: SecurityService,
   ) {}
 
   async overview(user: AuthUser): Promise<EnterpriseAdminOverview> {
@@ -246,13 +265,14 @@ export class EnterpriseAdministrationService {
     // downstream failure. Sections resolve independently (partial-failure isolation): one owner
     // failing marks only its section and never collapses the permission map or siblings.
     const perms = buildPermissions(user);
-    const [laboratory, branding, departments, users, roles, permissions] = await Promise.all([
+    const [laboratory, branding, departments, users, roles, permissions, security] = await Promise.all([
       this.loadLaboratory(perms),
       this.loadBranding(perms),
       this.loadDepartments(perms),
       this.loadUsers(perms),
       this.loadRoles(perms),
       this.loadPermissions(perms),
+      this.loadSecurity(perms),
     ]);
     return {
       asOf: new Date().toISOString(),
@@ -263,7 +283,7 @@ export class EnterpriseAdministrationService {
       users,
       roles,
       permissions,
-      security: deferred(),
+      security,
       clients: deferred(),
       labCodes: deferred(),
       codeSheets: deferred(),
@@ -409,6 +429,42 @@ export class EnterpriseAdministrationService {
       return { status: 'ready', data: { total: items.length, items: items.slice(0, 300) } };
     } catch {
       return { status: 'error', data: null, reason: 'Permissions failed to load' };
+    }
+  }
+
+  // Security posture — safe owner counts from `SecurityService.getDashboard` (all `count()` integers),
+  // plus the newest recorded security-event timestamp. The owner's raw login/alert rows are never
+  // surfaced (only the newest timestamp is read); no secret material and no derived risk/threat/grade.
+  // Gated by `system:security` (never falls back to record:view). Counts of 0 are valid recorded
+  // posture, so this section is `ready` (not `empty`) whenever the owner read succeeds.
+  private async loadSecurity(perms: EffectiveAdminPermissions): Promise<Section<SecuritySection>> {
+    if (!perms.systemSecurity) return { status: 'forbidden', data: null };
+    try {
+      const d: any = await this.security.getDashboard();
+      const k = d?.kpis ?? {};
+      const n = (v: unknown) => (typeof v === 'number' && !Number.isNaN(v) ? v : 0);
+      // Newest recorded security-event time: the max of the owner's recent login/alert timestamps
+      // (a factual pick of the latest owner timestamp — never an inferred metric).
+      const stamps: number[] = [];
+      for (const arr of [d?.recentLogins, d?.recentAlerts]) {
+        const t = Array.isArray(arr) && arr[0]?.createdAt ? new Date(arr[0].createdAt).getTime() : NaN;
+        if (!Number.isNaN(t)) stamps.push(t);
+      }
+      const lastEventAt = stamps.length ? new Date(Math.max(...stamps)).toISOString() : null;
+      return {
+        status: 'ready',
+        data: {
+          activeSessions: n(k.activeSessions),
+          failedLogins24h: n(k.failedLogins24h),
+          lockedAccounts: n(k.lockedAccounts),
+          openAlerts: n(k.openAlerts),
+          blockedIps: n(k.blockedIps),
+          lastEventAt,
+          ownerPath: '/security',
+        },
+      };
+    } catch {
+      return { status: 'error', data: null, reason: 'Security posture failed to load' };
     }
   }
 }

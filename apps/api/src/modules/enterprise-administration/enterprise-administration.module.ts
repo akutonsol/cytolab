@@ -3,6 +3,7 @@ import { LabModule } from '../lab/lab.module';
 import { DepartmentsModule } from '../departments/departments.module';
 import { UsersModule } from '../users/users.module';
 import { RolesModule } from '../roles/roles.module';
+import { SecurityModule } from '../security/security.module';
 import { EnterpriseAdministrationController } from './enterprise-administration.controller';
 import { EnterpriseAdministrationService } from './enterprise-administration.service';
 
@@ -11,7 +12,7 @@ import { EnterpriseAdministrationService } from './enterprise-administration.ser
 // Laboratory/Branding/Departments sections read (each owner module exports its service). Later
 // checkpoints add more owner-module imports as each section lands.
 @Module({
-  imports: [LabModule, DepartmentsModule, UsersModule, RolesModule],
+  imports: [LabModule, DepartmentsModule, UsersModule, RolesModule, SecurityModule],
   controllers: [EnterpriseAdministrationController],
   providers: [EnterpriseAdministrationService],
 })

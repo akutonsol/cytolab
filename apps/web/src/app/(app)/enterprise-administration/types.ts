@@ -133,6 +133,18 @@ export interface PermissionsSection {
   items: PermissionRow[];
 }
 
+// Security posture — safe owner counts (owner: SecurityService.getDashboard) + the newest recorded
+// security-event timestamp. No raw login/alert rows, no secrets, no derived risk/threat/grade.
+export interface SecuritySection {
+  activeSessions: number;
+  failedLogins24h: number;
+  lockedAccounts: number;
+  openAlerts: number;
+  blockedIps: number;
+  lastEventAt: string | null;
+  ownerPath: string;
+}
+
 export interface EnterpriseAdminOverview {
   asOf: string;
   permissionMatrix: Section<EffectiveAdminPermissions>;
@@ -142,7 +154,7 @@ export interface EnterpriseAdminOverview {
   users: Section<UsersSection>;
   roles: Section<RolesSection>;
   permissions: Section<PermissionsSection>;
-  security: Section<null>;
+  security: Section<SecuritySection>;
   clients: Section<null>;
   labCodes: Section<null>;
   codeSheets: Section<null>;
