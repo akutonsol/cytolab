@@ -286,3 +286,19 @@ until reviewed. On approval, the next step is a **feasibility audit** (in the ma
 compose-only path in §7/§9 is truthful against the current data model, before any checkpoint build
 begins. Every claim above traces to the read-only audit in §1 and §5; Missing/Future capabilities are
 named, not assumed.
+
+---
+
+## Completion status (Phase 2C — delivered)
+
+The workspace shipped **compose-only** exactly as classified here: every Existing/Partial capability
+in §5a/§5b was built, and every Missing (§5c) / Future (§5d) capability remains deferred with no schema
+or Helix change. The composed surfaces are Overview, Correlation, Discordance, Quality Control,
+Proficiency, Escalations, Recall, Benchmarks, Medical Director, Governance trail, and the descriptive
+Permissions map. Two §5b classifications were narrowed during the build for truthfulness: the
+governance trail composes only result-sheet authorizations, security access, and change-request
+creation (record-status events, maintenance, and notifications were excluded as non-composable or
+misrepresenting); and Medical Director oversight surfaces recorded open/review-required states only,
+with no result-sheet-authorization oversight queue (no owner-actionable state exists). Full completion
+record, permission matrix, performance, and limitations:
+[PATHOS_QUALITY_IMPLEMENTATION_PLAN.md](PATHOS_QUALITY_IMPLEMENTATION_PLAN.md) §14.
