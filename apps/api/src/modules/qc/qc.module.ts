@@ -10,5 +10,6 @@ import { EquipmentService } from './equipment.service';
   imports: [PrismaModule, NotificationsModule],
   controllers: [QcController, EquipmentController],
   providers: [QcService, EquipmentService],
+  exports: [QcService],
 })
 export class QcModule {}

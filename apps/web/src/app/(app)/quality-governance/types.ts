@@ -29,10 +29,25 @@ export interface EffectiveQualityPermissions {
   medicalDirector: boolean;
 }
 
+// Overview — a factual composition of owner-recorded summaries only. `open` is the owner's
+// own count; `note` is a factual owner-count descriptor. No score, ranking, or inference.
+export interface OverviewSource {
+  key: string;
+  label: string;
+  status: 'ready' | 'forbidden' | 'error';
+  open: number | null;
+  note: string | null;
+}
+export interface OverviewData {
+  asOf: string;
+  sources: OverviewSource[];
+  unavailable: string[];
+}
+
 export interface QualityOverviewAggregate {
   asOf: string;
   permissions: Section<EffectiveQualityPermissions>;
-  overview: Section<null>;
+  overview: Section<OverviewData>;
   correlation: Section<null>;
   discordance: Section<null>;
   qc: Section<null>;

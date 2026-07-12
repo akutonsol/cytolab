@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { EffectiveQualityPermissions, QualityOverviewAggregate, SectionStatus } from './types';
+import type { EffectiveQualityPermissions, OverviewSource, QualityOverviewAggregate, SectionStatus } from './types';
 
 // Only an internal, same-origin path may be a return target — reject external and
 // protocol-relative URLs (open-redirect protection). Mirrors the Sign-Out routing guard.
@@ -34,11 +34,10 @@ function safeReturnTo(raw: string | null): string | null {
 // section key; the Correlation & Discordance region reflects the `correlation` section
 // (the `discordance` section joins it at C4). `permissions` renders the descriptive map.
 type EvidenceKey =
-  | 'overview' | 'correlation' | 'qc' | 'proficiency' | 'escalations'
+  | 'correlation' | 'qc' | 'proficiency' | 'escalations'
   | 'recall' | 'benchmarks' | 'medicalDirector' | 'governance';
 
 const EVIDENCE_REGIONS: { key: EvidenceKey; title: string; responsibility: string }[] = [
-  { key: 'overview', title: 'Overview', responsibility: 'Recorded quality-evidence counts, composed from the owner sections below.' },
   { key: 'correlation', title: 'Correlation & Discordance', responsibility: 'Cytology–histology correlation and stored discordance results.' },
   { key: 'qc', title: 'Quality Control', responsibility: 'Analytical QC checks, failure alerts, and recorded corrective notes.' },
   { key: 'proficiency', title: 'Proficiency', responsibility: 'Proficiency testing status and grading.' },
@@ -138,10 +137,14 @@ export default function QualityGovernanceWorkspacePage() {
         </Card>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
+          {/* Overview — a factual composition of owner-recorded open counts/statuses.
+              No score, no ranking, no inference; each source is owner-provided. */}
+          <OverviewPanel section={data?.overview} loading={isLoading} />
+
           {/* Permissions — the descriptive, permission-aware view (not quality evidence). */}
           <PermissionsPanel section={permsSec} loading={isLoading} />
 
-          {/* The nine evidence regions — truthfully deferred at C2; each reflects its own
+          {/* The remaining evidence regions — truthfully deferred; each reflects its own
               aggregate section status, so a future failure isolates to its region. */}
           {EVIDENCE_REGIONS.map((r) => (
             <EvidenceRegion
@@ -153,6 +156,56 @@ export default function QualityGovernanceWorkspacePage() {
             />
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+// Overview — a restrained factual summary. For each owner source it shows the owner's
+// recorded open count and a factual note, "No recorded open items" when the owner's count
+// is zero, or "Source unavailable" when forbidden/errored. No score, chart, ranking,
+// health/risk meter, synthetic global state, colour-only meaning, or CAPA language.
+function OverviewPanel({
+  section,
+  loading,
+}: {
+  section?: QualityOverviewAggregate['overview'];
+  loading: boolean;
+}) {
+  const status = section?.status;
+  const data = status === 'ready' ? section?.data : null;
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <h2 className="mb-3 text-base font-bold text-text">Overview</h2>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-48" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status !== 'ready' || !data ? (
+        <EmptyState bare className="px-0 py-6" title="Unavailable" description="The overview could not be loaded." />
+      ) : (
+        <div className="space-y-2">
+          {data.sources.map((s) => <OverviewRow key={s.key} source={s} />)}
+          {data.unavailable.length > 0 && (
+            <p className="pt-1 text-meta text-text-tertiary">Sources unavailable: {data.unavailable.join(', ')}.</p>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function OverviewRow({ source }: { source: OverviewSource }) {
+  const unavailable = source.status !== 'ready';
+  const noOpen = source.status === 'ready' && (source.open ?? 0) === 0;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-lightgray px-3 py-2">
+      <div className="min-w-0">
+        <span className="text-sm font-semibold text-text">{source.label}</span>
+        <span className="ml-2 text-meta text-text-tertiary">
+          {unavailable ? 'Source unavailable' : noOpen ? 'No recorded open items' : source.note}
+        </span>
+      </div>
+      {!unavailable && (
+        <Badge tone="neutral" size="xs">{source.open} open</Badge>
       )}
     </div>
   );
