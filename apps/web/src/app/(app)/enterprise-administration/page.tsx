@@ -178,6 +178,7 @@ export default function EnterpriseAdministrationWorkspacePage() {
           if (s.key === 'clients') return <ClientsPanel key={s.key} section={data?.clients} loading={isLoading} onOpen={() => router.push('/clients')} />;
           if (s.key === 'labCodes') return <LabCodesPanel key={s.key} section={data?.labCodes} loading={isLoading} onOpen={() => router.push('/lab-codes')} />;
           if (s.key === 'codeSheets') return <CodeSheetsPanel key={s.key} section={data?.codeSheets} loading={isLoading} onOpen={() => router.push('/lab-codes')} />;
+          if (s.key === 'lifecycle') return <LifecyclePanel key={s.key} section={data?.lifecycle} loading={isLoading} onOpen={() => router.push('/records')} />;
           return (
             <AdminSection
               key={s.key}
@@ -588,6 +589,45 @@ function LabCodesPanel({ section, loading, onOpen }: { section?: EnterpriseAdmin
             );
           })}
           <OpenOwner label="Open code vault" onOpen={onOpen} />
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+// Lifecycle Observation — OBSERVE only. Shows the modeled RecordStatus set with the owner's own
+// counts, plus an explicit observation-only disclosure of the current (not future) reality. There is
+// NO status editor / transition selector / approve / authorize / release / archive / override control.
+function LifecyclePanel({ section, loading, onOpen }: { section?: EnterpriseAdminOverview['lifecycle']; loading: boolean; onOpen: () => void }) {
+  const disclosure = (
+    <p className="mb-3 text-meta text-text-tertiary">
+      Observation only — the Records owner is the sole lifecycle authority. Lifecycle is event-driven:
+      owner actions (submit, result, authorization, billing, payment, QC) advance workflow and record a
+      status event. Manual status changes go through the owner’s constrained transition
+      (PATCH&nbsp;/specimen/status/:id) — not free editing. Pending is the initial state; there is no
+      separate Started, Released, or Archived status.
+    </p>
+  );
+  return (
+    <SectionShell
+      title="Lifecycle Observation"
+      section={section}
+      loading={loading}
+      emptyText="No record lifecycle is recorded."
+      badge={section?.data ? <Badge tone="neutral" size="xs">{section.data.totalRecords} records</Badge> : undefined}
+    >
+      {(d) => (
+        <div>
+          {disclosure}
+          <div className="space-y-1">
+            {d.statuses.map((s) => (
+              <div key={s.status} className="flex items-baseline justify-between gap-2 border-b border-lightgray py-1.5 last:border-0">
+                <span className="text-sm text-text">{s.status}</span>
+                <span className="text-sm font-semibold text-text">{s.count}</span>
+              </div>
+            ))}
+          </div>
+          <OpenOwner label="Open records" onOpen={onOpen} />
         </div>
       )}
     </SectionShell>

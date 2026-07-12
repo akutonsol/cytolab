@@ -8,6 +8,11 @@ import { SecurityService } from '../security/security.service';
 import { ClientsService } from '../clients/clients.service';
 import { LabCodesService } from '../lab-codes/lab-codes.service';
 import { CodeSheetsService } from '../code-sheets/code-sheets.service';
+import { RecordsService } from '../records/records.service';
+// The owner's RecordStatus enum (schema-defined) — used ONLY to iterate the modeled statuses in
+// their owner-declared order. This is a generated enum type, not a Prisma query; the actual counts
+// come from RecordsService (the lifecycle owner). Enterprise Administration runs no Prisma query.
+import { RecordStatus } from '@prisma/client';
 
 // ── Enterprise Administration aggregate (orchestration only) ──────────────────
 // A2: a THIN read-only aggregate. It owns no persistence, runs no Prisma query, calls no
@@ -240,6 +245,27 @@ export interface CodeSheetsSection {
   items: CodeSheetRow[];
 }
 
+// ── Lifecycle Observation (A7) ───────────────────────────────────────────────
+// OBSERVATION ONLY. Enterprise Administration never transitions, approves, authorizes, releases,
+// archives, overrides, or bypasses ALLOWED_TRANSITIONS — the Records owner is the sole lifecycle
+// authority. The section composes the owner's own per-status COUNTS (via `RecordsService.findAll`
+// with a status filter, gated `record:view`) across the modeled `RecordStatus` set in owner-declared
+// order. It copies no ALLOWED_TRANSITIONS, exposes no transition metadata (the owner does not expose
+// it via a read), creates no RecordStatusEvent, and surfaces no lab-wide event history (no safe
+// record:view lab-wide history read exists — see the A7 report). Truthful current reality (documented
+// in the UI): lifecycle is event-driven; owner actions advance workflow; manual status changes are
+// constrained (PATCH /specimen/status/:id, not free editing); `Pending` is the initial state — there
+// is no separate `Started`, `Released`, or `Archived` status.
+export interface LifecycleStatusCount {
+  status: string; // a modeled RecordStatus value (owner-defined)
+  count: number; // the owner's own count of records currently in this status
+}
+export interface LifecycleSection {
+  statuses: LifecycleStatusCount[];
+  totalRecords: number;
+  ownerPath: string;
+}
+
 // The remaining evidence sections stay deferred. Each carries its own status so a future section
 // failure isolates to it and never collapses `permissionMatrix`, siblings, or the shell.
 export interface EnterpriseAdminOverview {
@@ -268,7 +294,7 @@ export interface EnterpriseAdminOverview {
   systemHealth: Section<null>;
   aiSettings: Section<null>;
   portalAccess: Section<null>;
-  lifecycle: Section<null>;
+  lifecycle: Section<LifecycleSection>;
 }
 
 const deferred = (): Section<null> => ({ status: 'deferred', data: null });
@@ -325,6 +351,7 @@ export class EnterpriseAdministrationService {
     private readonly clients: ClientsService,
     private readonly labCodes: LabCodesService,
     private readonly codeSheets: CodeSheetsService,
+    private readonly records: RecordsService,
   ) {}
 
   async overview(user: AuthUser): Promise<EnterpriseAdminOverview> {
@@ -332,7 +359,7 @@ export class EnterpriseAdministrationService {
     // downstream failure. Sections resolve independently (partial-failure isolation): one owner
     // failing marks only its section and never collapses the permission map or siblings.
     const perms = buildPermissions(user);
-    const [laboratory, branding, departments, users, roles, permissions, security, clients, labCodes, codeSheets] = await Promise.all([
+    const [laboratory, branding, departments, users, roles, permissions, security, clients, labCodes, codeSheets, lifecycle] = await Promise.all([
       this.loadLaboratory(perms),
       this.loadBranding(perms),
       this.loadDepartments(perms),
@@ -343,6 +370,7 @@ export class EnterpriseAdministrationService {
       this.loadClients(perms),
       this.loadLabCodes(perms),
       this.loadCodeSheets(perms),
+      this.loadLifecycle(perms),
     ]);
     return {
       asOf: new Date().toISOString(),
@@ -367,7 +395,7 @@ export class EnterpriseAdministrationService {
       systemHealth: deferred(),
       aiSettings: deferred(),
       portalAccess: deferred(),
-      lifecycle: deferred(),
+      lifecycle,
     };
   }
 
@@ -611,6 +639,29 @@ export class EnterpriseAdministrationService {
       return { status: 'ready', data: { total: items.length, items: items.slice(0, 100) } };
     } catch {
       return { status: 'error', data: null, reason: 'Code sheets failed to load' };
+    }
+  }
+
+  // Lifecycle Observation — OBSERVE only. Composes the Records owner's own per-status counts (via
+  // `RecordsService.findAll({ status })`, gated `record:view`) across the modeled RecordStatus set in
+  // owner-declared enum order. Copies no ALLOWED_TRANSITIONS, exposes no transition metadata, creates
+  // no RecordStatusEvent, mutates nothing. Zero counts are valid recorded state (the status exists in
+  // the model), so this section is `ready` (not `empty`) whenever the owner reads succeed.
+  private async loadLifecycle(perms: EffectiveAdminPermissions): Promise<Section<LifecycleSection>> {
+    if (!perms.viewRecord) return { status: 'forbidden', data: null };
+    try {
+      const values = Object.values(RecordStatus) as RecordStatus[];
+      const counts = await Promise.all(
+        values.map(async (status) => {
+          const page: any = await this.records.findAll({ status, pageSize: 1 } as any);
+          const count = typeof page?.total === 'number' ? page.total : Array.isArray(page?.data) ? page.data.length : 0;
+          return { status: String(status), count };
+        }),
+      );
+      const totalRecords = counts.reduce((sum, s) => sum + s.count, 0);
+      return { status: 'ready', data: { statuses: counts, totalRecords, ownerPath: '/records' } };
+    } catch {
+      return { status: 'error', data: null, reason: 'Lifecycle observation failed to load' };
     }
   }
 }

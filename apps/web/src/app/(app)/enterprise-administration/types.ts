@@ -215,7 +215,21 @@ export interface EnterpriseAdminOverview {
   systemHealth: Section<null>;
   aiSettings: Section<null>;
   portalAccess: Section<null>;
-  lifecycle: Section<null>;
+  lifecycle: Section<LifecycleSection>;
+}
+
+// Lifecycle Observation — OBSERVE only. Owner-recorded per-status counts (owner: RecordsService.
+// findAll per RecordStatus, record:view) in owner-declared enum order. No transition metadata, no
+// event history, no editing. The panel states the current reality: event-driven, owner actions
+// advance, manual changes constrained, observation-only; Pending is initial; no Started/Released/Archived.
+export interface LifecycleStatusCount {
+  status: string;
+  count: number;
+}
+export interface LifecycleSection {
+  statuses: LifecycleStatusCount[];
+  totalRecords: number;
+  ownerPath: string;
 }
 
 // The deferred-section keys (everything except the ready permissionMatrix) in the frozen
