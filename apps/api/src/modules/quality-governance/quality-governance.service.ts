@@ -162,6 +162,54 @@ export interface ProficiencySection {
   tests: ProficiencyTestRow[]; // bounded, deterministically ordered
 }
 
+// ── Escalations & Recall (C7) ────────────────────────────────────────────────
+// Read-only projections. `severity` and `status` are the owner's recorded enums, shown
+// verbatim; recall `status` (incl. Overdue) is read from the owner, never computed from
+// dates. `resolvedReason` is a recorded resolution note — never CAPA/root-cause/preventive/
+// effectiveness. No urgency/compliance/quality verdict is synthesised.
+export interface EscalationRow {
+  id: string;
+  identity: string | null; // record labNumber/identifier
+  trigger: string | null; // recorded category/type
+  severity: string | null; // recorded EscalationSeverity (stored)
+  status: string; // recorded lifecycle status
+  assignedToName: string | null;
+  reviewerName: string | null;
+  createdAt: string | null;
+  reviewedAt: string | null;
+  resolvedAt: string | null;
+  resolvedReason: string | null; // "Recorded resolution note"
+  ownerPath: string;
+}
+export interface EscalationSection {
+  // Owner-recorded counts (EscalationService.summary) — displayed, not recomputed.
+  pending: number;
+  acknowledged: number;
+  underReview: number;
+  resolvedToday: number;
+  malignant: number; // owner severity count
+  highGrade: number; // owner severity count
+  items: EscalationRow[]; // bounded, deterministically ordered
+}
+export interface RecallRow {
+  id: string;
+  identity: string | null; // patient name (permitted by record:view)
+  reason: string | null; // triggerDiagnosis
+  status: string; // recorded RecallStatus (incl. Overdue) — never computed here
+  dueAt: string | null;
+  completedAt: string | null;
+  completionNote: string | null; // recorded notes
+  ownerPath: string;
+}
+export interface RecallSection {
+  // Owner-recorded counts (RecallService.summary) — displayed, not recomputed.
+  pending: number;
+  due: number;
+  overdue: number;
+  completedThisMonth: number;
+  items: RecallRow[]; // bounded, deterministically ordered
+}
+
 export interface QualityOverviewAggregate {
   asOf: string;
   permissions: Section<EffectiveQualityPermissions>;
@@ -170,10 +218,10 @@ export interface QualityOverviewAggregate {
   discordance: Section<DiscordanceSection>;
   qc: Section<QcSection>;
   proficiency: Section<ProficiencySection>;
-  // The remaining five evidence sections stay deferred at C6. Each carries its own status
+  escalations: Section<EscalationSection>;
+  recall: Section<RecallSection>;
+  // The remaining three evidence sections stay deferred at C7. Each carries its own status
   // so a future section failure isolates to it and never collapses permissions or siblings.
-  escalations: Section<null>;
-  recall: Section<null>;
   benchmarks: Section<null>;
   medicalDirector: Section<null>;
   governance: Section<null>;
@@ -197,11 +245,13 @@ export class QualityGovernanceService {
     const perms = buildPermissions(user);
     // Sections resolve independently (partial-failure isolation): a correlation failure
     // never collapses the overview or sibling sections.
-    const [overview, corr, qc, proficiency] = await Promise.all([
+    const [overview, corr, qc, proficiency, escalations, recall] = await Promise.all([
       this.loadOverview(perms),
       this.loadCorrelationSections(perms),
       this.loadQc(perms),
       this.loadProficiency(perms),
+      this.loadEscalations(perms, user.userId),
+      this.loadRecall(perms),
     ]);
     return {
       asOf: new Date().toISOString(),
@@ -211,8 +261,8 @@ export class QualityGovernanceService {
       discordance: corr.discordance,
       qc,
       proficiency,
-      escalations: deferred(),
-      recall: deferred(),
+      escalations,
+      recall,
       benchmarks: deferred(),
       medicalDirector: deferred(),
       governance: deferred(),
@@ -398,6 +448,71 @@ export class QualityGovernanceService {
       return { status: 'error', data: null, reason: 'Proficiency failed to load' };
     }
   }
+
+  // Escalations — composed from EscalationService only. `summary()` gives owner-recorded
+  // counts (incl. the owner's severity counts); `list()` gives recorded escalations.
+  // severity/status are shown verbatim; resolvedReason is a recorded resolution note.
+  // Resolves independently of Recall (isolated failure).
+  private async loadEscalations(perms: EffectiveQualityPermissions, userId: string): Promise<Section<EscalationSection>> {
+    if (!perms.viewRecord) return { status: 'forbidden', data: null };
+    try {
+      const [summary, rows] = await Promise.all([
+        this.escalation.summary(),
+        this.escalation.list({} as any, userId),
+      ]);
+      const list: any[] = Array.isArray(rows) ? rows : [];
+      const s: any = summary ?? {};
+      const anyOpen = (s.pending ?? 0) + (s.acknowledged ?? 0) + (s.underReview ?? 0);
+      if (anyOpen === 0 && (s.resolvedToday ?? 0) === 0 && !list.length) {
+        return { status: 'empty', data: null };
+      }
+      return {
+        status: 'ready',
+        data: {
+          pending: s.pending ?? 0,
+          acknowledged: s.acknowledged ?? 0,
+          underReview: s.underReview ?? 0,
+          resolvedToday: s.resolvedToday ?? 0,
+          malignant: s.malignantCount ?? 0,
+          highGrade: s.highGradeCount ?? 0,
+          items: list.map(mapEscalation).sort(escalationSort).slice(0, 20),
+        },
+      };
+    } catch {
+      return { status: 'error', data: null, reason: 'Escalations failed to load' };
+    }
+  }
+
+  // Recall — composed from RecallService only. `summary()` gives owner-recorded counts;
+  // `list()` gives recorded recall items. `status` (incl. Overdue) is the owner's recorded
+  // state — never computed from dates here. Resolves independently of Escalations.
+  private async loadRecall(perms: EffectiveQualityPermissions): Promise<Section<RecallSection>> {
+    if (!perms.viewRecord) return { status: 'forbidden', data: null };
+    try {
+      const [summary, rows] = await Promise.all([
+        this.recall.summary(),
+        this.recall.list({} as any),
+      ]);
+      const list: any[] = Array.isArray(rows) ? rows : [];
+      const s: any = summary ?? {};
+      const anyOpen = (s.pending ?? 0) + (s.due ?? 0) + (s.overdue ?? 0);
+      if (anyOpen === 0 && (s.completedThisMonth ?? 0) === 0 && !list.length) {
+        return { status: 'empty', data: null };
+      }
+      return {
+        status: 'ready',
+        data: {
+          pending: s.pending ?? 0,
+          due: s.due ?? 0,
+          overdue: s.overdue ?? 0,
+          completedThisMonth: s.completedThisMonth ?? 0,
+          items: list.map(mapRecall).sort(recallSort).slice(0, 20),
+        },
+      };
+    } catch {
+      return { status: 'error', data: null, reason: 'Recall failed to load' };
+    }
+  }
 }
 
 // Deterministic ordering from recorded fields only. reviewRequired first is the OWNER's
@@ -481,6 +596,60 @@ function proficiencySort(x: ProficiencyTestRow, y: ProficiencyTestRow): number {
     t(y.createdAt) - t(x.createdAt) ||
     (x.id < y.id ? -1 : x.id > y.id ? 1 : 0)
   );
+}
+
+// Escalation ordering: recorded OPEN lifecycle state first (Pending/Acknowledged/UnderReview
+// — the owner's own OPEN_STATUSES), then oldest open, then a stable id. This reflects
+// recorded workflow state — NOT a PathOS-generated urgency score. Severity is displayed
+// (stored) but is NOT ranked here, to avoid duplicating the owner's severity ordering.
+const ESCALATION_OPEN = new Set(['Pending', 'Acknowledged', 'UnderReview']);
+function escalationSort(x: EscalationRow, y: EscalationRow): number {
+  const open = (r: EscalationRow) => ESCALATION_OPEN.has(r.status);
+  if (open(x) !== open(y)) return open(x) ? -1 : 1;
+  const t = (s: string | null) => (s ? new Date(s).getTime() : Infinity);
+  return t(x.createdAt) - t(y.createdAt) || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0);
+}
+
+function mapEscalation(e: any): EscalationRow {
+  return {
+    id: e.id,
+    identity: e.record ? (e.record.labNumber ?? e.record.identifier ?? null) : null,
+    trigger: e.trigger ? String(e.trigger) : null,
+    severity: e.severity ? String(e.severity) : null,
+    status: String(e.status),
+    assignedToName: personName(e.assignedTo),
+    reviewerName: personName(e.reviewedBy),
+    createdAt: iso(e.createdAt),
+    reviewedAt: iso(e.reviewedAt),
+    resolvedAt: iso(e.resolvedAt),
+    resolvedReason: e.resolvedReason ?? null,
+    ownerPath: '/escalations',
+  };
+}
+
+// Recall ordering follows the owner-recorded status only: overdue → due → pending →
+// completed → then by due/completion date → stable id. Overdue is a RECORDED status, never
+// computed from dates.
+const RECALL_STATUS_RANK: Record<string, number> = { Overdue: 0, Due: 1, Pending: 2, Completed: 3 };
+function recallSort(x: RecallRow, y: RecallRow): number {
+  const rx = RECALL_STATUS_RANK[x.status] ?? 4;
+  const ry = RECALL_STATUS_RANK[y.status] ?? 4;
+  if (rx !== ry) return rx - ry;
+  const t = (s: string | null) => (s ? new Date(s).getTime() : Infinity);
+  return t(x.dueAt ?? x.completedAt) - t(y.dueAt ?? y.completedAt) || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0);
+}
+
+function mapRecall(r: any): RecallRow {
+  return {
+    id: r.id,
+    identity: r.patientName ?? (r.patient ? `${r.patient.firstName ?? ''} ${r.patient.lastName ?? ''}`.trim() || null : null),
+    reason: r.triggerDiagnosis ?? null,
+    status: String(r.status),
+    dueAt: iso(r.dueDate),
+    completedAt: iso(r.completedAt),
+    completionNote: r.notes ?? null,
+    ownerPath: '/recalls',
+  };
 }
 
 function mapProficiencyTest(t: any): ProficiencyTestRow {

@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { CorrelationCaseRow, EffectiveQualityPermissions, OverviewSource, ProficiencyTestRow, QcAlertRow, QcCheckRow, QualityOverviewAggregate, SectionStatus } from './types';
+import type { CorrelationCaseRow, EffectiveQualityPermissions, EscalationRow, OverviewSource, ProficiencyTestRow, QcAlertRow, QcCheckRow, QualityOverviewAggregate, RecallRow, SectionStatus } from './types';
 
 // Only an internal, same-origin path may be a return target — reject external and
 // protocol-relative URLs (open-redirect protection). Mirrors the Sign-Out routing guard.
@@ -34,12 +34,9 @@ function safeReturnTo(raw: string | null): string | null {
 // section key; the Correlation & Discordance region reflects the `correlation` section
 // (the `discordance` section joins it at C4). `permissions` renders the descriptive map.
 type EvidenceKey =
-  | 'escalations'
-  | 'recall' | 'benchmarks' | 'medicalDirector' | 'governance';
+  | 'benchmarks' | 'medicalDirector' | 'governance';
 
 const EVIDENCE_REGIONS: { key: EvidenceKey; title: string; responsibility: string }[] = [
-  { key: 'escalations', title: 'Escalations', responsibility: 'Abnormal-result escalations awaiting review or resolution.' },
-  { key: 'recall', title: 'Recall', responsibility: 'Patient recall and follow-up compliance.' },
   { key: 'benchmarks', title: 'Benchmarks', responsibility: 'Owner-computed CAP, Bethesda, TAT, and abnormal-rate status.' },
   { key: 'medicalDirector', title: 'Medical Director', responsibility: 'Attention, review, and oversight queues from recorded owner states.' },
   { key: 'governance', title: 'Governance Trail', responsibility: 'A source-labelled assembly of recorded events — not a canonical audit ledger.' },
@@ -157,6 +154,11 @@ export default function QualityGovernanceWorkspacePage() {
           {/* Proficiency — recorded test evidence; grading/administration happen on the
               existing proficiency owner surface. No competency, ranking, or remediation. */}
           <ProficiencyPanel section={data?.proficiency} loading={isLoading} onOpen={(path) => router.push(path)} />
+
+          {/* Escalations & Recall — recorded lifecycle evidence; review/completion happen on
+              the existing owner surfaces. No urgency score, no computed overdue. */}
+          <EscalationPanel section={data?.escalations} loading={isLoading} onOpen={() => router.push('/escalations')} />
+          <RecallPanel section={data?.recall} loading={isLoading} onOpen={() => router.push('/recalls')} />
 
           {/* The remaining evidence regions — truthfully deferred; each reflects its own
               aggregate section status, so a future failure isolates to its region. */}
@@ -477,6 +479,137 @@ function ProficiencyRow({ test, onOpen }: { test: ProficiencyTestRow; onOpen: ()
         <div className="mt-0.5 text-meta text-text-tertiary">{meta}</div>
       </div>
       <Button variant="secondary" size="sm" onClick={onOpen}>Open</Button>
+    </div>
+  );
+}
+
+// Escalations — recorded counts + recorded escalations. severity/status shown verbatim;
+// resolvedReason labeled as a recorded resolution note. No urgency score, no CAPA. Review
+// opens the existing escalation owner surface.
+function EscalationPanel({
+  section,
+  loading,
+  onOpen,
+}: {
+  section?: QualityOverviewAggregate['escalations'];
+  loading: boolean;
+  onOpen: () => void;
+}) {
+  const status = section?.status;
+  const d = status === 'ready' ? section?.data : null;
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="text-base font-bold text-text">Escalations</h2>
+        {d && <Button variant="secondary" size="sm" onClick={onOpen}>Open escalations</Button>}
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-48" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-6" title="No access" description="You do not have permission to view escalations." />
+      ) : status === 'error' ? (
+        <EmptyState bare className="px-0 py-6" title="Unavailable" description="Escalations could not be loaded." />
+      ) : status === 'empty' || !d ? (
+        <EmptyState bare className="px-0 py-6" title="No escalations" description="No abnormal-result escalations are recorded." />
+      ) : (
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <Badge tone={d.pending > 0 ? 'danger' : 'neutral'} size="sm">{d.pending} pending</Badge>
+            <Badge tone="neutral" size="sm">{d.acknowledged} acknowledged</Badge>
+            <Badge tone="neutral" size="sm">{d.underReview} under review</Badge>
+            <Badge tone="neutral" size="sm">{d.resolvedToday} resolved today</Badge>
+            <Badge tone={d.malignant > 0 ? 'danger' : 'neutral'} size="sm">{d.malignant} malignant</Badge>
+            <Badge tone="neutral" size="sm">{d.highGrade} high-grade</Badge>
+          </div>
+          {d.items.length ? (
+            <div className="space-y-2">{d.items.map((e) => <EscalationItem key={e.id} row={e} />)}</div>
+          ) : (
+            <p className="text-sm text-text-tertiary">No recorded escalation items.</p>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function EscalationItem({ row }: { row: EscalationRow }) {
+  const meta = [row.trigger, row.assignedToName ? `assigned ${row.assignedToName}` : null, row.createdAt ? fmtDate(row.createdAt) : null].filter(Boolean).join(' · ');
+  return (
+    <div className="rounded-lg border border-lightgray px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-semibold text-text">{row.identity ?? 'Case'}</span>
+        {row.severity && <Badge tone="neutral" size="xs">{row.severity}</Badge>}
+        <Badge tone="neutral" size="xs">{row.status}</Badge>
+      </div>
+      {meta && <div className="mt-0.5 text-meta text-text-tertiary">{meta}</div>}
+      {row.resolvedAt && (
+        <p className="mt-1 text-meta text-text-tertiary">Resolved {fmtDate(row.resolvedAt)}{row.reviewerName ? ` · reviewed by ${row.reviewerName}` : ''}</p>
+      )}
+      {row.resolvedReason && (
+        <p className="mt-1 text-sm text-text-secondary"><span className="font-semibold text-text">Recorded resolution note:</span> {row.resolvedReason}</p>
+      )}
+    </div>
+  );
+}
+
+// Recall — recorded counts + recorded items. status (incl. Overdue) is recorded, never
+// computed. No compliance verdict. Completion opens the existing recall owner surface.
+function RecallPanel({
+  section,
+  loading,
+  onOpen,
+}: {
+  section?: QualityOverviewAggregate['recall'];
+  loading: boolean;
+  onOpen: () => void;
+}) {
+  const status = section?.status;
+  const d = status === 'ready' ? section?.data : null;
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="text-base font-bold text-text">Recall</h2>
+        {d && <Button variant="secondary" size="sm" onClick={onOpen}>Open recalls</Button>}
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-48" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-6" title="No access" description="You do not have permission to view recall." />
+      ) : status === 'error' ? (
+        <EmptyState bare className="px-0 py-6" title="Unavailable" description="Recall could not be loaded." />
+      ) : status === 'empty' || !d ? (
+        <EmptyState bare className="px-0 py-6" title="No recall items" description="No recall or follow-up items are recorded." />
+      ) : (
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <Badge tone={d.overdue > 0 ? 'danger' : 'neutral'} size="sm">{d.overdue} overdue</Badge>
+            <Badge tone="neutral" size="sm">{d.due} due</Badge>
+            <Badge tone="neutral" size="sm">{d.pending} pending</Badge>
+            <Badge tone="neutral" size="sm">{d.completedThisMonth} completed this month</Badge>
+          </div>
+          {d.items.length ? (
+            <div className="space-y-2">{d.items.map((r) => <RecallItem key={r.id} row={r} />)}</div>
+          ) : (
+            <p className="text-sm text-text-tertiary">No recorded recall items.</p>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function RecallItem({ row }: { row: RecallRow }) {
+  const meta = [row.reason, row.dueAt ? `due ${fmtDate(row.dueAt)}` : null, row.completedAt ? `completed ${fmtDate(row.completedAt)}` : null].filter(Boolean).join(' · ');
+  return (
+    <div className="rounded-lg border border-lightgray px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-semibold text-text">{row.identity ?? 'Patient'}</span>
+        <Badge tone={row.status === 'Overdue' ? 'danger' : 'neutral'} size="xs">{row.status}</Badge>
+      </div>
+      {meta && <div className="mt-0.5 text-meta text-text-tertiary">{meta}</div>}
+      {row.completionNote && (
+        <p className="mt-1 text-sm text-text-secondary"><span className="font-semibold text-text">Recorded note:</span> {row.completionNote}</p>
+      )}
     </div>
   );
 }

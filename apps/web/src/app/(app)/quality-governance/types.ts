@@ -134,6 +134,50 @@ export interface ProficiencySection {
   tests: ProficiencyTestRow[];
 }
 
+// Escalations & Recall — recorded lifecycle evidence. severity/status are stored enums;
+// recall status (incl. Overdue) is recorded, never computed. resolvedReason is a recorded
+// resolution note only.
+export interface EscalationRow {
+  id: string;
+  identity: string | null;
+  trigger: string | null;
+  severity: string | null;
+  status: string;
+  assignedToName: string | null;
+  reviewerName: string | null;
+  createdAt: string | null;
+  reviewedAt: string | null;
+  resolvedAt: string | null;
+  resolvedReason: string | null;
+  ownerPath: string;
+}
+export interface EscalationSection {
+  pending: number;
+  acknowledged: number;
+  underReview: number;
+  resolvedToday: number;
+  malignant: number;
+  highGrade: number;
+  items: EscalationRow[];
+}
+export interface RecallRow {
+  id: string;
+  identity: string | null;
+  reason: string | null;
+  status: string;
+  dueAt: string | null;
+  completedAt: string | null;
+  completionNote: string | null;
+  ownerPath: string;
+}
+export interface RecallSection {
+  pending: number;
+  due: number;
+  overdue: number;
+  completedThisMonth: number;
+  items: RecallRow[];
+}
+
 export interface QualityOverviewAggregate {
   asOf: string;
   permissions: Section<EffectiveQualityPermissions>;
@@ -142,8 +186,8 @@ export interface QualityOverviewAggregate {
   discordance: Section<DiscordanceSection>;
   qc: Section<QcSection>;
   proficiency: Section<ProficiencySection>;
-  escalations: Section<null>;
-  recall: Section<null>;
+  escalations: Section<EscalationSection>;
+  recall: Section<RecallSection>;
   benchmarks: Section<null>;
   medicalDirector: Section<null>;
   governance: Section<null>;
