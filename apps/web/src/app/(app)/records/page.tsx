@@ -497,6 +497,9 @@ export default function SamplesPage() {
                                 <div className="fixed inset-0 z-10" onClick={() => setMenuId(null)} />
                                 <div className="absolute right-0 top-10 z-20 w-44 rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
                                   <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50" onClick={() => { setMenuId(null); router.push(`/records/${r.id}`); }}><Eye size={14} /> View Details</button>
+                                  {/* Additive Sign-Out entry point: opens the unified workspace with a validated
+                                      internal returnTo (the worklist route only — no patient/clinical data). */}
+                                  <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50" onClick={() => { setMenuId(null); router.push(`/sign-out/${r.id}?returnTo=${encodeURIComponent('/records')}`); }}><CheckCircle2 size={14} /> Open Sign-Out</button>
                                   {showLabels && <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50" onClick={() => { setMenuId(null); setPrintIds([r.id]); }}><Printer size={14} /> Print Labels</button>}
                                   <div className="my-1 border-t border-slate-100" />
                                   <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-error hover:bg-error-container" onClick={() => { setMenuId(null); setConfirmDel(r); }}><Trash2 size={14} /> Delete</button>
