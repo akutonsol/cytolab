@@ -3,6 +3,7 @@ import { CorrelationService } from '../correlation/correlation.service';
 import { QcService } from '../qc/qc.service';
 import { EscalationService } from '../escalation/escalation.service';
 import { RecallService } from '../recall/recall.service';
+import { ProficiencyService } from '../proficiency/proficiency.service';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 
 // ── Quality & Governance aggregate (orchestration only) ──────────────────────
@@ -94,16 +95,83 @@ export interface DiscordanceSection {
   items: CorrelationCaseRow[]; // only cases whose STORED correlationResult records discordance
 }
 
+// ── Quality Control (C5) ─────────────────────────────────────────────────────
+// Read-only projection of recorded QC evidence. `result` is the stored QC status (never
+// recomputed); `failureReason` and `correctiveAction` are recorded free-text notes (NEVER
+// CAPA / root cause / preventive action / effectiveness). No severity is surfaced because
+// neither QCCheck nor QCFailureAlert records one. `ownerPath` is the QC console (`/qc`).
+export interface QcCheckRow {
+  id: string;
+  checkType: string;
+  result: string; // stored Pass / Fail / Marginal
+  failureReason: string | null; // recorded failure reason (verbatim)
+  correctiveAction: string | null; // recorded corrective-action NOTE (verbatim, not CAPA)
+  equipmentName: string | null;
+  performerName: string | null;
+  recordIdentity: string | null;
+  performedAt: string | null;
+  createdAt: string | null;
+  ownerPath: string;
+}
+export interface QcAlertRow {
+  id: string;
+  status: string; // stored alert status
+  relatedCheckType: string | null;
+  failureReason: string | null;
+  equipmentName: string | null;
+  createdAt: string | null;
+  resolvedAt: string | null;
+  ownerPath: string;
+}
+export interface QcSection {
+  // Owner-computed counts (QcService.stats) — displayed, not recomputed.
+  totalChecks: number;
+  pass: number;
+  fail: number;
+  marginal: number;
+  openAlerts: number; // count of the owner's not-Resolved alerts
+  recentChecks: QcCheckRow[]; // bounded, deterministically ordered
+  alerts: QcAlertRow[]; // bounded open alerts, deterministically ordered
+}
+
+// ── Proficiency (C6) ─────────────────────────────────────────────────────────
+// Read-only projection of recorded proficiency evidence. `status` is the owner's recorded
+// ProfTestStatus (Draft/Active/Grading/Completed/Archived), shown verbatim. No competency
+// is inferred, no staff ranking is computed (the owner's per-user rankings are NOT used),
+// no remediation is recommended, no pending count is fabricated. `averageScore` is the
+// owner-computed lab average (analytics.labAverageScore), displayed only because the owner
+// already exposes it. Per-user scores/pass-fail live on the owner surface (/proficiency/:id).
+export interface ProficiencyTestRow {
+  id: string;
+  name: string;
+  testType: string;
+  status: string; // recorded ProfTestStatus verbatim
+  administeredByName: string | null; // createdBy
+  passingScore: number | null; // the test's recorded passing threshold
+  caseCount: number;
+  responderCount: number;
+  startDate: string | null;
+  endDate: string | null;
+  createdAt: string | null;
+  ownerPath: string; // /proficiency/:id — grading/administration happens there
+}
+export interface ProficiencySection {
+  totalTests: number; // owner analytics.totalTests
+  completedTests: number; // owner analytics.completedTests
+  averageScore: number | null; // owner analytics.labAverageScore (owner-computed)
+  tests: ProficiencyTestRow[]; // bounded, deterministically ordered
+}
+
 export interface QualityOverviewAggregate {
   asOf: string;
   permissions: Section<EffectiveQualityPermissions>;
   overview: Section<OverviewData>;
   correlation: Section<CorrelationSection>;
   discordance: Section<DiscordanceSection>;
-  // The remaining seven evidence sections stay deferred at C4. Each carries its own status
+  qc: Section<QcSection>;
+  proficiency: Section<ProficiencySection>;
+  // The remaining five evidence sections stay deferred at C6. Each carries its own status
   // so a future section failure isolates to it and never collapses permissions or siblings.
-  qc: Section<null>;
-  proficiency: Section<null>;
   escalations: Section<null>;
   recall: Section<null>;
   benchmarks: Section<null>;
@@ -120,6 +188,7 @@ export class QualityGovernanceService {
     private readonly qc: QcService,
     private readonly escalation: EscalationService,
     private readonly recall: RecallService,
+    private readonly proficiency: ProficiencyService,
   ) {}
 
   async overview(user: AuthUser): Promise<QualityOverviewAggregate> {
@@ -128,9 +197,11 @@ export class QualityGovernanceService {
     const perms = buildPermissions(user);
     // Sections resolve independently (partial-failure isolation): a correlation failure
     // never collapses the overview or sibling sections.
-    const [overview, corr] = await Promise.all([
+    const [overview, corr, qc, proficiency] = await Promise.all([
       this.loadOverview(perms),
       this.loadCorrelationSections(perms),
+      this.loadQc(perms),
+      this.loadProficiency(perms),
     ]);
     return {
       asOf: new Date().toISOString(),
@@ -138,8 +209,8 @@ export class QualityGovernanceService {
       overview,
       correlation: corr.correlation,
       discordance: corr.discordance,
-      qc: deferred(),
-      proficiency: deferred(),
+      qc,
+      proficiency,
       escalations: deferred(),
       recall: deferred(),
       benchmarks: deferred(),
@@ -263,6 +334,70 @@ export class QualityGovernanceService {
       return { correlation: error, discordance: error };
     }
   }
+
+  // Quality Control — composed from QcService only. `stats()` gives owner-computed counts
+  // (displayed, not recomputed); `alerts()` gives the owner's OPEN (not-Resolved) alerts;
+  // `list()` gives recent recorded checks. failureReason/correctiveAction are shown as
+  // recorded notes, never CAPA. No severity is surfaced (the models record none).
+  private async loadQc(perms: EffectiveQualityPermissions): Promise<Section<QcSection>> {
+    if (!perms.viewRecord) return { status: 'forbidden', data: null };
+    try {
+      const [stats, alerts, checks] = await Promise.all([
+        this.qc.stats(),
+        this.qc.alerts(),
+        this.qc.list({ pageSize: 10 } as any),
+      ]);
+      const allAlerts: any[] = Array.isArray(alerts) ? alerts : [];
+      const checkList: any[] = (checks as any)?.data ?? (Array.isArray(checks) ? checks : []);
+      const s: any = stats ?? {};
+      if ((s.totalChecks ?? 0) === 0 && !allAlerts.length) {
+        return { status: 'empty', data: null };
+      }
+      return {
+        status: 'ready',
+        data: {
+          totalChecks: s.totalChecks ?? 0,
+          pass: s.passCount ?? 0,
+          fail: s.failCount ?? 0,
+          marginal: s.marginalCount ?? 0,
+          openAlerts: allAlerts.length, // the owner's not-Resolved alert count
+          recentChecks: checkList.map(mapQcCheck).sort(qcCheckSort).slice(0, 10),
+          alerts: allAlerts.map(mapQcAlert).sort(qcAlertSort).slice(0, 25),
+        },
+      };
+    } catch {
+      return { status: 'error', data: null, reason: 'Quality Control failed to load' };
+    }
+  }
+
+  // Proficiency — composed from ProficiencyService only. `analytics()` gives owner-computed
+  // totals + the owner's lab average score (displayed, not recomputed); `list()` gives the
+  // recorded tests. No competency inference, no staff ranking, no remediation, no fabricated
+  // pending count. Read gate mirrors the real owner permission (record:view); administer/
+  // grade stay gated by resultsheet:authorize at the owner endpoints.
+  private async loadProficiency(perms: EffectiveQualityPermissions): Promise<Section<ProficiencySection>> {
+    if (!perms.viewRecord) return { status: 'forbidden', data: null };
+    try {
+      const [analytics, tests] = await Promise.all([
+        this.proficiency.analytics(),
+        this.proficiency.list({} as any),
+      ]);
+      const list: any[] = Array.isArray(tests) ? tests : [];
+      const a: any = analytics ?? {};
+      if ((a.totalTests ?? 0) === 0 && !list.length) return { status: 'empty', data: null };
+      return {
+        status: 'ready',
+        data: {
+          totalTests: a.totalTests ?? 0,
+          completedTests: a.completedTests ?? 0,
+          averageScore: typeof a.labAverageScore === 'number' ? a.labAverageScore : null,
+          tests: list.map(mapProficiencyTest).sort(proficiencySort).slice(0, 15),
+        },
+      };
+    } catch {
+      return { status: 'error', data: null, reason: 'Proficiency failed to load' };
+    }
+  }
 }
 
 // Deterministic ordering from recorded fields only. reviewRequired first is the OWNER's
@@ -297,6 +432,86 @@ function mapCorrelationRow(c: any): CorrelationCaseRow {
 }
 
 const iso = (d: Date | string | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
+const personName = (u: { firstName?: string | null; lastName?: string | null } | null | undefined): string | null =>
+  u ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || null : null;
+
+// Recent checks: most recent performed/created date first, then a stable id tie-break.
+function qcCheckSort(x: QcCheckRow, y: QcCheckRow): number {
+  const t = (s: string | null) => (s ? new Date(s).getTime() : -Infinity);
+  return (
+    t(y.performedAt) - t(x.performedAt) ||
+    t(y.createdAt) - t(x.createdAt) ||
+    (x.id < y.id ? -1 : x.id > y.id ? 1 : 0)
+  );
+}
+
+// Open alerts: all are unresolved (the owner returns not-Resolved only); no severity is
+// stored, so we do NOT rank by severity. Oldest unresolved first, then a stable id.
+function qcAlertSort(x: QcAlertRow, y: QcAlertRow): number {
+  const t = (s: string | null) => (s ? new Date(s).getTime() : Infinity);
+  return t(x.createdAt) - t(y.createdAt) || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0);
+}
+
+function mapQcCheck(c: any): QcCheckRow {
+  return {
+    id: c.id,
+    checkType: String(c.checkType),
+    result: String(c.result),
+    failureReason: c.failureReason ?? null,
+    correctiveAction: c.correctiveAction ?? null,
+    equipmentName: c.equipment?.name ?? null,
+    performerName: personName(c.performedBy),
+    recordIdentity: c.record ? (c.record.labNumber ?? c.record.identifier ?? null) : null,
+    performedAt: iso(c.performedAt),
+    createdAt: iso(c.createdAt),
+    ownerPath: '/qc',
+  };
+}
+
+// Proficiency ordering: recorded in-progress state first (Draft/Active/Grading — the
+// owner's recorded status, NOT inferred urgency or staff risk), then most recent recorded
+// date, then createdAt, then a stable id.
+const PROFICIENCY_IN_PROGRESS = new Set(['Draft', 'Active', 'Grading']);
+function proficiencySort(x: ProficiencyTestRow, y: ProficiencyTestRow): number {
+  const inProgress = (r: ProficiencyTestRow) => PROFICIENCY_IN_PROGRESS.has(r.status);
+  if (inProgress(x) !== inProgress(y)) return inProgress(x) ? -1 : 1;
+  const t = (s: string | null) => (s ? new Date(s).getTime() : -Infinity);
+  return (
+    t(y.endDate ?? y.createdAt) - t(x.endDate ?? x.createdAt) ||
+    t(y.createdAt) - t(x.createdAt) ||
+    (x.id < y.id ? -1 : x.id > y.id ? 1 : 0)
+  );
+}
+
+function mapProficiencyTest(t: any): ProficiencyTestRow {
+  return {
+    id: t.id,
+    name: t.name,
+    testType: String(t.testType),
+    status: String(t.status),
+    administeredByName: personName(t.createdBy),
+    passingScore: typeof t.passingScore === 'number' ? t.passingScore : null,
+    caseCount: t.caseCount ?? 0,
+    responderCount: t.responderCount ?? 0,
+    startDate: iso(t.startDate),
+    endDate: iso(t.endDate),
+    createdAt: iso(t.createdAt),
+    ownerPath: `/proficiency/${t.id}`,
+  };
+}
+
+function mapQcAlert(a: any): QcAlertRow {
+  return {
+    id: a.id,
+    status: String(a.status),
+    relatedCheckType: a.qcCheck ? String(a.qcCheck.checkType) : null,
+    failureReason: a.qcCheck?.failureReason ?? null,
+    equipmentName: a.qcCheck?.equipment?.name ?? null,
+    createdAt: iso(a.createdAt),
+    resolvedAt: iso(a.resolvedAt),
+    ownerPath: '/qc',
+  };
+}
 
 function buildPermissions(user: AuthUser): EffectiveQualityPermissions {
   const has = (code: string) => !!user.isSuperRole || user.permissions.includes(code);

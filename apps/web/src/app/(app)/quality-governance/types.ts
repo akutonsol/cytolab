@@ -75,14 +75,73 @@ export interface DiscordanceSection {
   items: CorrelationCaseRow[];
 }
 
+// Quality Control — recorded QC evidence. `result` is the stored status; `failureReason`
+// and `correctiveAction` are recorded notes (never CAPA/root-cause/effectiveness). No
+// severity (the models record none).
+export interface QcCheckRow {
+  id: string;
+  checkType: string;
+  result: string;
+  failureReason: string | null;
+  correctiveAction: string | null;
+  equipmentName: string | null;
+  performerName: string | null;
+  recordIdentity: string | null;
+  performedAt: string | null;
+  createdAt: string | null;
+  ownerPath: string;
+}
+export interface QcAlertRow {
+  id: string;
+  status: string;
+  relatedCheckType: string | null;
+  failureReason: string | null;
+  equipmentName: string | null;
+  createdAt: string | null;
+  resolvedAt: string | null;
+  ownerPath: string;
+}
+export interface QcSection {
+  totalChecks: number;
+  pass: number;
+  fail: number;
+  marginal: number;
+  openAlerts: number;
+  recentChecks: QcCheckRow[];
+  alerts: QcAlertRow[];
+}
+
+// Proficiency — recorded proficiency evidence. `status` is the owner's recorded state;
+// `averageScore` is the owner-computed lab average. No competency/ranking/remediation.
+export interface ProficiencyTestRow {
+  id: string;
+  name: string;
+  testType: string;
+  status: string;
+  administeredByName: string | null;
+  passingScore: number | null;
+  caseCount: number;
+  responderCount: number;
+  startDate: string | null;
+  endDate: string | null;
+  createdAt: string | null;
+  ownerPath: string;
+}
+export interface ProficiencySection {
+  totalTests: number;
+  completedTests: number;
+  averageScore: number | null;
+  tests: ProficiencyTestRow[];
+}
+
 export interface QualityOverviewAggregate {
   asOf: string;
   permissions: Section<EffectiveQualityPermissions>;
   overview: Section<OverviewData>;
   correlation: Section<CorrelationSection>;
   discordance: Section<DiscordanceSection>;
-  qc: Section<null>;
-  proficiency: Section<null>;
+  qc: Section<QcSection>;
+  proficiency: Section<ProficiencySection>;
   escalations: Section<null>;
   recall: Section<null>;
   benchmarks: Section<null>;

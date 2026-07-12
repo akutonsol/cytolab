@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { CorrelationCaseRow, EffectiveQualityPermissions, OverviewSource, QualityOverviewAggregate, SectionStatus } from './types';
+import type { CorrelationCaseRow, EffectiveQualityPermissions, OverviewSource, ProficiencyTestRow, QcAlertRow, QcCheckRow, QualityOverviewAggregate, SectionStatus } from './types';
 
 // Only an internal, same-origin path may be a return target — reject external and
 // protocol-relative URLs (open-redirect protection). Mirrors the Sign-Out routing guard.
@@ -34,12 +34,10 @@ function safeReturnTo(raw: string | null): string | null {
 // section key; the Correlation & Discordance region reflects the `correlation` section
 // (the `discordance` section joins it at C4). `permissions` renders the descriptive map.
 type EvidenceKey =
-  | 'qc' | 'proficiency' | 'escalations'
+  | 'escalations'
   | 'recall' | 'benchmarks' | 'medicalDirector' | 'governance';
 
 const EVIDENCE_REGIONS: { key: EvidenceKey; title: string; responsibility: string }[] = [
-  { key: 'qc', title: 'Quality Control', responsibility: 'Analytical QC checks, failure alerts, and recorded corrective notes.' },
-  { key: 'proficiency', title: 'Proficiency', responsibility: 'Proficiency testing status and grading.' },
   { key: 'escalations', title: 'Escalations', responsibility: 'Abnormal-result escalations awaiting review or resolution.' },
   { key: 'recall', title: 'Recall', responsibility: 'Patient recall and follow-up compliance.' },
   { key: 'benchmarks', title: 'Benchmarks', responsibility: 'Owner-computed CAP, Bethesda, TAT, and abnormal-rate status.' },
@@ -151,6 +149,14 @@ export default function QualityGovernanceWorkspacePage() {
             loading={isLoading}
             onOpen={(path) => router.push(path)}
           />
+
+          {/* Quality Control — recorded QC evidence; corrective/failure text shown as
+              recorded notes only. Resolution happens on the existing QC owner surface. */}
+          <QcPanel section={data?.qc} loading={isLoading} onOpen={() => router.push('/qc')} />
+
+          {/* Proficiency — recorded test evidence; grading/administration happen on the
+              existing proficiency owner surface. No competency, ranking, or remediation. */}
+          <ProficiencyPanel section={data?.proficiency} loading={isLoading} onOpen={(path) => router.push(path)} />
 
           {/* The remaining evidence regions — truthfully deferred; each reflects its own
               aggregate section status, so a future failure isolates to its region. */}
@@ -307,6 +313,170 @@ function DiscordanceRow({ row, onOpen }: { row: CorrelationCaseRow; onOpen: () =
       {row.reviewedAt && (
         <p className="mt-1 text-meta text-text-tertiary">Reviewed {row.reviewerName ? `by ${row.reviewerName} ` : ''}· {fmtDate(row.reviewedAt)}</p>
       )}
+    </div>
+  );
+}
+
+// Stored QC result → tone (no synthetic severity; tones avoid amber).
+const qcResultTone = (r: string): 'success' | 'danger' | 'neutral' =>
+  r === 'Pass' ? 'success' : r === 'Fail' ? 'danger' : 'neutral';
+
+// Quality Control — recorded counts, recent checks, and open alerts. failureReason and
+// correctiveAction are shown verbatim as recorded NOTES — never CAPA, root cause, preventive
+// action, or effectiveness. No severity, no QC health score. Resolution opens the QC owner
+// surface (`/qc`); this never resolves alerts or edits checks itself.
+function QcPanel({
+  section,
+  loading,
+  onOpen,
+}: {
+  section?: QualityOverviewAggregate['qc'];
+  loading: boolean;
+  onOpen: () => void;
+}) {
+  const status = section?.status;
+  const d = status === 'ready' ? section?.data : null;
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="text-base font-bold text-text">Quality Control</h2>
+        {d && <Button variant="secondary" size="sm" onClick={onOpen}>Open QC</Button>}
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-48" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-6" title="No access" description="You do not have permission to view QC." />
+      ) : status === 'error' ? (
+        <EmptyState bare className="px-0 py-6" title="Unavailable" description="Quality Control could not be loaded." />
+      ) : status === 'empty' || !d ? (
+        <EmptyState bare className="px-0 py-6" title="No QC data" description="No QC checks or alerts are recorded." />
+      ) : (
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <Badge tone="neutral" size="sm">{d.totalChecks} checks</Badge>
+            <Badge tone="success" size="sm">{d.pass} pass</Badge>
+            <Badge tone={d.fail > 0 ? 'danger' : 'neutral'} size="sm">{d.fail} fail</Badge>
+            <Badge tone="neutral" size="sm">{d.marginal} marginal</Badge>
+            <Badge tone={d.openAlerts > 0 ? 'danger' : 'neutral'} size="sm">{d.openAlerts} open alert{d.openAlerts === 1 ? '' : 's'}</Badge>
+          </div>
+
+          <div>
+            <div className="mb-2 text-meta font-semibold uppercase tracking-wide text-text-tertiary">Open alerts</div>
+            {d.alerts.length ? (
+              <div className="space-y-2">{d.alerts.map((a) => <QcAlertItem key={a.id} alert={a} />)}</div>
+            ) : (
+              <p className="text-sm text-text-tertiary">No open failure alerts.</p>
+            )}
+          </div>
+
+          <div>
+            <div className="mb-2 text-meta font-semibold uppercase tracking-wide text-text-tertiary">Recent checks</div>
+            {d.recentChecks.length ? (
+              <div className="space-y-2">{d.recentChecks.map((c) => <QcCheckItem key={c.id} check={c} />)}</div>
+            ) : (
+              <p className="text-sm text-text-tertiary">No recorded checks.</p>
+            )}
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function QcAlertItem({ alert }: { alert: QcAlertRow }) {
+  const meta = [alert.relatedCheckType, alert.equipmentName, alert.createdAt ? fmtDate(alert.createdAt) : null].filter(Boolean).join(' · ');
+  return (
+    <div className="rounded-lg border border-lightgray px-3 py-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge tone="danger" size="xs">{alert.status}</Badge>
+        {meta && <span className="text-meta text-text-tertiary">{meta}</span>}
+      </div>
+      {alert.failureReason && (
+        <p className="mt-1 text-sm text-text-secondary"><span className="font-semibold text-text">Recorded failure reason:</span> {alert.failureReason}</p>
+      )}
+    </div>
+  );
+}
+
+function QcCheckItem({ check }: { check: QcCheckRow }) {
+  const meta = [check.checkType, check.equipmentName, check.recordIdentity, check.performerName, check.performedAt ? fmtDate(check.performedAt) : null].filter(Boolean).join(' · ');
+  return (
+    <div className="rounded-lg border border-lightgray px-3 py-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge tone={qcResultTone(check.result)} size="xs">{check.result}</Badge>
+        {meta && <span className="text-meta text-text-tertiary">{meta}</span>}
+      </div>
+      {check.failureReason && (
+        <p className="mt-1 text-sm text-text-secondary"><span className="font-semibold text-text">Recorded failure reason:</span> {check.failureReason}</p>
+      )}
+      {check.correctiveAction && (
+        <p className="mt-1 text-sm text-text-secondary"><span className="font-semibold text-text">Recorded corrective-action note:</span> {check.correctiveAction}</p>
+      )}
+    </div>
+  );
+}
+
+// Proficiency — recorded totals, the owner-computed lab average, and recorded tests with
+// their recorded status. No competency inference, no staff leaderboard, no remediation, no
+// synthetic pass/fail. Grading/administration open the existing proficiency owner surface.
+function ProficiencyPanel({
+  section,
+  loading,
+  onOpen,
+}: {
+  section?: QualityOverviewAggregate['proficiency'];
+  loading: boolean;
+  onOpen: (ownerPath: string) => void;
+}) {
+  const status = section?.status;
+  const d = status === 'ready' ? section?.data : null;
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <h2 className="mb-3 text-base font-bold text-text">Proficiency</h2>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-48" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-6" title="No access" description="You do not have permission to view proficiency." />
+      ) : status === 'error' ? (
+        <EmptyState bare className="px-0 py-6" title="Unavailable" description="Proficiency could not be loaded." />
+      ) : status === 'empty' || !d ? (
+        <EmptyState bare className="px-0 py-6" title="No proficiency tests" description="No proficiency tests are recorded." />
+      ) : (
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <Badge tone="neutral" size="sm">{d.totalTests} tests</Badge>
+            <Badge tone="neutral" size="sm">{d.completedTests} completed</Badge>
+            {d.averageScore != null && <Badge tone="neutral" size="sm">Lab average {d.averageScore}% (owner-computed)</Badge>}
+          </div>
+          {d.tests.length ? (
+            <div className="space-y-2">{d.tests.map((t) => <ProficiencyRow key={t.id} test={t} onOpen={() => onOpen(t.ownerPath)} />)}</div>
+          ) : (
+            <p className="text-sm text-text-tertiary">No recorded tests.</p>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function ProficiencyRow({ test, onOpen }: { test: ProficiencyTestRow; onOpen: () => void }) {
+  const meta = [
+    test.testType,
+    test.administeredByName ? `by ${test.administeredByName}` : null,
+    test.passingScore != null ? `pass ≥ ${test.passingScore}%` : null,
+    `${test.responderCount} responder${test.responderCount === 1 ? '' : 's'}`,
+    test.endDate ? fmtDate(test.endDate) : test.createdAt ? fmtDate(test.createdAt) : null,
+  ].filter(Boolean).join(' · ');
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-lightgray px-3 py-2.5">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold text-text">{test.name}</span>
+          <Badge tone="neutral" size="xs">{test.status}</Badge>
+        </div>
+        <div className="mt-0.5 text-meta text-text-tertiary">{meta}</div>
+      </div>
+      <Button variant="secondary" size="sm" onClick={onOpen}>Open</Button>
     </div>
   );
 }

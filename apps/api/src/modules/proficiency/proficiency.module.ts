@@ -8,5 +8,6 @@ import { ProficiencyService } from './proficiency.service';
   imports: [PrismaModule, NotificationsModule],
   controllers: [ProficiencyController],
   providers: [ProficiencyService],
+  exports: [ProficiencyService],
 })
 export class ProficiencyModule {}
