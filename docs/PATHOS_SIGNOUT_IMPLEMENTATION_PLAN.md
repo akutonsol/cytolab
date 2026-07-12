@@ -338,8 +338,88 @@ honors every exclusion in the architecture doc (Read→Reveal, Concordance, quan
 annotations, e-signature framework, schema, route consolidation, stable-screen redesign all deferred).
 One item to verify during build, not a conflict: the exact permission on the AI-draft endpoint (B10).
 
+## Phase 2B closeout (B1–B13) — verified 2026-07-11
+
+Phase 2B (Unified Sign-Out Workspace) is **complete**. Every checkpoint shipped as an isolated,
+reviewed commit. The workspace composes existing owner services around one `recordId` and owns no
+domain logic, persistence, editor, or authorization path.
+
+### Checkpoints (each an isolated commit)
+B1 shell · B2 case/patient/clinical aggregate · B3 context depth · B4 WSI metadata + viewer
+invocation · B5 AI/Bethesda/correlation evidence · B6 prior-aware review · B7 attachments ·
+B8 unified timeline · B9 result-sheet invocation · B10 AI-draft metadata · *(AI-draft read-access
+reconciliation — audit only, no change: `aidraft:view` is already seeded via the standard
+object×action mechanism and granted to Pathologist/Authorizers)* · B11 authorization & amendment
+invocation · B12 workflow continuity · B13 entry-point wiring + full verification.
+
+### Production entry point
+`/records` row menu → **Open Sign-Out** → `/sign-out/:recordId?returnTo=%2Frecords`. Additive (the
+worklist is not redesigned, no existing action replaced); `returnTo` carries only the internal
+worklist path — never patient/clinical data — and is re-validated as an internal path on return.
+
+### Section status at closeout — **no section remains deferred**
+`case, patient, clinicalContext, permissions, slides, ai, bethesda, correlation, priors,
+attachments, timeline, resultSheets, aiDraft` all hydrate to real `ready`/`empty`/`forbidden`/`error`
+states. `slides`, `correlation`, `attachments`, `aiDraft` render **`empty`** in the demo lab only
+because no such records exist there (verified truthful empty, not a stub).
+
+### Permission matrix (real seeded grants; owner endpoints enforce independently)
+| Capability (gate) | Superuser | Pathologist | Authorizers | Lab Technician | Receptionist |
+|---|---|---|---|---|---|
+| Enter workspace (`record:view`) | ✅ | ✅ | ✅ | ✅ | ❌ (no access) |
+| Slides / AI screening / attachments / correlation / priors / timeline (`record:view`) | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Bethesda (`resultentry:view`) | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Result-sheet view (`resultsheet:view`) | ✅ | ✅ | ✅ | ❌ forbidden | ❌ |
+| Result-sheet create (`resultsheet:create`) | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Authorize / reauthorize (`resultsheet:authorize`) | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Amend (`resultentry:change` ∧ `resultsheet:authorize`) | ✅ | ✅ | ✅ | ❌ | ❌ |
+| AI-draft view (`aidraft:view`) | ✅ | ✅ | ✅ | ❌ forbidden | ❌ |
+| AI-draft create (`aidraft:create`) | ✅ | ✅ | ✅ | ❌ | ❌ |
+
+Superuser verified live; the rest derive from real role→permission grants + the deterministic
+`has(code) = isSuperRole || permissions.includes(code)` map (only a superuser credential exists in
+the demo; no throwaway roles were created).
+
+### Verified capabilities (end-to-end)
+Entry/identity · WSI metadata-only + viewer invoke/return (no `slideUrl`/bytes in payload) ·
+evidence-before-confidence AI/Bethesda/correlation (no inferred diagnosis) · patient-linked priors
+(current excluded, deterministic order, 25-cap note) · attachments metadata-only (no bytes, owner
+route) · recorded-events-only chronological timeline (no `updatedAt`, honest actor absence,
+partial-source isolation) · result-sheet metadata + owner-modal create/refresh · AI-draft metadata
+only · authorization/amendment via unchanged `AuthorizationModal` (auth refreshes sheet + timeline;
+amendment derived only from recorded events) · workflow continuity (validated `returnTo`, `/records`
+fallback, `W`/`C`/`?`/`Esc` shortcuts suppressed in form controls/modals, focus-once, no mutating
+shortcut).
+
+### Verification results (B13)
+- Typecheck + production build clean (API + web). Aggregate response **21–37 ms**, payload **~14 KB**,
+  **11 composed owner-service reads**, zero direct Prisma in `SignoutService`.
+- Failure isolation: erroring AI/Bethesda/correlation/attachments/result-sheet/timeline sources keeps
+  case identity and unaffected sections usable; each failed source is named "Unavailable"; no false
+  empty state.
+- Accessibility: one `h1`, ordered headings, 0 unlabeled buttons, visible focus ring, status carried
+  by text (not color alone), antd owns modal focus.
+- Responsive: horizontal overflow **0** at 390/768/1024/1440/1920.
+- Zero-orange: **0 px** across states and breakpoints.
+
+### Intentional limitations (unchanged, documented)
+- `/records` keeps filters/search/sort/page in **local component state, not the URL**, so they cannot
+  yet be restored on return — only the source *path* is preserved.
+- **Previous/next case** deferred: no truthful source-ordered, tenant-safe case set is reachable.
+- Single-column workspace has no selectable panel/tab state to persist.
+- Slide-upload / attachment / case-created **actors** are not name-resolvable on their models →
+  shown as "Actor not recorded."
+
+### Deferred future capabilities (still blocked by design)
+Read → Reveal, Concordance Ledger, and quantification remain blocked (data-model additions required);
+the code explicitly disclaims them. No schema or Helix change was made anywhere in Phase 2B.
+
+### Known demo-data test side effect
+B11 authorized record **d2a7da86**'s result sheet through the owner endpoint to prove the refresh path
+(lifecycle Resulted → Approved); no improvised rollback was performed.
+
 ## Status of this document
 
-Binding engineering plan; architecture only. On approval, implementation proceeds checkpoint by
-checkpoint (B1…B13), each tracing here and to [PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md),
-verified against §11, and recorded in [../Roadmap/08_RELEASES.md](../Roadmap/08_RELEASES.md).
+Binding engineering plan. Phase 2B implemented checkpoint by checkpoint (B1…B13), each traced here and
+to [PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md), verified against §11, and recorded in
+[../Roadmap/08_RELEASES.md](../Roadmap/08_RELEASES.md). **Phase 2B is complete and verified.**
