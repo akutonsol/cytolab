@@ -1,18 +1,21 @@
 'use client';
 
-// Enterprise Administration & Controls Workspace — A1: the shell only.
-// Orchestration surface (future). A1 establishes route, permission gate, section hierarchy,
-// return-to-worklist navigation, accessibility, and responsive layout — and NOTHING else.
-// There is intentionally NO data fetching, NO React Query, NO aggregate call, NO owner-service
-// call, NO Prisma, NO counters/KPIs/status/mock values. Every section renders truthfully as
-// "Not yet loaded" (the frozen `deferred` state) until its checkpoint (A2–A9) hydrates it.
-// Contract: docs/PATHOS_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md (§1, §3, §4, §5, §10).
+// Enterprise Administration & Controls Workspace — A2: connect the shell to the read-only
+// aggregate (GET /enterprise-administration/overview) and freeze the section-status contract.
+// A2 renders ONLY the descriptive permission map (`permissionMatrix` → ready); the other 21
+// sections stay truthfully `deferred`. NO owner data, NO configuration values, NO counters/KPIs,
+// NO secrets, NO mutations/forms/modals. Each section resolves independently so a future failure
+// isolates to it and never collapses the permission map, siblings, or the shell.
+// Contract: docs/PATHOS_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md (§1, §3, §4, §5, §8).
 
 import { useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { Badge, Card, EmptyState } from '@/components/ui';
+import { Badge, Card, EmptyState, Skeleton } from '@/components/ui';
+import type { EffectiveAdminPermissions, EnterpriseAdminOverview, SectionStatus } from './types';
 
 // Only an internal, same-origin path may be a return target — reject external and
 // protocol-relative URLs (open-redirect protection). Mirrors the Sign-Out / Quality guard.
@@ -28,9 +31,11 @@ function safeReturnTo(raw: string | null): string | null {
 }
 
 // The approved administration sections, in the exact order of the implementation plan §5.
-// Each `responsibility` is a case-neutral description of what the section WILL compose from
-// its owner — never a value, count, or status. At A1 every section is `deferred`.
-const ADMIN_SECTIONS: { key: string; title: string; responsibility: string }[] = [
+// `key` matches the aggregate section key; `permissionMatrix` renders the descriptive map (ready
+// at A2), every other section renders its truthful status (deferred at A2). `responsibility` is a
+// case-neutral description of what the section WILL compose — never a value, count, or status.
+type SectionKey = keyof Omit<EnterpriseAdminOverview, 'asOf'>;
+const ADMIN_SECTIONS: { key: SectionKey; title: string; responsibility: string }[] = [
   { key: 'laboratory', title: 'Laboratory', responsibility: 'Recorded laboratory profile and operating preferences.' },
   { key: 'branding', title: 'Branding', responsibility: 'Recorded branding and logo configuration.' },
   { key: 'departments', title: 'Departments', responsibility: 'The recorded departments.' },
@@ -39,20 +44,57 @@ const ADMIN_SECTIONS: { key: string; title: string; responsibility: string }[] =
   { key: 'permissions', title: 'Permissions', responsibility: 'The descriptive role-to-permission map.' },
   { key: 'security', title: 'Security', responsibility: 'Security posture: sessions, login history, MFA coverage, locks, alerts, password policy.' },
   { key: 'clients', title: 'Clients', responsibility: 'The client directory.' },
-  { key: 'lab-codes', title: 'Lab Codes', responsibility: 'The lab-code catalog.' },
-  { key: 'code-sheets', title: 'Code Sheets', responsibility: 'The recorded code-sheet configuration.' },
+  { key: 'labCodes', title: 'Lab Codes', responsibility: 'The lab-code catalog.' },
+  { key: 'codeSheets', title: 'Code Sheets', responsibility: 'The recorded code-sheet configuration.' },
   { key: 'forms', title: 'Forms', responsibility: 'The recorded form configuration.' },
   { key: 'fhir', title: 'FHIR', responsibility: 'Configured FHIR endpoints and transmission health (never secrets).' },
   { key: 'notifications', title: 'Notifications', responsibility: 'The recorded notification preferences.' },
   { key: 'billing', title: 'Billing', responsibility: 'The recorded billing configuration.' },
   { key: 'services', title: 'Services', responsibility: 'The services and pricing catalog.' },
   { key: 'taxes', title: 'Taxes', responsibility: 'The recorded tax configuration.' },
-  { key: 'feature-flags', title: 'Feature Flags', responsibility: 'Enabled modules and feature flags.' },
-  { key: 'system-health', title: 'System Health', responsibility: 'System health and maintenance status.' },
-  { key: 'ai-settings', title: 'AI Settings', responsibility: 'The recorded AI reporting settings.' },
-  { key: 'portal-access', title: 'Portal Access', responsibility: 'Client portal access status.' },
+  { key: 'featureFlags', title: 'Feature Flags', responsibility: 'Enabled modules and feature flags.' },
+  { key: 'systemHealth', title: 'System Health', responsibility: 'System health and maintenance status.' },
+  { key: 'aiSettings', title: 'AI Settings', responsibility: 'The recorded AI reporting settings.' },
+  { key: 'portalAccess', title: 'Portal Access', responsibility: 'Client portal access status.' },
   { key: 'lifecycle', title: 'Lifecycle Observation', responsibility: 'The recorded record-status history — observation only.' },
-  { key: 'permission-matrix', title: 'Permission Matrix', responsibility: 'The descriptive permission map for the current user.' },
+  { key: 'permissionMatrix', title: 'Permission Matrix', responsibility: 'The descriptive permission map for the current user.' },
+];
+
+// Descriptive permission map labels. These render only which owner permissions the caller holds
+// (permission-aware presentation) — never a configuration value. Order mirrors the admin domains.
+const PERMISSION_LABELS: { key: keyof EffectiveAdminPermissions; label: string }[] = [
+  { key: 'viewRecord', label: 'View records' },
+  { key: 'viewRecordStatus', label: 'View record status' },
+  { key: 'changeRecordStatus', label: 'Change record status' },
+  { key: 'viewLabConfig', label: 'View lab configuration' },
+  { key: 'changeLabConfig', label: 'Change lab configuration' },
+  { key: 'viewDepartment', label: 'View departments' },
+  { key: 'changeDepartment', label: 'Change departments' },
+  { key: 'viewUser', label: 'View users' },
+  { key: 'changeUser', label: 'Change users' },
+  { key: 'viewRole', label: 'View roles' },
+  { key: 'changeRole', label: 'Change roles' },
+  { key: 'viewPermission', label: 'View permissions' },
+  { key: 'viewClient', label: 'View clients' },
+  { key: 'changeClient', label: 'Change clients' },
+  { key: 'viewLabCode', label: 'View lab codes' },
+  { key: 'changeLabCode', label: 'Change lab codes' },
+  { key: 'viewCodeSheet', label: 'View code sheets' },
+  { key: 'changeCodeSheet', label: 'Change code sheets' },
+  { key: 'viewFormConfig', label: 'View form config' },
+  { key: 'manageFormConfig', label: 'Manage form config' },
+  { key: 'systemSecurity', label: 'Security governance' },
+  { key: 'systemHealth', label: 'System health' },
+  { key: 'viewService', label: 'View services' },
+  { key: 'changeService', label: 'Change services' },
+  { key: 'viewTax', label: 'View taxes' },
+  { key: 'changeTax', label: 'Change taxes' },
+  { key: 'viewNotification', label: 'View notifications' },
+  { key: 'viewPortalUser', label: 'View portal access' },
+  { key: 'changePortalUser', label: 'Change portal access' },
+  { key: 'viewChangeRequest', label: 'View change requests' },
+  { key: 'changeChangeRequest', label: 'Change change requests' },
+  { key: 'featureFlags', label: 'Feature flags (superuser)' },
 ];
 
 export default function EnterpriseAdministrationWorkspacePage() {
@@ -63,8 +105,14 @@ export default function EnterpriseAdministrationWorkspacePage() {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const focusedOnce = useRef(false);
 
-  // Move focus to the workspace heading once on direct entry (accessibility). There is no
-  // data load at A1, so nothing can steal it.
+  const { data, isLoading } = useQuery({
+    queryKey: ['enterprise-admin-overview'],
+    queryFn: () => api.get<EnterpriseAdminOverview>('/enterprise-administration/overview').then((r) => r.data),
+    enabled: hydrated && can('record:view'),
+  });
+
+  // Move focus to the workspace heading once on direct entry (accessibility). The aggregate
+  // refetch never re-runs this (guarded by focusedOnce), so it cannot steal focus.
   useEffect(() => {
     if (hydrated && !focusedOnce.current && headingRef.current) {
       focusedOnce.current = true;
@@ -118,25 +166,101 @@ export default function EnterpriseAdministrationWorkspacePage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {ADMIN_SECTIONS.map((s) => (
-          <AdminSection key={s.key} title={s.title} responsibility={s.responsibility} />
-        ))}
+        {ADMIN_SECTIONS.map((s) =>
+          s.key === 'permissionMatrix' ? (
+            <PermissionMatrixPanel key={s.key} section={data?.permissionMatrix} loading={isLoading} />
+          ) : (
+            <AdminSection
+              key={s.key}
+              title={s.title}
+              responsibility={s.responsibility}
+              status={data?.[s.key]?.status}
+              loading={isLoading}
+            />
+          ),
+        )}
       </div>
     </div>
   );
 }
 
-// One administration section. At A1 every section is `deferred`, rendered truthfully as
-// "Not yet loaded". No evidence, counters, KPIs, status, or mock configuration — the region
-// only names what it WILL compose from its owner in a later checkpoint.
-function AdminSection({ title, responsibility }: { title: string; responsibility: string }) {
+// One deferred administration section. Distinct truthful states: loading (fetching) / deferred
+// ("Not yet loaded") / forbidden ("No access") / error ("Unavailable"). NO configuration values,
+// counters, KPIs, status, feature/integration/billing data, or secret presence — the region only
+// names what it WILL compose from its owner in a later checkpoint.
+function AdminSection({
+  title,
+  responsibility,
+  status,
+  loading,
+}: {
+  title: string;
+  responsibility: string;
+  status?: SectionStatus;
+  loading: boolean;
+}) {
+  const stateBadge =
+    status === 'forbidden' ? 'No access' : status === 'error' ? 'Unavailable' : loading || !status ? 'Loading' : 'Not yet loaded';
   return (
     <Card radius="md" elevation="soft" border="hairline" padding="lg">
       <div className="mb-1 flex items-center gap-2">
         <h2 className="text-base font-bold text-text">{title}</h2>
-        <Badge tone="neutral" size="xs">Not yet loaded</Badge>
+        <Badge tone="neutral" size="xs">{stateBadge}</Badge>
       </div>
-      <EmptyState bare className="px-0 py-8" title="Not yet loaded" description={responsibility} />
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-48" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-8" title="No access" description="You do not have permission to view this section." />
+      ) : status === 'error' ? (
+        <EmptyState bare className="px-0 py-8" title="Unavailable" description="This section could not be loaded." />
+      ) : (
+        // deferred (and, defensively, empty/ready which cannot occur until later checkpoints)
+        <EmptyState bare className="px-0 py-8" title="Not yet loaded" description={responsibility} />
+      )}
+    </Card>
+  );
+}
+
+// Permission Matrix — the descriptive, permission-aware view of which owner permissions the caller
+// holds. Status by text (badge label), never colour alone. It renders ONLY permission booleans;
+// no configuration value, secret, or owner record. Truthful notes disclose the superuser bypass and
+// the SuperuserGuard-only feature-flag gate.
+function PermissionMatrixPanel({
+  section,
+  loading,
+}: {
+  section?: EnterpriseAdminOverview['permissionMatrix'];
+  loading: boolean;
+}) {
+  const status = section?.status;
+  const data = status === 'ready' ? section?.data : null;
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-3 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">Permission Matrix</h2>
+        {status === 'ready' && data?.isSuperRole && <Badge tone="primary" size="xs">Superuser</Badge>}
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-48" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status === 'ready' && data ? (
+        <>
+          <div className="flex flex-wrap gap-2">
+            {PERMISSION_LABELS.map(({ key, label }) => (
+              <Badge key={key} tone={data[key] ? 'success' : 'neutral'} size="sm">
+                {data[key] ? '' : 'No '}{label}
+              </Badge>
+            ))}
+          </div>
+          <p className="mt-3 text-meta text-text-tertiary">
+            Descriptive only — owner endpoints remain the enforcement authority.
+            {data.isSuperRole
+              ? ' You hold every capability via the superuser bypass (isSuperRole).'
+              : ' Feature flags require the superuser bypass; portal access and change-request permissions are unseeded and superuser-only.'}
+          </p>
+        </>
+      ) : (
+        <EmptyState bare className="px-0 py-6" title="Unavailable" description="The permission map could not be loaded." />
+      )}
     </Card>
   );
 }
