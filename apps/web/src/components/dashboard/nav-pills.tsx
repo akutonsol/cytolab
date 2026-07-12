@@ -61,6 +61,17 @@ export function NavPills({ justify = 'flex-end' }: { justify?: React.CSSProperti
   }, []);
   const prefetchGroup = (items: any[]) => items.forEach((i: any) => prefetch(i.path));
 
+  // The Quality & Governance workspace is a return-aware surface (like Sign-Out): entering it
+  // carries an encoded, internal-only `returnTo` = the current route, so its Worklist/back
+  // action deterministically restores the source. Every other nav target is pushed as-is.
+  // The workspace re-validates `returnTo` server-side of the trust boundary (safeReturnTo).
+  const navTarget = (key: string) => {
+    if (key !== '/quality-governance' || typeof window === 'undefined') return key;
+    const src = window.location.pathname + window.location.search;
+    if (src.startsWith('/quality-governance') || src.startsWith('/login')) return key;
+    return `${key}?returnTo=${encodeURIComponent(src)}`;
+  };
+
   const Pill = (isActive: boolean, icon: React.ReactNode, label: string, onClick?: () => void, onMouseEnter?: () => void) => (
     <button
       onClick={onClick}
@@ -77,7 +88,7 @@ export function NavPills({ justify = 'flex-end' }: { justify?: React.CSSProperti
     <div className="navigation-menu" style={{ flexWrap: 'nowrap', justifyContent: justify }}>
       {can(HOME_ITEM.permission) && Pill(pathname === HOME_ITEM.path, createElement(HOME_ITEM.icon!, { size: 20, strokeWidth: 1.9 }), HOME_ITEM.label, () => router.push(HOME_ITEM.path), () => prefetch(HOME_ITEM.path))}
       {centerGroups.map((g) => (
-        <Dropdown key={g.key} trigger={['hover', 'click']} menu={{ items: g.visible.map((i: any) => ({ key: i.path, label: itemLabel(i) })), onClick: ({ key }) => router.push(key) }}>
+        <Dropdown key={g.key} trigger={['hover', 'click']} menu={{ items: g.visible.map((i: any) => ({ key: i.path, label: itemLabel(i) })), onClick: ({ key }) => router.push(navTarget(key)) }}>
           {Pill(groupActive(g.visible), createElement(g.icon as any, { size: 20, strokeWidth: 1.9 }), g.label, undefined, () => prefetchGroup(g.visible))}
         </Dropdown>
       ))}

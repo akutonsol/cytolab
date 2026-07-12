@@ -8,9 +8,9 @@
 // scores, or rankings are shown. Each evidence region hydrates in a later checkpoint.
 // Contract: docs/PATHOS_QUALITY_IMPLEMENTATION_PLAN.md (§1 Orchestration Rule, §3, §9).
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Keyboard } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -52,6 +52,7 @@ export default function QualityGovernanceWorkspacePage() {
   const returnTo = safeReturnTo(searchParams.get('returnTo')) ?? '/records';
   const headingRef = useRef<HTMLHeadingElement>(null);
   const focusedOnce = useRef(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['quality-overview'],
@@ -65,6 +66,30 @@ export default function QualityGovernanceWorkspacePage() {
       headingRef.current.focus({ preventScroll: true });
     }
   }, [hydrated]);
+
+  // Restrained, discoverable keyboard workflow (navigation only — never a mutation, mirrors
+  // the Sign-Out grammar). W returns to the validated source, Q focuses the heading, ? toggles
+  // the help sheet, Esc closes it. Shortcuts never fire from a form control, with a modifier,
+  // or while a modal/drawer is open; every one has a visible, clickable equivalent.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      const tag = t?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t?.isContentEditable) return;
+      // Never hijack keys while an antd modal/drawer (or any dialog) owns the screen.
+      if (document.querySelector('.ant-modal-wrap:not([style*="display: none"]), .ant-drawer-open, [role="dialog"][aria-modal="true"]:not([data-quality-help])')) return;
+      if (e.key === 'Escape') { if (helpOpen) { e.preventDefault(); setHelpOpen(false); } return; }
+      if (e.key === '?') { e.preventDefault(); setHelpOpen((v) => !v); return; }
+      if (e.shiftKey) return; // W/Q are single-key; don't fire on shifted variants
+      if (helpOpen) return; // while the sheet is open only ?/Esc act
+      const k = e.key.toLowerCase();
+      if (k === 'w') { e.preventDefault(); router.push(returnTo); }
+      else if (k === 'q') { e.preventDefault(); headingRef.current?.focus({ preventScroll: true }); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [helpOpen, returnTo, router]);
 
   if (!hydrated) return null;
 
@@ -110,6 +135,14 @@ export default function QualityGovernanceWorkspacePage() {
           One workspace for diagnostic quality, compliance, corrective evidence, and governance —
           composed from the existing PathOS owner systems. It surfaces recorded evidence only.
         </p>
+        <button
+          type="button"
+          onClick={() => setHelpOpen(true)}
+          className="mt-2 inline-flex items-center gap-1.5 text-meta font-medium text-text-tertiary hover:text-primary"
+          title="Keyboard shortcuts"
+        >
+          <Keyboard size={13} /> Keyboard shortcuts <kbd className="rounded border border-lightgray px-1 text-[11px]">?</kbd>
+        </button>
       </div>
 
       {isError ? (
@@ -162,6 +195,49 @@ export default function QualityGovernanceWorkspacePage() {
           <GovernancePanel section={data?.governance} loading={isLoading} onOpen={(path) => router.push(path)} />
         </div>
       )}
+
+      {helpOpen && <ShortcutHelp onClose={() => setHelpOpen(false)} />}
+    </div>
+  );
+}
+
+// Keyboard-shortcut sheet. Navigation-only shortcuts, each with a visible equivalent
+// elsewhere in the workspace. `data-quality-help` marks it so the page's own key handler
+// does not treat it as a blocking foreign modal. Esc or the backdrop/close button dismiss it.
+function ShortcutHelp({ onClose }: { onClose: () => void }) {
+  const rows: { keys: string; action: string }[] = [
+    { keys: 'W', action: 'Return to the source worklist' },
+    { keys: 'Q', action: 'Focus the workspace heading' },
+    { keys: '?', action: 'Toggle this shortcut sheet' },
+    { keys: 'Esc', action: 'Close this shortcut sheet' },
+  ];
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal-heading/30 px-4"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Keyboard shortcuts"
+        data-quality-help
+        className="w-full max-w-sm rounded-xl border border-lightgray bg-surface p-5 shadow-lg"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="mb-3 text-base font-bold text-text">Keyboard shortcuts</h2>
+        <dl className="space-y-2">
+          {rows.map((r) => (
+            <div key={r.keys} className="flex items-center justify-between gap-3">
+              <dt className="text-sm text-text-secondary">{r.action}</dt>
+              <dd><kbd className="rounded border border-lightgray px-1.5 py-0.5 text-meta font-semibold text-text">{r.keys}</kbd></dd>
+            </div>
+          ))}
+        </dl>
+        <p className="mt-3 text-meta text-text-tertiary">Shortcuts never fire inside a text field or with a modifier key. Each has a visible control too.</p>
+        <div className="mt-4 text-right">
+          <Button variant="secondary" size="sm" onClick={onClose}>Close</Button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -22,6 +22,7 @@ import {
   CheckCheck,
   Timer,
   CheckSquare,
+  ClipboardCheck,
   Clock,
   FileClock,
   FileBarChart,
@@ -75,6 +76,7 @@ export const NAV_GROUPS: NavGroup[] = [
     icon: FlaskConical,
     items: [
       { label: 'Operations', path: '/operations', permission: 'record:view', icon: Activity },
+      { label: 'Quality & Governance', path: '/quality-governance', permission: 'record:view', icon: ClipboardCheck },
       { label: 'Patients', path: '/patients', permission: 'patient:view' },
       { label: 'Clients', path: '/clients', permission: 'client:view' },
       { label: 'Requisitions', path: '/requisitions', permission: 'requisition:view' },
