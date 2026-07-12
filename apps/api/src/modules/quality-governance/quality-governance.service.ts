@@ -4,6 +4,7 @@ import { QcService } from '../qc/qc.service';
 import { EscalationService } from '../escalation/escalation.service';
 import { RecallService } from '../recall/recall.service';
 import { ProficiencyService } from '../proficiency/proficiency.service';
+import { ReportCenterService } from '../report-center/report-center.service';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 
 // ── Quality & Governance aggregate (orchestration only) ──────────────────────
@@ -210,6 +211,28 @@ export interface RecallSection {
   items: RecallRow[]; // bounded, deterministically ordered
 }
 
+// ── Benchmarks & compliance (C8) ─────────────────────────────────────────────
+// Read-only projection of OWNER-COMPUTED benchmark/compliance outputs (report-center).
+// Every value, benchmark reference, unit, and status comes straight from the owner —
+// nothing is recomputed, no metrics are combined into a global score, and the owner's
+// `overall` verdict is deliberately NOT surfaced. A metric with no owner reference/status
+// shows only its recorded value. Sources fail independently.
+export interface BenchmarkMetric {
+  key: string;
+  label: string;
+  value: number | null; // owner-computed value
+  unit: string | null; // owner unit (%, ratio, …)
+  reference: number | null; // owner benchmark, only if the owner provides one
+  status: string | null; // owner status, only if the owner exposes one
+  source: string; // owner domain label
+  ownerPath: string;
+}
+export interface BenchmarksSection {
+  asOf: string;
+  metrics: BenchmarkMetric[];
+  unavailable: string[]; // owner sources that failed
+}
+
 export interface QualityOverviewAggregate {
   asOf: string;
   permissions: Section<EffectiveQualityPermissions>;
@@ -220,9 +243,9 @@ export interface QualityOverviewAggregate {
   proficiency: Section<ProficiencySection>;
   escalations: Section<EscalationSection>;
   recall: Section<RecallSection>;
-  // The remaining three evidence sections stay deferred at C7. Each carries its own status
+  benchmarks: Section<BenchmarksSection>;
+  // The remaining two evidence sections stay deferred at C8. Each carries its own status
   // so a future section failure isolates to it and never collapses permissions or siblings.
-  benchmarks: Section<null>;
   medicalDirector: Section<null>;
   governance: Section<null>;
 }
@@ -237,6 +260,7 @@ export class QualityGovernanceService {
     private readonly escalation: EscalationService,
     private readonly recall: RecallService,
     private readonly proficiency: ProficiencyService,
+    private readonly reportCenter: ReportCenterService,
   ) {}
 
   async overview(user: AuthUser): Promise<QualityOverviewAggregate> {
@@ -245,13 +269,14 @@ export class QualityGovernanceService {
     const perms = buildPermissions(user);
     // Sections resolve independently (partial-failure isolation): a correlation failure
     // never collapses the overview or sibling sections.
-    const [overview, corr, qc, proficiency, escalations, recall] = await Promise.all([
+    const [overview, corr, qc, proficiency, escalations, recall, benchmarks] = await Promise.all([
       this.loadOverview(perms),
       this.loadCorrelationSections(perms),
       this.loadQc(perms),
       this.loadProficiency(perms),
       this.loadEscalations(perms, user.userId),
       this.loadRecall(perms),
+      this.loadBenchmarks(perms),
     ]);
     return {
       asOf: new Date().toISOString(),
@@ -263,7 +288,7 @@ export class QualityGovernanceService {
       proficiency,
       escalations,
       recall,
-      benchmarks: deferred(),
+      benchmarks,
       medicalDirector: deferred(),
       governance: deferred(),
     };
@@ -513,6 +538,55 @@ export class QualityGovernanceService {
       return { status: 'error', data: null, reason: 'Recall failed to load' };
     }
   }
+
+  // Benchmarks & compliance — composed from ReportCenterService (owner-computed). Each
+  // owner source resolves independently: if one fails, its label joins `unavailable[]` and
+  // the others survive. Values/references/units/status are owner outputs, shown verbatim.
+  // The owner's `overall` verdict is intentionally NOT surfaced (no global quality score).
+  private async loadBenchmarks(perms: EffectiveQualityPermissions): Promise<Section<BenchmarksSection>> {
+    if (!perms.viewReport) return { status: 'forbidden', data: null };
+    const metrics: BenchmarkMetric[] = [];
+    const unavailable: string[] = [];
+
+    // CAP benchmark suite — 4 owner metrics, each with value + benchmark reference + status.
+    try {
+      const cap: any = await this.reportCenter.capBenchmarks({} as any);
+      const src = 'CAP benchmarks';
+      const push = (key: string, label: string, unit: string, m: any) => {
+        if (m) metrics.push({ key, label, value: numOrNull(m.value), unit, reference: numOrNull(m.benchmark), status: m.status ?? null, source: src, ownerPath: '/report-center' });
+      };
+      push('cap-asc-sil', 'ASC/SIL ratio', 'ratio', cap.ascSilRatio);
+      push('cap-unsat', 'Unsatisfactory rate', '%', cap.unsatisfactoryRate);
+      push('cap-tat', 'TAT on-time rate', '%', cap.tatCompliance);
+      push('cap-qc-pass', 'QC pass rate', '%', cap.qcPassRate);
+    } catch {
+      unavailable.push('CAP benchmarks');
+    }
+
+    // Recall compliance — owner-computed complianceRate (value only; the owner exposes no
+    // benchmark/status here, so we show only the recorded metric).
+    try {
+      const rc: any = await this.reportCenter.recallCompliance({} as any);
+      metrics.push({ key: 'recall-compliance', label: 'Recall compliance rate', value: numOrNull(rc.complianceRate), unit: '%', reference: null, status: null, source: 'Recall compliance', ownerPath: '/report-center' });
+    } catch {
+      unavailable.push('Recall compliance');
+    }
+
+    // Abnormal rate — owner-computed value only (no owner benchmark/status).
+    try {
+      const ar: any = await this.reportCenter.abnormalRate({} as any);
+      metrics.push({ key: 'abnormal-rate', label: 'Abnormal result rate', value: numOrNull(ar.abnormalRate), unit: '%', reference: null, status: null, source: 'Abnormal rate', ownerPath: '/report-center' });
+    } catch {
+      unavailable.push('Abnormal rate');
+    }
+
+    if (!metrics.length) {
+      if (unavailable.length) return { status: 'error', data: null, reason: 'Benchmarks failed to load' };
+      return { status: 'empty', data: null };
+    }
+    metrics.sort(benchmarkOrder);
+    return { status: 'ready', data: { asOf: new Date().toISOString(), metrics, unavailable } };
+  }
 }
 
 // Deterministic ordering from recorded fields only. reviewRequired first is the OWNER's
@@ -549,6 +623,16 @@ function mapCorrelationRow(c: any): CorrelationCaseRow {
 const iso = (d: Date | string | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
 const personName = (u: { firstName?: string | null; lastName?: string | null } | null | undefined): string | null =>
   u ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || null : null;
+const numOrNull = (v: unknown): number | null => (typeof v === 'number' && !Number.isNaN(v) ? v : null);
+
+// Deterministic benchmark ordering: a FIXED source/domain order (documented here), then
+// the owner metric key. Never ordered by best/worst or inferred importance.
+const BENCHMARK_SOURCE_ORDER: Record<string, number> = { 'CAP benchmarks': 0, 'Recall compliance': 1, 'Abnormal rate': 2 };
+function benchmarkOrder(x: BenchmarkMetric, y: BenchmarkMetric): number {
+  const sx = BENCHMARK_SOURCE_ORDER[x.source] ?? 99;
+  const sy = BENCHMARK_SOURCE_ORDER[y.source] ?? 99;
+  return sx - sy || (x.key < y.key ? -1 : x.key > y.key ? 1 : 0);
+}
 
 // Recent checks: most recent performed/created date first, then a stable id tie-break.
 function qcCheckSort(x: QcCheckRow, y: QcCheckRow): number {

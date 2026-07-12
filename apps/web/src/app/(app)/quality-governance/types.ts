@@ -178,6 +178,24 @@ export interface RecallSection {
   items: RecallRow[];
 }
 
+// Benchmarks & compliance — owner-computed metrics only. value/reference/unit/status are
+// owner outputs, shown verbatim. No global score, no synthetic status.
+export interface BenchmarkMetric {
+  key: string;
+  label: string;
+  value: number | null;
+  unit: string | null;
+  reference: number | null;
+  status: string | null;
+  source: string;
+  ownerPath: string;
+}
+export interface BenchmarksSection {
+  asOf: string;
+  metrics: BenchmarkMetric[];
+  unavailable: string[];
+}
+
 export interface QualityOverviewAggregate {
   asOf: string;
   permissions: Section<EffectiveQualityPermissions>;
@@ -188,7 +206,7 @@ export interface QualityOverviewAggregate {
   proficiency: Section<ProficiencySection>;
   escalations: Section<EscalationSection>;
   recall: Section<RecallSection>;
-  benchmarks: Section<null>;
+  benchmarks: Section<BenchmarksSection>;
   medicalDirector: Section<null>;
   governance: Section<null>;
 }

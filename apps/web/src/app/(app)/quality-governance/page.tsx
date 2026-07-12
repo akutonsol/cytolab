@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { CorrelationCaseRow, EffectiveQualityPermissions, EscalationRow, OverviewSource, ProficiencyTestRow, QcAlertRow, QcCheckRow, QualityOverviewAggregate, RecallRow, SectionStatus } from './types';
+import type { BenchmarkMetric, CorrelationCaseRow, EffectiveQualityPermissions, EscalationRow, OverviewSource, ProficiencyTestRow, QcAlertRow, QcCheckRow, QualityOverviewAggregate, RecallRow, SectionStatus } from './types';
 
 // Only an internal, same-origin path may be a return target — reject external and
 // protocol-relative URLs (open-redirect protection). Mirrors the Sign-Out routing guard.
@@ -34,10 +34,9 @@ function safeReturnTo(raw: string | null): string | null {
 // section key; the Correlation & Discordance region reflects the `correlation` section
 // (the `discordance` section joins it at C4). `permissions` renders the descriptive map.
 type EvidenceKey =
-  | 'benchmarks' | 'medicalDirector' | 'governance';
+  | 'medicalDirector' | 'governance';
 
 const EVIDENCE_REGIONS: { key: EvidenceKey; title: string; responsibility: string }[] = [
-  { key: 'benchmarks', title: 'Benchmarks', responsibility: 'Owner-computed CAP, Bethesda, TAT, and abnormal-rate status.' },
   { key: 'medicalDirector', title: 'Medical Director', responsibility: 'Attention, review, and oversight queues from recorded owner states.' },
   { key: 'governance', title: 'Governance Trail', responsibility: 'A source-labelled assembly of recorded events — not a canonical audit ledger.' },
 ];
@@ -159,6 +158,10 @@ export default function QualityGovernanceWorkspacePage() {
               the existing owner surfaces. No urgency score, no computed overdue. */}
           <EscalationPanel section={data?.escalations} loading={isLoading} onOpen={() => router.push('/escalations')} />
           <RecallPanel section={data?.recall} loading={isLoading} onOpen={() => router.push('/recalls')} />
+
+          {/* Benchmarks — owner-computed metrics shown verbatim; detail on the report-center
+              owner surface. No global score, chart, or synthetic status. */}
+          <BenchmarksPanel section={data?.benchmarks} loading={isLoading} onOpen={() => router.push('/report-center')} />
 
           {/* The remaining evidence regions — truthfully deferred; each reflects its own
               aggregate section status, so a future failure isolates to its region. */}
@@ -610,6 +613,70 @@ function RecallItem({ row }: { row: RecallRow }) {
       {row.completionNote && (
         <p className="mt-1 text-sm text-text-secondary"><span className="font-semibold text-text">Recorded note:</span> {row.completionNote}</p>
       )}
+    </div>
+  );
+}
+
+// Owner-provided benchmark status → tone (owner conclusion, not ours; tones avoid amber).
+const benchmarkTone = (s: string | null): 'success' | 'danger' | 'neutral' =>
+  s === 'Compliant' || s === 'Within benchmark' ? 'success'
+    : s === 'Non-Compliant' || s === 'Above benchmark' ? 'danger'
+    : 'neutral';
+
+// Benchmarks — owner-computed metrics shown verbatim (value + owner unit + owner benchmark
+// reference + owner status where the owner exposes it). Restrained evidence rows, no chart,
+// no global score, no synthetic status, no risk meter. Detail on the report-center surface.
+function BenchmarksPanel({
+  section,
+  loading,
+  onOpen,
+}: {
+  section?: QualityOverviewAggregate['benchmarks'];
+  loading: boolean;
+  onOpen: () => void;
+}) {
+  const status = section?.status;
+  const d = status === 'ready' ? section?.data : null;
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="text-base font-bold text-text">Benchmarks</h2>
+        {d && <Button variant="secondary" size="sm" onClick={onOpen}>Open analytics</Button>}
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-48" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-6" title="No access" description="You do not have permission to view benchmarks." />
+      ) : status === 'error' ? (
+        <EmptyState bare className="px-0 py-6" title="Unavailable" description="Benchmarks could not be loaded." />
+      ) : status === 'empty' || !d ? (
+        <EmptyState bare className="px-0 py-6" title="No benchmark evidence" description="No owner-computed benchmark metrics are available." />
+      ) : (
+        <div className="space-y-2">
+          {d.metrics.map((m) => <BenchmarkRow key={m.key} metric={m} />)}
+          {d.unavailable.length > 0 && (
+            <p className="pt-1 text-meta text-text-tertiary">Sources unavailable: {d.unavailable.join(', ')}.</p>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function BenchmarkRow({ metric }: { metric: BenchmarkMetric }) {
+  const unit = metric.unit === '%' ? '%' : metric.unit ? ` ${metric.unit}` : '';
+  const val = metric.value != null ? `${metric.value}${unit}` : '—';
+  const ref = metric.reference != null ? `benchmark ${metric.reference}${unit}` : null;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-lightgray px-3 py-2">
+      <div className="min-w-0">
+        <span className="text-sm font-semibold text-text">{metric.label}</span>
+        <span className="ml-2 text-meta text-text-tertiary">{[metric.source, ref].filter(Boolean).join(' · ')}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-semibold text-text">{val}</span>
+        {metric.status && <Badge tone={benchmarkTone(metric.status)} size="xs">{metric.status}</Badge>}
+      </div>
     </div>
   );
 }
