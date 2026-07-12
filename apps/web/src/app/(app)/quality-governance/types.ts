@@ -44,12 +44,43 @@ export interface OverviewData {
   unavailable: string[];
 }
 
+// Correlation & Discordance — recorded CorrelationCase evidence only. `correlationResult`,
+// `discordanceReason`, `reviewRequired` are shown exactly as stored; never recomputed.
+export interface CorrelationCaseRow {
+  id: string;
+  identity: string | null;
+  cytologyDiagnosis: string;
+  histologyDiagnosis: string | null;
+  histologySource: string;
+  correlationResult: string | null;
+  discordanceReason: string | null;
+  reviewRequired: boolean;
+  reviewedAt: string | null;
+  reviewerName: string | null;
+  cytologyDate: string | null;
+  createdAt: string | null;
+  ownerPath: string;
+}
+export interface CorrelationSection {
+  total: number;
+  concordant: number;
+  minorDiscordant: number;
+  majorDiscordant: number;
+  unresolved: number;
+  pendingReview: number;
+  recent: CorrelationCaseRow[];
+}
+export interface DiscordanceSection {
+  count: number;
+  items: CorrelationCaseRow[];
+}
+
 export interface QualityOverviewAggregate {
   asOf: string;
   permissions: Section<EffectiveQualityPermissions>;
   overview: Section<OverviewData>;
-  correlation: Section<null>;
-  discordance: Section<null>;
+  correlation: Section<CorrelationSection>;
+  discordance: Section<DiscordanceSection>;
   qc: Section<null>;
   proficiency: Section<null>;
   escalations: Section<null>;

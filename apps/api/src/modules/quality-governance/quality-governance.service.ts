@@ -59,14 +59,49 @@ export interface OverviewData {
   unavailable: string[]; // labels of sources that were forbidden or errored
 }
 
+// ── Correlation & Discordance (C4) ───────────────────────────────────────────
+// Read-only projections of recorded CorrelationCase evidence. `correlationResult`,
+// `discordanceReason`, and `reviewRequired` are shown EXACTLY as stored — never recomputed,
+// never inferred from cytology-vs-histology diagnoses. No synthetic severity, no ranking,
+// no concordance-ledger behaviour, and `agreedWithAI` is never read.
+export interface CorrelationCaseRow {
+  id: string;
+  identity: string | null; // cytology record labNumber/identifier
+  cytologyDiagnosis: string;
+  histologyDiagnosis: string | null;
+  histologySource: string;
+  correlationResult: string | null; // stored verbatim
+  discordanceReason: string | null; // stored verbatim
+  reviewRequired: boolean; // owner-recorded workflow state (NOT inferred urgency)
+  reviewedAt: string | null;
+  reviewerName: string | null;
+  cytologyDate: string | null;
+  createdAt: string | null;
+  ownerPath: string; // the existing correlation surface — review happens there, not here
+}
+export interface CorrelationSection {
+  // Owner-computed counts (CorrelationService.analytics) — displayed, not recomputed.
+  total: number;
+  concordant: number;
+  minorDiscordant: number;
+  majorDiscordant: number;
+  unresolved: number;
+  pendingReview: number;
+  recent: CorrelationCaseRow[]; // bounded, deterministically ordered
+}
+export interface DiscordanceSection {
+  count: number;
+  items: CorrelationCaseRow[]; // only cases whose STORED correlationResult records discordance
+}
+
 export interface QualityOverviewAggregate {
   asOf: string;
   permissions: Section<EffectiveQualityPermissions>;
   overview: Section<OverviewData>;
-  // The remaining nine evidence sections stay deferred at C3. Each carries its own status
+  correlation: Section<CorrelationSection>;
+  discordance: Section<DiscordanceSection>;
+  // The remaining seven evidence sections stay deferred at C4. Each carries its own status
   // so a future section failure isolates to it and never collapses permissions or siblings.
-  correlation: Section<null>;
-  discordance: Section<null>;
   qc: Section<null>;
   proficiency: Section<null>;
   escalations: Section<null>;
@@ -91,13 +126,18 @@ export class QualityGovernanceService {
     // Permissions resolve independently of any evidence load (partial-failure tolerance):
     // they survive every future downstream failure.
     const perms = buildPermissions(user);
-    const overview = await this.loadOverview(perms);
+    // Sections resolve independently (partial-failure isolation): a correlation failure
+    // never collapses the overview or sibling sections.
+    const [overview, corr] = await Promise.all([
+      this.loadOverview(perms),
+      this.loadCorrelationSections(perms),
+    ]);
     return {
       asOf: new Date().toISOString(),
       permissions: { status: 'ready', data: perms },
       overview,
-      correlation: deferred(),
-      discordance: deferred(),
+      correlation: corr.correlation,
+      discordance: corr.discordance,
       qc: deferred(),
       proficiency: deferred(),
       escalations: deferred(),
@@ -178,7 +218,85 @@ export class QualityGovernanceService {
       };
     } catch { return { key: 'recall', label, status: 'error', open: null, note: null }; }
   }
+
+  // Correlation & Discordance — composed from CorrelationService only. `analytics()` gives
+  // owner-computed counts (displayed, not recomputed); `list()` gives the recorded case
+  // rows. Discordance = cases whose STORED correlationResult records it (never inferred).
+  // Both sections share the same gate/failure, so a correlation failure isolates to them.
+  private async loadCorrelationSections(
+    perms: EffectiveQualityPermissions,
+  ): Promise<{ correlation: Section<CorrelationSection>; discordance: Section<DiscordanceSection> }> {
+    if (!perms.viewRecord) {
+      const forbidden = { status: 'forbidden' as const, data: null };
+      return { correlation: forbidden, discordance: forbidden };
+    }
+    try {
+      const [a, rows] = await Promise.all([this.correlation.analytics(), this.correlation.list({} as any)]);
+      const list: any[] = Array.isArray(rows) ? rows : [];
+      if ((a?.total ?? 0) === 0 && !list.length) {
+        const empty = { status: 'empty' as const, data: null };
+        return { correlation: empty, discordance: empty };
+      }
+      const mapped = list.map(mapCorrelationRow).sort(correlationSort);
+      const recent = mapped.slice(0, 10);
+      // Only cases whose stored result records discordance — no inference from diagnoses.
+      const discordant = mapped
+        .filter((r) => r.correlationResult === 'MinorDiscordant' || r.correlationResult === 'MajorDiscordant')
+        .slice(0, 25);
+      return {
+        correlation: {
+          status: 'ready',
+          data: {
+            total: a.total ?? 0,
+            concordant: a.concordantCount ?? 0,
+            minorDiscordant: a.minorDiscordantCount ?? 0,
+            majorDiscordant: a.majorDiscordantCount ?? 0,
+            unresolved: a.unresolvedCount ?? 0,
+            pendingReview: a.pendingReview ?? 0,
+            recent,
+          },
+        },
+        discordance: { status: 'ready', data: { count: discordant.length, items: discordant } },
+      };
+    } catch {
+      const error = { status: 'error' as const, data: null, reason: 'Correlation failed to load' };
+      return { correlation: error, discordance: error };
+    }
+  }
 }
+
+// Deterministic ordering from recorded fields only. reviewRequired first is the OWNER's
+// recorded workflow state (not inferred urgency), then most recent clinical date, then
+// created date, then a stable id tie-break.
+function correlationSort(x: CorrelationCaseRow, y: CorrelationCaseRow): number {
+  if (x.reviewRequired !== y.reviewRequired) return x.reviewRequired ? -1 : 1;
+  const t = (s: string | null) => (s ? new Date(s).getTime() : -Infinity);
+  return (
+    t(y.cytologyDate) - t(x.cytologyDate) ||
+    t(y.createdAt) - t(x.createdAt) ||
+    (x.id < y.id ? -1 : x.id > y.id ? 1 : 0)
+  );
+}
+
+function mapCorrelationRow(c: any): CorrelationCaseRow {
+  return {
+    id: c.id,
+    identity: c.cytologyRecord ? (c.cytologyRecord.labNumber ?? c.cytologyRecord.identifier ?? null) : null,
+    cytologyDiagnosis: c.cytologyDiagnosis,
+    histologyDiagnosis: c.histologyDiagnosis ?? null,
+    histologySource: c.histologySource,
+    correlationResult: c.correlationResult ?? null,
+    discordanceReason: c.discordanceReason ?? null,
+    reviewRequired: !!c.reviewRequired,
+    reviewedAt: iso(c.reviewedAt),
+    reviewerName: c.reviewedBy ? `${c.reviewedBy.firstName ?? ''} ${c.reviewedBy.lastName ?? ''}`.trim() || null : null,
+    cytologyDate: iso(c.cytologyDate),
+    createdAt: iso(c.createdAt),
+    ownerPath: `/correlation/${c.id}`,
+  };
+}
+
+const iso = (d: Date | string | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
 
 function buildPermissions(user: AuthUser): EffectiveQualityPermissions {
   const has = (code: string) => !!user.isSuperRole || user.permissions.includes(code);
