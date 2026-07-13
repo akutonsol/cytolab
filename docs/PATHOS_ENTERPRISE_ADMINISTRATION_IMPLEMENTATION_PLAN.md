@@ -261,6 +261,148 @@ broadens a permission, or requires schema **does not ship under this contract.**
 
 ---
 
+## 14. Phase 2D completion record (A12 closeout)
+
+Phase 2D is **complete — declared 100%**. Every checkpoint A1–A12 shipped or was verified under this
+contract; the release gate (A12) passed all gates (A–K) with **no implementation defects requiring
+correction**.
+
+### 14a. Checkpoint → commit trace (isolated, separately-approved commits)
+
+| Checkpoint | Delivered | Commit |
+|---|---|---|
+| Architecture | Workspace architecture doc | `32fbde4` |
+| Feasibility | Composition feasibility audit | *(doc)* |
+| Plan | Binding implementation plan | `9ff04fd` |
+| A1 | Workspace shell (route + gate + deferred sections) | `e399b68` |
+| A2 | Aggregate contract + descriptive permission map | `3b8e98e` |
+| A3 | Laboratory configuration (Laboratory, Branding, Departments) | `6f216cf` |
+| A4 | Identity & Access (Users, Roles, Permissions) | `d24b53e` |
+| A5 | Security posture | `665a3fc` |
+| A6 | Clients, Lab Codes, Code Sheets (Forms deferred) | `457affc` |
+| A7 | Lifecycle Observation | `eb4d82c` |
+| A8 | Integrations/Notifications/Billing/Services/Taxes/Feature Flags/System Health/AI/Portal Access | `60897e6` |
+| A9 | Permission Matrix refinement (evidence rename, no seed-provenance) | `23018cd` |
+| **A10** | **Owner-invocation verification — corrected Taxes route `/services`→`/settings` (2-file commit)** | `1086b9f` |
+| A11 | Workflow continuity (nav entry + returnTo + W/A/?/Esc shortcuts) | `e03fcbc` |
+| A12 | Final verification + this closeout | *(docs commit)* |
+
+A10 was an owner-invocation audit that found and corrected **one real route defect** (Taxes navigated
+to `/services`, which manages no taxes; the real owner surface is `/settings` → Taxes tab) — a two-file
+route-correction commit, not an empty commit.
+
+### 14b. Production entry point
+
+One additive **Lab** nav item — `Enterprise Administration` → `/enterprise-administration`, permission
+`record:view`, icon `Building2` (`nav.ts`). `nav-pills.tsx` `navTarget` appends a validated internal-only
+`returnTo` (return-aware for `/quality-governance` and `/enterprise-administration`), omitted when already
+on the workspace or on `/login`. The workspace's `safeReturnTo` re-validates and falls back to `/records`.
+
+### 14c. Final supported sections (20 hydrated compose-only + 2 deferred)
+
+Hydrated (owner read · gate): Laboratory (`LabService.getProfile` · applicationprefs:view) · Branding
+(`getBranding` · applicationprefs:view) · Departments (`DepartmentsService.findAll` · department:view) ·
+Users (`UsersService.findAll` · user:view, ≤200) · Roles (`RolesService.findRoles` · role:view, ≤100) ·
+Permissions (`findPermissions` · permission:view, ≤300) · Security (`SecurityService.getDashboard` ·
+system:security) · Clients (`ClientsService.findAll` · client:view, ≤100) · Lab Codes
+(`LabCodesService.findAll` · labcode:view, ≤200) · Code Sheets (`CodeSheetsService.findCodeSheets` ·
+codesheet:view, ≤100) · FHIR (`FhirService.listEndpoints` · record:view, ≤50) · Billing
+(`BillingService.summary().byStatus` · bill:view) · Services (`ServicesCatalogService.findAll` ·
+service:view, ≤100) · Taxes (`TaxesService.findAll` · tax:view → `/settings`) · Feature Flags
+(`LabFeaturesService.listForLab` · SuperuserGuard, ≤100) · System Health (`SystemHealthService.getHealth`
+· system:health) · AI Settings (`AiReportingService.getSettings` · applicationprefs:view) · Portal Access
+(`PortalUsersService.findAll().total` · portaluser:view) · Lifecycle Observation (`RecordsService.findAll`
+per RecordStatus · record:view) · Permission Matrix (descriptive · record:view base).
+**Deferred: Forms & Notifications.**
+
+### 14d. Final permission/guard matrix (from real seeded grants + deterministic resolution)
+
+`has(code) = isSuperRole || permissions.includes(code)`. Derived from `apps/api/prisma/seed.ts`; **no
+throwaway roles created.**
+
+| Capability (gate) | Superuser | Pathologist | Authorizers | Lab Technician | Receptionist |
+|---|:--:|:--:|:--:|:--:|:--:|
+| **Entry** / FHIR / Lifecycle / Permission Matrix (`record:view`) | ✓ | ✓ | ✓ | ✓ | ✗ |
+| Clients (`client:view`) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Lab Codes / Code Sheets (`labcode:`/`codesheet:view`) | ✓ | ✓ | ✓ | ✗ | ✗ |
+| Billing (`bill:view`) | ✓ | ✗ | ✗ | ✗ | ✓ |
+| Laboratory/Branding/AI (`applicationprefs:view`) · Departments · Users · Roles · Permissions · Security · Services · Taxes · System Health | ✓ | ✗ | ✗ | ✗ | ✗ |
+| Feature Flags (`SuperuserGuard`) · Portal Access (`portaluser:view`, unseeded) | ✓ | ✗ | ✗ | ✗ | ✗ |
+
+**Caveats:** Receptionist lacks `record:view` → cannot enter. `portaluser:*`/`changerequest:*` are
+declared-but-catalog-absent → superuser-bypass-only; Feature Flags are SuperuserGuard-controlled;
+`system:security`/`system:health`/`applicationprefs`/`department`/`user`/`role`/`permission`/`service`/
+`tax` are held by no default staff role (superuser-only by default). Permission Matrix evidence is
+**null** when catalog (`permission:view`) or grant (`role:view`) reads are unavailable — never false; no
+seed-provenance is claimed; no role-name authorization; no aliasing; no synthetic admin permission.
+
+### 14e. Section-contract status
+
+Frozen `ready|empty|forbidden|error|deferred` intact. **20 sections ready, exactly 2 deferred (Forms,
+Notifications) — no implemented section deferred.** Deferred is not shown as forbidden; forbidden not as
+empty; source failure produces `error`/`forbidden`, never a false empty (verified E).
+
+### 14f. Failure isolation
+
+Verified: forcing Laboratory/Users/Security/Clients/Lifecycle/FHIR/Billing/System Health to `error` and
+Portal Access to `forbidden`, plus Permission-Matrix evidence to null, left every other section usable,
+the Permission Matrix available, failed sections named truthfully, no false empty, no unauthorized
+fallback. Structurally guaranteed: every loader wraps its owner read and returns a `Section` (never
+rejects), so `overview()`'s `Promise.all` cannot collapse.
+
+### 14g. Secret-safety results
+
+Full-payload scan clean: no password/hash, authToken/clientSecret, apiKey/access/refresh/session/reset/
+portal token, JWT/signing/TOTP/backup/MFA secret, connection string, `backup.sheetId`/env secret, IPv4,
+revenue sums, raw form schema, or portal username. FHIR excludes secrets (owner select); System Health
+whitelists safe checks (excludes sheetId/version/uptime/raw log); AI shows only enabled/key-configured/
+model; Portal Access is a single count; Security is counts + a timestamp (no PII rows). The only email
+value is `UserRow.email` (approved user-directory identity, user:view-gated) and the only "message"
+values are System Health check status text — neither is a secret or notification content.
+
+### 14h. Lifecycle observation limitations
+
+Observation-only: composes per-status counts via `RecordsService.findAll` per `RecordStatus`; **copies no
+`ALLOWED_TRANSITIONS`, creates no `RecordStatusEvent`, mutates nothing.** Current 13 statuses only;
+`Pending` is initial; `Started`/`Released`/`Archived` are not modeled; no lab-wide event history (no safe
+record:view read); no transition metadata/diagram.
+
+### 14i. Owner-invocation results
+
+Every action opens only a real owner route: `/users`, `/roles`, `/security`, `/clients`, `/lab-codes`,
+`/records`, `/fhir`, `/billing`, `/services`, `/settings` (incl. Taxes + AI), `/settings/features`,
+`/system`. Taxes → `/settings` (fixed at A10; no `/services`). Laboratory/Branding/Departments are
+display-only; Permission Matrix has no owner route; Forms/Notifications have no action. No duplicate
+workflow, no inline editor, no mutation primitive; browser Back restores the workspace with `returnTo`.
+
+### 14j. Accessibility & responsive results
+
+Exactly one `h1`; logical `h1→h2` order; zero unnamed controls; visible focus ring; status by text
+(never color-only); no keyboard trap; shortcut sheet labeled `role="dialog" aria-modal aria-label`;
+**W/A/?/Esc** navigation-only, suppressed in form controls / with modifiers / while a dialog is open;
+focus once on entry, not stolen on refetch; `prefers-reduced-motion` backstop present. Horizontal
+overflow **0** and **zero-orange 0 px** at 390/768/1024/1440/1920 (incl. System Health warn/error badges,
+which map to non-amber tones).
+
+### 14k. Performance measurements
+
+Aggregate **~28–43 ms warm** (~105 ms cold); payload **~41 KB**. ~19 distinct owner reads + duplicates
+(Permission Matrix re-reads `findRoles`/`findPermissions` that Roles/Permissions also read) + Lifecycle's
+**13× `findAll`** (one per RecordStatus) — all in `Promise.all` (parallel). **Duplicate-read observation
+(not a defect):** the `findRoles`/`findPermissions` double-read and the 13-status lifecycle reads are not
+a bottleneck at ~30 ms; a shared-read cache or a single owner status-count method would trim them but was
+not warranted in A12 scope.
+
+### 14l. Outcome & intentional deferrals
+
+**No schema change, no Helix change, no permission seed/grant change** across all of Phase 2D. Deferred
+(schema/product decisions, unchanged): Forms composition, Notifications composition, credential vault,
+notification templates, `Released`/`Archived` lifecycle states, provider/facility registries, department
+hierarchy, transition-policy/approval-chain engines, delegated/multi-site administration, configuration
+audit ledger. Each remains a named gap, never simulated.
+
+---
+
 ## Conflict check
 
 No conflict with [PATHOS_ENTERPRISE_ADMINISTRATION_WORKSPACE.md](PATHOS_ENTERPRISE_ADMINISTRATION_WORKSPACE.md)

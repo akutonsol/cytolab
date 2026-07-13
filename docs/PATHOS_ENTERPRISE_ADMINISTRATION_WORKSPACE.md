@@ -366,3 +366,18 @@ assumed. No conflict with Phases 2A ([PATHOS_OPERATIONS_WORKSPACE.md](PATHOS_OPE
 2B ([PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md)), or 2C
 ([PATHOS_QUALITY_WORKSPACE.md](PATHOS_QUALITY_WORKSPACE.md)): this workspace composes configuration
 owners those workspaces do not touch and reuses their orchestration contract without modification.
+
+---
+
+## Completion status (Phase 2D — delivered)
+
+The workspace shipped **compose-only** as architected: **20 sections hydrated** from existing owner reads
+and **2 deferred** (Forms, Notifications), with **no schema, Helix, or permission change**. Every
+Missing/Future capability in this document remains deferred: credential vault, notification templates,
+`Released`/`Archived` statuses, provider/facility registry, department hierarchy, transition-policy/
+approval-chain engines, delegated/multi-site administration, and a configuration-audit ledger. Two audit
+expectations were tightened during the build: the record lifecycle is surfaced **observation-only** (no
+`ALLOWED_TRANSITIONS` copy, no `RecordStatusEvent` creation, no status editor), and **Forms** proved
+non-composable read-only (its owner reads persist a default config). Full completion record, permission
+matrix, secret-safety, performance, and limitations:
+[PATHOS_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md](PATHOS_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md) §14.
