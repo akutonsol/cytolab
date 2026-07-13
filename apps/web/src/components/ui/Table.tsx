@@ -77,6 +77,10 @@ const TD_FAMILY: Record<Family, string> = {
 export function Th({ density = 'default', size = 'sm', family = 'slate', nowrap = true, className, children, ...rest }: ThProps) {
   return (
     <th
+      // Every Th consumer is a column header (verified: none used as a row header), so a
+      // scope default is safe and inert. Placed before {...rest} so a caller that passes an
+      // explicit `scope` (already accepted via ThHTMLAttributes) still overrides it.
+      scope="col"
       className={cn(
         TH_DENSITY[density],
         // the reference family sets its own size via font-label-sm/text-label-sm

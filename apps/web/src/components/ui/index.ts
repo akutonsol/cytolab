@@ -29,6 +29,7 @@ export { EmptyState, TableEmpty, type EmptyStateProps, type TableEmptyProps } fr
 export { Skeleton, SkeletonText, SkeletonRows, SkeletonStat, type SkeletonProps } from './Skeleton';
 export { PageHeader, type PageHeaderProps } from './PageHeader';
 export { DataToolbar, type DataToolbarProps } from './DataToolbar';
+export { SearchField, type SearchFieldProps } from './SearchField';
 export { SectionContainer, type SectionContainerProps } from './SectionContainer';
 
 // ── Overlays + status presentation (P2) ────────────────────────────────────

@@ -2,13 +2,13 @@
 
 import { useCallback, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { Activity, AlertCircle, Clock, Eye, MoreVertical, Pencil, Plus, RotateCcw, Search, User, Users } from 'lucide-react';
+import { Activity, AlertCircle, Clock, Eye, MoreVertical, Pencil, Plus, RotateCcw, User, Users } from 'lucide-react';
 import { api, type Paginated } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { PatientFormDrawer, type PatientRecord } from '@/components/PatientFormDrawer';
-import { Th, Td, Button, Badge, IconAction } from '@/components/ui';
+import { Th, Td, Button, Badge, IconAction, SearchField } from '@/components/ui';
 
 // The list endpoint enriches each patient with these two computed fields.
 type PatientListRow = PatientRecord & {
@@ -151,20 +151,21 @@ export default function PatientsPage() {
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="font-headline-md text-headline-md text-charcoal-heading">Patients</h2>
+          <h2 id="patients-heading" className="font-headline-md text-headline-md text-charcoal-heading">Patients</h2>
           <p className="font-body-sm text-body-sm text-secondary">Manage patient records and cytology history.</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-[360px] items-center gap-2 rounded-xl border border-outline-variant/40 bg-white px-4 text-secondary">
-            <Search size={18} />
-            <input
-              value={term}
-              onChange={(e) => setTerm(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') runSearch(); }}
-              placeholder="Search name, reg no, email, phone"
-              className="w-full border-none bg-transparent font-body-sm text-body-sm text-on-surface outline-none placeholder:text-outline"
-            />
-          </div>
+          <SearchField
+            label="Search patients"
+            hideLabel
+            className="h-12 w-[360px]"
+            inputProps={{
+              value: term,
+              onChange: (e) => setTerm(e.target.value),
+              onKeyDown: (e) => { if (e.key === 'Enter') runSearch(); },
+              placeholder: 'Search name, reg no, email, phone',
+            }}
+          />
           {can('patient:create') && (
             <Button onClick={openCreate}><Plus size={16} /> New Patient</Button>
           )}
@@ -220,7 +221,7 @@ export default function PatientsPage() {
         )}
 
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
+          <table className="w-full border-collapse" aria-labelledby="patients-heading">
             <thead>
               <tr className="border-b border-slate-100">
                 <Th density="roomy">Patient</Th>
