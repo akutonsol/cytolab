@@ -17,7 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { AttachmentsSubSection, BethesdaSubSection, CaseIdentitySection, CodingSubSection, CollaborationSection, CorrelationSubSection, DecisionSupportSection, DiagnosticCaseOverview, DiagnosticInterpretationSection, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, PriorEvidenceSection, PriorRecordsSubSection, SectionStatus, SlidesSubSection } from './types';
+import type { AttachmentsSubSection, BethesdaSubSection, CaseIdentitySection, CodingSubSection, CollaborationSection, CorrelationSubSection, DecisionSupportSection, DiagnosticCaseOverview, DiagnosticInterpretationSection, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, PriorEvidenceSection, PriorRecordsSubSection, ReportingSignOutSection, SectionStatus, SlidesSubSection } from './types';
 
 // Recorded dates render as plain calendar dates; null → "—". No relative/"ago" phrasing (which would
 // imply a freshness judgment the owner does not record).
@@ -63,7 +63,7 @@ const BANDS: { key: BandKey; title: string; purpose: string }[] = [
   { key: 'decisionSupport', title: 'Decision Support', purpose: 'Assistive material that supports, never replaces, interpretation. Any screening signal is labeled and non-diagnostic.' },
   { key: 'priorEvidence', title: 'Prior Evidence', purpose: 'The patient’s prior cases (this case excluded) and cyto-histo correlations recorded for this patient.' },
   { key: 'collaboration', title: 'Collaboration', purpose: 'External consultation and escalation activity recorded for this case.' },
-  { key: 'reportingSignOut', title: 'Reporting & Sign-Out', purpose: 'Result-sheet authorization state and the released report — opened and acted on in their owner systems.' },
+  { key: 'reportingSignOut', title: 'Reporting & Sign-Out', purpose: 'Result-sheet authorization state and whether a report is recorded — opened and acted on in their owner systems.' },
   { key: 'timelineProvenance', title: 'Timeline & Provenance', purpose: 'Recorded status and authorization events for this case, source-labeled and non-canonical.' },
   { key: 'permissionsActions', title: 'Permissions & Actions', purpose: 'Which sections the current user may view and which owner actions are available.' },
 ];
@@ -252,6 +252,19 @@ export default function DiagnosticCaseWorkspacePage() {
                 onRetry={() => refetch()}
                 retrying={isFetching}
                 onOpenEscalations={() => router.push('/escalations')}
+              />
+            );
+          }
+          if (b.key === 'reportingSignOut') {
+            return (
+              <ReportingSignOutBand
+                key={b.key}
+                title={b.title}
+                section={data?.reportingSignOut}
+                loading={isLoading}
+                onRetry={() => refetch()}
+                retrying={isFetching}
+                onOpenSignOut={() => router.push(`/sign-out/${recordId}`)}
               />
             );
           }
@@ -1044,6 +1057,80 @@ function CollaborationBand({
             })}
           </ul>
           {esc.items.length < total && <p className="mt-2 text-meta text-text-tertiary">Showing the first {esc.items.length} of {total} escalations.</p>}
+        </>
+      )}
+    </Card>
+  );
+}
+
+// Band 7: Reporting & Sign-Out (A11). Reporting METADATA only — result-sheet authorization/report/entry
+// counts + amendment flags (derived from recorded events). Display-only: no authorize/amend/release/
+// approve controls, no report prose/result content/narrative/diagnosis. Sign-Out is the authoritative
+// workspace — the only action is a link to it. Never implies a finalized/correct/complete diagnosis.
+function ReportingSignOutBand({
+  title,
+  section,
+  loading,
+  onRetry,
+  retrying,
+  onOpenSignOut,
+}: {
+  title: string;
+  section?: { status: SectionStatus; data: ReportingSignOutSection | null; reason?: string };
+  loading: boolean;
+  onRetry: () => void;
+  retrying: boolean;
+  onOpenSignOut: () => void;
+}) {
+  const status = section?.status;
+  const d = section?.data ?? null;
+  const rs = d?.resultSheets;
+  const total = rs?.total ?? 0;
+  const badge = loading || !status ? 'Loading' : status === 'ready' ? `${total} result sheet${total === 1 ? '' : 's'}` : status === 'empty' ? 'None recorded' : status === 'forbidden' ? 'No access' : status === 'error' ? 'Unavailable' : 'Not yet loaded';
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-1 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">{title}</h2>
+        <Badge tone="neutral" size="xs">{badge}</Badge>
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-52" /><Skeleton shape="text" width="w-40" /></div>
+      ) : !d || !rs ? (
+        status === 'forbidden' ? (
+          <EmptyState bare className="px-0 py-8" title="No access" description="You do not have permission to view reporting." />
+        ) : (
+          <EmptyState bare className="px-0 py-8" title="Unavailable" description={section?.reason ?? 'Reporting could not be loaded.'} action={<Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={14} className="mr-1.5" />{retrying ? 'Retrying…' : 'Retry'}</Button>} />
+        )
+      ) : rs.status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-8" title="No access" description="You do not have permission to view result sheets." />
+      ) : rs.status === 'error' ? (
+        <div className="flex items-center gap-3"><p className="text-meta text-text-tertiary">Reporting could not be loaded.</p><Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={12} className="mr-1" />{retrying ? 'Retrying…' : 'Retry'}</Button></div>
+      ) : rs.status === 'empty' || rs.items.length === 0 ? (
+        <>
+          <p className="text-meta text-text-tertiary">No result sheet recorded for this case.</p>
+          <div className="mt-3"><Button variant="secondary" size="sm" onClick={onOpenSignOut}>Open Sign-Out <ExternalLink size={12} className="ml-1" /></Button></div>
+        </>
+      ) : (
+        <>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-sm font-semibold text-text">Result sheets</span>
+            <Button variant="secondary" size="sm" onClick={onOpenSignOut}>Open Sign-Out <ExternalLink size={12} className="ml-1" /></Button>
+          </div>
+          <ul className="space-y-1.5">
+            {rs.items.map((s) => {
+              const state = s.authorized ? 'Authorized' : 'Not authorized';
+              const flags = [s.hasReport ? 'report recorded' : null, s.amended ? 'amended' : null, s.reauthorized ? 'reauthorized' : null, s.deauthorized ? 'de-authorized' : null, s.viewed ? 'viewed' : null].filter(Boolean);
+              const meta = [`${s.entryCount} ${s.entryCount === 1 ? 'entry' : 'entries'}`, s.authorizedBy ? `by ${s.authorizedBy}` : null, fmtDate(s.authorizedAt), ...flags, `created ${fmtDate(s.createdAt)}`].filter((v) => v && v !== '—');
+              return (
+                <li key={s.id} className="rounded border border-hairline px-2.5 py-1.5">
+                  <div className="truncate text-sm text-text">Result sheet <span className="text-text-tertiary">· {state}</span></div>
+                  <div className="truncate text-meta text-text-tertiary">{meta.join(' · ')}</div>
+                </li>
+              );
+            })}
+          </ul>
+          {rs.items.length < total && <p className="mt-2 text-meta text-text-tertiary">Showing the first {rs.items.length} of {total} result sheets.</p>}
+          <p className="mt-2 text-meta text-text-tertiary">Reporting metadata only — authoring, authorization, and release happen in Sign-Out.</p>
         </>
       )}
     </Card>

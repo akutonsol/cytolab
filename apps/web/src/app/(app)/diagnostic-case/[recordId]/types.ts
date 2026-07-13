@@ -286,6 +286,34 @@ export interface CollaborationSection {
   ownerPath: string;
 }
 
+// Band 7: Reporting & Sign-Out (A11). Reporting metadata only (result-sheet authorization/report/entry
+// counts + amendment flags derived from recorded events). No report prose/result content/narrative/
+// diagnosis; no authorize/amend/release actions. Sign-Out is the authoritative workspace (owner link).
+export interface ResultSheetSummary {
+  id: string;
+  authorized: boolean;
+  authorizedAt: string | null;
+  authorizedBy: string | null;
+  viewed: boolean;
+  createdAt: string | null;
+  entryCount: number;
+  hasReport: boolean;
+  amended: boolean;
+  reauthorized: boolean;
+  deauthorized: boolean;
+}
+export interface ReportingResultSheetsSubSection {
+  status: SectionStatus;
+  items: ResultSheetSummary[];
+  total: number;
+  reason?: string;
+}
+export interface ReportingSignOutSection {
+  recordId: string;
+  resultSheets: ReportingResultSheetsSubSection;
+  ownerPath: string;
+}
+
 export interface DiagnosticCaseOverview {
   asOf: string;
   recordId: string;
@@ -298,7 +326,7 @@ export interface DiagnosticCaseOverview {
   decisionSupport: Section<DecisionSupportSection>;
   priorEvidence: Section<PriorEvidenceSection>;
   collaboration: Section<CollaborationSection>;
-  reportingSignOut: Section<null>;
+  reportingSignOut: Section<ReportingSignOutSection>;
   timelineProvenance: Section<null>;
   permissionsActions: Section<null>;
 }

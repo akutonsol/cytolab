@@ -7,6 +7,7 @@ import { CodingModule } from '../coding/coding.module';
 import { AiModule } from '../ai/ai.module';
 import { CorrelationModule } from '../correlation/correlation.module';
 import { EscalationModule } from '../escalation/escalation.module';
+import { ResultSheetsModule } from '../result-sheets/result-sheets.module';
 import { DiagnosticCaseController } from './diagnostic-case.controller';
 import { DiagnosticCaseService } from './diagnostic-case.service';
 
@@ -21,10 +22,12 @@ import { DiagnosticCaseService } from './diagnostic-case.service';
 // mutation-free AiReportingService.draftsByRecord metadata read; generated text stays with the owner).
 // A9 adds CorrelationModule (the mutation-free CorrelationService.byPatient read; patient correlation
 // cases, existence + classification only). A10 adds EscalationModule (the mutation-free record-scoped
-// EscalationService.list({ recordId }, userId) read; escalation metadata only). The module never imports
-// PrismaModule; Sign-Out is not imported or modified.
+// EscalationService.list({ recordId }, userId) read; escalation metadata only). A11 adds ResultSheetsModule
+// (the mutation-free ResultSheetsService.metaByRecord + eventsByRecord reads — reporting metadata only, the
+// same reads Sign-Out composes; Sign-Out itself is NOT imported or modified). The module never imports
+// PrismaModule.
 @Module({
-  imports: [RecordsModule, WsiModule, FilesModule, BethesdaModule, CodingModule, AiModule, CorrelationModule, EscalationModule],
+  imports: [RecordsModule, WsiModule, FilesModule, BethesdaModule, CodingModule, AiModule, CorrelationModule, EscalationModule, ResultSheetsModule],
   controllers: [DiagnosticCaseController],
   providers: [DiagnosticCaseService],
 })

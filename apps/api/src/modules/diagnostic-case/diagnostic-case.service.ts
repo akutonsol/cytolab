@@ -8,6 +8,7 @@ import { CodingService } from '../coding/coding.service';
 import { AiReportingService } from '../ai/ai-reporting.service';
 import { CorrelationService } from '../correlation/correlation.service';
 import { EscalationService } from '../escalation/escalation.service';
+import { ResultSheetsService } from '../result-sheets/result-sheets.service';
 
 // Diagnostic Case Workspace — A2: the FROZEN read-only aggregate contract for
 // GET /diagnostic-case/:recordId/overview. This service is CONTRACT-ONLY: it holds no Prisma,
@@ -382,6 +383,38 @@ export interface CollaborationSection {
   ownerPath: string; // /records/:recordId
 }
 
+// ── Band 7: Reporting & Sign-Out (A11) ──
+// Reporting METADATA only, composed from ResultSheetsService.metaByRecord (per-sheet authorization/report/
+// entry counts) + ResultSheetsService.eventsByRecord (authorization/amendment event types). Sign-Out
+// remains the authoritative workspace and is NOT modified — this band reuses the same owner reads it uses.
+// NEVER: report prose (`content`), result text/lines, generated narrative, diagnosis, or any authorize/
+// amend/release/approve action. Authorization/amendment flags are derived ONLY from recorded
+// ResultSheetEvent types (like Sign-Out). No "finalized/correct/complete" claim — owner-recorded facts only.
+export interface ResultSheetSummary {
+  id: string;
+  authorized: boolean; // owner-recorded gate flag
+  authorizedAt: string | null;
+  authorizedBy: string | null; // display name only
+  viewed: boolean; // owner-recorded
+  createdAt: string | null;
+  entryCount: number; // _count.resultEntries (metadata count — NOT the entries/content)
+  hasReport: boolean; // _count.reports > 0 — a report RECORD EXISTS; proves NOTHING about release/publication/delivery/finalization
+  amended: boolean; // a Deauthorized/Reauthorized event exists (recorded)
+  reauthorized: boolean; // a Reauthorized event exists (recorded)
+  deauthorized: boolean; // currently not authorized AND a Deauthorized event exists (recorded)
+}
+export interface ReportingResultSheetsSubSection {
+  status: SectionStatus; // ready (≥1 sheet) | empty | forbidden (no resultsheet:view) | error
+  items: ResultSheetSummary[]; // ≤ RESULTSHEET_CAP, owner order (createdAt desc)
+  total: number;
+  reason?: string;
+}
+export interface ReportingSignOutSection {
+  recordId: string;
+  resultSheets: ReportingResultSheetsSubSection; // the single current source (metaByRecord + eventsByRecord)
+  ownerPath: string; // /sign-out/:recordId (authoritative workspace)
+}
+
 // ── The frozen overview envelope ──
 export interface DiagnosticCaseOverview {
   asOf: string;
@@ -397,7 +430,7 @@ export interface DiagnosticCaseOverview {
   decisionSupport: Section<DecisionSupportSection>;
   priorEvidence: Section<PriorEvidenceSection>;
   collaboration: Section<CollaborationSection>;
-  reportingSignOut: Section<null>;
+  reportingSignOut: Section<ReportingSignOutSection>;
   timelineProvenance: Section<null>;
   permissionsActions: Section<null>;
 }
@@ -411,6 +444,7 @@ const DRAFT_CAP = 50; // conservative bound on the recorded AI-draft list (plan 
 const PRIOR_CAP = 50; // conservative bound on the prior-record list (owner already applies take:50)
 const CORRELATION_CAP = 50; // conservative bound on the patient correlation list (plan A9 §List bounds)
 const ESCALATION_CAP = 50; // conservative bound on the record escalation list (plan A10 §List bounds)
+const RESULTSHEET_CAP = 50; // conservative bound on the record result-sheet list (plan A11 §List bounds)
 const iso = (d: Date | string | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
 const fullName = (
   u: { firstName?: string | null; lastName?: string | null } | null | undefined,
@@ -427,6 +461,7 @@ export class DiagnosticCaseService {
     private readonly aiReporting: AiReportingService,
     private readonly correlation: CorrelationService,
     private readonly escalation: EscalationService,
+    private readonly resultSheets: ResultSheetsService,
   ) {}
 
   /**
@@ -449,7 +484,7 @@ export class DiagnosticCaseService {
       decisionSupport: await this.sectionDecisionSupport(recordId, load, user),
       priorEvidence: await this.sectionPriorEvidence(recordId, load, user),
       collaboration: await this.sectionCollaboration(recordId, load, user),
-      reportingSignOut: deferred(),
+      reportingSignOut: await this.sectionReportingSignOut(recordId, load, user),
       timelineProvenance: deferred(),
       permissionsActions: deferred(),
     };
@@ -824,6 +859,57 @@ export class DiagnosticCaseService {
       return { status: 'ready', items, total: rows.length };
     } catch {
       return { status: 'error', items: [], total: 0, reason: 'Prior records could not be loaded' };
+    }
+  }
+
+  // Band 7: Reporting & Sign-Out (single source — result-sheet reporting metadata). Loaded after the
+  // root record read. Root failure → band mirrors root (owner not invoked). Sign-Out is NOT modified;
+  // this reuses ResultSheetsService.metaByRecord + eventsByRecord (the same reads Sign-Out composes).
+  private async sectionReportingSignOut(recordId: string, load: RecordLoad, user: AuthUser): Promise<Section<ReportingSignOutSection>> {
+    if (load.kind === 'forbidden') return { status: 'forbidden', data: null, reason: 'record:view required' };
+    if (load.kind === 'error') return { status: 'error', data: null, reason: load.reason };
+    const has = (code: string) => !!user.isSuperRole || user.permissions.includes(code);
+    const resultSheets = await this.loadReporting(recordId, has('resultsheet:view'));
+    const data: ReportingSignOutSection = { recordId, resultSheets, ownerPath: `/sign-out/${recordId}` };
+    return { status: resultSheets.status, data, reason: resultSheets.reason };
+  }
+
+  // Reporting sub-loader. Composes ResultSheetsService.metaByRecord (per-sheet authorization/report/entry
+  // metadata) + eventsByRecord (authorization/amendment event types) — both mutation-free, resultsheet:view.
+  // Derives amended/reauthorized/deauthorized ONLY from recorded ResultSheetEvent types (mirrors Sign-Out).
+  // Allowlist METADATA only — NO report prose/result content/narrative; report presence via `_count.reports`.
+  // Owner order (createdAt desc) preserved; capped RESULTSHEET_CAP. No sheets → empty; failure → error.
+  private async loadReporting(recordId: string, allowed: boolean): Promise<ReportingResultSheetsSubSection> {
+    if (!allowed) return { status: 'forbidden', items: [], total: 0, reason: 'resultsheet:view required' };
+    try {
+      const [sheets, events]: [any[], any[]] = await Promise.all([
+        this.resultSheets.metaByRecord(recordId),
+        this.resultSheets.eventsByRecord(recordId),
+      ]);
+      if (!Array.isArray(sheets) || sheets.length === 0) return { status: 'empty', items: [], total: 0 };
+      const evList: any[] = Array.isArray(events) ? events : [];
+      const items: ResultSheetSummary[] = sheets.slice(0, RESULTSHEET_CAP).map((s) => {
+        const evs = evList.filter((e) => e.resultSheetId === s.id);
+        const hasDeauth = evs.some((e) => e.type === 'Deauthorized');
+        const hasReauth = evs.some((e) => e.type === 'Reauthorized');
+        return {
+          id: s.id,
+          authorized: !!s.authorized,
+          authorizedAt: iso(s.authorizedAt),
+          authorizedBy: fullName(s.authorizedBy),
+          viewed: !!s.viewed,
+          createdAt: iso(s.createdAt),
+          entryCount: s._count?.resultEntries ?? 0,
+          hasReport: (s._count?.reports ?? 0) > 0, // report record exists — NOT a release/publish claim
+
+          amended: hasDeauth || hasReauth,
+          reauthorized: hasReauth,
+          deauthorized: !s.authorized && hasDeauth,
+        };
+      });
+      return { status: 'ready', items, total: sheets.length };
+    } catch {
+      return { status: 'error', items: [], total: 0, reason: 'Reporting could not be loaded' };
     }
   }
 
