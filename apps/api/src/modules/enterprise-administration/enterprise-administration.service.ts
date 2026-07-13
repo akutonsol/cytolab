@@ -9,6 +9,14 @@ import { ClientsService } from '../clients/clients.service';
 import { LabCodesService } from '../lab-codes/lab-codes.service';
 import { CodeSheetsService } from '../code-sheets/code-sheets.service';
 import { RecordsService } from '../records/records.service';
+import { FhirService } from '../fhir/fhir.service';
+import { BillingService } from '../billing/billing.service';
+import { ServicesCatalogService } from '../services-catalog/services-catalog.service';
+import { TaxesService } from '../taxes/taxes.service';
+import { LabFeaturesService } from '../lab-features/lab-features.service';
+import { SystemHealthService } from '../system/system-health.service';
+import { AiReportingService } from '../ai/ai-reporting.service';
+import { PortalUsersService } from '../portal/portal-users/portal-users.service';
 // The owner's RecordStatus enum (schema-defined) — used ONLY to iterate the modeled statuses in
 // their owner-declared order. This is a generated enum type, not a Prisma query; the actual counts
 // come from RecordsService (the lifecycle owner). Enterprise Administration runs no Prisma query.
@@ -67,6 +75,7 @@ export interface EffectiveAdminPermissions {
   changeService: boolean; // service:change
   viewTax: boolean; // tax:view
   changeTax: boolean; // tax:change
+  viewBill: boolean; // bill:view — billing summary (bill status counts only, never revenue)
   viewNotification: boolean; // notification:view
   viewPortalUser: boolean; // portaluser:view — declared-but-unseeded → superuser-only
   changePortalUser: boolean; // portaluser:change — declared-but-unseeded → superuser-only
@@ -266,6 +275,62 @@ export interface LifecycleSection {
   ownerPath: string;
 }
 
+// ── A8 sections (integrations, commercial, platform) ─────────────────────────
+// FHIR — safe endpoint metadata from `FhirService.listEndpoints` (the owner `endpointSelect` already
+// excludes authToken/clientSecret). No baseUrl/clientId/credentials surfaced. Gated `record:view`.
+export interface FhirEndpointRow {
+  id: string;
+  name: string;
+  system: string; // endpoint/EMR type
+  environment: string; // 'Sandbox' | 'Production' (from isSandbox)
+  enabled: boolean; // isActive
+  lastTestedAt: string | null;
+  lastTestStatus: string | null;
+  transmissionCount: number | null;
+  ownerPath: string;
+}
+export interface FhirSection { total: number; items: FhirEndpointRow[] }
+
+// Billing — bill COUNTS by status only from `BillingService.summary()` (`byStatus`). The owner's
+// money sums (billed/collected/outstanding) are NEVER surfaced — no revenue/margin/health. Gated `bill:view`.
+export interface BillStatusCount { status: string; count: number }
+export interface BillingSection { billsByStatus: BillStatusCount[]; ownerPath: string }
+
+// Services — recorded catalog from `ServicesCatalogService.findAll`. `price` is the owner's recorded
+// minor-units integer, shown verbatim (no calculation). Gated `service:view`.
+export interface ServiceRow { id: string; name: string; description: string | null; price: number | null; active: boolean; ownerPath: string }
+export interface ServicesSection { total: number; items: ServiceRow[] }
+
+// Taxes — recorded from `TaxesService.findAll`. `rateBasisPoints` is the owner's recorded rate; no
+// tax is computed/applied and no jurisdiction inferred. `isDefault` is the stored flag. Gated `tax:view`.
+export interface TaxRow { id: string; name: string; rateBasisPoints: number | null; isDefault: boolean; ownerPath: string }
+export interface TaxesSection { total: number; items: TaxRow[] }
+
+// Feature Flags — recorded module status from `LabFeaturesService.listForLab`. Status only, no toggle.
+// SuperuserGuard-controlled → surfaced only under the truthful superuser bypass. No secret.
+export interface FeatureFlagRow { featureKey: string; isEnabled: boolean; tier: number | null; ownerPath: string }
+export interface FeatureFlagsSection { total: number; items: FeatureFlagRow[] }
+
+// System Health — safe recorded checks from `SystemHealthService.getHealth`. Only status/message
+// counts from the data-integrity/business/security/db-latency checks are surfaced; the owner's
+// `backup.sheetId` (a raw env var), node version, uptime, and raw maintenance log are EXCLUDED. No
+// connection strings/host secrets/credentials/env vars/stack traces. Gated `system:health`.
+export interface HealthCheckRow { name: string; status: string; message: string | null }
+export interface SystemHealthSection { overall: string; generatedAt: string | null; checks: HealthCheckRow[]; ownerPath: string }
+
+// AI Settings — safe status from `AiReportingService.getSettings`: enabled, whether an API key is
+// configured (never the key), and the optional model name. House-style text and redaction policy are
+// NOT surfaced. No prompts/keys/tokens/redaction secrets. Gated `applicationprefs:view`.
+export interface AiSettingsSection { enabled: boolean; apiKeyConfigured: boolean; model: string | null; ownerPath: string }
+
+// Portal Access — the owner's ACCURATE configured-account total only (from `findAll().total`). Active/
+// inactive totals are NOT surfaced: the owner exposes no accurate aggregate for them, and counting from
+// a bounded page would undercount beyond 100 records. `configuredCount` proves only that N portal account
+// records exist — never enabled access, login eligibility, valid credentials, onboarding, unlock, or
+// authorization. Never the portal usernames, emails, hash, 2FA, tokens, or login state. Gated
+// `portaluser:view` (declared-but-unseeded → superuser-bypass-only).
+export interface PortalAccessSection { configuredCount: number; ownerPath: string }
+
 // The remaining evidence sections stay deferred. Each carries its own status so a future section
 // failure isolates to it and never collapses `permissionMatrix`, siblings, or the shell.
 export interface EnterpriseAdminOverview {
@@ -285,15 +350,18 @@ export interface EnterpriseAdminOverview {
   // getOrCreate, which persists a default config), so it cannot be composed under the orchestration-
   // only contract without a side-effect. See the A6 report.
   forms: Section<null>;
-  fhir: Section<null>;
+  fhir: Section<FhirSection>;
+  // Notifications stays deferred: the notifications owner exposes only PER-USER reads (message
+  // content, unread counts, per-user delivery preferences) — there is no lab-wide administration-safe
+  // read to compose. See the A8 report.
   notifications: Section<null>;
-  billing: Section<null>;
-  services: Section<null>;
-  taxes: Section<null>;
-  featureFlags: Section<null>;
-  systemHealth: Section<null>;
-  aiSettings: Section<null>;
-  portalAccess: Section<null>;
+  billing: Section<BillingSection>;
+  services: Section<ServicesSection>;
+  taxes: Section<TaxesSection>;
+  featureFlags: Section<FeatureFlagsSection>;
+  systemHealth: Section<SystemHealthSection>;
+  aiSettings: Section<AiSettingsSection>;
+  portalAccess: Section<PortalAccessSection>;
   lifecycle: Section<LifecycleSection>;
 }
 
@@ -328,6 +396,7 @@ function buildPermissions(user: AuthUser): EffectiveAdminPermissions {
     changeService: has('service:change'),
     viewTax: has('tax:view'),
     changeTax: has('tax:change'),
+    viewBill: has('bill:view'),
     viewNotification: has('notification:view'),
     viewPortalUser: has('portaluser:view'),
     changePortalUser: has('portaluser:change'),
@@ -352,6 +421,14 @@ export class EnterpriseAdministrationService {
     private readonly labCodes: LabCodesService,
     private readonly codeSheets: CodeSheetsService,
     private readonly records: RecordsService,
+    private readonly fhir: FhirService,
+    private readonly billing: BillingService,
+    private readonly servicesCatalog: ServicesCatalogService,
+    private readonly taxes: TaxesService,
+    private readonly labFeatures: LabFeaturesService,
+    private readonly systemHealth: SystemHealthService,
+    private readonly aiReporting: AiReportingService,
+    private readonly portalUsers: PortalUsersService,
   ) {}
 
   async overview(user: AuthUser): Promise<EnterpriseAdminOverview> {
@@ -359,7 +436,10 @@ export class EnterpriseAdministrationService {
     // downstream failure. Sections resolve independently (partial-failure isolation): one owner
     // failing marks only its section and never collapses the permission map or siblings.
     const perms = buildPermissions(user);
-    const [laboratory, branding, departments, users, roles, permissions, security, clients, labCodes, codeSheets, lifecycle] = await Promise.all([
+    const [
+      laboratory, branding, departments, users, roles, permissions, security, clients, labCodes, codeSheets, lifecycle,
+      fhir, billing, services, taxes, featureFlags, systemHealth, aiSettings, portalAccess,
+    ] = await Promise.all([
       this.loadLaboratory(perms),
       this.loadBranding(perms),
       this.loadDepartments(perms),
@@ -371,6 +451,14 @@ export class EnterpriseAdministrationService {
       this.loadLabCodes(perms),
       this.loadCodeSheets(perms),
       this.loadLifecycle(perms),
+      this.loadFhir(perms),
+      this.loadBilling(perms),
+      this.loadServices(perms),
+      this.loadTaxes(perms),
+      this.loadFeatureFlags(perms),
+      this.loadSystemHealth(perms),
+      this.loadAiSettings(perms),
+      this.loadPortalAccess(perms),
     ]);
     return {
       asOf: new Date().toISOString(),
@@ -386,16 +474,16 @@ export class EnterpriseAdministrationService {
       labCodes,
       codeSheets,
       forms: deferred(),
-      fhir: deferred(),
       notifications: deferred(),
-      billing: deferred(),
-      services: deferred(),
-      taxes: deferred(),
-      featureFlags: deferred(),
-      systemHealth: deferred(),
-      aiSettings: deferred(),
-      portalAccess: deferred(),
       lifecycle,
+      fhir,
+      billing,
+      services,
+      taxes,
+      featureFlags,
+      systemHealth,
+      aiSettings,
+      portalAccess,
     };
   }
 
@@ -664,9 +752,194 @@ export class EnterpriseAdministrationService {
       return { status: 'error', data: null, reason: 'Lifecycle observation failed to load' };
     }
   }
+
+  // FHIR — safe endpoint metadata (owner select already excludes authToken/clientSecret). No baseUrl/
+  // clientId/credentials surfaced. No credential editing or connection testing here. Gated `record:view`.
+  private async loadFhir(perms: EffectiveAdminPermissions): Promise<Section<FhirSection>> {
+    if (!perms.viewRecord) return { status: 'forbidden', data: null };
+    try {
+      const rows: any[] = await this.fhir.listEndpoints();
+      if (!Array.isArray(rows) || !rows.length) return { status: 'empty', data: null };
+      const items: FhirEndpointRow[] = rows.map((e) => ({
+        id: e.id,
+        name: String(e.name),
+        system: String(e.system ?? ''),
+        environment: e.isSandbox ? 'Sandbox' : 'Production',
+        enabled: !!e.isActive,
+        lastTestedAt: iso(e.lastTestedAt),
+        lastTestStatus: e.lastTestStatus ?? null,
+        transmissionCount: typeof e._count?.transmissions === 'number' ? e._count.transmissions : null,
+        ownerPath: '/fhir',
+      }));
+      items.sort(fhirSort);
+      return { status: 'ready', data: { total: items.length, items: items.slice(0, 50) } };
+    } catch {
+      return { status: 'error', data: null, reason: 'FHIR endpoints failed to load' };
+    }
+  }
+
+  // Billing — bill COUNTS by status only (owner `summary().byStatus`). The owner's money sums
+  // (billed/collected/outstanding) are never read into the payload — no revenue/margin/health. Gated `bill:view`.
+  private async loadBilling(perms: EffectiveAdminPermissions): Promise<Section<BillingSection>> {
+    if (!perms.viewBill) return { status: 'forbidden', data: null };
+    try {
+      const s: any = await this.billing.summary();
+      const byStatus = s?.byStatus && typeof s.byStatus === 'object' ? s.byStatus : {};
+      const billsByStatus: BillStatusCount[] = Object.entries(byStatus)
+        .map(([status, count]) => ({ status, count: typeof count === 'number' ? count : 0 }))
+        .sort((a, b) => (a.status < b.status ? -1 : a.status > b.status ? 1 : 0));
+      return { status: 'ready', data: { billsByStatus, ownerPath: '/billing' } };
+    } catch {
+      return { status: 'error', data: null, reason: 'Billing summary failed to load' };
+    }
+  }
+
+  // Services — recorded catalog. `price` is the owner's recorded minor-units integer, shown verbatim
+  // (no calculation). Bounded. Gated `service:view`.
+  private async loadServices(perms: EffectiveAdminPermissions): Promise<Section<ServicesSection>> {
+    if (!perms.viewService) return { status: 'forbidden', data: null };
+    try {
+      const page: any = await this.servicesCatalog.findAll({ pageSize: 100 } as any);
+      const rows: any[] = Array.isArray(page?.data) ? page.data : Array.isArray(page) ? page : [];
+      if (!rows.length) return { status: 'empty', data: null };
+      const items: ServiceRow[] = rows.map((s) => ({
+        id: s.id,
+        name: String(s.name),
+        description: s.description ?? null,
+        price: typeof s.price === 'number' ? s.price : null,
+        active: !!s.active,
+        ownerPath: '/services',
+      }));
+      items.sort(nameIdSort);
+      return { status: 'ready', data: { total: typeof page?.total === 'number' ? page.total : items.length, items: items.slice(0, 100) } };
+    } catch {
+      return { status: 'error', data: null, reason: 'Services failed to load' };
+    }
+  }
+
+  // Taxes — recorded rates. `rateBasisPoints` is the owner's recorded rate; no tax is computed/applied
+  // and no jurisdiction inferred. Bounded. Gated `tax:view`.
+  private async loadTaxes(perms: EffectiveAdminPermissions): Promise<Section<TaxesSection>> {
+    if (!perms.viewTax) return { status: 'forbidden', data: null };
+    try {
+      const rows: any[] = await this.taxes.findAll();
+      if (!Array.isArray(rows) || !rows.length) return { status: 'empty', data: null };
+      const items: TaxRow[] = rows.map((t) => ({
+        id: t.id,
+        name: String(t.name),
+        rateBasisPoints: typeof t.rateBasisPoints === 'number' ? t.rateBasisPoints : null,
+        isDefault: !!t.isDefault,
+        ownerPath: '/services',
+      }));
+      items.sort(nameIdSort);
+      return { status: 'ready', data: { total: items.length, items: items.slice(0, 100) } };
+    } catch {
+      return { status: 'error', data: null, reason: 'Taxes failed to load' };
+    }
+  }
+
+  // Feature Flags — recorded module status only (owner `listForLab`). SuperuserGuard-controlled, so
+  // surfaced only under the truthful superuser bypass; no toggle, no rollout/environment editor. Bounded.
+  private async loadFeatureFlags(perms: EffectiveAdminPermissions): Promise<Section<FeatureFlagsSection>> {
+    if (!perms.featureFlags) return { status: 'forbidden', data: null };
+    try {
+      const rows: any[] = await this.labFeatures.listForLab();
+      if (!Array.isArray(rows) || !rows.length) return { status: 'empty', data: null };
+      const items: FeatureFlagRow[] = rows.map((f) => ({
+        featureKey: String(f.featureKey),
+        isEnabled: !!f.isEnabled,
+        tier: typeof f.tier === 'number' ? f.tier : null,
+        ownerPath: '/settings/features',
+      }));
+      items.sort((a, b) => (a.featureKey < b.featureKey ? -1 : a.featureKey > b.featureKey ? 1 : 0));
+      return { status: 'ready', data: { total: items.length, items: items.slice(0, 100) } };
+    } catch {
+      return { status: 'error', data: null, reason: 'Feature flags failed to load' };
+    }
+  }
+
+  // System Health — safe recorded checks only (owner `getHealth`). Composes the data-integrity /
+  // business / security checks plus db-latency & memory, each as {name,status,message}. The owner's
+  // backup.sheetId (a raw env var), node version, uptime, and raw maintenance log are EXCLUDED. Gated
+  // `system:health`.
+  private async loadSystemHealth(perms: EffectiveAdminPermissions): Promise<Section<SystemHealthSection>> {
+    if (!perms.systemHealth) return { status: 'forbidden', data: null };
+    try {
+      const h: any = await this.systemHealth.getHealth();
+      const checks: HealthCheckRow[] = [];
+      const pushGroup = (group: any, keys?: string[]) => {
+        if (!group || typeof group !== 'object') return;
+        for (const [name, c] of Object.entries<any>(group)) {
+          if (keys && !keys.includes(name)) continue; // whitelist (excludes env/version/uptime)
+          if (!c || typeof c !== 'object') continue;
+          const message = c.message ?? (typeof c.value === 'number' ? String(c.value) : null);
+          checks.push({ name, status: String(c.status ?? 'ok'), message: message ?? null });
+        }
+      };
+      pushGroup(h?.infrastructure, ['dbPing', 'memoryUsage']); // never nodeVersion/apiUptime
+      pushGroup(h?.dataIntegrity);
+      pushGroup(h?.businessHealth);
+      pushGroup(h?.security);
+      // `backup` is intentionally omitted (its sheetId is a raw environment variable).
+      const bounded = checks.slice(0, 100);
+      return {
+        status: 'ready',
+        data: { overall: String(h?.overall ?? 'ok'), generatedAt: iso(h?.generatedAt), checks: bounded, ownerPath: '/system' },
+      };
+    } catch {
+      return { status: 'error', data: null, reason: 'System health failed to load' };
+    }
+  }
+
+  // AI Settings — safe status only (owner `getSettings`): enabled, whether an API key is configured
+  // (never the key), and optional model name. House-style text and redaction policy are not surfaced.
+  // No prompts/keys/tokens. Gated `applicationprefs:view`.
+  private async loadAiSettings(perms: EffectiveAdminPermissions): Promise<Section<AiSettingsSection>> {
+    if (!perms.viewLabConfig) return { status: 'forbidden', data: null };
+    try {
+      const s: any = await this.aiReporting.getSettings();
+      return {
+        status: 'ready',
+        data: { enabled: !!s?.enabled, apiKeyConfigured: !!s?.hasApiKey, model: s?.model ?? null, ownerPath: '/settings' },
+      };
+    } catch {
+      return { status: 'error', data: null, reason: 'AI settings failed to load' };
+    }
+  }
+
+  // Portal Access — the owner's ACCURATE configured-account total only. Active/inactive are NOT
+  // surfaced (the owner exposes no accurate aggregate; a bounded page would undercount beyond 100). No
+  // portal usernames, emails, hash, 2FA, tokens, or login state. Gated `portaluser:view` (unseeded →
+  // superuser-bypass-only). `pageSize: 1` because only the accurate `total` is used.
+  private async loadPortalAccess(perms: EffectiveAdminPermissions): Promise<Section<PortalAccessSection>> {
+    if (!perms.viewPortalUser) return { status: 'forbidden', data: null };
+    try {
+      const page: any = await this.portalUsers.findAll({ pageSize: 1 } as any);
+      const configuredCount = typeof page?.total === 'number' ? page.total : Array.isArray(page?.data) ? page.data.length : 0;
+      return { status: 'ready', data: { configuredCount, ownerPath: '/clients' } };
+    } catch {
+      return { status: 'error', data: null, reason: 'Portal access failed to load' };
+    }
+  }
 }
 
 const iso = (d: Date | string | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
+
+// FHIR: name, then a stable id. Never by risk/usage.
+function fhirSort(x: FhirEndpointRow, y: FhirEndpointRow): number {
+  const kx = x.name.toLowerCase();
+  const ky = y.name.toLowerCase();
+  if (kx !== ky) return kx < ky ? -1 : 1;
+  return x.id < y.id ? -1 : x.id > y.id ? 1 : 0;
+}
+
+// Services & taxes: name, then a stable id.
+function nameIdSort(x: { name: string; id: string }, y: { name: string; id: string }): number {
+  const kx = x.name.toLowerCase();
+  const ky = y.name.toLowerCase();
+  if (kx !== ky) return kx < ky ? -1 : 1;
+  return x.id < y.id ? -1 : x.id > y.id ? 1 : 0;
+}
 
 // ── Configuration deterministic ordering (recorded fields only) ──────────────
 // Clients: recorded active state first, then display name, then account number, then a stable id.

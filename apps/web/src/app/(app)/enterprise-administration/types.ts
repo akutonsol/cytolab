@@ -43,6 +43,7 @@ export interface EffectiveAdminPermissions {
   changeService: boolean;
   viewTax: boolean;
   changeTax: boolean;
+  viewBill: boolean;
   viewNotification: boolean;
   viewPortalUser: boolean;
   changePortalUser: boolean;
@@ -206,17 +207,51 @@ export interface EnterpriseAdminOverview {
   labCodes: Section<LabCodesSection>;
   codeSheets: Section<CodeSheetsSection>;
   forms: Section<null>;
-  fhir: Section<null>;
+  fhir: Section<FhirSection>;
   notifications: Section<null>;
-  billing: Section<null>;
-  services: Section<null>;
-  taxes: Section<null>;
-  featureFlags: Section<null>;
-  systemHealth: Section<null>;
-  aiSettings: Section<null>;
-  portalAccess: Section<null>;
+  billing: Section<BillingSection>;
+  services: Section<ServicesSection>;
+  taxes: Section<TaxesSection>;
+  featureFlags: Section<FeatureFlagsSection>;
+  systemHealth: Section<SystemHealthSection>;
+  aiSettings: Section<AiSettingsSection>;
+  portalAccess: Section<PortalAccessSection>;
   lifecycle: Section<LifecycleSection>;
 }
+
+// FHIR — safe endpoint metadata (owner select excludes authToken/clientSecret). No credentials.
+export interface FhirEndpointRow {
+  id: string; name: string; system: string; environment: string; enabled: boolean;
+  lastTestedAt: string | null; lastTestStatus: string | null; transmissionCount: number | null; ownerPath: string;
+}
+export interface FhirSection { total: number; items: FhirEndpointRow[] }
+
+// Billing — bill COUNTS by status only (no revenue/money sums).
+export interface BillStatusCount { status: string; count: number }
+export interface BillingSection { billsByStatus: BillStatusCount[]; ownerPath: string }
+
+// Services — recorded catalog; price is owner minor-units, shown verbatim.
+export interface ServiceRow { id: string; name: string; description: string | null; price: number | null; active: boolean; ownerPath: string }
+export interface ServicesSection { total: number; items: ServiceRow[] }
+
+// Taxes — recorded rate (basis points); no computation/jurisdiction inference.
+export interface TaxRow { id: string; name: string; rateBasisPoints: number | null; isDefault: boolean; ownerPath: string }
+export interface TaxesSection { total: number; items: TaxRow[] }
+
+// Feature Flags — recorded module status (SuperuserGuard). Status only, no toggle.
+export interface FeatureFlagRow { featureKey: string; isEnabled: boolean; tier: number | null; ownerPath: string }
+export interface FeatureFlagsSection { total: number; items: FeatureFlagRow[] }
+
+// System Health — safe recorded checks only (env vars/version/uptime/raw logs excluded).
+export interface HealthCheckRow { name: string; status: string; message: string | null }
+export interface SystemHealthSection { overall: string; generatedAt: string | null; checks: HealthCheckRow[]; ownerPath: string }
+
+// AI Settings — safe status only (never the key/prompts/redaction secrets).
+export interface AiSettingsSection { enabled: boolean; apiKeyConfigured: boolean; model: string | null; ownerPath: string }
+
+// Portal Access — the owner's accurate configured-account total only. No active/inactive totals (the
+// owner exposes no accurate aggregate). Never usernames/emails/hashes/tokens/2FA/login state.
+export interface PortalAccessSection { configuredCount: number; ownerPath: string }
 
 // Lifecycle Observation — OBSERVE only. Owner-recorded per-status counts (owner: RecordsService.
 // findAll per RecordStatus, record:view) in owner-declared enum order. No transition metadata, no

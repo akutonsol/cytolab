@@ -89,6 +89,7 @@ const PERMISSION_LABELS: { key: keyof EffectiveAdminPermissions; label: string }
   { key: 'changeService', label: 'Change services' },
   { key: 'viewTax', label: 'View taxes' },
   { key: 'changeTax', label: 'Change taxes' },
+  { key: 'viewBill', label: 'View billing' },
   { key: 'viewNotification', label: 'View notifications' },
   { key: 'viewPortalUser', label: 'View portal access' },
   { key: 'changePortalUser', label: 'Change portal access' },
@@ -179,6 +180,14 @@ export default function EnterpriseAdministrationWorkspacePage() {
           if (s.key === 'labCodes') return <LabCodesPanel key={s.key} section={data?.labCodes} loading={isLoading} onOpen={() => router.push('/lab-codes')} />;
           if (s.key === 'codeSheets') return <CodeSheetsPanel key={s.key} section={data?.codeSheets} loading={isLoading} onOpen={() => router.push('/lab-codes')} />;
           if (s.key === 'lifecycle') return <LifecyclePanel key={s.key} section={data?.lifecycle} loading={isLoading} onOpen={() => router.push('/records')} />;
+          if (s.key === 'fhir') return <FhirPanel key={s.key} section={data?.fhir} loading={isLoading} onOpen={() => router.push('/fhir')} />;
+          if (s.key === 'billing') return <BillingPanel key={s.key} section={data?.billing} loading={isLoading} onOpen={() => router.push('/billing')} />;
+          if (s.key === 'services') return <ServicesPanel key={s.key} section={data?.services} loading={isLoading} onOpen={() => router.push('/services')} />;
+          if (s.key === 'taxes') return <TaxesPanel key={s.key} section={data?.taxes} loading={isLoading} onOpen={() => router.push('/services')} />;
+          if (s.key === 'featureFlags') return <FeatureFlagsPanel key={s.key} section={data?.featureFlags} loading={isLoading} onOpen={() => router.push('/settings/features')} />;
+          if (s.key === 'systemHealth') return <SystemHealthPanel key={s.key} section={data?.systemHealth} loading={isLoading} onOpen={() => router.push('/system')} />;
+          if (s.key === 'aiSettings') return <AiSettingsPanel key={s.key} section={data?.aiSettings} loading={isLoading} onOpen={() => router.push('/settings')} />;
+          if (s.key === 'portalAccess') return <PortalAccessPanel key={s.key} section={data?.portalAccess} loading={isLoading} onOpen={() => router.push('/clients')} />;
           return (
             <AdminSection
               key={s.key}
@@ -628,6 +637,168 @@ function LifecyclePanel({ section, loading, onOpen }: { section?: EnterpriseAdmi
             ))}
           </div>
           <OpenOwner label="Open records" onOpen={onOpen} />
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+// Health-status tone — maps ok/warn/error to non-orange tones (warn → neutral, never amber).
+const healthTone = (s: string): 'success' | 'danger' | 'neutral' =>
+  s === 'ok' ? 'success' : s === 'error' ? 'danger' : 'neutral';
+
+// FHIR — configured endpoints + status. No credential editor / connection tester. Secrets never shown.
+function FhirPanel({ section, loading, onOpen }: { section?: EnterpriseAdminOverview['fhir']; loading: boolean; onOpen: () => void }) {
+  return (
+    <SectionShell title="FHIR" section={section} loading={loading} emptyText="No FHIR endpoints are configured."
+      badge={section?.data ? <Badge tone="neutral" size="xs">{section.data.total} configured</Badge> : undefined}>
+      {(d) => (
+        <div className="space-y-2">
+          {d.items.map((e) => {
+            const meta = [e.system, e.environment, e.transmissionCount != null ? `${e.transmissionCount} transmissions` : null, e.lastTestedAt ? `tested ${fmtDate(e.lastTestedAt)}` : null].filter(Boolean).join(' · ');
+            return (
+              <div key={e.id} className="flex flex-wrap items-start justify-between gap-2 rounded-lg border border-lightgray px-3 py-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-text">{e.name}</div>
+                  <div className="mt-0.5 text-meta text-text-tertiary">{meta}</div>
+                </div>
+                <Badge tone={e.enabled ? 'success' : 'neutral'} size="xs">{e.enabled ? 'Enabled' : 'Disabled'}</Badge>
+              </div>
+            );
+          })}
+          <OpenOwner label="Open FHIR" onOpen={onOpen} />
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+// Billing — bill counts by status only. No revenue, no editor.
+function BillingPanel({ section, loading, onOpen }: { section?: EnterpriseAdminOverview['billing']; loading: boolean; onOpen: () => void }) {
+  return (
+    <SectionShell title="Billing" section={section} loading={loading} emptyText="No bills are recorded.">
+      {(d) => (
+        <div>
+          {d.billsByStatus.length ? d.billsByStatus.map((b) => <CountRow key={b.status} label={b.status} value={b.count} />) : <p className="py-1.5 text-sm text-text-secondary">No bills recorded.</p>}
+          <OpenOwner label="Open billing" onOpen={onOpen} />
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+// Services — recorded catalog. Price shown verbatim (minor units). No editor/calculation.
+function ServicesPanel({ section, loading, onOpen }: { section?: EnterpriseAdminOverview['services']; loading: boolean; onOpen: () => void }) {
+  return (
+    <SectionShell title="Services" section={section} loading={loading} emptyText="No services are recorded."
+      badge={section?.data ? <Badge tone="neutral" size="xs">{section.data.total} recorded</Badge> : undefined}>
+      {(d) => (
+        <div className="space-y-1.5">
+          {d.items.map((s) => (
+            <div key={s.id} className="flex flex-wrap items-baseline justify-between gap-2 border-b border-lightgray py-1.5 last:border-0">
+              <span className="text-sm text-text">{s.name}{!s.active && <span className="ml-1 text-meta text-text-tertiary">(inactive)</span>}</span>
+              <span className="text-meta text-text-tertiary">{s.price != null ? (s.price / 100).toLocaleString(undefined, { style: 'currency', currency: 'USD' }) : '—'}</span>
+            </div>
+          ))}
+          <OpenOwner label="Open services" onOpen={onOpen} />
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+// Taxes — recorded rate (basis points → %). No computation, no editor.
+function TaxesPanel({ section, loading, onOpen }: { section?: EnterpriseAdminOverview['taxes']; loading: boolean; onOpen: () => void }) {
+  return (
+    <SectionShell title="Taxes" section={section} loading={loading} emptyText="No taxes are recorded."
+      badge={section?.data ? <Badge tone="neutral" size="xs">{section.data.total} recorded</Badge> : undefined}>
+      {(d) => (
+        <div className="space-y-1.5">
+          {d.items.map((t) => (
+            <div key={t.id} className="flex flex-wrap items-baseline justify-between gap-2 border-b border-lightgray py-1.5 last:border-0">
+              <span className="text-sm text-text">{t.name}{t.isDefault && <span className="ml-1 text-meta text-text-tertiary">(default)</span>}</span>
+              <span className="text-meta text-text-tertiary">{t.rateBasisPoints != null ? `${(t.rateBasisPoints / 100).toFixed(2)}%` : '—'}</span>
+            </div>
+          ))}
+          <OpenOwner label="Open taxes" onOpen={onOpen} />
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+// Feature Flags — recorded module status only (superuser-gated). No toggle.
+function FeatureFlagsPanel({ section, loading, onOpen }: { section?: EnterpriseAdminOverview['featureFlags']; loading: boolean; onOpen: () => void }) {
+  return (
+    <SectionShell title="Feature Flags" section={section} loading={loading} emptyText="No feature flags are recorded."
+      badge={section?.data ? <Badge tone="neutral" size="xs">{section.data.total} modules</Badge> : undefined}>
+      {(d) => (
+        <div className="space-y-1">
+          {d.items.map((f) => (
+            <div key={f.featureKey} className="flex items-baseline justify-between gap-2 border-b border-lightgray py-1.5 last:border-0">
+              <span className="font-mono text-sm text-text">{f.featureKey}</span>
+              <Badge tone={f.isEnabled ? 'success' : 'neutral'} size="xs">{f.isEnabled ? 'Enabled' : 'Disabled'}</Badge>
+            </div>
+          ))}
+          <OpenOwner label="Open modules" onOpen={onOpen} />
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+// System Health — safe recorded checks only (env vars/version/logs excluded). No remediation controls.
+function SystemHealthPanel({ section, loading, onOpen }: { section?: EnterpriseAdminOverview['systemHealth']; loading: boolean; onOpen: () => void }) {
+  return (
+    <SectionShell title="System Health" section={section} loading={loading} emptyText="No system health is recorded."
+      badge={section?.data ? <Badge tone={healthTone(section.data.overall)} size="xs">{section.data.overall}</Badge> : undefined}>
+      {(d) => (
+        <div className="space-y-1">
+          {d.generatedAt && <p className="mb-2 text-meta text-text-tertiary">Last checked {fmtDateTime(d.generatedAt)}</p>}
+          {d.checks.map((c) => (
+            <div key={c.name} className="flex flex-wrap items-baseline justify-between gap-2 border-b border-lightgray py-1.5 last:border-0">
+              <span className="text-sm text-text">{c.name}{c.message ? <span className="ml-1 text-meta text-text-tertiary">{c.message}</span> : null}</span>
+              <Badge tone={healthTone(c.status)} size="xs">{c.status}</Badge>
+            </div>
+          ))}
+          <OpenOwner label="Open system health" onOpen={onOpen} />
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+// AI Settings — safe status only (never the key/prompts/redaction). No editor.
+function AiSettingsPanel({ section, loading, onOpen }: { section?: EnterpriseAdminOverview['aiSettings']; loading: boolean; onOpen: () => void }) {
+  return (
+    <SectionShell title="AI Settings" section={section} loading={loading} emptyText="No AI settings are recorded.">
+      {(d) => (
+        <div>
+          <div className="flex items-center justify-between gap-2 border-b border-lightgray py-1.5">
+            <span className="text-meta uppercase tracking-wide text-text-tertiary">AI reporting</span>
+            <Badge tone={d.enabled ? 'success' : 'neutral'} size="xs">{d.enabled ? 'Enabled' : 'Disabled'}</Badge>
+          </div>
+          <div className="flex items-center justify-between gap-2 border-b border-lightgray py-1.5">
+            <span className="text-meta uppercase tracking-wide text-text-tertiary">API key</span>
+            <Badge tone={d.apiKeyConfigured ? 'success' : 'neutral'} size="xs">{d.apiKeyConfigured ? 'Configured' : 'Not configured'}</Badge>
+          </div>
+          <Field label="Model" value={d.model} />
+          <OpenOwner label="Open settings" onOpen={onOpen} />
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+// Portal Access — the owner's accurate configured-account total only. No active/inactive/enabled/
+// login/authorization status is claimed. Never usernames/emails/tokens/2FA/login state. No manager.
+function PortalAccessPanel({ section, loading, onOpen }: { section?: EnterpriseAdminOverview['portalAccess']; loading: boolean; onOpen: () => void }) {
+  return (
+    <SectionShell title="Portal Access" section={section} loading={loading} emptyText="No portal accounts are recorded.">
+      {(d) => (
+        <div>
+          <CountRow label="Configured portal accounts" value={d.configuredCount} />
+          <OpenOwner label="Open clients" onOpen={onOpen} />
         </div>
       )}
     </SectionShell>
