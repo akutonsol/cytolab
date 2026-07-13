@@ -14,7 +14,7 @@ import { ArrowLeft, Keyboard } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
+import { Badge, Button, Card, EmptyState, PageHeader, Skeleton } from '@/components/ui';
 import type { AdminCapabilityPermission, EnterpriseAdminOverview, SectionStatus } from './types';
 
 // Only an internal, same-origin path may be a return target — reject external and
@@ -136,30 +136,23 @@ export default function EnterpriseAdministrationWorkspacePage() {
 
   return (
     <div className="w-full">
-      <div className="mb-6">
-        {backToWorklist}
-        <h1
-          ref={headingRef}
-          tabIndex={-1}
-          id="enterprise-admin-heading"
-          className="text-[30px] font-bold leading-tight tracking-tight text-charcoal-heading outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-        >
-          Enterprise Administration
-        </h1>
-        <p className="mt-1 text-sm text-secondary">
-          One workspace to observe how PathOS is configured and governed — laboratory identity, access,
-          clients, lab codes, workflow, integrations, notifications, commercial settings, and platform
-          controls. It composes the existing owner systems and changes nothing itself.
-        </p>
-        <button
-          type="button"
-          onClick={() => setHelpOpen(true)}
-          className="mt-2 inline-flex items-center gap-1.5 text-meta font-medium text-text-tertiary hover:text-primary"
-          title="Keyboard shortcuts"
-        >
-          <Keyboard size={13} /> Keyboard shortcuts <kbd className="rounded border border-lightgray px-1 text-[11px]">?</kbd>
-        </button>
-      </div>
+      <PageHeader
+        back={backToWorklist}
+        title="Enterprise Administration"
+        titleRef={headingRef}
+        focusableTitle
+        description="One workspace to observe how PathOS is configured and governed — laboratory identity, access, clients, lab codes, workflow, integrations, notifications, commercial settings, and platform controls. It composes the existing owner systems and changes nothing itself."
+        meta={
+          <button
+            type="button"
+            onClick={() => setHelpOpen(true)}
+            className="inline-flex items-center gap-1.5 text-meta font-medium text-text-tertiary hover:text-primary"
+            title="Keyboard shortcuts"
+          >
+            <Keyboard size={13} /> Keyboard shortcuts <kbd className="rounded border border-lightgray px-1 text-[11px]">?</kbd>
+          </button>
+        }
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         {ADMIN_SECTIONS.map((s) => {

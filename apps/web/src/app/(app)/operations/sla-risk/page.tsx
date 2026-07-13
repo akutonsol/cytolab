@@ -7,7 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useRealtime } from '@/hooks/useRealtime';
 import {
-  Badge, Button, Card, cn, EmptyState, IconAction, SkeletonRows, SkeletonStat, StatCard, Td, Th, Tr,
+  Badge, Button, Card, cn, EmptyState, IconAction, PageHeader, SkeletonRows, SkeletonStat, StatCard, Td, Th, Tr,
 } from '@/components/ui';
 import { formatAge, formatTimeToBreach, type SlaRiskDetail } from '../types';
 
@@ -38,18 +38,18 @@ export default function SlaRiskPage() {
 
   return (
     <div className="w-full">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
+      <PageHeader
+        back={
           <Link
             href="/operations"
-            className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-primary"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-primary"
           >
             <ArrowLeft size={15} /> Operations
           </Link>
-          <h1 className="text-[30px] font-bold leading-tight tracking-tight text-charcoal-heading">
-            SLA Risk
-          </h1>
-          <p className="mt-1 text-sm text-secondary">
+        }
+        title="SLA Risk"
+        description={
+          <>
             Cases at risk of — or past — the turnaround target, ranked by urgency.
             {data && (
               <>
@@ -57,19 +57,21 @@ export default function SlaRiskPage() {
                 {' · '}{data.summary.inFlight} in flight.
               </>
             )}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {asOf && <span className="text-sm text-text-tertiary">Updated {asOf}</span>}
-          <IconAction
-            icon={<RefreshCw size={16} className={isFetching ? 'animate-spin' : undefined} />}
-            tone="muted"
-            aria-label="Refresh SLA risk"
-            disabled={isFetching}
-            onClick={() => refetch()}
-          />
-        </div>
-      </div>
+          </>
+        }
+        actions={
+          <>
+            {asOf && <span className="text-sm text-text-tertiary">Updated {asOf}</span>}
+            <IconAction
+              icon={<RefreshCw size={16} className={isFetching ? 'animate-spin' : undefined} />}
+              tone="muted"
+              aria-label="Refresh SLA risk"
+              disabled={isFetching}
+              onClick={() => refetch()}
+            />
+          </>
+        }
+      />
 
       {/* Summary — three clearly distinct classes. */}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">

@@ -1,6 +1,6 @@
 'use client';
 
-import { createElement, useEffect } from 'react';
+import { createElement, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Dropdown } from 'antd';
 import { useQuery } from '@tanstack/react-query';
@@ -74,11 +74,21 @@ export function NavPills({ justify = 'flex-end' }: { justify?: React.CSSProperti
     return `${key}?returnTo=${encodeURIComponent(src)}`;
   };
 
-  const Pill = (isActive: boolean, icon: React.ReactNode, label: string, onClick?: () => void, onMouseEnter?: () => void) => (
+  // `extra` carries accessibility props (aria-current on page pills; aria-haspopup/aria-expanded
+  // on the group triggers) so the rendered semantics match what each pill actually does.
+  const Pill = (
+    isActive: boolean,
+    icon: React.ReactNode,
+    label: string,
+    onClick?: () => void,
+    onMouseEnter?: () => void,
+    extra?: React.ButtonHTMLAttributes<HTMLButtonElement>,
+  ) => (
     <button
       onClick={onClick}
       onMouseEnter={onMouseEnter}
       className={`nav-item whitespace-nowrap text-base font-semibold ${isActive ? 'active text-white' : 'text-gray-700'}`}
+      {...extra}
     >
       <span className={`inline-flex ${isActive ? 'text-white' : 'text-indigo-500'}`}>{icon}</span>
       <span>{label}</span>
@@ -88,13 +98,83 @@ export function NavPills({ justify = 'flex-end' }: { justify?: React.CSSProperti
 
   return (
     <div className="navigation-menu" style={{ flexWrap: 'nowrap', justifyContent: justify }}>
-      {can(HOME_ITEM.permission) && Pill(pathname === HOME_ITEM.path, createElement(HOME_ITEM.icon!, { size: 20, strokeWidth: 1.9 }), HOME_ITEM.label, () => router.push(HOME_ITEM.path), () => prefetch(HOME_ITEM.path))}
+      {can(HOME_ITEM.permission) &&
+        Pill(
+          pathname === HOME_ITEM.path,
+          createElement(HOME_ITEM.icon!, { size: 20, strokeWidth: 1.9 }),
+          HOME_ITEM.label,
+          () => router.push(HOME_ITEM.path),
+          () => prefetch(HOME_ITEM.path),
+          { 'aria-current': pathname === HOME_ITEM.path ? 'page' : undefined },
+        )}
       {centerGroups.map((g) => (
-        <Dropdown key={g.key} trigger={['hover', 'click']} menu={{ items: g.visible.map((i: any) => ({ key: i.path, label: itemLabel(i) })), onClick: ({ key }) => router.push(navTarget(key)) }}>
-          {Pill(groupActive(g.visible), createElement(g.icon as any, { size: 20, strokeWidth: 1.9 }), g.label, undefined, () => prefetchGroup(g.visible))}
-        </Dropdown>
+        <GroupPill
+          key={g.key}
+          group={g}
+          active={groupActive(g.visible)}
+          onOpen={() => prefetchGroup(g.visible)}
+          onSelect={(key) => router.push(navTarget(key))}
+          renderPill={Pill}
+          renderItemLabel={itemLabel}
+        />
       ))}
-      {analyticsVisible && Pill(pathname === ANALYTICS_ITEM.path, createElement(ANALYTICS_ITEM.icon!, { size: 20, strokeWidth: 1.9 }), ANALYTICS_ITEM.label, () => router.push(ANALYTICS_ITEM.path), () => prefetch(ANALYTICS_ITEM.path))}
+      {analyticsVisible &&
+        Pill(
+          pathname === ANALYTICS_ITEM.path,
+          createElement(ANALYTICS_ITEM.icon!, { size: 20, strokeWidth: 1.9 }),
+          ANALYTICS_ITEM.label,
+          () => router.push(ANALYTICS_ITEM.path),
+          () => prefetch(ANALYTICS_ITEM.path),
+          { 'aria-current': pathname === ANALYTICS_ITEM.path ? 'page' : undefined },
+        )}
     </div>
+  );
+}
+
+// A center-nav group pill: a menu trigger, not a page link. Owns the dropdown's open state so
+// the trigger can expose truthful `aria-haspopup="menu"` / `aria-expanded`. The active styling
+// (a descendant route is the current page) stays visual only — a menu trigger is never the page
+// itself, so it carries no `aria-current`.
+function GroupPill({
+  group,
+  active,
+  onOpen,
+  onSelect,
+  renderPill,
+  renderItemLabel,
+}: {
+  group: any;
+  active: boolean;
+  onOpen: () => void;
+  onSelect: (key: string) => void;
+  renderPill: (
+    isActive: boolean,
+    icon: React.ReactNode,
+    label: string,
+    onClick?: () => void,
+    onMouseEnter?: () => void,
+    extra?: React.ButtonHTMLAttributes<HTMLButtonElement>,
+  ) => React.ReactElement;
+  renderItemLabel: (i: any) => React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Dropdown
+      trigger={['hover', 'click']}
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) onOpen();
+      }}
+      menu={{
+        items: group.visible.map((i: any) => ({ key: i.path, label: renderItemLabel(i) })),
+        onClick: ({ key }: { key: string }) => onSelect(key),
+      }}
+    >
+      {renderPill(active, createElement(group.icon as any, { size: 20, strokeWidth: 1.9 }), group.label, undefined, undefined, {
+        'aria-haspopup': 'menu',
+        'aria-expanded': open,
+      })}
+    </Dropdown>
   );
 }

@@ -14,7 +14,7 @@ import { ArrowLeft, Keyboard } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
+import { Badge, Button, Card, EmptyState, PageHeader, Skeleton } from '@/components/ui';
 import type { BenchmarkMetric, CorrelationCaseRow, EffectiveQualityPermissions, EscalationRow, GovernanceEvent, OverviewSource, OversightItem, ProficiencyTestRow, QcAlertRow, QcCheckRow, QualityOverviewAggregate, RecallRow } from './types';
 
 // Only an internal, same-origin path may be a return target — reject external and
@@ -121,29 +121,23 @@ export default function QualityGovernanceWorkspacePage() {
 
   return (
     <div className="w-full">
-      <div className="mb-6">
-        {backToWorklist}
-        <h1
-          ref={headingRef}
-          tabIndex={-1}
-          id="quality-heading"
-          className="text-[30px] font-bold leading-tight tracking-tight text-charcoal-heading outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-        >
-          Quality &amp; Governance
-        </h1>
-        <p className="mt-1 text-sm text-secondary">
-          One workspace for diagnostic quality, compliance, corrective evidence, and governance —
-          composed from the existing PathOS owner systems. It surfaces recorded evidence only.
-        </p>
-        <button
-          type="button"
-          onClick={() => setHelpOpen(true)}
-          className="mt-2 inline-flex items-center gap-1.5 text-meta font-medium text-text-tertiary hover:text-primary"
-          title="Keyboard shortcuts"
-        >
-          <Keyboard size={13} /> Keyboard shortcuts <kbd className="rounded border border-lightgray px-1 text-[11px]">?</kbd>
-        </button>
-      </div>
+      <PageHeader
+        back={backToWorklist}
+        title="Quality & Governance"
+        titleRef={headingRef}
+        focusableTitle
+        description="One workspace for diagnostic quality, compliance, corrective evidence, and governance — composed from the existing PathOS owner systems. It surfaces recorded evidence only."
+        meta={
+          <button
+            type="button"
+            onClick={() => setHelpOpen(true)}
+            className="inline-flex items-center gap-1.5 text-meta font-medium text-text-tertiary hover:text-primary"
+            title="Keyboard shortcuts"
+          >
+            <Keyboard size={13} /> Keyboard shortcuts <kbd className="rounded border border-lightgray px-1 text-[11px]">?</kbd>
+          </button>
+        }
+      />
 
       {isError ? (
         <Card radius="md" elevation="soft" border="hairline" padding="lg" className="text-center">
