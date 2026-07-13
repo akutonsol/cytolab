@@ -17,7 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { AttachmentsSubSection, BethesdaSubSection, CaseIdentitySection, CodingSubSection, CorrelationSubSection, DecisionSupportSection, DiagnosticCaseOverview, DiagnosticInterpretationSection, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, PriorEvidenceSection, PriorRecordsSubSection, SectionStatus, SlidesSubSection } from './types';
+import type { AttachmentsSubSection, BethesdaSubSection, CaseIdentitySection, CodingSubSection, CollaborationSection, CorrelationSubSection, DecisionSupportSection, DiagnosticCaseOverview, DiagnosticInterpretationSection, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, PriorEvidenceSection, PriorRecordsSubSection, SectionStatus, SlidesSubSection } from './types';
 
 // Recorded dates render as plain calendar dates; null → "—". No relative/"ago" phrasing (which would
 // imply a freshness judgment the owner does not record).
@@ -239,6 +239,19 @@ export default function DiagnosticCaseWorkspacePage() {
                 retrying={isFetching}
                 onOpenRecord={(rid) => router.push(`/records/${rid}`)}
                 onOpenCorrelation={(cid) => router.push(`/correlation/${cid}`)}
+              />
+            );
+          }
+          if (b.key === 'collaboration') {
+            return (
+              <CollaborationBand
+                key={b.key}
+                title={b.title}
+                section={data?.collaboration}
+                loading={isLoading}
+                onRetry={() => refetch()}
+                retrying={isFetching}
+                onOpenEscalations={() => router.push('/escalations')}
               />
             );
           }
@@ -965,6 +978,75 @@ function CorrelationSubArea({ correlation, onOpenCorrelation, onRetry, retrying 
         </>
       )}
     </div>
+  );
+}
+
+// Band 6: Collaboration (A10). SINGLE source — record-scoped escalation metadata. Display-only: no
+// acknowledge/resolve/reassign/close/notify/review/create/edit controls; no teleconsult or notes (no
+// safe Record-scoped owner read exists). severity/trigger/status shown VERBATIM (owner-recorded); the
+// notification is shown as a RECORDED fact ("Notification recorded"), never "delivered/received."
+function CollaborationBand({
+  title,
+  section,
+  loading,
+  onRetry,
+  retrying,
+  onOpenEscalations,
+}: {
+  title: string;
+  section?: { status: SectionStatus; data: CollaborationSection | null; reason?: string };
+  loading: boolean;
+  onRetry: () => void;
+  retrying: boolean;
+  onOpenEscalations: () => void;
+}) {
+  const status = section?.status;
+  const d = section?.data ?? null;
+  const esc = d?.escalations;
+  const total = esc?.total ?? 0;
+  const badge = loading || !status ? 'Loading' : status === 'ready' ? `${total} escalation${total === 1 ? '' : 's'}` : status === 'empty' ? 'None recorded' : status === 'forbidden' ? 'No access' : status === 'error' ? 'Unavailable' : 'Not yet loaded';
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-1 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">{title}</h2>
+        <Badge tone="neutral" size="xs">{badge}</Badge>
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-52" /><Skeleton shape="text" width="w-40" /></div>
+      ) : !d || !esc ? (
+        status === 'forbidden' ? (
+          <EmptyState bare className="px-0 py-8" title="No access" description="You do not have permission to view collaboration activity." />
+        ) : (
+          <EmptyState bare className="px-0 py-8" title="Unavailable" description={section?.reason ?? 'Collaboration activity could not be loaded.'} action={<Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={14} className="mr-1.5" />{retrying ? 'Retrying…' : 'Retry'}</Button>} />
+        )
+      ) : esc.status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-8" title="No access" description="You do not have permission to view escalations." />
+      ) : esc.status === 'error' ? (
+        <div className="flex items-center gap-3"><p className="text-meta text-text-tertiary">Escalations could not be loaded.</p><Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={12} className="mr-1" />{retrying ? 'Retrying…' : 'Retry'}</Button></div>
+      ) : esc.status === 'empty' || esc.items.length === 0 ? (
+        <p className="text-meta text-text-tertiary">No escalations recorded for this case.</p>
+      ) : (
+        <>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-sm font-semibold text-text">Escalations</span>
+            <Button variant="secondary" size="sm" onClick={onOpenEscalations}>Open Escalations <ExternalLink size={12} className="ml-1" /></Button>
+          </div>
+          <ul className="space-y-1.5">
+            {esc.items.map((e) => {
+              const notif = e.physicianNotifiedAt ? `Notification recorded ${fmtDate(e.physicianNotifiedAt)}${e.physicianNotifiedVia ? ` (${e.physicianNotifiedVia})` : ''}` : null;
+              const meta = [e.trigger, fmtDate(e.createdAt), e.assignedTo ? `assigned ${e.assignedTo}` : null, e.reviewedBy ? `reviewed by ${e.reviewedBy}` : null, notif, e.resolvedAt ? `resolved ${fmtDate(e.resolvedAt)}` : null].filter((v) => v && v !== '—');
+              return (
+                <li key={e.id} className="rounded border border-hairline px-2.5 py-1.5">
+                  <div className="truncate text-sm text-text">{dash(e.severity)} <span className="text-text-tertiary">· {dash(e.status)}</span></div>
+                  <div className="truncate text-meta text-text-tertiary">{meta.length ? meta.join(' · ') : 'Recorded escalation'}</div>
+                </li>
+              );
+            })}
+          </ul>
+          {esc.items.length < total && <p className="mt-2 text-meta text-text-tertiary">Showing the first {esc.items.length} of {total} escalations.</p>}
+        </>
+      )}
+    </Card>
   );
 }
 

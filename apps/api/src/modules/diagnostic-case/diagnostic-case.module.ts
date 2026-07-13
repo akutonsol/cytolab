@@ -6,6 +6,7 @@ import { BethesdaModule } from '../bethesda/bethesda.module';
 import { CodingModule } from '../coding/coding.module';
 import { AiModule } from '../ai/ai.module';
 import { CorrelationModule } from '../correlation/correlation.module';
+import { EscalationModule } from '../escalation/escalation.module';
 import { DiagnosticCaseController } from './diagnostic-case.controller';
 import { DiagnosticCaseService } from './diagnostic-case.service';
 
@@ -19,10 +20,11 @@ import { DiagnosticCaseService } from './diagnostic-case.service';
 // owner modules already export their service; their logic is unchanged. A8 adds AiModule (the
 // mutation-free AiReportingService.draftsByRecord metadata read; generated text stays with the owner).
 // A9 adds CorrelationModule (the mutation-free CorrelationService.byPatient read; patient correlation
-// cases, existence + classification only). The module never imports PrismaModule; Sign-Out is not
-// imported or modified.
+// cases, existence + classification only). A10 adds EscalationModule (the mutation-free record-scoped
+// EscalationService.list({ recordId }, userId) read; escalation metadata only). The module never imports
+// PrismaModule; Sign-Out is not imported or modified.
 @Module({
-  imports: [RecordsModule, WsiModule, FilesModule, BethesdaModule, CodingModule, AiModule, CorrelationModule],
+  imports: [RecordsModule, WsiModule, FilesModule, BethesdaModule, CodingModule, AiModule, CorrelationModule, EscalationModule],
   controllers: [DiagnosticCaseController],
   providers: [DiagnosticCaseService],
 })

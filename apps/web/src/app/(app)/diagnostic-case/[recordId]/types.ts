@@ -257,6 +257,35 @@ export interface PriorEvidenceSection {
   ownerPath: string;
 }
 
+// Band 6: Collaboration (A10). Single source — record-scoped escalation metadata. severity/trigger/
+// status verbatim (owner-recorded); physicianNotified* are recorded facts, never "delivered/received".
+// No teleconsult/notes/messaging (no safe Record-scoped owner read). Nulls "—".
+export interface EscalationItem {
+  id: string;
+  severity: string | null;
+  trigger: string | null;
+  status: string | null;
+  createdAt: string | null;
+  physicianNotifiedAt: string | null;
+  physicianNotifiedVia: string | null;
+  reviewedAt: string | null;
+  resolvedAt: string | null;
+  assignedTo: string | null;
+  reviewedBy: string | null;
+  ownerPath: string;
+}
+export interface EscalationsSubSection {
+  status: SectionStatus;
+  items: EscalationItem[];
+  total: number;
+  reason?: string;
+}
+export interface CollaborationSection {
+  recordId: string;
+  escalations: EscalationsSubSection;
+  ownerPath: string;
+}
+
 export interface DiagnosticCaseOverview {
   asOf: string;
   recordId: string;
@@ -268,7 +297,7 @@ export interface DiagnosticCaseOverview {
   diagnosticInterpretation: Section<DiagnosticInterpretationSection>;
   decisionSupport: Section<DecisionSupportSection>;
   priorEvidence: Section<PriorEvidenceSection>;
-  collaboration: Section<null>;
+  collaboration: Section<CollaborationSection>;
   reportingSignOut: Section<null>;
   timelineProvenance: Section<null>;
   permissionsActions: Section<null>;

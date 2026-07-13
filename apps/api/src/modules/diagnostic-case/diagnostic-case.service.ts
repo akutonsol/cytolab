@@ -7,6 +7,7 @@ import { BethesdaService } from '../bethesda/bethesda.service';
 import { CodingService } from '../coding/coding.service';
 import { AiReportingService } from '../ai/ai-reporting.service';
 import { CorrelationService } from '../correlation/correlation.service';
+import { EscalationService } from '../escalation/escalation.service';
 
 // Diagnostic Case Workspace — A2: the FROZEN read-only aggregate contract for
 // GET /diagnostic-case/:recordId/overview. This service is CONTRACT-ONLY: it holds no Prisma,
@@ -349,6 +350,38 @@ export interface PriorEvidenceSection {
   ownerPath: string; // /records/:recordId
 }
 
+// ── Band 6: Collaboration (A10) ──
+// The band currently owns EXACTLY ONE source — record-scoped escalation METADATA
+// (EscalationService.list({ recordId }, userId)). The contract models exactly that source (no generic
+// container for teleconsult/notes/messaging/tasks/notifications — none of those has a safe Record-scoped
+// owner read). Metadata/allowlist only; severity/trigger/status shown VERBATIM (owner-recorded enums),
+// never inferred. `physicianNotifiedAt`/`Via` are RECORDED notification facts — never "delivered/received".
+export interface EscalationItem {
+  id: string;
+  severity: string | null; // owner-recorded enum, verbatim (no urgency/risk inference)
+  trigger: string | null; // owner-recorded enum, verbatim
+  status: string | null; // owner-recorded enum, verbatim
+  createdAt: string | null;
+  physicianNotifiedAt: string | null; // recorded notification timestamp — app action, not delivery proof
+  physicianNotifiedVia: string | null; // recorded method ("portal"/"in-app")
+  reviewedAt: string | null;
+  resolvedAt: string | null;
+  assignedTo: string | null; // display name only (no user id)
+  reviewedBy: string | null; // display name only (no user id)
+  ownerPath: string; // /escalations (owner workspace; NOT claimed record-filtered)
+}
+export interface EscalationsSubSection {
+  status: SectionStatus; // ready (≥1) | empty | forbidden (no record:view) | error
+  items: EscalationItem[]; // ≤ ESCALATION_CAP, owner order (severity rank, then createdAt desc)
+  total: number; // true owner-returned count
+  reason?: string;
+}
+export interface CollaborationSection {
+  recordId: string;
+  escalations: EscalationsSubSection; // the single current source; extend ONLY when a real owner source is approved
+  ownerPath: string; // /records/:recordId
+}
+
 // ── The frozen overview envelope ──
 export interface DiagnosticCaseOverview {
   asOf: string;
@@ -363,7 +396,7 @@ export interface DiagnosticCaseOverview {
   diagnosticInterpretation: Section<DiagnosticInterpretationSection>;
   decisionSupport: Section<DecisionSupportSection>;
   priorEvidence: Section<PriorEvidenceSection>;
-  collaboration: Section<null>;
+  collaboration: Section<CollaborationSection>;
   reportingSignOut: Section<null>;
   timelineProvenance: Section<null>;
   permissionsActions: Section<null>;
@@ -377,6 +410,7 @@ const CODING_CAP = 50; // conservative bound on the recorded coding list (plan A
 const DRAFT_CAP = 50; // conservative bound on the recorded AI-draft list (plan A8 §List bounds)
 const PRIOR_CAP = 50; // conservative bound on the prior-record list (owner already applies take:50)
 const CORRELATION_CAP = 50; // conservative bound on the patient correlation list (plan A9 §List bounds)
+const ESCALATION_CAP = 50; // conservative bound on the record escalation list (plan A10 §List bounds)
 const iso = (d: Date | string | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
 const fullName = (
   u: { firstName?: string | null; lastName?: string | null } | null | undefined,
@@ -392,6 +426,7 @@ export class DiagnosticCaseService {
     private readonly coding: CodingService,
     private readonly aiReporting: AiReportingService,
     private readonly correlation: CorrelationService,
+    private readonly escalation: EscalationService,
   ) {}
 
   /**
@@ -413,7 +448,7 @@ export class DiagnosticCaseService {
       diagnosticInterpretation: await this.sectionDiagnosticInterpretation(recordId, load, user),
       decisionSupport: await this.sectionDecisionSupport(recordId, load, user),
       priorEvidence: await this.sectionPriorEvidence(recordId, load, user),
-      collaboration: deferred(),
+      collaboration: await this.sectionCollaboration(recordId, load, user),
       reportingSignOut: deferred(),
       timelineProvenance: deferred(),
       permissionsActions: deferred(),
@@ -789,6 +824,49 @@ export class DiagnosticCaseService {
       return { status: 'ready', items, total: rows.length };
     } catch {
       return { status: 'error', items: [], total: 0, reason: 'Prior records could not be loaded' };
+    }
+  }
+
+  // Band 6: Collaboration (single source — record-scoped escalation metadata). Loaded after the root
+  // record read. If the root read failed/was forbidden, the escalation owner is NOT invoked (band mirrors
+  // the root). Single-source: the band mirrors the escalation sub-source status.
+  private async sectionCollaboration(recordId: string, load: RecordLoad, user: AuthUser): Promise<Section<CollaborationSection>> {
+    if (load.kind === 'forbidden') return { status: 'forbidden', data: null, reason: 'record:view required' };
+    if (load.kind === 'error') return { status: 'error', data: null, reason: load.reason };
+    const has = (code: string) => !!user.isSuperRole || user.permissions.includes(code);
+    const escalations = await this.loadEscalations(recordId, user.userId, has('record:view'));
+    const data: CollaborationSection = { recordId, escalations, ownerPath: `/records/${recordId}` };
+    return { status: escalations.status, data, reason: escalations.reason };
+  }
+
+  // Escalation sub-loader. Reads ONLY EscalationService.list({ recordId }, userId) — the RECORD-SCOPED
+  // owner seam (no lab-wide read, no client-side filtering). The authenticated caller's real userId is
+  // passed through (owner visibility preserved). Owner order (severity rank, then createdAt desc) is
+  // PRESERVED — never re-ranked. Allowlist METADATA only; excludes reviewNotes/resolvedReason/updatedAt,
+  // the nested record/patient/Bethesda/generatedNarrative, and raw user ids (names only). No patient →
+  // n/a (escalation is record-scoped). No rows → empty; failure → error.
+  private async loadEscalations(recordId: string, userId: string, allowed: boolean): Promise<EscalationsSubSection> {
+    if (!allowed) return { status: 'forbidden', items: [], total: 0, reason: 'record:view required' };
+    try {
+      const rows: any[] = await this.escalation.list({ recordId }, userId);
+      if (!Array.isArray(rows) || rows.length === 0) return { status: 'empty', items: [], total: 0 };
+      const items: EscalationItem[] = rows.slice(0, ESCALATION_CAP).map((e) => ({
+        id: e.id,
+        severity: e.severity ?? null,
+        trigger: e.trigger ?? null,
+        status: e.status ?? null,
+        createdAt: iso(e.createdAt),
+        physicianNotifiedAt: iso(e.physicianNotifiedAt),
+        physicianNotifiedVia: e.physicianNotifiedVia ?? null,
+        reviewedAt: iso(e.reviewedAt),
+        resolvedAt: iso(e.resolvedAt),
+        assignedTo: fullName(e.assignedTo),
+        reviewedBy: fullName(e.reviewedBy),
+        ownerPath: '/escalations',
+      }));
+      return { status: 'ready', items, total: rows.length };
+    } catch {
+      return { status: 'error', items: [], total: 0, reason: 'Escalations could not be loaded' };
     }
   }
 
