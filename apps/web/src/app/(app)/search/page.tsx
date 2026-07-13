@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight, Building2, Clock, FileText, Loader2, Receipt, Search, User, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { Skeleton } from '@/components/ui';
 
 interface Hit {
   id: string; type: 'patient' | 'record' | 'client' | 'bill';
@@ -167,9 +168,9 @@ function SearchWorkspace() {
           <div className="mt-8 flex flex-col gap-4">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="glass-card rounded-2xl p-5">
-                <div className="h-4 w-40 animate-pulse rounded bg-surface-container" />
+                <Skeleton shape="text" width="w-40" />
                 <div className="mt-4 flex flex-col gap-3">
-                  {Array.from({ length: 3 }).map((__, j) => <div key={j} className="h-10 animate-pulse rounded-lg bg-surface-container" />)}
+                  {Array.from({ length: 3 }).map((__, j) => <Skeleton key={j} shape="block" height="h-10" />)}
                 </div>
               </div>
             ))}

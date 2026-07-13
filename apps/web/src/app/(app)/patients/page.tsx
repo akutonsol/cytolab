@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { PatientFormDrawer, type PatientRecord } from '@/components/PatientFormDrawer';
-import { Th, Td, Button, Badge, IconAction, SearchField } from '@/components/ui';
+import { Th, Td, Button, Badge, IconAction, SearchField, Skeleton } from '@/components/ui';
 
 // The list endpoint enriches each patient with these two computed fields.
 type PatientListRow = PatientRecord & {
@@ -238,7 +238,7 @@ export default function PatientsPage() {
               {initialLoading && !isError && (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="border-b border-slate-100">
-                    <Td colSpan={colCount} density="roomy"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></Td>
+                    <Td colSpan={colCount} density="roomy"><Skeleton shape="block" width="w-full" height="h-5" /></Td>
                   </tr>
                 ))
               )}
