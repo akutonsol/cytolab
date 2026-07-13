@@ -123,6 +123,57 @@ export interface DiagnosticMaterialSection {
   ownerPath: string;
 }
 
+// Band 3: Diagnostic Interpretation (A7). Two independent owner-recorded sub-sources, shown separately
+// — never merged into a diagnosis. Bethesda = structured TBS classification (gated resultentry:view);
+// Coding = recorded codes (gated record:view). Metadata/allowlist only; nulls render "—".
+export interface BethesdaEvidence {
+  adequacy: string | null;
+  unsatisfactoryReason: string | null;
+  generalCategory: string | null;
+  squamousCategory: string | null;
+  ascSubtype: string | null;
+  glandularCategory: string | null;
+  glandularSubtype: string | null;
+  otherMalignancy: string | null;
+  organisms: string[];
+  otherNonNeoplastic: string[];
+  hpvResult: string | null;
+  hpvGenotype: string | null;
+  recommendation: string | null;
+  recommendationNotes: string | null;
+  shortCode: string | null;
+  reportedBy: string | null;
+  reportedAt: string | null;
+}
+export interface BethesdaSubSection {
+  status: SectionStatus;
+  data: BethesdaEvidence | null;
+  reason?: string;
+}
+export interface CodingRow {
+  id: string;
+  codeType: string | null;
+  system: string | null;
+  code: string | null;
+  display: string | null;
+  category: string | null;
+  assignedBy: string | null;
+  assignedAt: string | null;
+}
+export interface CodingSubSection {
+  status: SectionStatus;
+  items: CodingRow[];
+  total: number;
+  reason?: string;
+}
+export interface DiagnosticInterpretationSection {
+  recordId: string;
+  bethesda: BethesdaSubSection;
+  coding: CodingSubSection;
+  unavailable: UnavailableSource[];
+  ownerPath: string;
+}
+
 export interface DiagnosticCaseOverview {
   asOf: string;
   recordId: string;
@@ -131,7 +182,7 @@ export interface DiagnosticCaseOverview {
 
   caseIdentity: Section<CaseIdentitySection>;
   diagnosticMaterial: Section<DiagnosticMaterialSection>;
-  diagnosticInterpretation: Section<null>;
+  diagnosticInterpretation: Section<DiagnosticInterpretationSection>;
   decisionSupport: Section<null>;
   priorEvidence: Section<null>;
   collaboration: Section<null>;

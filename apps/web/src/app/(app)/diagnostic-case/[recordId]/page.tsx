@@ -17,7 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { AttachmentsSubSection, CaseIdentitySection, DiagnosticCaseOverview, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, SectionStatus, SlidesSubSection } from './types';
+import type { AttachmentsSubSection, BethesdaSubSection, CaseIdentitySection, CodingSubSection, DiagnosticCaseOverview, DiagnosticInterpretationSection, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, SectionStatus, SlidesSubSection } from './types';
 
 // Recorded dates render as plain calendar dates; null → "—". No relative/"ago" phrasing (which would
 // imply a freshness judgment the owner does not record).
@@ -201,6 +201,18 @@ export default function DiagnosticCaseWorkspacePage() {
                 onRetry={() => refetch()}
                 retrying={isFetching}
                 onOpenSlide={(sid) => router.push(`/wsi/${sid}`)}
+              />
+            );
+          }
+          if (b.key === 'diagnosticInterpretation') {
+            return (
+              <DiagnosticInterpretationBand
+                key={b.key}
+                title={b.title}
+                section={data?.diagnosticInterpretation}
+                loading={isLoading}
+                onRetry={() => refetch()}
+                retrying={isFetching}
               />
             );
           }
@@ -527,6 +539,183 @@ function AttachmentsSubArea({
             <p className="mt-2 text-meta text-text-tertiary">Showing the first {attachments.items.length} of {total} recorded attachments.</p>
           )}
           <p className="mt-2 text-meta text-text-tertiary">Attachment metadata only; files open in the record’s file owner.</p>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Band 3: Diagnostic Interpretation (A7). Two INDEPENDENT owner-recorded sub-sources (Bethesda, Coding),
+// shown SEPARATELY — never merged into a diagnosis, never labeled final/definitive/confirmed. Display-
+// only (no editor/authorize/amend/suggest). Band-level forbidden (both sources forbidden) / error
+// (no evidence + a source failed) render at the band; otherwise the two sub-areas render with their own
+// truthful states. A resolved-but-empty sibling never hides a forbidden/errored source (unavailable[]).
+function DiagnosticInterpretationBand({
+  title,
+  section,
+  loading,
+  onRetry,
+  retrying,
+}: {
+  title: string;
+  section?: { status: SectionStatus; data: DiagnosticInterpretationSection | null; reason?: string };
+  loading: boolean;
+  onRetry: () => void;
+  retrying: boolean;
+}) {
+  const status = section?.status;
+  const d = section?.data ?? null;
+  const badge = loading || !status ? 'Loading' : status === 'ready' ? 'Recorded' : status === 'empty' ? 'None recorded' : status === 'forbidden' ? 'Restricted' : status === 'error' ? 'Unavailable' : 'Not yet loaded';
+  // Distinguish access restriction (forbidden — no Retry) from technical failure (error — with Retry),
+  // derived from the sub-source states so the band never describes forbidden as a technical failure.
+  const restricted = d ? [d.bethesda.status === 'forbidden' ? 'Bethesda' : null, d.coding.status === 'forbidden' ? 'Coding' : null].filter(Boolean) : [];
+  const failed = d ? [d.bethesda.status === 'error' ? 'Bethesda' : null, d.coding.status === 'error' ? 'Coding' : null].filter(Boolean) : [];
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-1 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">{title}</h2>
+        <Badge tone="neutral" size="xs">{badge}</Badge>
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-52" /><Skeleton shape="text" width="w-40" /></div>
+      ) : !d ? (
+        // No sub-source data → root failure (record read forbidden/error). Root forbidden shows No access
+        // (no Retry); root error shows Unavailable + Retry (technical).
+        status === 'forbidden' ? (
+          <EmptyState bare className="px-0 py-8" title="No access" description="You do not have permission to view the recorded interpretation." />
+        ) : (
+          <EmptyState
+            bare
+            className="px-0 py-8"
+            title="Unavailable"
+            description={section?.reason ?? 'Recorded interpretation could not be loaded.'}
+            action={<Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={14} className="mr-1.5" />{retrying ? 'Retrying…' : 'Retry'}</Button>}
+          />
+        )
+      ) : (
+        // Data present — ALWAYS render both sub-sources so an accessible-empty sibling stays visible even
+        // when the band is forbidden/error. Each sub-area is self-describing: forbidden → "No access"
+        // (no Retry), error → "Unavailable" + Retry, empty, or ready.
+        <>
+          <p className="mb-3 text-meta text-text-tertiary">Owner-recorded classification and coding, shown separately — not combined into a diagnosis.</p>
+          <BethesdaSubArea bethesda={d.bethesda} onRetry={onRetry} retrying={retrying} />
+          <div className="mt-3 border-t border-hairline pt-3">
+            <CodingSubArea coding={d.coding} onRetry={onRetry} retrying={retrying} />
+          </div>
+          {failed.length > 0 && (
+            <p className="mt-3 text-meta text-text-tertiary">Couldn’t load: {failed.join(', ')}.</p>
+          )}
+          {restricted.length > 0 && (
+            <p className="mt-1 text-meta text-text-tertiary">Access restricted: {restricted.join(', ')}.</p>
+          )}
+        </>
+      )}
+    </Card>
+  );
+}
+
+// Bethesda sub-area (A7). Owner-recorded structured classification (The Bethesda System — cervical
+// cytology). One per record. Fields shown verbatim; nulls "—". No inference, no diagnosis synthesis.
+// `generatedNarrative` is intentionally NOT surfaced (owner-generated prose without review state).
+function BethesdaSubArea({ bethesda, onRetry, retrying }: { bethesda?: BethesdaSubSection; onRetry: () => void; retrying: boolean }) {
+  const status = bethesda?.status;
+  const d = bethesda?.data ?? null;
+  const badge = !status ? 'Loading' : status === 'ready' ? 'Recorded' : status === 'empty' ? 'None recorded' : status === 'forbidden' ? 'No access' : status === 'error' ? 'Unavailable' : '—';
+  const arrays: [string, string[]][] = d ? [['Organisms', d.organisms], ['Other non-neoplastic', d.otherNonNeoplastic]] : [];
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-sm font-semibold text-text">Bethesda <span className="font-normal text-text-tertiary">· cervical cytology</span></span>
+        <Badge tone="neutral" size="xs">{badge}</Badge>
+      </div>
+      {!status ? (
+        <Skeleton shape="text" width="w-48" />
+      ) : status === 'forbidden' ? (
+        <p className="text-meta text-text-tertiary">You do not have permission to view Bethesda results.</p>
+      ) : status === 'error' ? (
+        <div className="flex items-center gap-3">
+          <p className="text-meta text-text-tertiary">Recorded Bethesda result could not be loaded.</p>
+          <Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={12} className="mr-1" />{retrying ? 'Retrying…' : 'Retry'}</Button>
+        </div>
+      ) : status === 'empty' || !d ? (
+        <p className="text-meta text-text-tertiary">No Bethesda result recorded for this case.</p>
+      ) : (
+        <>
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
+            <Field label="Adequacy" value={dash(d.adequacy)} />
+            <Field label="Short code" value={dash(d.shortCode)} />
+            <Field label="General category" value={dash(d.generalCategory)} />
+            <Field label="Squamous" value={dash(d.squamousCategory)} />
+            <Field label="ASC subtype" value={dash(d.ascSubtype)} />
+            <Field label="Glandular" value={dash(d.glandularCategory)} />
+            <Field label="Glandular subtype" value={dash(d.glandularSubtype)} />
+            <Field label="Other malignancy" value={dash(d.otherMalignancy)} />
+            <Field label="HPV result" value={dash(d.hpvResult)} />
+            <Field label="HPV genotype" value={dash(d.hpvGenotype)} />
+            <Field label="Recommendation" value={dash(d.recommendation)} />
+            <Field label="Unsatisfactory reason" value={dash(d.unsatisfactoryReason)} />
+            <Field label="Reported by" value={dash(d.reportedBy)} />
+            <Field label="Reported" value={fmtDate(d.reportedAt)} />
+          </dl>
+          {arrays.filter(([, v]) => v && v.length).map(([label, v]) => (
+            <div key={label} className="mt-2">
+              <dt className="text-meta text-text-tertiary">{label}</dt>
+              <dd className="text-sm text-text">{v.join(', ')}</dd>
+            </div>
+          ))}
+          {d.recommendationNotes && (
+            <div className="mt-2">
+              <dt className="text-meta text-text-tertiary">Recommendation notes</dt>
+              <dd className="text-sm text-text">{d.recommendationNotes}</dd>
+            </div>
+          )}
+          <p className="mt-2 text-meta text-text-tertiary">Owner-recorded classification (The Bethesda System). Shown as recorded — not a diagnosis.</p>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Coding sub-area (A7). Owner-recorded codes (SNOMED/ICD/LOINC via the coding owner). Metadata only;
+// nulls "—". No "primary/severe/malignant" labels unless the owner records them; no inference.
+function CodingSubArea({ coding, onRetry, retrying }: { coding?: CodingSubSection; onRetry: () => void; retrying: boolean }) {
+  const status = coding?.status;
+  const total = coding?.total ?? 0;
+  const badge = !status ? 'Loading' : status === 'ready' ? `${total} code${total === 1 ? '' : 's'}` : status === 'empty' ? 'None recorded' : status === 'forbidden' ? 'No access' : status === 'error' ? 'Unavailable' : '—';
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-sm font-semibold text-text">Coding</span>
+        <Badge tone="neutral" size="xs">{badge}</Badge>
+      </div>
+      {!status ? (
+        <Skeleton shape="text" width="w-40" />
+      ) : status === 'forbidden' ? (
+        <p className="text-meta text-text-tertiary">You do not have permission to view coding.</p>
+      ) : status === 'error' ? (
+        <div className="flex items-center gap-3">
+          <p className="text-meta text-text-tertiary">Recorded coding could not be loaded.</p>
+          <Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={12} className="mr-1" />{retrying ? 'Retrying…' : 'Retry'}</Button>
+        </div>
+      ) : status === 'empty' || !coding || coding.items.length === 0 ? (
+        <p className="text-meta text-text-tertiary">No coding recorded for this case.</p>
+      ) : (
+        <>
+          <ul className="space-y-1.5">
+            {coding.items.map((c) => {
+              const primary = [c.system, c.code].filter(Boolean).join(' ');
+              const meta = [c.category, c.codeType, c.assignedBy, fmtDate(c.assignedAt)].filter((v) => v && v !== '—');
+              return (
+                <li key={c.id} className="rounded border border-hairline px-2.5 py-1.5">
+                  <div className="truncate text-sm text-text">{dash(c.display)}</div>
+                  <div className="truncate text-meta text-text-tertiary">{[primary || null, ...meta].filter(Boolean).join(' · ') || 'Recorded code'}</div>
+                </li>
+              );
+            })}
+          </ul>
+          {coding.items.length < total && (
+            <p className="mt-2 text-meta text-text-tertiary">Showing the first {coding.items.length} of {total} recorded codes.</p>
+          )}
         </>
       )}
     </div>

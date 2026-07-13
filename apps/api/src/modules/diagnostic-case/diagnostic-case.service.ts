@@ -3,6 +3,8 @@ import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { RecordsService } from '../records/records.service';
 import { WsiService } from '../wsi/wsi.service';
 import { FilesService } from '../files/files.service';
+import { BethesdaService } from '../bethesda/bethesda.service';
+import { CodingService } from '../coding/coding.service';
 
 // Diagnostic Case Workspace — A2: the FROZEN read-only aggregate contract for
 // GET /diagnostic-case/:recordId/overview. This service is CONTRACT-ONLY: it holds no Prisma,
@@ -189,6 +191,64 @@ type RecordLoad =
   | { kind: 'forbidden' }
   | { kind: 'error'; reason: string };
 
+// ── Band 3: Diagnostic Interpretation (A7) ──
+// Two INDEPENDENT owner-recorded sub-sources, shown SEPARATELY and never merged into a diagnosis:
+//   • Bethesda — BethesdaService.getByRecord (structured TBS classification; one-per-record; owner-
+//     derived shortCode). Gated resultentry:view (narrower than the base record:view).
+//   • Coding — CodingService.getRecordCodings (recorded SNOMED/ICD/LOINC rows). Gated record:view.
+// METADATA/allowlist only — no owner DTO is spread. No diagnosis synthesis, no inferred severity/
+// urgency/malignancy/adequacy/priority, no cross-source relationship, no reinterpretation of labels.
+// Bethesda `generatedNarrative` is EXCLUDED (owner-generated prose with no review/provenance state —
+// ambiguous; the structured enums + shortCode are the unambiguous recorded evidence). Coding `notes`
+// is EXCLUDED (free-text; not proven a user-visible clinical field for this aggregate).
+export interface BethesdaEvidence {
+  adequacy: string | null; // specimenAdequacy (recorded enum, verbatim)
+  unsatisfactoryReason: string | null;
+  generalCategory: string | null;
+  squamousCategory: string | null;
+  ascSubtype: string | null;
+  glandularCategory: string | null;
+  glandularSubtype: string | null;
+  otherMalignancy: string | null;
+  organisms: string[];
+  otherNonNeoplastic: string[];
+  hpvResult: string | null;
+  hpvGenotype: string | null;
+  recommendation: string | null;
+  recommendationNotes: string | null;
+  shortCode: string | null; // owner-derived deterministic shortcode
+  reportedBy: string | null; // recorded reporter name
+  reportedAt: string | null; // ISO
+}
+export interface BethesdaSubSection {
+  status: SectionStatus; // ready (a result exists) | empty (none) | forbidden (no resultentry:view) | error
+  data: BethesdaEvidence | null;
+  reason?: string;
+}
+export interface CodingRow {
+  id: string; // opaque row id (stable key)
+  codeType: string | null; // recorded CodingType (verbatim; not "primary/severe/etc." unless owner records it)
+  system: string | null; // MedicalCode.system
+  code: string | null; // MedicalCode.code
+  display: string | null; // MedicalCode.display
+  category: string | null; // MedicalCode.category
+  assignedBy: string | null; // recorded assigner name
+  assignedAt: string | null; // ISO
+}
+export interface CodingSubSection {
+  status: SectionStatus; // ready (≥1 row) | empty | forbidden (no record:view) | error
+  items: CodingRow[]; // ≤ CODING_CAP
+  total: number; // true recorded count
+  reason?: string;
+}
+export interface DiagnosticInterpretationSection {
+  recordId: string;
+  bethesda: BethesdaSubSection;
+  coding: CodingSubSection;
+  unavailable: UnavailableSource[]; // sub-sources that are error OR forbidden (consistent with A6)
+  ownerPath: string; // /records/:recordId
+}
+
 // ── The frozen overview envelope ──
 export interface DiagnosticCaseOverview {
   asOf: string;
@@ -200,7 +260,7 @@ export interface DiagnosticCaseOverview {
   // as it lands (A3 = caseIdentity, A4 = diagnosticMaterial); the STATUS contract never changes.
   caseIdentity: Section<CaseIdentitySection>;
   diagnosticMaterial: Section<DiagnosticMaterialSection>;
-  diagnosticInterpretation: Section<null>;
+  diagnosticInterpretation: Section<DiagnosticInterpretationSection>;
   decisionSupport: Section<null>;
   priorEvidence: Section<null>;
   collaboration: Section<null>;
@@ -213,6 +273,7 @@ const deferred = (): Section<null> => ({ status: 'deferred', data: null });
 const MATERIAL_CAP = 50; // conservative bound on the recorded specimen list (plan A4 §List bounds)
 const SLIDE_CAP = 50; // conservative bound on the recorded slide list (plan A5 §List bounds)
 const ATTACHMENT_CAP = 50; // conservative bound on the recorded attachment list (plan A6 §List bounds)
+const CODING_CAP = 50; // conservative bound on the recorded coding list (plan A7 §List bounds)
 const iso = (d: Date | string | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
 const fullName = (
   u: { firstName?: string | null; lastName?: string | null } | null | undefined,
@@ -224,6 +285,8 @@ export class DiagnosticCaseService {
     private readonly records: RecordsService,
     private readonly wsi: WsiService,
     private readonly files: FilesService,
+    private readonly bethesda: BethesdaService,
+    private readonly coding: CodingService,
   ) {}
 
   /**
@@ -242,7 +305,7 @@ export class DiagnosticCaseService {
       permissions: { status: 'ready', data: this.buildPermissions(user) },
       caseIdentity: this.sectionCaseIdentity(recordId, load),
       diagnosticMaterial: await this.sectionDiagnosticMaterial(recordId, load),
-      diagnosticInterpretation: deferred(),
+      diagnosticInterpretation: await this.sectionDiagnosticInterpretation(recordId, load, user),
       decisionSupport: deferred(),
       priorEvidence: deferred(),
       collaboration: deferred(),
@@ -405,6 +468,106 @@ export class DiagnosticCaseService {
       return { status: 'ready', items, total: ordered.length };
     } catch {
       return { status: 'error', items: [], total: 0, reason: 'Attachments could not be loaded' };
+    }
+  }
+
+  // Band 3: Diagnostic Interpretation (multi-source). Two INDEPENDENT sub-sources (Bethesda, Coding),
+  // each with its own permission + failure state. If the root record read failed/was forbidden, the
+  // downstream interpretation owners are NOT invoked (the band mirrors the root, consistent with the
+  // established orchestration). Otherwise the two owner reads run in parallel and isolate their own
+  // failures. Band-status truth table below; `unavailable[]` names error OR forbidden sub-sources
+  // (consistent with A6). No diagnosis synthesis; sources are shown separately, verbatim.
+  private async sectionDiagnosticInterpretation(recordId: string, load: RecordLoad, user: AuthUser): Promise<Section<DiagnosticInterpretationSection>> {
+    if (load.kind === 'forbidden') return { status: 'forbidden', data: null, reason: 'record:view required' };
+    if (load.kind === 'error') return { status: 'error', data: null, reason: load.reason };
+    const has = (code: string) => !!user.isSuperRole || user.permissions.includes(code);
+    // Independent reads, parallel. Bethesda gates on resultentry:view (narrower); Coding on record:view.
+    const [bethesda, coding] = await Promise.all([
+      this.loadBethesda(recordId, has('resultentry:view')),
+      this.loadCoding(recordId, has('record:view')),
+    ]);
+    const unavailable: UnavailableSource[] = [];
+    if (bethesda.status === 'error' || bethesda.status === 'forbidden') unavailable.push({ key: 'bethesda', label: 'Bethesda', reason: bethesda.reason });
+    if (coding.status === 'error' || coding.status === 'forbidden') unavailable.push({ key: 'coding', label: 'Coding', reason: coding.reason });
+    const data: DiagnosticInterpretationSection = { recordId, bethesda, coding, unavailable, ownerPath: `/records/${recordId}` };
+
+    // Band-status PRECEDENCE (frozen contract; forbidden/error are NEVER converted to empty):
+    //   1. any sub-source has recorded evidence                         → ready (failed/forbidden siblings stay explicit)
+    //   2. else no evidence AND ≥1 sub-source is error (technical)       → error (reason names the errored source(s))
+    //   3. else no evidence AND ≥1 sub-source is forbidden (access)      → forbidden (reason = access restriction, NOT technical)
+    //   4. else every sub-source was accessible + successfully empty     → empty
+    // i.e. recorded evidence → ready · else technical failure → error · else access restriction → forbidden · else empty.
+    const anyItems = bethesda.status === 'ready' || coding.status === 'ready';
+    const errored = [bethesda.status === 'error' ? 'Bethesda' : null, coding.status === 'error' ? 'Coding' : null].filter(Boolean) as string[];
+    const forbidden = [bethesda.status === 'forbidden' ? 'Bethesda' : null, coding.status === 'forbidden' ? 'Coding' : null].filter(Boolean) as string[];
+    if (anyItems) return { status: 'ready', data };
+    if (errored.length) return { status: 'error', data, reason: `Diagnostic interpretation could not be loaded (${errored.join(', ')})` };
+    if (forbidden.length) return { status: 'forbidden', data, reason: `Access restricted (${forbidden.join(', ')})` };
+    return { status: 'empty', data }; // only when every source was accessible and successfully empty
+  }
+
+  // Bethesda sub-source. resultentry:view required (narrower than base). One-per-record (findFirst) →
+  // ready | empty. Explicit allowlist mapping (no spread; excludes id/recordId/labId/reportedById/
+  // updatedAt/generatedNarrative). Failure isolates to this sub-source.
+  private async loadBethesda(recordId: string, allowed: boolean): Promise<BethesdaSubSection> {
+    if (!allowed) return { status: 'forbidden', data: null, reason: 'resultentry:view required' };
+    try {
+      const r: any = await this.bethesda.getByRecord(recordId);
+      if (!r) return { status: 'empty', data: null };
+      return { status: 'ready', data: this.mapBethesda(r) };
+    } catch {
+      return { status: 'error', data: null, reason: 'Bethesda could not be loaded' };
+    }
+  }
+
+  private mapBethesda(r: any): BethesdaEvidence {
+    return {
+      adequacy: r.specimenAdequacy ?? null,
+      unsatisfactoryReason: r.unsatisfactoryReason ?? null,
+      generalCategory: r.generalCategory ?? null,
+      squamousCategory: r.squamousCategory ?? null,
+      ascSubtype: r.ascSubtype ?? null,
+      glandularCategory: r.glandularCategory ?? null,
+      glandularSubtype: r.glandularSubtype ?? null,
+      otherMalignancy: r.otherMalignancy ?? null,
+      organisms: Array.isArray(r.organisms) ? r.organisms : [],
+      otherNonNeoplastic: Array.isArray(r.otherNonNeoplastic) ? r.otherNonNeoplastic : [],
+      hpvResult: r.hpvResult ?? null,
+      hpvGenotype: r.hpvGenotype ?? null,
+      recommendation: r.recommendation ?? null,
+      recommendationNotes: r.recommendationNotes ?? null,
+      shortCode: r.shortCode ?? null,
+      reportedBy: fullName(r.reportedBy),
+      reportedAt: iso(r.reportedAt),
+    };
+  }
+
+  // Coding sub-source. record:view required. Explicit allowlist (no spread; excludes coding `notes` and
+  // raw code.id). Owner already orders assignedAt asc; re-sorted deterministically (assignedAt asc,
+  // then stable id) and capped at CODING_CAP with the true total preserved. NEVER calls suggest().
+  private async loadCoding(recordId: string, allowed: boolean): Promise<CodingSubSection> {
+    if (!allowed) return { status: 'forbidden', items: [], total: 0, reason: 'record:view required' };
+    try {
+      const rows: any[] = await this.coding.getRecordCodings(recordId);
+      if (!Array.isArray(rows) || rows.length === 0) return { status: 'empty', items: [], total: 0 };
+      const ordered = [...rows].sort((a, b) => {
+        const at = a.assignedAt ? new Date(a.assignedAt).getTime() : 0;
+        const bt = b.assignedAt ? new Date(b.assignedAt).getTime() : 0;
+        return at !== bt ? at - bt : String(a.id).localeCompare(String(b.id));
+      });
+      const items: CodingRow[] = ordered.slice(0, CODING_CAP).map((c) => ({
+        id: c.id,
+        codeType: c.codeType ?? null,
+        system: c.code?.system ?? null,
+        code: c.code?.code ?? null,
+        display: c.code?.display ?? null,
+        category: c.code?.category ?? null,
+        assignedBy: fullName(c.assignedBy),
+        assignedAt: iso(c.assignedAt),
+      }));
+      return { status: 'ready', items, total: ordered.length };
+    } catch {
+      return { status: 'error', items: [], total: 0, reason: 'Coding could not be loaded' };
     }
   }
 
