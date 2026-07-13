@@ -5,6 +5,7 @@ import { WsiService } from '../wsi/wsi.service';
 import { FilesService } from '../files/files.service';
 import { BethesdaService } from '../bethesda/bethesda.service';
 import { CodingService } from '../coding/coding.service';
+import { AiReportingService } from '../ai/ai-reporting.service';
 
 // Diagnostic Case Workspace — A2: the FROZEN read-only aggregate contract for
 // GET /diagnostic-case/:recordId/overview. This service is CONTRACT-ONLY: it holds no Prisma,
@@ -249,6 +250,36 @@ export interface DiagnosticInterpretationSection {
   ownerPath: string; // /records/:recordId
 }
 
+// ── Band 4: Decision Support (A8) ──
+// The band currently owns EXACTLY ONE source — AI-assisted reporting draft METADATA
+// (AiReportingService.draftsByRecord). The contract models exactly that source (no generic container
+// for future AI/recommendations/alerts/screening). Metadata only: the generated clinical text
+// (`output`/`finalText`) and the raw `editedDiff` are NEVER surfaced — `edited` is a presence boolean.
+// AI Screening (simulated/random) is deliberately EXCLUDED. Assistive provenance only — never a diagnosis.
+export interface AiDraftMeta {
+  id: string;
+  kind: string | null; // AiDraftKind (Narrative/CodeSuggestion/ConsistencyCheck), verbatim
+  status: string | null; // AiDraftStatus (Generated/Accepted/Rejected/Superseded), verbatim
+  model: string | null; // recorded model id (provenance)
+  promptVersion: string | null; // recorded prompt version (provenance)
+  createdAt: string | null; // ISO
+  createdBy: string | null; // display name
+  acceptedAt: string | null; // ISO
+  acceptedBy: string | null; // display name
+  edited: boolean; // derived from editedDiff PRESENCE only — raw diff is never exposed
+}
+export interface AiDraftsSubSection {
+  status: SectionStatus; // ready (≥1 draft) | empty | forbidden (no aidraft:view) | error
+  items: AiDraftMeta[]; // ≤ DRAFT_CAP, createdAt desc
+  total: number; // true recorded draft count
+  reason?: string;
+}
+export interface DecisionSupportSection {
+  recordId: string;
+  aiDrafts: AiDraftsSubSection; // the single current source; extend ONLY when a real owner source is approved
+  ownerPath: string; // /records/:recordId
+}
+
 // ── The frozen overview envelope ──
 export interface DiagnosticCaseOverview {
   asOf: string;
@@ -261,7 +292,7 @@ export interface DiagnosticCaseOverview {
   caseIdentity: Section<CaseIdentitySection>;
   diagnosticMaterial: Section<DiagnosticMaterialSection>;
   diagnosticInterpretation: Section<DiagnosticInterpretationSection>;
-  decisionSupport: Section<null>;
+  decisionSupport: Section<DecisionSupportSection>;
   priorEvidence: Section<null>;
   collaboration: Section<null>;
   reportingSignOut: Section<null>;
@@ -274,6 +305,7 @@ const MATERIAL_CAP = 50; // conservative bound on the recorded specimen list (pl
 const SLIDE_CAP = 50; // conservative bound on the recorded slide list (plan A5 §List bounds)
 const ATTACHMENT_CAP = 50; // conservative bound on the recorded attachment list (plan A6 §List bounds)
 const CODING_CAP = 50; // conservative bound on the recorded coding list (plan A7 §List bounds)
+const DRAFT_CAP = 50; // conservative bound on the recorded AI-draft list (plan A8 §List bounds)
 const iso = (d: Date | string | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
 const fullName = (
   u: { firstName?: string | null; lastName?: string | null } | null | undefined,
@@ -287,6 +319,7 @@ export class DiagnosticCaseService {
     private readonly files: FilesService,
     private readonly bethesda: BethesdaService,
     private readonly coding: CodingService,
+    private readonly aiReporting: AiReportingService,
   ) {}
 
   /**
@@ -306,7 +339,7 @@ export class DiagnosticCaseService {
       caseIdentity: this.sectionCaseIdentity(recordId, load),
       diagnosticMaterial: await this.sectionDiagnosticMaterial(recordId, load),
       diagnosticInterpretation: await this.sectionDiagnosticInterpretation(recordId, load, user),
-      decisionSupport: deferred(),
+      decisionSupport: await this.sectionDecisionSupport(recordId, load, user),
       priorEvidence: deferred(),
       collaboration: deferred(),
       reportingSignOut: deferred(),
@@ -568,6 +601,52 @@ export class DiagnosticCaseService {
       return { status: 'ready', items, total: ordered.length };
     } catch {
       return { status: 'error', items: [], total: 0, reason: 'Coding could not be loaded' };
+    }
+  }
+
+  // Band 4: Decision Support (single source — AI reporting draft metadata). If the root record read
+  // failed/was forbidden, the owner is NOT invoked (band mirrors the root). Otherwise the band mirrors
+  // its single sub-source status. No diagnosis synthesis; assistive provenance only.
+  private async sectionDecisionSupport(recordId: string, load: RecordLoad, user: AuthUser): Promise<Section<DecisionSupportSection>> {
+    if (load.kind === 'forbidden') return { status: 'forbidden', data: null, reason: 'record:view required' };
+    if (load.kind === 'error') return { status: 'error', data: null, reason: load.reason };
+    const has = (code: string) => !!user.isSuperRole || user.permissions.includes(code);
+    const aiDrafts = await this.loadAiDrafts(recordId, has('aidraft:view'));
+    const data: DecisionSupportSection = { recordId, aiDrafts, ownerPath: `/records/${recordId}` };
+    // Single source: the band mirrors the sub-source status (A7 precedence collapses to one source).
+    return { status: aiDrafts.status, data, reason: aiDrafts.reason };
+  }
+
+  // AI reporting drafts sub-loader. Reads ONLY through the mutation-free AiReportingService.draftsByRecord
+  // seam (the read is NOT model-backed — it lists persisted drafts). aidraft:view required (narrower than
+  // base). Explicit allowlist: METADATA ONLY — never `output`/`finalText`/prompts/reasoning/model payload,
+  // and NEVER the raw `editedDiff` (mapped to an `edited` presence boolean). Owner orders createdAt desc;
+  // re-sorted deterministically (createdAt desc, then stable id) and capped at DRAFT_CAP with true total.
+  private async loadAiDrafts(recordId: string, allowed: boolean): Promise<AiDraftsSubSection> {
+    if (!allowed) return { status: 'forbidden', items: [], total: 0, reason: 'aidraft:view required' };
+    try {
+      const rows: any[] = await this.aiReporting.draftsByRecord(recordId);
+      if (!Array.isArray(rows) || rows.length === 0) return { status: 'empty', items: [], total: 0 };
+      const ordered = [...rows].sort((a, b) => {
+        const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bt !== at ? bt - at : String(a.id).localeCompare(String(b.id));
+      });
+      const items: AiDraftMeta[] = ordered.slice(0, DRAFT_CAP).map((d) => ({
+        id: d.id,
+        kind: d.kind ?? null,
+        status: d.status ?? null,
+        model: d.model ?? null,
+        promptVersion: d.promptVersion ?? null,
+        createdAt: iso(d.createdAt),
+        createdBy: fullName(d.createdBy),
+        acceptedAt: iso(d.acceptedAt),
+        acceptedBy: fullName(d.acceptedBy),
+        edited: !!d.editedDiff, // presence boolean ONLY — raw editedDiff/output/finalText never surfaced
+      }));
+      return { status: 'ready', items, total: ordered.length };
+    } catch {
+      return { status: 'error', items: [], total: 0, reason: 'AI drafts could not be loaded' };
     }
   }
 

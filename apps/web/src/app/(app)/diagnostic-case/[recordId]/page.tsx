@@ -17,7 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { AttachmentsSubSection, BethesdaSubSection, CaseIdentitySection, CodingSubSection, DiagnosticCaseOverview, DiagnosticInterpretationSection, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, SectionStatus, SlidesSubSection } from './types';
+import type { AttachmentsSubSection, BethesdaSubSection, CaseIdentitySection, CodingSubSection, DecisionSupportSection, DiagnosticCaseOverview, DiagnosticInterpretationSection, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, SectionStatus, SlidesSubSection } from './types';
 
 // Recorded dates render as plain calendar dates; null → "—". No relative/"ago" phrasing (which would
 // imply a freshness judgment the owner does not record).
@@ -210,6 +210,18 @@ export default function DiagnosticCaseWorkspacePage() {
                 key={b.key}
                 title={b.title}
                 section={data?.diagnosticInterpretation}
+                loading={isLoading}
+                onRetry={() => refetch()}
+                retrying={isFetching}
+              />
+            );
+          }
+          if (b.key === 'decisionSupport') {
+            return (
+              <DecisionSupportBand
+                key={b.key}
+                title={b.title}
+                section={data?.decisionSupport}
                 loading={isLoading}
                 onRetry={() => refetch()}
                 retrying={isFetching}
@@ -719,6 +731,80 @@ function CodingSubArea({ coding, onRetry, retrying }: { coding?: CodingSubSectio
         </>
       )}
     </div>
+  );
+}
+
+// Band 4: Decision Support (A8). SINGLE source — AI-assisted reporting draft METADATA. Display-only:
+// no accept/reject/regenerate, no AI workflow, no owner-lifecycle duplication. Metadata only — the
+// generated text stays in the reporting owner; `edited` is a presence flag (no diff/prose). AI Screening
+// is excluded. Root failure (data null) renders a band-level message; otherwise the AI-drafts sub-source
+// state (ready/empty/forbidden/error) renders, with Retry only for technical error.
+function DecisionSupportBand({
+  title,
+  section,
+  loading,
+  onRetry,
+  retrying,
+}: {
+  title: string;
+  section?: { status: SectionStatus; data: DecisionSupportSection | null; reason?: string };
+  loading: boolean;
+  onRetry: () => void;
+  retrying: boolean;
+}) {
+  const status = section?.status;
+  const d = section?.data ?? null;
+  const drafts = d?.aiDrafts;
+  const total = drafts?.total ?? 0;
+  const badge = loading || !status ? 'Loading'
+    : status === 'ready' ? `${total} AI draft${total === 1 ? '' : 's'}`
+    : status === 'empty' ? 'None recorded'
+    : status === 'forbidden' ? 'No access'
+    : status === 'error' ? 'Unavailable' : 'Not yet loaded';
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-1 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">{title}</h2>
+        <Badge tone="neutral" size="xs">{badge}</Badge>
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-52" /><Skeleton shape="text" width="w-40" /></div>
+      ) : !d || !drafts ? (
+        // root failure (record read forbidden/error): band-level message. forbidden → No access (no Retry).
+        status === 'forbidden' ? (
+          <EmptyState bare className="px-0 py-8" title="No access" description="You do not have permission to view decision support." />
+        ) : (
+          <EmptyState bare className="px-0 py-8" title="Unavailable" description={section?.reason ?? 'Decision support could not be loaded.'} action={<Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={14} className="mr-1.5" />{retrying ? 'Retrying…' : 'Retry'}</Button>} />
+        )
+      ) : drafts.status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-8" title="No access" description="You do not have permission to view AI reporting drafts." />
+      ) : drafts.status === 'error' ? (
+        <div className="flex items-center gap-3">
+          <p className="text-meta text-text-tertiary">Recorded AI drafts could not be loaded.</p>
+          <Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={12} className="mr-1" />{retrying ? 'Retrying…' : 'Retry'}</Button>
+        </div>
+      ) : drafts.status === 'empty' || drafts.items.length === 0 ? (
+        <p className="text-meta text-text-tertiary">No AI reporting drafts recorded for this case.</p>
+      ) : (
+        <>
+          <p className="mb-2 text-meta text-text-tertiary">AI-assisted reporting drafts — metadata only. The generated text stays in the reporting owner; this is assistive provenance, not a diagnosis.</p>
+          <ul className="space-y-1.5">
+            {drafts.items.map((a) => {
+              const meta = [a.model, a.promptVersion, a.createdBy, fmtDate(a.createdAt), a.acceptedBy ? `accepted by ${a.acceptedBy}` : null, a.edited ? 'edited' : null].filter((v) => v && v !== '—');
+              return (
+                <li key={a.id} className="rounded border border-hairline px-2.5 py-1.5">
+                  <div className="truncate text-sm text-text">{dash(a.kind)} <span className="text-text-tertiary">· {dash(a.status)}</span></div>
+                  <div className="truncate text-meta text-text-tertiary">{meta.length ? meta.join(' · ') : 'Recorded AI draft'}</div>
+                </li>
+              );
+            })}
+          </ul>
+          {drafts.items.length < total && (
+            <p className="mt-2 text-meta text-text-tertiary">Showing the first {drafts.items.length} of {total} recorded AI drafts.</p>
+          )}
+        </>
+      )}
+    </Card>
   );
 }
 

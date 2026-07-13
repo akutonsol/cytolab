@@ -174,6 +174,32 @@ export interface DiagnosticInterpretationSection {
   ownerPath: string;
 }
 
+// Band 4: Decision Support (A8). Single source — AI reporting draft metadata. Metadata only; `edited`
+// is a presence boolean (raw editedDiff/output/finalText never sent). AI Screening excluded. Nulls "—".
+export interface AiDraftMeta {
+  id: string;
+  kind: string | null;
+  status: string | null;
+  model: string | null;
+  promptVersion: string | null;
+  createdAt: string | null;
+  createdBy: string | null;
+  acceptedAt: string | null;
+  acceptedBy: string | null;
+  edited: boolean;
+}
+export interface AiDraftsSubSection {
+  status: SectionStatus;
+  items: AiDraftMeta[];
+  total: number;
+  reason?: string;
+}
+export interface DecisionSupportSection {
+  recordId: string;
+  aiDrafts: AiDraftsSubSection;
+  ownerPath: string;
+}
+
 export interface DiagnosticCaseOverview {
   asOf: string;
   recordId: string;
@@ -183,7 +209,7 @@ export interface DiagnosticCaseOverview {
   caseIdentity: Section<CaseIdentitySection>;
   diagnosticMaterial: Section<DiagnosticMaterialSection>;
   diagnosticInterpretation: Section<DiagnosticInterpretationSection>;
-  decisionSupport: Section<null>;
+  decisionSupport: Section<DecisionSupportSection>;
   priorEvidence: Section<null>;
   collaboration: Section<null>;
   reportingSignOut: Section<null>;
