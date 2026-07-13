@@ -61,14 +61,16 @@ export function NavPills({ justify = 'flex-end' }: { justify?: React.CSSProperti
   }, []);
   const prefetchGroup = (items: any[]) => items.forEach((i: any) => prefetch(i.path));
 
-  // The Quality & Governance workspace is a return-aware surface (like Sign-Out): entering it
-  // carries an encoded, internal-only `returnTo` = the current route, so its Worklist/back
-  // action deterministically restores the source. Every other nav target is pushed as-is.
-  // The workspace re-validates `returnTo` server-side of the trust boundary (safeReturnTo).
+  // The Quality & Governance and Enterprise Administration workspaces are return-aware surfaces
+  // (like Sign-Out): entering one carries an encoded, internal-only `returnTo` = the current route,
+  // so its Worklist/back action deterministically restores the source. Every other nav target is
+  // pushed as-is. Each workspace re-validates `returnTo` at its trust boundary (safeReturnTo).
+  const RETURN_AWARE = ['/quality-governance', '/enterprise-administration'];
   const navTarget = (key: string) => {
-    if (key !== '/quality-governance' || typeof window === 'undefined') return key;
+    if (!RETURN_AWARE.includes(key) || typeof window === 'undefined') return key;
     const src = window.location.pathname + window.location.search;
-    if (src.startsWith('/quality-governance') || src.startsWith('/login')) return key;
+    // Omit returnTo when already on the target workspace or on an auth route.
+    if (src.startsWith(key) || src.startsWith('/login')) return key;
     return `${key}?returnTo=${encodeURIComponent(src)}`;
   };
 

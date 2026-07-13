@@ -22,6 +22,7 @@ import {
   CheckCheck,
   Timer,
   CheckSquare,
+  Building2,
   ClipboardCheck,
   Clock,
   FileClock,
@@ -77,6 +78,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Operations', path: '/operations', permission: 'record:view', icon: Activity },
       { label: 'Quality & Governance', path: '/quality-governance', permission: 'record:view', icon: ClipboardCheck },
+      { label: 'Enterprise Administration', path: '/enterprise-administration', permission: 'record:view', icon: Building2 },
       { label: 'Patients', path: '/patients', permission: 'patient:view' },
       { label: 'Clients', path: '/clients', permission: 'client:view' },
       { label: 'Requisitions', path: '/requisitions', permission: 'requisition:view' },
