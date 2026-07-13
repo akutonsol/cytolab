@@ -145,7 +145,7 @@ export default function EnterpriseAdministrationWorkspacePage() {
           if (s.key === 'fhir') return <FhirPanel key={s.key} section={data?.fhir} loading={isLoading} onOpen={() => router.push('/fhir')} />;
           if (s.key === 'billing') return <BillingPanel key={s.key} section={data?.billing} loading={isLoading} onOpen={() => router.push('/billing')} />;
           if (s.key === 'services') return <ServicesPanel key={s.key} section={data?.services} loading={isLoading} onOpen={() => router.push('/services')} />;
-          if (s.key === 'taxes') return <TaxesPanel key={s.key} section={data?.taxes} loading={isLoading} onOpen={() => router.push('/services')} />;
+          if (s.key === 'taxes') return <TaxesPanel key={s.key} section={data?.taxes} loading={isLoading} onOpen={() => router.push('/settings')} />;
           if (s.key === 'featureFlags') return <FeatureFlagsPanel key={s.key} section={data?.featureFlags} loading={isLoading} onOpen={() => router.push('/settings/features')} />;
           if (s.key === 'systemHealth') return <SystemHealthPanel key={s.key} section={data?.systemHealth} loading={isLoading} onOpen={() => router.push('/system')} />;
           if (s.key === 'aiSettings') return <AiSettingsPanel key={s.key} section={data?.aiSettings} loading={isLoading} onOpen={() => router.push('/settings')} />;

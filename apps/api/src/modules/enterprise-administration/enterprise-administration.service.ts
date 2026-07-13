@@ -165,7 +165,7 @@ const ADMIN_CAPABILITIES: CapabilityDescriptor[] = [
   { key: 'viewNotification', label: 'View notifications', section: 'Notifications', accessType: 'deferred', permissionCode: 'notification:view', implementationStatus: 'deferred', ownerPath: '/notifications', note: 'Deferred, not forbidden: the notifications owner exposes only per-user reads; there is no lab-wide administration-safe read.' },
   { key: 'viewBill', label: 'View billing', section: 'Billing', accessType: 'permission', permissionCode: 'bill:view', implementationStatus: 'ready', ownerPath: '/billing', note: 'Bill status COUNTS only — never revenue.' },
   { key: 'viewService', label: 'View services', section: 'Services', accessType: 'permission', permissionCode: 'service:view', implementationStatus: 'ready', ownerPath: '/services', note: null },
-  { key: 'viewTax', label: 'View taxes', section: 'Taxes', accessType: 'permission', permissionCode: 'tax:view', implementationStatus: 'ready', ownerPath: '/services', note: null },
+  { key: 'viewTax', label: 'View taxes', section: 'Taxes', accessType: 'permission', permissionCode: 'tax:view', implementationStatus: 'ready', ownerPath: '/settings', note: null },
   { key: 'featureFlags', label: 'Feature flags', section: 'Feature Flags', accessType: 'superuser-guard', permissionCode: null, implementationStatus: 'ready', ownerPath: '/settings/features', note: 'Controlled by SuperuserGuard (isSuperRole). No permission code exists — not permission-gated.' },
   { key: 'systemHealth', label: 'System health', section: 'System Health', accessType: 'permission', permissionCode: 'system:health', implementationStatus: 'ready', ownerPath: '/system', note: 'Governed by system:health; assigned to no default role — superuser-bypass-only under the current grants.' },
   { key: 'viewLabConfig', label: 'View AI settings', section: 'AI Settings', accessType: 'permission', permissionCode: 'applicationprefs:view', implementationStatus: 'ready', ownerPath: '/settings', note: 'Shares applicationprefs:view with Laboratory and Branding.' },
@@ -1019,7 +1019,7 @@ export class EnterpriseAdministrationService {
         name: String(t.name),
         rateBasisPoints: typeof t.rateBasisPoints === 'number' ? t.rateBasisPoints : null,
         isDefault: !!t.isDefault,
-        ownerPath: '/services',
+        ownerPath: '/settings', // taxes are managed on the Settings → Taxes tab (owner surface)
       }));
       items.sort(nameIdSort);
       return { status: 'ready', data: { total: items.length, items: items.slice(0, 100) } };
