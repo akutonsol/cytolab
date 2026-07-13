@@ -116,6 +116,33 @@ export interface CaseIdentitySection {
   ownerPath: string; // /records/:recordId
 }
 
+// ── Band 2: Diagnostic Material (A4) ──
+// Recorded specimen/material evidence, composed from the SAME RecordsService.findOne read's `specimens`
+// projection. Excludes specimen images (storageUrl), WSI slides, attachments, interpretation, and any
+// quality/adequacy/severity inference — those are later bands or deliberately never inferred. The case's
+// slides/attachments/AI are Record-anchored, NOT specimen-linked; this section says so and never implies
+// a specimen↔slide link. List capped at MATERIAL_CAP; `summary.total` is the true recorded count.
+export interface DiagnosticMaterialItem {
+  id: string;
+  label: string | null; // owner display label (recorded)
+  type: string | null; // SpecimenType (recorded)
+  container: string | null; // vial colour (recorded container attribute)
+  bloodGroup: string | null; // recorded
+  receivedAt: string | null; // dateReceived (ISO)
+}
+export interface DiagnosticMaterialSection {
+  recordId: string;
+  specimens: DiagnosticMaterialItem[]; // ≤ MATERIAL_CAP, deterministic order
+  summary: { total: number }; // true recorded specimen count (may exceed specimens.length if capped)
+  ownerPath: string; // /records/:recordId
+}
+
+// Discriminated result of the single shared record read.
+type RecordLoad =
+  | { kind: 'ok'; rec: any }
+  | { kind: 'forbidden' }
+  | { kind: 'error'; reason: string };
+
 // ── The frozen overview envelope ──
 export interface DiagnosticCaseOverview {
   asOf: string;
@@ -124,9 +151,9 @@ export interface DiagnosticCaseOverview {
   permissions: Section<EffectiveDiagnosticPermissions>;
 
   // The nine frozen clinical bands, in the frozen order (plan §4). Each hydrates to its band payload
-  // as it lands (A3 = caseIdentity); the STATUS contract never changes. Unhydrated bands are Section<null>.
+  // as it lands (A3 = caseIdentity, A4 = diagnosticMaterial); the STATUS contract never changes.
   caseIdentity: Section<CaseIdentitySection>;
-  diagnosticMaterial: Section<null>;
+  diagnosticMaterial: Section<DiagnosticMaterialSection>;
   diagnosticInterpretation: Section<null>;
   decisionSupport: Section<null>;
   priorEvidence: Section<null>;
@@ -137,6 +164,7 @@ export interface DiagnosticCaseOverview {
 }
 
 const deferred = (): Section<null> => ({ status: 'deferred', data: null });
+const MATERIAL_CAP = 50; // conservative bound on the recorded specimen list (plan A4 §List bounds)
 const iso = (d: Date | string | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
 const fullName = (
   u: { firstName?: string | null; lastName?: string | null } | null | undefined,
@@ -147,19 +175,21 @@ export class DiagnosticCaseService {
   constructor(private readonly records: RecordsService) {}
 
   /**
-   * Read-only aggregate for one case. A3: composes the Case Identity band from RecordsService.findOne
-   * (the verified, mutation-free record owner read); all other clinical bands remain `deferred`. The
-   * permission map is built from the caller's real claims. Orchestration only — no Prisma, no owner
-   * logic duplication, no mutation. Case Identity is the root: its loader isolates failure to its own
-   * Section (error/forbidden) and never collapses the permission map or the endpoint.
+   * Read-only aggregate for one case. A3–A4: composes Case Identity and Diagnostic Material from ONE
+   * RecordsService.findOne read (the verified, mutation-free record owner read whose projection already
+   * includes the recorded specimens) — no duplicate owner read, no second owner module. All other
+   * clinical bands remain `deferred`. Orchestration only — no Prisma, no owner logic duplication, no
+   * mutation. Case Identity is the root; a record failure isolates to these two record-derived Sections
+   * (error/forbidden) and never collapses the permission map or the endpoint.
    */
   async overview(recordId: string, user: AuthUser): Promise<DiagnosticCaseOverview> {
+    const load = await this.loadRecord(recordId, user);
     return {
       asOf: new Date().toISOString(),
       recordId,
       permissions: { status: 'ready', data: this.buildPermissions(user) },
-      caseIdentity: await this.loadCaseIdentity(recordId, user),
-      diagnosticMaterial: deferred(),
+      caseIdentity: this.sectionCaseIdentity(recordId, load),
+      diagnosticMaterial: this.sectionDiagnosticMaterial(recordId, load),
       diagnosticInterpretation: deferred(),
       decisionSupport: deferred(),
       priorEvidence: deferred(),
@@ -196,22 +226,54 @@ export class DiagnosticCaseService {
     };
   }
 
-  // Band 1 loader. Reads ONLY through RecordsService.findOne (owner, mutation-free, tenant-scoped by
-  // the LabContext Prisma extension) and maps its recorded fields into the bounded CaseIdentitySection.
-  // Truthful states: forbidden (caller lacks record:view — defensive; the base gate normally enforces),
-  // error (owner threw — e.g. NotFoundException for a missing/inaccessible record, preserved as the
-  // owner reports it), ready otherwise. Missing FIELDS stay null (never an error). No synthesis.
-  private async loadCaseIdentity(recordId: string, user: AuthUser): Promise<Section<CaseIdentitySection>> {
+  // ONE owner read shared by the two record-derived bands (Case Identity, Diagnostic Material). Reads
+  // ONLY through RecordsService.findOne (owner, mutation-free, tenant-scoped by the LabContext Prisma
+  // extension). Returns a discriminated load result so each band maps truthful states without a second
+  // read: forbidden (caller lacks record:view — defensive; the base gate normally enforces), error
+  // (owner threw — e.g. NotFoundException, preserved as the owner reports it), or the record.
+  private async loadRecord(recordId: string, user: AuthUser): Promise<RecordLoad> {
     const has = (code: string) => !!user.isSuperRole || user.permissions.includes(code);
-    if (!has('record:view')) return { status: 'forbidden', data: null, reason: 'record:view required' };
+    if (!has('record:view')) return { kind: 'forbidden' };
     try {
-      const r: any = await this.records.findOne(recordId);
-      return { status: 'ready', data: this.mapCaseIdentity(recordId, r) };
+      const rec = await this.records.findOne(recordId);
+      return { kind: 'ok', rec };
     } catch (e) {
-      // Preserve the owner's not-found/failure — never convert it into a fabricated or empty case.
       const reason = e instanceof NotFoundException ? 'Record not found' : 'Could not load the record';
-      return { status: 'error', data: null, reason };
+      return { kind: 'error', reason };
     }
+  }
+
+  // Band 1: Case Identity. Missing FIELDS stay null (never an error). No synthesis.
+  private sectionCaseIdentity(recordId: string, load: RecordLoad): Section<CaseIdentitySection> {
+    if (load.kind === 'forbidden') return { status: 'forbidden', data: null, reason: 'record:view required' };
+    if (load.kind === 'error') return { status: 'error', data: null, reason: load.reason };
+    return { status: 'ready', data: this.mapCaseIdentity(recordId, load.rec) };
+  }
+
+  // Band 2: Diagnostic Material. Composed from the SAME record read's recorded `specimens` (no second
+  // owner read). Excludes specimen images (storageUrl → A5/A6). No recorded specimens → empty; a record
+  // failure → error/forbidden (isolated to this Section). No quality/adequacy/severity inference.
+  private sectionDiagnosticMaterial(recordId: string, load: RecordLoad): Section<DiagnosticMaterialSection> {
+    if (load.kind === 'forbidden') return { status: 'forbidden', data: null, reason: 'record:view required' };
+    if (load.kind === 'error') return { status: 'error', data: null, reason: load.reason };
+    const rows: any[] = Array.isArray(load.rec.specimens) ? load.rec.specimens : [];
+    if (rows.length === 0) return { status: 'empty', data: null, reason: 'No specimens recorded' };
+    // Deterministic order from recorded fields only: receivedAt asc (nulls last), then stable id.
+    const ordered = [...rows].sort((a, b) => {
+      const at = a.dateReceived ? new Date(a.dateReceived).getTime() : Infinity;
+      const bt = b.dateReceived ? new Date(b.dateReceived).getTime() : Infinity;
+      return at !== bt ? at - bt : String(a.id).localeCompare(String(b.id));
+    });
+    const total = ordered.length;
+    const specimens: DiagnosticMaterialItem[] = ordered.slice(0, MATERIAL_CAP).map((s) => ({
+      id: s.id,
+      label: s.label ?? null,
+      type: s.type ?? null,
+      container: s.vialColour ?? null,
+      bloodGroup: s.bloodGroup ?? null,
+      receivedAt: iso(s.dateReceived),
+    }));
+    return { status: 'ready', data: { recordId, specimens, summary: { total }, ownerPath: `/records/${recordId}` } };
   }
 
   private mapCaseIdentity(recordId: string, r: any): CaseIdentitySection {

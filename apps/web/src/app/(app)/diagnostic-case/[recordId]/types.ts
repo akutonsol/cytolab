@@ -69,6 +69,23 @@ export interface CaseIdentitySection {
   ownerPath: string;
 }
 
+// Band 2: Diagnostic Material (A4). Recorded specimen/material evidence only — no images, no slides,
+// no attachments, no interpretation, no quality inference. Nulls render "—".
+export interface DiagnosticMaterialItem {
+  id: string;
+  label: string | null;
+  type: string | null;
+  container: string | null;
+  bloodGroup: string | null;
+  receivedAt: string | null;
+}
+export interface DiagnosticMaterialSection {
+  recordId: string;
+  specimens: DiagnosticMaterialItem[];
+  summary: { total: number };
+  ownerPath: string;
+}
+
 export interface DiagnosticCaseOverview {
   asOf: string;
   recordId: string;
@@ -76,7 +93,7 @@ export interface DiagnosticCaseOverview {
   permissions: Section<EffectiveDiagnosticPermissions>;
 
   caseIdentity: Section<CaseIdentitySection>;
-  diagnosticMaterial: Section<null>;
+  diagnosticMaterial: Section<DiagnosticMaterialSection>;
   diagnosticInterpretation: Section<null>;
   decisionSupport: Section<null>;
   priorEvidence: Section<null>;

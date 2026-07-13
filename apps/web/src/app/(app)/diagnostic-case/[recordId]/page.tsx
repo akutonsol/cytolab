@@ -17,7 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { CaseIdentitySection, DiagnosticCaseOverview, EffectiveDiagnosticPermissions, SectionStatus } from './types';
+import type { CaseIdentitySection, DiagnosticCaseOverview, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, SectionStatus } from './types';
 
 // Recorded dates render as plain calendar dates; null → "—". No relative/"ago" phrasing (which would
 // imply a freshness judgment the owner does not record).
@@ -180,6 +180,19 @@ export default function DiagnosticCaseWorkspacePage() {
               />
             );
           }
+          if (b.key === 'diagnosticMaterial') {
+            return (
+              <DiagnosticMaterialBand
+                key={b.key}
+                title={b.title}
+                purpose={b.purpose}
+                section={data?.diagnosticMaterial}
+                loading={isLoading}
+                onRetry={() => refetch()}
+                retrying={isFetching}
+              />
+            );
+          }
           return <BandShell key={b.key} title={b.title} purpose={b.purpose} status={data?.[b.key]?.status} loading={isLoading} />;
         })}
       </div>
@@ -281,6 +294,104 @@ function CaseIdentityBand({
         </>
       ) : (
         <EmptyState bare className="px-0 py-8" title="Not yet loaded" description={purpose} />
+      )}
+    </Card>
+  );
+}
+
+// Band 2: Diagnostic Material (A4). Recorded specimen/material evidence composed from the record read.
+// Display-only (Case Identity already offers "Open record" — no duplicate handoff). No images, no
+// slides, no attachments, no interpretation, no adequacy/quality verdict. Nulls render "—". A footnote
+// states the record-centric truth: slides/attachments/AI are recorded against the case, not a specimen.
+function DiagnosticMaterialBand({
+  title,
+  purpose,
+  section,
+  loading,
+  onRetry,
+  retrying,
+}: {
+  title: string;
+  purpose: string;
+  section?: { status: SectionStatus; data: DiagnosticMaterialSection | null; reason?: string };
+  loading: boolean;
+  onRetry: () => void;
+  retrying: boolean;
+}) {
+  const status = section?.status;
+  const d = section?.data ?? null;
+  const total = d?.summary.total ?? 0;
+  const badge = loading || !status ? 'Loading' : status === 'ready' ? `${total} specimen${total === 1 ? '' : 's'}` : status === 'empty' ? 'None recorded' : status === 'forbidden' ? 'No access' : status === 'error' ? 'Unavailable' : 'Not yet loaded';
+
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-1 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">{title}</h2>
+        <Badge tone="neutral" size="xs">{badge}</Badge>
+      </div>
+
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-52" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-8" title="No access" description="You do not have permission to view this section." />
+      ) : status === 'error' ? (
+        <EmptyState
+          bare
+          className="px-0 py-8"
+          title="Unavailable"
+          description="Recorded specimen material could not be loaded."
+          action={<Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={14} className="mr-1.5" />{retrying ? 'Retrying…' : 'Retry'}</Button>}
+        />
+      ) : (
+        // ready or empty — either way, show the recorded specimens (or an honest "none"), then the
+        // record-centric note and the two sub-areas that hydrate later (Slides = A5, Attachments = A6),
+        // kept VISIBLY deferred so the band's future shape is truthful, never implied to be specimen-linked.
+        <>
+          {status === 'empty' || !d || d.specimens.length === 0 ? (
+            <EmptyState bare className="px-0 py-6" title="No specimens recorded" description="No specimen material has been recorded for this case." />
+          ) : (
+            <>
+              <div className="-mx-1 overflow-x-auto">
+                <table className="w-full min-w-[420px] text-sm">
+                  <thead>
+                    <tr className="text-left text-meta text-text-tertiary">
+                      <th className="px-1 py-1 font-medium">Specimen</th>
+                      <th className="px-1 py-1 font-medium">Type</th>
+                      <th className="px-1 py-1 font-medium">Container</th>
+                      <th className="px-1 py-1 font-medium">Blood group</th>
+                      <th className="px-1 py-1 font-medium">Received</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {d.specimens.map((s) => (
+                      <tr key={s.id} className="border-t border-hairline">
+                        <td className="px-1 py-1.5 text-text">{dash(s.label)}</td>
+                        <td className="px-1 py-1.5 text-text-secondary">{dash(s.type)}</td>
+                        <td className="px-1 py-1.5 text-text-secondary">{dash(s.container)}</td>
+                        <td className="px-1 py-1.5 text-text-secondary">{dash(s.bloodGroup)}</td>
+                        <td className="px-1 py-1.5 text-text-secondary">{fmtDate(s.receivedAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {d.specimens.length < total && (
+                <p className="mt-2 text-meta text-text-tertiary">Showing the first {d.specimens.length} of {total} recorded specimens.</p>
+              )}
+            </>
+          )}
+          <p className="mt-3 text-meta text-text-tertiary">Recorded specimen material only. Slides and attachments are recorded against the case, not linked to a specific specimen.</p>
+          <div className="mt-3 space-y-1.5 border-t border-hairline pt-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm text-text-secondary">Slides (imaging)</span>
+              <Badge tone="neutral" size="xs">Not yet loaded</Badge>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm text-text-secondary">Attachments</span>
+              <Badge tone="neutral" size="xs">Not yet loaded</Badge>
+            </div>
+          </div>
+        </>
       )}
     </Card>
   );
