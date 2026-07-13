@@ -916,7 +916,7 @@ function PriorRecordsSubArea({ priorRecords, onOpenRecord, onRetry, retrying }: 
           <ul className="space-y-1.5">
             {priorRecords.items.map((p) => {
               const beth = p.bethesda ? [p.bethesda.generalCategory, p.bethesda.squamousCategory, p.bethesda.glandularCategory, p.bethesda.adequacy].filter(Boolean).join(' / ') : null;
-              const meta = [p.formType, fmtDate(p.specimenDate), beth || null, p.hasReport ? 'report released' : p.hasAuthorizedResultSheet ? 'authorized' : null].filter((v) => v && v !== '—');
+              const meta = [p.formType, fmtDate(p.specimenDate), beth || null, p.hasReport ? 'report recorded' : p.hasAuthorizedResultSheet ? 'authorized' : null].filter((v) => v && v !== '—');
               return (
                 <li key={p.id} className="flex items-center justify-between gap-3 rounded border border-hairline px-2.5 py-1.5">
                   <div className="min-w-0">
