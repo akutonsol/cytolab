@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
-import { AlertTriangle, CalendarClock, ClipboardCopy, Download, Plus, X } from 'lucide-react';
+import { CalendarClock, ClipboardCopy, Download, Plus, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
@@ -13,14 +13,17 @@ import {
   FILTER_TABS, STATUS_META, dueColor, dueLabel, shortDate,
   type Recall, type RecallListRow, type RecallStatus, type RecallSummary,
 } from '@/lib/recall';
-import { Card, IconAction, EmptyState } from '@/components/ui';
+import { Card, IconAction, EmptyState, Badge, Drawer, RECALL_STATUS, statusPresentation } from '@/components/ui';
 import { notify } from '@/lib/notify';
 
 const inp = 'h-10 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[14px] outline-none focus:border-[#4F46E5]';
 
 function StatusBadge({ s }: { s: RecallStatus }) {
-  const m = STATUS_META[s];
-  return <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: m.bg, color: m.fg }}>{s === 'Overdue' && <AlertTriangle size={11} />}{m.label}</span>;
+  // P2 status-token pilot: presentation via the shared RECALL_STATUS map + <Badge> (semantic
+  // tone), instead of inline STATUS_META hex. Labels are unchanged (owner wording preserved).
+  const p = statusPresentation(RECALL_STATUS, s);
+  const Icon = p.icon;
+  return <Badge tone={p.tone} size="sm">{Icon && <Icon size={11} />}{p.label}</Badge>;
 }
 function Kpi({ label, value, fg = '#0F172A' }: { label: string; value: number; fg?: string }) {
   return <Card radius="md" elevation="soft" border="hairline" className="p-4"><div className="text-[24px] font-bold leading-none" style={{ color: fg }}>{value}</div><div className="mt-1.5 text-[13px] text-[#475569]">{label}</div></Card>;
@@ -42,15 +45,20 @@ function RecallDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const m = r ? STATUS_META[r.status] : null;
   const isOpen = r ? ['Pending', 'Due', 'Overdue'].includes(r.status) : false;
 
-  return createPortal(
-    <div className="fixed inset-0 flex justify-end" style={{ zIndex: 2100, background: 'rgba(15,23,42,0.55)' }} onClick={onClose}>
-      <div className="flex h-full w-full max-w-[600px] flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start justify-between border-b border-slate-200 p-5">
-          <div><h3 className="text-[18px] font-bold text-[#0F172A]">{r?.patientName ?? 'Loading…'}</h3>{r && <p className="mt-0.5 text-[13px] text-[#475569]">{r.patient?.registrationNo ?? ''} · {r.triggerDiagnosis} recall</p>}</div>
-          <IconAction icon={<X size={16} />} tone="strong" onClick={onClose} />
-        </div>
+  // P2 Drawer pilot: the detail slide-over is now the shared accessible <Drawer> (Portal +
+  // focus-trap + Escape + scroll-lock + focus-restore). All content, actions and the nested
+  // appointment modal are preserved verbatim — only the overlay chrome changed.
+  return (
+    <>
+      <Drawer
+        open
+        onOpenChange={(o) => { if (!o) onClose(); }}
+        width="xl"
+        title={r?.patientName ?? 'Loading…'}
+        description={r ? `${r.patient?.registrationNo ?? ''} · ${r.triggerDiagnosis} recall` : undefined}
+      >
         {r && (
-          <div className="flex-1 overflow-y-auto p-5">
+          <>
             <div className="flex items-center gap-2"><StatusBadge s={r.status} /><span className="text-[13px] font-semibold" style={{ color: dueColor(r.daysUntilDue) }}>{dueLabel(r.daysUntilDue)}</span></div>
             <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-[13px]">
               <Info label="DOB" value={shortDate(r.patient?.dateOfBirth ?? null)} />
@@ -94,17 +102,16 @@ function RecallDetail({ id, onClose }: { id: string; onClose: () => void }) {
             )}
             {r.notes && <div className="mt-4 rounded-xl bg-[#F8FAFC] p-3 text-[13px] text-[#334155]"><span className="font-semibold">Notes:</span> {r.notes}</div>}
             {r.patient && <button onClick={() => router.push(`/patients/${r.patient!.id}`)} className="mt-4 text-[13px] font-semibold text-[#4F46E5] hover:underline">View patient →</button>}
-          </div>
+          </>
         )}
-      </div>
+      </Drawer>
       {bookOpen && r?.patient && (
         <NewAppointmentModal
           defaults={{ patientId: r.patient.id, appointmentType: 'RecallVisit', recallRecordId: r.id }}
           onClose={() => setBookOpen(false)}
         />
       )}
-    </div>,
-    document.body,
+    </>
   );
 }
 const Info = ({ label, value }: { label: string; value: React.ReactNode }) => (<div><div className="text-[11px] font-semibold uppercase tracking-wide text-[#475569]">{label}</div><div className="mt-0.5 text-[#0F172A]">{value}</div></div>);

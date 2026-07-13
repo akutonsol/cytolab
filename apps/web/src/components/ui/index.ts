@@ -28,3 +28,22 @@ export { Th, Td, Tr, type ThProps, type TdProps, type TrProps } from './Table';
 export { EmptyState, TableEmpty, type EmptyStateProps, type TableEmptyProps } from './EmptyState';
 export { Skeleton, SkeletonText, SkeletonRows, SkeletonStat, type SkeletonProps } from './Skeleton';
 export { SectionContainer, type SectionContainerProps } from './SectionContainer';
+
+// ── Overlays + status presentation (P2) ────────────────────────────────────
+// Accessible dialog primitives (Portal + focus-trap + Escape + scroll-lock + focus
+// restore) and the single domain status→presentation source. Presentation only.
+export { Modal, type ModalProps } from './Modal';
+export { Drawer, type DrawerProps } from './Drawer';
+export {
+  statusPresentation,
+  type StatusTone,
+  type StatusPresentation,
+  RECORD_STATUS,
+  RECALL_STATUS,
+  ESCALATION_STATUS,
+  ESCALATION_SEVERITY,
+  QC_RESULT,
+  QC_ALERT_STATUS,
+  PROFICIENCY_STATUS,
+  SYSTEM_HEALTH_STATUS,
+} from './status-tokens';

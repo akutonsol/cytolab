@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Building2, FileText, Layers, MoreHorizontal, Pencil, Plus, Trash2, Users, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
-import { Button, IconAction } from '@/components/ui';
+import { Button, IconAction, Modal } from '@/components/ui';
 import { notify } from '@/lib/notify';
 
 interface Workspace {
@@ -165,26 +165,34 @@ export default function WorkspacesPage() {
         />
       )}
 
-      {confirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: 'rgba(15,23,42,0.4)', backdropFilter: 'blur(4px)' }} onClick={() => setConfirm(null)}>
-          <div className="w-full max-w-[420px] rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-headline-sm text-headline-sm text-charcoal-heading">Delete “{confirm.name}”?</h3>
-            {confirm._count.users + confirm._count.records + confirm._count.clients > 0 ? (
-              <p className="mt-2 font-body-sm text-body-sm text-error">
+      {confirm && (() => {
+        const hasDeps = confirm._count.users + confirm._count.records + confirm._count.clients > 0;
+        return (
+          <Modal
+            open
+            onOpenChange={(o) => { if (!o) setConfirm(null); }}
+            tone="danger"
+            size="sm"
+            title={`Delete “${confirm.name}”?`}
+            footer={
+              <>
+                <Button variant="secondary" onClick={() => setConfirm(null)}>Cancel</Button>
+                <Button style={{ background: '#DC2626', boxShadow: '0 4px 12px rgba(220,38,38,0.2)', opacity: hasDeps ? 0.5 : 1 }}
+                  disabled={hasDeps || del.isPending}
+                  onClick={() => del.mutate(confirm.id)}>Delete</Button>
+              </>
+            }
+          >
+            {hasDeps ? (
+              <p className="font-body-sm text-body-sm text-error">
                 Cannot delete — reassign {[confirm._count.users && `${confirm._count.users} users`, confirm._count.records && `${confirm._count.records} records`, confirm._count.clients && `${confirm._count.clients} clients`].filter(Boolean).join(', ')} first.
               </p>
             ) : (
-              <p className="mt-2 font-body-sm text-body-sm text-secondary">This workspace is empty and will be permanently deleted.</p>
+              <p className="font-body-sm text-body-sm text-secondary">This workspace is empty and will be permanently deleted.</p>
             )}
-            <div className="mt-6 flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setConfirm(null)}>Cancel</Button>
-              <Button style={{ background: '#DC2626', boxShadow: '0 4px 12px rgba(220,38,38,0.2)', opacity: confirm._count.users + confirm._count.records + confirm._count.clients > 0 ? 0.5 : 1 }}
-                disabled={confirm._count.users + confirm._count.records + confirm._count.clients > 0 || del.isPending}
-                onClick={() => del.mutate(confirm.id)}>Delete</Button>
-            </div>
-          </div>
-        </div>
-      )}
+          </Modal>
+        );
+      })()}
 
       
     </div>
