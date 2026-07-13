@@ -17,7 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { CaseIdentitySection, DiagnosticCaseOverview, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, SectionStatus } from './types';
+import type { CaseIdentitySection, DiagnosticCaseOverview, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, SectionStatus, SlidesSubSection } from './types';
 
 // Recorded dates render as plain calendar dates; null → "—". No relative/"ago" phrasing (which would
 // imply a freshness judgment the owner does not record).
@@ -27,6 +27,16 @@ function fmtDate(iso: string | null): string {
   return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 const dash = (v: string | null | undefined): string => (v && v.trim() ? v : '—');
+// Recorded byte size → human units; null/invalid → "—". Display only, no rounding claims beyond 1 dp.
+function fmtBytes(n: number | null): string {
+  if (n == null || !Number.isFinite(n) || n < 0) return '—';
+  if (n < 1024) return `${n} B`;
+  const units = ['KB', 'MB', 'GB', 'TB'];
+  let v = n / 1024;
+  let i = 0;
+  while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+  return `${v.toFixed(1)} ${units[i]}`;
+}
 
 // Only an internal, same-origin path may be a return target — reject external and protocol-relative
 // URLs (open-redirect protection). Identical grammar to Sign-Out / Quality / Enterprise Administration.
@@ -190,6 +200,7 @@ export default function DiagnosticCaseWorkspacePage() {
                 loading={isLoading}
                 onRetry={() => refetch()}
                 retrying={isFetching}
+                onOpenSlide={(sid) => router.push(`/wsi/${sid}`)}
               />
             );
           }
@@ -310,6 +321,7 @@ function DiagnosticMaterialBand({
   loading,
   onRetry,
   retrying,
+  onOpenSlide,
 }: {
   title: string;
   purpose: string;
@@ -317,6 +329,7 @@ function DiagnosticMaterialBand({
   loading: boolean;
   onRetry: () => void;
   retrying: boolean;
+  onOpenSlide: (slideId: string) => void;
 }) {
   const status = section?.status;
   const d = section?.data ?? null;
@@ -381,19 +394,79 @@ function DiagnosticMaterialBand({
             </>
           )}
           <p className="mt-3 text-meta text-text-tertiary">Recorded specimen material only. Slides and attachments are recorded against the case, not linked to a specific specimen.</p>
-          <div className="mt-3 space-y-1.5 border-t border-hairline pt-3">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm text-text-secondary">Slides (imaging)</span>
-              <Badge tone="neutral" size="xs">Not yet loaded</Badge>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm text-text-secondary">Attachments</span>
-              <Badge tone="neutral" size="xs">Not yet loaded</Badge>
-            </div>
+          <div className="mt-3 border-t border-hairline pt-3">
+            <SlidesSubArea slides={d?.slides} onOpenSlide={onOpenSlide} onRetry={onRetry} retrying={retrying} />
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-2 border-t border-hairline pt-3">
+            <span className="text-sm text-text-secondary">Attachments</span>
+            <Badge tone="neutral" size="xs">Not yet loaded</Badge>
           </div>
         </>
       )}
     </Card>
+  );
+}
+
+// A5: Slides / Imaging sub-area within Diagnostic Material. Composed from WsiService.listByRecordMeta
+// (metadata only). Isolated status: a WSI failure shows here (Unavailable + Retry) without affecting the
+// specimen list. Metadata is caller-asserted (labeled), never a verified-scan claim; no thumbnails, no
+// image bytes. "Open slide" hands off to the existing /wsi/:id owner viewer — no viewer is reimplemented.
+function SlidesSubArea({
+  slides,
+  onOpenSlide,
+  onRetry,
+  retrying,
+}: {
+  slides?: SlidesSubSection;
+  onOpenSlide: (slideId: string) => void;
+  onRetry: () => void;
+  retrying: boolean;
+}) {
+  const status = slides?.status;
+  const total = slides?.total ?? 0;
+  const badge = !status ? 'Loading' : status === 'ready' ? `${total} slide${total === 1 ? '' : 's'}` : status === 'empty' ? 'None recorded' : status === 'forbidden' ? 'No access' : status === 'error' ? 'Unavailable' : 'Not yet loaded';
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-sm font-semibold text-text">Slides (imaging)</span>
+        <Badge tone="neutral" size="xs">{badge}</Badge>
+      </div>
+      {!status ? (
+        <Skeleton shape="text" width="w-40" />
+      ) : status === 'forbidden' ? (
+        <p className="text-meta text-text-tertiary">You do not have permission to view slides.</p>
+      ) : status === 'error' ? (
+        <div className="flex items-center gap-3">
+          <p className="text-meta text-text-tertiary">Recorded slides could not be loaded.</p>
+          <Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={12} className="mr-1" />{retrying ? 'Retrying…' : 'Retry'}</Button>
+        </div>
+      ) : status === 'empty' || !slides || slides.items.length === 0 ? (
+        <p className="text-meta text-text-tertiary">No slides recorded for this case.</p>
+      ) : (
+        <>
+          <ul className="space-y-1.5">
+            {slides.items.map((s) => {
+              const meta = [s.magnification, s.scanner, s.format, fmtBytes(s.fileSizeBytes), fmtDate(s.uploadedAt)].filter((v) => v && v !== '—');
+              return (
+                <li key={s.id} className="flex items-center justify-between gap-3 rounded border border-hairline px-2.5 py-1.5">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm text-text">{dash(s.stain)}</div>
+                    <div className="truncate text-meta text-text-tertiary">{meta.length ? meta.join(' · ') : 'Recorded slide'}</div>
+                  </div>
+                  <Button variant="secondary" size="sm" onClick={() => onOpenSlide(s.id)}>
+                    Open slide <ExternalLink size={12} className="ml-1" />
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+          {slides.items.length < total && (
+            <p className="mt-2 text-meta text-text-tertiary">Showing the first {slides.items.length} of {total} recorded slides.</p>
+          )}
+          <p className="mt-2 text-meta text-text-tertiary">Slide metadata is as recorded at upload; opening a slide hands off to the viewer.</p>
+        </>
+      )}
+    </div>
   );
 }
 

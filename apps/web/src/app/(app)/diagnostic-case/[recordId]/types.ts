@@ -79,10 +79,29 @@ export interface DiagnosticMaterialItem {
   bloodGroup: string | null;
   receivedAt: string | null;
 }
+// A5: Slides / Imaging sub-source. Metadata only (no image URL/bytes/annotations); `id` opens the
+// existing /wsi/:id owner viewer. Record-anchored, never specimen-linked. Nulls render "—".
+export interface SlideItem {
+  id: string;
+  format: string | null;
+  magnification: string | null;
+  stain: string | null;
+  scanner: string | null;
+  fileSizeBytes: number | null;
+  uploadedAt: string | null;
+}
+export interface SlidesSubSection {
+  status: SectionStatus;
+  items: SlideItem[];
+  total: number;
+  reason?: string;
+}
+
 export interface DiagnosticMaterialSection {
   recordId: string;
   specimens: DiagnosticMaterialItem[];
   summary: { total: number };
+  slides: SlidesSubSection;
   ownerPath: string;
 }
 

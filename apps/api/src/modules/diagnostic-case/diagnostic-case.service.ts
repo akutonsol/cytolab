@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { RecordsService } from '../records/records.service';
+import { WsiService } from '../wsi/wsi.service';
 
 // Diagnostic Case Workspace — A2: the FROZEN read-only aggregate contract for
 // GET /diagnostic-case/:recordId/overview. This service is CONTRACT-ONLY: it holds no Prisma,
@@ -130,10 +131,32 @@ export interface DiagnosticMaterialItem {
   bloodGroup: string | null; // recorded
   receivedAt: string | null; // dateReceived (ISO)
 }
+// A5: Slides / Imaging sub-source of the Diagnostic Material band. Composed from the mutation-free
+// WsiService.listByRecordMeta seam (metadata only — NO slideUrl, image bytes, thumbnails, annotations,
+// or storage keys; `id` is the viewer-safe identifier for the existing /wsi/:id owner route). It is a
+// SEPARATE owner read with its own status so a WSI failure isolates here and never affects specimens.
+// Slides are Record-anchored, never specimen-linked. No adequacy/quality/importance inference.
+export interface SlideItem {
+  id: string; // DigitalSlide id → owner viewer route /wsi/:id
+  format: string | null; // recorded (caller-asserted at upload)
+  magnification: string | null; // recorded (caller-asserted)
+  stain: string | null; // recorded (caller-asserted)
+  scanner: string | null; // recorded (caller-asserted)
+  fileSizeBytes: number | null; // recorded
+  uploadedAt: string | null; // recorded (ISO)
+}
+export interface SlidesSubSection {
+  status: SectionStatus; // ready | empty | forbidden | error (isolated to this sub-source)
+  items: SlideItem[]; // ≤ SLIDE_CAP, deterministic order
+  total: number; // true recorded slide count
+  reason?: string;
+}
+
 export interface DiagnosticMaterialSection {
   recordId: string;
-  specimens: DiagnosticMaterialItem[]; // ≤ MATERIAL_CAP, deterministic order
+  specimens: DiagnosticMaterialItem[]; // ≤ MATERIAL_CAP, deterministic order (A4 — record read)
   summary: { total: number }; // true recorded specimen count (may exceed specimens.length if capped)
+  slides: SlidesSubSection; // A5 — WsiService.listByRecordMeta (separate, isolated owner read)
   ownerPath: string; // /records/:recordId
 }
 
@@ -165,6 +188,7 @@ export interface DiagnosticCaseOverview {
 
 const deferred = (): Section<null> => ({ status: 'deferred', data: null });
 const MATERIAL_CAP = 50; // conservative bound on the recorded specimen list (plan A4 §List bounds)
+const SLIDE_CAP = 50; // conservative bound on the recorded slide list (plan A5 §List bounds)
 const iso = (d: Date | string | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
 const fullName = (
   u: { firstName?: string | null; lastName?: string | null } | null | undefined,
@@ -172,7 +196,10 @@ const fullName = (
 
 @Injectable()
 export class DiagnosticCaseService {
-  constructor(private readonly records: RecordsService) {}
+  constructor(
+    private readonly records: RecordsService,
+    private readonly wsi: WsiService,
+  ) {}
 
   /**
    * Read-only aggregate for one case. A3–A4: composes Case Identity and Diagnostic Material from ONE
@@ -189,7 +216,7 @@ export class DiagnosticCaseService {
       recordId,
       permissions: { status: 'ready', data: this.buildPermissions(user) },
       caseIdentity: this.sectionCaseIdentity(recordId, load),
-      diagnosticMaterial: this.sectionDiagnosticMaterial(recordId, load),
+      diagnosticMaterial: await this.sectionDiagnosticMaterial(recordId, load),
       diagnosticInterpretation: deferred(),
       decisionSupport: deferred(),
       priorEvidence: deferred(),
@@ -250,14 +277,16 @@ export class DiagnosticCaseService {
     return { status: 'ready', data: this.mapCaseIdentity(recordId, load.rec) };
   }
 
-  // Band 2: Diagnostic Material. Composed from the SAME record read's recorded `specimens` (no second
-  // owner read). Excludes specimen images (storageUrl → A5/A6). No recorded specimens → empty; a record
-  // failure → error/forbidden (isolated to this Section). No quality/adequacy/severity inference.
-  private sectionDiagnosticMaterial(recordId: string, load: RecordLoad): Section<DiagnosticMaterialSection> {
+  // Band 2: Diagnostic Material (multi-source). Specimens come from the SAME record read (A4, no second
+  // record read); Slides come from a SEPARATE, isolated WsiService.listByRecordMeta call (A5). Attachments
+  // remain deferred (A6). Band-level status is specimen-driven (A4 preserved: ready if specimens exist,
+  // empty if none); the slides sub-source carries its own status so a WSI failure isolates to it and
+  // never affects specimens. A record failure → error/forbidden (whole band). No quality/adequacy/
+  // severity inference; slides are Record-anchored, never specimen-linked.
+  private async sectionDiagnosticMaterial(recordId: string, load: RecordLoad): Promise<Section<DiagnosticMaterialSection>> {
     if (load.kind === 'forbidden') return { status: 'forbidden', data: null, reason: 'record:view required' };
     if (load.kind === 'error') return { status: 'error', data: null, reason: load.reason };
     const rows: any[] = Array.isArray(load.rec.specimens) ? load.rec.specimens : [];
-    if (rows.length === 0) return { status: 'empty', data: null, reason: 'No specimens recorded' };
     // Deterministic order from recorded fields only: receivedAt asc (nulls last), then stable id.
     const ordered = [...rows].sort((a, b) => {
       const at = a.dateReceived ? new Date(a.dateReceived).getTime() : Infinity;
@@ -273,7 +302,38 @@ export class DiagnosticCaseService {
       bloodGroup: s.bloodGroup ?? null,
       receivedAt: iso(s.dateReceived),
     }));
-    return { status: 'ready', data: { recordId, specimens, summary: { total }, ownerPath: `/records/${recordId}` } };
+    const slides = await this.loadSlides(recordId);
+    const data: DiagnosticMaterialSection = { recordId, specimens, summary: { total }, slides, ownerPath: `/records/${recordId}` };
+    // A4-preserved band status: specimen-driven. Slides live in the sub-source regardless.
+    return { status: total === 0 ? 'empty' : 'ready', data };
+  }
+
+  // A5 slides sub-loader. Reads ONLY through the mutation-free WsiService.listByRecordMeta seam
+  // (metadata only — no slideUrl/bytes/annotations). Failure isolates to the slides sub-source (status
+  // 'error'), never affecting specimens or the band. No slides → 'empty'. Deterministic order: uploadedAt
+  // desc (owner order), then stable id. `id` is exposed as the viewer-safe handoff to /wsi/:id.
+  private async loadSlides(recordId: string): Promise<SlidesSubSection> {
+    try {
+      const rows: any[] = await this.wsi.listByRecordMeta(recordId);
+      if (!Array.isArray(rows) || rows.length === 0) return { status: 'empty', items: [], total: 0 };
+      const ordered = [...rows].sort((a, b) => {
+        const at = a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0;
+        const bt = b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0;
+        return bt !== at ? bt - at : String(a.id).localeCompare(String(b.id));
+      });
+      const items: SlideItem[] = ordered.slice(0, SLIDE_CAP).map((s) => ({
+        id: s.id,
+        format: s.format ?? null,
+        magnification: s.magnification ?? null,
+        stain: s.stain ?? null,
+        scanner: s.scanner ?? null,
+        fileSizeBytes: typeof s.fileSizeBytes === 'number' ? s.fileSizeBytes : null,
+        uploadedAt: iso(s.uploadedAt),
+      }));
+      return { status: 'ready', items, total: ordered.length };
+    } catch {
+      return { status: 'error', items: [], total: 0, reason: 'Slides could not be loaded' };
+    }
   }
 
   private mapCaseIdentity(recordId: string, r: any): CaseIdentitySection {
