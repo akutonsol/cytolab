@@ -97,11 +97,29 @@ export interface SlidesSubSection {
   reason?: string;
 }
 
+// A6: Attachments sub-source. Metadata only — id/name/fileType/createdAt; NO storageUrl/bytes/download.
+// Record-anchored, never specimen/slide/result-linked. `fileType` is the recorded MIME, not a verified
+// semantic document type. Nulls render "—".
+export interface AttachmentRow {
+  id: string;
+  name: string | null;
+  fileType: string | null;
+  createdAt: string | null;
+}
+export interface AttachmentsSubSection {
+  status: SectionStatus;
+  items: AttachmentRow[];
+  total: number;
+  reason?: string;
+}
+
 export interface DiagnosticMaterialSection {
   recordId: string;
   specimens: DiagnosticMaterialItem[];
   summary: { total: number };
   slides: SlidesSubSection;
+  attachments: AttachmentsSubSection;
+  unavailable: UnavailableSource[];
   ownerPath: string;
 }
 

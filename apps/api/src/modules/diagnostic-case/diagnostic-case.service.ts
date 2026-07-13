@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { RecordsService } from '../records/records.service';
 import { WsiService } from '../wsi/wsi.service';
+import { FilesService } from '../files/files.service';
 
 // Diagnostic Case Workspace — A2: the FROZEN read-only aggregate contract for
 // GET /diagnostic-case/:recordId/overview. This service is CONTRACT-ONLY: it holds no Prisma,
@@ -152,11 +153,33 @@ export interface SlidesSubSection {
   reason?: string;
 }
 
+// A6: Attachments sub-source of the Diagnostic Material band. Composed from the mutation-free
+// FilesService.getRecordAttachments read, mapped to METADATA ONLY. The owner read returns the full row
+// (incl. storageUrl/labId); this mapper deliberately surfaces ONLY id/name/fileType/createdAt — never
+// storageUrl, signed URLs, GCS paths, base64, bytes, credentials, or download tokens. FilesService
+// remains the sole owner of binary storage and delivery. Record-anchored: never specimen/slide/result
+// linked. `fileType` is the recorded request MIME (kind), not a verified semantic document type — no
+// semantics are inferred from it. No uploader/size/checksum/version/review state exists in the model.
+export interface AttachmentRow {
+  id: string;
+  name: string | null; // filename (recorded); may be null
+  fileType: string | null; // kind / recorded MIME (not a verified semantic type)
+  createdAt: string | null; // recorded (ISO)
+}
+export interface AttachmentsSubSection {
+  status: SectionStatus; // ready | empty | forbidden | error (isolated to this sub-source)
+  items: AttachmentRow[]; // ≤ ATTACHMENT_CAP, deterministic order
+  total: number; // true recorded attachment count
+  reason?: string;
+}
+
 export interface DiagnosticMaterialSection {
   recordId: string;
   specimens: DiagnosticMaterialItem[]; // ≤ MATERIAL_CAP, deterministic order (A4 — record read)
   summary: { total: number }; // true recorded specimen count (may exceed specimens.length if capped)
   slides: SlidesSubSection; // A5 — WsiService.listByRecordMeta (separate, isolated owner read)
+  attachments: AttachmentsSubSection; // A6 — FilesService.getRecordAttachments (separate, isolated read)
+  unavailable: UnavailableSource[]; // sub-sources that failed (error/forbidden) — truthful partial state
   ownerPath: string; // /records/:recordId
 }
 
@@ -189,6 +212,7 @@ export interface DiagnosticCaseOverview {
 const deferred = (): Section<null> => ({ status: 'deferred', data: null });
 const MATERIAL_CAP = 50; // conservative bound on the recorded specimen list (plan A4 §List bounds)
 const SLIDE_CAP = 50; // conservative bound on the recorded slide list (plan A5 §List bounds)
+const ATTACHMENT_CAP = 50; // conservative bound on the recorded attachment list (plan A6 §List bounds)
 const iso = (d: Date | string | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
 const fullName = (
   u: { firstName?: string | null; lastName?: string | null } | null | undefined,
@@ -199,6 +223,7 @@ export class DiagnosticCaseService {
   constructor(
     private readonly records: RecordsService,
     private readonly wsi: WsiService,
+    private readonly files: FilesService,
   ) {}
 
   /**
@@ -277,12 +302,14 @@ export class DiagnosticCaseService {
     return { status: 'ready', data: this.mapCaseIdentity(recordId, load.rec) };
   }
 
-  // Band 2: Diagnostic Material (multi-source). Specimens come from the SAME record read (A4, no second
-  // record read); Slides come from a SEPARATE, isolated WsiService.listByRecordMeta call (A5). Attachments
-  // remain deferred (A6). Band-level status is specimen-driven (A4 preserved: ready if specimens exist,
-  // empty if none); the slides sub-source carries its own status so a WSI failure isolates to it and
-  // never affects specimens. A record failure → error/forbidden (whole band). No quality/adequacy/
-  // severity inference; slides are Record-anchored, never specimen-linked.
+  // Band 2: Diagnostic Material (multi-source). Three independent sources: specimens (from the SAME
+  // record read — A4, no second record read), slides (WsiService.listByRecordMeta — A5), and attachments
+  // (FilesService.getRecordAttachments — A6). Each sub-source carries its own status so one failure
+  // isolates to it and never collapses the others. Band-level status is now all-sources-aware: `empty`
+  // ONLY when every permitted source is genuinely empty; `ready` otherwise (incl. partial failure —
+  // never falsely empty). A record failure → error/forbidden (whole band, since specimens derive from it).
+  // `unavailable[]` names sub-sources that errored/were forbidden. No quality/adequacy/severity inference;
+  // slides and attachments are Record-anchored, never specimen-linked.
   private async sectionDiagnosticMaterial(recordId: string, load: RecordLoad): Promise<Section<DiagnosticMaterialSection>> {
     if (load.kind === 'forbidden') return { status: 'forbidden', data: null, reason: 'record:view required' };
     if (load.kind === 'error') return { status: 'error', data: null, reason: load.reason };
@@ -302,10 +329,25 @@ export class DiagnosticCaseService {
       bloodGroup: s.bloodGroup ?? null,
       receivedAt: iso(s.dateReceived),
     }));
-    const slides = await this.loadSlides(recordId);
-    const data: DiagnosticMaterialSection = { recordId, specimens, summary: { total }, slides, ownerPath: `/records/${recordId}` };
-    // A4-preserved band status: specimen-driven. Slides live in the sub-source regardless.
-    return { status: total === 0 ? 'empty' : 'ready', data };
+    // Two SEPARATE, isolated owner reads (parallel). Each failure stays inside its own sub-source.
+    const [slides, attachments] = await Promise.all([this.loadSlides(recordId), this.loadAttachments(recordId)]);
+    // Truthful partial-failure summary: only error/forbidden sub-sources are "unavailable" (empty ≠ unavailable).
+    const unavailable: UnavailableSource[] = [];
+    if (slides.status === 'error' || slides.status === 'forbidden') unavailable.push({ key: 'slides', label: 'Slides', reason: slides.reason });
+    if (attachments.status === 'error' || attachments.status === 'forbidden') unavailable.push({ key: 'attachments', label: 'Attachments', reason: attachments.reason });
+    const data: DiagnosticMaterialSection = { recordId, specimens, summary: { total }, slides, attachments, unavailable, ownerPath: `/records/${recordId}` };
+
+    // Band-status truth table (all-sources; a resolved-but-empty source is NOT the same as a failed one):
+    //   • any sub-source has ≥1 recorded item                        → ready (failed siblings named in unavailable[])
+    //   • all sub-sources resolved successfully with zero items       → empty
+    //   • no sub-source has items AND ≥1 sub-source failed            → error (never "empty"/"ready"; failed sources named)
+    //   • root record read failed / forbidden                        → handled above (whole band, preserved)
+    // (A `ready` sub-source implies items > 0 by the loader contract; `empty` implies a successful zero-item read.)
+    const anyItems = total > 0 || slides.status === 'ready' || attachments.status === 'ready';
+    if (anyItems) return { status: 'ready', data };
+    if (unavailable.length === 0) return { status: 'empty', data }; // every source resolved with zero items
+    // No items anywhere and ≥1 source failed: the band has no material to show and is not truthfully empty.
+    return { status: 'error', data, reason: `Diagnostic material could not be loaded (${unavailable.map((u) => u.label).join(', ')})` };
   }
 
   // A5 slides sub-loader. Reads ONLY through the mutation-free WsiService.listByRecordMeta seam
@@ -333,6 +375,36 @@ export class DiagnosticCaseService {
       return { status: 'ready', items, total: ordered.length };
     } catch {
       return { status: 'error', items: [], total: 0, reason: 'Slides could not be loaded' };
+    }
+  }
+
+  // A6 attachments sub-loader. Reads ONLY through the mutation-free FilesService.getRecordAttachments.
+  // The owner returns full rows (incl. storageUrl/labId); this mapper surfaces METADATA ONLY —
+  // id/name/fileType/createdAt — and NEVER storageUrl/signed URLs/GCS paths/base64/bytes/credentials/
+  // download tokens (FilesService remains the sole binary-delivery owner). Failure isolates to this
+  // sub-source ('error'), never affecting specimens or slides. No attachments → 'empty'. The owner
+  // already orders by createdAt desc; re-sorted deterministically (createdAt desc, then name, then id).
+  private async loadAttachments(recordId: string): Promise<AttachmentsSubSection> {
+    try {
+      const rows: any[] = await this.files.getRecordAttachments(recordId);
+      if (!Array.isArray(rows) || rows.length === 0) return { status: 'empty', items: [], total: 0 };
+      const ordered = [...rows].sort((a, b) => {
+        const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (bt !== at) return bt - at;
+        const an = a.filename ?? '';
+        const bn = b.filename ?? '';
+        return an !== bn ? an.localeCompare(bn) : String(a.id).localeCompare(String(b.id));
+      });
+      const items: AttachmentRow[] = ordered.slice(0, ATTACHMENT_CAP).map((a) => ({
+        id: a.id,
+        name: a.filename ?? null, // recorded filename only
+        fileType: a.kind ?? null, // recorded MIME only — no semantic inference; NO storageUrl mapped
+        createdAt: iso(a.createdAt),
+      }));
+      return { status: 'ready', items, total: ordered.length };
+    } catch {
+      return { status: 'error', items: [], total: 0, reason: 'Attachments could not be loaded' };
     }
   }
 

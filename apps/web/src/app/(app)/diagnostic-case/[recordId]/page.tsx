@@ -17,7 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { CaseIdentitySection, DiagnosticCaseOverview, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, SectionStatus, SlidesSubSection } from './types';
+import type { AttachmentsSubSection, CaseIdentitySection, DiagnosticCaseOverview, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, SectionStatus, SlidesSubSection } from './types';
 
 // Recorded dates render as plain calendar dates; null → "—". No relative/"ago" phrasing (which would
 // imply a freshness judgment the owner does not record).
@@ -334,7 +334,9 @@ function DiagnosticMaterialBand({
   const status = section?.status;
   const d = section?.data ?? null;
   const total = d?.summary.total ?? 0;
-  const badge = loading || !status ? 'Loading' : status === 'ready' ? `${total} specimen${total === 1 ? '' : 's'}` : status === 'empty' ? 'None recorded' : status === 'forbidden' ? 'No access' : status === 'error' ? 'Unavailable' : 'Not yet loaded';
+  // Band badge is now source-agnostic (the band is multi-source: specimens + slides + attachments).
+  // Each sub-source shows its own count; the band is `empty` only when ALL sources are empty.
+  const badge = loading || !status ? 'Loading' : status === 'ready' ? 'Ready' : status === 'empty' ? 'None recorded' : status === 'forbidden' ? 'No access' : status === 'error' ? 'Unavailable' : 'Not yet loaded';
 
   return (
     <Card radius="md" elevation="soft" border="hairline" padding="lg">
@@ -348,11 +350,13 @@ function DiagnosticMaterialBand({
       ) : status === 'forbidden' ? (
         <EmptyState bare className="px-0 py-8" title="No access" description="You do not have permission to view this section." />
       ) : status === 'error' ? (
+        // Band-level error: no material to show AND ≥1 source failed. `reason` names the failed source(s)
+        // truthfully; a resolved-but-empty sibling is never reported as this band's content.
         <EmptyState
           bare
           className="px-0 py-8"
           title="Unavailable"
-          description="Recorded specimen material could not be loaded."
+          description={section?.reason ?? 'Recorded specimen material could not be loaded.'}
           action={<Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={14} className="mr-1.5" />{retrying ? 'Retrying…' : 'Retry'}</Button>}
         />
       ) : (
@@ -397,10 +401,12 @@ function DiagnosticMaterialBand({
           <div className="mt-3 border-t border-hairline pt-3">
             <SlidesSubArea slides={d?.slides} onOpenSlide={onOpenSlide} onRetry={onRetry} retrying={retrying} />
           </div>
-          <div className="mt-3 flex items-center justify-between gap-2 border-t border-hairline pt-3">
-            <span className="text-sm text-text-secondary">Attachments</span>
-            <Badge tone="neutral" size="xs">Not yet loaded</Badge>
+          <div className="mt-3 border-t border-hairline pt-3">
+            <AttachmentsSubArea attachments={d?.attachments} onRetry={onRetry} retrying={retrying} />
           </div>
+          {d?.unavailable && d.unavailable.length > 0 && (
+            <p className="mt-3 text-meta text-text-tertiary">Some sources are unavailable: {d.unavailable.map((u) => u.label).join(', ')}.</p>
+          )}
         </>
       )}
     </Card>
@@ -464,6 +470,63 @@ function SlidesSubArea({
             <p className="mt-2 text-meta text-text-tertiary">Showing the first {slides.items.length} of {total} recorded slides.</p>
           )}
           <p className="mt-2 text-meta text-text-tertiary">Slide metadata is as recorded at upload; opening a slide hands off to the viewer.</p>
+        </>
+      )}
+    </div>
+  );
+}
+
+// A6: Attachments sub-area within Diagnostic Material. Composed from FilesService.getRecordAttachments
+// (metadata only — filename, recorded MIME, created date). DISPLAY-ONLY: no download/preview/upload/
+// delete/rename, no thumbnails, no inline render — FilesService remains the sole binary-delivery owner.
+// Isolated status: a Files failure shows here (Unavailable + Retry) without affecting specimens/slides.
+// Record-anchored; never implied to belong to a specimen, slide, or result. No semantic inference.
+function AttachmentsSubArea({
+  attachments,
+  onRetry,
+  retrying,
+}: {
+  attachments?: AttachmentsSubSection;
+  onRetry: () => void;
+  retrying: boolean;
+}) {
+  const status = attachments?.status;
+  const total = attachments?.total ?? 0;
+  const badge = !status ? 'Loading' : status === 'ready' ? `${total} attachment${total === 1 ? '' : 's'}` : status === 'empty' ? 'None recorded' : status === 'forbidden' ? 'No access' : status === 'error' ? 'Unavailable' : 'Not yet loaded';
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-sm font-semibold text-text">Attachments</span>
+        <Badge tone="neutral" size="xs">{badge}</Badge>
+      </div>
+      {!status ? (
+        <Skeleton shape="text" width="w-40" />
+      ) : status === 'forbidden' ? (
+        <p className="text-meta text-text-tertiary">You do not have permission to view attachments.</p>
+      ) : status === 'error' ? (
+        <div className="flex items-center gap-3">
+          <p className="text-meta text-text-tertiary">Recorded attachments could not be loaded.</p>
+          <Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={12} className="mr-1" />{retrying ? 'Retrying…' : 'Retry'}</Button>
+        </div>
+      ) : status === 'empty' || !attachments || attachments.items.length === 0 ? (
+        <p className="text-meta text-text-tertiary">No attachments recorded for this case.</p>
+      ) : (
+        <>
+          <ul className="space-y-1.5">
+            {attachments.items.map((a) => {
+              const meta = [a.fileType, fmtDate(a.createdAt)].filter((v) => v && v !== '—');
+              return (
+                <li key={a.id} className="rounded border border-hairline px-2.5 py-1.5">
+                  <div className="truncate text-sm text-text">{dash(a.name)}</div>
+                  <div className="truncate text-meta text-text-tertiary">{meta.length ? meta.join(' · ') : 'Recorded attachment'}</div>
+                </li>
+              );
+            })}
+          </ul>
+          {attachments.items.length < total && (
+            <p className="mt-2 text-meta text-text-tertiary">Showing the first {attachments.items.length} of {total} recorded attachments.</p>
+          )}
+          <p className="mt-2 text-meta text-text-tertiary">Attachment metadata only; files open in the record’s file owner.</p>
         </>
       )}
     </div>
