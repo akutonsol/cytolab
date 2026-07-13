@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from './cn';
 import { Card } from './Card';
 
@@ -29,6 +29,27 @@ const DESC_TONE: Record<DescTone, string> = {
   strong: 'text-text-strong', // #475569 — 2 sites
 };
 
+/**
+ * Icon colour by presentation intent. `neutral` is the historical look (a faint icon for an
+ * absence of data); `danger` tints only the icon for an error framing — the title/description
+ * stay neutral, matching the route error boundary. Default is `neutral`, so it is inert.
+ */
+type Tone = 'neutral' | 'danger';
+
+const ICON_TONE: Record<Tone, string> = {
+  neutral: 'text-icon-faint',
+  danger: 'text-error',
+};
+
+/**
+ * Screen-reader announcement intent. This is PRESENTATION INTENT, not a state decision — the
+ * page still decides whether it is showing an empty/error/forbidden surface and opts in:
+ *   `status` → role="status" + aria-live="polite" (a non-urgent update, e.g. a load error a
+ *              retry can fix). `alert` → role="alert" (assertive). Omitted → no ARIA is added,
+ *              so every existing consumer renders byte-identically.
+ */
+type Announcement = 'status' | 'alert';
+
 export interface EmptyStateProps {
   /** Rendered as-is; the call sites pass a Lucide icon at `size={28}`. */
   icon?: ReactNode;
@@ -39,6 +60,10 @@ export interface EmptyStateProps {
   action?: ReactNode;
   /** Drop the card chrome, e.g. when already inside a Card. */
   bare?: boolean;
+  /** Icon colour intent. Defaults to `neutral` (unchanged look). */
+  tone?: Tone;
+  /** Opt in to a screen-reader announcement. Omitted = no ARIA (unchanged). */
+  announcement?: Announcement;
   className?: string;
 }
 
@@ -49,18 +74,28 @@ export function EmptyState({
   descTone = 'secondary',
   action,
   bare,
+  tone = 'neutral',
+  announcement,
   className,
 }: EmptyStateProps) {
+  // Additive only: with no `announcement`, `announce` is empty and nothing is spread.
+  const announce: HTMLAttributes<HTMLElement> =
+    announcement === 'status'
+      ? { role: 'status', 'aria-live': 'polite' }
+      : announcement === 'alert'
+        ? { role: 'alert' }
+        : {};
+
   const body = (
     <>
-      {icon && <div className="mx-auto text-icon-faint">{icon}</div>}
+      {icon && <div className={cn('mx-auto', ICON_TONE[tone])}>{icon}</div>}
       <div className="mt-3 text-[18px] font-bold text-[var(--slate-900)]">{title}</div>
       {description && <div className={cn('mt-1 text-[14px]', DESC_TONE[descTone])}>{description}</div>}
       {action && <div className="mt-4">{action}</div>}
     </>
   );
 
-  if (bare) return <div className={cn('text-center', className)}>{body}</div>;
+  if (bare) return <div className={cn('text-center', className)} {...announce}>{body}</div>;
 
   return (
     <Card
@@ -69,6 +104,7 @@ export function EmptyState({
       border="hairline"
       padding="xl"
       className={cn('mx-auto max-w-md text-center', className)}
+      {...announce}
     >
       {body}
     </Card>

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, RefreshCw } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useRealtime } from '@/hooks/useRealtime';
@@ -74,10 +74,13 @@ export default function QualityAlertsPage() {
       </div>
 
       {isError ? (
-        <Card radius="md" elevation="soft" border="hairline" padding="lg" className="text-center">
-          <p className="text-sm text-text-secondary">Couldn’t load quality alerts.</p>
-          <Button variant="secondary" size="sm" className="mt-3" onClick={() => refetch()}>Retry</Button>
-        </Card>
+        <EmptyState
+          icon={<AlertTriangle size={28} />}
+          tone="danger"
+          announcement="status"
+          title="Couldn’t load quality alerts."
+          action={<Button variant="secondary" size="sm" onClick={() => refetch()}>Retry</Button>}
+        />
       ) : isLoading || !data ? (
         <LoadingState />
       ) : (
