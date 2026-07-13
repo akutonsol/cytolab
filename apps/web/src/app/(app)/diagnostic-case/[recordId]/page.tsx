@@ -12,12 +12,21 @@
 
 import { useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, RotateCw } from 'lucide-react';
+import { ArrowLeft, ExternalLink, RotateCw } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { DiagnosticCaseOverview, EffectiveDiagnosticPermissions, SectionStatus } from './types';
+import type { CaseIdentitySection, DiagnosticCaseOverview, EffectiveDiagnosticPermissions, SectionStatus } from './types';
+
+// Recorded dates render as plain calendar dates; null → "—". No relative/"ago" phrasing (which would
+// imply a freshness judgment the owner does not record).
+function fmtDate(iso: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+const dash = (v: string | null | undefined): string => (v && v.trim() ? v : '—');
 
 // Only an internal, same-origin path may be a return target — reject external and protocol-relative
 // URLs (open-redirect protection). Identical grammar to Sign-Out / Quality / Enterprise Administration.
@@ -140,14 +149,36 @@ export default function DiagnosticCaseWorkspacePage() {
   }
 
   const perms = data?.permissions?.status === 'ready' ? data.permissions.data : null;
+  const identity = data?.caseIdentity;
+
+  // Root-failure behavior: Case Identity is the root. If the record cannot be verified (error), we do
+  // NOT paint the seven downstream clinical bands as "Not yet loaded" (that would imply a valid case
+  // is loading). We render the truthful Case Identity error (with Retry) and keep the safe,
+  // caller-scoped Permissions & Actions panel. Documented, truthful suppression (plan A3 §Failure).
+  const rootError = !!data && identity?.status === 'error';
+  const visibleBands = rootError ? BANDS.filter((b) => b.key === 'caseIdentity' || b.key === 'permissionsActions') : BANDS;
 
   return (
     <div className="w-full">
       {header}
       <div className="grid gap-4 lg:grid-cols-2">
-        {BANDS.map((b) => {
+        {visibleBands.map((b) => {
           if (b.key === 'permissionsActions') {
             return <PermissionsBand key={b.key} title={b.title} purpose={b.purpose} perms={perms} loading={isLoading} status={data?.permissions?.status} />;
+          }
+          if (b.key === 'caseIdentity') {
+            return (
+              <CaseIdentityBand
+                key={b.key}
+                title={b.title}
+                purpose={b.purpose}
+                section={identity}
+                loading={isLoading}
+                onRetry={() => refetch()}
+                retrying={isFetching}
+                onOpenRecord={(rid) => router.push(`/records/${rid}`)}
+              />
+            );
           }
           return <BandShell key={b.key} title={b.title} purpose={b.purpose} status={data?.[b.key]?.status} loading={isLoading} />;
         })}
@@ -156,9 +187,108 @@ export default function DiagnosticCaseWorkspacePage() {
   );
 }
 
+// A labeled recorded fact. Value "—" when the owner did not record it — never a warning, never inferred.
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-meta text-text-tertiary">{label}</dt>
+      <dd className="text-sm text-text">{value}</dd>
+    </div>
+  );
+}
+
+// Band 1: Case Identity (A3). A restrained, read-only case header composed ONLY from RecordsService
+// .findOne — recorded identity, patient, referring context, dates, and assignee. It is NOT a second
+// record-detail page: no editing, no status transition, no patient/specimen editing. `status` is the
+// stored value shown verbatim; `urgent` is a recorded flag (neutral, never an amber severity signal);
+// `clinicalIndication` is the referring impression, never a diagnosis. One owner action: Open record.
+function CaseIdentityBand({
+  title,
+  purpose,
+  section,
+  loading,
+  onRetry,
+  retrying,
+  onOpenRecord,
+}: {
+  title: string;
+  purpose: string;
+  section?: { status: SectionStatus; data: CaseIdentitySection | null; reason?: string };
+  loading: boolean;
+  onRetry: () => void;
+  retrying: boolean;
+  onOpenRecord: (recordId: string) => void;
+}) {
+  const status = section?.status;
+  const d = section?.data ?? null;
+  const badge = loading || !status ? 'Loading' : status === 'ready' ? 'Ready' : status === 'forbidden' ? 'No access' : status === 'error' ? 'Unavailable' : 'Not yet loaded';
+
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-3 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">{title}</h2>
+        <Badge tone="neutral" size="xs">{badge}</Badge>
+        {d?.urgent && <Badge tone="neutral" size="xs">Urgent (recorded)</Badge>}
+      </div>
+
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-56" /><Skeleton shape="text" width="w-44" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-8" title="No access" description="You do not have permission to view this record." />
+      ) : status === 'error' ? (
+        // Root error: the record could not be verified. Truthful message + Retry; the workspace does
+        // not fabricate a case, and the downstream clinical bands are suppressed by the parent.
+        <EmptyState
+          bare
+          className="px-0 py-8"
+          title="This case could not be loaded"
+          description={section?.reason === 'Record not found' ? 'No such record, or it is not in your laboratory.' : 'The record could not be loaded.'}
+          action={<Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={14} className="mr-1.5" />{retrying ? 'Retrying…' : 'Retry'}</Button>}
+        />
+      ) : d ? (
+        <>
+          {/* Primary identity */}
+          <div className="mb-3">
+            <div className="text-lg font-bold leading-tight text-charcoal-heading">{dash(d.labNumber)}</div>
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-meta text-text-tertiary">
+              <span title="System identifier">{d.identifier}</span>
+              {d.formType && <><span aria-hidden>·</span><span>{d.formType}</span></>}
+              <span aria-hidden>·</span>
+              <Badge tone="neutral" size="xs">{d.status}</Badge>
+            </div>
+          </div>
+
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+            <Field label="Patient" value={dash(d.patient?.name ?? null)} />
+            <Field label="MRN" value={dash(d.patient?.registrationNo ?? null)} />
+            <Field label="Sex" value={dash(d.patient?.gender ?? null)} />
+            <Field label="Date of birth" value={fmtDate(d.patient?.dateOfBirth ?? null)} />
+            <Field label="Referring doctor" value={dash(d.referringDoctor)} />
+            <Field label="Client / referrer" value={dash(d.client?.name ?? null)} />
+            <Field label="Referring indication" value={dash(d.clinicalIndication)} />
+            <Field label="Medical entry" value={dash(d.medicalEntry)} />
+            <Field label="Specimen date" value={fmtDate(d.specimenDate)} />
+            <Field label="Registered" value={fmtDate(d.registeredAt)} />
+            <Field label="Status changed" value={fmtDate(d.statusChangedAt)} />
+            <Field label="Assigned to" value={dash(d.assignedTo?.name ?? null)} />
+          </dl>
+
+          <div className="mt-4">
+            <Button variant="secondary" size="sm" onClick={() => onOpenRecord(d.recordId)}>
+              Open record <ExternalLink size={14} className="ml-1.5" />
+            </Button>
+          </div>
+        </>
+      ) : (
+        <EmptyState bare className="px-0 py-8" title="Not yet loaded" description={purpose} />
+      )}
+    </Card>
+  );
+}
+
 // One clinical band. Truthful states: loading ("Loading") / deferred ("Not yet loaded") / forbidden
 // ("No access") / error ("Unavailable") / empty ("None recorded"). No data, counts, status, diagnosis,
-// AI output, or owner-workflow buttons at A2 — the region only names what it WILL compose from its owner.
+// AI output, or owner-workflow buttons yet — the region only names what it WILL compose from its owner.
 function BandShell({ title, purpose, status, loading }: { title: string; purpose: string; status?: SectionStatus; loading: boolean }) {
   const badge = status === 'forbidden' ? 'No access' : status === 'error' ? 'Unavailable' : status === 'empty' ? 'None recorded' : loading || !status ? 'Loading' : 'Not yet loaded';
   return (

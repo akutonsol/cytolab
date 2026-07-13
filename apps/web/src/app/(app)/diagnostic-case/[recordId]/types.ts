@@ -41,13 +41,41 @@ export interface EffectiveDiagnosticPermissions {
   isSuperRole: boolean;
 }
 
+// Band 1: Case Identity (A3). Bounded, factual — mirrors the API CaseIdentitySection. Nulls render
+// "—"; `clinicalIndication` is the referring impression, never a diagnosis; `status` is the stored
+// value with no added meaning.
+export interface CaseIdentitySection {
+  recordId: string;
+  identifier: string;
+  labNumber: string | null;
+  formType: string | null;
+  status: string;
+  urgent: boolean;
+  specimenDate: string | null;
+  registeredAt: string | null;
+  statusChangedAt: string | null;
+  patient: {
+    id: string;
+    name: string | null;
+    registrationNo: string | null;
+    gender: string | null;
+    dateOfBirth: string | null;
+  } | null;
+  referringDoctor: string | null;
+  clinicalIndication: string | null;
+  medicalEntry: string | null;
+  client: { name: string | null; accountNo: string | null; type: string | null } | null;
+  assignedTo: { name: string | null; at: string | null } | null;
+  ownerPath: string;
+}
+
 export interface DiagnosticCaseOverview {
   asOf: string;
   recordId: string;
 
   permissions: Section<EffectiveDiagnosticPermissions>;
 
-  caseIdentity: Section<null>;
+  caseIdentity: Section<CaseIdentitySection>;
   diagnosticMaterial: Section<null>;
   diagnosticInterpretation: Section<null>;
   decisionSupport: Section<null>;

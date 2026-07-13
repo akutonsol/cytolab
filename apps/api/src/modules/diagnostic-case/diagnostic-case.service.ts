@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { RecordsService } from '../records/records.service';
 
 // Diagnostic Case Workspace — A2: the FROZEN read-only aggregate contract for
 // GET /diagnostic-case/:recordId/overview. This service is CONTRACT-ONLY: it holds no Prisma,
@@ -83,6 +84,38 @@ export interface EffectiveDiagnosticPermissions {
   isSuperRole: boolean;
 }
 
+// ── Band 1: Case Identity (A3) ──
+// Bounded, factual case header composed ONLY from fields RecordsService.findOne already returns
+// (recordSelect). No synthesis: no diagnosis, no inferred urgency/risk/severity, no lifecycle meaning
+// beyond the stored status, no Started/Released/Archived. Nulls stay null (render "—"), never errors.
+// Specimen material, therapy, clinical features, and result sheets are DELIBERATELY excluded — they
+// belong to later bands. `clinicalIndication` is the REFERRING clinician's recorded impression
+// (Record.clinicalDiagnosis), never the pathologist's diagnosis.
+export interface CaseIdentitySection {
+  recordId: string;
+  identifier: string; // internal stable system id (recorded)
+  labNumber: string | null; // human case number / lab no. (recorded)
+  formType: string | null; // clinical form discriminator (recorded)
+  status: string; // stored RecordStatus, verbatim — no meaning beyond the recorded value
+  urgent: boolean; // recorded flag (NOT synthesized urgency)
+  specimenDate: string | null; // recorded specimen date (ISO) — collection date as recorded
+  registeredAt: string | null; // record createdAt (ISO)
+  statusChangedAt: string | null; // dateStatus (ISO) — last recorded status-change time
+  patient: {
+    id: string;
+    name: string | null;
+    registrationNo: string | null; // MRN as already used by the record surface
+    gender: string | null; // as recorded (no inference)
+    dateOfBirth: string | null; // recorded DOB (ISO); age is NOT synthesized
+  } | null;
+  referringDoctor: string | null; // Record.doctor (recorded free text)
+  clinicalIndication: string | null; // Record.clinicalDiagnosis — REFERRING impression, not a diagnosis
+  medicalEntry: string | null; // Record.medicalEntry (recorded free text)
+  client: { name: string | null; accountNo: string | null; type: string | null } | null;
+  assignedTo: { name: string | null; at: string | null } | null; // recorded assignee (owner field)
+  ownerPath: string; // /records/:recordId
+}
+
 // ── The frozen overview envelope ──
 export interface DiagnosticCaseOverview {
   asOf: string;
@@ -90,9 +123,9 @@ export interface DiagnosticCaseOverview {
 
   permissions: Section<EffectiveDiagnosticPermissions>;
 
-  // The nine frozen clinical bands, in the frozen order (plan §4). `Section<null>` at A2; each is
-  // typed to its band payload as it hydrates in A3+ (the STATUS contract never changes).
-  caseIdentity: Section<null>;
+  // The nine frozen clinical bands, in the frozen order (plan §4). Each hydrates to its band payload
+  // as it lands (A3 = caseIdentity); the STATUS contract never changes. Unhydrated bands are Section<null>.
+  caseIdentity: Section<CaseIdentitySection>;
   diagnosticMaterial: Section<null>;
   diagnosticInterpretation: Section<null>;
   decisionSupport: Section<null>;
@@ -104,20 +137,28 @@ export interface DiagnosticCaseOverview {
 }
 
 const deferred = (): Section<null> => ({ status: 'deferred', data: null });
+const iso = (d: Date | string | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
+const fullName = (
+  u: { firstName?: string | null; lastName?: string | null } | null | undefined,
+): string | null => (u ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || null : null);
 
 @Injectable()
 export class DiagnosticCaseService {
+  constructor(private readonly records: RecordsService) {}
+
   /**
-   * Read-only aggregate for one case. A2: contract-only. Builds the descriptive permission map from
-   * the caller's real claims and returns every clinical band `deferred`. Performs NO owner read and
-   * NO record existence lookup — `recordId` is echoed back verbatim, not resolved.
+   * Read-only aggregate for one case. A3: composes the Case Identity band from RecordsService.findOne
+   * (the verified, mutation-free record owner read); all other clinical bands remain `deferred`. The
+   * permission map is built from the caller's real claims. Orchestration only — no Prisma, no owner
+   * logic duplication, no mutation. Case Identity is the root: its loader isolates failure to its own
+   * Section (error/forbidden) and never collapses the permission map or the endpoint.
    */
-  overview(recordId: string, user: AuthUser): DiagnosticCaseOverview {
+  async overview(recordId: string, user: AuthUser): Promise<DiagnosticCaseOverview> {
     return {
       asOf: new Date().toISOString(),
       recordId,
       permissions: { status: 'ready', data: this.buildPermissions(user) },
-      caseIdentity: deferred(),
+      caseIdentity: await this.loadCaseIdentity(recordId, user),
       diagnosticMaterial: deferred(),
       diagnosticInterpretation: deferred(),
       decisionSupport: deferred(),
@@ -152,6 +193,62 @@ export class DiagnosticCaseService {
       viewChangeRequests: has('changerequest:view'),
       changeChangeRequests: has('changerequest:change'),
       isSuperRole: !!user.isSuperRole,
+    };
+  }
+
+  // Band 1 loader. Reads ONLY through RecordsService.findOne (owner, mutation-free, tenant-scoped by
+  // the LabContext Prisma extension) and maps its recorded fields into the bounded CaseIdentitySection.
+  // Truthful states: forbidden (caller lacks record:view — defensive; the base gate normally enforces),
+  // error (owner threw — e.g. NotFoundException for a missing/inaccessible record, preserved as the
+  // owner reports it), ready otherwise. Missing FIELDS stay null (never an error). No synthesis.
+  private async loadCaseIdentity(recordId: string, user: AuthUser): Promise<Section<CaseIdentitySection>> {
+    const has = (code: string) => !!user.isSuperRole || user.permissions.includes(code);
+    if (!has('record:view')) return { status: 'forbidden', data: null, reason: 'record:view required' };
+    try {
+      const r: any = await this.records.findOne(recordId);
+      return { status: 'ready', data: this.mapCaseIdentity(recordId, r) };
+    } catch (e) {
+      // Preserve the owner's not-found/failure — never convert it into a fabricated or empty case.
+      const reason = e instanceof NotFoundException ? 'Record not found' : 'Could not load the record';
+      return { status: 'error', data: null, reason };
+    }
+  }
+
+  private mapCaseIdentity(recordId: string, r: any): CaseIdentitySection {
+    const client = r.client
+      ? {
+          name: r.client.officeName || fullName(r.client) || null,
+          accountNo: r.client.accountNo ?? null,
+          type: r.client.clientType?.type ?? null,
+        }
+      : null;
+    return {
+      recordId,
+      identifier: r.identifier,
+      labNumber: r.labNumber ?? null,
+      formType: r.formType ?? null,
+      status: r.status, // stored RecordStatus, verbatim
+      urgent: !!r.urgent, // recorded flag only
+      specimenDate: iso(r.specimenDate),
+      registeredAt: iso(r.createdAt),
+      statusChangedAt: iso(r.dateStatus),
+      patient: r.patient
+        ? {
+            id: r.patient.id,
+            name: fullName(r.patient),
+            registrationNo: r.patient.registrationNo ?? null,
+            gender: r.patient.gender ?? null,
+            dateOfBirth: iso(r.patient.dateOfBirth),
+          }
+        : null,
+      referringDoctor: r.doctor ?? null,
+      clinicalIndication: r.clinicalDiagnosis ?? null, // referring impression, not a diagnosis
+      medicalEntry: r.medicalEntry ?? null,
+      client,
+      assignedTo: r.assignedTo
+        ? { name: fullName(r.assignedTo), at: iso(r.assignedAt) }
+        : null,
+      ownerPath: `/records/${recordId}`,
     };
   }
 }
