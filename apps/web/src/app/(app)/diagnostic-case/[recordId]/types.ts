@@ -200,6 +200,63 @@ export interface DecisionSupportSection {
   ownerPath: string;
 }
 
+// Band 5: Prior Evidence (A9). Two patient-anchored sub-sources shown separately, never compared to the
+// current case. Prior Records = the patient's prior cases with the CURRENT record excluded by the owner
+// (so "prior" is accurate) + embedded historical Bethesda. Correlation = patient-level cyto-histo
+// correlations (may include one tied to the current record — labeled neutrally, never "prior"); existence
+// + classification only (no diagnoses/notes/review/identity). Nulls "—".
+export interface PriorRecordBethesda {
+  adequacy: string | null;
+  generalCategory: string | null;
+  squamousCategory: string | null;
+  ascSubtype: string | null;
+  glandularCategory: string | null;
+  glandularSubtype: string | null;
+}
+export interface PriorRecordItem {
+  id: string;
+  labNumber: string | null;
+  identifier: string;
+  formType: string | null;
+  status: string;
+  specimenDate: string | null;
+  statusChangedAt: string | null;
+  createdAt: string | null;
+  bethesda: PriorRecordBethesda | null;
+  hasAuthorizedResultSheet: boolean;
+  hasReport: boolean;
+  ownerPath: string;
+}
+export interface PriorRecordsSubSection {
+  status: SectionStatus;
+  items: PriorRecordItem[];
+  total: number;
+  reason?: string;
+}
+export interface CorrelationItem {
+  id: string;
+  cytologyDate: string | null;
+  histologyDate: string | null;
+  histologySource: string | null;
+  externalLabName: string | null;
+  correlationResult: string | null;
+  createdAt: string | null;
+  ownerPath: string;
+}
+export interface CorrelationSubSection {
+  status: SectionStatus;
+  items: CorrelationItem[];
+  total: number;
+  reason?: string;
+}
+export interface PriorEvidenceSection {
+  recordId: string;
+  priorRecords: PriorRecordsSubSection;
+  correlation: CorrelationSubSection;
+  unavailable: UnavailableSource[];
+  ownerPath: string;
+}
+
 export interface DiagnosticCaseOverview {
   asOf: string;
   recordId: string;
@@ -210,7 +267,7 @@ export interface DiagnosticCaseOverview {
   diagnosticMaterial: Section<DiagnosticMaterialSection>;
   diagnosticInterpretation: Section<DiagnosticInterpretationSection>;
   decisionSupport: Section<DecisionSupportSection>;
-  priorEvidence: Section<null>;
+  priorEvidence: Section<PriorEvidenceSection>;
   collaboration: Section<null>;
   reportingSignOut: Section<null>;
   timelineProvenance: Section<null>;

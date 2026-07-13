@@ -5,6 +5,7 @@ import { FilesModule } from '../files/files.module';
 import { BethesdaModule } from '../bethesda/bethesda.module';
 import { CodingModule } from '../coding/coding.module';
 import { AiModule } from '../ai/ai.module';
+import { CorrelationModule } from '../correlation/correlation.module';
 import { DiagnosticCaseController } from './diagnostic-case.controller';
 import { DiagnosticCaseService } from './diagnostic-case.service';
 
@@ -17,9 +18,11 @@ import { DiagnosticCaseService } from './diagnostic-case.service';
 // and CodingService.getRecordCodings reads, allowlisted; suggest()/write paths are never called). All
 // owner modules already export their service; their logic is unchanged. A8 adds AiModule (the
 // mutation-free AiReportingService.draftsByRecord metadata read; generated text stays with the owner).
-// The module never imports PrismaModule; Sign-Out is not imported or modified.
+// A9 adds CorrelationModule (the mutation-free CorrelationService.byPatient read; patient correlation
+// cases, existence + classification only). The module never imports PrismaModule; Sign-Out is not
+// imported or modified.
 @Module({
-  imports: [RecordsModule, WsiModule, FilesModule, BethesdaModule, CodingModule, AiModule],
+  imports: [RecordsModule, WsiModule, FilesModule, BethesdaModule, CodingModule, AiModule, CorrelationModule],
   controllers: [DiagnosticCaseController],
   providers: [DiagnosticCaseService],
 })

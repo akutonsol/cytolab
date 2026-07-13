@@ -6,6 +6,7 @@ import { FilesService } from '../files/files.service';
 import { BethesdaService } from '../bethesda/bethesda.service';
 import { CodingService } from '../coding/coding.service';
 import { AiReportingService } from '../ai/ai-reporting.service';
+import { CorrelationService } from '../correlation/correlation.service';
 
 // Diagnostic Case Workspace — A2: the FROZEN read-only aggregate contract for
 // GET /diagnostic-case/:recordId/overview. This service is CONTRACT-ONLY: it holds no Prisma,
@@ -280,6 +281,74 @@ export interface DecisionSupportSection {
   ownerPath: string; // /records/:recordId
 }
 
+// ── Band 5: Prior Evidence (A9) ──
+// Two INDEPENDENT patient-anchored sub-sources, shown SEPARATELY — never merged, never compared to the
+// current case, never turned into progression/recurrence/trend/concordance:
+//   • Prior Records — RecordsService.priorsByPatient (prior case identity + lifecycle + HISTORICAL
+//     Bethesda selections embedded per record + result-sheet/report PRESENCE metadata). Gated
+//     resultentry:view (the projection exposes Bethesda selections). Historical Bethesda stays embedded
+//     in each prior record — NOT a separate subsection.
+//   • Correlation — CorrelationService.byPatient (patient-level cyto-histo correlation cases; a case tied
+//     to the CURRENT record MAY be present — it is NOT filtered out and is labeled neutrally, never
+//     "prior"). Gated record:view. EXISTENCE + owner-recorded classification ONLY (no diagnoses/notes/
+//     review/outcome/identity).
+// Metadata/allowlist only. Only Prior Records is truly "prior" (owner excludes the current record);
+// correlations are patient-level. Nothing is compared to the current case; no temporal/progression/
+// recurrence/agreement/correctness inference.
+export interface PriorRecordBethesda {
+  adequacy: string | null;
+  generalCategory: string | null;
+  squamousCategory: string | null;
+  ascSubtype: string | null;
+  glandularCategory: string | null;
+  glandularSubtype: string | null;
+}
+export interface PriorRecordItem {
+  id: string;
+  labNumber: string | null;
+  identifier: string;
+  formType: string | null;
+  status: string; // stored RecordStatus, verbatim
+  specimenDate: string | null;
+  statusChangedAt: string | null; // dateStatus
+  createdAt: string | null;
+  bethesda: PriorRecordBethesda | null; // historical Bethesda selections embedded (owner projection)
+  hasAuthorizedResultSheet: boolean; // presence only (from resultSheets.authorized)
+  hasReport: boolean; // presence only (from resultSheets.reports)
+  ownerPath: string; // /records/:id
+}
+export interface PriorRecordsSubSection {
+  status: SectionStatus; // ready (≥1 prior) | empty | forbidden (no resultentry:view) | error
+  items: PriorRecordItem[]; // ≤ PRIOR_CAP, createdAt desc (owner order)
+  total: number;
+  reason?: string;
+}
+// Correlation: EXISTENCE + owner-recorded classification only (narrow allowlist per A9 brief). No
+// cytology/histology diagnosis text, no review/notes/outcome/discordanceReason, no patient identity.
+export interface CorrelationItem {
+  id: string;
+  cytologyDate: string | null;
+  histologyDate: string | null;
+  histologySource: string | null;
+  externalLabName: string | null;
+  correlationResult: string | null; // owner-recorded (Concordant/MinorDiscordant/MajorDiscordant), verbatim
+  createdAt: string | null;
+  ownerPath: string; // /correlation/:id
+}
+export interface CorrelationSubSection {
+  status: SectionStatus; // ready (≥1 case) | empty | forbidden (no record:view) | error
+  items: CorrelationItem[]; // ≤ CORRELATION_CAP, cytologyDate desc (owner order)
+  total: number;
+  reason?: string;
+}
+export interface PriorEvidenceSection {
+  recordId: string;
+  priorRecords: PriorRecordsSubSection;
+  correlation: CorrelationSubSection;
+  unavailable: UnavailableSource[]; // sub-sources that are error OR forbidden (consistent with A6/A7)
+  ownerPath: string; // /records/:recordId
+}
+
 // ── The frozen overview envelope ──
 export interface DiagnosticCaseOverview {
   asOf: string;
@@ -293,7 +362,7 @@ export interface DiagnosticCaseOverview {
   diagnosticMaterial: Section<DiagnosticMaterialSection>;
   diagnosticInterpretation: Section<DiagnosticInterpretationSection>;
   decisionSupport: Section<DecisionSupportSection>;
-  priorEvidence: Section<null>;
+  priorEvidence: Section<PriorEvidenceSection>;
   collaboration: Section<null>;
   reportingSignOut: Section<null>;
   timelineProvenance: Section<null>;
@@ -306,6 +375,8 @@ const SLIDE_CAP = 50; // conservative bound on the recorded slide list (plan A5 
 const ATTACHMENT_CAP = 50; // conservative bound on the recorded attachment list (plan A6 §List bounds)
 const CODING_CAP = 50; // conservative bound on the recorded coding list (plan A7 §List bounds)
 const DRAFT_CAP = 50; // conservative bound on the recorded AI-draft list (plan A8 §List bounds)
+const PRIOR_CAP = 50; // conservative bound on the prior-record list (owner already applies take:50)
+const CORRELATION_CAP = 50; // conservative bound on the patient correlation list (plan A9 §List bounds)
 const iso = (d: Date | string | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
 const fullName = (
   u: { firstName?: string | null; lastName?: string | null } | null | undefined,
@@ -320,6 +391,7 @@ export class DiagnosticCaseService {
     private readonly bethesda: BethesdaService,
     private readonly coding: CodingService,
     private readonly aiReporting: AiReportingService,
+    private readonly correlation: CorrelationService,
   ) {}
 
   /**
@@ -340,7 +412,7 @@ export class DiagnosticCaseService {
       diagnosticMaterial: await this.sectionDiagnosticMaterial(recordId, load),
       diagnosticInterpretation: await this.sectionDiagnosticInterpretation(recordId, load, user),
       decisionSupport: await this.sectionDecisionSupport(recordId, load, user),
-      priorEvidence: deferred(),
+      priorEvidence: await this.sectionPriorEvidence(recordId, load, user),
       collaboration: deferred(),
       reportingSignOut: deferred(),
       timelineProvenance: deferred(),
@@ -647,6 +719,104 @@ export class DiagnosticCaseService {
       return { status: 'ready', items, total: ordered.length };
     } catch {
       return { status: 'error', items: [], total: 0, reason: 'AI drafts could not be loaded' };
+    }
+  }
+
+  // Band 5: Prior Evidence (multi-source; patient-anchored). Loaded AFTER the root record read (needs
+  // patientId). Two independent sub-sources isolate their own failures. No current-vs-prior comparison,
+  // no progression/recurrence/trend/concordance inference — prior evidence shown as recorded, per source.
+  private async sectionPriorEvidence(recordId: string, load: RecordLoad, user: AuthUser): Promise<Section<PriorEvidenceSection>> {
+    if (load.kind === 'forbidden') return { status: 'forbidden', data: null, reason: 'record:view required' };
+    if (load.kind === 'error') return { status: 'error', data: null, reason: load.reason };
+    const patientId: string | null = load.rec?.patientId ?? null;
+    const has = (code: string) => !!user.isSuperRole || user.permissions.includes(code);
+    const [priorRecords, correlation] = await Promise.all([
+      this.loadPriorRecords(patientId, recordId, has('resultentry:view')),
+      this.loadCorrelation(patientId, has('record:view')),
+    ]);
+    const unavailable: UnavailableSource[] = [];
+    if (priorRecords.status === 'error' || priorRecords.status === 'forbidden') unavailable.push({ key: 'priorRecords', label: 'Prior records', reason: priorRecords.reason });
+    if (correlation.status === 'error' || correlation.status === 'forbidden') unavailable.push({ key: 'correlation', label: 'Correlation', reason: correlation.reason });
+    const data: PriorEvidenceSection = { recordId, priorRecords, correlation, unavailable, ownerPath: `/records/${recordId}` };
+    // Frozen precedence: recorded evidence → ready; else technical failure → error; else access
+    // restriction → forbidden; else empty (accessible + empty).
+    const anyItems = priorRecords.status === 'ready' || correlation.status === 'ready';
+    const errored = [priorRecords.status === 'error' ? 'Prior records' : null, correlation.status === 'error' ? 'Correlation' : null].filter(Boolean) as string[];
+    const forbidden = [priorRecords.status === 'forbidden' ? 'Prior records' : null, correlation.status === 'forbidden' ? 'Correlation' : null].filter(Boolean) as string[];
+    if (anyItems) return { status: 'ready', data };
+    if (errored.length) return { status: 'error', data, reason: `Prior evidence could not be loaded (${errored.join(', ')})` };
+    if (forbidden.length) return { status: 'forbidden', data, reason: `Access restricted (${forbidden.join(', ')})` };
+    return { status: 'empty', data };
+  }
+
+  // Prior records sub-loader. Reads ONLY RecordsService.priorsByPatient (mutation-free, patient-anchored,
+  // excludes the current record, owner-bounded take:50, createdAt desc). Historical Bethesda stays embedded
+  // per record. resultentry:view required (the projection exposes Bethesda selections). Presence-only for
+  // result sheets/reports (no content). No patient → empty; failure → error.
+  private async loadPriorRecords(patientId: string | null, currentRecordId: string, allowed: boolean): Promise<PriorRecordsSubSection> {
+    if (!allowed) return { status: 'forbidden', items: [], total: 0, reason: 'resultentry:view required' };
+    if (!patientId) return { status: 'empty', items: [], total: 0 };
+    try {
+      const rows: any[] = await this.records.priorsByPatient(patientId, currentRecordId);
+      if (!Array.isArray(rows) || rows.length === 0) return { status: 'empty', items: [], total: 0 };
+      const items: PriorRecordItem[] = rows.slice(0, PRIOR_CAP).map((r) => {
+        const sheets: any[] = Array.isArray(r.resultSheets) ? r.resultSheets : [];
+        const b = r.bethesdaResult;
+        return {
+          id: r.id,
+          labNumber: r.labNumber ?? null,
+          identifier: r.identifier,
+          formType: r.formType ?? null,
+          status: r.status,
+          specimenDate: iso(r.specimenDate),
+          statusChangedAt: iso(r.dateStatus),
+          createdAt: iso(r.createdAt),
+          bethesda: b
+            ? {
+                adequacy: b.specimenAdequacy ?? null,
+                generalCategory: b.generalCategory ?? null,
+                squamousCategory: b.squamousCategory ?? null,
+                ascSubtype: b.ascSubtype ?? null,
+                glandularCategory: b.glandularCategory ?? null,
+                glandularSubtype: b.glandularSubtype ?? null,
+              }
+            : null,
+          hasAuthorizedResultSheet: sheets.some((s) => !!s.authorized),
+          hasReport: sheets.some((s) => Array.isArray(s.reports) && s.reports.length > 0),
+          ownerPath: `/records/${r.id}`,
+        };
+      });
+      return { status: 'ready', items, total: rows.length };
+    } catch {
+      return { status: 'error', items: [], total: 0, reason: 'Prior records could not be loaded' };
+    }
+  }
+
+  // Correlation sub-loader. Reads ONLY CorrelationService.byPatient (mutation-free, PATIENT-level,
+  // cytologyDate desc). record:view required. Rows are NOT filtered — a correlation tied to the current
+  // record may be present and is surfaced neutrally (never labeled "prior"); no owner contract requires
+  // excluding it, and cytologyRecordId is NOT exposed. NARROW allowlist: existence + owner-recorded
+  // classification only — NO cytology/histology diagnosis text, NO review/notes/outcome/discordanceReason,
+  // NO patient identity, NO updatedAt. No patient → empty; failure → error. byCytologyRecord is NEVER called.
+  private async loadCorrelation(patientId: string | null, allowed: boolean): Promise<CorrelationSubSection> {
+    if (!allowed) return { status: 'forbidden', items: [], total: 0, reason: 'record:view required' };
+    if (!patientId) return { status: 'empty', items: [], total: 0 };
+    try {
+      const rows: any[] = await this.correlation.byPatient(patientId);
+      if (!Array.isArray(rows) || rows.length === 0) return { status: 'empty', items: [], total: 0 };
+      const items: CorrelationItem[] = rows.slice(0, CORRELATION_CAP).map((c) => ({
+        id: c.id,
+        cytologyDate: iso(c.cytologyDate),
+        histologyDate: iso(c.histologyDate),
+        histologySource: c.histologySource ?? null,
+        externalLabName: c.externalLabName ?? null,
+        correlationResult: c.correlationResult ?? null,
+        createdAt: iso(c.createdAt),
+        ownerPath: `/correlation/${c.id}`,
+      }));
+      return { status: 'ready', items, total: rows.length };
+    } catch {
+      return { status: 'error', items: [], total: 0, reason: 'Correlation could not be loaded' };
     }
   }
 

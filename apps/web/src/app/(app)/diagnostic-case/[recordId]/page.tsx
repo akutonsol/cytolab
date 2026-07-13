@@ -17,7 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { AttachmentsSubSection, BethesdaSubSection, CaseIdentitySection, CodingSubSection, DecisionSupportSection, DiagnosticCaseOverview, DiagnosticInterpretationSection, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, SectionStatus, SlidesSubSection } from './types';
+import type { AttachmentsSubSection, BethesdaSubSection, CaseIdentitySection, CodingSubSection, CorrelationSubSection, DecisionSupportSection, DiagnosticCaseOverview, DiagnosticInterpretationSection, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, PriorEvidenceSection, PriorRecordsSubSection, SectionStatus, SlidesSubSection } from './types';
 
 // Recorded dates render as plain calendar dates; null → "—". No relative/"ago" phrasing (which would
 // imply a freshness judgment the owner does not record).
@@ -61,7 +61,7 @@ const BANDS: { key: BandKey; title: string; purpose: string }[] = [
   { key: 'diagnosticMaterial', title: 'Diagnostic Material', purpose: 'Specimens, slide metadata, and attachments — the material under review. Images are opened on their viewer.' },
   { key: 'diagnosticInterpretation', title: 'Diagnostic Interpretation', purpose: 'Structured (Bethesda) findings, result-sheet state, and coding — each shown as its owner records it, never merged into a single diagnosis.' },
   { key: 'decisionSupport', title: 'Decision Support', purpose: 'Assistive material that supports, never replaces, interpretation. Any screening signal is labeled and non-diagnostic.' },
-  { key: 'priorEvidence', title: 'Prior Evidence', purpose: 'The patient’s prior cases, cyto-histo correlation, and historical reports — clearly distinct from the current case.' },
+  { key: 'priorEvidence', title: 'Prior Evidence', purpose: 'The patient’s prior cases (this case excluded) and cyto-histo correlations recorded for this patient.' },
   { key: 'collaboration', title: 'Collaboration', purpose: 'External consultation and escalation activity recorded for this case.' },
   { key: 'reportingSignOut', title: 'Reporting & Sign-Out', purpose: 'Result-sheet authorization state and the released report — opened and acted on in their owner systems.' },
   { key: 'timelineProvenance', title: 'Timeline & Provenance', purpose: 'Recorded status and authorization events for this case, source-labeled and non-canonical.' },
@@ -225,6 +225,20 @@ export default function DiagnosticCaseWorkspacePage() {
                 loading={isLoading}
                 onRetry={() => refetch()}
                 retrying={isFetching}
+              />
+            );
+          }
+          if (b.key === 'priorEvidence') {
+            return (
+              <PriorEvidenceBand
+                key={b.key}
+                title={b.title}
+                section={data?.priorEvidence}
+                loading={isLoading}
+                onRetry={() => refetch()}
+                retrying={isFetching}
+                onOpenRecord={(rid) => router.push(`/records/${rid}`)}
+                onOpenCorrelation={(cid) => router.push(`/correlation/${cid}`)}
               />
             );
           }
@@ -805,6 +819,152 @@ function DecisionSupportBand({
         </>
       )}
     </Card>
+  );
+}
+
+// Band 5: Prior Evidence (A9). Two patient-anchored sub-sources shown SEPARATELY — Prior Records (with
+// embedded historical Bethesda; the current record is excluded by the owner method) and Correlation
+// (existence + owner-recorded classification only; patient-level, so a case tied to the current record
+// MAY appear and is labeled neutrally — never called "prior"). Display-only + owner navigation. Shown as
+// recorded; never compared to the current case; no progression/recurrence/trend/concordance inference.
+function PriorEvidenceBand({
+  title,
+  section,
+  loading,
+  onRetry,
+  retrying,
+  onOpenRecord,
+  onOpenCorrelation,
+}: {
+  title: string;
+  section?: { status: SectionStatus; data: PriorEvidenceSection | null; reason?: string };
+  loading: boolean;
+  onRetry: () => void;
+  retrying: boolean;
+  onOpenRecord: (recordId: string) => void;
+  onOpenCorrelation: (correlationId: string) => void;
+}) {
+  const status = section?.status;
+  const d = section?.data ?? null;
+  const badge = loading || !status ? 'Loading' : status === 'ready' ? 'Recorded' : status === 'empty' ? 'None recorded' : status === 'forbidden' ? 'Restricted' : status === 'error' ? 'Unavailable' : 'Not yet loaded';
+  const failed = d ? [d.priorRecords.status === 'error' ? 'Prior records' : null, d.correlation.status === 'error' ? 'Correlation' : null].filter(Boolean) : [];
+  const restricted = d ? [d.priorRecords.status === 'forbidden' ? 'Prior records' : null, d.correlation.status === 'forbidden' ? 'Correlation' : null].filter(Boolean) : [];
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-1 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">{title}</h2>
+        <Badge tone="neutral" size="xs">{badge}</Badge>
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-52" /><Skeleton shape="text" width="w-40" /></div>
+      ) : !d ? (
+        status === 'forbidden' ? (
+          <EmptyState bare className="px-0 py-8" title="No access" description="You do not have permission to view prior evidence." />
+        ) : (
+          <EmptyState bare className="px-0 py-8" title="Unavailable" description={section?.reason ?? 'Prior evidence could not be loaded.'} action={<Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={14} className="mr-1.5" />{retrying ? 'Retrying…' : 'Retry'}</Button>} />
+        )
+      ) : (
+        <>
+          <p className="mb-3 text-meta text-text-tertiary">Prior cases (this case excluded) and cyto-histo correlations recorded for this patient — shown as recorded, never compared to the current case.</p>
+          <PriorRecordsSubArea priorRecords={d.priorRecords} onOpenRecord={onOpenRecord} onRetry={onRetry} retrying={retrying} />
+          <div className="mt-3 border-t border-hairline pt-3">
+            <CorrelationSubArea correlation={d.correlation} onOpenCorrelation={onOpenCorrelation} onRetry={onRetry} retrying={retrying} />
+          </div>
+          {failed.length > 0 && <p className="mt-3 text-meta text-text-tertiary">Couldn’t load: {failed.join(', ')}.</p>}
+          {restricted.length > 0 && <p className="mt-1 text-meta text-text-tertiary">Access restricted: {restricted.join(', ')}.</p>}
+        </>
+      )}
+    </Card>
+  );
+}
+
+// Prior Records sub-area (A9). Prior cases for the patient, each with embedded historical Bethesda and
+// result-sheet/report presence. Display-only + "Open record" → /records/:id. Each labeled with its date.
+function PriorRecordsSubArea({ priorRecords, onOpenRecord, onRetry, retrying }: { priorRecords?: PriorRecordsSubSection; onOpenRecord: (id: string) => void; onRetry: () => void; retrying: boolean }) {
+  const status = priorRecords?.status;
+  const total = priorRecords?.total ?? 0;
+  const badge = !status ? 'Loading' : status === 'ready' ? `${total} prior case${total === 1 ? '' : 's'}` : status === 'empty' ? 'None recorded' : status === 'forbidden' ? 'No access' : status === 'error' ? 'Unavailable' : '—';
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-sm font-semibold text-text">Prior cases</span>
+        <Badge tone="neutral" size="xs">{badge}</Badge>
+      </div>
+      {!status ? (
+        <Skeleton shape="text" width="w-44" />
+      ) : status === 'forbidden' ? (
+        <p className="text-meta text-text-tertiary">You do not have permission to view prior cases.</p>
+      ) : status === 'error' ? (
+        <div className="flex items-center gap-3"><p className="text-meta text-text-tertiary">Prior cases could not be loaded.</p><Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={12} className="mr-1" />{retrying ? 'Retrying…' : 'Retry'}</Button></div>
+      ) : status === 'empty' || !priorRecords || priorRecords.items.length === 0 ? (
+        <p className="text-meta text-text-tertiary">No prior cases recorded for this patient.</p>
+      ) : (
+        <>
+          <ul className="space-y-1.5">
+            {priorRecords.items.map((p) => {
+              const beth = p.bethesda ? [p.bethesda.generalCategory, p.bethesda.squamousCategory, p.bethesda.glandularCategory, p.bethesda.adequacy].filter(Boolean).join(' / ') : null;
+              const meta = [p.formType, fmtDate(p.specimenDate), beth || null, p.hasReport ? 'report released' : p.hasAuthorizedResultSheet ? 'authorized' : null].filter((v) => v && v !== '—');
+              return (
+                <li key={p.id} className="flex items-center justify-between gap-3 rounded border border-hairline px-2.5 py-1.5">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm text-text">{dash(p.labNumber)} <span className="text-text-tertiary">· {p.status}</span></div>
+                    <div className="truncate text-meta text-text-tertiary">{meta.length ? meta.join(' · ') : 'Recorded case'}</div>
+                  </div>
+                  <Button variant="secondary" size="sm" onClick={() => onOpenRecord(p.id)}>Open record <ExternalLink size={12} className="ml-1" /></Button>
+                </li>
+              );
+            })}
+          </ul>
+          {priorRecords.items.length < total && <p className="mt-2 text-meta text-text-tertiary">Showing the first {priorRecords.items.length} of {total} prior cases.</p>}
+        </>
+      )}
+    </div>
+  );
+}
+
+// Correlation sub-area (A9). Patient-level (CorrelationService.byPatient) — existence + owner-recorded
+// classification only. A correlation tied to the CURRENT record may appear; it is labeled neutrally as a
+// patient correlation, NEVER as "prior." Display-only + "Open correlation" → /correlation/:id. No
+// diagnoses/notes/review/outcome (those live in the correlation owner). correlationResult shown verbatim.
+function CorrelationSubArea({ correlation, onOpenCorrelation, onRetry, retrying }: { correlation?: CorrelationSubSection; onOpenCorrelation: (id: string) => void; onRetry: () => void; retrying: boolean }) {
+  const status = correlation?.status;
+  const total = correlation?.total ?? 0;
+  const badge = !status ? 'Loading' : status === 'ready' ? `${total} correlation${total === 1 ? '' : 's'}` : status === 'empty' ? 'None recorded' : status === 'forbidden' ? 'No access' : status === 'error' ? 'Unavailable' : '—';
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-sm font-semibold text-text">Cyto-histo correlation</span>
+        <Badge tone="neutral" size="xs">{badge}</Badge>
+      </div>
+      {!status ? (
+        <Skeleton shape="text" width="w-40" />
+      ) : status === 'forbidden' ? (
+        <p className="text-meta text-text-tertiary">You do not have permission to view correlation.</p>
+      ) : status === 'error' ? (
+        <div className="flex items-center gap-3"><p className="text-meta text-text-tertiary">Correlation could not be loaded.</p><Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={12} className="mr-1" />{retrying ? 'Retrying…' : 'Retry'}</Button></div>
+      ) : status === 'empty' || !correlation || correlation.items.length === 0 ? (
+        <p className="text-meta text-text-tertiary">No cyto-histo correlation recorded for this patient.</p>
+      ) : (
+        <>
+          <ul className="space-y-1.5">
+            {correlation.items.map((c) => {
+              const meta = [c.histologySource, c.externalLabName, fmtDate(c.cytologyDate), c.histologyDate ? `histology ${fmtDate(c.histologyDate)}` : null].filter((v) => v && v !== '—');
+              return (
+                <li key={c.id} className="flex items-center justify-between gap-3 rounded border border-hairline px-2.5 py-1.5">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm text-text">{dash(c.correlationResult)}</div>
+                    <div className="truncate text-meta text-text-tertiary">{meta.length ? meta.join(' · ') : 'Recorded correlation'}</div>
+                  </div>
+                  <Button variant="secondary" size="sm" onClick={() => onOpenCorrelation(c.id)}>Open correlation <ExternalLink size={12} className="ml-1" /></Button>
+                </li>
+              );
+            })}
+          </ul>
+          {correlation.items.length < total && <p className="mt-2 text-meta text-text-tertiary">Showing the first {correlation.items.length} of {total} correlation cases.</p>}
+          <p className="mt-2 text-meta text-text-tertiary">Cyto-histo correlations recorded for this patient; may include one tied to the current case.</p>
+        </>
+      )}
+    </div>
   );
 }
 
