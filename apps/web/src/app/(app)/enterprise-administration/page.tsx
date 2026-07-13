@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { EffectiveAdminPermissions, EnterpriseAdminOverview, SectionStatus } from './types';
+import type { AdminCapabilityPermission, EnterpriseAdminOverview, SectionStatus } from './types';
 
 // Only an internal, same-origin path may be a return target — reject external and
 // protocol-relative URLs (open-redirect protection). Mirrors the Sign-Out / Quality guard.
@@ -58,44 +58,6 @@ const ADMIN_SECTIONS: { key: SectionKey; title: string; responsibility: string }
   { key: 'portalAccess', title: 'Portal Access', responsibility: 'Client portal access status.' },
   { key: 'lifecycle', title: 'Lifecycle Observation', responsibility: 'The recorded record-status history — observation only.' },
   { key: 'permissionMatrix', title: 'Permission Matrix', responsibility: 'The descriptive permission map for the current user.' },
-];
-
-// Descriptive permission map labels. These render only which owner permissions the caller holds
-// (permission-aware presentation) — never a configuration value. Order mirrors the admin domains.
-const PERMISSION_LABELS: { key: keyof EffectiveAdminPermissions; label: string }[] = [
-  { key: 'viewRecord', label: 'View records' },
-  { key: 'viewRecordStatus', label: 'View record status' },
-  { key: 'changeRecordStatus', label: 'Change record status' },
-  { key: 'viewLabConfig', label: 'View lab configuration' },
-  { key: 'changeLabConfig', label: 'Change lab configuration' },
-  { key: 'viewDepartment', label: 'View departments' },
-  { key: 'changeDepartment', label: 'Change departments' },
-  { key: 'viewUser', label: 'View users' },
-  { key: 'changeUser', label: 'Change users' },
-  { key: 'viewRole', label: 'View roles' },
-  { key: 'changeRole', label: 'Change roles' },
-  { key: 'viewPermission', label: 'View permissions' },
-  { key: 'viewClient', label: 'View clients' },
-  { key: 'changeClient', label: 'Change clients' },
-  { key: 'viewLabCode', label: 'View lab codes' },
-  { key: 'changeLabCode', label: 'Change lab codes' },
-  { key: 'viewCodeSheet', label: 'View code sheets' },
-  { key: 'changeCodeSheet', label: 'Change code sheets' },
-  { key: 'viewFormConfig', label: 'View form config' },
-  { key: 'manageFormConfig', label: 'Manage form config' },
-  { key: 'systemSecurity', label: 'Security governance' },
-  { key: 'systemHealth', label: 'System health' },
-  { key: 'viewService', label: 'View services' },
-  { key: 'changeService', label: 'Change services' },
-  { key: 'viewTax', label: 'View taxes' },
-  { key: 'changeTax', label: 'Change taxes' },
-  { key: 'viewBill', label: 'View billing' },
-  { key: 'viewNotification', label: 'View notifications' },
-  { key: 'viewPortalUser', label: 'View portal access' },
-  { key: 'changePortalUser', label: 'Change portal access' },
-  { key: 'viewChangeRequest', label: 'View change requests' },
-  { key: 'changeChangeRequest', label: 'Change change requests' },
-  { key: 'featureFlags', label: 'Feature flags (superuser)' },
 ];
 
 export default function EnterpriseAdministrationWorkspacePage() {
@@ -240,10 +202,27 @@ function AdminSection({
   );
 }
 
-// Permission Matrix — the descriptive, permission-aware view of which owner permissions the caller
-// holds. Status by text (badge label), never colour alone. It renders ONLY permission booleans;
-// no configuration value, secret, or owner record. Truthful notes disclose the superuser bypass and
-// the SuperuserGuard-only feature-flag gate.
+// Access-model label for a capability's accessType — text, never colour alone.
+function accessLabel(c: AdminCapabilityPermission): string {
+  if (c.accessType === 'superuser-guard') return 'SuperuserGuard';
+  if (c.accessType === 'deferred') return c.permissionCode ?? 'Deferred';
+  return c.permissionCode ?? '—';
+}
+
+// Truthful evidence phrase for the current-grant reachability of a capability (never fabricated). Only stated
+// when the owner reads prove it; otherwise the caller lacks catalog/grant visibility (a caveat says so).
+function grantPhrase(c: AdminCapabilityPermission): string | null {
+  if (c.catalogPresent === false) return 'Declared, unseeded — superuser-only';
+  if (c.superuserOnlyUnderCurrentGrants === true) return c.accessType === 'superuser-guard' ? 'SuperuserGuard only' : 'Superuser-only (current grants)';
+  if (c.superuserOnlyUnderCurrentGrants === false) return 'Held by a standard role';
+  return null; // unproven for this caller
+}
+
+// Permission Matrix — the descriptive access model for every administration section. It explains
+// which real permission or guard controls each section, whether THIS caller holds it, whether the
+// section is Ready or Deferred, and (where owner reads prove it) whether it is superuser-only under
+// the current grants. Status/access are conveyed by TEXT (Yes/No, badge label), never colour alone.
+// It renders NO configuration value, NO secret, NO owner record — and NO editor/assignment control.
 function PermissionMatrixPanel({
   section,
   loading,
@@ -255,27 +234,64 @@ function PermissionMatrixPanel({
   const data = status === 'ready' ? section?.data : null;
   return (
     <Card radius="md" elevation="soft" border="hairline" padding="lg">
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-1 flex items-center gap-2">
         <h2 className="text-base font-bold text-text">Permission Matrix</h2>
-        {status === 'ready' && data?.isSuperRole && <Badge tone="primary" size="xs">Superuser</Badge>}
+        {status === 'ready' && data?.effective.isSuperRole && <Badge tone="primary" size="xs">Superuser</Badge>}
       </div>
+      <p className="mb-3 text-meta text-text-tertiary">
+        Descriptive only — it grants nothing and changes nothing. Owner endpoints remain the enforcement authority.
+      </p>
       {loading || !status ? (
         <div className="space-y-2"><Skeleton shape="text" width="w-48" /><Skeleton shape="text" width="w-40" /></div>
       ) : status === 'ready' && data ? (
         <>
-          <div className="flex flex-wrap gap-2">
-            {PERMISSION_LABELS.map(({ key, label }) => (
-              <Badge key={key} tone={data[key] ? 'success' : 'neutral'} size="sm">
-                {data[key] ? '' : 'No '}{label}
-              </Badge>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[680px] border-collapse text-left">
+              <thead>
+                <tr className="border-b border-card text-meta uppercase tracking-wide text-text-tertiary">
+                  <th className="py-2 pr-3 font-semibold">Section</th>
+                  <th className="py-2 pr-3 font-semibold">Controlled by</th>
+                  <th className="py-2 pr-3 font-semibold">Your access</th>
+                  <th className="py-2 pr-3 font-semibold">State</th>
+                  <th className="py-2 font-semibold">Grant reachability</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.capabilities.map((c) => {
+                  const phrase = grantPhrase(c);
+                  return (
+                    <tr key={c.key} className="border-b border-card/60 align-top">
+                      <td className="py-2 pr-3">
+                        <span className="font-semibold text-text">{c.section}</span>
+                        {c.ownerPath && <a href={c.ownerPath} className="ml-2 text-caption text-primary hover:underline">{c.ownerPath}</a>}
+                      </td>
+                      <td className="py-2 pr-3">
+                        <code className="rounded bg-surface-container px-1.5 py-0.5 text-caption text-text-secondary">{accessLabel(c)}</code>
+                      </td>
+                      <td className="py-2 pr-3">
+                        <Badge tone={c.callerHasAccess ? 'success' : 'neutral'} size="xs">{c.callerHasAccess ? 'Yes' : 'No'}</Badge>
+                      </td>
+                      <td className="py-2 pr-3">
+                        <Badge tone={c.implementationStatus === 'ready' ? 'primary' : 'neutral'} size="xs">
+                          {c.implementationStatus === 'ready' ? 'Ready' : 'Deferred'}
+                        </Badge>
+                      </td>
+                      <td className="py-2 text-caption text-text-secondary">{phrase ?? <span className="text-text-tertiary">Not visible to you</span>}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-          <p className="mt-3 text-meta text-text-tertiary">
-            Descriptive only — owner endpoints remain the enforcement authority.
-            {data.isSuperRole
-              ? ' You hold every capability via the superuser bypass (isSuperRole).'
-              : ' Feature flags require the superuser bypass; portal access and change-request permissions are unseeded and superuser-only.'}
-          </p>
+          {data.caveats.length > 0 && (
+            <ul className="mt-4 space-y-1.5 border-t border-card pt-3">
+              {data.caveats.map((cv) => (
+                <li key={cv.key} className="text-meta text-text-tertiary">
+                  <span className="font-semibold text-text-secondary">{cv.label}:</span> {cv.note}
+                </li>
+              ))}
+            </ul>
+          )}
         </>
       ) : (
         <EmptyState bare className="px-0 py-6" title="Unavailable" description="The permission map could not be loaded." />

@@ -85,6 +85,94 @@ export interface EffectiveAdminPermissions {
   isSuperRole: boolean; // truthful superuser bypass flag (a role FLAG, never a role NAME)
 }
 
+// ── Permission Matrix (A9) — descriptive access model, grants nothing ─────────
+// A9 refines ONLY the permission-matrix presentation into a richer descriptive contract. It is
+// DESCRIPTIVE: it explains which real permission or guard controls each administration section,
+// whether the current caller holds it, and — where the owner reads can prove it — whether the
+// capability is currently reachable to standard roles or only via the superuser bypass. It grants
+// nothing, aliases nothing, invents nothing, and never authorises from a role NAME.
+//   • accessType is the real wiring: `permission` (a catalog permission code gates it),
+//     `superuser-guard` (SuperuserGuard/isSuperRole — no permission code exists), `base-endpoint`
+//     (gated by the workspace's own base permission, record:view), or `deferred` (section not yet
+//     composed read-only). This is code/guard wiring, never role-name inference.
+//   • callerHasAccess is computed from the caller's own claims (isSuperRole || permissions.includes).
+//   • catalogPresent / standardRoleGrantPresent / superuserOnlyUnderCurrentGrants are EVIDENCE fields,
+//     populated ONLY from real owner reads (RolesService.findPermissions = catalog;
+//     RolesService.findRoles = role→permission grants). When those reads are not available to the
+//     caller (they are gated permission:view / role:view) or fail, the evidence is `null` with a
+//     truthful caveat — never fabricated, never assumed false.
+export type AdminAccessType = 'permission' | 'superuser-guard' | 'base-endpoint' | 'deferred';
+export type AdminImplStatus = 'ready' | 'deferred';
+
+export interface AdminCapabilityPermission {
+  key: string;
+  label: string;
+  section: string;
+  accessType: AdminAccessType;
+  permissionCode: string | null; // the real owner permission code, or null for SuperuserGuard
+  callerHasAccess: boolean; // from the caller's own claims (isSuperRole || permissions.includes)
+  catalogPresent: boolean | null; // in the permission catalog? (from findPermissions) — null if unproven
+  standardRoleGrantPresent: boolean | null; // held by ≥1 non-super role? (from findRoles) — null if unproven
+  superuserOnlyUnderCurrentGrants: boolean | null; // reachable only via superuser bypass? — null if unproven
+  implementationStatus: AdminImplStatus;
+  ownerPath: string | null;
+  note: string | null;
+}
+
+export interface PermissionCaveat {
+  key: string;
+  label: string;
+  note: string;
+}
+
+// Preserves the flat `effective` booleans for backward compatibility (existing callers), and adds
+// the descriptive capability rows + caveats. Independently loadable: it never throws — evidence
+// reads are isolated and degrade to null.
+export interface PermissionMatrixSection {
+  effective: EffectiveAdminPermissions;
+  capabilities: AdminCapabilityPermission[];
+  caveats: PermissionCaveat[];
+  ownerPath: string | null;
+}
+
+// Static capability descriptors in the FIXED implementation-plan section order (never sorted by
+// privilege/risk/importance). Each row states the REAL permission/guard wiring for a section — the
+// same static code knowledge the `buildPermissions` map already encodes — plus the deferred reason
+// where applicable. Evidence (catalog/grant) is layered on at request time from owner reads.
+interface CapabilityDescriptor {
+  key: keyof EffectiveAdminPermissions;
+  label: string;
+  section: string;
+  accessType: AdminAccessType;
+  permissionCode: string | null;
+  implementationStatus: AdminImplStatus;
+  ownerPath: string | null;
+  note: string | null;
+}
+const ADMIN_CAPABILITIES: CapabilityDescriptor[] = [
+  { key: 'viewLabConfig', label: 'View lab configuration', section: 'Laboratory', accessType: 'permission', permissionCode: 'applicationprefs:view', implementationStatus: 'ready', ownerPath: '/settings', note: 'Owned by applicationprefs:view (there is no lab:* object).' },
+  { key: 'viewLabConfig', label: 'View branding', section: 'Branding', accessType: 'permission', permissionCode: 'applicationprefs:view', implementationStatus: 'ready', ownerPath: '/settings', note: 'Shares applicationprefs:view with Laboratory and AI Settings.' },
+  { key: 'viewDepartment', label: 'View departments', section: 'Departments', accessType: 'permission', permissionCode: 'department:view', implementationStatus: 'ready', ownerPath: '/departments', note: null },
+  { key: 'viewUser', label: 'View users', section: 'Users', accessType: 'permission', permissionCode: 'user:view', implementationStatus: 'ready', ownerPath: '/users', note: null },
+  { key: 'viewRole', label: 'View roles', section: 'Roles', accessType: 'permission', permissionCode: 'role:view', implementationStatus: 'ready', ownerPath: '/roles', note: null },
+  { key: 'viewPermission', label: 'View permissions', section: 'Permissions', accessType: 'permission', permissionCode: 'permission:view', implementationStatus: 'ready', ownerPath: '/roles', note: null },
+  { key: 'systemSecurity', label: 'Security governance', section: 'Security', accessType: 'permission', permissionCode: 'system:security', implementationStatus: 'ready', ownerPath: '/security', note: 'Governed by the security guard (system:security); assigned to no default role — superuser-bypass-only under the current grants. See catalogPresent for its live catalog state.' },
+  { key: 'viewClient', label: 'View clients', section: 'Clients', accessType: 'permission', permissionCode: 'client:view', implementationStatus: 'ready', ownerPath: '/clients', note: null },
+  { key: 'viewLabCode', label: 'View lab codes', section: 'Lab Codes', accessType: 'permission', permissionCode: 'labcode:view', implementationStatus: 'ready', ownerPath: '/lab-codes', note: null },
+  { key: 'viewCodeSheet', label: 'View code sheets', section: 'Code Sheets', accessType: 'permission', permissionCode: 'codesheet:view', implementationStatus: 'ready', ownerPath: '/lab-codes', note: null },
+  { key: 'viewFormConfig', label: 'View form configuration', section: 'Forms', accessType: 'deferred', permissionCode: 'formconfig:view', implementationStatus: 'deferred', ownerPath: '/settings/forms', note: 'Deferred, not forbidden: FormConfig exposes no mutation-free read (reads route through getOrCreate, which persists a default).' },
+  { key: 'viewRecord', label: 'View FHIR endpoints', section: 'FHIR', accessType: 'base-endpoint', permissionCode: 'record:view', implementationStatus: 'ready', ownerPath: '/fhir', note: 'Gated by the workspace base permission (record:view).' },
+  { key: 'viewNotification', label: 'View notifications', section: 'Notifications', accessType: 'deferred', permissionCode: 'notification:view', implementationStatus: 'deferred', ownerPath: '/notifications', note: 'Deferred, not forbidden: the notifications owner exposes only per-user reads; there is no lab-wide administration-safe read.' },
+  { key: 'viewBill', label: 'View billing', section: 'Billing', accessType: 'permission', permissionCode: 'bill:view', implementationStatus: 'ready', ownerPath: '/billing', note: 'Bill status COUNTS only — never revenue.' },
+  { key: 'viewService', label: 'View services', section: 'Services', accessType: 'permission', permissionCode: 'service:view', implementationStatus: 'ready', ownerPath: '/services', note: null },
+  { key: 'viewTax', label: 'View taxes', section: 'Taxes', accessType: 'permission', permissionCode: 'tax:view', implementationStatus: 'ready', ownerPath: '/services', note: null },
+  { key: 'featureFlags', label: 'Feature flags', section: 'Feature Flags', accessType: 'superuser-guard', permissionCode: null, implementationStatus: 'ready', ownerPath: '/settings/features', note: 'Controlled by SuperuserGuard (isSuperRole). No permission code exists — not permission-gated.' },
+  { key: 'systemHealth', label: 'System health', section: 'System Health', accessType: 'permission', permissionCode: 'system:health', implementationStatus: 'ready', ownerPath: '/system', note: 'Governed by system:health; assigned to no default role — superuser-bypass-only under the current grants.' },
+  { key: 'viewLabConfig', label: 'View AI settings', section: 'AI Settings', accessType: 'permission', permissionCode: 'applicationprefs:view', implementationStatus: 'ready', ownerPath: '/settings', note: 'Shares applicationprefs:view with Laboratory and Branding.' },
+  { key: 'viewPortalUser', label: 'View portal access', section: 'Portal Access', accessType: 'permission', permissionCode: 'portaluser:view', implementationStatus: 'ready', ownerPath: '/clients', note: 'Declared-but-unseeded: absent from the permission catalog, so reachable only via superuser bypass under the current grants.' },
+  { key: 'viewRecord', label: 'Observe lifecycle', section: 'Lifecycle', accessType: 'base-endpoint', permissionCode: 'record:view', implementationStatus: 'ready', ownerPath: '/records', note: 'Gated by the workspace base permission (record:view). Observation only.' },
+];
+
 // ── Laboratory (A3) ──────────────────────────────────────────────────────────
 // Recorded laboratory profile from the lab owner (`LabService.getProfile`), shown verbatim. No
 // computed status, no fabricated "missing configuration" warning. Gated by `applicationprefs:view`.
@@ -335,7 +423,7 @@ export interface PortalAccessSection { configuredCount: number; ownerPath: strin
 // failure isolates to it and never collapses `permissionMatrix`, siblings, or the shell.
 export interface EnterpriseAdminOverview {
   asOf: string;
-  permissionMatrix: Section<EffectiveAdminPermissions>;
+  permissionMatrix: Section<PermissionMatrixSection>;
   laboratory: Section<LaboratorySection>;
   branding: Section<BrandingSection>;
   departments: Section<DepartmentsSection>;
@@ -437,9 +525,11 @@ export class EnterpriseAdministrationService {
     // failing marks only its section and never collapses the permission map or siblings.
     const perms = buildPermissions(user);
     const [
+      permissionMatrix,
       laboratory, branding, departments, users, roles, permissions, security, clients, labCodes, codeSheets, lifecycle,
       fhir, billing, services, taxes, featureFlags, systemHealth, aiSettings, portalAccess,
     ] = await Promise.all([
+      this.loadPermissionMatrix(perms),
       this.loadLaboratory(perms),
       this.loadBranding(perms),
       this.loadDepartments(perms),
@@ -462,7 +552,7 @@ export class EnterpriseAdministrationService {
     ]);
     return {
       asOf: new Date().toISOString(),
-      permissionMatrix: { status: 'ready', data: perms },
+      permissionMatrix,
       laboratory,
       branding,
       departments,
@@ -485,6 +575,106 @@ export class EnterpriseAdministrationService {
       aiSettings,
       portalAccess,
     };
+  }
+
+  // Permission Matrix — the descriptive access model. It ALWAYS resolves `ready` (it never throws):
+  // the caller-centric booleans + capability wiring are computed synchronously, and the catalog/grant
+  // EVIDENCE is layered on best-effort from owner reads, isolated so any failure degrades that field
+  // to null (with a caveat) rather than collapsing the matrix. The evidence reads are gated on the
+  // caller's own permission:view / role:view (the owners' gates) — the matrix never broadens access.
+  private async loadPermissionMatrix(perms: EffectiveAdminPermissions): Promise<Section<PermissionMatrixSection>> {
+    const isSuper = perms.isSuperRole;
+
+    // Catalog evidence: which permission codes exist in the current catalog (owner: findPermissions,
+    // gated permission:view). Null when the caller cannot read it or the read fails — never assumed.
+    let catalogSet: Set<string> | null = null;
+    if (perms.viewPermission) {
+      try {
+        const rows: any[] = await this.roles.findPermissions();
+        catalogSet = new Set((Array.isArray(rows) ? rows : []).map((r) => String(r.code)));
+      } catch {
+        catalogSet = null;
+      }
+    }
+
+    // Grant evidence: which permission codes at least one NON-super role holds (owner: findRoles,
+    // gated role:view). Super roles bypass via isSuperRole and hold no explicit grants, so they are
+    // excluded — this set answers "can a standard (non-super) role reach it?" Null when unavailable.
+    let roleGrantCodes: Set<string> | null = null;
+    if (perms.viewRole) {
+      try {
+        const roleRows: any[] = await this.roles.findRoles();
+        const s = new Set<string>();
+        for (const r of Array.isArray(roleRows) ? roleRows : []) {
+          if (r?.isSuperRole) continue;
+          for (const rp of Array.isArray(r?.permissions) ? r.permissions : []) {
+            const code = rp?.permission?.code;
+            if (code) s.add(String(code));
+          }
+        }
+        roleGrantCodes = s;
+      } catch {
+        roleGrantCodes = null;
+      }
+    }
+
+    const capabilities: AdminCapabilityPermission[] = ADMIN_CAPABILITIES.map((d) => {
+      const code = d.permissionCode;
+      // callerHasAccess from the caller's own claims only. SuperuserGuard capabilities resolve on the
+      // isSuperRole flag; every coded capability on the recorded permission (already superuser-aware).
+      const callerHasAccess = d.accessType === 'superuser-guard' ? isSuper : perms[d.key];
+
+      const catalogPresent: boolean | null = code === null ? null : catalogSet ? catalogSet.has(code) : null;
+      const standardRoleGrantPresent: boolean | null = code === null ? null : roleGrantCodes ? roleGrantCodes.has(code) : null;
+
+      // superuser-only under current grants: provable when (a) the guard has no permission code, or
+      // (b) grant evidence shows no non-super role holds the code, or (c) the code is absent from the
+      // catalog (declared-but-unseeded). Otherwise null — never assumed false.
+      let superuserOnlyUnderCurrentGrants: boolean | null;
+      if (d.accessType === 'superuser-guard') {
+        superuserOnlyUnderCurrentGrants = true;
+      } else if (roleGrantCodes && code) {
+        superuserOnlyUnderCurrentGrants = !roleGrantCodes.has(code);
+      } else if (catalogSet && code && !catalogSet.has(code)) {
+        superuserOnlyUnderCurrentGrants = true;
+      } else {
+        superuserOnlyUnderCurrentGrants = null;
+      }
+
+      return {
+        key: `${d.section}:${d.key}`,
+        label: d.label,
+        section: d.section,
+        accessType: d.accessType,
+        permissionCode: code,
+        callerHasAccess,
+        catalogPresent,
+        standardRoleGrantPresent,
+        superuserOnlyUnderCurrentGrants,
+        implementationStatus: d.implementationStatus,
+        ownerPath: d.ownerPath,
+        note: d.note,
+      };
+    });
+
+    const caveats: PermissionCaveat[] = [
+      { key: 'base-gate', label: 'Workspace base gate', note: 'Entry requires record:view; a role without record:view cannot reach this endpoint at all.' },
+      { key: 'superuser-bypass', label: 'Superuser bypass', note: 'isSuperRole bypasses every permission check, so a superuser caller holds every capability regardless of grants. This is a role FLAG, never a role name.' },
+      { key: 'feature-flags', label: 'Feature Flags', note: 'Controlled by SuperuserGuard (isSuperRole). No permission code exists — feature flags are not permission-gated.' },
+      { key: 'portaluser', label: 'portaluser:*', note: 'Declared in the portal module but absent from the permission catalog — reachable only via superuser bypass under the current grants. Never aliased to record:view.' },
+      { key: 'changerequest', label: 'changerequest:*', note: 'Declared but absent from the permission catalog — reachable only via superuser bypass under the current grants. Never aliased.' },
+      { key: 'forms-deferred', label: 'Forms', note: 'Deferred, not forbidden: FormConfig exposes no mutation-free read (reads persist a default config), so it cannot be composed read-only.' },
+      { key: 'notifications-deferred', label: 'Notifications', note: 'Deferred, not forbidden: the notifications owner exposes only per-user reads; there is no lab-wide administration-safe read.' },
+    ];
+    if (catalogSet === null || roleGrantCodes === null) {
+      caveats.push({
+        key: 'evidence-availability',
+        label: 'Grant evidence',
+        note: 'Catalog presence requires permission:view and role-grant evidence requires role:view. Where unavailable to this caller, catalogPresent / standardRoleGrantPresent / superuserOnlyUnderCurrentGrants are null (unproven) — never false.',
+      });
+    }
+
+    return { status: 'ready', data: { effective: perms, capabilities, caveats, ownerPath: null } };
   }
 
   // Laboratory — the recorded profile from the lab owner, shown verbatim. Gated descriptively by

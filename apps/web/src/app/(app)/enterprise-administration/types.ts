@@ -53,6 +53,41 @@ export interface EffectiveAdminPermissions {
   isSuperRole: boolean;
 }
 
+// Permission Matrix (A9) — descriptive access model. Grants nothing; explains which real permission
+// or guard controls each administration section, whether the caller holds it, and (where owner reads
+// prove it) whether the capability is superuser-only under the current grants. Evidence fields are null
+// when the caller cannot read the catalog (permission:view) / grants (role:view) — never fabricated.
+export type AdminAccessType = 'permission' | 'superuser-guard' | 'base-endpoint' | 'deferred';
+export type AdminImplStatus = 'ready' | 'deferred';
+
+export interface AdminCapabilityPermission {
+  key: string;
+  label: string;
+  section: string;
+  accessType: AdminAccessType;
+  permissionCode: string | null;
+  callerHasAccess: boolean;
+  catalogPresent: boolean | null;
+  standardRoleGrantPresent: boolean | null;
+  superuserOnlyUnderCurrentGrants: boolean | null;
+  implementationStatus: AdminImplStatus;
+  ownerPath: string | null;
+  note: string | null;
+}
+
+export interface PermissionCaveat {
+  key: string;
+  label: string;
+  note: string;
+}
+
+export interface PermissionMatrixSection {
+  effective: EffectiveAdminPermissions; // preserved for backward compatibility
+  capabilities: AdminCapabilityPermission[];
+  caveats: PermissionCaveat[];
+  ownerPath: string | null;
+}
+
 // Laboratory — recorded lab profile (owner: LabService.getProfile), shown verbatim. No computed
 // status, no fabricated missing-config warning.
 export interface LaboratorySection {
@@ -195,7 +230,7 @@ export interface CodeSheetsSection {
 
 export interface EnterpriseAdminOverview {
   asOf: string;
-  permissionMatrix: Section<EffectiveAdminPermissions>;
+  permissionMatrix: Section<PermissionMatrixSection>;
   laboratory: Section<LaboratorySection>;
   branding: Section<BrandingSection>;
   departments: Section<DepartmentsSection>;
