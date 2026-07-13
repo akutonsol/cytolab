@@ -9,7 +9,7 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, fmtHours, fmtMoney, fmtMultiplier, rateColor, WARN_FG } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Card, Button, Th, Td, TableEmpty } from '@/components/ui';
+import { Card, Button, DataToolbar, Th, Td, TableEmpty } from '@/components/ui';
 
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
 const NO_ROWS: any[] = [];
@@ -55,19 +55,25 @@ function AttendanceTab() {
 
   return (
     <div>
-      <Card radius="sm" elevation="sm" border="subtle" className="mb-6 flex flex-wrap items-center justify-between gap-3 p-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <DateRange start={start} end={end} onStart={setStart} onEnd={setEnd} />
-          <select value={departmentId} onChange={(e) => setDept(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary">
-            <option value="">All Departments</option>
-            {departments.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-          </select>
-        </div>
-        <Button variant="secondary" onClick={() => downloadCsv('attendance-summary.csv',
-            ['Employee', 'Department', 'Total Days', 'Present', 'Absent', 'Late', 'On Leave', 'Attendance Rate %'],
-            rows.map((r: any) => [r.name, r.department ?? '', r.totalDays, r.presentDays, r.absentDays, r.lateDays, r.leaveDays, r.attendanceRate]))}
-          disabled={rows.length === 0}
-          className="disabled:opacity-40"><Download size={15} /> Export CSV</Button>
+      <Card radius="sm" elevation="sm" border="subtle" className="mb-6 p-4">
+        <DataToolbar
+          leading={
+            <>
+              <DateRange start={start} end={end} onStart={setStart} onEnd={setEnd} />
+              <select value={departmentId} onChange={(e) => setDept(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary">
+                <option value="">All Departments</option>
+                {departments.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+              </select>
+            </>
+          }
+          trailing={
+            <Button variant="secondary" onClick={() => downloadCsv('attendance-summary.csv',
+                ['Employee', 'Department', 'Total Days', 'Present', 'Absent', 'Late', 'On Leave', 'Attendance Rate %'],
+                rows.map((r: any) => [r.name, r.department ?? '', r.totalDays, r.presentDays, r.absentDays, r.lateDays, r.leaveDays, r.attendanceRate]))}
+              disabled={rows.length === 0}
+              className="disabled:opacity-40"><Download size={15} /> Export CSV</Button>
+          }
+        />
       </Card>
 
       <Card radius="sm" elevation="sm" border="subtle" className="overflow-hidden">

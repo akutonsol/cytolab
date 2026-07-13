@@ -9,7 +9,7 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, empName, fmtHours } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Card, Button, Th, Td, TableEmpty } from '@/components/ui';
+import { Card, Button, DataToolbar, Th, Td, TableEmpty } from '@/components/ui';
 import { notify } from '@/lib/notify';
 
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
@@ -165,14 +165,17 @@ function ProductivityPage() {
         {/* Summary + Log */}
         <div className="min-w-0 flex-1 space-y-6">
           <Card radius="sm" elevation="sm" border="subtle" className="overflow-hidden">
-            <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-              <span className="text-base font-semibold text-charcoal-heading">Summary</span>
-              <div className="flex items-center gap-2">
-                <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="h-9 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-600 outline-none focus:border-primary" />
-                <span className="text-sm text-slate-500">to</span>
-                <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="h-9 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-600 outline-none focus:border-primary" />
-              </div>
-            </div>
+            <DataToolbar
+              className="px-5 py-4"
+              leading={<span className="text-base font-semibold text-charcoal-heading">Summary</span>}
+              trailing={
+                <div className="flex items-center gap-2">
+                  <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="h-9 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-600 outline-none focus:border-primary" />
+                  <span className="text-sm text-slate-500">to</span>
+                  <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="h-9 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-600 outline-none focus:border-primary" />
+                </div>
+              }
+            />
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead><tr className="border-y border-slate-100"><Th density="compact" size="xs">Employee</Th><Th density="compact" size="xs" className="text-right">Specimens/Day</Th><Th density="compact" size="xs" className="text-right">Avg TAT</Th><Th density="compact" size="xs" className="text-right">Quality</Th><Th density="compact" size="xs" className="text-right">Reports</Th><Th density="compact" size="xs" className="text-right">Trend</Th></tr></thead>

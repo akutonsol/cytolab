@@ -9,7 +9,7 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useEmployees, empName, fmtDate, fmtHours, fmtMultiplier, WF_STATUS } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Card, Button, Th, Td, IconAction, TableEmpty } from '@/components/ui';
+import { Card, Button, DataToolbar, Th, Td, IconAction, TableEmpty } from '@/components/ui';
 import { notify } from '@/lib/notify';
 
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
@@ -151,17 +151,23 @@ function OvertimePage() {
       </div>
 
       {/* Filters */}
-      <Card radius="sm" elevation="sm" border="subtle" className="mb-6 flex flex-wrap items-center gap-3 p-4">
-        <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary">
-          <option value="">All Employees</option>
-          {employees.map((e) => <option key={e.id} value={e.id}>{empName(e)}</option>)}
-        </select>
-        <input type="date" value={startDate} onChange={(e) => setStart(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary" />
-        <span className="text-sm text-slate-500">to</span>
-        <input type="date" value={endDate} onChange={(e) => setEnd(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary" />
-        <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary">
-          {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((s) => <option key={s} value={s}>{s === 'ALL' ? 'All Statuses' : s}</option>)}
-        </select>
+      <Card radius="sm" elevation="sm" border="subtle" className="mb-6 p-4">
+        <DataToolbar
+          leading={
+            <>
+              <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary">
+                <option value="">All Employees</option>
+                {employees.map((e) => <option key={e.id} value={e.id}>{empName(e)}</option>)}
+              </select>
+              <input type="date" value={startDate} onChange={(e) => setStart(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary" />
+              <span className="text-sm text-slate-500">to</span>
+              <input type="date" value={endDate} onChange={(e) => setEnd(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary" />
+              <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-primary">
+                {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((s) => <option key={s} value={s}>{s === 'ALL' ? 'All Statuses' : s}</option>)}
+              </select>
+            </>
+          }
+        />
       </Card>
 
       {/* Records */}
