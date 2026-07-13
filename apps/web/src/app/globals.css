@@ -702,6 +702,37 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── P1 FOUNDATION · Keyboard-focus baseline ───────────────────────────────
+   A single visible focus ring for every interactive element reached by
+   keyboard / assistive tech. `:focus-visible` never fires for mouse or touch,
+   so pointer interaction is visually unchanged. `:where()` gives this rule
+   ZERO specificity, so anything with its own focus treatment always wins — the
+   `.btn-*` focus ring (below), the native <select> box-shadow ring (below),
+   and any custom `ring-*`/`focus-visible:` utility. This only FILLS THE GAP for
+   the many raw <button>/<a>/<input>/role-based controls that previously had no
+   focus indicator at all. `--color-primary` keeps the ring in step with the
+   active accent theme. Additive and behaviour-neutral — no control changes how
+   it works, only how it looks when keyboard-focused. */
+:where(
+  a[href], button, input, select, textarea, summary,
+  [tabindex]:not([tabindex='-1']),
+  [role='button'], [role='link'], [role='tab'], [role='menuitem'],
+  [role='menuitemradio'], [role='menuitemcheckbox'],
+  [role='switch'], [role='checkbox'], [role='radio'], [role='option']
+):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ── P1 FOUNDATION · Native form-control accent ────────────────────────────
+   Native checkboxes / radios / range inputs follow the active accent theme
+   rather than the browser-default blue (and rather than pages hard-coding an
+   inline `accentColor`). Colour only — no behaviour change. AntD controls are
+   custom-rendered and unaffected. */
+:root {
+  accent-color: var(--color-primary);
+}
+
 /* ── Unified dropdown design ───────────────────────────────────────────────
    Every native <select> in the app renders as a soft gradient pill with an
    up/down chevron (Tailwind's preflight is off, so this is the single source
