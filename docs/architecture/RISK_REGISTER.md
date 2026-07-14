@@ -284,6 +284,25 @@
 | **Owner** | Unassigned |
 | **Notes** | Removal is out of scope for the current documentation checkpoint. |
 
+## R-015 — Global app-shell content clipping at ~390px
+
+| Field | Value |
+|---|---|
+| **Risk ID** | R-015 |
+| **Title** | `(app)` content column has a ~700px minimum width; content/actions clip at ~390px |
+| **Category** | Performance / UX (responsive) |
+| **Description** | Across the authenticated `(app)` shell, the main content column does not shrink below ~700px, so at ~390px the content extends beyond the viewport and is clipped by an overflow-hidden ancestor (no horizontal page scroll). This is product-wide, not specific to any one screen. |
+| **Current impact** | On ~390px viewports, actions and content are cut off. Page-level horizontal overflow is zero at all widths; the effect is clipped (not scrollable) content. Desktop-first product, so real-world staff impact is currently limited. |
+| **Evidence** | Phase-3A runtime certification at committed HEAD `c352dee`: identical clipping observed on `/diagnostic-case/:id` (band card width ~679px at 390), `/records`, and `/dashboard` (buttons extend past the 390 viewport; `scrollWidth == clientWidth` at 390/768/1024/1440/1920). |
+| **Affected modules** | web — `(app)` shell layout (global); all authenticated pages |
+| **Severity** | Low |
+| **Likelihood** | Medium (reproducible on any ≤~700px viewport) |
+| **Recommended checkpoint** | Separate responsive-shell workstream (not part of Phase 3A; not a Diagnostic Case / A12 / Final Polish defect). |
+| **Status** | Open |
+| **Verification required** | Define the supported-width policy; confirm the content column reflows below ~700px without clipping, verified at 390/768/1024/1440/1920. |
+| **Owner** | Unassigned |
+| **Notes** | Explicitly **not fixed** and **not introduced by** A12/Final Polish — certified as a pre-existing, global limitation. Tracked here per the Phase-3A certification (ARCHITECTURE_LEDGER.md §15). |
+
 ---
 
 ## Related documents
