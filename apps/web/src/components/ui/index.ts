@@ -30,6 +30,7 @@ export { Skeleton, SkeletonText, SkeletonRows, SkeletonStat, type SkeletonProps 
 export { PageHeader, type PageHeaderProps } from './PageHeader';
 export { DataToolbar, type DataToolbarProps } from './DataToolbar';
 export { SearchField, type SearchFieldProps } from './SearchField';
+export { Field, type FieldProps } from './Field';
 export { SectionContainer, type SectionContainerProps } from './SectionContainer';
 
 // ── Overlays + status presentation (P2) ────────────────────────────────────

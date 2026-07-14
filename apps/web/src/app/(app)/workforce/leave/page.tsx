@@ -9,7 +9,7 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { useMyEmployee, empName, fmtDate, daysBetweenInclusive, WF_STATUS } from '@/lib/workforce';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Card, Button, Th, Td, IconAction, TableEmpty } from '@/components/ui';
+import { Card, Button, Field, Th, Td, IconAction, TableEmpty } from '@/components/ui';
 import { notify } from '@/lib/notify';
 
 // Stable empty fallback so the infinite-scroll fetchFn identity is stable while loading.
@@ -42,18 +42,20 @@ function RequestModal({ employeeId, onClose }: { employeeId: string; onClose: ()
     <div className="fixed inset-0 z-[120] grid place-items-center bg-black/30 p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Request Leave</h3><IconAction icon={<X size={18} />} onClick={onClose} /></div>
-        <label className="mb-1 block text-sm font-medium text-slate-600">Leave type</label>
-        <select value={leaveTypeId} onChange={(e) => setLeaveTypeId(e.target.value)} className="mb-4 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary">
-          <option value="">Select type…</option>
-          {types.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
+        <Field label="Leave type" htmlFor="leave-type">
+          <select id="leave-type" value={leaveTypeId} onChange={(e) => setLeaveTypeId(e.target.value)} className="mb-4 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary">
+            <option value="">Select type…</option>
+            {types.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+        </Field>
         <div className="mb-4 flex gap-3">
-          <div className="flex-1"><label className="mb-1 block text-sm font-medium text-slate-600">Start date</label><input type="date" value={startDate} onChange={(e) => setStart(e.target.value)} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary" /></div>
-          <div className="flex-1"><label className="mb-1 block text-sm font-medium text-slate-600">End date</label><input type="date" value={endDate} min={startDate} onChange={(e) => setEnd(e.target.value)} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary" /></div>
+          <Field className="flex-1" label="Start date" htmlFor="leave-start"><input id="leave-start" type="date" value={startDate} onChange={(e) => setStart(e.target.value)} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary" /></Field>
+          <Field className="flex-1" label="End date" htmlFor="leave-end"><input id="leave-end" type="date" value={endDate} min={startDate} onChange={(e) => setEnd(e.target.value)} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-primary" /></Field>
         </div>
         {totalDays > 0 && <div className="mb-4 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">Total: <span className="font-semibold text-charcoal-heading">{totalDays} day{totalDays === 1 ? '' : 's'}</span></div>}
-        <label className="mb-1 block text-sm font-medium text-slate-600">Reason <span className="text-slate-500">(optional)</span></label>
-        <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} className="mb-4 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-primary" placeholder="Add a note…" />
+        <Field label={<>Reason <span className="text-slate-500">(optional)</span></>} htmlFor="leave-reason">
+          <textarea id="leave-reason" value={reason} onChange={(e) => setReason(e.target.value)} rows={3} className="mb-4 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-primary" placeholder="Add a note…" />
+        </Field>
         {err && <div className="mb-2 text-sm text-error">{err}</div>}
         <div className="flex justify-end gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={submit.isPending} onClick={() => submit.mutate()} disabled={!valid || submit.isPending}  style={{ opacity: !valid || submit.isPending ? 0.5 : 1 }}>Submit Request</Button></div>
       </div>

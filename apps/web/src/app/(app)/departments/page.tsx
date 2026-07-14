@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Building2, MoreHorizontal, Pencil, Plus, Trash2, UserCircle, Users, X } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
-import { Button, IconAction } from '@/components/ui';
+import { Button, Field, IconAction } from '@/components/ui';
 import { notify } from '@/lib/notify';
 
 interface Dept {
@@ -188,14 +188,14 @@ function DeptModal({ dept, onClose, onSaved, onError }: { dept: Dept | null; onC
           <IconAction icon={<X size={16} />} tone="strong" className="hover:bg-surface-container-low text-secondary" onClick={onClose} />
         </div>
         <div className="flex flex-col gap-4">
-          <Field label="Name" required>
-            <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Laboratory" className={inputCls} />
+          <Field label="Name" htmlFor="dept-name" required>
+            <input id="dept-name" autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Laboratory" className={inputCls} />
           </Field>
-          <Field label="Description">
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="What this team does…" className={`${inputCls} h-auto py-2.5`} />
+          <Field label="Description" htmlFor="dept-description">
+            <textarea id="dept-description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="What this team does…" className={`${inputCls} h-auto py-2.5`} />
           </Field>
-          <Field label="Manager">
-            <select value={managerId} onChange={(e) => setManagerId(e.target.value)} className={inputCls}>
+          <Field label="Manager" htmlFor="dept-manager">
+            <select id="dept-manager" value={managerId} onChange={(e) => setManagerId(e.target.value)} className={inputCls}>
               <option value="">No manager</option>
               {(users ?? []).map((u) => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}
             </select>
@@ -213,11 +213,3 @@ function DeptModal({ dept, onClose, onSaved, onError }: { dept: Dept | null; onC
 }
 
 const inputCls = 'h-11 w-full rounded-xl border border-outline-variant/40 bg-white px-3.5 font-body-sm text-body-sm text-on-surface outline-none transition-colors focus:border-primary';
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="mb-1.5 block font-label-md text-label-md text-on-surface">{label}{required && <span className="text-error"> *</span>}</label>
-      {children}
-    </div>
-  );
-}
