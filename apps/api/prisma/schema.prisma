@@ -251,6 +251,7 @@ model Lab {
   workloadTargets         WorkloadTarget[]
   qcChecks                QCCheck[]
   equipment               Equipment[]
+  ancillaryOrders         AncillaryOrder[]
   qcFailureAlerts         QCFailureAlert[]
   requisitionTrackings    RequisitionTracking[]
   trackingEvents          TrackingEvent[]
@@ -660,6 +661,7 @@ model Record {
   consultRequests      ConsultRequest[]
   codings              RecordCoding[]
   fhirTransmissions    FHIRTransmission[]
+  ancillaryOrders      AncillaryOrder[]
   // Case assignment (Tier 2 — workload balancing). Fields are unconditional in
   // the schema; only the UI is feature-gated.
   assignedToId         String?
@@ -3796,4 +3798,60 @@ model DigitalRequisitionForm {
 
   @@index([labId, batchId])
   @@index([clientId])
+}
+
+// ─── Ancillary & IHC Ordering (Phase 4.1A) ───────────────────────────────────
+// A record-scoped ancillary / IHC work order — a new owner-controlled capability
+// (Phase 4.1A). It records a REQUESTED dependency on a case. Order existence is
+// not completion; completion is not a clinical conclusion. This model does NOT
+// own the Record, Result Sheet, Sign-Out, Bethesda, Coding, Specimen, Slide,
+// Report, or Requisition lifecycles — it only records the order.
+
+enum AncillaryKind {
+  IHC // immunohistochemistry
+  SpecialStain // histochemical special stain
+  Molecular // molecular / genetic assay
+  Cytochemistry // cytochemical stain
+  Other // other ancillary work (real, entered)
+}
+
+// State VOCABULARY only. B1 does NOT establish which transitions are legal —
+// transition legality belongs to the owner service (B3). Cancelled and Completed
+// are deliberately distinct; there is intentionally no separate rejected /
+// resulted / reviewed state (an order is not a result and not a review).
+enum AncillaryStatus {
+  Ordered // requested, not yet started
+  InProcess // work underway
+  Completed // work finished — NOT a clinical conclusion
+  Cancelled // withdrawn before completion
+}
+
+model AncillaryOrder {
+  id       String @id @default(cuid())
+  labId    String
+  lab      Lab    @relation(fields: [labId], references: [id])
+  recordId String
+  record   Record @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  kind   AncillaryKind
+  target String // real entered marker/antibody/stain name (never inferred)
+  status AncillaryStatus @default(Ordered)
+
+  // Recorded, never inferred: whether this dependency blocks sign-out. Whether to
+  // warn vs. hard-block at sign-out is a later owner/UI concern (B4); here it is
+  // only recorded data.
+  blocksSignOut Boolean @default(true)
+
+  // Requester provenance. Scalar-only actor id (matches the Record.assignedById /
+  // QCFailureAlert.resolvedById precedent) to keep this schema checkpoint surgical
+  // and avoid touching the User model; may be promoted to a User relation later.
+  orderedById String?
+
+  orderedAt   DateTime  @default(now()) // request time (also serves as creation time)
+  updatedAt   DateTime  @updatedAt // last recorded change
+  completedAt DateTime? // set only when status → Completed (truthful timestamp)
+  notes       String? // free-text request/handling note (no structured payload/JSON)
+
+  @@index([labId, status])
+  @@index([recordId])
 }
