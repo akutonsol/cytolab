@@ -314,6 +314,26 @@ export interface ReportingSignOutSection {
   ownerPath: string;
 }
 
+// Band 8: Timeline & Provenance (A12). A unified chronological list from two authoritative persisted event
+// streams — RecordStatusEvent (statusHistory) and ResultSheetEvent (the shared eventsByRecord read A11 uses).
+// No synthetic Record.createdAt event, no notes, no report content — labels derive from owner-recorded values.
+export interface TimelineEvent {
+  id: string;
+  source: 'record-status' | 'result-sheet';
+  eventType: string;
+  occurredAt: string;
+  actor: string | null;
+  ownerPath: string;
+}
+export interface TimelineProvenanceSection {
+  recordId: string;
+  events: TimelineEvent[];
+  total: number;
+  truncated: boolean;
+  unavailable: UnavailableSource[];
+  ownerPath: string;
+}
+
 export interface DiagnosticCaseOverview {
   asOf: string;
   recordId: string;
@@ -327,6 +347,6 @@ export interface DiagnosticCaseOverview {
   priorEvidence: Section<PriorEvidenceSection>;
   collaboration: Section<CollaborationSection>;
   reportingSignOut: Section<ReportingSignOutSection>;
-  timelineProvenance: Section<null>;
+  timelineProvenance: Section<TimelineProvenanceSection>;
   permissionsActions: Section<null>;
 }

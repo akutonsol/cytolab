@@ -17,7 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { AttachmentsSubSection, BethesdaSubSection, CaseIdentitySection, CodingSubSection, CollaborationSection, CorrelationSubSection, DecisionSupportSection, DiagnosticCaseOverview, DiagnosticInterpretationSection, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, PriorEvidenceSection, PriorRecordsSubSection, ReportingSignOutSection, SectionStatus, SlidesSubSection } from './types';
+import type { AttachmentsSubSection, BethesdaSubSection, CaseIdentitySection, CodingSubSection, CollaborationSection, CorrelationSubSection, DecisionSupportSection, DiagnosticCaseOverview, DiagnosticInterpretationSection, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, PriorEvidenceSection, PriorRecordsSubSection, ReportingSignOutSection, SectionStatus, SlidesSubSection, TimelineProvenanceSection } from './types';
 
 // Recorded dates render as plain calendar dates; null → "—". No relative/"ago" phrasing (which would
 // imply a freshness judgment the owner does not record).
@@ -268,7 +268,21 @@ export default function DiagnosticCaseWorkspacePage() {
               />
             );
           }
-          return <BandShell key={b.key} title={b.title} purpose={b.purpose} status={data?.[b.key]?.status} loading={isLoading} />;
+          if (b.key === 'timelineProvenance') {
+            return (
+              <TimelineProvenanceBand
+                key={b.key}
+                title={b.title}
+                section={data?.timelineProvenance}
+                loading={isLoading}
+                onRetry={() => refetch()}
+                retrying={isFetching}
+                onOpen={(path) => router.push(path)}
+              />
+            );
+          }
+          // Defensive fallback: every band key above is handled, so this is unreachable (b.key is `never`).
+          return <BandShell key={b.key} title={b.title} purpose={b.purpose} loading={isLoading} />;
         })}
       </div>
     </div>
@@ -1131,6 +1145,79 @@ function ReportingSignOutBand({
           </ul>
           {rs.items.length < total && <p className="mt-2 text-meta text-text-tertiary">Showing the first {rs.items.length} of {total} result sheets.</p>}
           <p className="mt-2 text-meta text-text-tertiary">Reporting metadata only — authoring, authorization, and release happen in Sign-Out.</p>
+        </>
+      )}
+    </Card>
+  );
+}
+
+// Band 8: Timeline & Provenance (A12). ONE unified chronological list of recorded events from two
+// authoritative persisted streams — record status changes and result-sheet events — each row carrying a
+// visible source label. Metadata only: no notes, no report/result content, no diagnosis, no workflow
+// controls (no authorize/amend/reverse/accept). Actorless events show a neutral "System". A per-row link
+// opens the owner workspace conservatively (record status → the record; result-sheet → Sign-Out) — it does
+// not claim to open a specific event. Retry appears for a technical error only.
+const TIMELINE_SOURCE_LABEL: Record<string, string> = { 'record-status': 'Record status', 'result-sheet': 'Result sheet' };
+function TimelineProvenanceBand({
+  title,
+  section,
+  loading,
+  onRetry,
+  retrying,
+  onOpen,
+}: {
+  title: string;
+  section?: { status: SectionStatus; data: TimelineProvenanceSection | null; reason?: string };
+  loading: boolean;
+  onRetry: () => void;
+  retrying: boolean;
+  onOpen: (path: string) => void;
+}) {
+  const status = section?.status;
+  const d = section?.data ?? null;
+  const total = d?.total ?? 0;
+  const badge = loading || !status ? 'Loading' : status === 'ready' ? `${total} event${total === 1 ? '' : 's'}` : status === 'empty' ? 'None recorded' : status === 'forbidden' ? 'No access' : status === 'error' ? 'Unavailable' : 'Not yet loaded';
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-1 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">{title}</h2>
+        <Badge tone="neutral" size="xs">{badge}</Badge>
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-52" /><Skeleton shape="text" width="w-40" /></div>
+      ) : !d ? (
+        status === 'forbidden' ? (
+          <EmptyState bare className="px-0 py-8" title="No access" description="You do not have permission to view this case's timeline." />
+        ) : (
+          <EmptyState bare className="px-0 py-8" title="Unavailable" description={section?.reason ?? 'The timeline could not be loaded.'} action={<Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={14} className="mr-1.5" />{retrying ? 'Retrying…' : 'Retry'}</Button>} />
+        )
+      ) : d.events.length === 0 && status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-8" title="No access" description="You do not have permission to view result-sheet events." />
+      ) : d.events.length === 0 && status === 'error' ? (
+        <div className="flex items-center gap-3"><p className="text-meta text-text-tertiary">Result-sheet events could not be loaded.</p><Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={12} className="mr-1" />{retrying ? 'Retrying…' : 'Retry'}</Button></div>
+      ) : d.events.length === 0 ? (
+        <p className="text-meta text-text-tertiary">No recorded events for this case.</p>
+      ) : (
+        <>
+          <ul className="space-y-1.5">
+            {d.events.map((ev) => {
+              const src = TIMELINE_SOURCE_LABEL[ev.source] ?? ev.source;
+              const meta = [fmtDate(ev.occurredAt), ev.actor ?? 'System'].filter((v) => v && v !== '—');
+              const openLabel = ev.source === 'result-sheet' ? 'Open Sign-Out' : 'Open record';
+              return (
+                <li key={ev.id} className="flex items-center justify-between gap-3 rounded border border-hairline px-2.5 py-1.5">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm text-text">{ev.eventType} <span className="text-text-tertiary">· {src}</span></div>
+                    <div className="truncate text-meta text-text-tertiary">{meta.join(' · ')}</div>
+                  </div>
+                  <Button variant="secondary" size="sm" onClick={() => onOpen(ev.ownerPath)}>{openLabel} <ExternalLink size={12} className="ml-1" /></Button>
+                </li>
+              );
+            })}
+          </ul>
+          {d.truncated && <p className="mt-2 text-meta text-text-tertiary">Showing the first {d.events.length} of {total} events.</p>}
+          {d.unavailable.length > 0 && <p className="mt-2 text-meta text-text-tertiary">Some event sources are unavailable: {d.unavailable.map((u) => u.label).join(', ')}.</p>}
+          <p className="mt-2 text-meta text-text-tertiary">Recorded events only — source-labeled and non-canonical. The owner systems remain authoritative.</p>
         </>
       )}
     </Card>

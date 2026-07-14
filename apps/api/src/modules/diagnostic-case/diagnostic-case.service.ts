@@ -195,6 +195,15 @@ type RecordLoad =
   | { kind: 'forbidden' }
   | { kind: 'error'; reason: string };
 
+// Discriminated result of the SINGLE shared ResultSheetsService.eventsByRecord read. Performed once per
+// overview (only when the root record loaded OK) and threaded into BOTH A11 Reporting & Sign-Out and A12
+// Timeline & Provenance — eventsByRecord is never called twice. `forbidden` = caller lacks resultsheet:view
+// (the read is not attempted); `error` = the owner read threw; `ok` = the recorded events (never mutated).
+type RsEventsLoad =
+  | { kind: 'ok'; events: any[] }
+  | { kind: 'forbidden' }
+  | { kind: 'error' };
+
 // ── Band 3: Diagnostic Interpretation (A7) ──
 // Two INDEPENDENT owner-recorded sub-sources, shown SEPARATELY and never merged into a diagnosis:
 //   • Bethesda — BethesdaService.getByRecord (structured TBS classification; one-per-record; owner-
@@ -415,6 +424,34 @@ export interface ReportingSignOutSection {
   ownerPath: string; // /sign-out/:recordId (authoritative workspace)
 }
 
+// ── Band 8: Timeline & Provenance (A12) ──
+// A unified, chronological, read-only list composed from EXACTLY TWO authoritative, persisted,
+// append-only event streams — nothing synthesized, nothing reconstructed from current-state fields:
+//   1. RecordStatusEvent — from the already-loaded record's `statusHistory` (record:view via the base
+//      gate). NO synthetic "Case created" event from Record.createdAt (the create flow already persists
+//      an initial RecordStatusEvent); a legacy record with no status events truthfully contributes none.
+//   2. ResultSheetEvent — from the SINGLE shared ResultSheetsService.eventsByRecord read (resultsheet:view),
+//      the SAME in-request read A11 uses (called at most once per overview).
+// Labels derive deterministically from owner-recorded values (never AI/generated prose, never notes).
+// Every event keeps its `source`; ids are source-prefixed to avoid cross-source collision. Raw user ids,
+// notes, resultSheetId, report content/narrative/diagnosis, and all current-state timestamps are excluded.
+export interface TimelineEvent {
+  id: string; // source-prefixed public id: `status-<ownerEventId>` | `result-sheet-<ownerEventId>`
+  source: 'record-status' | 'result-sheet'; // owner identity, never erased in normalization
+  eventType: string; // restrained factual label derived directly from the owner-recorded value
+  occurredAt: string; // recorded event time (ISO) — the owner's createdAt
+  actor: string | null; // display name only; null for system/actorless events (never fabricated)
+  ownerPath: string; // conservative owner navigation (record status → /records/:id; result sheet → /sign-out/:id)
+}
+export interface TimelineProvenanceSection {
+  recordId: string;
+  events: TimelineEvent[]; // ≤ TIMELINE_CAP, unified deterministic chronological order
+  total: number; // full normalized owner-event count BEFORE the cap slice
+  truncated: boolean; // total > TIMELINE_CAP
+  unavailable: UnavailableSource[]; // event sources that were forbidden/errored (named truthfully)
+  ownerPath: string; // /records/:recordId
+}
+
 // ── The frozen overview envelope ──
 export interface DiagnosticCaseOverview {
   asOf: string;
@@ -431,7 +468,7 @@ export interface DiagnosticCaseOverview {
   priorEvidence: Section<PriorEvidenceSection>;
   collaboration: Section<CollaborationSection>;
   reportingSignOut: Section<ReportingSignOutSection>;
-  timelineProvenance: Section<null>;
+  timelineProvenance: Section<TimelineProvenanceSection>;
   permissionsActions: Section<null>;
 }
 
@@ -445,10 +482,36 @@ const PRIOR_CAP = 50; // conservative bound on the prior-record list (owner alre
 const CORRELATION_CAP = 50; // conservative bound on the patient correlation list (plan A9 §List bounds)
 const ESCALATION_CAP = 50; // conservative bound on the record escalation list (plan A10 §List bounds)
 const RESULTSHEET_CAP = 50; // conservative bound on the record result-sheet list (plan A11 §List bounds)
+const TIMELINE_CAP = 50; // conservative bound on the unified event list (plan A12 §Ordering and cap)
 const iso = (d: Date | string | null | undefined): string | null => (d ? new Date(d).toISOString() : null);
 const fullName = (
   u: { firstName?: string | null; lastName?: string | null } | null | undefined,
 ): string | null => (u ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || null : null);
+
+// Fixed, factual labels for recorded ResultSheetEvent types — the exact owner enum, no interpretation,
+// no clinical-significance/final/complete/urgent claim. An unmapped value falls back to its raw string
+// (still owner-recorded, never invented). Mirrors Sign-Out's RSE_TEXT intent without importing it.
+const RSE_LABEL: Record<string, string> = {
+  Authorized: 'Authorized',
+  Deauthorized: 'Deauthorized',
+  Reauthorized: 'Reauthorized',
+  AiDrafted: 'AI draft recorded',
+  AiAccepted: 'AI draft accepted',
+};
+
+// Deterministic unified ordering: occurredAt ascending, then a FIXED source priority ONLY to break exact
+// timestamp ties (never a clinical-importance ranking), then the stable source-prefixed id. Same input →
+// same order, always.
+const TIMELINE_SOURCE_PRIORITY: Record<string, number> = { 'record-status': 0, 'result-sheet': 1 };
+function timelineSort(a: TimelineEvent, b: TimelineEvent): number {
+  const ta = new Date(a.occurredAt).getTime();
+  const tb = new Date(b.occurredAt).getTime();
+  if (ta !== tb) return ta - tb;
+  const pa = TIMELINE_SOURCE_PRIORITY[a.source] ?? 99;
+  const pb = TIMELINE_SOURCE_PRIORITY[b.source] ?? 99;
+  if (pa !== pb) return pa - pb;
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
 
 @Injectable()
 export class DiagnosticCaseService {
@@ -474,6 +537,12 @@ export class DiagnosticCaseService {
    */
   async overview(recordId: string, user: AuthUser): Promise<DiagnosticCaseOverview> {
     const load = await this.loadRecord(recordId, user);
+    const has = (code: string) => !!user.isSuperRole || user.permissions.includes(code);
+    // ONE result-sheet event read for the whole request (A11 Reporting + A12 Timeline). Invoked ONLY when
+    // the root record loaded OK; a root failure/forbidden makes both bands mirror the root WITHOUT invoking
+    // the owner. eventsByRecord is therefore called at most once per overview (never separately per band).
+    const rsEvents: RsEventsLoad =
+      load.kind === 'ok' ? await this.loadResultSheetEvents(recordId, has('resultsheet:view')) : { kind: 'forbidden' };
     return {
       asOf: new Date().toISOString(),
       recordId,
@@ -484,10 +553,22 @@ export class DiagnosticCaseService {
       decisionSupport: await this.sectionDecisionSupport(recordId, load, user),
       priorEvidence: await this.sectionPriorEvidence(recordId, load, user),
       collaboration: await this.sectionCollaboration(recordId, load, user),
-      reportingSignOut: await this.sectionReportingSignOut(recordId, load, user),
-      timelineProvenance: deferred(),
+      reportingSignOut: await this.sectionReportingSignOut(recordId, load, user, rsEvents),
+      timelineProvenance: this.sectionTimelineProvenance(recordId, load, rsEvents),
       permissionsActions: deferred(),
     };
+  }
+
+  // The SINGLE shared ResultSheetsService.eventsByRecord read. Not attempted without resultsheet:view
+  // (forbidden). Mutation-free; the recorded events are threaded into A11 and A12 unchanged.
+  private async loadResultSheetEvents(recordId: string, allowed: boolean): Promise<RsEventsLoad> {
+    if (!allowed) return { kind: 'forbidden' };
+    try {
+      const events = await this.resultSheets.eventsByRecord(recordId);
+      return { kind: 'ok', events: Array.isArray(events) ? events : [] };
+    } catch {
+      return { kind: 'error' };
+    }
   }
 
   // Descriptive only. has(code) = isSuperRole || permissions.includes(code). Grants nothing; owner
@@ -865,29 +946,32 @@ export class DiagnosticCaseService {
   // Band 7: Reporting & Sign-Out (single source — result-sheet reporting metadata). Loaded after the
   // root record read. Root failure → band mirrors root (owner not invoked). Sign-Out is NOT modified;
   // this reuses ResultSheetsService.metaByRecord + eventsByRecord (the same reads Sign-Out composes).
-  private async sectionReportingSignOut(recordId: string, load: RecordLoad, user: AuthUser): Promise<Section<ReportingSignOutSection>> {
+  private async sectionReportingSignOut(recordId: string, load: RecordLoad, user: AuthUser, rsEvents: RsEventsLoad): Promise<Section<ReportingSignOutSection>> {
     if (load.kind === 'forbidden') return { status: 'forbidden', data: null, reason: 'record:view required' };
     if (load.kind === 'error') return { status: 'error', data: null, reason: load.reason };
     const has = (code: string) => !!user.isSuperRole || user.permissions.includes(code);
-    const resultSheets = await this.loadReporting(recordId, has('resultsheet:view'));
+    const resultSheets = await this.loadReporting(recordId, has('resultsheet:view'), rsEvents);
     const data: ReportingSignOutSection = { recordId, resultSheets, ownerPath: `/sign-out/${recordId}` };
     return { status: resultSheets.status, data, reason: resultSheets.reason };
   }
 
   // Reporting sub-loader. Composes ResultSheetsService.metaByRecord (per-sheet authorization/report/entry
-  // metadata) + eventsByRecord (authorization/amendment event types) — both mutation-free, resultsheet:view.
-  // Derives amended/reauthorized/deauthorized ONLY from recorded ResultSheetEvent types (mirrors Sign-Out).
-  // Allowlist METADATA only — NO report prose/result content/narrative; report presence via `_count.reports`.
-  // Owner order (createdAt desc) preserved; capped RESULTSHEET_CAP. No sheets → empty; failure → error.
-  private async loadReporting(recordId: string, allowed: boolean): Promise<ReportingResultSheetsSubSection> {
+  // metadata) with the SHARED eventsByRecord result (authorization/amendment event types) — both
+  // mutation-free, resultsheet:view. The event read is the ONE shared read (A11 + A12); it is NOT re-issued
+  // here. A11 behavior is preserved exactly: missing resultsheet:view → forbidden; a FAILED event read
+  // (rsEvents.error) → error; a failed meta read → error; amended/reauthorized/deauthorized derived ONLY
+  // from recorded ResultSheetEvent types scoped by resultSheetId (mirrors Sign-Out). Allowlist METADATA only
+  // — NO report prose/result content/narrative; report presence via `_count.reports`. Owner order
+  // (createdAt desc) preserved; capped RESULTSHEET_CAP. No sheets → empty.
+  private async loadReporting(recordId: string, allowed: boolean, rsEvents: RsEventsLoad): Promise<ReportingResultSheetsSubSection> {
     if (!allowed) return { status: 'forbidden', items: [], total: 0, reason: 'resultsheet:view required' };
+    // A failed shared event read is a reporting failure — identical to the prior Promise.all, where an
+    // eventsByRecord rejection surfaced as error.
+    if (rsEvents.kind === 'error') return { status: 'error', items: [], total: 0, reason: 'Reporting could not be loaded' };
     try {
-      const [sheets, events]: [any[], any[]] = await Promise.all([
-        this.resultSheets.metaByRecord(recordId),
-        this.resultSheets.eventsByRecord(recordId),
-      ]);
+      const sheets: any[] = await this.resultSheets.metaByRecord(recordId);
       if (!Array.isArray(sheets) || sheets.length === 0) return { status: 'empty', items: [], total: 0 };
-      const evList: any[] = Array.isArray(events) ? events : [];
+      const evList: any[] = rsEvents.kind === 'ok' ? rsEvents.events : [];
       const items: ResultSheetSummary[] = sheets.slice(0, RESULTSHEET_CAP).map((s) => {
         const evs = evList.filter((e) => e.resultSheetId === s.id);
         const hasDeauth = evs.some((e) => e.type === 'Deauthorized');
@@ -911,6 +995,85 @@ export class DiagnosticCaseService {
     } catch {
       return { status: 'error', items: [], total: 0, reason: 'Reporting could not be loaded' };
     }
+  }
+
+  // Band 8: Timeline & Provenance (A12 — the final Phase 3A band). Composes the two authoritative persisted
+  // event streams into ONE unified chronological list. Root failure/forbidden → band mirrors the root (data
+  // null; result-sheet owner not invoked). Otherwise:
+  //   • Record-lifecycle sub-source: mapped from the already-loaded record's statusHistory (record:view via
+  //     the base gate — so it is never independently forbidden/errored here; it only contributes events or
+  //     nothing). NO synthetic Record.createdAt event; a record with no status events contributes none.
+  //   • Result-sheet sub-source: from the SHARED eventsByRecord read (resultsheet:view). forbidden/error is
+  //     isolated — it NEVER hides available lifecycle events; it is named truthfully in `unavailable[]`.
+  // Band precedence (frozen): any events → ready; else result-sheet error → error; else result-sheet
+  // forbidden → forbidden; else empty. Never converts forbidden/error into empty. Metadata only.
+  private sectionTimelineProvenance(recordId: string, load: RecordLoad, rsEvents: RsEventsLoad): Section<TimelineProvenanceSection> {
+    if (load.kind === 'forbidden') return { status: 'forbidden', data: null, reason: 'record:view required' };
+    if (load.kind === 'error') return { status: 'error', data: null, reason: load.reason };
+
+    const recordEvents = this.mapRecordLifecycleEvents(recordId, load.rec);
+    const resultSheetEvents = this.mapResultSheetEvents(recordId, rsEvents);
+
+    const unavailable: UnavailableSource[] = [];
+    if (rsEvents.kind === 'forbidden') {
+      unavailable.push({ key: 'result-sheet', label: 'Result-sheet events', reason: 'resultsheet:view required' });
+    } else if (rsEvents.kind === 'error') {
+      unavailable.push({ key: 'result-sheet', label: 'Result-sheet events', reason: 'Result-sheet events could not be loaded' });
+    }
+
+    const all = [...recordEvents, ...resultSheetEvents].sort(timelineSort);
+    const total = all.length; // full normalized count BEFORE slicing — never silently discarded
+    const truncated = total > TIMELINE_CAP;
+    const events = all.slice(0, TIMELINE_CAP);
+    const data: TimelineProvenanceSection = { recordId, events, total, truncated, unavailable, ownerPath: `/records/${recordId}` };
+
+    if (total > 0) return { status: 'ready', data };
+    if (rsEvents.kind === 'error') return { status: 'error', data, reason: 'Result-sheet events could not be loaded' };
+    if (rsEvents.kind === 'forbidden') return { status: 'forbidden', data, reason: 'resultsheet:view required' };
+    return { status: 'empty', data };
+  }
+
+  // Record-lifecycle events from the already-loaded record's persisted statusHistory (RecordStatusEvent).
+  // NO synthetic creation event; skips rows with no recorded time. Allowlist: id (source-prefixed), status
+  // (→ factual label), createdAt, actor display name. Excludes notes, raw userId, and record identity.
+  private mapRecordLifecycleEvents(recordId: string, rec: any): TimelineEvent[] {
+    const hist: any[] = Array.isArray(rec?.statusHistory) ? rec.statusHistory : [];
+    const out: TimelineEvent[] = [];
+    for (const h of hist) {
+      const occurredAt = iso(h?.createdAt);
+      if (!occurredAt) continue;
+      out.push({
+        id: `status-${h.id}`,
+        source: 'record-status',
+        eventType: `Status set to ${h.status}`,
+        occurredAt,
+        actor: fullName(h.user),
+        ownerPath: `/records/${recordId}`,
+      });
+    }
+    return out;
+  }
+
+  // Result-sheet events from the SHARED eventsByRecord result (ResultSheetEvent). Empty for forbidden/error
+  // (those states are surfaced by the band, not here). Skips rows with no recorded time. Allowlist: id
+  // (source-prefixed), type (→ fixed factual label), createdAt, actor display name. Excludes resultSheetId,
+  // raw userId, and all report content/narrative/diagnosis.
+  private mapResultSheetEvents(recordId: string, rsEvents: RsEventsLoad): TimelineEvent[] {
+    if (rsEvents.kind !== 'ok') return [];
+    const out: TimelineEvent[] = [];
+    for (const e of rsEvents.events) {
+      const occurredAt = iso(e?.createdAt);
+      if (!occurredAt) continue;
+      out.push({
+        id: `result-sheet-${e.id}`,
+        source: 'result-sheet',
+        eventType: RSE_LABEL[e.type] ?? String(e.type),
+        occurredAt,
+        actor: fullName(e.user),
+        ownerPath: `/sign-out/${recordId}`,
+      });
+    }
+    return out;
   }
 
   // Band 6: Collaboration (single source — record-scoped escalation metadata). Loaded after the root
