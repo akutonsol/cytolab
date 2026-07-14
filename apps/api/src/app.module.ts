@@ -68,6 +68,7 @@ import { LabModule } from './modules/lab/lab.module';
 import { QualityGovernanceModule } from './modules/quality-governance/quality-governance.module';
 import { EnterpriseAdministrationModule } from './modules/enterprise-administration/enterprise-administration.module';
 import { DiagnosticCaseModule } from './modules/diagnostic-case/diagnostic-case.module';
+import { AncillaryOrdersModule } from './modules/ancillary-orders/ancillary-orders.module';
 
 /**
  * Cytolab modular monolith.
@@ -162,6 +163,7 @@ import { DiagnosticCaseModule } from './modules/diagnostic-case/diagnostic-case.
     QualityGovernanceModule,
     EnterpriseAdministrationModule,
     DiagnosticCaseModule,
+    AncillaryOrdersModule,
   ],
   controllers: [HealthController],
   providers: [
