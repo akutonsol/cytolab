@@ -107,6 +107,25 @@ export class AncillaryOrdersService {
   }
 
   /**
+   * B4 sign-out signal — does this record have an OPEN order that blocks sign-out?
+   * Read-only, lab-scoped (tenancy extension), record-scoped, based solely on
+   * persisted facts: `blocksSignOut = true` AND `status ∈ {Ordered, InProcess}`.
+   * Never inferred from completedAt/updatedAt/kind/notes/result/Record status.
+   * Returns only the minimum the authorization guard needs — a boolean and a
+   * truthful total; no rows, no labId/orderedById/notes are exposed.
+   */
+  async hasBlockingOpenOrders(recordId: string): Promise<{ blocked: boolean; total: number }> {
+    const total = await this.prisma.ancillaryOrder.count({
+      where: {
+        recordId,
+        blocksSignOut: true,
+        status: { in: AncillaryOrdersService.OPEN_STATUSES },
+      },
+    });
+    return { blocked: total > 0, total };
+  }
+
+  /**
    * Lab queue of OPEN orders. Base filter is always the open statuses; a `status`
    * filter can only narrow within OPEN (never widen to Completed/Cancelled).
    * Bounded to QUEUE_CAP with a truthful total, ordered oldest-waiting first.

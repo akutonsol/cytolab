@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, RecordStatus, ResultSheetEventType } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { paginate } from '../../common/dto/pagination.dto';
@@ -7,6 +7,7 @@ import { LabContext } from '../../common/tenancy/lab-context';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { RecordsService } from '../records/records.service';
 import { EscalationService } from '../escalation/escalation.service';
+import { AncillaryOrdersService } from '../ancillary-orders/ancillary-orders.service';
 import {
   CreateResultEntryDto,
   CreateResultSheetDto,
@@ -52,6 +53,7 @@ export class ResultSheetsService {
     private prisma: PrismaService,
     private records: RecordsService,
     private escalation: EscalationService,
+    private ancillary: AncillaryOrdersService,
     private labContext: LabContext,
     private realtime: RealtimeGateway,
   ) {}
@@ -244,6 +246,18 @@ export class ResultSheetsService {
   async authorize(id: string, userId: string, signature?: string) {
     const sheet = await this.findOne(id);
     if (sheet.authorized) throw new BadRequestException('Result sheet is already authorized');
+
+    // B4: refuse authorization while an OPEN ancillary order blocks sign-out.
+    // Composes the ancillary owner's read (no direct AncillaryOrder Prisma access
+    // here). Runs before ANY mutation — including the signature persist below — so
+    // a block causes zero side effects. An owner-read failure propagates and
+    // aborts authorization (fail-closed): a read error is never "no blockers".
+    const blocking = await this.ancillary.hasBlockingOpenOrders(sheet.recordId);
+    if (blocking.blocked) {
+      throw new ConflictException(
+        `Authorization is blocked by ${blocking.total} open ancillary order(s).`,
+      );
+    }
 
     // If the authorizer signed with a hand-drawn signature, persist it to their
     // profile so the on-demand report render (which reads User.signatureUrl)
