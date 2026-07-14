@@ -415,6 +415,10 @@ function DiagnosticMaterialBand({
   // Band badge is now source-agnostic (the band is multi-source: specimens + slides + attachments).
   // Each sub-source shows its own count; the band is `empty` only when ALL sources are empty.
   const badge = loading || !status ? 'Loading' : status === 'ready' ? 'Ready' : status === 'empty' ? 'None recorded' : status === 'forbidden' ? 'No access' : status === 'error' ? 'Unavailable' : 'Not yet loaded';
+  // Sub-source failures split by cause (technical vs access) — same presentation as the other
+  // multi-source bands (Interpretation, Prior Evidence): "Couldn't load" vs "Access restricted", never merged.
+  const failed = d ? [d.slides.status === 'error' ? 'Slides' : null, d.attachments.status === 'error' ? 'Attachments' : null].filter(Boolean) : [];
+  const restricted = d ? [d.slides.status === 'forbidden' ? 'Slides' : null, d.attachments.status === 'forbidden' ? 'Attachments' : null].filter(Boolean) : [];
 
   return (
     <Card radius="md" elevation="soft" border="hairline" padding="lg">
@@ -482,8 +486,11 @@ function DiagnosticMaterialBand({
           <div className="mt-3 border-t border-hairline pt-3">
             <AttachmentsSubArea attachments={d?.attachments} onRetry={onRetry} retrying={retrying} />
           </div>
-          {d?.unavailable && d.unavailable.length > 0 && (
-            <p className="mt-3 text-meta text-text-tertiary">Some sources are unavailable: {d.unavailable.map((u) => u.label).join(', ')}.</p>
+          {failed.length > 0 && (
+            <p className="mt-3 text-meta text-text-tertiary">Couldn’t load: {failed.join(', ')}.</p>
+          )}
+          {restricted.length > 0 && (
+            <p className="mt-1 text-meta text-text-tertiary">Access restricted: {restricted.join(', ')}.</p>
           )}
         </>
       )}
@@ -838,7 +845,7 @@ function DecisionSupportBand({
           <Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={12} className="mr-1" />{retrying ? 'Retrying…' : 'Retry'}</Button>
         </div>
       ) : drafts.status === 'empty' || drafts.items.length === 0 ? (
-        <p className="text-meta text-text-tertiary">No AI reporting drafts recorded for this case.</p>
+        <EmptyState bare className="px-0 py-6" title="No AI drafts recorded" description="No AI reporting drafts recorded for this case." />
       ) : (
         <>
           <p className="mb-2 text-meta text-text-tertiary">AI-assisted reporting drafts — metadata only. The generated text stays in the reporting owner; this is assistive provenance, not a diagnosis.</p>
@@ -1051,7 +1058,7 @@ function CollaborationBand({
       ) : esc.status === 'error' ? (
         <div className="flex items-center gap-3"><p className="text-meta text-text-tertiary">Escalations could not be loaded.</p><Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={12} className="mr-1" />{retrying ? 'Retrying…' : 'Retry'}</Button></div>
       ) : esc.status === 'empty' || esc.items.length === 0 ? (
-        <p className="text-meta text-text-tertiary">No escalations recorded for this case.</p>
+        <EmptyState bare className="px-0 py-6" title="No escalations recorded" description="No escalations recorded for this case." />
       ) : (
         <>
           <div className="mb-2 flex items-center justify-between gap-2">
@@ -1120,10 +1127,7 @@ function ReportingSignOutBand({
       ) : rs.status === 'error' ? (
         <div className="flex items-center gap-3"><p className="text-meta text-text-tertiary">Reporting could not be loaded.</p><Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={12} className="mr-1" />{retrying ? 'Retrying…' : 'Retry'}</Button></div>
       ) : rs.status === 'empty' || rs.items.length === 0 ? (
-        <>
-          <p className="text-meta text-text-tertiary">No result sheet recorded for this case.</p>
-          <div className="mt-3"><Button variant="secondary" size="sm" onClick={onOpenSignOut}>Open Sign-Out <ExternalLink size={12} className="ml-1" /></Button></div>
-        </>
+        <EmptyState bare className="px-0 py-6" title="No result sheet recorded" description="No result sheet recorded for this case." action={<Button variant="secondary" size="sm" onClick={onOpenSignOut}>Open Sign-Out <ExternalLink size={12} className="ml-1" /></Button>} />
       ) : (
         <>
           <div className="mb-2 flex items-center justify-between gap-2">
@@ -1177,6 +1181,10 @@ function TimelineProvenanceBand({
   const d = section?.data ?? null;
   const total = d?.total ?? 0;
   const badge = loading || !status ? 'Loading' : status === 'ready' ? `${total} event${total === 1 ? '' : 's'}` : status === 'empty' ? 'None recorded' : status === 'forbidden' ? 'No access' : status === 'error' ? 'Unavailable' : 'Not yet loaded';
+  // Unavailable event sources split by cause (technical vs access) — same presentation as the other
+  // multi-source bands. Permission denials use the aggregate's "<code> required" reason convention.
+  const failed = d ? d.unavailable.filter((u) => !/required$/.test(u.reason ?? '')).map((u) => u.label) : [];
+  const restricted = d ? d.unavailable.filter((u) => /required$/.test(u.reason ?? '')).map((u) => u.label) : [];
   return (
     <Card radius="md" elevation="soft" border="hairline" padding="lg">
       <div className="mb-1 flex items-center gap-2">
@@ -1196,7 +1204,7 @@ function TimelineProvenanceBand({
       ) : d.events.length === 0 && status === 'error' ? (
         <div className="flex items-center gap-3"><p className="text-meta text-text-tertiary">Result-sheet events could not be loaded.</p><Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={12} className="mr-1" />{retrying ? 'Retrying…' : 'Retry'}</Button></div>
       ) : d.events.length === 0 ? (
-        <p className="text-meta text-text-tertiary">No recorded events for this case.</p>
+        <EmptyState bare className="px-0 py-6" title="No recorded events" description="No recorded events for this case." />
       ) : (
         <>
           <ul className="space-y-1.5">
@@ -1216,7 +1224,8 @@ function TimelineProvenanceBand({
             })}
           </ul>
           {d.truncated && <p className="mt-2 text-meta text-text-tertiary">Showing the first {d.events.length} of {total} events.</p>}
-          {d.unavailable.length > 0 && <p className="mt-2 text-meta text-text-tertiary">Some event sources are unavailable: {d.unavailable.map((u) => u.label).join(', ')}.</p>}
+          {failed.length > 0 && <p className="mt-3 text-meta text-text-tertiary">Couldn’t load: {failed.join(', ')}.</p>}
+          {restricted.length > 0 && <p className="mt-1 text-meta text-text-tertiary">Access restricted: {restricted.join(', ')}.</p>}
           <p className="mt-2 text-meta text-text-tertiary">Recorded events only — source-labeled and non-canonical. The owner systems remain authoritative.</p>
         </>
       )}

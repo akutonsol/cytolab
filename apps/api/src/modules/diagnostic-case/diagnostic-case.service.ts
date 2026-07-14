@@ -110,7 +110,6 @@ export interface CaseIdentitySection {
   registeredAt: string | null; // record createdAt (ISO)
   statusChangedAt: string | null; // dateStatus (ISO) — last recorded status-change time
   patient: {
-    id: string;
     name: string | null;
     registrationNo: string | null; // MRN as already used by the record surface
     gender: string | null; // as recorded (no inference)
@@ -656,17 +655,21 @@ export class DiagnosticCaseService {
     if (attachments.status === 'error' || attachments.status === 'forbidden') unavailable.push({ key: 'attachments', label: 'Attachments', reason: attachments.reason });
     const data: DiagnosticMaterialSection = { recordId, specimens, summary: { total }, slides, attachments, unavailable, ownerPath: `/records/${recordId}` };
 
-    // Band-status truth table (all-sources; a resolved-but-empty source is NOT the same as a failed one):
-    //   • any sub-source has ≥1 recorded item                        → ready (failed siblings named in unavailable[])
-    //   • all sub-sources resolved successfully with zero items       → empty
-    //   • no sub-source has items AND ≥1 sub-source failed            → error (never "empty"/"ready"; failed sources named)
-    //   • root record read failed / forbidden                        → handled above (whole band, preserved)
-    // (A `ready` sub-source implies items > 0 by the loader contract; `empty` implies a successful zero-item read.)
+    // Band-status PRECEDENCE (frozen CANONICAL contract — identical to Diagnostic Interpretation and
+    // Prior Evidence; forbidden/error are NEVER converted to empty, and forbidden NEVER collapses into error):
+    //   1. any sub-source has ≥1 recorded item                          → ready (failed/forbidden siblings stay explicit)
+    //   2. else no items AND ≥1 sub-source is error (technical)         → error (reason names the errored source(s))
+    //   3. else no items AND ≥1 sub-source is forbidden (access)        → forbidden (access restriction, NOT technical)
+    //   4. else every sub-source was accessible + successfully empty    → empty
+    // (slides/attachments run under the base record:view gate today, so the forbidden branch is not reachable
+    //  here; it is kept for canonical symmetry with the other multi-source bands. `ready` sub-source ⇒ items>0.)
     const anyItems = total > 0 || slides.status === 'ready' || attachments.status === 'ready';
+    const errored = [slides.status === 'error' ? 'Slides' : null, attachments.status === 'error' ? 'Attachments' : null].filter(Boolean) as string[];
+    const forbidden = [slides.status === 'forbidden' ? 'Slides' : null, attachments.status === 'forbidden' ? 'Attachments' : null].filter(Boolean) as string[];
     if (anyItems) return { status: 'ready', data };
-    if (unavailable.length === 0) return { status: 'empty', data }; // every source resolved with zero items
-    // No items anywhere and ≥1 source failed: the band has no material to show and is not truthfully empty.
-    return { status: 'error', data, reason: `Diagnostic material could not be loaded (${unavailable.map((u) => u.label).join(', ')})` };
+    if (errored.length) return { status: 'error', data, reason: `Diagnostic material could not be loaded (${errored.join(', ')})` };
+    if (forbidden.length) return { status: 'forbidden', data, reason: `Access restricted (${forbidden.join(', ')})` };
+    return { status: 'empty', data }; // only when every source was accessible and successfully empty
   }
 
   // A5 slides sub-loader. Reads ONLY through the mutation-free WsiService.listByRecordMeta seam
@@ -1167,7 +1170,6 @@ export class DiagnosticCaseService {
       statusChangedAt: iso(r.dateStatus),
       patient: r.patient
         ? {
-            id: r.patient.id,
             name: fullName(r.patient),
             registrationNo: r.patient.registrationNo ?? null,
             gender: r.patient.gender ?? null,

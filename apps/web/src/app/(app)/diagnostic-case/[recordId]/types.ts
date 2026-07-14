@@ -55,7 +55,6 @@ export interface CaseIdentitySection {
   registeredAt: string | null;
   statusChangedAt: string | null;
   patient: {
-    id: string;
     name: string | null;
     registrationNo: string | null;
     gender: string | null;
