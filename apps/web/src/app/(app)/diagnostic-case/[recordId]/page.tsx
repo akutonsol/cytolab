@@ -17,7 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { AttachmentsSubSection, BethesdaSubSection, CaseIdentitySection, CodingSubSection, CollaborationSection, CorrelationSubSection, DecisionSupportSection, DiagnosticCaseOverview, DiagnosticInterpretationSection, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, PriorEvidenceSection, PriorRecordsSubSection, ReportingSignOutSection, SectionStatus, SlidesSubSection, TimelineProvenanceSection } from './types';
+import type { AncillaryOrdersSection, AttachmentsSubSection, BethesdaSubSection, CaseIdentitySection, CodingSubSection, CollaborationSection, CorrelationSubSection, DecisionSupportSection, DiagnosticCaseOverview, DiagnosticInterpretationSection, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, PriorEvidenceSection, PriorRecordsSubSection, ReportingSignOutSection, SectionStatus, SlidesSubSection, TimelineProvenanceSection } from './types';
 
 // Recorded dates render as plain calendar dates; null → "—". No relative/"ago" phrasing (which would
 // imply a freshness judgment the owner does not record).
@@ -59,6 +59,7 @@ type BandKey = Exclude<keyof DiagnosticCaseOverview, 'asOf' | 'recordId' | 'perm
 const BANDS: { key: BandKey; title: string; purpose: string }[] = [
   { key: 'caseIdentity', title: 'Case Identity', purpose: 'The record’s identity, patient, lifecycle state, clinical indication, and assignment.' },
   { key: 'diagnosticMaterial', title: 'Diagnostic Material', purpose: 'Specimens, slide metadata, and attachments — the material under review. Images are opened on their viewer.' },
+  { key: 'ancillaryOrders', title: 'Ancillary Orders', purpose: 'Ancillary and IHC orders recorded for this case — observed here; ordered and resolved in their owner workspace.' },
   { key: 'diagnosticInterpretation', title: 'Diagnostic Interpretation', purpose: 'Structured (Bethesda) findings, result-sheet state, and coding — each shown as its owner records it, never merged into a single diagnosis.' },
   { key: 'decisionSupport', title: 'Decision Support', purpose: 'Assistive material that supports, never replaces, interpretation. Any screening signal is labeled and non-diagnostic.' },
   { key: 'priorEvidence', title: 'Prior Evidence', purpose: 'The patient’s prior cases (this case excluded) and cyto-histo correlations recorded for this patient.' },
@@ -239,6 +240,19 @@ export default function DiagnosticCaseWorkspacePage() {
                 retrying={isFetching}
                 onOpenRecord={(rid) => router.push(`/records/${rid}`)}
                 onOpenCorrelation={(cid) => router.push(`/correlation/${cid}`)}
+              />
+            );
+          }
+          if (b.key === 'ancillaryOrders') {
+            return (
+              <AncillaryOrdersBand
+                key={b.key}
+                title={b.title}
+                section={data?.ancillaryOrders}
+                loading={isLoading}
+                onRetry={() => refetch()}
+                retrying={isFetching}
+                onOpen={() => router.push('/ancillary-orders')}
               />
             );
           }
@@ -1019,6 +1033,81 @@ function CorrelationSubArea({ correlation, onOpenCorrelation, onRetry, retrying 
 // acknowledge/resolve/reassign/close/notify/review/create/edit controls; no teleconsult or notes (no
 // safe Record-scoped owner read exists). severity/trigger/status shown VERBATIM (owner-recorded); the
 // notification is shown as a RECORDED fact ("Notification recorded"), never "delivered/received."
+// B7: Ancillary Orders — read-only observation of the AncillaryOrders owner. One action (Open
+// Ancillary Orders → owner workspace); NO inline create/start/complete/cancel. Statuses shown
+// verbatim; "Blocks Sign-Out" is surfaced only for OPEN orders (Ordered/InProcess), never claimed
+// for a closed order. Nothing implies testing complete / results / reviewed / released.
+function AncillaryOrdersBand({
+  title,
+  section,
+  loading,
+  onRetry,
+  retrying,
+  onOpen,
+}: {
+  title: string;
+  section?: { status: SectionStatus; data: AncillaryOrdersSection | null; reason?: string };
+  loading: boolean;
+  onRetry: () => void;
+  retrying: boolean;
+  onOpen: () => void;
+}) {
+  const status = section?.status;
+  const d = section?.data ?? null;
+  const total = d?.total ?? 0;
+  const badge =
+    loading || !status ? 'Loading'
+    : status === 'ready' ? `${total} order${total === 1 ? '' : 's'}`
+    : status === 'empty' ? 'None recorded'
+    : status === 'forbidden' ? 'No access'
+    : status === 'error' ? 'Unavailable'
+    : 'Not yet loaded';
+  const label = (s: string) => (s === 'InProcess' ? 'In Process' : s);
+  const isOpen = (s: string) => s === 'Ordered' || s === 'InProcess';
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-1 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">{title}</h2>
+        <Badge tone="neutral" size="xs">{badge}</Badge>
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-52" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-8" title="No access" description="You do not have permission to view ancillary orders." />
+      ) : status === 'error' || !d ? (
+        <EmptyState bare className="px-0 py-8" title="Unavailable" description={section?.reason ?? 'Ancillary orders could not be loaded.'} action={<Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={14} className="mr-1.5" />{retrying ? 'Retrying…' : 'Retry'}</Button>} />
+      ) : status === 'empty' || d.items.length === 0 ? (
+        <EmptyState bare className="px-0 py-6" title="No ancillary orders recorded" description="No ancillary or IHC orders are recorded for this case." />
+      ) : (
+        <>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-sm font-semibold text-text">Ancillary orders</span>
+            <Button variant="secondary" size="sm" onClick={onOpen}>Open Ancillary Orders <ExternalLink size={12} className="ml-1" /></Button>
+          </div>
+          <ul className="space-y-1.5">
+            {d.items.map((o) => {
+              const meta = [
+                fmtDate(o.orderedAt) !== '—' ? `ordered ${fmtDate(o.orderedAt)}` : null,
+                o.completedAt ? `completed ${fmtDate(o.completedAt)}` : null,
+                o.notes ? o.notes : null,
+              ].filter((v) => v && v !== '—');
+              return (
+                <li key={o.id} className="rounded border border-hairline px-2.5 py-1.5">
+                  <div className="truncate text-sm text-text">
+                    {dash(o.kind)} · {dash(o.target)} <span className="text-text-tertiary">· {label(o.status)}</span>
+                    {o.blocksSignOut && isOpen(o.status) && <Badge tone="danger" size="xs" className="ml-1.5">Blocks Sign-Out</Badge>}
+                  </div>
+                  <div className="truncate text-meta text-text-tertiary">{meta.length ? meta.join(' · ') : 'Recorded order'}</div>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
+    </Card>
+  );
+}
+
 function CollaborationBand({
   title,
   section,

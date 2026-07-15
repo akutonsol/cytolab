@@ -9,6 +9,7 @@ import { AiReportingService } from '../ai/ai-reporting.service';
 import { CorrelationService } from '../correlation/correlation.service';
 import { EscalationService } from '../escalation/escalation.service';
 import { ResultSheetsService } from '../result-sheets/result-sheets.service';
+import { AncillaryOrdersService } from '../ancillary-orders/ancillary-orders.service';
 
 // Diagnostic Case Workspace — A2: the FROZEN read-only aggregate contract for
 // GET /diagnostic-case/:recordId/overview. This service is CONTRACT-ONLY: it holds no Prisma,
@@ -469,6 +470,30 @@ export interface DiagnosticCaseOverview {
   reportingSignOut: Section<ReportingSignOutSection>;
   timelineProvenance: Section<TimelineProvenanceSection>;
   permissionsActions: Section<null>;
+
+  // B7 (additive extension per Architecture Ledger §19) — a NEW read-only band composing the
+  // AncillaryOrders owner (AncillaryOrdersService.listByRecord). The nine frozen bands above are
+  // unchanged and unreordered; this band only OBSERVES. Ordering / creation / lifecycle stay with
+  // the /ancillary-orders owner workspace.
+  ancillaryOrders: Section<AncillaryOrdersSection>;
+}
+
+export interface AncillaryOrderItem {
+  id: string;
+  kind: string; // AncillaryKind enum value, verbatim
+  target: string; // recorded marker/antibody/stain — never inferred
+  status: string; // AncillaryStatus enum value, verbatim (Completed means only: owner recorded Completed)
+  blocksSignOut: boolean; // recorded flag
+  orderedAt: string | null;
+  updatedAt: string | null;
+  completedAt: string | null;
+  notes: string | null;
+}
+export interface AncillaryOrdersSection {
+  recordId: string;
+  items: AncillaryOrderItem[]; // owner order (orderedAt desc); allowlisted metadata only
+  total: number; // true owner-returned count
+  ownerPath: string; // /ancillary-orders (owner workspace — the only action target)
 }
 
 const deferred = (): Section<null> => ({ status: 'deferred', data: null });
@@ -524,6 +549,7 @@ export class DiagnosticCaseService {
     private readonly correlation: CorrelationService,
     private readonly escalation: EscalationService,
     private readonly resultSheets: ResultSheetsService,
+    private readonly ancillary: AncillaryOrdersService, // B7 — owner read reuse only (listByRecord)
   ) {}
 
   /**
@@ -555,6 +581,7 @@ export class DiagnosticCaseService {
       reportingSignOut: await this.sectionReportingSignOut(recordId, load, user, rsEvents),
       timelineProvenance: this.sectionTimelineProvenance(recordId, load, rsEvents),
       permissionsActions: deferred(),
+      ancillaryOrders: await this.sectionAncillaryOrders(recordId, user),
     };
   }
 
@@ -1184,6 +1211,39 @@ export class DiagnosticCaseService {
         ? { name: fullName(r.assignedTo), at: iso(r.assignedAt) }
         : null,
       ownerPath: `/records/${recordId}`,
+    };
+  }
+
+  // ── B7: Ancillary Orders band (read-only composition of the AncillaryOrders owner) ──────────────
+  // Reuses ONLY the mutation-free owner read AncillaryOrdersService.listByRecord(recordId). No Prisma,
+  // no owner mutation, no lifecycle logic duplicated. Gated descriptively on the base record:view.
+  // Failure isolation: an owner throw yields status 'error' for THIS band ONLY (siblings unaffected).
+  // Truthfulness: statuses shown verbatim; Completed means only that the owner recorded Completed.
+  private async sectionAncillaryOrders(recordId: string, user: AuthUser): Promise<Section<AncillaryOrdersSection>> {
+    const has = (code: string) => !!user.isSuperRole || user.permissions.includes(code);
+    if (!has('record:view')) return { status: 'forbidden', data: null, reason: 'record:view required' };
+    try {
+      const rows: any[] = await this.ancillary.listByRecord(recordId);
+      const items = (Array.isArray(rows) ? rows : []).map((o) => this.mapAncillaryOrder(o));
+      const data: AncillaryOrdersSection = { recordId, items, total: items.length, ownerPath: '/ancillary-orders' };
+      return { status: items.length ? 'ready' : 'empty', data };
+    } catch {
+      return { status: 'error', data: null, reason: 'Ancillary orders could not be loaded' };
+    }
+  }
+
+  // Explicit allowlist — owner metadata only. Never labId / orderedById / nested relations / storage.
+  private mapAncillaryOrder(o: any): AncillaryOrderItem {
+    return {
+      id: o.id,
+      kind: o.kind,
+      target: o.target,
+      status: o.status,
+      blocksSignOut: !!o.blocksSignOut,
+      orderedAt: iso(o.orderedAt),
+      updatedAt: iso(o.updatedAt),
+      completedAt: iso(o.completedAt),
+      notes: o.notes ?? null,
     };
   }
 }

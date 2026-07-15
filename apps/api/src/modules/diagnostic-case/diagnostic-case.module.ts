@@ -8,6 +8,7 @@ import { AiModule } from '../ai/ai.module';
 import { CorrelationModule } from '../correlation/correlation.module';
 import { EscalationModule } from '../escalation/escalation.module';
 import { ResultSheetsModule } from '../result-sheets/result-sheets.module';
+import { AncillaryOrdersModule } from '../ancillary-orders/ancillary-orders.module';
 import { DiagnosticCaseController } from './diagnostic-case.controller';
 import { DiagnosticCaseService } from './diagnostic-case.service';
 
@@ -27,7 +28,7 @@ import { DiagnosticCaseService } from './diagnostic-case.service';
 // same reads Sign-Out composes; Sign-Out itself is NOT imported or modified). The module never imports
 // PrismaModule.
 @Module({
-  imports: [RecordsModule, WsiModule, FilesModule, BethesdaModule, CodingModule, AiModule, CorrelationModule, EscalationModule, ResultSheetsModule],
+  imports: [RecordsModule, WsiModule, FilesModule, BethesdaModule, CodingModule, AiModule, CorrelationModule, EscalationModule, ResultSheetsModule, AncillaryOrdersModule],
   controllers: [DiagnosticCaseController],
   providers: [DiagnosticCaseService],
 })

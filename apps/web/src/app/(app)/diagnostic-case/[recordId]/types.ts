@@ -348,4 +348,26 @@ export interface DiagnosticCaseOverview {
   reportingSignOut: Section<ReportingSignOutSection>;
   timelineProvenance: Section<TimelineProvenanceSection>;
   permissionsActions: Section<null>;
+  // B7 (additive) — read-only Ancillary Orders band, composed from the owner (listByRecord).
+  ancillaryOrders: Section<AncillaryOrdersSection>;
+}
+
+// B7: Ancillary Orders band — allowlisted owner metadata only (no labId/orderedBy/nested relations).
+// "Completed" means only that the owner recorded the order status as Completed.
+export interface AncillaryOrderItem {
+  id: string;
+  kind: string;
+  target: string;
+  status: string;
+  blocksSignOut: boolean;
+  orderedAt: string | null;
+  updatedAt: string | null;
+  completedAt: string | null;
+  notes: string | null;
+}
+export interface AncillaryOrdersSection {
+  recordId: string;
+  items: AncillaryOrderItem[];
+  total: number;
+  ownerPath: string; // /ancillary-orders (owner workspace)
 }
