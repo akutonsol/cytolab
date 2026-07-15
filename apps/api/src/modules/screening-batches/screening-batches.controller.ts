@@ -90,6 +90,12 @@ export class ScreeningBatchesController {
     return this.service.queue(query);
   }
 
+  @Get('summary')
+  @RequirePermissions('record:view')
+  summary() {
+    return this.service.getOperationalSummary();
+  }
+
   @Get()
   @RequirePermissions('record:view')
   list(@Query() query: QueryScreeningBatchesDto) {

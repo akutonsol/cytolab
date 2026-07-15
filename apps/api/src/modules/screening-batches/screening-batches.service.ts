@@ -76,6 +76,17 @@ export class ScreeningBatchesService {
     'Completed',
   ];
 
+  /** Canonical lifecycle order for a deterministic byStatus roll-up (C6-STATS). */
+  private static readonly STATUS_ORDER: ScreeningBatchStatus[] = [
+    'Draft',
+    'Ready',
+    'Assigned',
+    'InScreening',
+    'Completed',
+    'Closed',
+    'Cancelled',
+  ];
+
   /** Statuses in which a screener may be recorded/reassigned (never once screening started). */
   private static readonly ASSIGNABLE: ScreeningBatchStatus[] = ['Draft', 'Ready', 'Assigned'];
 
@@ -378,6 +389,56 @@ export class ScreeningBatchesService {
       ...this.mapBatch(scalar, { caseCount: cases.length, pendingCount }),
       cases: cases.map((c) => this.mapCase(c)),
     };
+  }
+
+  /**
+   * Operational summary (Phase 4.2 · C6-STATS). A narrow, read-only, DB-computed roll-up
+   * of persisted screening-batch facts only. Every count is lab-scoped by the tenancy
+   * extension (groupBy/count are intercepted). No rows are pulled into memory.
+   *
+   * Truthful, count-only:
+   *   openBatchCount   = ScreeningBatch rows whose status is non-terminal
+   *   openCaseCount    = ScreeningBatchCase rows whose parent batch is non-terminal
+   *   pendingCaseCount = those open memberships whose disposition is still Pending
+   *   byStatus         = ScreeningBatch counts grouped by persisted status
+   *
+   * "Open" = non-terminal only; "Pending" = pending screening disposition only. These are
+   * NOT productivity/performance/turnaround/throughput/backlog metrics — those are deferred
+   * (plan STEP 7). No timestamps, ids, PHI, or elapsed-time are exposed here.
+   */
+  async getOperationalSummary(): Promise<{
+    openBatchCount: number;
+    openCaseCount: number;
+    pendingCaseCount: number;
+    byStatus: { status: ScreeningBatchStatus; count: number }[];
+  }> {
+    const open = { status: { in: ScreeningBatchesService.NON_TERMINAL } };
+    const [grouped, openCaseCount, pendingCaseCount] = await Promise.all([
+      // Batch counts grouped by persisted status (lab-scoped by the extension).
+      this.prisma.screeningBatch.groupBy({ by: ['status'], _count: { _all: true } }),
+      // Memberships whose parent batch is non-terminal.
+      this.prisma.screeningBatchCase.count({ where: { batch: open } }),
+      // Of those, the ones still Pending disposition.
+      this.prisma.screeningBatchCase.count({ where: { disposition: 'Pending', batch: open } }),
+    ]);
+
+    // Deterministic byStatus over the full canonical status list — zero-count statuses are
+    // included (documented choice) so the shape is stable regardless of which states exist.
+    const counts = new Map<ScreeningBatchStatus, number>(
+      grouped.map((g) => [g.status, g._count._all]),
+    );
+    const byStatus = ScreeningBatchesService.STATUS_ORDER.map((status) => ({
+      status,
+      count: counts.get(status) ?? 0,
+    }));
+
+    // openBatchCount is derived from the same grouped read (no extra query).
+    const openBatchCount = ScreeningBatchesService.NON_TERMINAL.reduce(
+      (sum, s) => sum + (counts.get(s) ?? 0),
+      0,
+    );
+
+    return { openBatchCount, openCaseCount, pendingCaseCount, byStatus };
   }
 
   // ── Shared paging + counts ──────────────────────────────────────────────────
