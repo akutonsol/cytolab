@@ -126,6 +126,24 @@ export class AncillaryOrdersService {
   }
 
   /**
+   * Phase 5 · E1C — lab-scoped set of record ids that have at least one OPEN ancillary
+   * order (status ∈ {Ordered, InProcess}). This is the minimum a future orchestrator
+   * needs to build the "Awaiting Ancillary" queue by intersecting with the record
+   * projection — it returns record IDs ONLY. No order id/kind/target/status/payload,
+   * no `blocksSignOut` narrowing (any open order counts), no counts, no lifecycle, no
+   * mutation. Distinct + deterministically sorted. Lab-scoped by the tenancy extension
+   * (groupBy is intercepted); no caller labId is accepted. The orchestrator supplies
+   * the queue semantics; the owner supplies only which records have recorded open work.
+   */
+  async recordIdsWithOpenWork(): Promise<string[]> {
+    const rows = await this.prisma.ancillaryOrder.groupBy({
+      by: ['recordId'],
+      where: { status: { in: AncillaryOrdersService.OPEN_STATUSES } },
+    });
+    return rows.map((r) => r.recordId).sort();
+  }
+
+  /**
    * Lab queue of OPEN orders. Base filter is always the open statuses; a `status`
    * filter can only narrow within OPEN (never widen to Completed/Cancelled).
    * Bounded to QUEUE_CAP with a truthful total, ordered oldest-waiting first.
