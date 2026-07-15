@@ -100,6 +100,28 @@ export class RecallService {
     return { pending, due, overdue, completedThisMonth, overdueRate: denom ? Math.round((overdue / denom) * 1000) / 10 : 0 };
   }
 
+  /**
+   * Phase 5 · E1F2 — distinct, sorted trigger-record ids of RecallRecords in an OPEN
+   * persisted status (Pending, Due, or Overdue); Completed/Cancelled/Declined are excluded.
+   * Openness is taken verbatim from the owner-recorded `status` — never derived from dueDate,
+   * reminderSentAt, clientNotifiedAt, appointments, or any timestamp. Anchored on
+   * `triggerRecordId` only — never patientId/completedRecordId/clientId/appointment, no
+   * inferred mapping. Record ids ONLY — no recall id, patient/contact data, triggerDiagnosis,
+   * notes, dueDate, reminder/notification timestamps, appointments, completedRecordId, status
+   * detail, actors, or labId. Mutation-free (one grouped read; no recall/appointment/Record
+   * write, no client notification). Lab-scoped by the tenancy extension (groupBy intercepted);
+   * no caller labId. This is the "Open Recalls" signal — NOT clinical urgency, patient-notified/
+   * contacted/completed, recollection done, or a current-record/sign-out/release block. It is a
+   * separate projection and must never be merged with Awaiting Correlation.
+   */
+  async recordIdsWithOpenRecall(): Promise<string[]> {
+    const rows = await this.prisma.recallRecord.groupBy({
+      by: ['triggerRecordId'],
+      where: { status: { in: [RecallStatus.Pending, RecallStatus.Due, RecallStatus.Overdue] } },
+    });
+    return rows.map((r) => r.triggerRecordId).sort();
+  }
+
   async detail(id: string) {
     const r = await this.prisma.recallRecord.findFirst({ where: { id }, select: recallSelect });
     if (!r) throw new NotFoundException('Recall not found');
