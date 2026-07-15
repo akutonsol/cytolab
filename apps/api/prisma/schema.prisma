@@ -252,6 +252,8 @@ model Lab {
   qcChecks                QCCheck[]
   equipment               Equipment[]
   ancillaryOrders         AncillaryOrder[]
+  screeningBatches        ScreeningBatch[]
+  screeningBatchCases     ScreeningBatchCase[]
   qcFailureAlerts         QCFailureAlert[]
   requisitionTrackings    RequisitionTracking[]
   trackingEvents          TrackingEvent[]
@@ -662,6 +664,7 @@ model Record {
   codings              RecordCoding[]
   fhirTransmissions    FHIRTransmission[]
   ancillaryOrders      AncillaryOrder[]
+  screeningBatchCases  ScreeningBatchCase[]
   // Case assignment (Tier 2 — workload balancing). Fields are unconditional in
   // the schema; only the UI is feature-gated.
   assignedToId         String?
@@ -3854,4 +3857,88 @@ model AncillaryOrder {
 
   @@index([labId, status])
   @@index([recordId])
+}
+
+// ─── Screening Batch (Phase 4.2 — Screening Batch Management) ────────────────
+// A cytotechnologist primary-screening batch: a persisted, screener-owned grouping
+// of cases. `ScreeningBatchService` (added in C3) is the SOLE owner of this
+// aggregate's lifecycle, membership, batch→screener assignment, and completion
+// state (D-002/D-014). It references Record and Lab but writes ONLY its own tables;
+// it never writes Record.status, Record.assignedTo* (workload), QC, AI, Result
+// Sheet, or Sign-Out (D-004/D-019). Plan: docs/platform/PATHOS_SCREENING_BATCH_IMPLEMENTATION_PLAN.md (C1).
+
+enum ScreeningBatchStatus {
+  Draft // membership being assembled
+  Ready // membership frozen, awaiting a screener
+  Assigned // screener assigned, not yet started
+  InScreening // screener working the batch
+  Completed // every member case dispositioned by the screener — NOT a diagnosis/QC-pass/release
+  Closed // administratively archived (terminal)
+  Cancelled // withdrawn before completion (terminal)
+}
+
+// Per-case screening-workflow disposition — NEVER a clinical finding. The batch
+// records only that a screener handled the case; Bethesda / Result Sheet owners
+// hold the actual diagnosis (truthfulness, D-005/D-007).
+enum ScreeningDisposition {
+  Pending // not yet screened by the cytotechnologist
+  Screened // screener completed a routine screen (unremarkable) — not a diagnosis
+  Flagged // flagged for pathologist review
+  QCSelected // selected for QC rescreen/rapid review (the QC act itself belongs to qc)
+}
+
+model ScreeningBatch {
+  id    String @id @default(cuid())
+  labId String
+  lab   Lab    @relation(fields: [labId], references: [id])
+
+  batchNumber String // human label (e.g. SCR-2026-XXXX); assigned by the owner, unique per lab
+  status      ScreeningBatchStatus @default(Draft)
+
+  // Batch → screener (cytotechnologist) assignment. Distinct granularity from
+  // workload's case→pathologist assignment (Record.assignedTo*); the batch NEVER
+  // writes those fields. Scalar-only actor ids (AncillaryOrder.orderedById /
+  // Record.assignedById precedent) keep this checkpoint surgical — the User model
+  // is untouched; they may be promoted to User relations later.
+  assignedToId String? // the screener
+  assignedById String? // the manager who assigned
+  assignedAt   DateTime?
+
+  createdById String? // creator provenance (scalar-only)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  startedAt   DateTime? // set only when status → InScreening (truthful)
+  completedAt DateTime? // set only when status → Completed (truthful; screening only)
+  closedAt    DateTime? // set only when status → Closed
+  notes       String? // free-text batch note (no structured payload/JSON)
+
+  cases ScreeningBatchCase[]
+
+  @@unique([labId, batchNumber])
+  @@index([labId, status])
+  @@index([assignedToId])
+}
+
+model ScreeningBatchCase {
+  id    String @id @default(cuid())
+  labId String
+  lab   Lab    @relation(fields: [labId], references: [id])
+
+  batchId  String
+  batch    ScreeningBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  recordId String
+  record   Record         @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  disposition  ScreeningDisposition @default(Pending)
+  screenedById String? // scalar-only actor id (the screener who dispositioned)
+  screenedAt   DateTime? // set only when disposition leaves Pending (truthful)
+  notes        String?
+
+  addedAt   DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([batchId, recordId]) // a case appears at most once within a batch
+  @@index([labId])
+  @@index([recordId])
+  @@index([batchId, disposition])
 }
