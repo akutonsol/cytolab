@@ -17,6 +17,18 @@ import {
 } from './dto/record.dto';
 import { randomBytes } from 'crypto';
 
+// Phase 5 · E1A — orchestration-facing filter for the Enterprise projection read.
+// Recorded facts only: status set, assignment, unassigned, and pagination. NO queue
+// names, NO cross-owner state, NO TAT/urgency inference — those belong to the future
+// Enterprise Case Management aggregate, never to the owner.
+export interface OrchestrationRecordFilter {
+  statuses?: RecordStatus[]; // filter to a set of owner-recorded RecordStatus values
+  assignedToId?: string; // exact assignee (ignored when `unassigned` is true)
+  unassigned?: boolean; // records with no assignee
+  page?: number;
+  pageSize?: number;
+}
+
 // Human-facing case number (legacy Lab No., e.g. CBL26-06-465): <lab-prefix> +
 // 2-digit year + 2-digit month + a MONTHLY-reset sequence. Imported verbatim.
 const LABNO_MAX_RETRIES = 5;
@@ -608,6 +620,9 @@ export class RecordsService {
     RecordStatus.Partial, RecordStatus.Completed, RecordStatus.Resulted,
   ];
 
+  // Bounded page size for the E1A enterprise orchestration projection read.
+  private static readonly ORCH_MAX_PAGE_SIZE = 100;
+
   private async labTatThresholdHours(): Promise<number> {
     const labId = this.labContext.getLabId();
     const lab = labId ? await this.prisma.lab.findFirst({ where: { id: labId }, select: { targetTatDays: true } }) : null;
@@ -696,6 +711,78 @@ export class RecordsService {
       },
     });
     return this.decorateAndSort(rows, threshold);
+  }
+
+  /**
+   * Enterprise orchestration projection (Phase 5 · E1A). A narrow, mutation-free,
+   * lab-scoped read returning ONLY Record identity / lifecycle / assignment / timing
+   * metadata — the substrate the future Enterprise Case Management aggregate projects
+   * into queues. The owner supplies recorded facts; it applies NO queue semantics, NO
+   * cross-owner state, NO TAT-breach/urgency inference. Tenancy is enforced by the
+   * Prisma extension (both items and total are lab-scoped from LabContext); no caller
+   * labId is accepted. Ordering is deterministic with a stable id tie-breaker. The
+   * select is an explicit metadata allowlist — no clinical/diagnosis/result/feature/
+   * storage content, no labId. This does not change any existing Records behaviour.
+   */
+  async listForOrchestration(filter: OrchestrationRecordFilter = {}) {
+    const page = Math.max(1, filter.page ?? 1);
+    const pageSize = Math.min(Math.max(1, filter.pageSize ?? 50), RecordsService.ORCH_MAX_PAGE_SIZE);
+
+    const where: Prisma.RecordWhereInput = {};
+    if (filter.statuses && filter.statuses.length) where.status = { in: filter.statuses };
+    if (filter.unassigned) where.assignedToId = null;
+    else if (filter.assignedToId) where.assignedToId = filter.assignedToId;
+
+    const [rows, total] = await Promise.all([
+      this.prisma.record.findMany({
+        where,
+        select: {
+          id: true,
+          identifier: true,
+          labNumber: true,
+          formType: true,
+          status: true,
+          urgent: true,
+          specimenDate: true,
+          createdAt: true,
+          dateStatus: true, // status-changed timestamp
+          assignedToId: true,
+          assignedAt: true,
+          assignedTo: { select: { firstName: true, lastName: true } }, // display name only
+          patient: { select: { registrationNo: true, firstName: true, lastName: true } }, // safe display id (records worklist contract)
+        },
+        // Recorded fields only: urgent flag, then recency, then a stable id tie-breaker.
+        orderBy: [{ urgent: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.record.count({ where }),
+    ]);
+
+    const items = rows.map((r) => ({
+      id: r.id,
+      identifier: r.identifier,
+      labNumber: r.labNumber ?? null,
+      formType: r.formType ?? null,
+      status: r.status,
+      urgent: r.urgent,
+      specimenDate: r.specimenDate ? r.specimenDate.toISOString() : null,
+      createdAt: r.createdAt.toISOString(),
+      statusChangedAt: r.dateStatus ? r.dateStatus.toISOString() : null,
+      assignedToId: r.assignedToId ?? null,
+      assignedAt: r.assignedAt ? r.assignedAt.toISOString() : null,
+      assignedTo: r.assignedTo
+        ? `${r.assignedTo.firstName ?? ''} ${r.assignedTo.lastName ?? ''}`.trim() || null
+        : null,
+      patient: r.patient
+        ? {
+            registrationNo: r.patient.registrationNo ?? null,
+            name: `${r.patient.firstName ?? ''} ${r.patient.lastName ?? ''}`.trim() || null,
+          }
+        : null,
+    }));
+
+    return paginate(items, total, page, pageSize);
   }
 
   private decorateAndSort(rows: Array<{ urgent: boolean; specimenDate: Date | null; createdAt: Date; assignedAt: Date | null; patient: { firstName: string; lastName: string } | null; specimens: { type: string }[] }>, threshold: number) {
