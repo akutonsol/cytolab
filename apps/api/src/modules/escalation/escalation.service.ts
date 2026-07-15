@@ -209,6 +209,27 @@ export class EscalationService {
     return { ...esc, reviewTimeframe: REVIEW_TIMEFRAME[esc.severity] };
   }
 
+  /**
+   * Phase 5 · E1H — distinct, sorted record ids that have an OPEN escalation: one whose
+   * status is in the owner's own OPEN_STATUSES (Pending / Acknowledged / UnderReview) —
+   * Acknowledged remains open; Resolved and Dismissed are excluded. Anchored on the
+   * required, non-null `recordId` only — never patient, assignee, reviewer, creator, or
+   * notification relationships. Record ids ONLY — no escalation id, severity, trigger,
+   * status, review/resolution text, actor, physician-notification field, timestamp, patient
+   * data, Bethesda narrative, or labId. Mutation-free (one grouped read; no EscalationRecord
+   * or Record write, no notification, no status change). Lab-scoped by the tenancy extension
+   * (groupBy intercepted); no caller labId; no userId, no assignedToMe filtering. This is the
+   * source for the future "Open Escalations" projection — NOT a clinical-urgency, diagnosis-
+   * severity, quality-failure, unsafe-case, Record hold, or sign-out/release/authorization claim.
+   */
+  async recordIdsWithOpenEscalation(): Promise<string[]> {
+    const rows = await this.prisma.escalationRecord.groupBy({
+      by: ['recordId'],
+      where: { status: { in: OPEN_STATUSES } },
+    });
+    return rows.map((row) => row.recordId).sort();
+  }
+
   // ── Workflow transitions ──────────────────────────────────────────────
   private async transition(id: string, data: Prisma.EscalationRecordUpdateInput) {
     const existing = await this.prisma.escalationRecord.findFirst({ where: { id }, select: { id: true } });
