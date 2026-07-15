@@ -159,4 +159,24 @@ export class CorrelationService {
       byMonth: Object.entries(months).map(([month, v]) => ({ month, ...v })),
     };
   }
+
+  /**
+   * Phase 5 · E1F1 — distinct, sorted cytology record ids whose cyto-histo correlation is
+   * still AWAITING (not yet resolved): `correlationResult` is null (result not entered) or
+   * `Unresolved` (histology not yet received) — i.e. not one of the owner's RESOLVED values
+   * (Concordant / MinorDiscordant / MajorDiscordant). Anchored on `cytologyRecordId` only —
+   * never patientId, never histologyRecordId, no inferred mapping. Record ids ONLY — no
+   * diagnoses, discordance reason, notes, review state, external lab, dates, or patient data.
+   * "Pending review" (reviewRequired && !reviewedAt) is a SEPARATE owner concept and is NOT
+   * included here. Mutation-free (one grouped read); lab-scoped by the tenancy extension
+   * (groupBy intercepted); no caller labId. This is "Awaiting Correlation" — not a diagnostic
+   * conflict, owner error, incompleteness, or sign-out/release block.
+   */
+  async recordIdsAwaitingCorrelation(): Promise<string[]> {
+    const rows = await this.prisma.correlationCase.groupBy({
+      by: ['cytologyRecordId'],
+      where: { OR: [{ correlationResult: null }, { correlationResult: CorrelationResult.Unresolved }] },
+    });
+    return rows.map((r) => r.cytologyRecordId).sort();
+  }
 }
