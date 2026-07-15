@@ -350,6 +350,29 @@ export interface DiagnosticCaseOverview {
   permissionsActions: Section<null>;
   // B7 (additive) — read-only Ancillary Orders band, composed from the owner (listByRecord).
   ancillaryOrders: Section<AncillaryOrdersSection>;
+  // C8 (additive) — read-only Screening Batch band, composed from the owner (listByRecord).
+  screeningBatches: Section<ScreeningBatchesSection>;
+}
+
+// C8: Screening Batch band — allowlisted owner metadata only (no labId/actor ids/notes/nested).
+// "Completed" = the owner recorded every membership dispositioned; "QC Selected" = selected for QC only.
+export interface ScreeningBatchMembershipItem {
+  caseId: string;
+  batchId: string;
+  batchNumber: string;
+  batchStatus: string;
+  assignedToId: string | null;
+  disposition: string;
+  addedAt: string | null;
+  screenedAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+export interface ScreeningBatchesSection {
+  recordId: string;
+  items: ScreeningBatchMembershipItem[];
+  total: number;
+  ownerPath: string; // /screening-batches (owner workspace)
 }
 
 // B7: Ancillary Orders band — allowlisted owner metadata only (no labId/orderedBy/nested relations).

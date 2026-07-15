@@ -10,6 +10,7 @@ import { CorrelationService } from '../correlation/correlation.service';
 import { EscalationService } from '../escalation/escalation.service';
 import { ResultSheetsService } from '../result-sheets/result-sheets.service';
 import { AncillaryOrdersService } from '../ancillary-orders/ancillary-orders.service';
+import { ScreeningBatchesService } from '../screening-batches/screening-batches.service';
 
 // Diagnostic Case Workspace — A2: the FROZEN read-only aggregate contract for
 // GET /diagnostic-case/:recordId/overview. This service is CONTRACT-ONLY: it holds no Prisma,
@@ -476,6 +477,31 @@ export interface DiagnosticCaseOverview {
   // unchanged and unreordered; this band only OBSERVES. Ordering / creation / lifecycle stay with
   // the /ancillary-orders owner workspace.
   ancillaryOrders: Section<AncillaryOrdersSection>;
+
+  // C8 (additive extension per Architecture Ledger §19) — a NEW read-only band composing the
+  // ScreeningBatch owner (ScreeningBatchesService.listByRecord). The ten bands above (nine frozen
+  // 3A + the 4.1A Ancillary band) are unchanged and unreordered; this band only OBSERVES.
+  // Screening batch creation / membership / lifecycle stay with the /screening-batches owner.
+  screeningBatches: Section<ScreeningBatchesSection>;
+}
+
+export interface ScreeningBatchMembershipItem {
+  caseId: string; // ScreeningBatchCase id (membership), never a clinical id
+  batchId: string;
+  batchNumber: string;
+  batchStatus: string; // ScreeningBatchStatus verbatim (Completed = all memberships dispositioned only)
+  assignedToId: string | null; // recorded screener identifier only — not a validated display identity
+  disposition: string; // ScreeningDisposition verbatim (QCSelected = selected for QC only)
+  addedAt: string | null;
+  screenedAt: string | null;
+  startedAt: string | null; // batch started (InScreening)
+  completedAt: string | null; // batch completed
+}
+export interface ScreeningBatchesSection {
+  recordId: string;
+  items: ScreeningBatchMembershipItem[]; // owner order (addedAt desc); allowlisted metadata only
+  total: number; // true owner-returned count
+  ownerPath: string; // /screening-batches (owner workspace — the only action target)
 }
 
 export interface AncillaryOrderItem {
@@ -550,6 +576,7 @@ export class DiagnosticCaseService {
     private readonly escalation: EscalationService,
     private readonly resultSheets: ResultSheetsService,
     private readonly ancillary: AncillaryOrdersService, // B7 — owner read reuse only (listByRecord)
+    private readonly screening: ScreeningBatchesService, // C8 — owner read reuse only (listByRecord)
   ) {}
 
   /**
@@ -582,6 +609,7 @@ export class DiagnosticCaseService {
       timelineProvenance: this.sectionTimelineProvenance(recordId, load, rsEvents),
       permissionsActions: deferred(),
       ancillaryOrders: await this.sectionAncillaryOrders(recordId, user),
+      screeningBatches: await this.sectionScreeningBatches(recordId, user),
     };
   }
 
@@ -1244,6 +1272,43 @@ export class DiagnosticCaseService {
       updatedAt: iso(o.updatedAt),
       completedAt: iso(o.completedAt),
       notes: o.notes ?? null,
+    };
+  }
+
+  // ── C8: Screening Batch band (read-only composition of the ScreeningBatch owner) ────────────────
+  // Reuses ONLY the mutation-free owner read ScreeningBatchesService.listByRecord(recordId). No Prisma,
+  // no owner mutation, no lifecycle logic duplicated. Gated descriptively on the base record:view.
+  // Failure isolation: an owner throw yields status 'error' for THIS band ONLY (siblings unaffected).
+  // Truthfulness: batch status and disposition shown verbatim — Completed means only that the owner
+  // recorded every membership as dispositioned; QCSelected means selected for QC only; no active
+  // membership is NOT "screening not required". No diagnosis/QC/sign-out/authorization inference.
+  private async sectionScreeningBatches(recordId: string, user: AuthUser): Promise<Section<ScreeningBatchesSection>> {
+    const has = (code: string) => !!user.isSuperRole || user.permissions.includes(code);
+    if (!has('record:view')) return { status: 'forbidden', data: null, reason: 'record:view required' };
+    try {
+      const rows: any[] = await this.screening.listByRecord(recordId);
+      const items = (Array.isArray(rows) ? rows : []).map((m) => this.mapScreeningMembership(m));
+      const data: ScreeningBatchesSection = { recordId, items, total: items.length, ownerPath: '/screening-batches' };
+      return { status: items.length ? 'ready' : 'empty', data };
+    } catch {
+      return { status: 'error', data: null, reason: 'Screening batches could not be loaded' };
+    }
+  }
+
+  // Explicit allowlist — owner metadata only. Never labId / createdById / assignedById / screenedById /
+  // notes / nested Batch or Record.
+  private mapScreeningMembership(m: any): ScreeningBatchMembershipItem {
+    return {
+      caseId: m.caseId,
+      batchId: m.batchId,
+      batchNumber: m.batchNumber,
+      batchStatus: m.batchStatus,
+      assignedToId: m.assignedToId ?? null,
+      disposition: m.disposition,
+      addedAt: iso(m.addedAt),
+      screenedAt: iso(m.screenedAt),
+      startedAt: iso(m.startedAt),
+      completedAt: iso(m.completedAt),
     };
   }
 }

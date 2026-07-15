@@ -17,7 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
-import type { AncillaryOrdersSection, AttachmentsSubSection, BethesdaSubSection, CaseIdentitySection, CodingSubSection, CollaborationSection, CorrelationSubSection, DecisionSupportSection, DiagnosticCaseOverview, DiagnosticInterpretationSection, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, PriorEvidenceSection, PriorRecordsSubSection, ReportingSignOutSection, SectionStatus, SlidesSubSection, TimelineProvenanceSection } from './types';
+import type { AncillaryOrdersSection, AttachmentsSubSection, BethesdaSubSection, CaseIdentitySection, CodingSubSection, CollaborationSection, CorrelationSubSection, DecisionSupportSection, DiagnosticCaseOverview, DiagnosticInterpretationSection, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, PriorEvidenceSection, PriorRecordsSubSection, ReportingSignOutSection, ScreeningBatchesSection, SectionStatus, SlidesSubSection, TimelineProvenanceSection } from './types';
 
 // Recorded dates render as plain calendar dates; null → "—". No relative/"ago" phrasing (which would
 // imply a freshness judgment the owner does not record).
@@ -60,6 +60,7 @@ const BANDS: { key: BandKey; title: string; purpose: string }[] = [
   { key: 'caseIdentity', title: 'Case Identity', purpose: 'The record’s identity, patient, lifecycle state, clinical indication, and assignment.' },
   { key: 'diagnosticMaterial', title: 'Diagnostic Material', purpose: 'Specimens, slide metadata, and attachments — the material under review. Images are opened on their viewer.' },
   { key: 'ancillaryOrders', title: 'Ancillary Orders', purpose: 'Ancillary and IHC orders recorded for this case — observed here; ordered and resolved in their owner workspace.' },
+  { key: 'screeningBatches', title: 'Screening Batch', purpose: 'Cytotechnologist screening batches this case belongs to — observed here; managed in their owner workspace. Not a diagnosis or QC outcome.' },
   { key: 'diagnosticInterpretation', title: 'Diagnostic Interpretation', purpose: 'Structured (Bethesda) findings, result-sheet state, and coding — each shown as its owner records it, never merged into a single diagnosis.' },
   { key: 'decisionSupport', title: 'Decision Support', purpose: 'Assistive material that supports, never replaces, interpretation. Any screening signal is labeled and non-diagnostic.' },
   { key: 'priorEvidence', title: 'Prior Evidence', purpose: 'The patient’s prior cases (this case excluded) and cyto-histo correlations recorded for this patient.' },
@@ -253,6 +254,19 @@ export default function DiagnosticCaseWorkspacePage() {
                 onRetry={() => refetch()}
                 retrying={isFetching}
                 onOpen={() => router.push('/ancillary-orders')}
+              />
+            );
+          }
+          if (b.key === 'screeningBatches') {
+            return (
+              <ScreeningBatchBand
+                key={b.key}
+                title={b.title}
+                section={data?.screeningBatches}
+                loading={isLoading}
+                onRetry={() => refetch()}
+                retrying={isFetching}
+                onOpen={() => router.push('/screening-batches')}
               />
             );
           }
@@ -1098,6 +1112,79 @@ function AncillaryOrdersBand({
                     {o.blocksSignOut && isOpen(o.status) && <Badge tone="danger" size="xs" className="ml-1.5">Blocks Sign-Out</Badge>}
                   </div>
                   <div className="truncate text-meta text-text-tertiary">{meta.length ? meta.join(' · ') : 'Recorded order'}</div>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
+    </Card>
+  );
+}
+
+// C8: Screening Batch band — read-only, allowlisted owner metadata only. Persisted workflow
+// facts (batch status + case disposition) shown verbatim; never a diagnosis, QC outcome, or
+// sign-out signal. "No screening batches recorded" does NOT mean screening is unnecessary.
+function ScreeningBatchBand({
+  title,
+  section,
+  loading,
+  onRetry,
+  retrying,
+  onOpen,
+}: {
+  title: string;
+  section?: { status: SectionStatus; data: ScreeningBatchesSection | null; reason?: string };
+  loading: boolean;
+  onRetry: () => void;
+  retrying: boolean;
+  onOpen: () => void;
+}) {
+  const status = section?.status;
+  const d = section?.data ?? null;
+  const total = d?.total ?? 0;
+  const badge =
+    loading || !status ? 'Loading'
+    : status === 'ready' ? `${total} batch${total === 1 ? '' : 'es'}`
+    : status === 'empty' ? 'None recorded'
+    : status === 'forbidden' ? 'No access'
+    : status === 'error' ? 'Unavailable'
+    : 'Not yet loaded';
+  const statusLabel = (s: string) => (s === 'InScreening' ? 'In Screening' : s === 'QCSelected' ? 'QC Selected' : s);
+  return (
+    <Card radius="md" elevation="soft" border="hairline" padding="lg">
+      <div className="mb-1 flex items-center gap-2">
+        <h2 className="text-base font-bold text-text">{title}</h2>
+        <Badge tone="neutral" size="xs">{badge}</Badge>
+      </div>
+      {loading || !status ? (
+        <div className="space-y-2"><Skeleton shape="text" width="w-52" /><Skeleton shape="text" width="w-40" /></div>
+      ) : status === 'forbidden' ? (
+        <EmptyState bare className="px-0 py-8" title="No access" description="You do not have permission to view screening batches." />
+      ) : status === 'error' || !d ? (
+        <EmptyState bare className="px-0 py-8" title="Unavailable" description={section?.reason ?? 'Screening batches could not be loaded.'} action={<Button variant="secondary" size="sm" onClick={onRetry} disabled={retrying}><RotateCw size={14} className="mr-1.5" />{retrying ? 'Retrying…' : 'Retry'}</Button>} />
+      ) : status === 'empty' || d.items.length === 0 ? (
+        <EmptyState bare className="px-0 py-6" title="No screening batches recorded" description="This case is not recorded in any cytotechnologist screening batch." />
+      ) : (
+        <>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-sm font-semibold text-text">Screening batches</span>
+            <Button variant="secondary" size="sm" onClick={onOpen}>Open Screening Batches <ExternalLink size={12} className="ml-1" /></Button>
+          </div>
+          <ul className="space-y-1.5">
+            {d.items.map((m) => {
+              const meta = [
+                fmtDate(m.addedAt) !== '—' ? `added ${fmtDate(m.addedAt)}` : null,
+                m.screenedAt ? `screened ${fmtDate(m.screenedAt)}` : null,
+                m.completedAt ? `batch completed ${fmtDate(m.completedAt)}` : null,
+              ].filter((v) => v && v !== '—');
+              return (
+                <li key={m.caseId} className="rounded border border-hairline px-2.5 py-1.5">
+                  <div className="truncate text-sm text-text">
+                    {dash(m.batchNumber)} <span className="text-text-tertiary">· {statusLabel(m.batchStatus)}</span>
+                    <Badge tone="neutral" size="xs" className="ml-1.5">{statusLabel(m.disposition)}</Badge>
+                  </div>
+                  <div className="truncate text-meta text-text-tertiary">{meta.length ? meta.join(' · ') : 'Recorded membership'}</div>
                 </li>
               );
             })}

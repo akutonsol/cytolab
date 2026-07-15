@@ -392,6 +392,48 @@ export class ScreeningBatchesService {
   }
 
   /**
+   * Record-scoped read for the Diagnostic Case Screening band (C8). Returns every screening
+   * membership for one record, each joined with its batch's public metadata. Read-only,
+   * lab-scoped (findMany intercepted by the tenancy extension), deterministic (newest-added
+   * first), and allowlisted — NO labId, createdById, assignedById, screenedById, notes, or
+   * nested Record/Lab. No lifecycle logic; a consumer composes this, never the tables.
+   */
+  async listByRecord(recordId: string) {
+    const rows = await this.prisma.screeningBatchCase.findMany({
+      where: { recordId },
+      select: {
+        id: true,
+        disposition: true,
+        addedAt: true,
+        screenedAt: true,
+        batch: {
+          select: {
+            id: true,
+            batchNumber: true,
+            status: true,
+            assignedToId: true,
+            startedAt: true,
+            completedAt: true,
+          },
+        },
+      },
+      orderBy: [{ addedAt: 'desc' }, { id: 'asc' }],
+    });
+    return rows.map((r) => ({
+      caseId: r.id,
+      disposition: r.disposition,
+      addedAt: r.addedAt,
+      screenedAt: r.screenedAt,
+      batchId: r.batch.id,
+      batchNumber: r.batch.batchNumber,
+      batchStatus: r.batch.status,
+      assignedToId: r.batch.assignedToId,
+      startedAt: r.batch.startedAt,
+      completedAt: r.batch.completedAt,
+    }));
+  }
+
+  /**
    * Operational summary (Phase 4.2 · C6-STATS). A narrow, read-only, DB-computed roll-up
    * of persisted screening-batch facts only. Every count is lab-scoped by the tenancy
    * extension (groupBy/count are intercepted). No rows are pulled into memory.
