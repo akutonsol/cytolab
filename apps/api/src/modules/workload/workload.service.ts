@@ -4,6 +4,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { LabContext } from '../../common/tenancy/lab-context';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { hoursElapsed } from '../../common/util/tat-priority';
+import { ScreeningBatchesService } from '../screening-batches/screening-batches.service';
 import { UpsertTargetDto } from './dto/workload.dto';
 
 const DEFAULT_DAILY = 20;
@@ -28,7 +29,39 @@ const initials = (f: string, l: string) => `${f?.[0] ?? ''}${l?.[0] ?? ''}`.toUp
 
 @Injectable()
 export class WorkloadService {
-  constructor(private prisma: PrismaService, private labContext: LabContext) {}
+  constructor(
+    private prisma: PrismaService,
+    private labContext: LabContext,
+    private readonly screening: ScreeningBatchesService,
+  ) {}
+
+  /**
+   * C4 — Screening Batch read bridge. Operational-awareness only: composes the
+   * screening owner's single open-batch read (`queue()`) and projects it to a
+   * narrow workload DTO. Workload NEVER writes screening state (lifecycle,
+   * assignment, membership, disposition) and never touches prisma.screeningBatch.
+   * Owner facts only — no notes, no labId, no downstream inference; a batch here
+   * is a screening batch, not a diagnosis/QC/sign-out signal.
+   */
+  async screeningAssignments() {
+    const q = await this.screening.queue({});
+    return {
+      items: q.items.map((b) => ({
+        id: b.id,
+        batchNumber: b.batchNumber,
+        status: b.status,
+        assignedToId: b.assignedToId,
+        caseCount: b.caseCount,
+        pendingCount: b.pendingCount,
+        createdAt: b.createdAt,
+        startedAt: b.startedAt,
+        completedAt: b.completedAt,
+      })),
+      total: q.total,
+      cap: q.cap,
+      truncated: q.truncated,
+    };
+  }
 
   private async thresholdHours(): Promise<number> {
     const labId = this.labContext.getLabId();

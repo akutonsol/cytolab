@@ -38,6 +38,13 @@ export class WorkloadController {
     return this.workload.listTargets();
   }
 
+  // C4 — Screening Batch read bridge (read-only composition of the owner's queue).
+  @Get('screening-assignments')
+  @RequirePermissions('record:view')
+  screeningAssignments() {
+    return this.workload.screeningAssignments();
+  }
+
   @Post('targets')
   @RequirePermissions('record:change')
   upsertTarget(@Body() dto: UpsertTargetDto) {
