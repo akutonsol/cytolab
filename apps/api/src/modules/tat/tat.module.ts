@@ -8,5 +8,6 @@ import { TatScheduler } from './tat.scheduler';
   imports: [PrismaModule],
   controllers: [TatController],
   providers: [TatService, TatScheduler],
+  exports: [TatService], // Phase 5 · E1D — consumed read-only by the future Enterprise Case Management aggregate
 })
 export class TatModule {}

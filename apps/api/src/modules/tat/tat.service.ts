@@ -29,6 +29,17 @@ const alertSelect = {
   },
 } as const;
 
+// Phase 5 · E1D — narrow enterprise-facing overdue signal. Owner-recorded conclusion
+// only: which records currently have an Open, Breached TATAlert, plus whether TAT is
+// configured at all. NOT a live recalculation — it reflects the currently recorded
+// alerts (there is no persisted authoritative last-scan timestamp to expose). No queue
+// name, no clinical/urgency/quality claim. `activeConfigCount` distinguishes
+// "configured, none breached" (>0 with empty recordIds) from "TAT not configured" (0).
+export interface TatOverdueSignal {
+  recordIds: string[]; // distinct, deterministically sorted record ids with an Open Breached TATAlert
+  activeConfigCount: number; // lab-scoped count of active TATConfig rows
+}
+
 @Injectable()
 export class TatService {
   constructor(private prisma: PrismaService) {}
@@ -96,6 +107,28 @@ export class TatService {
       this.prisma.tATConfig.count({ where: { isActive: true } }),
     ]);
     return { openBreached, openApproaching, acknowledged, resolved, activeConfigs: configs };
+  }
+
+  /**
+   * Phase 5 · E1D — enterprise overdue signal. Reads ONLY the owner's persisted
+   * conclusion: the distinct set of record ids that currently have an Open, Breached
+   * TATAlert, plus the lab-scoped count of active TATConfig rows. Record ids + a count
+   * only — no alert id/dueAt/elapsedHours/config/threshold/actor/timestamp/Record detail.
+   * Mutation-free: it does NOT scan(), evaluate breach, touch alerts/configs, or query
+   * Records. Both reads are lab-scoped by the tenancy extension (groupBy/count intercepted);
+   * no caller labId is accepted or returned. `activeConfigCount` lets the orchestrator
+   * distinguish "configured, no open breaches" from "TAT not configured" (never "clear").
+   * This is not a live recalculation; it reflects currently recorded alerts.
+   */
+  async getOverdueSignal(): Promise<TatOverdueSignal> {
+    const [grouped, activeConfigCount] = await Promise.all([
+      this.prisma.tATAlert.groupBy({
+        by: ['recordId'],
+        where: { level: TATAlertLevel.Breached, status: TATAlertStatus.Open },
+      }),
+      this.prisma.tATConfig.count({ where: { isActive: true } }),
+    ]);
+    return { recordIds: grouped.map((g) => g.recordId).sort(), activeConfigCount };
   }
 
   // ── Scan (cron + on-demand). Operates in the ambient lab scope. ──
