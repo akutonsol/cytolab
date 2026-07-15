@@ -177,6 +177,31 @@ export class QcService {
     });
   }
 
+  /**
+   * Phase 5 · E1E — distinct, sorted record ids that have a RECORD-ANCHORED, unresolved
+   * QC failure: a QCCheck with a non-null recordId whose QCFailureAlert.status is not
+   * Resolved. Record ids ONLY — no check/alert id, result, status, equipment, reagent,
+   * notes, corrective action, actor, timestamp, or labId. Excludes equipment/reagent/
+   * batch/non-record QC (recordId null), Marginal/Pass checks (no failure alert), and
+   * Resolved alerts. Mutation-free (one grouped read; no Record write, no RecordStatusEvent,
+   * never sets OnHold). Lab-scoped by the tenancy extension (groupBy intercepted); no caller
+   * labId. This is "Open QC Failures" — NOT a Record hold, clinical-risk, diagnosis-quality,
+   * urgency, or release/authorization claim.
+   */
+  async recordIdsWithOpenFailure(): Promise<string[]> {
+    const rows = await this.prisma.qCCheck.groupBy({
+      by: ['recordId'],
+      where: {
+        recordId: { not: null },
+        failureAlert: { status: { not: 'Resolved' } },
+      },
+    });
+    return rows
+      .map((r) => r.recordId)
+      .filter((id): id is string => id !== null)
+      .sort();
+  }
+
   async resolveAlert(id: string, userId: string, dto: ResolveAlertDto) {
     const alert = await this.prisma.qCFailureAlert.findFirst({ where: { id }, select: { id: true, qcCheckId: true } });
     if (!alert) throw new NotFoundException('Alert not found');
