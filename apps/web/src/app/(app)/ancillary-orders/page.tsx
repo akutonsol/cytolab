@@ -1,14 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { AxiosError } from 'axios';
-import { Ban, Microscope, RefreshCw } from 'lucide-react';
+import { Ban, Microscope, Plus, RefreshCw } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { claimsHavePermission, useAuthStore } from '@/lib/auth';
 import {
   Badge, Button, Card, DataToolbar, EmptyState, IconAction, PageHeader, PillSelect, SkeletonRows, Td, Th,
 } from '@/components/ui';
+import { CreateAncillaryOrderDrawer } from '@/components/ancillary/CreateAncillaryOrderDrawer';
+import { AncillaryOrderDetailDrawer } from '@/components/ancillary/AncillaryOrderDetailDrawer';
 
 // ── Truthful contract (mirrors the B3 owner allowlist; read-only) ─────────────
 // This surface shows ONLY recorded ancillary-order facts. It never claims a stain
@@ -50,7 +52,10 @@ const fmtDateTime = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 
 export default function AncillaryOrdersPage() {
-  const router = useRouter();
+  const claims = useAuthStore((s) => s.claims);
+  const canChange = claimsHavePermission(claims, 'record:change');
+  const [creating, setCreating] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [statusF, setStatusF] = useState('All open');
   const [kindF, setKindF] = useState('All kinds');
   const [blockF, setBlockF] = useState('All');
@@ -93,6 +98,11 @@ export default function AncillaryOrdersPage() {
               disabled={isFetching}
               onClick={() => refetch()}
             />
+            {canChange && (
+              <Button variant="primary" size="sm" onClick={() => setCreating(true)}>
+                <Plus size={15} /> New order
+              </Button>
+            )}
           </>
         }
       />
@@ -195,8 +205,8 @@ export default function AncillaryOrdersPage() {
                       <span className="tabular-nums text-sm text-text-secondary">{fmtDateTime(o.updatedAt)}</span>
                     </Td>
                     <Td density="cozy" nowrap>
-                      <Button variant="secondary" size="sm" onClick={() => router.push(`/records/${o.recordId}`)}>
-                        Open record
+                      <Button variant="secondary" size="sm" onClick={() => setDetailId(o.id)}>
+                        Details
                       </Button>
                     </Td>
                   </tr>
@@ -206,6 +216,9 @@ export default function AncillaryOrdersPage() {
           </div>
         )}
       </Card>
+
+      <CreateAncillaryOrderDrawer open={creating} onClose={() => setCreating(false)} />
+      <AncillaryOrderDetailDrawer id={detailId} canChange={canChange} onClose={() => setDetailId(null)} />
     </div>
   );
 }
