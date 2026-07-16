@@ -5,6 +5,7 @@ import { EscalationModule } from '../escalation/escalation.module';
 import { QcModule } from '../qc/qc.module';
 import { RecallModule } from '../recall/recall.module';
 import { RecordsModule } from '../records/records.module';
+import { TatModule } from '../tat/tat.module';
 import { EnterpriseCaseManagementController } from './enterprise-case-management.controller';
 import { EnterpriseCaseManagementService } from './enterprise-case-management.service';
 
@@ -13,11 +14,11 @@ import { EnterpriseCaseManagementService } from './enterprise-case-management.se
  *
  * E2B composes the Records owner (record-projection queues). E2C adds the five
  * cross-owner signal owners (ancillary, correlation, QC, recall, escalation).
- * TAT (overdue overlay) is NOT imported here — it lands in E2D. No PrismaModule,
- * no Workload/Operations/SignOut/DiagnosticCase/ResultSheets/ChangeRequests.
+ * E2D adds TatModule for the standalone Overdue overlay (recorded breach alerts).
+ * No PrismaModule, no Workload/Operations/SignOut/DiagnosticCase/ResultSheets/ChangeRequests.
  */
 @Module({
-  imports: [RecordsModule, AncillaryOrdersModule, CorrelationModule, QcModule, RecallModule, EscalationModule],
+  imports: [RecordsModule, AncillaryOrdersModule, CorrelationModule, QcModule, RecallModule, EscalationModule, TatModule],
   controllers: [EnterpriseCaseManagementController],
   providers: [EnterpriseCaseManagementService],
 })

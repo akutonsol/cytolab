@@ -6,6 +6,7 @@ import { EscalationService } from '../escalation/escalation.service';
 import { QcService } from '../qc/qc.service';
 import { RecallService } from '../recall/recall.service';
 import { OrchestrationRecordFilter, RecordsService } from '../records/records.service';
+import { TatService } from '../tat/tat.service';
 import { EnterpriseQueueDetailQueryDto } from './dto/enterprise-queue.dto';
 import {
   ENTERPRISE_ARCHIVED_DEFERRED_REASON,
@@ -24,6 +25,13 @@ import {
 
 /** Exact row shape returned by the owner orchestration read (derived, not re-declared). */
 type OrchestrationRow = Awaited<ReturnType<RecordsService['listForOrchestration']>>['data'][number];
+
+/**
+ * Truthful config-state reason for Overdue when TAT has no active configuration.
+ * `activeConfigCount === 0` is authoritative — the lab has not configured TAT, so
+ * "overdue" is neither computable nor zero; it is deferred (distinct from empty).
+ */
+const TAT_NOT_CONFIGURED_REASON = 'TAT not configured for this lab';
 
 /**
  * Phase 5 · E2 — Enterprise Case Management aggregate.
@@ -48,6 +56,7 @@ export class EnterpriseCaseManagementService {
     private readonly qc: QcService,
     private readonly recall: RecallService,
     private readonly escalation: EscalationService,
+    private readonly tat: TatService,
   ) {}
 
   // ── Record-projection predicates (E2B, owner-recorded fields only) ────────
@@ -103,6 +112,7 @@ export class EnterpriseCaseManagementService {
    * No assignedToId is applied to counts (unchanged from E2B). Failure-isolated.
    */
   private async loadCount(queue: QueueKey, callerId: string): Promise<EnterpriseCountState> {
+    if (queue === 'overdue') return this.loadOverdueCount();
     const base = this.baseFilter(queue, callerId);
     const signal = this.crossOwnerSignal(queue);
     if (!base && !signal) return { value: null, status: 'deferred', reason: this.deferredReason(queue) };
@@ -114,6 +124,32 @@ export class EnterpriseCaseManagementService {
       return res.total > 0 ? { value: res.total, status: 'ready' } : { value: 0, status: 'empty' };
     } catch {
       return { value: null, status: 'error', reason: 'Owner read failed' };
+    }
+  }
+
+  /**
+   * E2D — Overdue count from the TAT owner's RECORDED breach alerts
+   * (`getOverdueSignal`: `TATAlert.level=Breached ∧ status=Open`), intersected with
+   * Records. Config-state matrix: TAT signal throws → error (A); `activeConfigCount===0`
+   * → deferred, no Records call (C); else intersect the (possibly empty) recordIds →
+   * Records total (ready if >0 else empty — D/E/F); Records read throws → error (B).
+   * Never `recordIds.length` as the count; never a fabricated scan time.
+   */
+  private async loadOverdueCount(): Promise<EnterpriseCountState> {
+    let signal: { recordIds: string[]; activeConfigCount: number };
+    try {
+      signal = await this.tat.getOverdueSignal();
+    } catch {
+      return { value: null, status: 'error', reason: 'TAT overdue signal failed' }; // Case A
+    }
+    if (signal.activeConfigCount === 0) {
+      return { value: null, status: 'deferred', reason: TAT_NOT_CONFIGURED_REASON }; // Case C — no Records call
+    }
+    try {
+      const res = await this.records.listForOrchestration({ ids: signal.recordIds, page: 1, pageSize: 1 });
+      return res.total > 0 ? { value: res.total, status: 'ready' } : { value: 0, status: 'empty' }; // D / E / F
+    } catch {
+      return { value: null, status: 'error', reason: 'Records intersection failed' }; // Case B
     }
   }
 
@@ -189,7 +225,10 @@ export class EnterpriseCaseManagementService {
     const echoAssignedToId: string | null =
       key === 'my-work' ? callerId : key === 'unassigned' ? null : query.assignedToId ?? null;
 
-    // Deferred queues (archived + overdue): data null, never empty-looking.
+    // Overdue: dedicated TAT-gated overlay path (E2D).
+    if (key === 'overdue') return this.overdueDetail(page, pageSize, echoAssignedToId);
+
+    // Deferred queues (archived): data null, never empty-looking.
     if (!base && !signal) {
       return {
         queue: key,
@@ -231,6 +270,57 @@ export class EnterpriseCaseManagementService {
         section: { status: 'error', data: null, reason: 'Owner read failed' },
         echo: { page, pageSize, assignedToId: echoAssignedToId },
       };
+    }
+  }
+
+  /**
+   * E2D — standalone Overdue detail. Same config-state matrix as loadOverdueCount:
+   *  A: TAT signal throws  → error, data null (TAT source reason)
+   *  C: activeConfigCount 0 → deferred, data null (no Records call), TAT-not-configured reason
+   *  D/E/F: intersect recordIds (ids ALWAYS passed, even []) → owner page verbatim;
+   *         ready if total>0 else empty (empty covers "no recorded breach" AND "all ids stale")
+   *  B: Records read throws → error, data null (Records-intersection reason)
+   * `assignedToId` AND-composes for detail only. No fabricated scan/last-evaluated time.
+   */
+  private async overdueDetail(
+    page: number,
+    pageSize: number,
+    echoAssignedToId: string | null,
+  ): Promise<EnterpriseQueueDetailResponse> {
+    const category = 'operational-overlay' as const;
+    const echo = { page, pageSize, assignedToId: echoAssignedToId };
+
+    let signal: { recordIds: string[]; activeConfigCount: number };
+    try {
+      signal = await this.tat.getOverdueSignal();
+    } catch {
+      return { queue: 'overdue', category, section: { status: 'error', data: null, reason: 'TAT overdue signal failed' }, echo }; // A
+    }
+    if (signal.activeConfigCount === 0) {
+      // C — configuration unavailable is authoritative; no Records read, no intersection.
+      return {
+        queue: 'overdue',
+        category,
+        section: { status: 'deferred', data: null, reason: TAT_NOT_CONFIGURED_REASON },
+        echo: { page, pageSize, assignedToId: null },
+      };
+    }
+    try {
+      let filter: OrchestrationRecordFilter = { ids: signal.recordIds, page, pageSize };
+      if (echoAssignedToId) filter = { ...filter, assignedToId: echoAssignedToId };
+      const res = await this.records.listForOrchestration(filter);
+      const items = res.data.map((r) => this.toRow(r));
+      return {
+        queue: 'overdue',
+        category,
+        section: {
+          status: res.total > 0 ? 'ready' : 'empty', // D/E ready · F/empty-signal empty
+          data: { items, total: res.total, page: res.page, pageSize: res.pageSize, totalPages: res.totalPages },
+        },
+        echo,
+      };
+    } catch {
+      return { queue: 'overdue', category, section: { status: 'error', data: null, reason: 'Records intersection failed' }, echo }; // B
     }
   }
 }
