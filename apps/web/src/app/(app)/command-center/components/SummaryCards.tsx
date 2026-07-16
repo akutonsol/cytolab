@@ -6,10 +6,11 @@ import { getEnterpriseSummary } from '../enterprise-api';
 import { CountValue, QueueStateTag } from './QueueStateTag';
 
 /**
- * Summary — one card per queue rendered DIRECTLY from GET /enterprise/summary.
- * Card = label (queue key, the only label the summary carries) + count + state.
- * No derived metrics, percentages, trends, or count-based colouring. Independent
- * loading boundary (its own query) — never blocks the rail or detail panel.
+ * Summary — one card per queue, rendered DIRECTLY from GET /enterprise/summary in
+ * API order (never sorted; zero/deferred/error cards never hidden). Card = count
+ * (prominent, neutral — not count-coloured) + state tag + queue key label.
+ * No percentages, trends, or count-based urgency colour. Independent loading /
+ * failure boundary — never blocks the rail or detail panel.
  */
 export function SummaryCards() {
   const { data, isLoading, isError, refetch } = useQuery({
@@ -19,18 +20,22 @@ export function SummaryCards() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      <div role="status" aria-live="polite" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <span className="sr-only">Loading queue summary…</span>
         {Array.from({ length: 13 }).map((_, i) => (
-          <Skeleton key={i} height="h-[68px]" />
+          <Skeleton key={i} height="h-[76px]" />
         ))}
       </div>
     );
   }
   if (isError || !data) {
     return (
-      <div className="rounded-lg border border-[var(--status-danger-soft)] bg-white p-4 text-sm text-[var(--status-danger-strong)]">
+      <div className="rounded-xl border border-[var(--status-danger-soft)] bg-white p-4 text-sm text-[var(--status-danger-strong)]">
         Summary could not be loaded.{' '}
-        <button className="underline" onClick={() => refetch()}>
+        <button
+          className="rounded font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          onClick={() => refetch()}
+        >
           Retry
         </button>
       </div>
@@ -38,18 +43,23 @@ export function SummaryCards() {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {data.counts.map((c) => (
-        <div key={c.key} className="rounded-lg border border-slate-200 bg-white p-3">
-          <div className="flex items-center justify-between">
-            <span className="text-lg font-semibold text-slate-900">
+        <li
+          key={c.key}
+          className="flex min-h-[76px] flex-col justify-between rounded-xl border border-slate-200 bg-white p-3"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-2xl font-semibold leading-none tracking-tight text-slate-900 tabular-nums">
               <CountValue count={c.count} />
             </span>
             <QueueStateTag status={c.count.status} />
           </div>
-          <div className="mt-1 truncate text-xs text-slate-500">{c.key}</div>
-        </div>
+          <div className="mt-2 truncate text-xs font-medium text-slate-500" title={c.key}>
+            {c.key}
+          </div>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }

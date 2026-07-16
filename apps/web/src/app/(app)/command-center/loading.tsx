@@ -1,18 +1,36 @@
 import { Skeleton } from '@/components/ui';
 
-// Route loading cue for the Command Center shell (per-screen skeleton; rises,
-// does not fade — information appears before decoration).
+// Route loading cue for the Command Center — a structural skeleton that
+// approximates the final layout (header · summary grid · rail + detail). Rises,
+// does not fade; the Skeleton primitive respects reduced-motion.
 export default function Loading() {
   return (
-    <div className="space-y-5 p-5">
-      <Skeleton height="h-8" width="w-72" />
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton key={i} height="h-[68px]" />
+    <div className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6" role="status" aria-live="polite">
+      <span className="sr-only">Loading Enterprise Command Center…</span>
+
+      {/* Header */}
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div className="space-y-2">
+          <Skeleton height="h-7" width="w-72" />
+          <Skeleton height="h-4" width="w-40" />
+        </div>
+        <Skeleton height="h-9" width="w-28" />
+      </div>
+
+      {/* Summary grid */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <Skeleton key={i} height="h-[76px]" />
         ))}
       </div>
-      <div className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <Skeleton height="h-96" />
+
+      {/* Rail + detail */}
+      <div className="mt-5 grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
+        <div className="space-y-1">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} height="h-11" />
+          ))}
+        </div>
         <Skeleton height="h-96" />
       </div>
     </div>

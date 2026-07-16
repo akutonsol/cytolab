@@ -1,12 +1,15 @@
 'use client';
 
 import { RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui';
+import { Button, PageHeader } from '@/components/ui';
 import { useAuthStore } from '@/lib/auth';
 
 /**
- * Header — title, current lab, refresh, and a CLIENT refresh timestamp only.
- * No "Live" / "Connected" / heartbeat / health indicator (no such signal exists).
+ * Header — the page's single <h1> via the shared PageHeader primitive. Shows the
+ * title, current lab, a client-only "Last refreshed" timestamp, and Refresh.
+ * No "Live" / "Connected" / heartbeat / health / backend-evaluation language
+ * (no such signal exists). Refresh keeps E3A's invalidation behavior; the button
+ * stays mounted in its busy state, so focus is never lost after a refresh.
  */
 export function CommandCenterHeader({
   lastRefreshed,
@@ -19,19 +22,27 @@ export function CommandCenterHeader({
 }) {
   const labId = useAuthStore((s) => s.claims?.labId ?? null);
   return (
-    <header className="flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900">Enterprise Case Management</h1>
-        <p className="text-sm text-slate-500">Current lab{labId ? ` · ${labId}` : ''}</p>
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="text-xs text-slate-400">
-          {lastRefreshed ? `Last refreshed ${lastRefreshed.toLocaleTimeString()}` : '—'}
+    <PageHeader
+      title="Enterprise Case Management"
+      description={labId ? `Current lab · ${labId}` : 'Current lab'}
+      meta={
+        <span className="text-xs text-slate-500" aria-live="polite">
+          {lastRefreshed ? `Last refreshed ${lastRefreshed.toLocaleTimeString()}` : 'Not yet refreshed'}
         </span>
-        <Button variant="secondary" size="sm" icon={<RefreshCw size={14} />} loading={refreshing} onClick={onRefresh}>
+      }
+      actions={
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={<RefreshCw size={14} />}
+          loading={refreshing}
+          loadingLabel="Refreshing…"
+          onClick={onRefresh}
+          aria-label="Refresh enterprise queues"
+        >
           Refresh
         </Button>
-      </div>
-    </header>
+      }
+    />
   );
 }
