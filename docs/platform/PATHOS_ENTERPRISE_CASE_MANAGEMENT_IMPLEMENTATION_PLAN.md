@@ -3,14 +3,16 @@
 
 | Field | Value |
 |---|---|
-| Status | **PLAN ONLY — not implemented.** Binding engineering document for checkpoints E1–E5; awaiting explicit approval before any code. |
+| Status | **IMPLEMENTED & CERTIFIED (E2A–E2E).** Release: **CERTIFIED WITH DOCUMENTED NON-BLOCKING DEBT** — production-ready behind existing RBAC. §1–§16 below are the **original E0 plan, retained as history**; the authoritative implemented state is **[Final Status — E2 Enterprise Aggregate Certification](#final-status--e2-enterprise-aggregate-certification)** at the end of this document. |
 | Phase | Phase 5 (Enterprise operational layer above all owner workspaces) |
 | Precursor | Approved Phase 5 architecture audit (this repository) |
 | Dependencies | [DECISION_RECORDS.md](architecture/DECISION_RECORDS.md) (D-001…D-020), [ARCHITECTURE_LEDGER §19](architecture/ARCHITECTURE_LEDGER.md), Phase 3A Diagnostic Case (frozen), Phase 4.1A Ancillary (frozen), Phase 4.2 Screening Batch (frozen) |
 | Governing precedent | Diagnostic Case (A1–A12) — owner-first composition, frozen Section contract, per-source failure isolation, allowlisted read-only projection |
-| Last Updated | 2026-07-15 |
+| Last Updated | 2026-07-16 (E2F documentation closeout — records implemented + certified reality) |
 
 > **Constitutional preservation.** Nothing in this plan modifies D-001…D-020, owner-first architecture, aggregate ownership, the truthfulness doctrine, the frozen Diagnostic Case / Ancillary / Screening / Sign-Out baselines, the permission model, or owner boundaries. Enterprise Case Management is a **read-only orchestration layer** that **projects** owner-recorded state; it owns no persistence, no lifecycle, no status, no assignment authority.
+
+> **⚠️ Historical-plan notice (E2F, 2026-07-16).** Sections **§1–§16 below are the original E0 plan**, kept for provenance. Several plan-era queue labels were **corrected during implementation** — `Completed`→**Signed Out**, `Quality Hold`→**On Hold** + **Open QC Failures**, `Escalated`→**Open Escalations**, `Returned`→**retired**, `Team Work`→**deferred to E4**, and `Archived`→**deferred** (no owner-recorded archived state). For the authoritative **implemented + certified** reality — final 13-queue taxonomy, owner seams, commit ledger, six-case Overdue matrix, and release classification — read **[Final Status — E2 Enterprise Aggregate Certification](#final-status--e2-enterprise-aggregate-certification)** at the end. Where §1–§16 and Final Status disagree, **Final Status governs.**
 
 ---
 
@@ -275,6 +277,138 @@ MVP = **E1 + E2 + E3**.
 
 ---
 
-## STOP
+## Historical E0 closeout
 
-No code, schema, migration, API, service, controller, DTO, permission, event, UI, or test was created. **This document is the only artifact.** It is left **uncommitted**. Phase 5 implementation does **not** begin until this plan is reviewed and explicitly approved.
+> *(Original E0 sign-off, retained verbatim for provenance.)* No code, schema, migration, API, service, controller, DTO, permission, event, UI, or test was created **at E0**. That document was the only E0 artifact and was left uncommitted pending approval. **This condition no longer holds** — E1–E2 were subsequently approved, implemented, and certified; see Final Status below.
+
+---
+
+## Final Status — E2 Enterprise Aggregate Certification
+
+> **Authoritative current-state record (E2F, 2026-07-16).** Supersedes the plan-era taxonomy/status in §1–§16 wherever they differ. Records the implemented + certified E2 Enterprise Case Management aggregate. No application code, schema, migration, permission, seed, UI, or test was changed by this documentation checkpoint.
+
+### Status
+| Field | Value |
+|---|---|
+| Phase 5 E2 — Enterprise Case Management Aggregate | **CERTIFIED WITH DOCUMENTED NON-BLOCKING DEBT** |
+| Release blockers | **None** |
+| Release posture | **Production-ready behind existing RBAC** |
+| Permission | `record:view` for all aggregate reads |
+| Architecture | owner-first · read-only · tenant-scoped · failure-isolated · exact-count-safe · pagination-safe · **no direct Prisma** · **no owner mutation** |
+| E3 (Command Center UI) | **Not started** |
+
+Certification (E2E) result: **PASS WITH DOCUMENTED NON-BLOCKING DEBT** — certification only, **no implementation commit, no files changed**.
+
+### Final queue taxonomy (frozen — 13 queues, exact order)
+| # | Key | Category | Membership (owner-recorded) |
+|---|---|---|---|
+| 1 | `my-work` | record-projection | `assignedToId = authenticated caller userId` ∧ `status ∈ RecordsService.OPEN_ASSIGNABLE` |
+| 2 | `unassigned` | record-projection | `assignedToId = null` ∧ `status ∈ OPEN_ASSIGNABLE` |
+| 3 | `pending-review` | record-projection | `RecordStatus.Completed` |
+| 4 | `awaiting-sign-out` | record-projection | `RecordStatus.Resulted` |
+| 5 | `signed-out` | record-projection | `RecordStatus.Approved` |
+| 6 | `archived` | record-projection | **deferred** — no owner-recorded archived state exists |
+| 7 | `on-hold` | record-projection | `RecordStatus.OnHold` |
+| 8 | `awaiting-ancillary` | cross-owner | `AncillaryOrdersService.recordIdsWithOpenWork()` |
+| 9 | `awaiting-correlation` | cross-owner | `CorrelationService.recordIdsAwaitingCorrelation()` |
+| 10 | `open-qc-failures` | cross-owner | `QcService.recordIdsWithOpenFailure()` |
+| 11 | `open-recalls` | cross-owner | `RecallService.recordIdsWithOpenRecall()` |
+| 12 | `open-escalations` | cross-owner | `EscalationService.recordIdsWithOpenEscalation()` |
+| 13 | `overdue` | operational-overlay | `TatService.getOverdueSignal()` (recorded Open/Breached `TATAlert`) ∩ Records |
+
+**Queues are projections, not Record statuses; a Record may belong to multiple queues simultaneously.** Composition never mutates any owner lifecycle. `archived` remains deferred (count `null`, data `null`, no owner call) — **never mapped from Billed / Paid / Disabled / Viewed / Failed or any substitute status**.
+
+### Superseded taxonomy corrections (plan-era → final)
+| Plan-era (§6/§8) | Final | Reason |
+|---|---|---|
+| `Completed` (queue label) | **`signed-out`** (`RecordStatus.Approved`) | plan label collided with `RecordStatus.Completed` (which maps to `pending-review`) |
+| `Quality Hold` | **`on-hold`** (`RecordStatus.OnHold`) **+** **`open-qc-failures`** (QC signal) | two independent facts, wrongly merged in the plan |
+| `Escalated` | **`open-escalations`** | resolved/dismissed escalation history may remain attached; "open" is the truthful state |
+| `Returned` | **retired** | it was a client-communication change-request concept, not a Record projection |
+| (Change Requests) | **excluded from E2 MVP** | distinct `changerequest:view` authority, unseeded for standard roles |
+| (Correlation + Recall merged) | **two separate queues** (`awaiting-correlation`, `open-recalls`) | distinct owners and predicates |
+| `Team Work` | **deferred to E4** | needs team resolution + a multi-assignee owner capability |
+| `Archived` | **deferred** | no owner-recorded archived state |
+
+### Final owner seams
+| Seam | Owns |
+|---|---|
+| `RecordsService.listForOrchestration({ ids?, statuses?, assignedToId?, unassigned?, page?, pageSize? })` | visible Record metadata, tenant intersection, **exact totals**, pagination, deterministic ordering, allowlist |
+| `AncillaryOrdersService.recordIdsWithOpenWork()` | awaiting-ancillary membership |
+| `CorrelationService.recordIdsAwaitingCorrelation()` | awaiting-correlation membership |
+| `QcService.recordIdsWithOpenFailure()` | open-qc-failures membership |
+| `RecallService.recordIdsWithOpenRecall()` | open-recalls membership |
+| `EscalationService.recordIdsWithOpenEscalation()` | open-escalations membership |
+| `TatService.getOverdueSignal()` → `{ recordIds, activeConfigCount }` | recorded breach conclusions + active-configuration state |
+
+Enterprise Case Management **owns composition only**. Signal owners define cross-owner membership; Records owns everything visible + counted. **Excluded / not reused:** `ChangeRequestsService` (E2 MVP), `WorkloadService` (deferred to E4), Operations direct-Prisma reads, Diagnostic Case / Sign-Out presentation seams. **No `TatService.scan()`, no `Lab.targetTatDays`, no direct Prisma.**
+
+### E1 owner-read checkpoint ledger
+| CP | Commit | Deliverable |
+|---|---|---|
+| E1A | `ed1d7f7d1ab5b4689c6f117899503d94e59c01c3` | Records orchestration projection read |
+| E1B | *audit only — no commit* | WorkloadService export **deferred to E4** |
+| E1C | `bdbec020d65d12baadf8d1af4d5383d27faf5206` | Ancillary open-work Record signal |
+| E1D | `85117ff98a42ef3b95c8ae2c7c4b4607d523fe45` | Recorded TAT overdue signal |
+| E1E | `daec2120c84fa33b4ad21034715be7619b511392` | Record-anchored open QC failure signal |
+| E1F1 | `27c62866276bc5d02473ee3cd2cea071fe3a0863` | Awaiting-correlation Record signal |
+| E1F2 | `6552ca03d5a3e348fab05239967ad1d3710c663e` | Open-recall Record signal |
+| E1G | *audit only — no commit* | Change-request signal **deferred / excluded from E2 MVP** |
+| E1H | `699d7fcc61187079aa0c5ed9610911893361645d` | Open-escalation Record signal |
+| E1I | `d30d60a419ca8d4511589a03a0b7d1378e77a788` | Records candidate-ID (`ids`) filter |
+
+### E2 aggregate checkpoint ledger
+| CP | Commit | Deliverable |
+|---|---|---|
+| E2A | `a7c26b3` | Aggregate contract, module, controller, deferred shell |
+| E2B | `f8671fe0f484b37675eb71691d088ddaa453006e` | Six record-projection queues |
+| E2C | `381993db98d2e2ccd5474ded12a77c7b47ac1e95` | Five cross-owner queues |
+| E2D | `817562f057dd8b5a285838680e63bc2e106d0833` | Recorded Overdue queue + aggregate finalization |
+| E2E | *certification only — no commit* | **PASS WITH DOCUMENTED NON-BLOCKING DEBT** |
+
+### Overdue — six-case state matrix
+Overdue is based on **persisted Open/Breached `TATAlert` rows** — it is **not a live recalculation**. No last-scan / evaluation timestamp is persisted or claimed; the response-level `asOf` is **request time only**. No page-local Overdue metadata was added (the Record row contract stays narrow).
+
+| Case | Condition | State | Count / detail |
+|---|---|---|---|
+| A | `getOverdueSignal()` throws | **error** | count `null`, detail data `null`; sibling queues unaffected; listed once in `unavailable[]` |
+| B | configured, ids, `listForOrchestration` throws | **error** | count `null`, detail data `null`; **no raw `recordIds.length` fallback** |
+| C | `activeConfigCount === 0` | **deferred** | count `null`, detail data `null`; **no Records call**; reason "TAT not configured for this lab"; never empty/zero; not in `unavailable[]` |
+| D | configured, `recordIds = []` | **empty** | count `0`; truthful empty page; `ids: []` passed — **never an unfiltered Records query** |
+| E | configured, visible ids | **ready** | count = **exact Records owner total**; owner pagination + ordering |
+| F | configured, stale/inaccessible ids only | **empty** | count `0`; **not** an error; **no raw signal length exposed** |
+
+### State & count semantics (frozen)
+States: **`ready` · `empty` · `forbidden` · `error` · `deferred`**.
+- `ready` = exact visible total > 0 · `empty` = successful evaluation, exact visible total 0 · `forbidden` = access denied (never rendered as empty) · `error` = owner/intersection failure, count `null`, detail data `null` · `deferred` = intentionally unavailable, count `null`.
+- A `null` count is **not** zero. Errors are **never** hidden as empty; deferred is **never** hidden as empty. **Counts come from Records owner totals** — raw signal lengths and page lengths are **never** presented as queue totals. `unavailable[]` names only `error`/`forbidden` sources (each once); `empty` and `deferred` are **not** listed there.
+
+### Permissions & tenancy
+Routes (all **GET-only**, read-only): `GET /enterprise/summary` · `GET /enterprise/queues` · `GET /enterprise/queues/:queue`. Permission: **`record:view`** for all three. No new permission codes; no role-name authorization; no caller-supplied `labId`; active-lab scoping enforced through owner reads (tenancy extension). Invalid/retired queue keys → **404**. Assignment mutations remain **Records-owner** behavior under `record:change` elsewhere; the Enterprise aggregate exposes **no mutation route**.
+
+### Privacy & allowlist
+Enterprise Record row (exact): `id`, `identifier`, `labNumber`, `formType`, `status`, `urgent`, `specimenDate`, `createdAt`, `statusChangedAt`, `assignedToId`, `assignedToName`, `patientDisplayName`, `ownerPath`. `ownerPath = /records/:id`. **Excluded:** `labId`, diagnosis, medical entry, reports, result-sheet content, narratives, AI content, attachments, WSI, storage URLs, credentials, internal notes, owner entity IDs, and QC / Recall / Correlation / Escalation / TAT details.
+
+### Documented non-blocking debt (intentional deferrals — not defects, not release blockers)
+1. **Archived deferred** — no owner-recorded archived state exists.
+2. **Team Work deferred to E4** — requires team resolution + a multi-assignee owner capability.
+3. **Change Requests excluded** — distinct `changerequest:view` authority (unseeded for standard roles); client-communication workflow, not internal Record lifecycle.
+4. **No cache/polling optimization** — aggregate uses live owner reads; not required for correctness.
+5. **No page-local signal metadata** — signals remain standalone queues; the Record row contract stays narrow.
+6. **Cosmetic:** `ENTERPRISE_DEFERRED_REASON` is an unreachable fallback constant (harmless dead constant; no release impact; not removed here).
+
+### Release classification
+- Certification result: **PASS WITH DOCUMENTED NON-BLOCKING DEBT**
+- Release blockers: **None**
+- Classification: **Production-ready behind existing RBAC**
+- E2: implementation complete · certification complete · documentation recorded (this checkpoint) · **E3 not started**
+
+### Rollback map (additive, reverse-order; no schema/permission/seed/DB rollback required)
+| CP | Revert | Effect |
+|---|---|---|
+| E2D | `git revert 817562f057dd8b5a285838680e63bc2e106d0833` | returns Overdue to deferred; preserves E2A–E2C |
+| E2C | `git revert 381993db98d2e2ccd5474ded12a77c7b47ac1e95` | returns five cross-owner queues to deferred; preserves E2A/E2B |
+| E2B | `git revert f8671fe0f484b37675eb71691d088ddaa453006e` | returns six Record queues to deferred; preserves E2A shell |
+| E2A | `git revert a7c26b3` | removes aggregate shell + root registration per the committed diff |
+
+Reverse-order rollback **E2D → E2A** removes E2 cleanly. The aggregate owns no persistence — **no schema, migration, permission, seed, or database rollback is required**.
