@@ -295,7 +295,8 @@ MVP = **E1 + E2 + E3**.
 | Release posture | **Production-ready behind existing RBAC** |
 | Permission | `record:view` for all aggregate reads |
 | Architecture | owner-first · read-only · tenant-scoped · failure-isolated · exact-count-safe · pagination-safe · **no direct Prisma** · **no owner mutation** |
-| E3 (Command Center UI) | **Not started** |
+| E3 (Command Center UI) | **Implemented & certified (E3A–E3C)** — see [E3 — Enterprise Command Center](#e3--enterprise-command-center-implementation--certification) |
+| E4 (Manager / Assignment) | **Not started** |
 
 Certification (E2E) result: **PASS WITH DOCUMENTED NON-BLOCKING DEBT** — certification only, **no implementation commit, no files changed**.
 
@@ -401,7 +402,7 @@ Enterprise Record row (exact): `id`, `identifier`, `labNumber`, `formType`, `sta
 - Certification result: **PASS WITH DOCUMENTED NON-BLOCKING DEBT**
 - Release blockers: **None**
 - Classification: **Production-ready behind existing RBAC**
-- E2: implementation complete · certification complete · documentation recorded (this checkpoint) · **E3 not started**
+- E2: implementation complete · certification complete · documentation recorded · **E3 (Command Center UI) complete & certified (E3A–E3C)** · **E4 (Manager / Assignment) not started**
 
 ### Rollback map (additive, reverse-order; no schema/permission/seed/DB rollback required)
 | CP | Revert | Effect |
@@ -412,3 +413,56 @@ Enterprise Record row (exact): `id`, `identifier`, `labNumber`, `formType`, `sta
 | E2A | `git revert a7c26b3` | removes aggregate shell + root registration per the committed diff |
 
 Reverse-order rollback **E2D → E2A** removes E2 cleanly. The aggregate owns no persistence — **no schema, migration, permission, seed, or database rollback is required**.
+
+---
+
+## E3 — Enterprise Command Center: Implementation & Certification
+
+> **Authoritative E3 record (E3D, 2026-07-16).** The Enterprise Command Center UI over the certified E2 aggregate. Frontend-only; it changes no backend, aggregate, API contract, permission, schema, or owner. Supersedes the plan-era §10 UI sketch wherever they differ (e.g. the route is exactly **`/command-center`** — never `/worklist`; `formType`/`urgent` detail filters are **deferred**, not shipped; the row contract is the narrow allowlist below).
+
+### Status
+| Field | Value |
+|---|---|
+| Phase 5 E3 — Enterprise Command Center UI | **CERTIFIED** |
+| Route | **`/command-center`** (single route; no alias) |
+| Permission | **`record:view`** (the only gate — same code the backend enforces) |
+| Feature gate | **Option B — navigation + existing permission only** (no feature key) |
+| Backend / aggregate / API / permissions / schema | **unchanged** (frontend-only) |
+| E4 (Manager / Assignment) | **Not started** |
+
+### Checkpoint ledger
+| CP | Commit | Deliverable |
+|---|---|---|
+| E3A | `eb7bb104e47c28173f7fe7095e8630cbe6395ef2` | Command Center shell (9 files): page/loading/types/api + Header/Summary/Rail/Detail/StateTag — pure presentation over the three E2 endpoints |
+| E3B | `ec3fa69c75b3dfeb17321b07d17db9995bc0b62c` | Visual/responsive/accessibility refinement (7 files); shared PageHeader; five-state text presentation; responsive table→cards |
+| E3C | `203118bbfd266fe0c03cf8d5b4204f8281c9de5e` | Navigation integration (`src/lib/nav.ts`, +2): one Lab-group entry **"Enterprise Case Management" → `/command-center`** |
+
+### Navigation architecture (as shipped)
+One nav entry in the **`lab` group** (`src/lib/nav.ts`), after *Enterprise Administration*: `{ label: 'Enterprise Case Management', path: '/command-center', permission: 'record:view', icon: LayoutGrid }`. Rendered by the top-bar pill + antd dropdown (`nav-pills.tsx`) and the mobile drawer; both derive from `NAV_GROUPS`. Active-route state is the established P3 convention: the **Lab group pill** activates when a child path matches (`groupActive`); group triggers expose `aria-haspopup`/`aria-expanded` (not `aria-current`). `/command-center` is **not** return-aware (plain push). **No badge** (the Command Center has 13 independent queue counts and no certified single navigation value).
+
+### Feature-gate decision — **Option B**
+No enterprise/worklist/command-center/case-management feature key exists in `features.ts`; the closest siblings (Operations, Quality & Governance, Enterprise Administration) use `record:view` with **no** flag. A fabricated flag would falsely imply a backend enforcement boundary that does not exist. Decision: **reuse `record:view`, add no feature key, add no permission code, use no role names.**
+
+### Certified invariants (frozen)
+- **One `<h1>`** ("Enterprise Case Management", via shared PageHeader) — no raw h1 in the module.
+- **Only three endpoints:** `/enterprise/summary`, `/enterprise/queues`, `/enterprise/queues/:queue`. **No owner endpoint**, no direct Prisma, no owner-service import.
+- **No frontend business logic:** no derived queue membership, counts, status, overdue, urgency, or assignment; queue order rendered as received; owner pagination/ordering verbatim (no local sort/filter/paginate/recount); unavailable counts render an em-dash (never a fabricated zero).
+- **No page-local overdue/signal metadata**; the row allowlist is exactly: `id, identifier, labNumber, formType, status, urgent, specimenDate, createdAt, statusChangedAt, assignedToId, assignedToName, patientDisplayName, ownerPath`.
+- **`ownerPath` navigation only** → `/records/:id`.
+- Query keys: `['enterprise-summary']`, `['enterprise-queues']`, `['enterprise-queue', queue, page]`; Refresh invalidates all three.
+
+### Verification (measured)
+- **E3B-V (live, Playwright):** responsive **0 page overflow** at 320/360/390/430/768/1024/1440/1920 (`documentElement.scrollWidth === clientWidth`); **zero-orange = 0 pixels** across full-content scans at 390/768/1440/1920; five states render distinctly with text; **one h1**, `axe-core` **0 violations**, keyboard `ownerPath` navigation (Enter), visible focus, truthful disabled pagination; reduced-motion clean; **0 page/console errors from the page**; data-flow (3 endpoints, Refresh-invalidates-3, server pagination) confirmed.
+- **E3C (live, real backend — no interception):** nav item present exactly once → `/command-center` loads; real `/enterprise/summary|queues|queues/:queue` → **200**; **no owner endpoints** called by the page; record → `ownerPath` → Back restores the Command Center with the Lab pill active; Refresh re-fetched all three; mobile drawer contains the item; **0 orange**, **no overflow**, **0 page errors**.
+
+### E3 rollback map (additive; reverse-order; documentation-only for this checkpoint)
+| CP | Revert | Effect |
+|---|---|---|
+| E3C | `git revert 203118bbfd266fe0c03cf8d5b4204f8281c9de5e` | removes the nav entry; page still reachable by URL; preserves E3A/E3B |
+| E3B | `git revert ec3fa69c75b3dfeb17321b07d17db9995bc0b62c` | returns the seven files to the E3A shell |
+| E3A | `git revert eb7bb104e47c28173f7fe7095e8630cbe6395ef2` | removes the Command Center route entirely |
+
+No schema/permission/seed/backend rollback anywhere in E3 (frontend-only). **E4 (Manager / Assignment) — not started.**
+
+### Documentation-only environment note
+During E3C's real-backend verification, the stale `:4000` API process (a build predating E2) was replaced with the **current committed API build** so the three `/enterprise` routes were served live; no application code, data, or owner state was modified.
