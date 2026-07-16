@@ -1,4 +1,9 @@
 import { Module } from '@nestjs/common';
+import { AncillaryOrdersModule } from '../ancillary-orders/ancillary-orders.module';
+import { CorrelationModule } from '../correlation/correlation.module';
+import { EscalationModule } from '../escalation/escalation.module';
+import { QcModule } from '../qc/qc.module';
+import { RecallModule } from '../recall/recall.module';
 import { RecordsModule } from '../records/records.module';
 import { EnterpriseCaseManagementController } from './enterprise-case-management.controller';
 import { EnterpriseCaseManagementService } from './enterprise-case-management.service';
@@ -6,12 +11,13 @@ import { EnterpriseCaseManagementService } from './enterprise-case-management.se
 /**
  * Phase 5 · E2 — Enterprise Case Management aggregate module.
  *
- * E2B composes the Records owner only (record-projection queues). Additional
- * owner modules are added checkpoint-by-checkpoint (E2C onward) as cross-owner
- * composition begins — never imported preemptively. No PrismaModule.
+ * E2B composes the Records owner (record-projection queues). E2C adds the five
+ * cross-owner signal owners (ancillary, correlation, QC, recall, escalation).
+ * TAT (overdue overlay) is NOT imported here — it lands in E2D. No PrismaModule,
+ * no Workload/Operations/SignOut/DiagnosticCase/ResultSheets/ChangeRequests.
  */
 @Module({
-  imports: [RecordsModule],
+  imports: [RecordsModule, AncillaryOrdersModule, CorrelationModule, QcModule, RecallModule, EscalationModule],
   controllers: [EnterpriseCaseManagementController],
   providers: [EnterpriseCaseManagementService],
 })

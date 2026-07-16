@@ -1,5 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { RecordStatus } from '@prisma/client';
+import { AncillaryOrdersService } from '../ancillary-orders/ancillary-orders.service';
+import { CorrelationService } from '../correlation/correlation.service';
+import { EscalationService } from '../escalation/escalation.service';
+import { QcService } from '../qc/qc.service';
+import { RecallService } from '../recall/recall.service';
 import { OrchestrationRecordFilter, RecordsService } from '../records/records.service';
 import { EnterpriseQueueDetailQueryDto } from './dto/enterprise-queue.dto';
 import {
@@ -26,23 +31,26 @@ type OrchestrationRow = Awaited<ReturnType<RecordsService['listForOrchestration'
  * Read-only orchestration: every queue is a PROJECTION over owner-recorded state,
  * composed exclusively from exported owner services. No direct Prisma.
  *
- * E2B hydrates the six SUPPORTED record-projection queues from the single owner
- * seam `RecordsService.listForOrchestration`. `archived` is truthfully DEFERRED
- * (no owner-recorded archived state). All cross-owner queues and the overdue
- * overlay remain DEFERRED for later checkpoints.
+ * E2B: six record-projection queues (RecordsService only).
+ * E2C: five cross-owner queues — each composes ITS authoritative owner Record-ID
+ *      signal, intersected with tenant-scoped Records via
+ *      `RecordsService.listForOrchestration({ ids, ... })`. The signal defines
+ *      membership; Records defines the visible metadata, true total, pagination,
+ *      ordering, allowlist, and tenancy. `archived` and the `overdue` overlay
+ *      remain DEFERRED.
  */
 @Injectable()
 export class EnterpriseCaseManagementService {
-  constructor(private readonly records: RecordsService) {}
+  constructor(
+    private readonly records: RecordsService,
+    private readonly ancillary: AncillaryOrdersService,
+    private readonly correlation: CorrelationService,
+    private readonly qc: QcService,
+    private readonly recall: RecallService,
+    private readonly escalation: EscalationService,
+  ) {}
 
-  // ── Queue predicates (owner-recorded fields only) ─────────────────────────
-  // my-work         assignedToId = caller ∧ status ∈ OPEN_ASSIGNABLE (owner's own open set)
-  // unassigned      assignedToId = null   ∧ status ∈ OPEN_ASSIGNABLE
-  // pending-review  status = Completed  (results complete, pre-authorization)
-  // awaiting-sign-out status = Resulted (result sheet exists, not yet authorized — enum-documented)
-  // signed-out      status = Approved   (authorized; NOT a "Released" claim)
-  // on-hold         status = OnHold
-  // archived / cross-owner / overdue → deferred (no owner-recorded fact yet, or later checkpoint)
+  // ── Record-projection predicates (E2B, owner-recorded fields only) ────────
   private baseFilter(queue: QueueKey, callerId: string): OrchestrationRecordFilter | null {
     switch (queue) {
       case 'my-work':
@@ -58,7 +66,28 @@ export class EnterpriseCaseManagementService {
       case 'on-hold':
         return { statuses: [RecordStatus.OnHold] };
       default:
-        return null; // archived + cross-owner + overlay → deferred in E2B
+        return null; // cross-owner (E2C) + archived/overdue (deferred)
+    }
+  }
+
+  // ── Cross-owner signals (E2C) ─────────────────────────────────────────────
+  // Membership comes ONLY from the queue's authoritative owner Record-ID signal.
+  // No status filter, no reinterpretation. The signal is intersected with Records
+  // (never trusted as the visible set or count on its own).
+  private crossOwnerSignal(queue: QueueKey): (() => Promise<string[]>) | null {
+    switch (queue) {
+      case 'awaiting-ancillary':
+        return () => this.ancillary.recordIdsWithOpenWork();
+      case 'awaiting-correlation':
+        return () => this.correlation.recordIdsAwaitingCorrelation();
+      case 'open-qc-failures':
+        return () => this.qc.recordIdsWithOpenFailure();
+      case 'open-recalls':
+        return () => this.recall.recordIdsWithOpenRecall();
+      case 'open-escalations':
+        return () => this.escalation.recordIdsWithOpenEscalation();
+      default:
+        return null;
     }
   }
 
@@ -66,12 +95,22 @@ export class EnterpriseCaseManagementService {
     return queue === 'archived' ? ENTERPRISE_ARCHIVED_DEFERRED_REASON : ENTERPRISE_DEFERRED_REASON;
   }
 
-  /** Count for one queue via the owner total (pageSize:1 → count-only read). Failure-isolated. */
+  /**
+   * Count for one queue via the owner total (pageSize:1 → count-only read).
+   * Cross-owner: signal ids → owner intersection total (EXCLUDES stale/inaccessible/
+   * cross-lab ids; never `signalIds.length`). Empty signal → `{ ids: [] }` → owner
+   * total 0 → empty (E1I guarantees `[]` matches nothing, never an unfiltered read).
+   * No assignedToId is applied to counts (unchanged from E2B). Failure-isolated.
+   */
   private async loadCount(queue: QueueKey, callerId: string): Promise<EnterpriseCountState> {
     const base = this.baseFilter(queue, callerId);
-    if (!base) return { value: null, status: 'deferred', reason: this.deferredReason(queue) };
+    const signal = this.crossOwnerSignal(queue);
+    if (!base && !signal) return { value: null, status: 'deferred', reason: this.deferredReason(queue) };
     try {
-      const res = await this.records.listForOrchestration({ ...base, page: 1, pageSize: 1 });
+      const filter: OrchestrationRecordFilter = signal
+        ? { ids: await signal(), page: 1, pageSize: 1 }
+        : { ...base, page: 1, pageSize: 1 };
+      const res = await this.records.listForOrchestration(filter);
       return res.total > 0 ? { value: res.total, status: 'ready' } : { value: 0, status: 'empty' };
     } catch {
       return { value: null, status: 'error', reason: 'Owner read failed' };
@@ -121,7 +160,7 @@ export class EnterpriseCaseManagementService {
     const byKey = new Map(counts.map((c) => [c.key, c.count]));
     const queues = ENTERPRISE_QUEUE_DEFINITIONS.map((q) => {
       const count = byKey.get(q.key)!;
-      // ownerPath is the queue-level list surface only for supported record projections.
+      // ownerPath is the queue-level list surface only for composed queues (ready/empty).
       const ownerPath = count.status === 'ready' || count.status === 'empty' ? '/records' : null;
       return { key: q.key, label: q.label, category: q.category, count, ownerPath };
     });
@@ -139,11 +178,19 @@ export class EnterpriseCaseManagementService {
     const def = ENTERPRISE_QUEUE_DEFINITIONS.find((q) => q.key === key)!;
 
     const base = this.baseFilter(key, callerId);
+    const signal = this.crossOwnerSignal(key);
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? ENTERPRISE_DEFAULT_PAGE_SIZE;
 
-    // Deferred queues (archived + cross-owner + overlay): data null, never empty-looking.
-    if (!base) {
+    // Effective assignedToId (independent of the owner read, so the error path echoes it too):
+    //  · my-work    → forced to the caller (any query assignedToId ignored)
+    //  · unassigned → not applicable (unassigned filter is authoritative)
+    //  · status + cross-owner queues → optional owner-supported narrowing by query.assignedToId
+    const echoAssignedToId: string | null =
+      key === 'my-work' ? callerId : key === 'unassigned' ? null : query.assignedToId ?? null;
+
+    // Deferred queues (archived + overdue): data null, never empty-looking.
+    if (!base && !signal) {
       return {
         queue: key,
         category: def.category,
@@ -152,23 +199,20 @@ export class EnterpriseCaseManagementService {
       };
     }
 
-    // Effective assignedToId per queue:
-    //  · my-work    → forced to the caller (any query assignedToId is ignored)
-    //  · unassigned → not applicable (unassigned filter is authoritative)
-    //  · status queues → optional owner-supported narrowing by query.assignedToId
-    let filter: OrchestrationRecordFilter = { ...base, page, pageSize };
-    let echoAssignedToId: string | null;
-    if (key === 'my-work') {
-      echoAssignedToId = callerId;
-    } else if (key === 'unassigned') {
-      echoAssignedToId = null;
-    } else {
-      const requested = query.assignedToId ?? null;
-      if (requested) filter = { ...filter, assignedToId: requested };
-      echoAssignedToId = requested;
-    }
-
     try {
+      let filter: OrchestrationRecordFilter;
+      if (signal) {
+        // Cross-owner: signal defines membership; ids ALWAYS passed (even []).
+        filter = { ids: await signal(), page, pageSize };
+        if (echoAssignedToId) filter = { ...filter, assignedToId: echoAssignedToId };
+      } else {
+        // Record projection: my-work/unassigned already encode assignment in base;
+        // status queues optionally narrow by assignedToId.
+        filter = { ...base, page, pageSize };
+        if (key !== 'my-work' && key !== 'unassigned' && echoAssignedToId) {
+          filter = { ...filter, assignedToId: echoAssignedToId };
+        }
+      }
       const res = await this.records.listForOrchestration(filter);
       const items = res.data.map((r) => this.toRow(r));
       return {
