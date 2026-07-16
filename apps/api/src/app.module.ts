@@ -68,6 +68,7 @@ import { LabModule } from './modules/lab/lab.module';
 import { QualityGovernanceModule } from './modules/quality-governance/quality-governance.module';
 import { EnterpriseAdministrationModule } from './modules/enterprise-administration/enterprise-administration.module';
 import { DiagnosticCaseModule } from './modules/diagnostic-case/diagnostic-case.module';
+import { EnterpriseCaseManagementModule } from './modules/enterprise-case-management/enterprise-case-management.module';
 import { AncillaryOrdersModule } from './modules/ancillary-orders/ancillary-orders.module';
 import { ScreeningBatchesModule } from './modules/screening-batches/screening-batches.module';
 
@@ -164,6 +165,7 @@ import { ScreeningBatchesModule } from './modules/screening-batches/screening-ba
     QualityGovernanceModule,
     EnterpriseAdministrationModule,
     DiagnosticCaseModule,
+    EnterpriseCaseManagementModule,
     AncillaryOrdersModule,
     ScreeningBatchesModule,
   ],
