@@ -22,6 +22,7 @@ import { randomBytes } from 'crypto';
 // names, NO cross-owner state, NO TAT/urgency inference — those belong to the future
 // Enterprise Case Management aggregate, never to the owner.
 export interface OrchestrationRecordFilter {
+  ids?: string[]; // candidate record-id set (AND-composed); `[]` matches none, omitted = no id constraint
   statuses?: RecordStatus[]; // filter to a set of owner-recorded RecordStatus values
   assignedToId?: string; // exact assignee (ignored when `unassigned` is true)
   unassigned?: boolean; // records with no assignee
@@ -729,6 +730,10 @@ export class RecordsService {
     const pageSize = Math.min(Math.max(1, filter.pageSize ?? 50), RecordsService.ORCH_MAX_PAGE_SIZE);
 
     const where: Prisma.RecordWhereInput = {};
+    // Candidate-id constraint (DB-side, set-semantic). `!== undefined` — not `.length` —
+    // so an empty array truthfully matches nothing (never an unfiltered read). Stale and
+    // cross-lab ids fall out via the tenancy `where`; duplicates don't multiply rows (id PK).
+    if (filter.ids !== undefined) where.id = { in: filter.ids };
     if (filter.statuses && filter.statuses.length) where.status = { in: filter.statuses };
     if (filter.unassigned) where.assignedToId = null;
     else if (filter.assignedToId) where.assignedToId = filter.assignedToId;
