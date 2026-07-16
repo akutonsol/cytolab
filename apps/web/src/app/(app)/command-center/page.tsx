@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { CommandCenterHeader } from './components/CommandCenterHeader';
 import { SummaryCards } from './components/SummaryCards';
 import { QueueRail } from './components/QueueRail';
-import { QueueDetailPanel } from './components/QueueDetailPanel';
+import { DISCARD_SELECTION_MESSAGE, QueueDetailPanel } from './components/QueueDetailPanel';
 
 /**
  * Phase 5 · E3B — Enterprise Command Center work surface.
@@ -23,6 +23,13 @@ export default function CommandCenterPage() {
   const [selected, setSelected] = useState<string | null>('my-work');
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  // E4C — the detail panel reports its page-scoped bulk selection count so a queue
+  // switch that would discard a non-empty selection can be confirmed first.
+  const [ccSelectionCount, setCcSelectionCount] = useState(0);
+  const handleSelectQueue = (key: string) => {
+    if (key !== selected && ccSelectionCount > 0 && !window.confirm(DISCARD_SELECTION_MESSAGE)) return;
+    setSelected(key);
+  };
 
   // Client-only timestamp (avoids SSR hydration mismatch; deterministic first render).
   useEffect(() => {
@@ -52,12 +59,12 @@ export default function CommandCenterPage() {
       <div className="mt-5 grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
         <section aria-labelledby="cc-rail-heading" className="min-w-0">
           <h2 id="cc-rail-heading" className="sr-only">Queues</h2>
-          <QueueRail selected={selected} onSelect={setSelected} />
+          <QueueRail selected={selected} onSelect={handleSelectQueue} />
         </section>
 
         <section aria-labelledby="cc-detail-heading" className="min-w-0 rounded-xl border border-slate-200 bg-white p-4">
           <h2 id="cc-detail-heading" className="sr-only">Queue records</h2>
-          <QueueDetailPanel queue={selected} />
+          <QueueDetailPanel queue={selected} onSelectionCountChange={setCcSelectionCount} />
         </section>
       </div>
     </div>
