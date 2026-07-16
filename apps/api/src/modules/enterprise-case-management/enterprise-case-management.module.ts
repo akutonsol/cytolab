@@ -1,15 +1,17 @@
 import { Module } from '@nestjs/common';
+import { RecordsModule } from '../records/records.module';
 import { EnterpriseCaseManagementController } from './enterprise-case-management.controller';
 import { EnterpriseCaseManagementService } from './enterprise-case-management.service';
 
 /**
  * Phase 5 · E2 — Enterprise Case Management aggregate module.
  *
- * E2A imports nothing: the shell needs no PrismaModule and no owner modules.
- * Owner modules are added checkpoint-by-checkpoint (E2B onward) as queue
- * composition begins — never imported preemptively.
+ * E2B composes the Records owner only (record-projection queues). Additional
+ * owner modules are added checkpoint-by-checkpoint (E2C onward) as cross-owner
+ * composition begins — never imported preemptively. No PrismaModule.
  */
 @Module({
+  imports: [RecordsModule],
   controllers: [EnterpriseCaseManagementController],
   providers: [EnterpriseCaseManagementService],
 })

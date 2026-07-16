@@ -130,31 +130,32 @@ export interface EnterpriseQueueCatalogResponse {
 }
 
 // ── Queue detail (GET /enterprise/queues/:queue) ──────────────────────────
-export interface EnterpriseQueueRecordItem {
+// E2B record-projection row — a minimal, allowlisted subset of EXACTLY the
+// fields RecordsService.listForOrchestration already returns. No overdue/signal
+// overlay flags (those are cross-owner/overlay concerns, added in E2C+ and never
+// fabricated here). No diagnosis/result/AI/attachment/WSI/tenant content.
+export interface EnterpriseRecordProjectionRow {
   id: string;
   identifier: string | null;
   labNumber: string | null;
   formType: string | null;
   status: string; // RecordStatus verbatim (owner-recorded)
-  urgent: boolean;
+  urgent: boolean; // owner-recorded flag, displayed as fact — never a ranking
   specimenDate: string | null;
   createdAt: string;
   statusChangedAt: string | null;
   assignedToId: string | null;
-  assignedTo: string | null;
-  overdue: boolean; // derived overlay flag (labeled)
-  signals: Record<string, boolean>; // cross-owner presence booleans only
-  ownerPath: string | null;
+  assignedToName: string | null;
+  patientDisplayName: string | null;
+  ownerPath: string; // /records/:id — navigational handoff only
 }
 
 export interface EnterpriseQueueDetailData {
-  items: EnterpriseQueueRecordItem[];
-  total: number;
+  items: EnterpriseRecordProjectionRow[];
+  total: number; // owner total (count query), never a page-length recount
   page: number;
   pageSize: number;
-  totalPages: number;
-  cap: number;
-  truncated: boolean;
+  totalPages: number; // owner-computed; not recomputed here
 }
 
 /**
@@ -176,5 +177,14 @@ export interface EnterpriseQueueDetailResponse {
   echo: EnterpriseQueueDetailEcho;
 }
 
-/** Shared deferred reason for the E2A shell. */
-export const ENTERPRISE_DEFERRED_REASON = 'Queue composition not yet loaded (E2A shell)';
+/** Deferred reason for cross-owner + operational-overlay queues (hydrated in E2C+). */
+export const ENTERPRISE_DEFERRED_REASON = 'Queue composition not yet loaded (cross-owner/overlay — later checkpoint)';
+
+/**
+ * Truthful deferral for the `archived` queue: RecordStatus models no `Archived`
+ * value and Record carries no archival flag, so there is no owner-recorded
+ * archived state to project. The queue stays in the taxonomy but is deferred —
+ * never fabricated from Billed/Paid/Disabled/Completed/Viewed.
+ */
+export const ENTERPRISE_ARCHIVED_DEFERRED_REASON =
+  'No owner-recorded archived state exists (RecordStatus has no Archived value); queue intentionally deferred';
