@@ -3,9 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, ChevronLeft, ChevronRight, Clock, Inbox, Lock } from 'lucide-react';
 import { Button, EmptyState, SkeletonRows, Td, Th, Tr } from '@/components/ui';
+import { api } from '@/lib/api';
+import { notify } from '@/lib/notify';
+import { useAuth } from '@/lib/auth';
+import { useFeatures } from '@/lib/feature-context';
+import type { WorkloadUser } from '@/lib/workload';
 import { getEnterpriseQueueDetail } from '../enterprise-api';
 import type { EnterpriseRecordProjectionRow } from '../types';
 
@@ -17,9 +22,49 @@ function fmtDate(iso: string | null): string {
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40';
 
+/**
+ * Row-level single-assignment control (E4B). PURE DELEGATION to the owner route
+ * `PATCH /records/:id/assign` with the owner DTO `{ assignedToId }` — no bulk, no
+ * optimistic update, no local persistence/validation/authorization. On success it
+ * refreshes the aggregate views (membership + counts change). Assignees come from
+ * the existing `/workload/summary` read; visibility is gated by the caller
+ * (`record:change` + `CASE_ASSIGNMENT`). Empty selection = unassign (`null`).
+ */
+function AssignSelect({ record, assignees }: { record: EnterpriseRecordProjectionRow; assignees: WorkloadUser[] }) {
+  const qc = useQueryClient();
+  const mut = useMutation({
+    mutationFn: (assignedToId: string | null) =>
+      api.patch(`/records/${record.id}/assign`, { assignedToId }).then((r) => r.data),
+    onSuccess: (_data, assignedToId) => {
+      notify.success(assignedToId ? 'Case assigned' : 'Case unassigned');
+      // Assignment changes queue membership + counts — refetch the aggregate surfaces.
+      qc.invalidateQueries({ queryKey: ['enterprise-summary'] });
+      qc.invalidateQueries({ queryKey: ['enterprise-queues'] });
+      qc.invalidateQueries({ queryKey: ['enterprise-queue'] });
+    },
+    onError: () => notify.error('Assignment failed'),
+  });
+  return (
+    <select
+      aria-label={`Assign ${record.identifier ?? record.labNumber ?? 'record'}`}
+      value={record.assignedToId ?? ''}
+      disabled={mut.isPending}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => mut.mutate(e.target.value || null)}
+      className={`w-full max-w-[180px] rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 disabled:opacity-50 ${focusRing}`}
+    >
+      <option value="">Unassigned</option>
+      {assignees.map((u) => (
+        <option key={u.userId} value={u.userId}>{u.userName}</option>
+      ))}
+    </select>
+  );
+}
+
 /** Mobile record card — the same allowlisted fields as the table row; the whole
- *  card is a keyboard-focusable link that navigates via ownerPath. */
-function RecordCard({ r }: { r: EnterpriseRecordProjectionRow }) {
+ *  card is a keyboard-focusable link that navigates via ownerPath. When the caller
+ *  may assign, a delegation control is rendered as a sibling (never nested in the link). */
+function RecordCard({ r, canAssign, assignees }: { r: EnterpriseRecordProjectionRow; canAssign: boolean; assignees: WorkloadUser[] }) {
   return (
     <li>
       <Link
@@ -44,6 +89,12 @@ function RecordCard({ r }: { r: EnterpriseRecordProjectionRow }) {
           <div className="truncate"><dt className="inline text-slate-400">Changed </dt><dd className="inline">{fmtDate(r.statusChangedAt)}</dd></div>
         </dl>
       </Link>
+      {canAssign && (
+        <div className="mt-2 flex items-center gap-2 pl-1">
+          <span className="text-xs text-slate-400">Assign</span>
+          <AssignSelect record={r} assignees={assignees} />
+        </div>
+      )}
     </li>
   );
 }
@@ -67,6 +118,17 @@ export function QueueDetailPanel({ queue }: { queue: string | null }) {
     queryKey: ['enterprise-queue', queue, page],
     queryFn: () => getEnterpriseQueueDetail(queue as string, page, PAGE_SIZE),
     enabled: !!queue,
+  });
+
+  // E4B — single-assignment delegation. Gated by the app's established assignment
+  // convention (record:change + CASE_ASSIGNMENT); assignees reuse /workload/summary.
+  const { can } = useAuth();
+  const { isEnabled } = useFeatures();
+  const canAssign = can('record:change') && isEnabled('CASE_ASSIGNMENT');
+  const { data: assignees = [] } = useQuery<WorkloadUser[]>({
+    queryKey: ['workload-summary'],
+    enabled: canAssign,
+    queryFn: () => api.get('/workload/summary').then((r) => r.data),
   });
 
   if (!queue) {
@@ -145,7 +207,7 @@ export function QueueDetailPanel({ queue }: { queue: string | null }) {
                 <Td>{r.formType ?? '—'}</Td>
                 <Td>{r.status}</Td>
                 <Td>{r.urgent ? 'Urgent' : '—'}</Td>
-                <Td>{r.assignedToName ?? '—'}</Td>
+                <Td>{canAssign ? <AssignSelect record={r} assignees={assignees} /> : (r.assignedToName ?? '—')}</Td>
                 <Td nowrap>{fmtDate(r.createdAt)}</Td>
                 <Td nowrap>{fmtDate(r.statusChangedAt)}</Td>
               </Tr>
@@ -157,7 +219,7 @@ export function QueueDetailPanel({ queue }: { queue: string | null }) {
       {/* Record cards — below md */}
       <ul className="space-y-2 md:hidden">
         {d.items.map((r) => (
-          <RecordCard key={r.id} r={r} />
+          <RecordCard key={r.id} r={r} canAssign={canAssign} assignees={assignees} />
         ))}
       </ul>
 
