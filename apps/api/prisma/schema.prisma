@@ -4095,6 +4095,23 @@ model AuditEvent {
   @@index([actorId, recordedAt])
   @@index([resourceType, resourceId])
   @@index([correlationId])
-  @@index([chainId, sequence])
+  // P2-4B: (chainId, sequence) uniquely identifies every chained event. Legacy pre-P2-4
+  // rows carry chainId = NULL; Postgres treats NULL index keys as distinct (NULLS DISTINCT,
+  // the PG16 default), so unlimited legacy NULL-chainId rows coexist under this standard
+  // UNIQUE with no partial predicate. Allocation/wiring is P2-4C, not here.
+  @@unique([chainId, sequence])
   @@index([recordedAt])
+}
+
+/// P2-4B — Audit chain head (integrity infrastructure; NOT yet allocated/wired).
+/// One row per chain. `chainId` encodes the scope partition (e.g. "lab:<id>", "system",
+/// "cross-lab") and is derived by the Audit owner from the trusted organization scope —
+/// never producer-supplied. Deliberately named `chainId` (not `labId`) so it stays outside
+/// the tenancy auto-scoping. In P2-4C this row is locked FOR UPDATE inside the append
+/// transaction to allocate a gapless per-chain sequence and carry the prevHash forward.
+model AuditChainHead {
+  chainId      String   @id
+  lastSequence BigInt
+  lastSelfHash String
+  updatedAt    DateTime @updatedAt
 }
