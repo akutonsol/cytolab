@@ -3942,3 +3942,159 @@ model ScreeningBatchCase {
   @@index([recordId])
   @@index([batchId, disposition])
 }
+
+// ============================================================================
+// Program 2 · P2-1 — Enterprise Audit bounded context (append-only ledger).
+// Binding authority: docs/architecture/AUDIT_EVENT_CONTRACT.md.
+// Owned exclusively by the Audit module; NO domain owner may reference AuditEvent
+// directly (enforced by audit-architecture.spec.ts). The scope column is deliberately
+// named `scopeLabId`, NOT `labId`, so the global tenancy extension — which auto-scopes
+// every model carrying a `labId` column — never forces a lab onto SYSTEM/CROSS_LAB
+// events. The Audit owner performs its own scope filtering in the P2-6 query API.
+// Enum values are SCREAMING_SNAKE registry/wire codes (not the PascalCase used by older
+// domain enums) to match the contract document.
+// ============================================================================
+
+enum AuditCategory {
+  AUTHENTICATION
+  AUTHORIZATION
+  PHI_ACCESS
+  RECORD_LIFECYCLE
+  CLINICAL_WORKFLOW
+  ADMINISTRATIVE
+  CONFIGURATION
+  DATA_EXPORT
+  SECURITY
+  DATA_MAINTENANCE
+  SYSTEM
+}
+
+enum AuditActorType {
+  STAFF
+  PORTAL
+  SERVICE
+  SYSTEM
+  ANONYMOUS
+}
+
+enum AuditOrganizationScope {
+  LAB
+  SYSTEM
+  CROSS_LAB
+}
+
+enum AuditOutcome {
+  SUCCESS
+  FAILURE
+  DENIED
+  ERROR
+}
+
+enum AuditSeverity {
+  INFO
+  NOTICE
+  WARNING
+  CRITICAL
+}
+
+enum AuditDataClass {
+  PUBLIC
+  INTERNAL
+  CONFIDENTIAL
+  PHI
+}
+
+enum AuditRetentionClass {
+  SHORT
+  STANDARD
+  EXTENDED
+  PERMANENT
+}
+
+enum AuditDurabilityClass {
+  CRITICAL_TRANSACTIONAL
+  REQUIRED_DURABLE
+  OPERATIONAL
+}
+
+model AuditEvent {
+  // --- Identity (platform-owned; producers never set these) ---
+  id            String   @id @default(cuid()) // eventId
+  occurredAt    DateTime // when the fact happened (may precede recordedAt)
+  recordedAt    DateTime @default(now()) // when the ledger persisted it
+  sequence      BigInt? // per-chain monotonic order; assigned by the P2-4 chain-head, null until then
+  schemaVersion Int      @default(1) // storage-envelope version
+  eventVersion  Int // semantic payload version, resolved from the registry
+
+  // --- Classification (resolved from the registry) ---
+  category        AuditCategory
+  severity        AuditSeverity
+  phiIndicator    Boolean             @default(false)
+  dataClass       AuditDataClass
+  retentionClass  AuditRetentionClass
+  durabilityClass AuditDurabilityClass
+
+  // --- Actor (identifiers only; never a name/email) ---
+  actorType         AuditActorType
+  actorId           String?
+  onBehalfOfActorId String?
+  servicePrincipal  String?
+
+  // --- Organization / scope (see class comment: scopeLabId, not labId) ---
+  organizationScope AuditOrganizationScope
+  scopeLabId        String? // required iff scope = LAB; absent for SYSTEM / CROSS_LAB
+  organizationId    String?
+
+  // --- Request context (OPTIONAL at the envelope level; policy is registry-driven) ---
+  requestId     String?
+  correlationId String?
+  ipAddress     String?
+  userAgent     String?
+  deviceId      String?
+  route         String?
+  httpMethod    String?
+
+  // --- Session context (OPTIONAL) ---
+  sessionId   String?
+  sessionKind String?
+
+  // --- Resource (patientRef is an opaque pseudonymous token; no free-text field) ---
+  resourceType       String
+  resourceId         String?
+  resourceLabId      String?
+  parentResourceType String?
+  parentResourceId   String?
+  patientRef         String?
+
+  // --- Action (verb lives ONLY here) + outcome ---
+  actionCode String
+  detailCode String?
+  outcome    AuditOutcome
+  statusCode Int?
+  errorCode  String?
+  reasonCode String?
+
+  // --- Change evidence (names + hashes only; raw values prohibited) ---
+  changedFields String[]
+  beforeHash    String?
+  afterHash     String?
+
+  // --- Integrity (P2-4; INACTIVE in P2-1, explicit nullable — no tamper claim yet) ---
+  chainId       String?
+  prevHash      String?
+  selfHash      String?
+  hashAlgorithm String?
+
+  // --- Producer attribution + typed metadata ---
+  producerModule String
+  executionId    String?
+  metadata       Json? // typed/bounded per registry contract; validated at the write boundary
+
+  @@index([scopeLabId, recordedAt])
+  @@index([category, recordedAt])
+  @@index([actorId, recordedAt])
+  @@index([resourceType, resourceId])
+  @@index([correlationId])
+  @@index([chainId, sequence])
+  @@index([recordedAt])
+}
