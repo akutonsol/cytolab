@@ -6,7 +6,7 @@
  * Run: npx ts-node prisma/seed-features.ts
  */
 import { PrismaClient } from '@prisma/client';
-import { ALL_FEATURE_KEYS, BUILT_FEATURES, FEATURE_TIERS } from '../src/modules/lab-features/feature-catalog';
+import { ALL_FEATURE_KEYS, BUILT_FEATURES, CONTAINED_FEATURES, FEATURE_TIERS } from '../src/modules/lab-features/feature-catalog';
 
 const prisma = new PrismaClient();
 
@@ -15,10 +15,14 @@ async function main() {
   let created = 0;
   for (const lab of labs) {
     for (const key of ALL_FEATURE_KEYS) {
-      const enabled = BUILT_FEATURES.has(key);
+      const contained = CONTAINED_FEATURES.has(key);
+      const enabled = BUILT_FEATURES.has(key) && !contained;
+      // Contained features (Program 1 · P1-1) are forced OFF on every lab, even if a
+      // prior toggle enabled them — they are not available for clinical use. All other
+      // features keep their existing toggle on update (never clobber a superuser's choice).
       const res = await prisma.labFeature.upsert({
         where: { labId_featureKey: { labId: lab.id, featureKey: key } },
-        update: { tier: FEATURE_TIERS[key] },
+        update: contained ? { tier: FEATURE_TIERS[key], isEnabled: false, enabledAt: null } : { tier: FEATURE_TIERS[key] },
         create: {
           labId: lab.id,
           featureKey: key,

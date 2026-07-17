@@ -64,11 +64,22 @@ export const BUILT_FEATURES: ReadonlySet<FeatureKey> = new Set<FeatureKey>([
   'VOICE_TO_TEXT',
   'RESULT_TEMPLATES',
   'WSI_VIEWER',
-  'AI_SCREENING',
+  // AI_SCREENING intentionally omitted — see CONTAINED_FEATURES below (Program 1 · P1-1).
   'TELECONSULTATION',
   'LOINC_SNOMED',
   'HL7_FHIR',
   'WORKFORCE_MANAGEMENT',
+]);
+
+/**
+ * Features held OFF and unavailable for clinical use, regardless of prior toggle
+ * state. AI_SCREENING is a SIMULATED implementation (Math.random over the human's
+ * own Bethesda entry — no image analysis); it is contained under Program 1 (P1-1)
+ * so it can never be mistaken for real diagnostic AI. Real image inference is
+ * Program 6's responsibility. seed-features forces these disabled on every lab.
+ */
+export const CONTAINED_FEATURES: ReadonlySet<FeatureKey> = new Set<FeatureKey>([
+  'AI_SCREENING',
 ]);
 
 export const ALL_FEATURE_KEYS = Object.keys(FEATURE_TIERS) as FeatureKey[];

@@ -499,7 +499,10 @@ export class SignoutService {
         },
       };
     } catch {
-      return { status: 'error', data: null, reason: 'AI screening failed to load' };
+      // The ai-screening owner is contained (Program 1 · P1-1): diagnostic image analysis
+      // is deliberately unavailable, not a transient failure. Truthful reason; graceful
+      // partial-failure is preserved (this band degrades, the rest of Sign-Out still loads).
+      return { status: 'error', data: null, reason: 'Diagnostic image analysis is not currently available.' };
     }
   }
 

@@ -212,7 +212,7 @@ export default function SignOutWorkspacePage() {
         </div>
         <p className="mt-1 text-sm text-secondary">
           One workspace for reading, evidence, priors, reporting, and sign-out — composed from the
-          existing PathOS surfaces around this case.
+          existing Osieri surfaces around this case.
         </p>
         {showHints && (
           <div role="region" aria-label="Keyboard shortcuts" className="mt-3 flex flex-wrap gap-x-6 gap-y-1.5 rounded-lg border border-lightgray bg-surface-subtle px-3 py-2 text-meta text-text-secondary">
@@ -556,13 +556,21 @@ const aiStatusTone = (s: string): 'success' | 'danger' | 'neutral' =>
 // Nothing here is a diagnosis, a recommendation, or a quantification claim.
 function AIEvidencePanel({ section, loading }: { section?: SignOutCaseAggregate['ai']; loading: boolean }) {
   const d = section?.status === 'ready' ? section.data : null;
+  // Program 1 · P1-1: the ai-screening owner reports diagnostic image analysis as
+  // unavailable (contained). Present that truthfully — not as a load failure — while
+  // preserving the shared status contract for the genuine empty/forbidden states.
+  const unavailable = section?.status === 'error' || section?.status === 'deferred';
   return (
     <EvidenceCard
       title="AI screening"
-      status={section?.status}
+      status={unavailable ? 'empty' : section?.status}
       loading={loading}
-      emptyTitle="No AI screening"
-      emptyDescription="No AI screening result has been recorded for this case."
+      emptyTitle={unavailable ? 'Not available' : 'No AI screening'}
+      emptyDescription={
+        unavailable
+          ? 'Diagnostic image analysis is not currently available.'
+          : 'No AI screening result has been recorded for this case.'
+      }
       badge={d ? <Badge tone={aiStatusTone(d.status)} size="xs">{d.status}</Badge> : null}
     >
       {d && (

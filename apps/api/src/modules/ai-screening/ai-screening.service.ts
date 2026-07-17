@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { LabContext } from '../../common/tenancy/lab-context';
@@ -24,10 +24,31 @@ type Row = Prisma.AIScreeningResultGetPayload<{ select: typeof resultSelect }>;
 
 const SIMULATE_MS = 2000;
 
+// Program 1 · P1-1 containment message. Truthful and consistent across every route.
+const CONTAINMENT_MESSAGE =
+  'AI Screening is a simulated demonstration and is not available for clinical use. No slide-image analysis is performed.';
+
 @Injectable()
 export class AIScreeningService {
   private readonly log = new Logger(AIScreeningService.name);
   constructor(private prisma: PrismaService, private labContext: LabContext) {}
+
+  /**
+   * Hard containment backstop (Program 1 · P1-1). This service produces SIMULATED
+   * screening output (Math.random over the human's own Bethesda entry — no image is
+   * read). It is prohibited from clinical exposure. The controller is also flag-gated,
+   * but this guard is the authoritative boundary: it refuses to generate or serve
+   * simulated results even if the AI_SCREENING flag is (or is later) re-enabled for a
+   * lab. Real image inference is Program 6's responsibility; the code below is
+   * preserved for that future replacement — do NOT re-enable it here.
+   *
+   * Declared `: void` (not `: never`) on purpose: at runtime it always throws, but
+   * typing it as returning keeps the preserved method bodies below reachable for the
+   * type-checker instead of collapsing their inferred types to `never`.
+   */
+  private assertContained(): void {
+    throw new ServiceUnavailableException(CONTAINMENT_MESSAGE);
+  }
 
   private toRow(r: Row) {
     return {
@@ -40,12 +61,14 @@ export class AIScreeningService {
   }
 
   async getByRecord(recordId: string) {
+    this.assertContained();
     const r = await this.prisma.aIScreeningResult.findFirst({ where: { recordId }, select: resultSelect });
     return r ? this.toRow(r) : null;
   }
 
   /** Create or re-run screening for a record: set Processing now, complete after a short delay. */
   async triggerScreening(recordId: string) {
+    this.assertContained();
     const record = await this.prisma.record.findFirst({ where: { id: recordId }, select: { id: true } });
     if (!record) throw new NotFoundException('Record not found');
 
@@ -100,6 +123,7 @@ export class AIScreeningService {
   }
 
   async review(id: string, dto: ReviewScreeningDto, userId: string) {
+    this.assertContained();
     const r = await this.prisma.aIScreeningResult.findFirst({ where: { id }, select: { id: true } });
     if (!r) throw new NotFoundException('Screening result not found');
     return this.prisma.aIScreeningResult
@@ -109,6 +133,7 @@ export class AIScreeningService {
 
   /** Completed results not yet reviewed — lowest confidence first (most need a human). */
   async queue() {
+    this.assertContained();
     const rows = await this.prisma.aIScreeningResult.findMany({
       where: { status: 'Completed', reviewedAt: null },
       select: resultSelect,
@@ -119,6 +144,7 @@ export class AIScreeningService {
   }
 
   async analytics() {
+    this.assertContained();
     const completed = await this.prisma.aIScreeningResult.findMany({
       where: { status: 'Completed' },
       select: { confidence: true, confidenceLevel: true, agreedWithAI: true, reviewedAt: true, processedAt: true, createdAt: true, record: { select: { formType: true } } },
