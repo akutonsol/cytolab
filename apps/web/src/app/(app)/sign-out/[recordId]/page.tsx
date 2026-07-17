@@ -562,14 +562,14 @@ function AIEvidencePanel({ section, loading }: { section?: SignOutCaseAggregate[
   const unavailable = section?.status === 'error' || section?.status === 'deferred';
   return (
     <EvidenceCard
-      title="AI screening"
+      title="Diagnostic image analysis"
       status={unavailable ? 'empty' : section?.status}
       loading={loading}
-      emptyTitle={unavailable ? 'Not available' : 'No AI screening'}
+      emptyTitle={unavailable ? 'Not available' : 'None recorded'}
       emptyDescription={
         unavailable
           ? 'Diagnostic image analysis is not currently available.'
-          : 'No AI screening result has been recorded for this case.'
+          : 'No diagnostic image analysis has been recorded for this case.'
       }
       badge={d ? <Badge tone={aiStatusTone(d.status)} size="xs">{d.status}</Badge> : null}
     >

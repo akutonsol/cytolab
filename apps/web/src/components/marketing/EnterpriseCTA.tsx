@@ -118,7 +118,7 @@ export function EnterpriseCTA() {
           </h2>
 
           <p className={`${s.paragraph} ${s.reveal}`} style={{ transitionDelay: '280ms' }}>
-            CYTOLAB connects AI screening, specimen management, reporting, and laboratory operations
+            CYTOLAB connects specimen management, reporting, and laboratory operations
             into one intelligent platform designed for enterprise pathology.
           </p>
 

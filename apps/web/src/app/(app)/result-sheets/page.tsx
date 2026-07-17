@@ -534,7 +534,7 @@ export default function ResultSheetsPage() {
                 <li>Avg readiness: <span className="font-semibold text-white">{aiAvg}%</span></li>
               </ul>
             )}
-            <button onClick={() => { setConfF('Low'); setTab('all'); }} className="mt-4 bg-transparent text-[13px] font-semibold text-white hover:underline">View AI Recommendations →</button>
+            <button onClick={() => { setConfF('Low'); setTab('all'); }} className="mt-4 bg-transparent text-[13px] font-semibold text-white hover:underline">View low-readiness →</button>
           </div>
 
           <Card radius="sm" elevation="sm" border="subtle" className="p-5">

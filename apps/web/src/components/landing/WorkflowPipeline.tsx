@@ -55,7 +55,7 @@ export function WorkflowPipeline() {
         <div className="lwf-case">
           <span className="lwf-case-live"><i /> LIVE CASE</span>
           <span className="lwf-case-id">CY-24-1187</span>
-          <span className="lwf-case-note">Cervical cytology · AI screening in progress</span>
+          <span className="lwf-case-note">Cervical cytology · in review</span>
         </div>
         <div className="lwf-eta">
           <Clock3 size={14} />
