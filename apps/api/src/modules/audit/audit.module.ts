@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { PrismaModule } from '../../database/prisma.module';
 import { AuditPersistenceService } from './audit-persistence.service';
 import { AuditChainService } from './audit-chain.service';
+import { AuditVerificationService } from './audit-verification.service';
 import { AuditRecorder } from './audit-recorder.service';
 
 /**
@@ -19,7 +20,7 @@ import { AuditRecorder } from './audit-recorder.service';
 @Global()
 @Module({
   imports: [PrismaModule],
-  providers: [AuditPersistenceService, AuditChainService, AuditRecorder],
+  providers: [AuditPersistenceService, AuditChainService, AuditVerificationService, AuditRecorder],
   exports: [AuditRecorder],
 })
 export class AuditModule {}
