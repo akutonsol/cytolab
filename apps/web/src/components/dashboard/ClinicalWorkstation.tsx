@@ -38,8 +38,8 @@ export function ClinicalWorkstation({
   const [showTimeline, setShowTimeline] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [comments, setComments] = useState([
-    { author: 'AI Triage', text: 'Atypical squamous cells flagged — recommend cytotech review.', time: '08:43 AM' },
-    { author: 'Dr. Bailey', text: 'Agree — prioritizing this case for review this shift.', time: '08:51 AM' },
+    { author: 'Workflow', text: 'Case entered the review queue.', time: '08:43 AM' },
+    { author: 'Dr. Bailey', text: 'Prioritizing this case for review this shift.', time: '08:51 AM' },
   ]);
   const [draft, setDraft] = useState('');
   const postComment = () => {
@@ -133,9 +133,9 @@ export function ClinicalWorkstation({
   };
 
   const workflowSteps = [
-    { label: 'Uploaded', time: '08:35 AM', state: 'done' },
-    { label: 'Scanning', time: 'LIVE', state: 'active' },
-    { label: 'AI Complete', time: '08:43 AM', state: 'pending' },
+    { label: 'Accessioned', time: '08:35 AM', state: 'done' },
+    { label: 'Processing', time: 'In progress', state: 'active' },
+    { label: 'Draft assist', time: '08:43 AM', state: 'pending' },
     { label: 'Human Review', time: 'Pending', state: 'pending' },
     { label: 'Authorization', time: '—', state: 'pending' },
     { label: 'Released', time: '—', state: 'pending' },
@@ -190,7 +190,7 @@ export function ClinicalWorkstation({
             <span className="text-white font-bold text-[13px]">CYTOLAB</span>
           </div>
           <div className="w-px h-4 bg-white/10" />
-          <span className="text-white/60 text-[12px] font-medium">AI Diagnostic Workspace</span>
+          <span className="text-white/60 text-[12px] font-medium">Case Workspace</span>
           <div className="px-2.5 py-1 bg-indigo-600 rounded-full text-white text-[11px] font-bold">
             Focus Mode
           </div>
@@ -441,7 +441,7 @@ export function ClinicalWorkstation({
         >
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/8">
             <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              AI Cytology Model
+              Case Overview
             </span>
           </div>
           <div {...panAreaProps}>
@@ -477,7 +477,7 @@ export function ClinicalWorkstation({
         >
           <div className="px-4 py-2.5 border-b border-white/8">
             <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              AI Findings
+              AI Draft Assist
             </span>
           </div>
           <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden' }}>
@@ -691,7 +691,7 @@ export function ClinicalWorkstation({
             style={{ height: '52px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15,17,30,0.96)' }}>
             <div className="flex items-center gap-3">
               <div className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
-              <span style={{ fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>AI Cytology Model</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>Case Overview</span>
               <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Expanded view</span>
             </div>
             <button onClick={() => setModelExpanded(false)}
