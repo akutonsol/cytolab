@@ -64,7 +64,7 @@ export default function IntegrationHealthPage() {
             Integration Health
           </h1>
           <p className="mt-1 text-sm text-secondary">
-            Whether PathOS is reliably delivering data across its external interfaces — from real
+            Whether Osieri is reliably delivering data across its external interfaces — from real
             transmission and connection signals only.
           </p>
         </div>

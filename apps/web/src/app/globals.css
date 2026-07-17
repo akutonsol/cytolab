@@ -528,7 +528,11 @@
   to   { transform: none; }
 }
 .helix-page {
-  animation: helix-page-enter var(--duration-base) var(--ease-emphasized) both;
+  /* `backwards` (not `both`): the entrance still rises, but no transform is RETAINED
+     after it finishes. A lingering transform (even the identity matrix left by `both`)
+     makes this element the containing block for `position: fixed`, which mispositions
+     every in-app modal/overlay (New Sample chooser, confirm dialogs) off-screen. */
+  animation: helix-page-enter var(--duration-base) var(--ease-emphasized) backwards;
 }
 
 /* Table rows arrive. Staggered by the caller via `animation-delay`, capped: a delay
@@ -693,6 +697,7 @@ html,
 body {
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
 }
 body {
   font-family: var(--font-family);
@@ -780,47 +785,61 @@ select option {
   background: transparent;
 }
 
-/* ── Popup form scrollbars (sitewide) ── Modal/Drawer bodies scroll, but the
-   default overlay scrollbar is thin and auto-hides, so it's hard to grab. Make it
-   an always-visible, wide, high-contrast thumb the user can click/drag up & down.
+/* ── Popup form scrollbars (sitewide) ── Modal/Drawer bodies scroll. A clean, slim indigo
+   pill that is HIDDEN at rest and reveals when the pointer is over the panel (strongest on
+   the thumb itself). Chrome ≥121 ignores `::-webkit-scrollbar` whenever `scrollbar-width`
+   is a non-`auto` value, and antd injects `scrollbar-width: thin` on these panels at
+   runtime — so we first reset it to `auto` (below) to re-enable the webkit customization.
    Applies to every AntD Modal/Drawer form across the app. */
 .ant-modal-body,
 .ant-modal-wrap,
 .ant-drawer-body,
 .ds-form-scroll {
-  scrollbar-width: auto; /* Firefox: classic (not thin/overlay) */
-  scrollbar-color: rgba(79, 70, 229, 0.55) rgba(15, 23, 42, 0.06);
+  /* antd injects `scrollbar-width: thin` + `scrollbar-color` on these at runtime, and
+     Chrome ≥121 IGNORES every `::-webkit-scrollbar` rule below when `scrollbar-width` is
+     a non-`auto` value — reverting the panel to the invisible 0-px overlay scrollbar.
+     Reset both to their initial (`auto`) to re-enable the webkit customization. */
+  scrollbar-width: auto !important;
+  scrollbar-color: auto !important;
 }
 .ant-modal-body::-webkit-scrollbar,
 .ant-modal-wrap::-webkit-scrollbar,
 .ant-drawer-body::-webkit-scrollbar,
 .ds-form-scroll::-webkit-scrollbar {
-  width: 14px;
-  height: 14px;
+  width: 14px !important;
+  height: 14px !important;
 }
 .ant-modal-body::-webkit-scrollbar-track,
 .ant-modal-wrap::-webkit-scrollbar-track,
 .ant-drawer-body::-webkit-scrollbar-track,
 .ds-form-scroll::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.05);
-  border-radius: 10px;
+  background: transparent !important;
 }
+/* Hidden at rest. The 5px transparent border keeps the visible pill slim (~4px) while the
+   14px track stays an easy hover/hit target; rounded so it reads as a clean pill. */
 .ant-modal-body::-webkit-scrollbar-thumb,
 .ant-modal-wrap::-webkit-scrollbar-thumb,
 .ant-drawer-body::-webkit-scrollbar-thumb,
 .ds-form-scroll::-webkit-scrollbar-thumb {
-  background: rgba(79, 70, 229, 0.5);
-  border-radius: 10px;
-  border: 3px solid transparent;
+  background: transparent !important;
+  border-radius: 999px;
+  border: 5px solid transparent;
   background-clip: padding-box;
-  min-height: 40px; /* easy to grab */
+  min-height: 40px;
 }
+/* Reveal as a slim indigo pill when the pointer is over the panel */
+.ant-modal-body:hover::-webkit-scrollbar-thumb,
+.ant-modal-wrap:hover::-webkit-scrollbar-thumb,
+.ant-drawer-body:hover::-webkit-scrollbar-thumb,
+.ds-form-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(79, 70, 229, 0.38) !important;
+}
+/* Stronger while pointing at / dragging the thumb itself */
 .ant-modal-body::-webkit-scrollbar-thumb:hover,
 .ant-modal-wrap::-webkit-scrollbar-thumb:hover,
 .ant-drawer-body::-webkit-scrollbar-thumb:hover,
 .ds-form-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(79, 70, 229, 0.8);
-  background-clip: padding-box;
+  background: rgba(79, 70, 229, 0.62) !important;
 }
 
 /* ============================================================
@@ -1682,6 +1701,47 @@ select option {
   .page-container { padding-inline: var(--page-padding-mobile); }
 }
 
+/* ── Global presentation scale ───────────────────────────────────────────────
+   The product type scale is dense (a lot of 11–14px text), which reads as small.
+   This uniformly enlarges the AUTHENTICATED app (browser-zoom style) so text,
+   spacing and overlays all grow together — the design is preserved, just bigger.
+
+   Scoped to `body:has(.premium-scroll)` — `.premium-scroll` is the app shell, so the
+   marketing/landing pages, login and the client portal (which have no such shell) are
+   left untouched. Portaled overlays (modals, drawers, toasts, menus) live under <body>,
+   so they scale with it. `.premium-scroll` is a 100vh scroll frame; its height is
+   divided back by the zoom so the enlarged frame still fits the viewport exactly. Tune
+   the whole app via `--app-zoom` (1 = off). */
+:root { --app-zoom: 1.07; --nav-scale: 0.92; }
+body:has(.app-shell) { zoom: var(--app-zoom); }
+/* Only the app SHELL (the 100vh scroll frame) is height-compensated so the enlarged frame
+   still fits the viewport. `.premium-scroll` is a shared scrollbar utility (also on modals
+   and drawers), so this must NOT target it — else those panels get forced to full height. */
+body:has(.app-shell) .app-shell { height: calc(100vh / var(--app-zoom)) !important; }
+/* The navigation chrome sits BELOW the content scale — counter the app zoom and apply
+   `--nav-scale` (1 = original size, <1 = more compact) to the top bar and the mobile nav
+   drawer (the side nav), so the page content is enlarged while the nav stays tight. */
+body:has(.app-shell) .top-navigation,
+body:has(.app-shell) .app-nav-drawer { zoom: calc(var(--nav-scale) / var(--app-zoom)); }
+/* Dropdown navigation menus (nav groups, quick-add, account, row kebabs): smaller item text
+   than the app-wide antd fontSize (16). !important overrides antd's runtime CSS-in-JS. */
+.ant-dropdown-menu .ant-dropdown-menu-item,
+.ant-dropdown-menu .ant-dropdown-menu-item .ant-dropdown-menu-title-content { font-size: 14px !important; }
+
+/* Top-nav group dropdowns only (rootClassName="nav-group-menu"): the item for the page the
+   user is on keeps a persistent grey highlight — the SAME grey as hover — so they can see
+   where they are at a glance. antd's default "selected" style is a blue tint + blue text;
+   we neutralise it to the hover grey and keep the text colour normal. Hover on every other
+   item is unchanged. !important beats antd's runtime CSS-in-JS. */
+.nav-group-menu .ant-dropdown-menu-item-selected {
+  background-color: rgba(0, 0, 0, 0.04) !important; /* = antd controlItemBgHover */
+  color: inherit !important;
+  font-weight: 600;
+}
+.nav-group-menu .ant-dropdown-menu-item-selected:hover {
+  background-color: rgba(0, 0, 0, 0.06) !important; /* stays grey (slightly deeper) on hover */
+}
+
 .navigation {
   width: 100%;
   height: 92px;
@@ -1884,19 +1944,22 @@ select option {
 
 .notification-dot {
   position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
+  top: -5px;
+  right: -6px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 999px;
   background: #ff4d4f;
   color: white;
-  font-size: 11px;
+  font-size: 11.5px;
+  line-height: 1;
   font-weight: 700;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 2px solid white;
+  box-sizing: border-box;
 }
 
 /* Dashboard AI Cytology Model — very subtle breathing glow. */
@@ -1959,7 +2022,8 @@ select option {
 }
 @media (max-width: 560px) {
   .hero-grid { padding: 64px 24px 40px !important; }
-  .hero-headline { font-size: clamp(40px, 12vw, 56px); }
+  /* Smaller floor so the longest line ("Unified pathology.") fits a phone without clipping. */
+  .hero-headline { font-size: clamp(28px, 8vw, 56px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

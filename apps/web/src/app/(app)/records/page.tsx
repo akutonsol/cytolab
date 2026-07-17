@@ -17,7 +17,7 @@ import { useFeatures } from '@/lib/feature-context';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import type { FormType } from '@/lib/specimen-types';
-import { Card, Button, IconAction, SkeletonStat, SkeletonRows, SkeletonText } from '@/components/ui';
+import { Card, Button, IconAction, SkeletonStat, SkeletonRows, SkeletonText, Portal } from '@/components/ui';
 import { notify } from '@/lib/notify';
 
 interface Rec {
@@ -143,7 +143,7 @@ function KpiCard({ icon, iconClass, label, value, sub, subColor, spark, sparkDat
             <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${iconClass}`}>{icon}</span>
             <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{label}</span>
           </div>
-          <div className="mt-2 text-3xl font-bold leading-none text-charcoal-heading">{value}</div>
+          <div className="mt-2 whitespace-nowrap text-3xl font-bold leading-none text-charcoal-heading">{value}</div>
           <div className="mt-1.5 text-[11px] font-semibold" style={{ color: subColor }}>{sub}</div>
         </div>
         <Sparkline color={spark} data={sparkData} />
@@ -599,8 +599,9 @@ export default function SamplesPage() {
         </div>
       </div>
 
-      {/* New Sample chooser */}
+      {/* New Sample chooser — portaled to <body> so no wrapper transform can mis-position it. */}
       {chooseOpen && (
+        <Portal>
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setChooseOpen(false)}>
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="text-lg font-bold text-charcoal-heading">New sample</div>
@@ -614,9 +615,11 @@ export default function SamplesPage() {
             </div>
           </div>
         </div>
+        </Portal>
       )}
 
       {confirmDel && (
+        <Portal>
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setConfirmDel(null)}>
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-1 flex items-center justify-between"><h3 className="text-lg font-bold text-charcoal-heading">Delete this sample?</h3><IconAction icon={<X size={16} />} onClick={() => setConfirmDel(null)} /></div>
@@ -624,6 +627,7 @@ export default function SamplesPage() {
             <div className="mt-5 flex justify-end gap-2"><Button variant="secondary" onClick={() => setConfirmDel(null)}>Cancel</Button><Button style={{ background: 'var(--red-600)' }} loading={del.isPending} loadingLabel="Deleting…" onClick={() => del.mutate(confirmDel.id)}>Delete</Button></div>
           </div>
         </div>
+        </Portal>
       )}
 
       {drawer && <RecordFormDrawer open onClose={() => { setDrawer(null); qc.invalidateQueries({ queryKey: ['records-all'] }); }} formType={drawer.formType} recordId={drawer.recordId} />}

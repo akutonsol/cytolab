@@ -23,7 +23,7 @@ export function SecurityPage({
 }) {
   const router = useRouter();
   return (
-    <div className="mx-auto w-full max-w-[1200px]">
+    <div className="w-full">
       <div className="mb-5 flex items-center gap-3">
         {back && (
           <IconAction icon={<ArrowLeft size={16} />} size="lg" hover={false} className="border border-slate-200 bg-white hover:text-slate-900" onClick={() => router.push(back)} aria-label="Back" />

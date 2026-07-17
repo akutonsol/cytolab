@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
-import { Card, IconAction, SkeletonRows } from '@/components/ui';
+import { Card, IconAction, PageHeader, SkeletonRows } from '@/components/ui';
 import { notify } from '@/lib/notify';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -155,6 +155,7 @@ function BillingWorkspace() {
 
   return (
     <div className="min-h-full py-6" style={{ background: 'var(--background)' }}>
+      <PageHeader title="Billing" description="Invoices, collections, and lab financial health." />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.75fr_1fr]">
         {/* ══ LEFT COLUMN ══ */}
         <div className="flex min-w-0 flex-col gap-6">
@@ -168,7 +169,7 @@ function BillingWorkspace() {
               { n: pendingCount, label: 'Pending', circle: 'var(--color-primary)' },
             ].map((p) => (
               <Card radius="lg" elevation="raised" border="hairline" className="flex items-center gap-4 p-5" key={p.label}>
-                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full text-[22px] font-extrabold text-white" style={{ background: p.circle, fontFamily: 'Geist,sans-serif' }}>{p.n}</div>
+                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full text-[22px] font-extrabold text-white" style={{ background: p.circle }}>{p.n}</div>
                 <span className="text-[17px] font-semibold text-[var(--slate-900)]">{p.label}</span>
               </Card>
             ))}
@@ -259,7 +260,7 @@ function BillingWorkspace() {
           {/* Financial health */}
           <Card radius="lg" elevation="raised" border="hairline" className="overflow-hidden">
             <div style={{ background: 'linear-gradient(135deg,var(--indigo-50) 0%,var(--status-success-soft) 100%)', padding: 32 }}>
-              <div className="text-[30px] font-bold leading-tight text-[var(--slate-900)]" style={{ fontFamily: 'Geist,sans-serif' }}>Good morning, {firstName}</div>
+              <div className="text-[30px] font-bold leading-tight text-[var(--slate-900)]">Good morning, {firstName}</div>
               <div className="mt-1.5 text-[16px] text-[var(--slate-600)]">Here is your lab financial health</div>
               <div className="mt-5 inline-flex gap-1 rounded-full bg-white/70 p-1">
                 {([['month', 'This Month'], ['last', 'Last Month'], ['ytd', 'YTD']] as const).map(([v, l]) => (
@@ -292,7 +293,7 @@ function BillingWorkspace() {
 
           {/* Payment History (under the stats cards) */}
           <Card radius="lg" elevation="raised" border="hairline" className="p-6">
-            <div className="text-[18px] font-bold text-[var(--slate-900)]" style={{ fontFamily: 'Geist,sans-serif' }}>Payment History</div>
+            <div className="text-[18px] font-bold text-[var(--slate-900)]">Payment History</div>
             <div className="mt-1.5 text-[14px] text-[var(--slate-600)]">You have made {onTimePct}% of payments on time.</div>
             <div className="mt-6 overflow-x-auto">
               <div className="inline-block">
@@ -392,7 +393,7 @@ function CollectionGauge({ rate, delta }: { rate: number; delta: number }) {
         {delta !== 0 && (
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: delta > 0 ? 'var(--status-success-soft)' : 'var(--status-danger-soft)', color: delta > 0 ? 'var(--status-success-strong)' : 'var(--status-danger-strong)', borderRadius: 999, padding: '3px 12px', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)} pts</div>
         )}
-        <div style={{ fontSize: 56, fontWeight: 800, color: 'var(--slate-900)', fontFamily: 'Geist,sans-serif', lineHeight: 1 }}>{rate}%</div>
+        <div style={{ fontSize: 56, fontWeight: 800, color: 'var(--slate-900)', lineHeight: 1 }}>{rate}%</div>
         {rate === 0 && (
           <div style={{ fontSize: 11, color: 'var(--slate-600)', marginTop: 4, textAlign: 'center', maxWidth: 120, marginLeft: 'auto', marginRight: 'auto' }}>No payments recorded yet</div>
         )}
@@ -420,7 +421,7 @@ function MetricCard({ title, value, tone, badge, sub, onClick }: { title: string
         <ArrowUpRight size={17} className="text-[var(--slate-600)]" />
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-2.5">
-        <span className="text-[30px] font-extrabold leading-none text-[var(--slate-900)]" style={{ fontFamily: 'Geist,sans-serif' }}>{value}</span>
+        <span className="text-[30px] font-extrabold leading-none text-[var(--slate-900)]">{value}</span>
         <ImpactBadge tone={tone} text={badge} />
       </div>
       <div className="mt-2.5 text-[13px] leading-snug text-[var(--slate-600)]">{sub}</div>

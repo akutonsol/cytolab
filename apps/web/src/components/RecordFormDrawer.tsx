@@ -69,9 +69,11 @@ interface Props {
   formType: FormType;
   /** When set, the drawer edits this record instead of creating a new one. */
   recordId?: string;
+  /** When set (create mode), preselects this patient — e.g. opened from a patient's page. */
+  initialPatientId?: string;
 }
 
-export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
+export function RecordFormDrawer({ open, onClose, formType, recordId, initialPatientId }: Props) {
   const { modal } = App.useApp();
   const qc = useQueryClient();
   const [form] = Form.useForm();
@@ -117,8 +119,8 @@ export function RecordFormDrawer({ open, onClose, formType, recordId }: Props) {
     if (!open) return;
     if (isEdit) return; // edit prefill is handled once the record loads
     form.resetFields();
-    form.setFieldsValue({ specimenDate: dayjs(), urgent: false, specimenTypes: [] });
-  }, [open, isEdit, form]);
+    form.setFieldsValue({ specimenDate: dayjs(), urgent: false, specimenTypes: [], ...(initialPatientId ? { patientId: initialPatientId } : {}) });
+  }, [open, isEdit, form, initialPatientId]);
 
   // Auto-draft (create mode): the SessionTimeoutProvider flushes these values to a
   // local draft right before an idle timeout, so work-in-progress is never lost.

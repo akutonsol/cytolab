@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Bell, CalendarOff, Check, CheckCircle2, ChevronRight, Clock, DollarSign, ExternalLink,
-  FileClock, FlaskConical, Inbox, MessageSquare, MoreHorizontal, SlidersHorizontal, X, XCircle,
+  Archive, Bell, CalendarOff, Check, CheckCircle2, ChevronRight, Clock, DollarSign, ExternalLink,
+  FileClock, FlaskConical, Inbox, MessageSquare, RotateCcw, Trash2, X, XCircle,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -21,16 +21,17 @@ interface UItem {
   title: string;
   body: string;
   read: boolean;
+  archived: boolean;
   createdAt: string;
   entityId: string | null;
   entityType: string | null;
   link: string | null;
 }
-interface SysNotif { id: string; type: string; title: string; body: string; read: boolean; link?: string | null; entityId?: string | null; entityType?: string | null; createdAt: string }
-interface WfNotif { id: string; type: string; title: string; body: string; isRead: boolean; relatedEntityId: string | null; relatedEntityType: string | null; createdAt: string }
+interface SysNotif { id: string; type: string; title: string; body: string; read: boolean; archived?: boolean; link?: string | null; entityId?: string | null; entityType?: string | null; createdAt: string }
+interface WfNotif { id: string; type: string; title: string; body: string; isRead: boolean; archived?: boolean; relatedEntityId: string | null; relatedEntityType: string | null; createdAt: string }
 
-const normSys = (n: SysNotif): UItem => ({ id: n.id, source: 'sys', type: n.type, title: n.title, body: n.body, read: n.read, createdAt: n.createdAt, entityId: n.entityId ?? null, entityType: n.entityType ?? null, link: n.link ?? null });
-const normWf = (n: WfNotif): UItem => ({ id: n.id, source: 'wf', type: n.type, title: n.title, body: n.body, read: n.isRead, createdAt: n.createdAt, entityId: n.relatedEntityId, entityType: n.relatedEntityType, link: null });
+const normSys = (n: SysNotif): UItem => ({ id: n.id, source: 'sys', type: n.type, title: n.title, body: n.body, read: n.read, archived: n.archived ?? false, createdAt: n.createdAt, entityId: n.entityId ?? null, entityType: n.entityType ?? null, link: n.link ?? null });
+const normWf = (n: WfNotif): UItem => ({ id: n.id, source: 'wf', type: n.type, title: n.title, body: n.body, read: n.isRead, archived: n.archived ?? false, createdAt: n.createdAt, entityId: n.relatedEntityId, entityType: n.relatedEntityType, link: null });
 
 // ── Category grouping (Records / Requests / Payments; everything else → All) ─────
 const CAT_RECORDS = ['SPECIMEN_RECEIVED', 'RESULT_READY', 'AUTHORIZATION_REQUIRED', 'RECORD_SUBMITTED', 'RECORD_RESULTED', 'RECORD_APPROVED', 'RECORD_FAILED', 'AUTHORIZATION_NEEDED'];
@@ -109,7 +110,7 @@ function bucketOf(iso: string): 'Today' | 'Yesterday' | 'This Week' | 'Earlier' 
   return 'Earlier';
 }
 const BUCKETS = ['Today', 'Yesterday', 'This Week', 'Earlier'] as const;
-const TABS = [['all', 'All'], ['unread', 'Unread'], ['records', 'Records'], ['requests', 'Requests'], ['payments', 'Payments']] as const;
+const TABS = [['all', 'All'], ['unread', 'Unread'], ['records', 'Records'], ['requests', 'Requests'], ['payments', 'Payments'], ['archive', 'Archive']] as const;
 
 export default function NotificationsPage() {
   const router = useRouter();
@@ -122,7 +123,7 @@ export default function NotificationsPage() {
     (page: number, pageSize: number) => api.get('/notifications', { params: { page, pageSize } }).then((r) => r.data),
     [],
   );
-  const { items: sysRaw, loading, initialLoading, hasMore, sentinelRef } = useInfiniteScroll<SysNotif>({ fetchFn, pageSize: 20 });
+  const { items: sysRaw, loading, initialLoading, hasMore, sentinelRef, reset: resetSys } = useInfiniteScroll<SysNotif>({ fetchFn, pageSize: 20 });
 
   // Workforce notifications — flat array (≤100), feature-gated (fail soft → []).
   const { data: wfRaw = [] } = useQuery({
@@ -130,11 +131,45 @@ export default function NotificationsPage() {
     queryFn: () => api.get('/workforce/notifications').then((r) => r.data as WfNotif[]).catch(() => [] as WfNotif[]),
   });
 
+  // Archived (cleared) notifications — both sources. Fetched up-front so the Archive tab
+  // count is available; server excludes these from the active list and the bell badge.
+  const { data: sysArchived = [] } = useQuery({
+    queryKey: ['notifications-archived'],
+    queryFn: () => api.get('/notifications', { params: { archived: true, page: 1, pageSize: 100 } }).then((r) => (r.data.data ?? []) as SysNotif[]),
+  });
+  const { data: wfArchived = [] } = useQuery({
+    queryKey: ['wf-notifications-archived'],
+    queryFn: () => api.get('/workforce/notifications', { params: { archived: true } }).then((r) => r.data as WfNotif[]).catch(() => [] as WfNotif[]),
+  });
+
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['notifications'] });
     qc.invalidateQueries({ queryKey: ['wf-notifications-page'] });
     qc.invalidateQueries({ queryKey: ['notifications-unread'] });
   };
+  const invalidateAll = () => {
+    // The active System list is a local-state infinite scroll (React Query invalidation
+    // does not reach it), so refetch it explicitly to drop/restore the moved item.
+    resetSys();
+    invalidate();
+    qc.invalidateQueries({ queryKey: ['notifications-archived'] });
+    qc.invalidateQueries({ queryKey: ['wf-notifications-archived'] });
+  };
+  const archiveM = useMutation({
+    mutationFn: (n: UItem) => (n.source === 'wf' ? api.patch(`/workforce/notifications/${n.id}/archive`) : api.put(`/notifications/${n.id}/archive`)),
+    onSuccess: () => { invalidateAll(); notify.success('Notification cleared to Archive'); },
+    onError: (e) => notify.error(errorMessage(e, 'Could not clear that notification.')),
+  });
+  const unarchiveM = useMutation({
+    mutationFn: (n: UItem) => (n.source === 'wf' ? api.patch(`/workforce/notifications/${n.id}/unarchive`) : api.put(`/notifications/${n.id}/unarchive`)),
+    onSuccess: () => { invalidateAll(); notify.success('Notification restored'); },
+    onError: (e) => notify.error(errorMessage(e, 'Could not restore that notification.')),
+  });
+  const removeM = useMutation({
+    mutationFn: (n: UItem) => (n.source === 'wf' ? api.delete(`/workforce/notifications/${n.id}`) : api.delete(`/notifications/${n.id}`)),
+    onSuccess: () => { invalidateAll(); notify.success('Notification deleted'); },
+    onError: (e) => notify.error(errorMessage(e, 'Could not delete that notification.')),
+  });
   const markRead = useMutation({
     mutationFn: (n: UItem) => (n.source === 'wf' ? api.patch(`/workforce/notifications/${n.id}/read`) : api.put(`/notifications/${n.id}/read`)),
     /**
@@ -177,19 +212,25 @@ export default function NotificationsPage() {
     () => [...wfRaw.map(normWf), ...sysRaw.map(normSys)].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
     [wfRaw, sysRaw],
   );
+  const mergedArchived = useMemo(
+    () => [...wfArchived.map(normWf), ...sysArchived.map(normSys)].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
+    [wfArchived, sysArchived],
+  );
   const counts = useMemo(() => ({
     all: merged.length,
     unread: merged.filter((n) => !n.read).length,
     records: merged.filter((n) => categoryOf(n.type) === 'records').length,
     requests: merged.filter((n) => categoryOf(n.type) === 'requests').length,
     payments: merged.filter((n) => categoryOf(n.type) === 'payments').length,
-  }), [merged]);
+    archive: mergedArchived.length,
+  }), [merged, mergedArchived]);
 
   const shown = useMemo(() => {
+    if (tab === 'archive') return mergedArchived;
     if (tab === 'unread') return merged.filter((n) => !n.read);
     if (tab === 'all') return merged;
     return merged.filter((n) => categoryOf(n.type) === tab);
-  }, [merged, tab]);
+  }, [merged, mergedArchived, tab]);
 
   const grouped = useMemo(() => {
     const g: Record<string, UItem[]> = { Today: [], Yesterday: [], 'This Week': [], Earlier: [] };
@@ -197,31 +238,38 @@ export default function NotificationsPage() {
     return g;
   }, [shown]);
 
-  const selected = merged.find((n) => n.id === selectedId) ?? null;
-  // Default-select the most recent notification so the detail panel is populated
-  // on load (matches the reference). Selecting does NOT mark read — that's the
-  // explicit "Mark as read" action.
-  useEffect(() => { if (!selectedId && merged.length > 0) setSelectedId(merged[0].id); }, [merged, selectedId]);
+  // Prefer the current tab's copy so an item shown in the Archive tab resolves to its
+  // archived version (Restore/Delete actions) rather than a stale active-list copy.
+  const selected = (tab === 'archive' ? [...mergedArchived, ...merged] : [...merged, ...mergedArchived]).find((n) => n.id === selectedId) ?? null;
+  // Keep a notification selected so the detail panel is populated. Re-selects the first of
+  // the current tab on load, on tab switch, and when the selected item leaves the list
+  // (e.g. after it is cleared/restored/deleted). Selecting does NOT mark read.
+  useEffect(() => {
+    if (shown.length === 0) return;
+    if (!selectedId || !shown.some((n) => n.id === selectedId)) setSelectedId(shown[0].id);
+  }, [shown, selectedId]);
   const openDetail = (n: UItem) => setSelectedId(n.id);
 
   return (
     <div className="flex h-full min-h-0 gap-6">
       {/* ── Left: list ── */}
       <div className="flex min-w-0 flex-1 flex-col">
+        {/* Header + tabs stick below the top nav as the page scrolls, so the title, "Mark all
+            as read" and the tab filters stay reachable. Canvas background (#F8F9FD, the app
+            shell colour) so the list card scrolls cleanly underneath. */}
+        <div className="sticky z-20 pb-4" style={{ top: 'var(--notif-detail-top, 120px)', background: '#F8F9FD' }}>
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-[30px] font-bold leading-tight tracking-tight text-charcoal-heading">Notifications</h1>
             <p className="mt-1 text-sm text-secondary">Stay updated with everything that matters.</p>
           </div>
           <div className="flex items-center gap-2">
-            <button className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"><SlidersHorizontal size={15} /> Filter</button>
             <button onClick={() => markAll.mutate()} disabled={markAll.isPending || counts.unread === 0} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"><Check size={15} /> Mark all as read</button>
-            <IconAction icon={<MoreHorizontal size={16} />} size="lg" shape="soft" className="hover:bg-slate-50 border border-slate-200 bg-white" aria-label="More options" />
           </div>
         </div>
 
         {/* Tab pills */}
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
           {TABS.map(([key, label]) => {
             const active = tab === key;
             const n = counts[key as keyof typeof counts];
@@ -233,6 +281,7 @@ export default function NotificationsPage() {
               </button>
             );
           })}
+        </div>
         </div>
 
         {/* List */}
@@ -250,18 +299,32 @@ export default function NotificationsPage() {
                 {grouped[b].map((n) => {
                   const ic = iconFor(n.type);
                   const isSel = n.id === selectedId;
+                  // Quick actions revealed on row hover: Clear (active) or Restore + Delete (archive).
+                  // Wrapped in a div so the actions aren't nested inside the row's <button>.
                   return (
-                    <button key={`${n.source}-${n.id}`} onClick={() => openDetail(n)}
-                      className={`flex w-full items-start gap-3.5 border-b border-slate-100 px-5 py-4 text-left transition-colors ${isSel ? '' : 'bg-white hover:bg-slate-50'}`}
-                      style={isSel ? { background: '#F5F6FF', borderLeft: '3px solid #4F46E5', paddingLeft: 'calc(1.25rem - 3px)' } : undefined}>
-                      <span style={{ background: ic.bg, color: ic.fg }} className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl"><ic.Icon size={18} /></span>
-                      <span className="min-w-0 flex-1">
-                        <span className={`block truncate text-sm ${n.read ? 'font-medium text-slate-600' : 'font-bold text-charcoal-heading'}`}>{n.title}</span>
-                        <span className="mt-0.5 block truncate text-[13px] text-slate-500">{n.body}</span>
-                        <span className="mt-1 block text-[11px] text-slate-400">{relTime(n.createdAt)}</span>
-                      </span>
-                      {!n.read && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />}
-                    </button>
+                    <div key={`${n.source}-${n.id}`} className="group relative border-b border-slate-100">
+                      <button onClick={() => openDetail(n)}
+                        className={`flex w-full items-start gap-3.5 px-5 py-4 pr-16 text-left transition-colors ${isSel ? '' : 'bg-white hover:bg-slate-50'}`}
+                        style={isSel ? { background: '#F5F6FF', borderLeft: '3px solid #4F46E5', paddingLeft: 'calc(1.25rem - 3px)' } : undefined}>
+                        <span style={{ background: ic.bg, color: ic.fg }} className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl"><ic.Icon size={18} /></span>
+                        <span className="min-w-0 flex-1">
+                          <span className={`block truncate text-sm ${n.read ? 'font-medium text-slate-600' : 'font-bold text-charcoal-heading'}`}>{n.title}</span>
+                          <span className="mt-0.5 block truncate text-[13px] text-slate-500">{n.body}</span>
+                          <span className="mt-1 block text-[11px] text-slate-400">{relTime(n.createdAt)}</span>
+                        </span>
+                        {!n.read && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />}
+                      </button>
+                      <div className="pointer-events-none absolute right-3 top-3 flex items-center gap-1 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
+                        {tab === 'archive' ? (
+                          <>
+                            <button title="Restore" aria-label="Restore" onClick={() => unarchiveM.mutate(n)} className="grid h-7 w-7 place-items-center rounded-lg bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition-colors hover:text-primary"><RotateCcw size={14} /></button>
+                            <button title="Delete permanently" aria-label="Delete" onClick={() => removeM.mutate(n)} className="grid h-7 w-7 place-items-center rounded-lg bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition-colors hover:text-danger"><Trash2 size={14} /></button>
+                          </>
+                        ) : (
+                          <button title="Clear to Archive" aria-label="Clear" onClick={() => archiveM.mutate(n)} className="grid h-7 w-7 place-items-center rounded-lg bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition-colors hover:text-primary"><Archive size={14} /></button>
+                        )}
+                      </div>
+                    </div>
                   );
                 })}
               </div>
@@ -272,9 +335,24 @@ export default function NotificationsPage() {
       </div>
 
       {/* ── Right: detail ── */}
-      <div className="hidden w-[400px] shrink-0 xl:block">
+      {/* Sticky so the detail follows the page scroll and stays in view (the page scrolls
+          as a whole when content is taller than the viewport). self-start keeps it sized to
+          its content so there is room to stick; a max-height lets a tall detail scroll inside
+          itself rather than push the page. Offset sits just below the sticky top nav. */}
+      <div
+        className="hidden w-[400px] shrink-0 self-start xl:block xl:sticky"
+        style={{ top: 'var(--notif-detail-top, 120px)', maxHeight: 'calc(100vh - var(--notif-detail-top, 120px) - 20px)' }}
+      >
         {selected ? (
-          <Detail n={selected} onClose={() => setSelectedId(null)} onView={(r) => router.push(r)} onMarkRead={() => markRead.mutate(selected)} />
+          <Detail
+            n={selected}
+            onClose={() => setSelectedId(null)}
+            onView={(r) => router.push(r)}
+            onMarkRead={() => markRead.mutate(selected)}
+            onArchive={() => archiveM.mutate(selected)}
+            onUnarchive={() => unarchiveM.mutate(selected)}
+            onDelete={() => removeM.mutate(selected)}
+          />
         ) : (
           <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-slate-100 bg-white py-24 text-center">
             <span className="grid h-14 w-14 place-items-center rounded-2xl bg-indigo-50 text-indigo-400"><Bell size={26} /></span>
@@ -287,7 +365,7 @@ export default function NotificationsPage() {
   );
 }
 
-function Detail({ n, onClose, onView, onMarkRead }: { n: UItem; onClose: () => void; onView: (route: string) => void; onMarkRead: () => void }) {
+function Detail({ n, onClose, onView, onMarkRead, onArchive, onUnarchive, onDelete }: { n: UItem; onClose: () => void; onView: (route: string) => void; onMarkRead: () => void; onArchive: () => void; onUnarchive: () => void; onDelete: () => void }) {
   const pr = priorityOf(n);
   const prc = PRIORITY[pr];
   const rel = relatedFor(n);
@@ -295,7 +373,7 @@ function Detail({ n, onClose, onView, onMarkRead }: { n: UItem; onClose: () => v
   const tkt = ticketNo(n);
   const viewRoute = n.link || rel?.route || null;
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-slate-100 bg-white p-6">
+    <div className="flex max-h-full flex-col overflow-y-auto rounded-2xl border border-slate-100 bg-white p-6">
       <div className="mb-4 flex items-center justify-between">
         <span className="font-mono text-sm text-slate-500">{tkt ?? humanType(n.type)}</span>
         <IconAction icon={<X size={18} />} tone="faint" className="text-slate-400" onClick={onClose} aria-label="Close" />
@@ -335,7 +413,17 @@ function Detail({ n, onClose, onView, onMarkRead }: { n: UItem; onClose: () => v
             View {tkt ? 'Ticket' : 'Details'} <ExternalLink size={16} />
           </Button>
         )}
-        {!n.read && <Button variant="secondary" onClick={onMarkRead} className="w-full justify-center"><Check size={15} /> Mark as read</Button>}
+        {n.archived ? (
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={onUnarchive} className="flex-1 justify-center"><RotateCcw size={15} /> Restore</Button>
+            <Button variant="secondary" onClick={onDelete} className="flex-1 justify-center text-danger hover:text-danger"><Trash2 size={15} /> Delete</Button>
+          </div>
+        ) : (
+          <>
+            {!n.read && <Button variant="secondary" onClick={onMarkRead} className="w-full justify-center"><Check size={15} /> Mark as read</Button>}
+            <Button variant="secondary" onClick={onArchive} className="w-full justify-center"><Archive size={15} /> Clear</Button>
+          </>
+        )}
       </div>
     </div>
   );

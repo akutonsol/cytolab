@@ -32,6 +32,7 @@ export { DataToolbar, type DataToolbarProps } from './DataToolbar';
 export { SearchField, type SearchFieldProps } from './SearchField';
 export { Field, type FieldProps } from './Field';
 export { SectionContainer, type SectionContainerProps } from './SectionContainer';
+export { Portal } from './Portal';
 
 // ── Overlays + status presentation (P2) ────────────────────────────────────
 // Accessible dialog primitives (Portal + focus-trap + Escape + scroll-lock + focus

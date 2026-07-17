@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bar, BarChart, Area, AreaChart, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
-import { Calendar, Check, ChevronDown, Clock, Droplet, FlaskConical, Filter, Plus, ScanLine, SlidersHorizontal, TestTube, TrendingUp } from 'lucide-react';
+import { Calendar, Check, ChevronDown, Clock, Droplet, FlaskConical, ScanLine, SlidersHorizontal, TestTube, TrendingUp } from 'lucide-react';
 import { Card } from '@/components/ui';
 
 // ── Palette (zero-orange: indigo / teal / emerald / slate only) ──────────────
@@ -424,7 +424,6 @@ function RevenueTooltip({ active, payload, label }: any) {
 
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]>('Overview');
-  const [revPeriod, setRevPeriod] = useState<'Monthly' | 'Quarterly' | 'Yearly'>('Monthly');
 
   const [period, setPeriod] = useState<'Weekly' | 'Monthly' | 'Quarterly' | 'Yearly'>('Monthly');
   const [periodOpen, setPeriodOpen] = useState(false);
@@ -669,7 +668,7 @@ export default function AnalyticsPage() {
               {/* Practice Overview */}
               <div className="mt-5 border-t border-gray-100 pt-5">
                 <div className="mb-4 text-sm font-bold text-gray-900">Practice Overview</div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   {practice.map(({ label, value, Icon }) => (
                     <div key={label} className="flex items-center gap-3">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-gray-200 text-gray-500">
@@ -764,18 +763,6 @@ export default function AnalyticsPage() {
                   <span className="text-4xl font-black text-gray-900">$12,579</span>
                   <GrowthBadge pct={8} />
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center rounded-lg border border-gray-200 bg-white p-0.5">
-                  {(['Monthly', 'Quarterly', 'Yearly'] as const).map((p) => (
-                    <button key={p} onClick={() => setRevPeriod(p)}
-                      className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${revPeriod === p ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
-                      {p}
-                    </button>
-                  ))}
-                </div>
-                <button className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"><Filter size={14} /> Filter</button>
-                <button className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"><Plus size={14} /> Add widget</button>
               </div>
             </div>
 

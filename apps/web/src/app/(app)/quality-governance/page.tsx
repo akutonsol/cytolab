@@ -126,7 +126,7 @@ export default function QualityGovernanceWorkspacePage() {
         title="Quality & Governance"
         titleRef={headingRef}
         focusableTitle
-        description="One workspace for diagnostic quality, compliance, corrective evidence, and governance — composed from the existing PathOS owner systems. It surfaces recorded evidence only."
+        description="One workspace for diagnostic quality, compliance, corrective evidence, and governance — composed from the existing Osieri owner systems. It surfaces recorded evidence only."
         meta={
           <button
             type="button"

@@ -61,6 +61,9 @@ const PROGRESS_MAP: Record<string, number> = {
   Paid: 98, Viewed: 100, OnHold: 35, Failed: 35, Disabled: 0,
 };
 const INDIGO = '#4F46E5';
+// H&E-slide look + micro-drift reused from the landing hero (HeroV2) so the
+// specimen preview reads as the same living digital-pathology slide.
+const HE_FILTER = 'saturate(0.52) brightness(1.21) contrast(1.12) hue-rotate(-4deg)';
 // Activity-dot colour per the reference spec.
 const DOT: Record<string, string> = {
   Pending: '#475569', Submitted: '#475569', Processing: '#4F46E5', Partial: '#4F46E5',
@@ -116,6 +119,8 @@ const GLOWS = [
 const ANIM_CSS = `
 @keyframes microDrift{0%{transform:translate(0px,0px) scale(1.02)}25%{transform:translate(-10px,7px) scale(1.05)}50%{transform:translate(8px,-6px) scale(1.03)}75%{transform:translate(-6px,-9px) scale(1.06)}100%{transform:translate(0px,0px) scale(1.02)}}
 @keyframes ringSpin{to{transform:rotate(360deg)}}
+/* Landing-hero specimen drift — subtle pan/zoom on the H&E slide. */
+@keyframes hv2-microdrift{0%,100%{transform:scale(1.18) translate(0px,0px)}25%{transform:scale(1.18) translate(-3px,2px)}50%{transform:scale(1.18) translate(2px,3px)}75%{transform:scale(1.18) translate(3px,-1.5px)}}
 `;
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -366,13 +371,31 @@ export default function RecordDetailPage() {
             </div>
           </div>
 
-          <div style={{ flex: 1, alignSelf: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', zIndex: 20 }}>
-            {/* Living-microscope view: specimen field slowly pans + zooms, with drifting particles over it */}
-            <div style={{ position: 'relative', width: '100%', maxWidth: 1040 }}>
-              <img src={cytologyImg} alt="Cytology specimen" style={{ display: 'block', width: '100%', height: 'auto', transformOrigin: 'center', animation: 'microDrift 20s ease-in-out infinite' }} />
-              {PARTICLES.map((p, i) => (
-                <div key={`p${i}`} className="pointer-events-none absolute rounded-full" style={{ left: p.left, top: p.top, width: p.size, height: p.size, background: p.color, filter: p.blur ? `blur(${p.blur}px)` : undefined, animation: `${p.anim} ${p.dur} ease-in-out ${p.delay} infinite` }} />
-              ))}
+          {/* Digital preview — the landing hero's living H&E slide (same specimen image +
+              micro-drift), framed as a labeled card with a live caption over it. */}
+          <div style={{ flex: 1, alignSelf: 'stretch', display: 'flex', minWidth: 0, zIndex: 20 }}>
+            <div className="relative flex min-h-[360px] w-full flex-col overflow-hidden rounded-2xl border border-[#E4E8F4] bg-white">
+              <div className="flex shrink-0 items-center justify-between px-4 pt-3.5">
+                <div className={LABEL}>Digital Preview</div>
+                {record.formType && (
+                  <span className="rounded-md px-2 py-0.5 text-[11px] font-bold" style={isGyn ? { background: '#EEF3FF', color: '#4F46E5' } : { background: '#F0FDF4', color: '#16A34A' }}>{isGyn ? 'GYN' : 'NON-GYN'}</span>
+                )}
+              </div>
+              <div className="relative mt-2.5 flex-1 overflow-hidden rounded-b-2xl">
+                {/* same specimen image + micro-drift as the landing hero */}
+                <img src={cytologyImg} alt="Cytology specimen" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: HE_FILTER, transform: 'scale(1.18)', transformOrigin: '56% 45%', animation: 'hv2-microdrift 18s ease-in-out infinite', willChange: 'transform' }} />
+                {GLOWS.map((g, i) => (
+                  <div key={`g${i}`} className="pointer-events-none absolute rounded-full" style={{ left: g.left, top: g.top, width: g.size, height: g.size, background: `radial-gradient(circle, ${g.color} 0%, transparent 70%)` }} />
+                ))}
+                {PARTICLES.map((p, i) => (
+                  <div key={`p${i}`} className="pointer-events-none absolute rounded-full" style={{ left: p.left, top: p.top, width: p.size, height: p.size, background: p.color, filter: p.blur ? `blur(${p.blur}px)` : undefined, animation: `${p.anim} ${p.dur} ease-in-out ${p.delay} infinite` }} />
+                ))}
+                {/* live caption over the slide */}
+                <div className="absolute inset-x-3 bottom-3 flex items-center gap-2.5 rounded-xl border border-[#E4E8F4] bg-white/85 px-3.5 py-2.5 backdrop-blur">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#EEF3FF] text-[#4F46E5]"><Microscope size={15} /></span>
+                  <span className="min-w-0 flex-1 truncate text-[13px] italic text-[#475569]">{aiFinding}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

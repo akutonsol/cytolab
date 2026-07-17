@@ -112,6 +112,7 @@ export function NavPills({ justify = 'flex-end' }: { justify?: React.CSSProperti
           key={g.key}
           group={g}
           active={groupActive(g.visible)}
+          pathname={pathname}
           onOpen={() => prefetchGroup(g.visible)}
           onSelect={(key) => router.push(navTarget(key))}
           renderPill={Pill}
@@ -138,6 +139,7 @@ export function NavPills({ justify = 'flex-end' }: { justify?: React.CSSProperti
 function GroupPill({
   group,
   active,
+  pathname,
   onOpen,
   onSelect,
   renderPill,
@@ -145,6 +147,7 @@ function GroupPill({
 }: {
   group: any;
   active: boolean;
+  pathname: string;
   onOpen: () => void;
   onSelect: (key: string) => void;
   renderPill: (
@@ -158,16 +161,24 @@ function GroupPill({
   renderItemLabel: (i: any) => React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  // The item for the page the user is on stays highlighted (grey, like hover) so they can
+  // see where they are. Longest-prefix match so a detail route (/qc/equipment) highlights
+  // its own item over a shorter sibling (/qc). Hover behavior is untouched.
+  const selectedKey = group.visible
+    .filter((i: any) => pathname === i.path || pathname.startsWith(`${i.path}/`))
+    .sort((a: any, b: any) => b.path.length - a.path.length)[0]?.path;
   return (
     <Dropdown
       trigger={['hover', 'click']}
       open={open}
+      rootClassName="nav-group-menu"
       onOpenChange={(next) => {
         setOpen(next);
         if (next) onOpen();
       }}
       menu={{
         items: group.visible.map((i: any) => ({ key: i.path, label: renderItemLabel(i) })),
+        selectedKeys: selectedKey ? [selectedKey] : [],
         onClick: ({ key }: { key: string }) => onSelect(key),
       }}
     >

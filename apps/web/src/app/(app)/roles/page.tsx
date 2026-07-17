@@ -42,7 +42,7 @@ export default function RolesPage() {
   const colCount = 5 + (hasActions ? 1 : 0);
 
   return (
-    <div className="mx-auto max-w-[1400px]">
+    <div className="w-full">
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>

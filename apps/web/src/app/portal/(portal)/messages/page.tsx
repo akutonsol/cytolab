@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Plus, Send } from 'lucide-react';
+import { ArrowLeft, Plus, Send } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { portalApi } from '@/lib/portal-api';
 import { CrStatusBadge, fmtDateTime } from '@/lib/portal-ui';
@@ -20,6 +20,9 @@ function MessagesInner() {
   const qc = useQueryClient();
   const recordId = useSearchParams().get('recordId') ?? undefined;
   const [activeId, setActiveId] = useState<string>();
+  // Mobile is single-panel: 'list' shows the message list, 'thread' shows the conversation/compose
+  // form (with a back button). Desktop (lg+) shows both, so this only gates the phone/tablet layout.
+  const [mobileView, setMobileView] = useState<'list' | 'thread'>('list');
   const [composing, setComposing] = useState(false);
   const [text, setText] = useState('');
   // new-request form
@@ -63,7 +66,7 @@ function MessagesInner() {
     onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not send'),
   });
 
-  const startNew = () => { setComposing(true); setActiveId(undefined); };
+  const startNew = () => { setComposing(true); setActiveId(undefined); setMobileView('thread'); };
   const sendReply = () => { const b = text.trim(); if (b && activeId) reply.mutate(b); };
   const canCreate = !!subject.trim() && !!body.trim() && !create.isPending;
   const messages: any[] = active?.messages ?? [];
@@ -74,7 +77,7 @@ function MessagesInner() {
 
       <div className="flex h-[560px] gap-4">
         {/* Thread list */}
-        <aside className="flex w-[300px] shrink-0 flex-col overflow-hidden rounded-2xl border border-[#EEF2F7] bg-white">
+        <aside className={`${mobileView === 'thread' ? 'hidden lg:flex' : 'flex'} w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-[#EEF2F7] bg-white lg:w-[300px]`}>
           <div className="border-b border-[#EEF2F7] p-3">
             <button onClick={startNew} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#4F46E5] py-2.5 text-[13px] font-semibold text-white transition-[filter] hover:brightness-110"><Plus size={16} /> New Message</button>
           </div>
@@ -83,7 +86,7 @@ function MessagesInner() {
             {threads.map((t) => {
               const on = t.id === activeId && !composing;
               return (
-                <button key={t.id} onClick={() => { setComposing(false); setActiveId(t.id); }}
+                <button key={t.id} onClick={() => { setComposing(false); setActiveId(t.id); setMobileView('thread'); }}
                   className="flex w-full flex-col gap-1 border-b border-[#F8FAFC] px-4 py-3 text-left transition-colors hover:bg-[#FAFBFD]"
                   style={{ background: on ? '#EEF3FF' : undefined }}>
                   <div className="flex items-center justify-between gap-2">
@@ -98,7 +101,10 @@ function MessagesInner() {
         </aside>
 
         {/* Conversation / composer */}
-        <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#EEF2F7] bg-white">
+        <section className={`${mobileView === 'list' ? 'hidden lg:flex' : 'flex'} min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#EEF2F7] bg-white`}>
+          <button onClick={() => { setMobileView('list'); setComposing(false); }} className="flex items-center gap-1.5 border-b border-[#EEF2F7] px-5 py-3 text-[13px] font-medium text-[#64748B] hover:text-[#4F46E5] lg:hidden">
+            <ArrowLeft size={15} /> Messages
+          </button>
           {composing ? (
             <div className="flex flex-col gap-4 p-6">
               <div className="text-[16px] font-bold text-[#0F172A]">New message to the lab</div>

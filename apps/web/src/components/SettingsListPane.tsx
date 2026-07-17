@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Inbox, Plus, Trash2 } from 'lucide-react';
+import { Inbox, Plus, Trash2, type LucideIcon } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 
@@ -38,6 +38,10 @@ interface Props {
   deleteUrl: (id: string) => string;
   /** Extract the item array from the list response (e.g. paginated → `.data`). */
   mapList?: (raw: any) => Item[];
+  /** Optional richer empty state (icon + title + subtitle + centered Add CTA). */
+  emptyIcon?: LucideIcon;
+  emptyTitle?: string;
+  emptySubtitle?: string;
 }
 
 type Notify = (type: 'ok' | 'err', msg: string) => void;
@@ -59,6 +63,7 @@ const INPUT = 'h-11 w-full rounded-xl border border-outline-variant/40 bg-white 
  */
 export function SettingsListPane({
   title, helper, addLabel, fields, queryKey, listUrl, createUrl, updateUrl, deleteUrl, mapList,
+  emptyIcon, emptyTitle, emptySubtitle,
 }: Props) {
   const [drafts, setDrafts] = useState<Array<Record<string, any>>>([]);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
@@ -71,6 +76,19 @@ export function SettingsListPane({
 
   const addDraft = () => setDrafts((d) => [...d, {}]);
   const removeDraft = (i: number) => setDrafts((d) => d.filter((_, idx) => idx !== i));
+
+  // Richer, centered empty state (when configured) — icon + title + subtitle + CTA.
+  if (!isLoading && items.length === 0 && drafts.length === 0 && emptyTitle) {
+    const EmptyIcon = emptyIcon ?? Inbox;
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+        <div className="grid h-16 w-16 place-items-center rounded-2xl bg-slate-100 text-slate-500"><EmptyIcon size={30} /></div>
+        <div className="text-lg font-bold text-charcoal-heading">{emptyTitle}</div>
+        <p className="max-w-md font-body-sm text-body-sm text-secondary">{emptySubtitle ?? helper}</p>
+        <button onClick={addDraft} className="btn-primary mt-2"><Plus size={16} /> {addLabel}</button>
+      </div>
+    );
+  }
 
   return (
     <div>

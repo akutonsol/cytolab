@@ -12,7 +12,7 @@ import { api, type Paginated } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
-import { Card, IconAction, TableEmpty } from '@/components/ui';
+import { Card, IconAction, PageHeader, TableEmpty } from '@/components/ui';
 import { notify } from '@/lib/notify';
 
 // Stable empty fallback — a fresh [] each render would retrigger the
@@ -79,7 +79,7 @@ const isBreached = (t: Ticket) => !!t.slaDeadline && ['OPEN', 'IN_PROGRESS', 'PE
 function Badge({ bg, fg, children }: { bg: string; fg: string; children: React.ReactNode }) {
   return <span className="rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: bg, color: fg }}>{children}</span>;
 }
-const inputCls = 'h-11 w-full rounded-xl border border-[#E2E8F0] bg-white px-3.5 text-sm text-[#0F172A] outline-none focus:border-[#4F46E5]';
+const inputCls = 'h-11 w-full rounded-xl border border-[#E2E8F0] bg-white px-3.5 text-sm text-charcoal-heading outline-none focus:border-[#4F46E5]';
 const labelCls = 'mb-1.5 block text-[13px] font-semibold text-[#334155]';
 const btnPrimary = 'inline-flex items-center gap-2 rounded-xl bg-[#4F46E5] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#4338CA] disabled:opacity-50';
 const btnGhost = 'inline-flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-white px-4 py-2.5 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC]';
@@ -113,10 +113,10 @@ export default function SupportPage() {
 
   return (
     <div className="min-h-full pb-10 pt-4" style={{ background: '#F8FAFC' }}>
-      <div className="mb-5">
-        <h1 className="text-[28px] font-bold leading-tight tracking-tight text-[#0F172A]">Maintenance &amp; Support</h1>
-        <p className="mt-1.5 text-[15px] text-[#6B7280]">Support tickets, scheduled maintenance and system announcements.</p>
-      </div>
+      <PageHeader
+        title="Maintenance & Support"
+        description="Support tickets, scheduled maintenance and system announcements."
+      />
 
       <div className="mb-6 flex flex-wrap gap-1 rounded-2xl border border-[#EEF2F7] bg-white p-1.5 shadow-sm" style={{ width: 'fit-content' }}>
         {TABS.map((t) => {
@@ -192,7 +192,7 @@ function TicketsTab() {
       <Card radius="md" elevation="raised" border="hairline" className="flex flex-wrap items-center gap-3 p-4">
         <div className="flex h-11 min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-[#E2E8F0] bg-white px-3.5 text-[#9CA3AF]">
           <Search size={16} />
-          <input value={f.search} onChange={(e) => setF({ ...f, search: e.target.value })} placeholder="Search title or ticket #..." className="w-full border-none bg-transparent text-sm text-[#0F172A] outline-none placeholder:text-[#9CA3AF]" />
+          <input value={f.search} onChange={(e) => setF({ ...f, search: e.target.value })} placeholder="Search title or ticket #..." className="w-full border-none bg-transparent text-sm text-charcoal-heading outline-none placeholder:text-[#9CA3AF]" />
         </div>
         <select aria-label="Filter by status" value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} className="h-11 rounded-xl border border-[#E2E8F0] px-3 text-sm"><option value="">All Statuses</option>{STATUSES.map((s) => <option key={s} value={s}>{STATUS[s].label}</option>)}</select>
         <select aria-label="Filter by priority" value={f.priority} onChange={(e) => setF({ ...f, priority: e.target.value })} className="h-11 rounded-xl border border-[#E2E8F0] px-3 text-sm"><option value="">All Priorities</option>{PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}</select>
@@ -215,7 +215,7 @@ function TicketsTab() {
               {!isFetching && !initialLoading && rows.length === 0 && <TableEmpty colSpan={9} tone="strong">No tickets found.</TableEmpty>}
               {ticketRows.map((t) => (
                 <tr key={t.id} onClick={() => setOpenId(t.id)} className="cursor-pointer border-b border-[#F1F5F9] transition-colors hover:bg-[#F8FAFC]">
-                  <td className="px-4 py-3.5 font-mono text-[13px] font-bold text-[#0F172A]">{t.ticketNumber}</td>
+                  <td className="px-4 py-3.5 font-mono text-[13px] font-bold text-charcoal-heading">{t.ticketNumber}</td>
                   <td className="px-4 py-3.5 max-w-[280px] truncate text-[#334155]">{t.title}</td>
                   <td className="px-4 py-3.5"><Badge bg="#F1F5F9" fg="#475569">{cat(t.category)}</Badge></td>
                   <td className="px-4 py-3.5"><Badge bg={PRIORITY[t.priority].bg} fg={PRIORITY[t.priority].fg}>{t.priority}</Badge></td>
@@ -294,7 +294,7 @@ function TicketDetail({ id, users, onClose }: { id: string; users: UserLite[]; o
         <div className="flex items-start justify-between border-b border-[#EEF2F7] p-5">
           <div>
             <div className="font-mono text-[13px] font-bold text-[#4F46E5]">{t?.ticketNumber}</div>
-            <h2 className="mt-1 text-[18px] font-bold text-[#0F172A]">{t?.title ?? 'Loading…'}</h2>
+            <h2 className="mt-1 text-[18px] font-bold text-charcoal-heading">{t?.title ?? 'Loading…'}</h2>
             {t && <div className="mt-1 text-[13px] text-[#475569]">{t.submitterName} · {t.submitterType} · {fmtDate(t.createdAt)}</div>}
           </div>
           <IconAction icon={<X size={18} />} tone="strong" size="lg" shape="circle" className="hover:bg-[#F1F5F9]" onClick={onClose} aria-label="Close" />
@@ -331,7 +331,7 @@ function TicketDetail({ id, users, onClose }: { id: string; users: UserLite[]; o
                 {t.comments.map((c) => (
                   <div key={c.id} className="rounded-xl border p-3" style={{ borderColor: c.isInternal ? '#FDE68A' : '#EEF2F7', background: c.isInternal ? '#FFFBEB' : '#fff' }}>
                     <div className="flex items-center justify-between">
-                      <span className="text-[13px] font-semibold text-[#0F172A]">{c.authorName}</span>
+                      <span className="text-[13px] font-semibold text-charcoal-heading">{c.authorName}</span>
                       <span className="text-[11px] text-[#475569]">{fmtDateTime(c.createdAt)}</span>
                     </div>
                     {c.isInternal && <span className="mt-1 inline-block text-[10px] font-bold uppercase text-[#A16207]">Internal note</span>}
@@ -377,7 +377,7 @@ function MaintenanceTab() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-[16px] font-bold text-[#0F172A]">Upcoming Windows</h2>
+        <h2 className="text-[16px] font-bold text-charcoal-heading">Upcoming Windows</h2>
         <button onClick={() => setOpen(true)} className={btnPrimary}><Plus size={16} /> Schedule Maintenance</button>
       </div>
       {upcoming.length === 0 && <Card radius="md" elevation="raised" border="hairline" className="p-8 text-center text-[14px] text-[#475569]">No upcoming maintenance scheduled.</Card>}
@@ -385,7 +385,7 @@ function MaintenanceTab() {
         {upcoming.map((w) => (
           <Card radius="md" elevation="raised" border="hairline" className="p-5" key={w.id}>
             <div className="flex items-start justify-between">
-              <div className="text-[15px] font-bold text-[#0F172A]">{w.title}</div>
+              <div className="text-[15px] font-bold text-charcoal-heading">{w.title}</div>
               <Badge bg={winStatus[w.status]?.bg ?? '#F1F5F9'} fg={winStatus[w.status]?.fg ?? '#475569'}>{w.status}</Badge>
             </div>
             {w.description && <p className="mt-1 text-[13px] text-[#475569]">{w.description}</p>}
@@ -398,13 +398,13 @@ function MaintenanceTab() {
 
       {past.length > 0 && (
         <Card radius="md" elevation="raised" border="hairline" className="overflow-hidden p-0">
-          <div className="border-b border-[#EEF2F7] p-4 text-[14px] font-bold text-[#0F172A]">Past &amp; Cancelled</div>
+          <div className="border-b border-[#EEF2F7] p-4 text-[14px] font-bold text-charcoal-heading">Past &amp; Cancelled</div>
           <table className="w-full text-left text-sm">
             <thead><tr className="border-b border-[#EEF2F7] text-[11px] uppercase tracking-wide text-[#475569]">{['Title', 'Scheduled', 'Duration', 'Systems', 'Status'].map((h) => <th key={h} className="px-4 py-3 font-semibold">{h}</th>)}</tr></thead>
             <tbody>
               {past.map((w) => (
                 <tr key={w.id} className="border-b border-[#F1F5F9]">
-                  <td className="px-4 py-3 font-semibold text-[#0F172A]">{w.title}</td>
+                  <td className="px-4 py-3 font-semibold text-charcoal-heading">{w.title}</td>
                   <td className="px-4 py-3 text-[#475569]">{fmtDateTime(w.scheduledAt)}</td>
                   <td className="px-4 py-3 text-[#475569]">{w.durationMinutes} min</td>
                   <td className="px-4 py-3 text-[#475569]">{w.affectedSystems.join(', ')}</td>
@@ -470,7 +470,7 @@ function AnnouncementsTab() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-[16px] font-bold text-[#0F172A]">Announcements</h2>
+        <h2 className="text-[16px] font-bold text-charcoal-heading">Announcements</h2>
         <button onClick={() => setOpen(true)} className={btnPrimary}><Plus size={16} /> New Announcement</button>
       </div>
       {list.length === 0 && <Card radius="md" elevation="raised" border="hairline" className="p-8 text-center text-[14px] text-[#475569]">No announcements yet.</Card>}
@@ -481,7 +481,7 @@ function AnnouncementsTab() {
             <Card radius="md" elevation="raised" border="hairline" className="p-5" key={a.id}>
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2"><Badge bg={c.bg} fg={c.fg}>{a.type}</Badge><span className="text-[15px] font-bold text-[#0F172A]">{a.title}</span></div>
+                  <div className="flex items-center gap-2"><Badge bg={c.bg} fg={c.fg}>{a.type}</Badge><span className="text-[15px] font-bold text-charcoal-heading">{a.title}</span></div>
                   <p className="mt-1.5 text-[13px] text-[#475569]">{a.body}</p>
                   <div className="mt-2 text-[11px] text-[#475569]">Shows {fmtDate(a.showFrom)}{a.showUntil ? ` → ${fmtDate(a.showUntil)}` : ' onwards'}</div>
                 </div>
@@ -582,7 +582,7 @@ function AnalyticsTab() {
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Card radius="md" elevation="raised" border="hairline" className="p-5">
-          <div className="mb-4 text-[14px] font-bold text-[#0F172A]">Tickets by Category</div>
+          <div className="mb-4 text-[14px] font-bold text-charcoal-heading">Tickets by Category</div>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={byCategory}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
@@ -595,14 +595,14 @@ function AnalyticsTab() {
         </Card>
 
         <Card radius="md" elevation="raised" border="hairline" className="p-5">
-          <div className="mb-4 text-[14px] font-bold text-[#0F172A]">Tickets by Status</div>
+          <div className="mb-4 text-[14px] font-bold text-charcoal-heading">Tickets by Status</div>
           <div className="flex items-center gap-4">
             <PieChart width={200} height={200}>
               <Pie data={byStatus} dataKey="value" cx="50%" cy="50%" innerRadius={52} outerRadius={82} paddingAngle={2} stroke="none">{byStatus.map((s, i) => <Cell key={i} fill={s.color} />)}</Pie>
             </PieChart>
             <div className="flex flex-1 flex-col gap-2">
               {byStatus.map((s) => (
-                <div key={s.name} className="flex items-center justify-between text-[13px]"><span className="flex items-center gap-2 text-[#475569]"><span className="h-2.5 w-2.5 rounded-full" style={{ background: s.color }} /> {s.name}</span><span className="font-semibold text-[#0F172A]">{s.value}</span></div>
+                <div key={s.name} className="flex items-center justify-between text-[13px]"><span className="flex items-center gap-2 text-[#475569]"><span className="h-2.5 w-2.5 rounded-full" style={{ background: s.color }} /> {s.name}</span><span className="font-semibold text-charcoal-heading">{s.value}</span></div>
               ))}
               {byStatus.length === 0 && <div className="text-[13px] text-[#475569]">No data</div>}
             </div>
@@ -611,7 +611,7 @@ function AnalyticsTab() {
       </div>
 
       <Card radius="md" elevation="raised" border="hairline" className="p-5">
-        <div className="mb-4 text-[14px] font-bold text-[#0F172A]">Ticket Volume (last 30 days)</div>
+        <div className="mb-4 text-[14px] font-bold text-charcoal-heading">Ticket Volume (last 30 days)</div>
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={days}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
@@ -633,7 +633,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
       <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
       <div className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-full max-w-[560px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-[18px] font-bold text-[#0F172A]">{title}</h2>
+          <h2 className="text-[18px] font-bold text-charcoal-heading">{title}</h2>
           <IconAction icon={<X size={18} />} tone="strong" size="lg" shape="circle" className="hover:bg-[#F1F5F9]" onClick={onClose} aria-label="Close" />
         </div>
         {children}

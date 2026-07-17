@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowUpRight, ChevronDown, Folder, MoreHorizontal, Plus, Search, SlidersHorizontal } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, Folder, Plus, Search } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { ClientSelect } from '@/components/ClientSelect';
@@ -151,7 +151,6 @@ export default function CabinetsPage() {
                 <Divider />
                 <Kpi label="Authorized" value={authorizedRows.length} />
                 <div className="ml-1 flex items-center gap-2">
-                  <button aria-label="Filters" className="grid h-11 w-11 place-items-center rounded-full border border-card bg-surface text-text-secondary hover:text-text"><SlidersHorizontal size={18} /></button>
                   <button onClick={() => router.push('/records')} aria-label="Open records" className="grid h-11 w-11 place-items-center rounded-full bg-text text-white hover:bg-text/90"><ArrowUpRight size={18} /></button>
                 </div>
               </div>
@@ -246,7 +245,7 @@ export default function CabinetsPage() {
                         <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
                         <td className="px-4 py-3">{r.urgent ? <span className="inline-flex items-center rounded-pill bg-danger-soft px-2.5 py-1 text-caption font-bold text-danger">Urgent</span> : <span className="text-small text-text-tertiary">—</span>}</td>
                         <td className="px-4 py-3"><span className="text-small font-medium text-text-secondary">{fmt(r.specimenDate ?? r.createdAt)}</span></td>
-                        <td className="px-2 py-3"><button className="text-text-tertiary hover:text-text"><MoreHorizontal size={18} /></button></td>
+                        <td className="px-2 py-3"><button onClick={() => router.push(`/records/${r.id}`)} aria-label="Open record" className="text-text-tertiary hover:text-text"><ArrowUpRight size={18} /></button></td>
                       </tr>
                     ))}
                   </tbody>

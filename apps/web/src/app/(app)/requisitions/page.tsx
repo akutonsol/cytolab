@@ -2,8 +2,8 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import {
-  AlertCircle, Calendar, CheckCircle2, ChevronsUpDown, CircleDashed, Eye, FileText, Filter,
-  Inbox, MoreHorizontal, Plus, RotateCcw, Search, Upload,
+  AlertCircle, Calendar, CheckCircle2, ChevronsUpDown, CircleDashed, FileText,
+  Inbox, Plus, RotateCcw, Search, Upload,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { PieChart, Pie, Cell } from 'recharts';
@@ -14,7 +14,7 @@ import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { RequisitionFormDrawer } from '@/components/RequisitionFormDrawer';
 import { RequisitionReportModal } from '@/components/RequisitionReportModal';
 import { PendingBatchesTab } from '@/components/requisitions/PendingBatchesTab';
-import { Card, Button, IconAction, TableEmpty } from '@/components/ui';
+import { Card, Button, TableEmpty } from '@/components/ui';
 
 interface RequisitionLine { id: string; isCompleted: boolean }
 interface Requisition {
@@ -173,7 +173,7 @@ export default function RequisitionsPage() {
           <select className={`${SELECT} pl-9`} value={dateRange} onChange={(e) => { setDateRange(e.target.value); }}><option value="7">Last 7 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option><option value="all">All Time</option></select>
           <Calendar size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
         </div>
-        <button onClick={clearFilters} className="flex h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-base font-medium text-slate-600 hover:bg-slate-50"><Filter size={16} /> Filters</button>
+        <button onClick={clearFilters} className="flex h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-base font-medium text-slate-600 hover:bg-slate-50"><RotateCcw size={16} /> Clear filters</button>
       </Card>
 
       {isError && (
@@ -195,22 +195,19 @@ export default function RequisitionsPage() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-slate-100">
-                    <th className={`${TH} w-10`} />
                     <th className={TH}>Ref #</th><th className={TH}>Client</th><th className={TH}>Items</th><th className={TH}>Amount</th><th className={TH}>Status</th>
                     <th className={TH}><button onClick={() => setSortDesc((v) => !v)} className="flex items-center gap-1 uppercase tracking-wide hover:text-slate-600">Received <ChevronsUpDown size={12} /></button></th>
-                    <th className={`${TH} text-right`}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {isFetching && all.length === 0 && Array.from({ length: 6 }).map((_, i) => (
-                    <tr key={i} className="border-b border-slate-100"><td colSpan={8} className="px-5 py-4"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></td></tr>
+                    <tr key={i} className="border-b border-slate-100"><td colSpan={6} className="px-5 py-4"><div className="h-5 w-full animate-pulse rounded-md bg-surface-container" /></td></tr>
                   ))}
-                  {!isFetching && !initialLoading && filtered.length === 0 && <TableEmpty colSpan={8} pad="lg">No requisitions found.</TableEmpty>}
+                  {!isFetching && !initialLoading && filtered.length === 0 && <TableEmpty colSpan={6} pad="lg">No requisitions found.</TableEmpty>}
                   {pageRows.map((r) => {
                     const name = clientName(r);
                     return (
                       <tr key={r.id} className="border-b border-slate-100 transition-colors hover:bg-slate-50">
-                        <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}><input type="checkbox" style={{ accentColor: '#4F46E5' }} /></td>
                         <td className={CELL}><span className="text-sm font-bold text-charcoal-heading">{r.referenceNo ?? '—'}</span></td>
                         <td className={CELL}>
                           <div className="flex items-center gap-3">
@@ -225,12 +222,6 @@ export default function RequisitionsPage() {
                         <td className={CELL}><span className="text-sm font-bold text-primary">{money(r.amount)}</span></td>
                         <td className={CELL}><StatusBadge status={r.status} /></td>
                         <td className={CELL}><div className="text-sm font-semibold text-charcoal-heading">{fmtDate(r.dateReceived ?? r.createdAt)}</div><div className="text-[11px] text-slate-500">{fmtTime(r.dateReceived ?? r.createdAt)}</div></td>
-                        <td className={CELL}>
-                          <div className="flex items-center justify-end gap-1.5">
-                            <IconAction icon={<Eye size={16} />} size="lg" className="hover:bg-slate-50 border border-slate-200 hover:text-primary" aria-label="View" />
-                            <IconAction icon={<MoreHorizontal size={16} />} size="lg" className="border border-slate-200 hover:text-slate-600" aria-label="More" />
-                          </div>
-                        </td>
                       </tr>
                     );
                   })}
@@ -282,7 +273,7 @@ export default function RequisitionsPage() {
           </Card>
 
           <Card radius="sm" elevation="sm" border="subtle" className="p-6">
-            <div className="mb-4 flex items-center justify-between"><span className="text-base font-semibold text-charcoal-heading">Recent Requisitions</span><button className="text-sm font-semibold text-primary hover:underline">View all</button></div>
+            <div className="mb-4 flex items-center justify-between"><span className="text-base font-semibold text-charcoal-heading">Recent Requisitions</span><button onClick={() => { setTab('requisitions'); clearFilters(); }} className="text-sm font-semibold text-primary hover:underline">View all</button></div>
             <div className="flex flex-col gap-4">
               {recent.length === 0 && <div className="text-base text-slate-500">No requisitions yet.</div>}
               {recent.map((r) => (

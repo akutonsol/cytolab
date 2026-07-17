@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Clock,
-  Download, ExternalLink, MoreHorizontal, Plus, Search, Settings, SlidersHorizontal, TrendingUp, DollarSign,
+  AlertTriangle, CheckCircle2, Clock,
+  ExternalLink, MoreHorizontal, Plus, Search, Settings, TrendingUp, DollarSign, X,
 } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -47,12 +47,11 @@ interface Payment {
   bill?: any;
 }
 const clientName = (c?: any) => (c ? (c.officeName || `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim() || '—') : '—');
+const outstandingOf = (b: any) => (b?.total ?? 0) - (b?.amountPaid ?? 0);
+const PAYMENT_TYPES = [['Cash', 'Cash'], ['Cheque', 'Cheque'], ['CreditCard', 'Credit Card'], ['DebitCard', 'Debit Card'], ['BankTransfer', 'Bank Transfer']] as const;
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const PAGE_SIZE = 20;
 
-const SortIcon = () => (
-  <span className="inline-flex flex-col leading-none text-[#CBD5E1]"><ChevronUp size={10} /><ChevronDown size={10} style={{ marginTop: -3 }} /></span>
-);
 const DeltaPill = ({ n, pct }: { n: number; pct?: boolean }) => {
   const pos = n >= 0;
   return <span style={{ background: pos ? '#DCFCE7' : '#FEE2E2', color: pos ? '#16A34A' : '#DC2626', borderRadius: 999, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>{pos ? '+' : ''}{n}{pct ? '%' : ''}</span>;
@@ -67,8 +66,8 @@ export default function PaymentsPage() {
   const [tab, setTab] = useState<'all' | 'unverified' | 'verified'>('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [timeframe, setTimeframe] = useState('all');
-  const [period, setPeriod] = useState('Yearly');
   const [menuId, setMenuId] = useState<string | null>(null);
+  const [recordOpen, setRecordOpen] = useState(false);
 
   const { data: summary } = useQuery<any>({ queryKey: ['payments-summary'], queryFn: () => api.get('/payments/summary').then((r) => r.data) });
   const { data: paymentsPage } = useQuery<Paginated<Payment>>({ queryKey: ['payments-all'], queryFn: () => api.get('/payments', { params: { pageSize: 200 } }).then((r) => r.data) });
@@ -149,7 +148,7 @@ export default function PaymentsPage() {
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-[32px] font-extrabold leading-none tracking-tight text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Payments</h1>
-        <button onClick={() => router.push('/billing')} className="flex items-center gap-1.5 rounded-[10px] px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-[#4338CA]" style={{ background: '#4F46E5' }}><Plus size={16} /> Record Payment</button>
+        <button onClick={() => setRecordOpen(true)} className="flex items-center gap-1.5 rounded-[10px] px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-[#4338CA]" style={{ background: '#4F46E5' }}><Plus size={16} /> Record Payment</button>
       </div>
 
       {/* KPI strip */}
@@ -173,7 +172,7 @@ export default function PaymentsPage() {
       <Card radius="md" elevation="none" border="hairline" className="mb-6 p-6">
         <div className="mb-4 flex items-center justify-between">
           <span className="text-[18px] font-semibold text-[#0F172A]" style={{ fontFamily: 'Geist,sans-serif' }}>Payment Trends</span>
-          <button onClick={() => setPeriod((p) => (p === 'Yearly' ? 'Monthly' : 'Yearly'))} className="flex items-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5 text-[13px] font-medium text-[#374151]">{period} <ChevronDown size={14} /></button>
+          <span className="text-[13px] font-medium text-[#94A3B8]">Last 12 months</span>
         </div>
         <ResponsiveContainer width="100%" height={240}>
           <AreaChart data={monthlyData} margin={{ top: 10, right: 8, bottom: 4, left: 0 }}>
@@ -234,7 +233,6 @@ export default function PaymentsPage() {
                 <Search size={15} />
                 <input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search Bill# or Client…" className="w-full border-none bg-transparent text-[13px] text-[#0F172A] outline-none placeholder:text-[#9CA3AF]" />
               </div>
-              <button className="flex h-9 items-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-3 text-[13px] font-medium text-[#374151]"><SlidersHorizontal size={14} /> Filter</button>
             </div>
           </div>
 
@@ -250,7 +248,7 @@ export default function PaymentsPage() {
                 <thead>
                   <tr className="border-b-2 border-[#F1F5F9]">
                     {['Bill#', 'Client', 'Amount', 'Type', 'Status', 'Report Time', 'By', 'Actions'].map((h, i) => (
-                      <th key={h} className={`${th} ${i === 2 ? 'text-right' : ''}`}><span className="inline-flex items-center gap-1">{h} <SortIcon /></span></th>
+                      <th key={h} className={`${th} ${i === 2 ? 'text-right' : ''}`}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -272,7 +270,6 @@ export default function PaymentsPage() {
                         <td className="px-4 py-3.5 text-[13px] text-[#475569]">Recorded</td>
                         <td className="px-4 py-3.5">
                           <div className="flex items-center justify-end gap-1.5">
-                            <IconAction icon={<Download size={14} />} tone="strong" shape="circle" className="hover:bg-[#F5F7FF] border border-[#E2E8F0]" title="Download receipt" />
                             <IconAction icon={<ExternalLink size={14} />} tone="strong" shape="circle" className="hover:bg-[#F5F7FF] border border-[#E2E8F0] hover:text-[#4F46E5]" title="Open bill" onClick={() => router.push('/billing')} />
                             <button title={p.verified ? 'Verified' : 'Verify payment'} disabled={p.verified || verify.isPending} onClick={() => verify.mutate(p.id)} className="grid h-8 w-8 place-items-center rounded-full border border-[#E2E8F0] transition-colors hover:bg-[#F5F7FF]" style={{ color: p.verified ? '#CBD5E1' : '#4F46E5', cursor: p.verified ? 'default' : 'pointer' }}><CheckCircle2 size={14} /></button>
                             <div className="relative">
@@ -304,7 +301,98 @@ export default function PaymentsPage() {
         </Card>
       </div>
 
-      
+      {recordOpen && (
+        <RecordPaymentModal
+          bills={billsPage?.data ?? []}
+          onClose={() => setRecordOpen(false)}
+          onRecorded={() => {
+            setRecordOpen(false);
+            qc.invalidateQueries({ queryKey: ['payments-all'] });
+            qc.invalidateQueries({ queryKey: ['payments-summary'] });
+            qc.invalidateQueries({ queryKey: ['bills-all'] });
+            notify.success('Payment recorded');
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Record Payment modal ────────────────────────────────────────────────────
+// Self-contained: pick an unpaid bill, enter amount/type/reference, POST /payment/create.
+// Same API and validation as the billing pay flow — no navigation away from Payments.
+function RecordPaymentModal({ bills, onClose, onRecorded }: { bills: any[]; onClose: () => void; onRecorded: () => void }) {
+  const unpaid = useMemo(() => bills.filter((b) => outstandingOf(b) > 0 && b.status !== 'Void'), [bills]);
+  const [billId, setBillId] = useState(unpaid[0]?.id ?? '');
+  const bill = unpaid.find((b) => b.id === billId) ?? null;
+  const out = bill ? outstandingOf(bill) : 0;
+  const [amount, setAmount] = useState('');
+  const [type, setType] = useState('Cash');
+  const [referenceNo, setReferenceNo] = useState('');
+
+  // Default the amount to the selected bill's outstanding balance.
+  useEffect(() => { setAmount(bill ? (out / 100).toFixed(2) : ''); }, [billId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const cents = Math.round(Number(amount) * 100);
+  const valid = !!bill && cents >= 1 && cents <= out;
+
+  const create = useMutation({
+    mutationFn: () => api.post('/payment/create', { billId, amount: cents, type, referenceNo: referenceNo || undefined }).then((r) => r.data),
+    onSuccess: onRecorded,
+    onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not record payment'),
+  });
+
+  const input = 'h-10 w-full rounded-lg border border-[#E2E8F0] px-3 text-[14px] text-[#0F172A] outline-none focus:border-[#4F46E5]';
+  const labelCls = 'text-[13px] font-semibold text-[#0F172A]';
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="text-[20px] font-bold text-[#0F172A]">Record Payment</div>
+            <div className="mt-0.5 text-[14px] text-[#475569]">Record a payment against an unpaid bill.</div>
+          </div>
+          <IconAction icon={<X size={18} />} tone="strong" aria-label="Close" onClick={onClose} />
+        </div>
+
+        {unpaid.length === 0 ? (
+          <div className="mt-6 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-6 text-center">
+            <div className="text-[15px] font-semibold text-[#0F172A]">No unpaid bills</div>
+            <div className="mt-1 text-[13px] text-[#475569]">Every bill is fully paid — there is nothing to record a payment against.</div>
+            <button onClick={onClose} className="mt-4 h-9 rounded-lg border border-[#E2E8F0] px-4 text-[13px] font-semibold text-[#475569]">Close</button>
+          </div>
+        ) : (
+          <>
+            <div className="mt-5 flex flex-col gap-4">
+              <label className="flex flex-col gap-1.5"><span className={labelCls}>Bill</span>
+                <select value={billId} onChange={(e) => setBillId(e.target.value)} className={`${input} appearance-none`}>
+                  {unpaid.map((b) => (
+                    <option key={b.id} value={b.id}>{b.referenceNo} · {clientName(b.client)} · Outstanding {fmt(outstandingOf(b))}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1.5"><span className={labelCls}>Amount</span>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-[#94A3B8]">$</span>
+                  <input type="number" min={0.01} step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className={`${input} pl-7`} />
+                </div>
+                {bill && !valid && <span className="text-[12px] text-[#DC2626]">Enter an amount between $0.01 and {fmt(out)}.</span>}
+              </label>
+              <label className="flex flex-col gap-1.5"><span className={labelCls}>Payment Type</span>
+                <select value={type} onChange={(e) => setType(e.target.value)} className={`${input} appearance-none`}>{PAYMENT_TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+              </label>
+              <label className="flex flex-col gap-1.5"><span className={labelCls}>Reference No</span>
+                <input value={referenceNo} onChange={(e) => setReferenceNo(e.target.value)} placeholder="Optional" className={input} />
+              </label>
+            </div>
+            <div className="mt-6 flex justify-end gap-2.5">
+              <button onClick={onClose} className="h-10 rounded-lg border border-[#E2E8F0] px-4 text-[14px] font-semibold text-[#475569] hover:text-[#0F172A]">Cancel</button>
+              <button onClick={() => create.mutate()} disabled={!valid || create.isPending} className="h-10 rounded-lg px-5 text-[14px] font-semibold text-white disabled:opacity-50" style={{ background: '#4F46E5' }}>{create.isPending ? 'Recording…' : 'Record Payment'}</button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

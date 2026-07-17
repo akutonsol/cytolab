@@ -142,7 +142,6 @@ export default function LivingScienceSection() {
             borderRadius: '16px',
             padding: '20px 24px',
             maxWidth: '520px',
-            backdropFilter: 'blur(10px)',
           }}>
             <div style={{
               fontSize: '12px',
@@ -255,7 +254,6 @@ export default function LivingScienceSection() {
             border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: '16px',
             padding: '16px 20px',
-            backdropFilter: 'blur(16px)',
             display: 'flex',
             alignItems: 'center',
             gap: '14px',
@@ -296,7 +294,6 @@ export default function LivingScienceSection() {
             border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: '16px',
             padding: '16px 20px',
-            backdropFilter: 'blur(16px)',
             display: 'flex',
             alignItems: 'center',
             gap: '14px',
@@ -342,7 +339,6 @@ export default function LivingScienceSection() {
             border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: '16px',
             padding: '16px 20px',
-            backdropFilter: 'blur(16px)',
             display: 'flex',
             alignItems: 'center',
             gap: '14px',

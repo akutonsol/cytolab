@@ -99,6 +99,72 @@ function NotifierBridge() {
   return null;
 }
 
+/**
+ * Recover from stale JS chunks. After a new build or deploy the chunk hashes change, so a
+ * tab that is already open requests chunk files that now 404 → an unhandled ChunkLoadError
+ * React cannot recover from (it surfaces as Next's "Application error: a client-side
+ * exception has occurred", often with React hydration error #423). We catch it at the
+ * window level — both `error` (script tags) and `unhandledrejection` (dynamic-import
+ * promises reject) — and reload once to pull the current build.
+ *
+ * Guards against a genuinely broken build trapping the tab in a reload loop by carrying a
+ * recovery marker in the URL (`?_cr=<ts>`) — the URL survives a reload deterministically, so
+ * if the reloaded build errors again immediately we see our own recent marker and stop. Once
+ * a build has stayed healthy for 10s the marker is stripped (no reload), keeping the URL
+ * clean and giving a later deploy a fresh recovery.
+ */
+const CHUNK_MARK = '_cr';
+const CHUNK_RELOAD_WINDOW_MS = 20_000;
+
+function ChunkReloadGuard() {
+  useEffect(() => {
+    const isChunkError = (val: unknown): boolean => {
+      const e = val as { name?: string; message?: string; reason?: { name?: string; message?: string } } | undefined;
+      const name = e?.name ?? e?.reason?.name ?? '';
+      const msg = String(e?.message ?? e?.reason?.message ?? e?.reason ?? e ?? '');
+      return name === 'ChunkLoadError'
+        || /ChunkLoadError/i.test(msg)
+        || /Loading chunk [\w-]+ failed/i.test(msg)
+        || /Loading CSS chunk/i.test(msg)
+        || /error loading dynamically imported module/i.test(msg);
+    };
+    const recover = () => {
+      try {
+        const url = new URL(window.location.href);
+        const prev = Number(url.searchParams.get(CHUNK_MARK) || '0');
+        // We already reloaded for a chunk error moments ago and it happened again — the build
+        // is genuinely broken; stop rather than loop. A stale marker (older than the window)
+        // is ignored so a later, unrelated failure can still recover.
+        if (prev && Date.now() - prev < CHUNK_RELOAD_WINDOW_MS) return;
+        url.searchParams.set(CHUNK_MARK, String(Date.now()));
+        window.location.replace(url.toString());
+      } catch {
+        window.location.reload();
+      }
+    };
+    const onError = (ev: ErrorEvent) => { if (isChunkError(ev.error ?? ev.message)) recover(); };
+    const onRejection = (ev: PromiseRejectionEvent) => { if (isChunkError(ev.reason)) recover(); };
+    window.addEventListener('error', onError);
+    window.addEventListener('unhandledrejection', onRejection);
+    // Build proved healthy → strip the marker from the URL without navigating.
+    const healthy = setTimeout(() => {
+      try {
+        const url = new URL(window.location.href);
+        if (url.searchParams.has(CHUNK_MARK)) {
+          url.searchParams.delete(CHUNK_MARK);
+          window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+        }
+      } catch { /* ignore */ }
+    }, 10_000);
+    return () => {
+      window.removeEventListener('error', onError);
+      window.removeEventListener('unhandledrejection', onRejection);
+      clearTimeout(healthy);
+    };
+  }, []);
+  return null;
+}
+
 export function Providers({ children }: { children: React.ReactNode }) {
   const reducedMotion = useReducedMotion();
   const [queryClient] = useState(
@@ -151,7 +217,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <AntdRegistry>
+    <>
+      <ChunkReloadGuard />
+      <AntdRegistry>
       <ConfigProvider
         theme={{
           algorithm: theme.defaultAlgorithm,
@@ -209,6 +277,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           </QueryClientProvider>
         </AntdApp>
       </ConfigProvider>
-    </AntdRegistry>
+      </AntdRegistry>
+    </>
   );
 }

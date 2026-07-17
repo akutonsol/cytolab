@@ -1,7 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { AlertTriangle, ShieldCheck, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import * as LucideIcons from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ExternalLink, Info, MapPin, ShieldCheck, X, type LucideIcon } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -38,10 +40,14 @@ const AFFECTED: Partial<Record<FeatureKey, string[]>> = {
 
 const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : null);
 
+// Resolve a feature's Lucide icon name to a component, falling back to a generic block icon.
+const resolveIcon = (name: string): LucideIcon => ((LucideIcons as unknown as Record<string, LucideIcon>)[name] ?? LucideIcons.Boxes);
+
 export default function ModuleManagementPage() {
   const qc = useQueryClient();
   const { claims } = useAuth();
   const [pending, setPending] = useState<{ key: FeatureKey; next: boolean } | null>(null);
+  const [info, setInfo] = useState<FeatureKey | null>(null);
 
   const { data = [], isLoading } = useQuery({
     queryKey: ['lab-features-list'],
@@ -76,6 +82,7 @@ export default function ModuleManagementPage() {
     // Refresh the app-wide feature context so nav/UI gating updates immediately.
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['lab-features-list'] });
+      qc.invalidateQueries({ queryKey: ['lab-features-all'] }); // keep the superuser Features page in sync
       qc.invalidateQueries({ queryKey: ['lab-features-enabled'] });
     },
   });
@@ -117,6 +124,13 @@ export default function ModuleManagementPage() {
                     <span className="text-[16px] font-bold text-[#0F172A]">{def.name}</span>
                     <span className="rounded-full bg-[#EEF2FF] px-2.5 py-0.5 text-[11px] font-bold text-[#4F46E5]">Tier {def.tier}</span>
                     {!isBuilt(row.featureKey) && <span className="rounded-full bg-[#F1F5F9] px-2.5 py-0.5 text-[11px] font-semibold text-[#475569]">Coming soon</span>}
+                    <button
+                      onClick={() => setInfo(row.featureKey)}
+                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#EEF2FF]"
+                      aria-label={`What does ${def.name} do?`}
+                    >
+                      <Info size={13} /> Details
+                    </button>
                   </div>
                   <p className="mt-1.5 text-[13px] leading-relaxed text-[#475569]">{def.description}</p>
                 </div>
@@ -156,8 +170,9 @@ export default function ModuleManagementPage() {
         })}
       </div>
 
-      {/* Confirmation modal */}
-      {pending && pendingDef && (
+      {/* Confirmation modal — portaled to <body> to escape the `.helix-page`
+          page-transition transform, which otherwise re-anchors `position: fixed`. */}
+      {pending && pendingDef && createPortal(
         <>
           <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setPending(null)} />
           <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-2xl">
@@ -186,8 +201,99 @@ export default function ModuleManagementPage() {
               </button>
             </div>
           </div>
-        </>
+        </>,
+        document.body,
       )}
+
+      {/* Module details dialog — "what does this module do?" */}
+      {info && (() => {
+        const def = FEATURES[info];
+        const row = data.find((r) => r.featureKey === info);
+        const Icon = resolveIcon(def.icon);
+        const chips = AFFECTED[info] ?? [def.name];
+        const deps = def.dependsOn.map((k) => FEATURES[k]?.name).filter(Boolean);
+        return createPortal(
+          <>
+            <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setInfo(null)} />
+            <div className="fixed left-1/2 top-1/2 z-50 flex max-h-[85vh] w-full max-w-[520px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+              <div className="flex items-start justify-between gap-4 border-b border-[#EEF2F7] px-6 py-5">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EEF2FF] text-[#4F46E5]">
+                    <Icon size={22} />
+                  </span>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-[18px] font-bold text-[#0F172A]">{def.name}</h2>
+                      {!isBuilt(info) && <span className="rounded-full bg-[#F1F5F9] px-2.5 py-0.5 text-[11px] font-semibold text-[#475569]">Coming soon</span>}
+                    </div>
+                    <p className="mt-0.5 text-[12px] font-semibold text-[#4F46E5]">Tier {def.tier} · {def.tierName}</p>
+                  </div>
+                </div>
+                <IconAction icon={<X size={18} />} tone="strong" size="lg" shape="circle" className="hover:bg-[#F1F5F9]" onClick={() => setInfo(null)} aria-label="Close" />
+              </div>
+
+              <div className="overflow-y-auto px-6 py-5">
+                <p className="text-[14px] leading-relaxed text-[#334155]">{def.longDescription ?? def.description}</p>
+
+                {def.capabilities && def.capabilities.length > 0 && (
+                  <div className="mt-5">
+                    <p className="mb-2 text-[12px] font-bold uppercase tracking-wide text-[#94A3B8]">What you get</p>
+                    <ul className="space-y-2">
+                      {def.capabilities.map((c) => (
+                        <li key={c} className="flex items-start gap-2 text-[13px] leading-relaxed text-[#334155]">
+                          <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[#16A34A]" /> {c}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="mt-5">
+                  <p className="mb-2 text-[12px] font-bold uppercase tracking-wide text-[#94A3B8]">Where it appears</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {chips.map((c) => (
+                      <span key={c} className="rounded-full bg-[#F1F5F9] px-2.5 py-1 text-[11px] font-semibold text-[#475569]">{c}</span>
+                    ))}
+                  </div>
+                  {def.navPath && (
+                    <p className="mt-2 flex items-center gap-1.5 text-[12px] text-[#64748B]">
+                      <MapPin size={13} className="shrink-0" /> Opens at <span className="font-mono text-[#475569]">{def.navPath}</span> when enabled
+                    </p>
+                  )}
+                </div>
+
+                {deps.length > 0 && (
+                  <div className="mt-5 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] px-3 py-2.5 text-[12px] text-[#1D4ED8]">
+                    <span className="font-semibold">Requires:</span> {deps.join(', ')}. Enable {deps.length > 1 ? 'those modules' : 'that module'} first.
+                  </div>
+                )}
+
+                {def.docsUrl && (
+                  <a href={def.docsUrl} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#4F46E5] hover:underline">
+                    <ExternalLink size={14} /> Full documentation
+                  </a>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between gap-3 border-t border-[#EEF2F7] px-6 py-4">
+                <span className="text-[12px] font-semibold" style={{ color: row?.isEnabled ? '#16A34A' : '#475569' }}>
+                  {row?.isEnabled ? 'Currently enabled' : 'Currently disabled'}
+                </span>
+                {isBuilt(info) && (
+                  <button
+                    onClick={() => { setPending({ key: info, next: !row?.isEnabled }); setInfo(null); }}
+                    className="rounded-xl px-4 py-2 text-sm font-semibold text-white"
+                    style={{ background: row?.isEnabled ? '#DC2626' : '#16A34A' }}
+                  >
+                    {row?.isEnabled ? 'Disable module' : 'Enable module'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </>,
+          document.body,
+        );
+      })()}
     </div>
   );
 }

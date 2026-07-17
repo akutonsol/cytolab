@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Award, CheckCircle, ChevronDown, Clock, Download,
-  ExternalLink, Eye, FileText, Filter, Search, X,
+  ExternalLink, Eye, FileText, Search, X,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
@@ -142,7 +142,6 @@ function ReportsWorkspace() {
               <button onClick={() => setSearch('')}><X size={14} className="text-secondary" /></button>
             )}
           </div>
-          <button className="flex h-11 items-center gap-2 rounded-xl border border-outline-variant/30 bg-white px-4 font-label-md text-label-md text-secondary transition-[background-color,border-color,color,box-shadow,transform,opacity] hover:bg-surface-container-low"><Filter size={15} /> Filters</button>
         </div>
       </div>
 

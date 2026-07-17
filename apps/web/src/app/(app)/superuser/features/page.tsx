@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  AlertTriangle, BarChart3, BellRing, ClipboardList, Clock, FileText, FlaskConical, GitCompare,
-  GraduationCap, History, ListChecks, Lock, type LucideIcon, Mic, Network, PackageSearch, Printer,
-  ScanEye, ShieldCheck, Shield, Sparkles, Tags, Video,
+  AlertTriangle, BarChart3, BellRing, CheckCircle2, ClipboardList, Clock, ExternalLink, FileText,
+  FlaskConical, GitCompare, GraduationCap, History, Info, ListChecks, Lock, type LucideIcon, MapPin,
+  Mic, Network, PackageSearch, Printer, ScanEye, ShieldCheck, Shield, Sparkles, Tags, Video,
 } from 'lucide-react';
-import { App as AntdApp } from 'antd';
+import { App as AntdApp, Modal } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -24,7 +24,7 @@ interface FeatureRow {
   enabledByName: string | null;
   notes: string | null;
 }
-interface LabFeatures { labId: string; labName: string; features: FeatureRow[] }
+interface LabFeatures { labId: string; labName: string; isActive: boolean; online: boolean; activeSessions: number; features: FeatureRow[] }
 
 // ─── Icon + tier color maps ──────────────────────────────────────────────────
 const ICONS: Record<string, LucideIcon> = {
@@ -54,6 +54,69 @@ function Toggle({ on, disabled, onChange }: { on: boolean; disabled?: boolean; o
   );
 }
 
+// ─── Feature details (the "what does this do?" dialog body) ───────────────────
+function FeatureDetails({ featureKey, row }: { featureKey: FeatureKey; row?: FeatureRow }) {
+  const def = FEATURES[featureKey];
+  const tier = def.tier;
+  const Icon = ICONS[def.icon] ?? FileText;
+  const deps = def.dependsOn.map((k) => FEATURES[k]?.name).filter(Boolean);
+  const on = row?.isEnabled ?? false;
+  return (
+    <div>
+      <div className="flex items-start gap-3">
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl" style={{ background: TIER_TINT[tier], color: TIER_COLOR[tier] }}><Icon size={24} /></span>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-[18px] font-bold text-[#0F172A]">{def.name}</h2>
+            {def.comingSoon && <span className="rounded-full border border-[#A5B4FC] bg-white px-2 py-0.5 text-[11px] font-semibold text-[#4F46E5]">Coming Soon</span>}
+          </div>
+          <p className="mt-0.5 text-[12px] font-semibold" style={{ color: TIER_COLOR[tier] }}>Tier {tier} · {def.tierName}</p>
+        </div>
+      </div>
+
+      <p className="mt-4 text-[14px] leading-relaxed text-[#334155]">{def.longDescription ?? def.description}</p>
+
+      {def.capabilities && def.capabilities.length > 0 && (
+        <div className="mt-5">
+          <p className="mb-2 text-[12px] font-bold uppercase tracking-wide text-[#94A3B8]">What you get</p>
+          <ul className="space-y-2">
+            {def.capabilities.map((c) => (
+              <li key={c} className="flex items-start gap-2 text-[13px] leading-relaxed text-[#334155]">
+                <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[#16A34A]" /> {c}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {def.navPath && (
+        <div className="mt-5">
+          <p className="mb-2 text-[12px] font-bold uppercase tracking-wide text-[#94A3B8]">Where it appears</p>
+          <p className="flex items-center gap-1.5 text-[13px] text-[#475569]">
+            <MapPin size={14} className="shrink-0" /> Opens at <span className="font-mono text-[#334155]">{def.navPath}</span> when enabled
+          </p>
+        </div>
+      )}
+
+      {deps.length > 0 && (
+        <div className="mt-5 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] px-3 py-2.5 text-[12px] text-[#1D4ED8]">
+          <span className="font-semibold">Requires:</span> {deps.join(', ')}. Enable {deps.length > 1 ? 'those features' : 'that feature'} first.
+        </div>
+      )}
+
+      {def.docsUrl && (
+        <a href={def.docsUrl} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#4F46E5] hover:underline">
+          <ExternalLink size={14} /> Full documentation
+        </a>
+      )}
+
+      <div className="mt-5 border-t border-[#EEF2F7] pt-3 text-[12px] font-semibold" style={{ color: on ? '#16A34A' : '#475569' }}>
+        {def.comingSoon ? 'Not yet available' : on ? 'Currently enabled for this lab' : 'Currently disabled for this lab'}
+      </div>
+    </div>
+  );
+}
+
 export default function FeaturesPage() {
   const router = useRouter();
   const { claims } = useAuth();
@@ -68,11 +131,13 @@ export default function FeaturesPage() {
 
   const [tab, setTab] = useState<number | 'all'>('all');
   const [labId, setLabId] = useState<string | null>(null);
+  const [infoKey, setInfoKey] = useState<FeatureKey | null>(null);
 
   const { data, isLoading } = useQuery<LabFeatures[]>({
     queryKey: ['lab-features-all'],
     queryFn: () => api.get('/lab-features/all-labs').then((r) => r.data),
     enabled: isSuper,
+    refetchInterval: 30_000, // keep live presence (online/offline) fresh
   });
 
   // Default the selected lab to the superuser's own lab once data lands.
@@ -108,6 +173,7 @@ export default function FeaturesPage() {
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['lab-features-all'] });
+      qc.invalidateQueries({ queryKey: ['lab-features-list'] }); // keep the Modules page in sync
       qc.invalidateQueries({ queryKey: ['lab-features-enabled'] });
     },
   });
@@ -155,7 +221,7 @@ export default function FeaturesPage() {
           <h1 className="text-[26px] font-bold leading-tight tracking-tight text-[#0F172A]">Feature Management</h1>
           <p className="mt-1.5 text-[15px] text-[#6B7280]">Enable or disable features per lab. Tier 1 (Standard) features are always enabled.</p>
         </div>
-        {data && data.length > 1 && (
+        {data && data.length > 0 && (
           <label className="flex items-center gap-2 text-[13px] text-[#6B7280]">
             Lab
             <select
@@ -168,6 +234,47 @@ export default function FeaturesPage() {
           </label>
         )}
       </div>
+
+      {/* ── Labs presence grid — live online/offline per lab, from active user sessions (not revoked,
+             not expired, active in the last 15 min). Click a tile to manage that lab's modules
+             (drives the same selection as the Lab dropdown). Refreshes every 30s. ── */}
+      {data && data.length > 0 && (
+        <div className="mb-5">
+          <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-semibold text-[#475569]">
+            <span>Labs</span>
+            <span className="text-[#94A3B8]">·</span>
+            <span className="inline-flex items-center gap-1.5 text-[#16A34A]"><span className="h-2 w-2 rounded-full bg-[#16A34A]" />{data.filter((l) => l.online).length} online now</span>
+            <span className="inline-flex items-center gap-1.5 text-[#64748B]"><span className="h-2 w-2 rounded-full bg-[#CBD5E1]" />{data.filter((l) => !l.online).length} offline</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {data.map((l) => {
+              const selected = l.labId === labId;
+              return (
+                <button
+                  key={l.labId}
+                  type="button"
+                  onClick={() => setLabId(l.labId)}
+                  aria-pressed={selected}
+                  className="flex items-center justify-between gap-2 rounded-xl border px-3.5 py-3 text-left transition-colors hover:border-[#A5B4FC]"
+                  style={{ borderColor: selected ? '#4F46E5' : '#E2E8F0', background: selected ? '#EEF2FF' : '#fff' }}
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate text-[14px] font-bold text-[#0F172A]">{l.labName}</span>
+                      {!l.isActive && <span className="shrink-0 rounded bg-[#F1F5F9] px-1.5 py-0.5 text-[10px] font-semibold text-[#94A3B8]">Deactivated</span>}
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: l.online ? '#16A34A' : '#94A3B8' }}>
+                      <span className="h-2 w-2 rounded-full" style={{ background: l.online ? '#16A34A' : '#CBD5E1' }} />
+                      {l.online ? `Online · ${l.activeSessions} active` : 'Offline'}
+                    </div>
+                  </div>
+                  {selected && <CheckCircle2 size={16} className="shrink-0 text-[#4F46E5]" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Stats bar ── */}
       <div className="mb-5 flex flex-wrap items-center gap-2.5">
@@ -240,7 +347,18 @@ export default function FeaturesPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
                           <span className="truncate text-[15px] font-bold text-[#0F172A]">{def.name}</span>
-                          <span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={{ background: TIER_TINT[t], color: TIER_COLOR[t] }}>T{t}</span>
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setInfoKey(r.featureKey)}
+                              title={`What does ${def.name} do?`}
+                              aria-label={`What does ${def.name} do?`}
+                              className="grid h-6 w-6 place-items-center rounded-full text-[#94A3B8] transition-colors hover:bg-[#EEF2FF] hover:text-[#4F46E5]"
+                            >
+                              <Info size={15} />
+                            </button>
+                            <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={{ background: TIER_TINT[t], color: TIER_COLOR[t] }}>T{t}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -270,6 +388,19 @@ export default function FeaturesPage() {
           </section>
         );
       })}
+
+      {/* Feature details dialog — "what does this feature do?" */}
+      <Modal
+        open={infoKey !== null}
+        onCancel={() => setInfoKey(null)}
+        footer={null}
+        width={520}
+        centered
+        title={null}
+        destroyOnClose
+      >
+        {infoKey && <FeatureDetails featureKey={infoKey} row={rowByKey.get(infoKey)} />}
+      </Modal>
     </div>
   );
 }

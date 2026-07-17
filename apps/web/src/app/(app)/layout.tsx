@@ -22,6 +22,7 @@ import { SessionTimeoutProvider } from '@/components/SessionTimeoutProvider';
 import { saveReturnTo, clearReturnTo } from '@/lib/session-drafts';
 import { useAuth, useAuthStore } from '@/lib/auth';
 import { api, refreshSession, validatePersistedSession } from '@/lib/api';
+import { playNotificationSound } from '@/lib/notification-sound';
 import { GlobalProgress } from '@/components/GlobalProgress';
 
 interface Announcement { id: string; title: string; body: string; type: string }
@@ -69,7 +70,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // Live unread-notification count for the bell badge (polls every 30s). Combines
   // both sources — system (/notifications) and workforce (/workforce/notifications,
   // feature-gated → fail soft to 0).
-  const { data: unread = 0 } = useQuery({
+  const { data: unread = 0, isSuccess: unreadReady } = useQuery({
     queryKey: ['notifications-unread'],
     queryFn: async () => {
       const [sys, wf] = await Promise.all([
@@ -81,6 +82,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     refetchInterval: 30_000,
     enabled: isAuthed,
   });
+
+  // Play a chime when the unread count RISES — i.e. a new notification arrived (via the 30s
+  // poll or a realtime push). We seed `prevUnread` from the first settled value so the initial
+  // load never chimes; only genuine increases after that do. Honors the per-device sound pref.
+  const prevUnread = useRef<number | null>(null);
+  useEffect(() => {
+    if (!unreadReady) return;
+    const prev = prevUnread.current;
+    if (prev !== null && unread > prev) playNotificationSound();
+    prevUnread.current = unread;
+  }, [unread, unreadReady]);
 
   // Lab branding for the shell (logo/name/tagline). Auth-only endpoint so every
   // staff user sees their lab's identity; falls back to the CYTOLAB default.
@@ -243,6 +255,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       { key: 'logout', label: 'Sign out', icon: <LogoutOutlined />, danger: true },
     ],
     onClick: ({ key }) => (key === 'logout' ? logout() : navigate(key)),
+    // The account menu is long (platform + security + superuser). antd caps its height at 100vh but
+    // anchors it below the avatar, so the last items overflowed off-screen and were unclickable.
+    // Cap it to fit within the viewport (accounting for the trigger offset) and scroll internally.
+    style: { maxHeight: 'calc(100vh - 140px)', overflowY: 'auto' },
   };
 
   const quickAdd: MenuProps = {
@@ -278,7 +294,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="premium-scroll" style={{ height: '100vh', position: 'relative', overflowY: 'auto', overflowX: 'hidden', background: CANVAS, display: 'flex', flexDirection: 'column' }}>
+    <div className="premium-scroll app-shell" style={{ height: '100vh', position: 'relative', overflowY: 'auto', overflowX: 'hidden', background: CANVAS, display: 'flex', flexDirection: 'column' }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');`}</style>
 
       {/* Idle-timeout warning + auto-draft of open work (authed app only). */}
@@ -411,7 +427,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </main>
 
-      <Drawer title={<Logo />} placement="left" width={300} open={drawerOpen} onClose={() => setDrawerOpen(false)} styles={{ body: { padding: 0 } }}>
+      <Drawer rootClassName="app-nav-drawer" title={<Logo />} placement="left" width={300} open={drawerOpen} onClose={() => setDrawerOpen(false)} styles={{ body: { padding: 0 } }}>
         <Menu mode="inline" selectedKeys={[pathname]} defaultOpenKeys={NAV_GROUPS.map((g) => g.key)} items={drawerMenu} onClick={({ key }) => navigate(key)} style={{ borderInlineEnd: 'none' }} />
       </Drawer>
     </div>

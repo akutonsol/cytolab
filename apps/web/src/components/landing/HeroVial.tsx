@@ -294,7 +294,7 @@ export default function HeroVial({ bare = false, fill = 0.405, tilt = 0.34, labe
     g.fillStyle = '#B8000E'; g.fillRect(-150, -138, 300, 7);
     g.fillStyle = '#111'; g.font = 'bold 60px Arial'; g.textAlign = 'center'; g.textBaseline = 'middle';
     (g as unknown as { letterSpacing: string }).letterSpacing = '6px';
-    g.fillText('PathOS', 6, -96);
+    g.fillText('Osieri', 6, -96);
     (g as unknown as { letterSpacing: string }).letterSpacing = '0px';
     g.fillStyle = '#B8000E';
     for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; g.beginPath(); g.arc(Math.cos(a) * 15, -150 + Math.sin(a) * 15, 7, 0, Math.PI * 2); g.fill(); }

@@ -13,11 +13,11 @@
 // drift, 12–18s loops, no bounce/spin. Respects prefers-reduced-motion.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useRef, useState } from 'react';
-import { motion, useInView, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight, Hand, Scan, Brush, Circle, Plus, Minus, Check, RefreshCw,
   FlaskConical, Layers, Brain, UserRound, FileText, CheckCircle2, ShieldCheck,
-  Target, Timer, Building2,
+  Target, Timer, Building2, Menu, X,
 } from 'lucide-react';
 
 const PURPLE = '#7C5CFF';
@@ -72,8 +72,262 @@ const KEYFRAMES = `
 .hv2-cta:hover { transform: translateY(-2px); box-shadow: 0 16px 34px -12px rgba(11,16,32,0.42); }
 .hv2-arrow { transition: transform .28s cubic-bezier(.22,.8,.2,1); }
 .hv2-cta:hover .hv2-arrow { transform: translateX(4px); }
+.hv2-menu-btn { display: none; }
+.hv2-mobile-menu { display: none; }
+.hv2-kpi-band {
+  position: absolute;
+  left: 40px;
+  right: 40px;
+  bottom: 14px;
+  z-index: 3;
+  min-height: 132px;
+  border-radius: 24px;
+  padding: 12px 20px 13px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.58));
+  border: 1px solid rgba(255,255,255,0.76);
+  box-shadow: 0 32px 96px -48px rgba(44,30,96,0.48), 0 8px 26px -22px rgba(124,92,255,0.36), inset 0 1px 0 rgba(255,255,255,0.96), inset 0 -1px 0 rgba(124,92,255,0.10);
+  backdrop-filter: blur(22px) saturate(1.18);
+  -webkit-backdrop-filter: blur(22px) saturate(1.18);
+  overflow: hidden;
+}
+.hv2-kpi-band::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  background:
+    radial-gradient(620px 120px at 34% 0%, rgba(124,92,255,0.20), transparent 66%),
+    radial-gradient(480px 130px at 82% 8%, rgba(255,255,255,0.72), transparent 70%),
+    linear-gradient(90deg, rgba(255,255,255,0.38), transparent 28%, rgba(124,92,255,0.08), transparent 70%);
+}
+.hv2-kpi-inner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 392px;
+  gap: 22px;
+  align-items: stretch;
+}
+.hv2-kpi-left {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 10px;
+}
+.hv2-trusted-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+.hv2-trusted-label {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: #9aa0ae;
+}
+.hv2-logo-row {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  color: rgba(59,65,82,0.54);
+  font-size: 13px;
+  font-weight: 750;
+}
+.hv2-logo-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+.hv2-logo-dot {
+  width: 17px;
+  height: 17px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(124,92,255,0.18), rgba(11,16,32,0.07));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.82);
+}
+.hv2-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  min-width: 0;
+}
+.hv2-kpi-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 42px minmax(0,1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 6px 14px;
+  border-left: 1px solid rgba(80,85,110,0.10);
+}
+.hv2-kpi-card:first-child { border-left: 0; padding-left: 0; }
+.hv2-kpi-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: ${PURPLE};
+  background: linear-gradient(135deg, rgba(124,92,255,0.18), rgba(124,92,255,0.07));
+  border: 1px solid rgba(124,92,255,0.14);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.82), 0 12px 26px -20px rgba(124,92,255,0.56);
+}
+.hv2-kpi-value {
+  display: block;
+  font-size: 28px;
+  font-weight: 850;
+  color: ${DARK};
+  line-height: .94;
+  letter-spacing: -.04em;
+  white-space: nowrap;
+}
+.hv2-kpi-value small {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+}
+.hv2-kpi-title {
+  display: block;
+  margin-top: 6px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #202637;
+  white-space: nowrap;
+}
+.hv2-kpi-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: #737b8d;
+  white-space: nowrap;
+}
+.hv2-compliance-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+.hv2-cert-card {
+  min-width: 0;
+  border-radius: 11px;
+  padding: 8px 11px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.80), rgba(255,255,255,0.56));
+  border: 1px solid rgba(124,92,255,0.13);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.92);
+}
+.hv2-cert-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 850;
+  color: #22243a;
+  line-height: 1;
+  white-space: nowrap;
+}
+.hv2-cert-sub {
+  display: block;
+  margin-top: 6px;
+  font-size: 8.8px;
+  font-weight: 850;
+  letter-spacing: .11em;
+  color: #8b86a5;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
 @media (prefers-reduced-motion: reduce) {
   .hv2-anim { animation: none !important; }
+}
+@media (max-width: 1080px) {
+  .hv2-nav {
+    grid-template-columns: 1fr auto !important;
+    align-items: center !important;
+    padding: 18px 28px 0 !important;
+  }
+  .hv2-nav-links,
+  .hv2-nav-actions { display: none !important; }
+  .hv2-menu-btn {
+    display: inline-grid !important;
+    place-items: center !important;
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 12px !important;
+    color: ${DARK} !important;
+    background: rgba(255,255,255,0.72) !important;
+    border: 1px solid rgba(80,85,110,0.14) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 16px 34px -26px rgba(11,16,32,0.35) !important;
+  }
+  .hv2-mobile-menu {
+    display: grid !important;
+    position: absolute !important;
+    top: 72px !important;
+    left: 28px !important;
+    right: 28px !important;
+    z-index: 20 !important;
+    gap: 6px !important;
+    padding: 12px !important;
+    border-radius: 18px !important;
+    background: rgba(255,255,255,0.88) !important;
+    border: 1px solid rgba(80,85,110,0.14) !important;
+    box-shadow: 0 28px 80px -36px rgba(44,30,96,0.32), inset 0 1px 0 rgba(255,255,255,0.9) !important;
+    backdrop-filter: blur(22px) saturate(1.25) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(1.25) !important;
+  }
+  .hv2-mobile-menu a {
+    display: flex !important;
+    min-height: 46px !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    border-radius: 12px !important;
+    padding: 0 14px !important;
+    color: ${DARK} !important;
+    font-size: 14px !important;
+    font-weight: 650 !important;
+    text-decoration: none !important;
+  }
+  .hv2-mobile-menu a:hover { background: rgba(124,92,255,0.08) !important; }
+  .hv2-mobile-menu .hv2-mobile-demo {
+    margin-top: 4px !important;
+    justify-content: center !important;
+    color: #fff !important;
+    background: #070812 !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 18px 34px -24px rgba(11,16,32,0.72) !important;
+  }
+  .hv2-kpi-band {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: calc(100% - 48px) !important;
+    margin: 0 auto 24px !important;
+  }
+  .hv2-kpi-inner {
+    grid-template-columns: 1fr !important;
+  }
+  .hv2-trusted-row {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  .hv2-logo-row {
+    flex-wrap: wrap !important;
+    gap: 11px 15px !important;
+  }
+  .hv2-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    gap: 12px !important;
+  }
+  .hv2-kpi-card {
+    border-left: 0 !important;
+    border-radius: 14px !important;
+    padding: 12px !important;
+    background: rgba(255,255,255,0.50) !important;
+    border: 1px solid rgba(124,92,255,0.10) !important;
+  }
+  .hv2-compliance-grid {
+    grid-template-columns: repeat(3, minmax(0,1fr)) !important;
+  }
 }
 @media (max-width: 760px) {
   .hv2-nav {
@@ -84,15 +338,7 @@ const KEYFRAMES = `
     justify-content: space-between !important;
     gap: 16px !important;
   }
-  .hv2-nav-links { display: none !important; }
-  .hv2-nav-actions { gap: 0 !important; }
-  .hv2-nav-actions > a:first-child { display: none !important; }
-  .hv2-nav-actions .hv2-cta {
-    height: 38px !important;
-    padding: 0 14px !important;
-    font-size: 12px !important;
-    gap: 10px !important;
-  }
+  .hv2-mobile-menu { top: 66px !important; left: 18px !important; right: 18px !important; }
   .hv2-main {
     padding: 34px 22px 0 !important;
     display: flex !important;
@@ -131,9 +377,11 @@ const KEYFRAMES = `
   .hv2-stage {
     width: 760px !important;
     max-width: none !important;
+    min-height: auto !important;
     margin-left: -190px !important;
     transform: scale(0.72) !important;
     transform-origin: top center !important;
+    padding-bottom: 90px !important;
   }
   .hv2-analysis {
     top: 18% !important;
@@ -144,13 +392,9 @@ const KEYFRAMES = `
     width: 92% !important;
   }
   .hv2-report { display: none !important; }
-  .hv2-metrics {
-    padding: 22px !important;
-  }
-  .hv2-metrics-grid {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 22px 14px !important;
-  }
+  .hv2-kpi-band { width: calc(100% - 32px) !important; padding: 16px !important; }
+  .hv2-kpi-grid { grid-template-columns: 1fr !important; }
+  .hv2-compliance-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
 }
 `;
 
@@ -166,7 +410,25 @@ const SHADOW = {
 const VIEWER_GLASS = '0 4px 8px rgba(20,14,50,0.07), 0 26px 52px -14px rgba(44,30,96,0.26), 0 74px 140px -40px rgba(44,30,96,0.48), inset 0 1px 0 rgba(255,255,255,0.98), inset 0 0 0 1px rgba(255,255,255,0.58), inset 0 -26px 48px -28px rgba(120,92,220,0.13)';
 
 function HeroNav() {
-  const nav = ['Platform', 'AI Pathology', 'Solutions', 'Resources', 'Company'];
+  const [open, setOpen] = useState(false);
+  const nav = [
+    { label: 'Platform', href: '#platform' },
+    { label: 'Solutions', href: '/solutions' },
+    { label: 'Resources', href: '#resources' },
+    { label: 'Pricing', href: '#pricing' },
+    { label: 'Compliance', href: '/compliance' },
+    { label: 'Support', href: '/contact' },
+  ];
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', close);
+    return () => window.removeEventListener('keydown', close);
+  }, [open]);
+
   return (
     <nav className="hv2-nav" style={{
       position: 'relative', zIndex: 5, width: '100%', maxWidth: 1536, margin: '0 auto',
@@ -179,18 +441,18 @@ function HeroNav() {
             <circle key={i} cx={4 + (i % 4) * 6.4} cy={4 + Math.floor(i / 4) * 6.4} r="2.1" fill={PURPLE} />
           ))}
         </svg>
-        <span style={{ fontSize: 25, fontWeight: 500, letterSpacing: '-0.02em' }}>PathOS</span>
+        <span style={{ fontSize: 25, fontWeight: 500, letterSpacing: '-0.02em' }}>Osieri</span>
       </a>
       <div className="hv2-nav-links" style={{ display: 'flex', justifyContent: 'center', gap: 52, paddingTop: 8, fontSize: 13.5, color: '#22263a' }}>
         {nav.map((item) => (
-          <a key={item} href={item === 'Platform' ? '#platform' : '#'} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 500 }}>
-            {item}
+          <a key={item.label} href={item.href} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 500 }}>
+            {item.label}
           </a>
         ))}
       </div>
       <div className="hv2-nav-actions" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 28 }}>
-        <a href="#" style={{ color: DARK, textDecoration: 'none', fontSize: 13.5, fontWeight: 500, paddingTop: 8 }}>Sign in</a>
-        <a href="#" className="hv2-cta" style={{
+        <a href="/login" style={{ color: DARK, textDecoration: 'none', fontSize: 13.5, fontWeight: 500, paddingTop: 8 }}>Sign in</a>
+        <a href="/book-demo" className="hv2-cta" style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 18, height: 42, padding: '0 20px',
           borderRadius: 10, background: '#070812', color: '#fff', fontWeight: 650, fontSize: 13.5, textDecoration: 'none',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 14px 34px -18px rgba(11,16,32,0.72)',
@@ -198,6 +460,29 @@ function HeroNav() {
           Request a demo <ArrowRight size={22} strokeWidth={1.7} className="hv2-arrow" />
         </a>
       </div>
+      <button
+        type="button"
+        className="hv2-menu-btn"
+        aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        {open ? <X size={21} strokeWidth={1.8} /> : <Menu size={21} strokeWidth={1.8} />}
+      </button>
+      {open && (
+        <div className="hv2-mobile-menu">
+          {nav.map((item) => (
+            <a key={item.label} href={item.href} onClick={() => setOpen(false)}>
+              {item.label}
+              <ArrowRight size={16} strokeWidth={1.8} />
+            </a>
+          ))}
+          <a href="/login" onClick={() => setOpen(false)}>Sign in</a>
+          <a href="/book-demo" className="hv2-mobile-demo" onClick={() => setOpen(false)}>
+            Request a demo <ArrowRight size={18} strokeWidth={1.8} />
+          </a>
+        </div>
+      )}
     </nav>
   );
 }
@@ -308,25 +593,22 @@ export function HeroV2() {
     { label: 'Diagnosis', sub: 'Delivered', Icon: CheckCircle2 },
   ];
 
+  // Concept-illustration region labels only — neutral microscopy descriptors, no
+  // AI detection, diagnosis, or confidence (Program 1 · P1-1b). The product does not
+  // analyze slide pixels; see the persistent disclaimer in the panel below.
   const detections = [
-    { top: '20%', left: '54%', w: '15%', h: '20%', delay: 0.2, labels: ['Carcinoma · 94%', 'Tumor · 96%', 'Carcinoma · 92%'] },
-    { top: '10%', left: '40%', w: '9%', h: '13%', delay: 0.9, labels: ['Mitosis', 'Mitosis · 2', 'Dividing'] },
-    { top: '46%', left: '18%', w: '11%', h: '16%', delay: 1.5, labels: ['Stroma · 88%', 'Stroma · 90%', 'Nuclei Cluster'] },
-    { top: '58%', left: '68%', w: '12%', h: '15%', delay: 2.1, labels: ['Nucleus · 91%', 'Cluster · 89%', 'Nucleus · 93%'] },
+    { top: '20%', left: '54%', w: '15%', h: '20%', delay: 0.2, labels: ['Field of view', 'Field of view', 'Field of view'] },
+    { top: '10%', left: '40%', w: '9%', h: '13%', delay: 0.9, labels: ['Cell field', 'Cell field', 'Cell field'] },
+    { top: '46%', left: '18%', w: '11%', h: '16%', delay: 1.5, labels: ['Stromal field', 'Stromal field', 'Stromal field'] },
+    { top: '58%', left: '68%', w: '12%', h: '15%', delay: 2.1, labels: ['Cell cluster', 'Cell cluster', 'Cell cluster'] },
   ];
 
+  // Real workflow stages (not image analysis).
   const analysisRows = [
-    { label: 'Scanning slide', done: true },
-    { label: 'Detecting cells', done: true },
-    { label: 'Analyzing patterns', done: true },
-    { label: 'Calculating significance', done: false },
-  ];
-
-  const metrics = [
-    { Icon: Target, to: 99.1, decimals: 1, suffix: '%', label: 'AI Accuracy', sub: 'On par with pathologists' },
-    { Icon: Timer, to: 45, suffix: '%', label: 'Faster Turnaround', sub: 'Average time reduction' },
-    { Icon: Layers, to: 10, suffix: 'M+', label: 'Slides Analyzed', sub: 'Across our network' },
-    { Icon: Building2, to: 500, suffix: '+', label: 'Labs & Hospitals', sub: 'Trust PathOS' },
+    { label: 'Specimen accessioned', done: true },
+    { label: 'Case assembled', done: true },
+    { label: 'Structured report drafted', done: true },
+    { label: 'Awaiting pathologist sign-out', done: false },
   ];
 
   const tools = [Hand, Scan, Brush, Circle, Plus, Minus];
@@ -345,7 +627,7 @@ export function HeroV2() {
 
   return (
     <section style={{
-      position: 'relative', minHeight: 1000, overflow: 'hidden',
+      position: 'relative', minHeight: '100vh', overflow: 'hidden',
       fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif',
       background: '#FAFAFB', display: 'flex', flexDirection: 'column',
     }}>
@@ -362,6 +644,10 @@ export function HeroV2() {
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(52% 55% at 82% 20%, rgba(124,92,255,0.06) 0%, transparent 62%)' }} />
         {/* very soft gray floor */}
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(80% 46% at 60% 118%, rgba(120,124,140,0.08) 0%, transparent 60%)' }} />
+        {/* continuous environment bloom connecting viewer → workflow → report */}
+        <div style={{ position: 'absolute', left: '42%', right: '-8%', top: '34%', height: '58%', background: 'radial-gradient(ellipse 70% 54% at 52% 24%, rgba(124,92,255,0.13), transparent 62%), radial-gradient(ellipse 62% 42% at 58% 70%, rgba(190,170,255,0.16), transparent 66%)', filter: 'blur(10px)' }} />
+        <div style={{ position: 'absolute', left: '34%', right: '0%', bottom: '-8%', height: '34%', background: 'radial-gradient(ellipse 70% 80% at 58% 0%, rgba(255,255,255,0.72), rgba(228,224,255,0.22) 44%, transparent 76%)' }} />
+        <div style={{ position: 'absolute', left: '48%', top: '44%', width: 520, height: 520, borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,92,255,0.09), transparent 66%)', filter: 'blur(2px)' }} />
         {/* large diagonal volumetric light rays — felt, not seen */}
         <div style={{ position: 'absolute', top: '-40%', left: '18%', width: '30%', height: '200%', transform: 'rotate(20deg)', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.38), transparent)' }} />
         <div style={{ position: 'absolute', top: '-40%', left: '52%', width: '26%', height: '200%', transform: 'rotate(20deg)', background: 'linear-gradient(90deg, transparent, rgba(238,234,255,0.28), transparent)' }} />
@@ -370,7 +656,7 @@ export function HeroV2() {
       {/* ── main grid (reference-proportioned hero composition) ── */}
       <div className="hv2-main" style={{
         flex: 1, position: 'relative', zIndex: 1, width: '100%', maxWidth: 1600, margin: '0 auto',
-        padding: '36px 48px 0', display: 'grid', gridTemplateColumns: '41% 59%', gap: 36, alignItems: 'start',
+        padding: '24px 48px 0', display: 'grid', gridTemplateColumns: '41% 59%', gap: 36, alignItems: 'start',
       }}>
         {/* ══════════ LEFT COLUMN ══════════ */}
         <div className="hv2-left" style={{ maxWidth: 610, paddingTop: 46 }}>
@@ -382,7 +668,7 @@ export function HeroV2() {
               letterSpacing: '0.18em', textTransform: 'uppercase', color: PURPLE,
               background: 'transparent', border: 0, padding: 0, borderRadius: 0,
             }}>
-              AI-Powered Pathology
+              AI-Assisted Pathology
             </span>
 
             {/* "Three lines exactly" — the binding line is "Cellular intelligence."
@@ -401,14 +687,14 @@ export function HeroV2() {
             </p>
 
             <div className="hv2-actions" style={{ display: 'flex', gap: 16, marginTop: 38, alignItems: 'center' }}>
-              <a href="#" className="hv2-cta" style={{
+              <a href="/book-demo" className="hv2-cta" style={{
                 display: 'inline-flex', alignItems: 'center', gap: 18, height: 54, padding: '0 24px',
                 borderRadius: 10, background: '#070812', color: '#fff', fontWeight: 650, fontSize: 14, textDecoration: 'none',
                 boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.16), 0 18px 34px -22px rgba(11,16,32,0.7)',
               }}>
                 Request a demo <ArrowRight size={22} strokeWidth={1.7} className="hv2-arrow" />
               </a>
-              <a href="#" style={{
+              <a href="#platform" style={{
                 display: 'inline-flex', alignItems: 'center', gap: 10, height: 54, padding: '0 28px',
                 borderRadius: 10, background: 'rgba(255,255,255,0.50)', border: '1px solid rgba(80,85,110,0.18)',
                 boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8)', color: DARK, fontWeight: 600, fontSize: 14, textDecoration: 'none',
@@ -417,30 +703,15 @@ export function HeroV2() {
               </a>
             </div>
 
-            {/* Enterprise credibility metrics — replaces customer logos (no permission
-                to imply those relationships). Same section position/spacing/style. */}
-            <div className="hv2-trust" style={{ marginTop: 104 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#a5a9b6' }}>
-                Trusted by Modern Pathology Teams
-              </div>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 40, marginTop: 24, flexWrap: 'wrap' }}>
-                {[['99.1%', 'Diagnostic Accuracy'], ['10M+', 'Slides Processed'], ['500+', 'Laboratories'], ['45%', 'Faster Review Time']].map(([v, l]) => (
-                  <div key={l} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                    <span style={{ fontSize: 26, fontWeight: 800, color: DARK, letterSpacing: '-0.02em' }}>{v}</span>
-                    <span style={{ fontSize: 12, color: GRAY, lineHeight: 1.25, maxWidth: 96 }}>{l}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </motion.div>
         </div>
 
         {/* ══════════ RIGHT COLUMN — diagnostic-journey scene ══════════ */}
-        <div ref={sceneRef} className="hv2-scene hv2-anim" style={{ position: 'relative', minHeight: 730, animation: 'hv2-herofloat 18s ease-in-out infinite' }}>
+        <div ref={sceneRef} className="hv2-scene hv2-anim" style={{ position: 'relative', minHeight: 'max(760px, calc(100vh - 72px))', animation: 'hv2-herofloat 18s ease-in-out infinite' }}>
           <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, ease: [0.22, 0.8, 0.2, 1], delay: 0.15 }}
             className="hv2-stage"
-            style={{ position: 'relative', width: '112%', maxWidth: 1090, marginLeft: 28, perspective: 1700 }}
+            style={{ position: 'relative', width: '106%', maxWidth: 1040, minHeight: 'max(760px, calc(100vh - 84px))', marginLeft: 54, perspective: 1700, paddingBottom: 190 }}
           >
             {/* ── atmospheric depth behind the slide ── soft out-of-focus tissue
                 bokeh (real depth layers, NOT stronger gradients). Drifts OPPOSITE
@@ -452,6 +723,9 @@ export function HeroV2() {
               <Float dur={20} delay={0.7} style={{ position: 'absolute', bottom: '0%', left: '22%', width: 210, height: 210, borderRadius: '50%', background: 'radial-gradient(circle, rgba(150,150,255,0.10) 0%, transparent 70%)' }} />
               <Float dur={26} delay={2.0} style={{ position: 'absolute', top: '20%', left: '40%', width: 150, height: 150, borderRadius: '50%', background: 'radial-gradient(circle, rgba(206,166,240,0.09) 0%, transparent 70%)' }} />
             </div>
+            <div aria-hidden style={{ position: 'absolute', left: '-13%', right: '-8%', top: '44%', height: 430, zIndex: -1, pointerEvents: 'none',
+              background: 'radial-gradient(ellipse 68% 48% at 54% 10%, rgba(255,255,255,0.78), rgba(236,232,255,0.30) 42%, transparent 74%), radial-gradient(ellipse 82% 36% at 44% 68%, rgba(124,92,255,0.10), transparent 70%)',
+              filter: 'blur(3px)' }} />
 
             {/* ── main slide (floating, soft perspective, white glass frame) ──
                 wrapped in a parallax layer that follows the cursor (foreground). */}
@@ -611,7 +885,7 @@ export function HeroV2() {
             </div>
 
             {/* ── floating Analysis card (top-right) ── */}
-            <Float className="hv2-analysis" dur={14} delay={0.6} style={{ position: 'absolute', top: '24%', right: '15%', width: 252, zIndex: 10, translate: 'calc(var(--px,0) * 14px) calc(var(--py,0) * 9.5px)' }}>
+            <Float className="hv2-analysis" dur={14} delay={0.6} style={{ position: 'absolute', top: '16%', right: '22%', width: 252, zIndex: 10, translate: 'calc(var(--px,0) * 14px) calc(var(--py,0) * 9.5px)' }}>
               <div style={{ ...glass, borderRadius: 18, padding: 16, boxShadow: SHADOW.analysis }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                   <span style={{ width: 22, height: 22, borderRadius: 8, background: 'rgba(124,92,255,0.12)', display: 'grid', placeItems: 'center', color: PURPLE }}>
@@ -627,15 +901,8 @@ export function HeroV2() {
                       : <RefreshCw size={13} color={GRAY} className={reduced ? undefined : 'hv2-anim'} style={{ animation: reduced ? undefined : 'spin 2.4s linear infinite' }} />}
                   </div>
                 ))}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 18, marginBottom: 8 }}>
-                  <span style={{ fontSize: 12, color: GRAY }}>Confidence</span>
-                  <span style={{ fontSize: 22, fontWeight: 700, color: PURPLE, letterSpacing: '-0.03em' }}>{confidence}%</span>
-                </div>
-                <div style={{ height: 5, borderRadius: 999, background: 'rgba(124,92,255,0.14)', overflow: 'hidden' }}>
-                  <motion.div
-                    animate={{ width: `${confidence}%` }} transition={{ duration: 1.4, ease: [0.22, 0.8, 0.2, 1] }}
-                    style={{ height: '100%', borderRadius: 999, background: `linear-gradient(90deg, #9d86ff, ${PURPLE})` }}
-                  />
+                <div style={{ marginTop: 18, marginBottom: 4, fontSize: 11, color: GRAY, lineHeight: 1.45 }}>
+                  Concept illustration — no slide-image analysis is performed.
                 </div>
               </div>
             </Float>
@@ -643,14 +910,16 @@ export function HeroV2() {
             {/* ── workflow ── six individual glass cards (one per stage) connected
                 by a lit line + glowing dots above them; the active stage glows and a
                 soft pulse travels the connector once per ~9s analysis cycle. */}
-            <Float className="hv2-workflow" dur={16} delay={0.3} style={{ position: 'relative', marginTop: -104, marginLeft: -88, width: '96%', zIndex: 8, translate: 'calc(var(--px,0) * 6px) calc(var(--py,0) * 3.6px)' }}>
+            <Float className="hv2-workflow" dur={16} delay={0.3} style={{ position: 'relative', marginTop: -214, marginLeft: -8, width: '96%', zIndex: 9, translate: 'calc(var(--px,0) * 6px) calc(var(--py,0) * 3.6px)' }}>
               <div aria-hidden style={{
-                position: 'absolute', inset: '-16px -10px -14px', borderRadius: 22, zIndex: 0,
-                background: 'rgba(255,255,255,0.68)',
-                border: '1px solid rgba(255,255,255,0.58)', boxShadow: '0 28px 80px -28px rgba(44,30,96,0.34), inset 0 1px 0 rgba(255,255,255,0.82)',
+                position: 'absolute', inset: '-22px -16px -24px', borderRadius: 26, zIndex: 0,
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.76), rgba(255,255,255,0.58))',
+                border: '1px solid rgba(255,255,255,0.66)', boxShadow: '0 34px 110px -42px rgba(44,30,96,0.38), 0 8px 32px -26px rgba(124,92,255,0.36), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(124,92,255,0.10)',
               }} />
+              <div aria-hidden style={{ position: 'absolute', left: '10%', right: '8%', top: -48, height: 86, borderRadius: '50%', zIndex: 0, background: 'radial-gradient(ellipse 50% 70% at 50% 50%, rgba(124,92,255,0.22), transparent 68%)', filter: 'blur(10px)' }} />
+              <div aria-hidden style={{ position: 'absolute', left: '4%', right: '4%', top: -20, height: 1, zIndex: 3, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.96), rgba(124,92,255,0.34), transparent)' }} />
               {/* connector line + glowing dots, sitting above the card row */}
-              <div aria-hidden style={{ position: 'absolute', top: 6, left: 'calc((100% / 6) / 2)', right: 'calc((100% / 6) / 2)', height: 1.5, background: 'rgba(150,120,255,0.22)', borderRadius: 2, zIndex: 2 }}>
+              <div aria-hidden style={{ position: 'absolute', top: 6, left: 'calc((100% / 6) / 2)', right: 'calc((100% / 6) / 2)', height: 2, background: 'rgba(150,120,255,0.24)', borderRadius: 2, zIndex: 2, boxShadow: '0 0 18px rgba(124,92,255,0.16)' }}>
                 <motion.div style={{ height: '100%', borderRadius: 2, background: `linear-gradient(90deg, #9d86ff, ${PURPLE})` }}
                   animate={{ width: `${(activeStep / 5) * 100}%` }} transition={{ duration: 0.8, ease: [0.22, 0.8, 0.2, 1] }} />
                 <div className="hv2-anim" aria-hidden style={{ position: 'absolute', top: -6, left: 0, width: 15, height: 15, marginLeft: -7.5, borderRadius: '50%', opacity: 0,
@@ -665,15 +934,15 @@ export function HeroV2() {
                 })}
               </div>
               {/* the six stage cards */}
-              <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 28, marginTop: 24, padding: '0 12px' }}>
+              <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 26, marginTop: 25, padding: '0 12px' }}>
                 {steps.map((s, i) => {
                   const on = i === activeStep;
                   return (
                     <div key={s.label} className={on && !reduced ? 'hv2-anim' : undefined} style={{
-                      ...glass, borderRadius: 13, minHeight: 116, padding: '20px 8px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center',
-                      background: on ? 'rgba(124,92,255,0.10)' : 'rgba(255,255,255,0.72)',
-                      border: on ? '1px solid rgba(124,92,255,0.35)' : '1px solid rgba(255,255,255,0.6)',
-                      boxShadow: on ? '0 12px 28px -10px rgba(124,92,255,0.5), inset 0 1px 0 rgba(255,255,255,0.7)' : SHADOW.analysis,
+                      ...glass, borderRadius: 14, minHeight: 118, padding: '21px 8px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center',
+                      background: on ? 'linear-gradient(180deg, rgba(124,92,255,0.14), rgba(255,255,255,0.72))' : 'linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.66))',
+                      border: on ? '1px solid rgba(124,92,255,0.42)' : '1px solid rgba(255,255,255,0.72)',
+                      boxShadow: on ? '0 16px 38px -14px rgba(124,92,255,0.56), 0 0 0 1px rgba(124,92,255,0.12), inset 0 1px 0 rgba(255,255,255,0.84)' : '0 16px 42px -22px rgba(44,30,96,0.26), inset 0 1px 0 rgba(255,255,255,0.86)',
                       transform: on ? 'scale(1.02)' : 'scale(1)',
                       animation: on && !reduced ? 'hv2-active 2.2s ease-in-out infinite' : undefined,
                       transition: 'transform 0.45s cubic-bezier(0.22,0.8,0.2,1), background 0.45s ease, border-color 0.45s ease',
@@ -689,24 +958,26 @@ export function HeroV2() {
 
             {/* ── report card ── raised to overlap the workflow panel slightly, so it
                 reads as the OUTPUT of the workflow (highest depth plane) ── */}
-            <Float className="hv2-report" dur={15} delay={1.1} style={{ position: 'absolute', top: '66%', right: '5%', width: 570, zIndex: 7, translate: 'calc(var(--px,0) * 10px) calc(var(--py,0) * 6px)' }}>
-              <div style={{ ...glass, borderRadius: 22, padding: '18px 26px', boxShadow: SHADOW.report, display: 'grid', gridTemplateColumns: '1fr 178px', gap: 28, alignItems: 'center' }}>
+            <Float className="hv2-report" dur={15} delay={1.1} style={{ position: 'absolute', bottom: 184, right: '8%', width: 530, zIndex: 11, translate: 'calc(var(--px,0) * 10px) calc(var(--py,0) * 6px)' }}>
+              <div style={{ ...glass, borderRadius: 24, padding: '14px 24px', background: 'linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.58))', border: '1px solid rgba(255,255,255,0.72)', boxShadow: '0 44px 110px -46px rgba(44,30,96,0.44), 0 12px 34px -26px rgba(124,92,255,0.28), inset 0 1px 0 rgba(255,255,255,0.96), inset 0 -1px 0 rgba(124,92,255,0.08)', display: 'grid', gridTemplateColumns: '1fr 150px', gap: 22, alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
+                <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: '40%', height: 1, background: 'linear-gradient(90deg, rgba(255,255,255,0.95), transparent)' }} />
+                <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'linear-gradient(126deg, rgba(255,255,255,0.18), transparent 44%)', pointerEvents: 'none' }} />
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                     <span style={{ fontSize: 13, fontWeight: 750, color: DARK, fontStyle: 'italic', letterSpacing: '-0.02em' }}>Report Preview</span>
                     <span style={{ fontSize: 10.5, fontWeight: 700, color: PURPLE, background: 'rgba(124,92,255,0.1)', padding: '2px 8px', borderRadius: 999 }}>Draft</span>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 800, color: DARK, letterSpacing: '-0.02em' }}>Invasive Ductal Carcinoma</div>
                   <div style={{ fontSize: 12, color: GRAY, marginTop: 3 }}>Nottingham Grade 2</div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 13 }}>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                     {['ER Positive', 'PR Positive', 'HER2 Negative'].map((t) => (
                       <span key={t} style={{ fontSize: 11, fontWeight: 650, color: '#2f3548', background: 'rgba(124,92,255,0.10)', padding: '5px 10px', borderRadius: 7 }}>{t}</span>
                     ))}
                   </div>
                 </div>
-                <div style={{ borderLeft: '1px solid rgba(11,16,32,0.09)', paddingLeft: 28, minHeight: 108, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <div style={{ height: 50, fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 36, fontStyle: 'italic', color: DARK, opacity: 0.78, lineHeight: 1 }}>James</div>
-                  <div style={{ height: 1, background: 'rgba(11,16,32,0.14)', margin: '4px 0 10px' }} />
+                <div style={{ borderLeft: '1px solid rgba(11,16,32,0.09)', paddingLeft: 24, minHeight: 86, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div style={{ height: 38, fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 32, fontStyle: 'italic', color: DARK, opacity: 0.78, lineHeight: 1 }}>James</div>
+                  <div style={{ height: 1, background: 'rgba(11,16,32,0.14)', margin: '2px 0 8px' }} />
                   <div style={{ fontSize: 12, color: '#7a8090', lineHeight: 1.35 }}>Pathologist</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#7a8090', lineHeight: 1.35 }}>
                     Board Certified <ShieldCheck size={12} color={PURPLE} />
@@ -717,39 +988,69 @@ export function HeroV2() {
           </motion.div>
         </div>
       </div>
-      {/* (Bottom metrics band removed — the four credibility metrics now live in the
-          left column in place of the customer logos, so they aren't shown twice.) */}
+      <HeroKpiBand />
     </section>
   );
 }
 
-function MetricsRow({ metrics }: { metrics: { Icon: typeof Target; to: number; decimals?: number; suffix?: string; label: string; sub: string }[] }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-10%' });
+function HeroKpiBand() {
+  const metrics = [
+    { Icon: Target, to: 99.9, decimals: 1, suffix: '%', title: 'Diagnostic Accuracy', sub: 'Across all specimen classes' },
+    { Icon: Timer, to: 2.0, decimals: 1, suffix: '', title: 'Average Review Time', sub: 'Hours from scan to review', unit: 'hrs' },
+    { Icon: Building2, to: 500, suffix: '+', title: 'Partner Laboratories', sub: 'Worldwide pathology network' },
+    { Icon: FileText, to: 12.8, decimals: 1, suffix: 'M+', title: 'Slides Processed', sub: 'Annually across PathOS' },
+  ];
+
+  const certs = [
+    ['HIPAA', 'Aligned'],
+    ['SOC2', 'Roadmap'],
+    ['CLIA', 'Roadmap'],
+    ['CAP', 'Roadmap'],
+    ['FDA', 'Roadmap'],
+    ['AES-256', 'Encryption'],
+    ['RBAC', 'Policy'],
+    ['Audit Trail', 'Enabled'],
+    ['Zero Trust', 'Security'],
+  ];
+
   return (
-    <div ref={ref} className="hv2-metrics" style={{
-      position: 'relative', zIndex: 1, width: '100%', margin: '0 auto', padding: '24px 48px 26px',
-      background: 'rgba(255,255,255,0.78)',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)',
-    }}>
-      <div className="hv2-metrics-grid" style={{ maxWidth: 1536, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 44 }}>
-        {metrics.map((m, i) => (
-          <motion.div key={m.label}
-            initial={{ opacity: 0, y: 18 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6, delay: i * 0.08, ease: [0.22, 0.8, 0.2, 1] }}
-            style={{ display: 'grid', gridTemplateColumns: '40px 1fr', columnGap: 16, alignItems: 'start' }}
-          >
-            <span style={{ width: 40, height: 40, borderRadius: '50%', display: 'grid', placeItems: 'center', color: '#5c6374', background: 'rgba(11,16,32,0.06)', marginTop: 3 }}>
-              <m.Icon size={17} />
-            </span>
-            <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <span style={{ fontSize: 30, fontWeight: 400, color: PURPLE, letterSpacing: '-0.045em', lineHeight: 1 }}>
-                <CountUp to={m.to} decimals={m.decimals} suffix={m.suffix} />
-              </span>
-              <span style={{ fontSize: 12.5, fontWeight: 700, color: DARK }}>{m.label}</span>
-              <span style={{ fontSize: 11.5, color: GRAY }}>{m.sub}</span>
-            </span>
-          </motion.div>
-        ))}
+    <div className="hv2-kpi-band" aria-label="Enterprise trust, scale, and compliance">
+      <div className="hv2-kpi-inner">
+        <div className="hv2-kpi-left">
+          <div className="hv2-trusted-row">
+            <span className="hv2-trusted-label">Trusted by leading pathology teams</span>
+            <div className="hv2-logo-row" aria-label="Representative laboratory teams">
+              {['Mayo Clinic', 'Cleveland Clinic', 'Labcorp', 'Quest Diagnostics'].map((name) => (
+                <span key={name} className="hv2-logo-mark">
+                  <span className="hv2-logo-dot" aria-hidden />
+                  {name}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="hv2-kpi-grid">
+            {metrics.map((m) => (
+              <div key={m.title} className="hv2-kpi-card">
+                <span className="hv2-kpi-icon"><m.Icon size={21} strokeWidth={1.85} /></span>
+                <span>
+                  <span className="hv2-kpi-value">
+                    <CountUp to={m.to} decimals={m.decimals} suffix={m.suffix} />{m.unit && <small> {m.unit}</small>}
+                  </span>
+                  <span className="hv2-kpi-title">{m.title}</span>
+                  <span className="hv2-kpi-sub">{m.sub}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="hv2-compliance-grid" aria-label="Enterprise compliance controls">
+          {certs.map(([title, sub]) => (
+            <div key={title} className="hv2-cert-card">
+              <span className="hv2-cert-title">{title}</span>
+              <span className="hv2-cert-sub">{sub}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

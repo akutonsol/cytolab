@@ -7,7 +7,6 @@
 // destination is real. Do NOT redesign this — it is the shipping landing chrome.
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { SmoothScroll } from './SmoothScroll';
 
 const RED = '#E63946';
 const INK = '#0a0b1a';
@@ -30,7 +29,7 @@ export function SiteNav({ active = 'platform' }: { active?: string }) {
   return (
     <nav style={{
       position: 'fixed', top: 0, width: '100%', zIndex: 100,
-      background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(12px)',
+      background: 'rgba(255,255,255,0.96)',
       borderBottom: '1px solid rgba(0,0,0,0.06)', padding: '0 48px', height: 78,
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     }}>
@@ -46,7 +45,7 @@ export function SiteNav({ active = 'platform' }: { active?: string }) {
           <circle cx="20.5" cy="19.5" r="1.7" fill={RED} opacity={0.75} />
         </svg>
         <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.02 }}>
-          <span style={{ fontWeight: 900, fontSize: 25, letterSpacing: '0.02em' }}>PathOS</span>
+          <span style={{ fontWeight: 900, fontSize: 25, letterSpacing: '0.02em' }}>Osieri</span>
           <span style={{ fontSize: 10.5, fontWeight: 600, color: '#6b7280', letterSpacing: '0.005em', marginTop: 3 }}>The Operating System for Modern Pathology</span>
         </span>
       </Link>
@@ -86,10 +85,10 @@ export function SiteFooter() {
             <div style={{ width: 24, height: 24, background: RED, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ color: '#fff', fontSize: 10, fontWeight: 900 }}>PO</span>
             </div>
-            <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, fontWeight: 800, letterSpacing: '0.01em' }}>PathOS</span>
+            <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, fontWeight: 800, letterSpacing: '0.01em' }}>Osieri</span>
           </Link>
           <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12.5 }}>The Operating System for Modern Pathology</span>
-          <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11 }}>© 2026 PathOS. All rights reserved.</span>
+          <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11 }}>© 2026 Osieri. All rights reserved.</span>
         </div>
         <div style={{ display: 'flex', gap: 24 }}>
           {links.map((item) => (
@@ -108,12 +107,10 @@ export function SiteFooter() {
   );
 }
 
-// Smooth-scroll + fixed-nav offset for hash navigation. Injected once via the
-// endorsed raw-CSS pattern (avoids SSR hydration mismatch). scroll-margin-top
-// keeps anchored sections clear of the 78px fixed nav.
+// Fixed-nav offset for hash navigation. Keep document scrolling native; synthetic
+// or CSS smooth scrolling made the long landing page feel sticky on wheel input.
 export function MarketingScrollStyle() {
   return <style dangerouslySetInnerHTML={{ __html: `
-    @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
     section[id], [id].scroll-anchor { scroll-margin-top: 96px; }
   ` }} />;
 }
@@ -123,7 +120,6 @@ export function MarketingPage({ active, children }: { active?: string; children:
   return (
     <div style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif', color: INK, background: '#fff', minHeight: '100vh' }}>
       <MarketingScrollStyle />
-      <SmoothScroll />
       <SiteNav active={active} />
       <main style={{ paddingTop: 78 }}>{children}</main>
       <SiteFooter />

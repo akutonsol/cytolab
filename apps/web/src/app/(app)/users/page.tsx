@@ -41,7 +41,7 @@ export default function UsersPage() {
   }, [data, q]);
 
   return (
-    <div className="mx-auto max-w-[1400px]">
+    <div className="w-full">
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>

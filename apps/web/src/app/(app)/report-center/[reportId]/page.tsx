@@ -10,7 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
 import { donutColor, fmtValue, getPath, reportById, toCsv } from '@/lib/report-center';
-import { Card, TableEmpty } from '@/components/ui';
+import { Card, PageHeader, TableEmpty } from '@/components/ui';
 import { notify } from '@/lib/notify';
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -54,12 +54,11 @@ export default function ReportRunnerPage() {
 
   return (
     <div className="report-print min-h-full pb-10 pt-4" style={{ background: '#F8FAFC' }}>
-      <button onClick={() => router.push(`/report-center?tab=${def.category.toLowerCase()}`)} className="no-print mb-4 flex items-center gap-1.5 text-[13px] font-semibold text-[#475569] hover:text-[#0F172A]"><ArrowLeft size={15} /> Report Center</button>
-
-      <div className="mb-5">
-        <h1 className="text-[24px] font-bold tracking-tight text-[#0F172A]">{def.name}</h1>
-        <p className="mt-1 text-[14px] text-[#6B7280]">{def.description}</p>
-      </div>
+      <PageHeader
+        back={<button onClick={() => router.push(`/report-center?tab=${def.category.toLowerCase()}`)} className="no-print flex items-center gap-1.5 text-[13px] font-semibold text-[#475569] hover:text-charcoal-heading"><ArrowLeft size={15} /> Report Center</button>}
+        title={def.name}
+        description={def.description}
+      />
 
       {/* Controls */}
       <Card radius="md" elevation="soft" border="hairline" className="no-print mb-5 flex flex-wrap items-end gap-3 p-4">
@@ -80,7 +79,7 @@ export default function ReportRunnerPage() {
               return (
                 <Card radius="md" elevation="soft" border="hairline" className="p-4" key={key}>
                   <div className="text-[13px] text-[#475569]">{label}</div>
-                  <div className="mt-1 text-[32px] font-bold text-[#0F172A]">{m ? fmtValue(m.value, fmt as any) : '—'}</div>
+                  <div className="mt-1 text-[32px] font-bold text-charcoal-heading">{m ? fmtValue(m.value, fmt as any) : '—'}</div>
                   <div className="mt-1 text-[12px] text-[#475569]">Benchmark {m ? fmtValue(m.benchmark, fmt as any) : '—'}</div>
                   {m && <span className="mt-2 inline-flex rounded-full px-2.5 py-0.5 text-[12px] font-bold" style={{ background: sc.bg, color: sc.fg }}>{m.status}</span>}
                 </Card>
@@ -88,7 +87,7 @@ export default function ReportRunnerPage() {
             })}
           </div>
           <Card radius="md" elevation="soft" border="hairline" className="flex items-center justify-between p-5">
-            <span className="text-[15px] font-bold text-[#0F172A]">Overall Compliance</span>
+            <span className="text-[15px] font-bold text-charcoal-heading">Overall Compliance</span>
             {data?.overall && <span className="rounded-full px-3 py-1 text-[14px] font-bold" style={{ background: (STATUS_COLOR[data.overall] ?? STATUS_COLOR.Warning).bg, color: (STATUS_COLOR[data.overall] ?? STATUS_COLOR.Warning).fg }}>{data.overall}</span>}
           </Card>
         </div>
@@ -100,7 +99,7 @@ export default function ReportRunnerPage() {
               {def.kpis.map((k) => (
                 <Card radius="md" elevation="soft" border="hairline" className="p-4" key={k.path}>
                   <div className="text-[13px] text-[#475569]">{k.label}</div>
-                  <div className="mt-1 text-[32px] font-bold leading-none text-[#0F172A]">{data ? fmtValue(getPath(data, k.path), k.format) : '—'}</div>
+                  <div className="mt-1 text-[32px] font-bold leading-none text-charcoal-heading">{data ? fmtValue(getPath(data, k.path), k.format) : '—'}</div>
                 </Card>
               ))}
             </div>

@@ -394,9 +394,8 @@ export default function DashboardPage() {
             <div style={{ height: 540, background: q.panelBg, borderRadius: 20, padding: '20px', border: `1px solid ${q.panelBorder}`, boxShadow: q.panelShadow, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <span style={{ fontSize: 18, fontWeight: 700, color: q.title, fontFamily: 'Geist,sans-serif' }}>Specimen Queue</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: q.pillBg, border: `1px solid ${q.pillBorder}`, borderRadius: 999, padding: '4px 10px', cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: q.pillBg, border: `1px solid ${q.pillBorder}`, borderRadius: 999, padding: '4px 10px' }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: q.pillText }}>All Types</span>
-                  <ChevronDown size={12} color={q.pillText} />
                 </div>
               </div>
               <div className="premium-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, overflowY: 'auto', minHeight: 0 }}>
@@ -428,7 +427,7 @@ export default function DashboardPage() {
                           <span style={{ fontSize: 11, color: q.received }}>Received {new Date(r.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#818CF8' }} />
-                            <span style={{ fontSize: 10, fontWeight: 600, color: q.aiText }}>AI Screening Complete</span>
+                            <span style={{ fontSize: 10, fontWeight: 600, color: q.aiText }}>In workflow</span>
                           </span>
                         </div>
                       </div>
@@ -467,11 +466,11 @@ export default function DashboardPage() {
             <div className="ai-model-container" style={{ height: 540, background: m.panelBg, borderRadius: 20, border: `2px solid ${m.panelBorder}`, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               {/* Header (overlays the stage so the head can fill the panel) */}
               <div style={{ padding: '20px 24px 0', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 4 }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: m.title, fontFamily: 'Geist,sans-serif' }}>AI Cytology Model</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: m.title, fontFamily: 'Geist,sans-serif' }}>Case Overview</div>
                 <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5" style={{ background: m.livePillBg, boxShadow: m.livePillShadow }}>
                   <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" style={{ animationDuration: '1.5s' }} />
                   <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: m.liveText }}>Live</span>
-                  <span className="text-[11px] font-medium" style={{ color: m.scanText }}>Scanning</span>
+                  <span className="text-[11px] font-medium" style={{ color: m.scanText }}>Lab metrics</span>
                 </div>
               </div>
 
@@ -518,26 +517,21 @@ export default function DashboardPage() {
                         {/* rotating halo beneath the bust */}
                         <div style={{ position: 'absolute', left: 70, top: 450, width: 370, height: 80, borderRadius: '50%', background: 'radial-gradient(50% 50% at 50% 50%, rgba(167,139,250,0.3) 0%, rgba(99,102,241,0.15) 45%, transparent 70%)', filter: 'blur(8px)', zIndex: 1, animation: 'haloRotate 6s ease-in-out infinite' }} />
                         {/* head — box matches the image's 1.5 aspect (no letterbox); scalp near top */}
-                        <img src="/ai-man.png" alt="AI Cytology Model" className="ai-breathe"
+                        <img src="/ai-man.png" alt="Case overview illustration" className="ai-breathe"
                           style={{ position: 'absolute', left: -167, top: -18, width: 833, height: 555, objectFit: 'contain', objectPosition: 'center', filter: 'brightness(1.52) contrast(1.14) saturate(0.35) drop-shadow(0 18px 40px rgba(99,102,241,0.3))', zIndex: 2 }} />
                         {/* glossy white top-light to mimic the reference render */}
                         <div style={{ position: 'absolute', left: 80, top: 20, width: 360, height: 340, background: 'radial-gradient(46% 42% at 50% 26%, rgba(255,255,255,0.55), rgba(255,255,255,0.12) 46%, transparent 66%)', mixBlendMode: 'screen', pointerEvents: 'none', zIndex: 2 }} />
                         {/* target markers (soft halo + ring + center) */}
-                        {markers.map((m, i) => (
-                          <div key={i} style={{ position: 'absolute', left: m.x, top: m.y, transform: 'translate(-50%,-50%)', zIndex: 3, width: 48, height: 48, borderRadius: '50%', display: 'grid', placeItems: 'center', background: `radial-gradient(50% 50% at 50% 50%, ${m.color}33, transparent 70%)` }}>
-                            <div className="ai-pulse" style={{ width: 28, height: 28, borderRadius: '50%', background: 'white', border: `2px solid ${m.color}`, boxShadow: `0 0 10px ${m.color}66`, display: 'grid', placeItems: 'center' }}>
-                              <div style={{ width: 10, height: 10, borderRadius: '50%', background: m.color }} />
-                            </div>
-                          </div>
-                        ))}
-                        {/* findings labels (plain, connected) */}
+                        {/* Detection markers removed (Program 1 · P1-1C): no slide-image
+                            analysis is performed, so no cells are detected or localized. */}
+                        {/* KPI labels (lab performance metrics, not slide findings) */}
                         {findings.map((f, i) => (
                           <div key={i} style={{ position: 'absolute', left: LX, top: f.y, transform: 'translateY(-50%)', width: 210, zIndex: 3 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                               <div style={{ width: 10, height: 10, borderRadius: '50%', background: f.color, flexShrink: 0 }} />
                               <span style={{ fontSize: 16, fontWeight: 800, color: m.findingLabel }}>{f.label}</span>
                             </div>
-                            <div style={{ fontSize: 13, color: m.findingConf, marginLeft: 19, marginTop: 2 }}>Confidence {f.conf}%</div>
+                            <div style={{ fontSize: 13, color: m.findingConf, marginLeft: 19, marginTop: 2 }}>{f.conf}%</div>
                             {f.attention && (
                               <div style={{ marginLeft: 19, marginTop: 5 }}>
                                 <span style={{ fontSize: 11, fontWeight: 700, color: m.attnText, background: m.attnBg, borderRadius: 6, padding: '2px 8px' }}>+ Attention</span>
@@ -568,7 +562,7 @@ export default function DashboardPage() {
                   const pct = PROGRESS_MAP[selectedRecord?.status ?? 'Pending'] ?? 5;
                   return (
                     <>
-                      <div style={{ fontSize: 11, color: m.cardSub, marginBottom: 6 }}>Scanning Cells…</div>
+                      <div style={{ fontSize: 11, color: m.cardSub, marginBottom: 6 }}>Processing…</div>
                       <div style={{ height: 8, background: m.progTrack, borderRadius: 999, overflow: 'hidden', marginBottom: 4 }}>
                         <div style={{ height: 8, borderRadius: 999, background: 'linear-gradient(90deg,#4F46E5,#6B21A8)', width: `${pct}%`, transition: 'width 0.5s ease-out' }} />
                       </div>
@@ -619,123 +613,33 @@ export default function DashboardPage() {
               <div className="flex h-full flex-col gap-3">
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">AI Findings</span>
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">AI Draft Assist</span>
                   <span className="text-xs font-semibold text-indigo-600">{selectedRecord?.labNumber ?? '—'}</span>
                 </div>
 
-                {/* AI status */}
-                <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-2.5">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-                  <span className="text-[12px] font-bold text-emerald-700">✓ AI Screening Complete</span>
+                {/* Draft status — assistive reporting, human-reviewed. No image analysis. */}
+                <div className="flex items-center gap-2 rounded-xl bg-indigo-50 p-2.5">
+                  <div className="h-2 w-2 rounded-full bg-indigo-500" />
+                  <span className="text-[12px] font-bold text-indigo-700">Human-reviewed draft assistance</span>
                 </div>
 
-                {/* AI version + trust signals */}
+                {/* Trust signals — what is actually true today. */}
                 <div className="rounded-xl bg-gray-50 p-2.5">
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="text-[13px] font-black text-gray-900">CYTO AI</span>
-                    <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-600">v3.2</span>
-                  </div>
+                  <div className="mb-1 text-[13px] font-black text-gray-900">AI-assisted reporting</div>
                   <div className="flex flex-wrap gap-2">
-                    <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">✓ FDA Validated</span>
-                    <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">✓ CAP Certified</span>
+                    <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">✓ Human sign-out</span>
+                    <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">✓ Redacted inputs</span>
+                    <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">✓ Audit-logged</span>
                   </div>
-                  <div className="mt-1 text-[10px] text-gray-400">85,203 cases processed</div>
+                  <div className="mt-1 text-[10px] text-gray-400">Drafts assist reporting; they never diagnose or sign out.</div>
                 </div>
 
-                {/* Confidence + colour coding. Zero-orange: safe tiers only —
-                    emerald ≥80, dark amber-800 60–79, red <60 (no orange-500/600). */}
-                <div className="rounded-xl bg-gray-50 p-3">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Confidence</span>
-                    <span className={`text-[13px] font-black ${displayConf >= 80 ? 'text-emerald-600' : displayConf >= 60 ? 'text-amber-800' : 'text-red-600'}`}>{displayConf}%</span>
-                  </div>
-                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
-                    <div className={`h-full rounded-full transition-[background-color,border-color,color,box-shadow,transform,opacity] duration-1000 ${displayConf >= 80 ? 'bg-emerald-500' : displayConf >= 60 ? 'bg-yellow-400' : 'bg-red-500'}`} style={{ width: `${targetConf}%` }} />
-                  </div>
-                  <div className="mt-1 flex items-start justify-between">
-                    <span className="text-[10px] text-gray-400">Based on {eff?.specimensProcessed ?? 0} specimens</span>
-                    <div className="text-right">
-                      <span className={`text-[10px] font-semibold ${displayConf >= 80 ? 'text-emerald-600' : displayConf >= 60 ? 'text-amber-800' : 'text-red-600'}`}>{displayConf >= 80 ? 'High Confidence' : displayConf >= 60 ? 'Moderate' : 'Low Confidence'}</span>
-                      <div className="text-[10px] text-gray-400">Est. false positive: {((100 - displayConf) * 0.3).toFixed(1)}%</div>
-                    </div>
-                  </div>
-                  <div className={`mt-0.5 text-[10px] font-semibold ${displayConf >= 80 ? 'text-emerald-600' : displayConf >= 60 ? 'text-amber-800' : 'text-red-600'}`}>
-                    {displayConf >= 80 ? 'Very Low Risk of Misclassification' : displayConf >= 60 ? 'Low Risk of Misclassification' : 'Manual Review Strongly Recommended'}
-                  </div>
-                </div>
-
-                {/* AI Confidence history — grew as more cells were analysed. */}
-                <div className="rounded-xl bg-gray-50 p-3">
-                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">AI Confidence History</div>
-                  <div className="flex h-12 items-end gap-1.5">
-                    {[{ time: '08:41', value: 61 }, { time: '08:42', value: 72 }, { time: '08:43', value: 79 }, { time: '08:44', value: 84 }].map((point) => (
-                      <div key={point.time} className="flex flex-1 flex-col items-center gap-1">
-                        <div className="w-full rounded-sm bg-indigo-200 transition-[background-color,border-color,color,box-shadow,transform,opacity] duration-500" style={{ height: `${(point.value / 100) * 40}px` }} />
-                        <span className="text-[9px] text-gray-400">{point.time}</span>
-                      </div>
-                    ))}
-                    <div className="flex flex-1 flex-col items-center gap-1">
-                      <div className="w-full rounded-sm bg-indigo-600" style={{ height: '40px' }} />
-                      <span className="text-[9px] font-bold text-indigo-600">Now</span>
-                    </div>
-                  </div>
-                  <div className="mt-1 text-[10px] text-gray-400">Confidence increased as more cells were analyzed</div>
-                </div>
-
-                {/* AI Decision Probabilities — the differentiator. Zero-orange severity
-                    palette: HSIL red · ASC-US rose · LSIL bright-yellow · Normal emerald. */}
-                <div className="rounded-xl bg-indigo-50 p-3">
-                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-indigo-600">AI Decision Probabilities</div>
-                  {[
-                    { label: 'HSIL', prob: 84, color: 'bg-red-500' },
-                    { label: 'ASC-US', prob: 9, color: 'bg-rose-400' },
-                    { label: 'LSIL', prob: 5, color: 'bg-yellow-400' },
-                    { label: 'Normal', prob: 2, color: 'bg-emerald-500' },
-                  ].map(({ label, prob, color }) => (
-                    <div key={label} className="mb-1.5 flex items-center gap-2 last:mb-0">
-                      <span className="w-14 text-[11px] font-semibold text-gray-700">{label}</span>
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white">
-                        <div className={`h-full rounded-full ${color}`} style={{ width: `${prob}%` }} />
-                      </div>
-                      <span className="w-8 text-right text-[11px] font-bold text-gray-600">{prob}%</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Prediction */}
-                <div>
-                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Prediction</div>
-                  <div className="text-[15px] font-bold text-gray-900">{selectedRecord?.urgent ? 'Atypical Cells Detected' : 'Specimen Under Review'}</div>
-                  <div className="text-[11px] text-gray-500">{selectedRecord?.client ?? 'Awaiting analysis'}</div>
-                </div>
-
-                <div className="h-px w-full bg-gray-100" />
-
-                {/* XAI — AI evidence with per-finding confidence */}
-                <div>
-                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">AI Evidence</div>
-                  {[
-                    { label: 'Nuclear enlargement', confidence: 94 },
-                    { label: 'Hyperchromasia', confidence: 87 },
-                    { label: 'Dense clustering', confidence: 81 },
-                    { label: 'Irregular chromatin', confidence: 73 },
-                  ].map(({ label, confidence }) => (
-                    <div key={label} className="mb-2 last:mb-0">
-                      <div className="mb-0.5 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] text-emerald-500">✓</span>
-                          <span className="text-[11px] font-medium text-gray-700">{label}</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[11px] font-bold text-gray-700">{confidence}%</span>
-                          <span className="ml-1 text-[10px] text-gray-400">{confidenceLabel(confidence)}</span>
-                        </div>
-                      </div>
-                      <div className="h-1 w-full overflow-hidden rounded-full bg-gray-100">
-                        <div className="h-full rounded-full bg-indigo-400" style={{ width: `${confidence}%` }} />
-                      </div>
-                    </div>
-                  ))}
+                {/* Truthful capability boundary — PathOS performs no slide-image analysis
+                    today, so there is no model confidence, probability, or prediction to show. */}
+                <div className="rounded-xl border border-gray-100 bg-white p-3">
+                  <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-gray-400">Diagnostic image analysis</div>
+                  <div className="text-[13px] font-semibold text-gray-700">Not currently available</div>
+                  <div className="text-[11px] text-gray-500">No slide-image inference is performed today. The Bethesda category is entered by the pathologist; AI assists report drafting only.</div>
                 </div>
 
                 <div className="h-px w-full bg-gray-100" />
@@ -744,7 +648,7 @@ export default function DashboardPage() {
                 <div>
                   <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">Review Workflow</div>
                   {[
-                    { label: 'AI Screening Complete', state: 'done' },
+                    { label: 'Draft assist', state: 'done' },
                     { label: 'Human Review', state: 'active' },
                     { label: 'Authorization', state: 'pending' },
                     { label: 'Released', state: 'pending' },
@@ -776,7 +680,7 @@ export default function DashboardPage() {
                     anti-alias orange); HIGH priority uses red-600. */}
                 <div className="mt-auto rounded-xl border border-amber-100 bg-amber-50 p-3">
                   <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-amber-800">Recommended Next Step</div>
-                  <div className="mb-2 text-[13px] font-bold text-amber-900">Immediate Cytotechnologist Review</div>
+                  <div className="mb-2 text-[13px] font-bold text-amber-900">Pathologist review</div>
                   <div className="mb-3 flex items-center justify-between">
                     <div>
                       <div className="text-[10px] text-amber-800">Estimated review time</div>
@@ -788,7 +692,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <div className="text-[10px] text-amber-800">AI Role</div>
-                      <div className="text-[12px] font-bold text-amber-900">Screening Only</div>
+                      <div className="text-[12px] font-bold text-amber-900">Draft assist</div>
                     </div>
                   </div>
                   <button onClick={() => router.push(`/records/${selectedRecord?.id ?? ''}`)} className="w-full rounded-xl bg-indigo-600 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-indigo-700">Open Review →</button>
@@ -867,12 +771,7 @@ export default function DashboardPage() {
             <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Laboratory Vitals</span>
             <div className="h-px flex-1 bg-gray-100" />
           </div>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(5, 1fr)',
-            gap: 16,
-            marginBottom: 20,
-          }}>
+          <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
             {[
               {
                 icon: <TestTube size={24} color="#4F46E5" />,
@@ -1024,7 +923,7 @@ export default function DashboardPage() {
               onNextCase={() => router.push('/records')}
               onPrevCase={() => router.push('/records')}
             />
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.8fr) minmax(0, 1fr)', gap: 20, alignItems: 'stretch' }}>
+          <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.8fr)_minmax(0,1fr)]">
             {buildSpecimenQueue(false)}
             {buildAiModel(false)}
             {focusAiFindings}
@@ -1032,12 +931,12 @@ export default function DashboardPage() {
           </div>
 
           {/* ═══ SECTION 3: BOTTOM ROW ═══ */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {/* Monthly Case Volume */}
             <div style={{ background: '#FAFBFF', borderRadius: 20, padding: '20px 24px', border: '1px solid #F1F0EA' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <span style={{ fontSize: 17, fontWeight: 700, color: '#0F172A', fontFamily: 'Geist,sans-serif' }}>Monthly Case Volume</span>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 999, padding: '3px 10px', cursor: 'pointer' }}>6 Months ▾</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 999, padding: '3px 10px' }}>6 Months</div>
               </div>
               <SubscriptionBars data={volRows} />
               <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

@@ -141,7 +141,7 @@ export default function EnterpriseAdministrationWorkspacePage() {
         title="Enterprise Administration"
         titleRef={headingRef}
         focusableTitle
-        description="One workspace to observe how PathOS is configured and governed — laboratory identity, access, clients, lab codes, workflow, integrations, notifications, commercial settings, and platform controls. It composes the existing owner systems and changes nothing itself."
+        description="One workspace to observe how Osieri is configured and governed — laboratory identity, access, clients, lab codes, workflow, integrations, notifications, commercial settings, and platform controls. It composes the existing owner systems and changes nothing itself."
         meta={
           <button
             type="button"

@@ -10,7 +10,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Line, LineChart, ResponsiveContainer } from 'recharts';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { Card, Button } from '@/components/ui';
+import { Button, Card, PageHeader } from '@/components/ui';
 import { notify } from '@/lib/notify';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -142,7 +142,7 @@ export default function SystemHealthPage() {
       <div className="min-h-full pt-4" style={{ background: '#F8FAFC' }}>
         <Card radius="md" elevation="raised" border="hairline" className="mx-auto mt-16 max-w-md p-8 text-center">
           <Shield size={28} className="mx-auto text-[#9CA3AF]" />
-          <div className="mt-3 text-[18px] font-bold text-[#0F172A]">Access restricted</div>
+          <div className="mt-3 text-[18px] font-bold text-charcoal-heading">Access restricted</div>
           <div className="mt-1 text-[14px] text-[#6B7280]">System Health is available to superusers only.</div>
         </Card>
       </div>
@@ -152,12 +152,11 @@ export default function SystemHealthPage() {
   return (
     <div className="min-h-full pb-8 pt-4" style={{ background: '#F8FAFC' }}>
       {/* ── Header ── */}
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-[26px] font-bold leading-tight tracking-tight text-[#0F172A]">System Health</h1>
-          <p className="mt-1.5 text-[15px] text-[#6B7280]">Internal maintenance and infrastructure monitoring</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
+      <PageHeader
+        title="System Health"
+        description="Internal maintenance and infrastructure monitoring"
+        actions={
+          <>
           {data && <span className="text-[13px] text-[#9CA3AF]">Last checked: {relTime(data.generatedAt)}</span>}
           <button onClick={() => refetch()} disabled={isFetching}
             className="flex h-10 items-center gap-2 rounded-lg bg-[#4F46E5] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#4338CA] disabled:opacity-60">
@@ -167,8 +166,9 @@ export default function SystemHealthPage() {
             className="flex h-10 items-center gap-2 rounded-lg border border-[#4F46E5] px-4 text-[14px] font-semibold text-[#4F46E5] transition-colors hover:bg-[#EEF3FF] disabled:opacity-60">
             <Wrench size={15} /> {runMaint.isPending ? 'Running…' : 'Run maintenance'}
           </button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {isError ? (
         <div className="rounded-2xl border border-[#FECACA] bg-[#FEF2F2] p-5 text-center">
@@ -187,22 +187,22 @@ export default function SystemHealthPage() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <InfraTile check={data.infrastructure.dbPing} label="Database" render={(c) => (
                 <>
-                  <div className="text-[22px] font-bold text-[#0F172A]">{c.value} ms</div>
+                  <div className="text-[22px] font-bold text-charcoal-heading">{c.value} ms</div>
                   <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#F1F3F7]">
                     <div className="h-full rounded-full" style={{ width: `${Math.min(Number(c.value) / 5, 100)}%`, background: DOT[c.status] }} />
                   </div>
                 </>
               )} />
-              <InfraTile check={data.infrastructure.apiUptime} label="Uptime" render={(c) => <div className="text-[22px] font-bold text-[#0F172A]">{c.value}</div>} />
+              <InfraTile check={data.infrastructure.apiUptime} label="Uptime" render={(c) => <div className="text-[22px] font-bold text-charcoal-heading">{c.value}</div>} />
               <InfraTile check={data.infrastructure.memoryUsage} label="Memory" render={(c) => (
                 <>
-                  <div className="text-[22px] font-bold text-[#0F172A]">{c.value}%</div>
+                  <div className="text-[22px] font-bold text-charcoal-heading">{c.value}%</div>
                   <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#F1F3F7]">
                     <div className="h-full rounded-full" style={{ width: `${c.value}%`, background: DOT[c.status] }} />
                   </div>
                 </>
               )} />
-              <InfraTile check={data.infrastructure.nodeVersion} label="Runtime" render={(c) => <div className="text-[22px] font-bold text-[#0F172A]">{c.value}</div>} />
+              <InfraTile check={data.infrastructure.nodeVersion} label="Runtime" render={(c) => <div className="text-[22px] font-bold text-charcoal-heading">{c.value}</div>} />
             </div>
           </Section>
 
@@ -224,7 +224,7 @@ export default function SystemHealthPage() {
               <div className="rounded-xl border border-[#F3F4F6] p-4">
                 <div className="flex items-center gap-2"><Dot status={data.businessHealth.authorizationRate.status} /><span className="text-[13px] text-[#6B7280]">Authorization rate</span></div>
                 <div className="mt-1 flex items-end justify-between">
-                  <div className="text-[32px] font-bold leading-none text-[#0F172A]">{data.businessHealth.authorizationRate.value}%</div>
+                  <div className="text-[32px] font-bold leading-none text-charcoal-heading">{data.businessHealth.authorizationRate.value}%</div>
                   {Array.isArray(data.businessHealth.authorizationRate.trend) && (
                     <div className="h-10 w-24">
                       <ResponsiveContainer width="100%" height="100%">
@@ -255,7 +255,7 @@ export default function SystemHealthPage() {
           <Card radius="md" elevation="raised" border="hairline" className="p-6">
             <div className="mb-4 flex items-center gap-2">
               <Clock size={18} className="text-[#4F46E5]" />
-              <h2 className="text-[18px] font-bold text-[#0F172A]">Maintenance Log</h2>
+              <h2 className="text-[18px] font-bold text-charcoal-heading">Maintenance Log</h2>
               <span className="text-[13px] text-[#9CA3AF]">Last 10 runs</span>
             </div>
             {data.maintenanceLog.length === 0 ? (
@@ -273,16 +273,16 @@ export default function SystemHealthPage() {
                 <tbody>
                   {data.maintenanceLog.map((l) => (
                     <tr key={l.id} className="border-t border-[#F3F4F6]">
-                      <td className="py-3 text-[13px] text-[#0F172A]">{new Date(l.ranAt).toLocaleString()}</td>
+                      <td className="py-3 text-[13px] text-charcoal-heading">{new Date(l.ranAt).toLocaleString()}</td>
                       <td className="py-3">
                         {l.ranBy === 'system'
                           ? <span className="rounded-md bg-[#EEF3FF] px-2 py-0.5 text-[12px] font-semibold text-[#4F46E5]">system</span>
                           : <span className="rounded-md bg-[#F3F4F6] px-2 py-0.5 text-[12px] font-semibold text-[#6B7280]">manual</span>}
                       </td>
                       <td className="py-3 text-[13px] text-[#6B7280]">{l.duration} ms</td>
-                      <td className="py-3 text-[13px] text-[#0F172A]">{l.results?.flagged ?? 0}</td>
-                      <td className="py-3 text-[13px] text-[#0F172A]">{l.results?.archived ?? 0}</td>
-                      <td className="py-3 text-[13px] text-[#0F172A]">{l.results?.missedClosed ?? 0}</td>
+                      <td className="py-3 text-[13px] text-charcoal-heading">{l.results?.flagged ?? 0}</td>
+                      <td className="py-3 text-[13px] text-charcoal-heading">{l.results?.archived ?? 0}</td>
+                      <td className="py-3 text-[13px] text-charcoal-heading">{l.results?.missedClosed ?? 0}</td>
                       <td className="py-3 text-[13px] text-[#6B7280]">{l.notes}</td>
                     </tr>
                   ))}
@@ -358,7 +358,7 @@ export default function SystemHealthPage() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Cpu size={18} className="text-[#4F46E5]" />
-                <h2 className="text-[18px] font-bold text-[#0F172A]">Deep Diagnostics</h2>
+                <h2 className="text-[18px] font-bold text-charcoal-heading">Deep Diagnostics</h2>
                 <span className="text-[13px] text-[#9CA3AF]">Active subsystem probes — runs on demand</span>
               </div>
               <div className="flex items-center gap-3">
@@ -410,7 +410,7 @@ function Section({ title, icon: Icon, children }: { title: string; icon: any; ch
     <Card radius="md" elevation="raised" border="hairline" className="mb-5 p-6">
       <div className="mb-4 flex items-center gap-2">
         <Icon size={18} className="text-[#4F46E5]" />
-        <h2 className="text-[18px] font-bold text-[#0F172A]">{title}</h2>
+        <h2 className="text-[18px] font-bold text-charcoal-heading">{title}</h2>
       </div>
       {children}
     </Card>
@@ -433,7 +433,7 @@ function DataRow({ check, label, onView, last }: { check: Check; label: string; 
   const count = Number(check.value) || 0;
   return (
     <div className={`flex items-center justify-between py-3 ${last ? '' : 'border-b border-[#F9FAFB]'}`}>
-      <div className="flex items-center gap-2.5"><Dot status={check.status} /><span className="text-[14px] font-medium text-[#0F172A]">{label}</span></div>
+      <div className="flex items-center gap-2.5"><Dot status={check.status} /><span className="text-[14px] font-medium text-charcoal-heading">{label}</span></div>
       <div className="flex items-center gap-3">
         <span className="text-[13px] text-[#6B7280]">{check.message ?? check.value}</span>
         {onView && count > 0 && (
@@ -448,7 +448,7 @@ function BusinessTile({ check, label, unit }: { check: Check; label: string; uni
   return (
     <div className="rounded-xl border border-[#F3F4F6] p-4">
       <div className="flex items-center gap-2"><Dot status={check.status} /><span className="text-[13px] text-[#6B7280]">{label}</span></div>
-      <div className="mt-1 text-[32px] font-bold leading-none text-[#0F172A]">{check.value}</div>
+      <div className="mt-1 text-[32px] font-bold leading-none text-charcoal-heading">{check.value}</div>
       <div className="mt-1.5 text-[12px] text-[#9CA3AF]">{unit}</div>
     </div>
   );
@@ -488,7 +488,7 @@ function DeepCheckCard({ check }: { check: DiagnosticCheck }) {
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: DEEP_DOT[check.status] }} />
-          <span className="text-[14px] font-semibold text-[#0F172A]">{check.name}</span>
+          <span className="text-[14px] font-semibold text-charcoal-heading">{check.name}</span>
         </div>
         {typeof check.responseTimeMs === 'number' && (
           <span className="shrink-0 rounded-md bg-[#F3F4F6] px-1.5 py-0.5 text-[11px] font-medium text-[#6B7280]">{check.responseTimeMs} ms</span>

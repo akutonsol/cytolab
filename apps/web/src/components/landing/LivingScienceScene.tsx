@@ -28,9 +28,13 @@ export default function LivingScienceScene() {
     const camera = new THREE.PerspectiveCamera(65, W / H, 0.1, 100)
     camera.position.set(0.2, 0.1, 4.2)
 
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
     // ── CLOCK ──
     const clock = new THREE.Clock()
-    let rafId: number
+    let rafId = 0
+    let inView = false
+    let pageVisible = document.visibilityState === 'visible'
 
     // ── MOUSE ──
     let mouseX = 0, mouseY = 0
@@ -319,6 +323,10 @@ export default function LivingScienceScene() {
 
     // ── ANIMATE ──
     function animate() {
+      if (!inView || !pageVisible || reduceMotion) {
+        rafId = 0
+        return
+      }
       rafId = requestAnimationFrame(animate)
       const t = clock.getElapsedTime()
 
@@ -381,7 +389,35 @@ export default function LivingScienceScene() {
 
       renderer.render(scene, camera)
     }
-    animate()
+
+    const start = () => {
+      if (!rafId && inView && pageVisible && !reduceMotion) {
+        clock.start()
+        rafId = requestAnimationFrame(animate)
+      }
+    }
+    const stop = () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId)
+        rafId = 0
+      }
+      clock.stop()
+    }
+
+    const io = new IntersectionObserver(([entry]) => {
+      inView = entry.isIntersecting
+      if (inView) start()
+      else stop()
+    }, { rootMargin: '240px 0px', threshold: 0.01 })
+    io.observe(mount)
+
+    const onVisibility = () => {
+      pageVisible = document.visibilityState === 'visible'
+      if (pageVisible) start()
+      else stop()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    renderer.render(scene, camera)
 
     // ── RESIZE ──
     const onResize = () => {
@@ -396,6 +432,8 @@ export default function LivingScienceScene() {
     // ── CLEANUP ──
     return () => {
       cancelAnimationFrame(rafId)
+      io.disconnect()
+      document.removeEventListener('visibilitychange', onVisibility)
       window.removeEventListener('resize', onResize)
       mount.removeEventListener('mousemove', onMouse)
       renderer.dispose()

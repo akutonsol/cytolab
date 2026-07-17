@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Inbox, Loader2, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Inbox, Loader2, Save, Trash2 } from 'lucide-react';
 import { SettingsListPane, type PaneField } from '@/components/SettingsListPane';
 import { AiSettingsPane } from '@/components/AiSettingsPane';
 import { CompanySettingsPane } from '@/components/settings/CompanySettingsPane';
@@ -82,6 +82,9 @@ function ComingSoon({ label }: { label: string }) {
 
 export default function SettingsPage() {
   const [active, setActive] = useState<SectionId>('labcodes');
+  // Mobile is single-panel: the nav list, then the selected pane (with a back button). Desktop
+  // (lg+) shows both side by side, so this only gates the phone/tablet layout.
+  const [mobileDetail, setMobileDetail] = useState(false);
 
   const pane = (() => {
     switch (active) {
@@ -175,7 +178,7 @@ export default function SettingsPage() {
 
   return (
     <div className="flex items-start gap-4">
-      <Card border="none" elevation="none" className="glass-card w-60 shrink-0 p-4">
+      <Card border="none" elevation="none" className={`${mobileDetail ? 'hidden lg:block' : 'block'} glass-card w-full shrink-0 p-4 lg:w-60`}>
         <div className="mb-4 font-headline-sm text-headline-sm text-charcoal-heading">Settings</div>
         {NAV_GROUPS.map((group) => (
           <div key={group.title} className="mb-4">
@@ -186,7 +189,7 @@ export default function SettingsPage() {
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setActive(item.id)}
+                    onClick={() => { setActive(item.id); setMobileDetail(true); }}
                     className={`rounded-lg border-l-4 px-3 py-2 text-left font-body-sm text-body-sm transition-colors ${isActive ? 'border-indigo-500 bg-indigo-50 font-medium text-indigo-700' : 'border-transparent bg-white text-gray-600 hover:bg-gray-50'}`}
                   >
                     {item.label}
@@ -200,7 +203,12 @@ export default function SettingsPage() {
 
       {/* key by section so each pane remounts — otherwise the shared
           SettingsListPane instance leaks its draft/edit state across sections. */}
-      <Card border="none" elevation="none" className="glass-card min-w-0 flex-1 p-6" key={active}>{pane}</Card>
+      <Card border="none" elevation="none" className={`${mobileDetail ? 'block' : 'hidden lg:block'} glass-card min-w-0 flex-1 p-6`} key={active}>
+        <button onClick={() => setMobileDetail(false)} className="mb-4 -ml-1 inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-primary lg:hidden">
+          <ArrowLeft size={15} /> Settings
+        </button>
+        {pane}
+      </Card>
     </div>
   );
 }

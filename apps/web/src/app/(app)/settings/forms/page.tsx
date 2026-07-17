@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { PageHeader } from '@/components/ui';
 
 interface Config { formType: string; fields: any[]; printGroups: any[] }
 
@@ -21,16 +22,16 @@ export default function FormSetupPage() {
   return (
     <div className="min-h-full pb-8 pt-4" style={{ background: '#F8FAFC' }}>
       {/* Header */}
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-[28px] font-bold leading-tight tracking-tight text-[#0F172A]">Form Setup</h1>
-          <p className="mt-1.5 text-[14px] text-[#6B7280]">Create a form with your desired Clinical Features</p>
-        </div>
-        <button disabled title="Both form types are pre-configured. Custom form types coming soon."
-          className="flex h-10 cursor-not-allowed items-center gap-2 rounded-lg bg-[#F3F4F6] px-4 text-[14px] font-semibold text-[#9CA3AF]">
-          <Plus size={16} /> Add Form
-        </button>
-      </div>
+      <PageHeader
+        title="Form Setup"
+        description="Create a form with your desired Clinical Features"
+        actions={
+          <button disabled title="Both form types are pre-configured. Custom form types coming soon."
+            className="flex h-10 cursor-not-allowed items-center gap-2 rounded-lg bg-[#F3F4F6] px-4 text-[14px] font-semibold text-[#9CA3AF]">
+            <Plus size={16} /> Add Form
+          </button>
+        }
+      />
 
       {/* Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -38,7 +39,7 @@ export default function FormSetupPage() {
           <div key={f.type} className="glass-card rounded-2xl p-6" style={{ borderTop: '3px solid #4F46E5' }}>
             <div className="font-headline-sm text-headline-sm text-charcoal-heading">{f.title}</div>
             <div className="mt-4 flex items-end gap-2">
-              <span className="text-[40px] font-bold leading-none text-[#0F172A]">{count(f.type)}</span>
+              <span className="text-[40px] font-bold leading-none text-charcoal-heading">{count(f.type)}</span>
               <span className="pb-1 text-[14px] text-[#6B7280]">items</span>
             </div>
             <div className="mt-1 text-[13px] text-[#9CA3AF]">Fields included in the form</div>

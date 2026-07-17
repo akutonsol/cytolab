@@ -56,26 +56,29 @@ export function AttentionRail({
               key={item.id}
               className="flex items-center gap-3 border-t border-lightgray py-3 first:border-t-0"
             >
-              <Badge domain={SEVERITY_DOMAIN[item.severity]} size="xs" dot>
+              <Badge domain={SEVERITY_DOMAIN[item.severity]} size="xs" dot className="shrink-0">
                 {item.priority}
               </Badge>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold tabular-nums text-text">{item.caseRef}</span>
-                  <span className="text-text-tertiary">·</span>
-                  <span className="text-sm text-text-secondary">{item.stage}</span>
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="shrink-0 whitespace-nowrap font-semibold tabular-nums text-text">{item.caseRef}</span>
+                  <span className="shrink-0 text-text-tertiary">·</span>
+                  <span className="min-w-0 truncate text-sm text-text-secondary">{item.stage}</span>
                 </div>
                 <div className="truncate text-sm text-text-secondary">
                   {item.reason}
                   {item.assignee ? ` · ${item.assignee}` : ' · unassigned'}
+                  {/* On phones the age column is hidden (below), so surface it here inline. */}
+                  <span className="text-text-tertiary sm:hidden"> · {formatAge(item.ageHours)}</span>
                 </div>
               </div>
-              <span className="tabular-nums text-sm font-medium text-text-tertiary">
+              <span className="hidden shrink-0 tabular-nums text-sm font-medium text-text-tertiary sm:block">
                 {formatAge(item.ageHours)}
               </span>
               <IconAction
                 icon={<ChevronRight size={16} />}
                 tone="muted"
+                className="shrink-0"
                 aria-label={`Open ${item.caseRef}`}
                 onClick={() => onOpen({ id: item.id, caseRef: item.caseRef })}
               />

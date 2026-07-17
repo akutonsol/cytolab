@@ -1,13 +1,13 @@
 'use client';
 
 import { useCallback, useState, type ReactNode } from 'react';
-import { AlertCircle, CheckCircle2, FlaskConical, Monitor, MoreVertical, Pencil, Plus, RotateCcw, Search, Stethoscope, Users } from 'lucide-react';
+import { AlertCircle, CheckCircle2, FlaskConical, Monitor, Pencil, Plus, RotateCcw, Search, Stethoscope, Users } from 'lucide-react';
 import { api, type Paginated } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { ClientFormDrawer, type ClientRecord } from '@/components/ClientFormDrawer';
-import { Th, Td, Badge, Button, IconAction } from '@/components/ui';
+import { Th, Td, Badge, Button } from '@/components/ui';
 
 
 // Deterministic avatar colour from the client name (sum of char codes % palette).
@@ -250,7 +250,6 @@ export default function ClientsPage() {
                     <Td density="roomy" className="text-base">
                       <div className="flex items-center gap-2">
                         <Button variant="secondary" onClick={() => openEdit(r)}><Pencil size={14} /> Edit</Button>
-                        <IconAction icon={<MoreVertical size={16} />} size="lg" className="hover:text-slate-600" aria-label="More actions" />
                       </div>
                     </Td>
                   )}

@@ -1,15 +1,15 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
-  ChevronDown, Filter, MoreHorizontal, Paperclip, Plus, Search, Send, Video, X,
+  ArrowLeft, ChevronDown, Plus, Search, Send, X,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { ClientSelect } from '@/components/ClientSelect';
-import { IconAction } from '@/components/ui';
 import { notify } from '@/lib/notify';
 
 // Brand avatar palette (no orange). Colour picked deterministically by name hash.
@@ -81,8 +81,12 @@ export default function MessagingPage() {
   const { claims } = useAuth();
   const myId = claims?.userId;
   const qc = useQueryClient();
+  const router = useRouter();
   const [filter, setFilter] = useState<string>('');
   const [activeId, setActiveId] = useState<string>();
+  // Mobile is single-panel: 'list' shows the thread list, 'thread' shows the conversation (with a
+  // back button). Desktop (lg+) always shows both, so this only gates the phone/tablet layout.
+  const [mobileView, setMobileView] = useState<'list' | 'thread'>('list');
   const [text, setText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [openMore, setOpenMore] = useState(false);
@@ -122,7 +126,7 @@ export default function MessagingPage() {
     mutationFn: (threadId: string) => api.put(`/messaging/threads/${threadId}/read`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['msg-threads'] }); qc.invalidateQueries({ queryKey: ['notifications-unread'] }); },
   });
-  const openThread = (id: string) => { setActiveId(id); markRead.mutate(id); };
+  const openThread = (id: string) => { setActiveId(id); setMobileView('thread'); markRead.mutate(id); };
   const handleCompose = (e: React.ChangeEvent<HTMLInputElement>) => {
     setText(e.target.value);
     clearTimeout(typingTimeoutRef.current);
@@ -172,7 +176,7 @@ export default function MessagingPage() {
   return (
     <div className="flex h-[calc(100vh-140px)] gap-4">
       {/* ================= LEFT PANEL ================= */}
-      <aside className="flex w-[300px] shrink-0 flex-col overflow-hidden rounded-2xl border border-card bg-surface shadow-card">
+      <aside className={`${mobileView === 'thread' ? 'hidden lg:flex' : 'flex'} w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-card bg-surface shadow-card lg:w-[300px]`}>
         <div className="flex items-center justify-between px-4 py-4">
           <div className="relative">
             <select value={filter} onChange={(e) => setFilter(e.target.value)}
@@ -182,10 +186,6 @@ export default function MessagingPage() {
               <option value="CLIENT">Client</option>
             </select>
             <ChevronDown size={16} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-text-secondary" />
-          </div>
-          <div className="flex items-center gap-2">
-            <IconAction icon={<Filter size={15} />} tone="faint" shape="circle" hover={false} className="border border-[#eef2f7] hover:text-[#111827]" aria-label="Filter" />
-            <IconAction icon={<Search size={15} />} tone="faint" shape="circle" hover={false} className="border border-[#eef2f7] hover:text-[#111827]" aria-label="Search" />
           </div>
         </div>
 
@@ -219,13 +219,16 @@ export default function MessagingPage() {
       </aside>
 
       {/* ================= CENTER PANEL ================= */}
-      <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-card bg-surface shadow-card">
+      <section className={`${mobileView === 'list' ? 'hidden lg:flex' : 'flex'} min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-card bg-surface shadow-card`}>
         {!thread ? (
           <div className="grid flex-1 place-items-center text-small text-text-tertiary">Select a conversation</div>
         ) : (
           <>
             <div className="flex items-center justify-between border-b border-card px-5 py-3.5">
               <div className="flex items-center gap-3">
+                <button onClick={() => setMobileView('list')} aria-label="Back to conversations" className="-ml-1 grid h-8 w-8 shrink-0 place-items-center rounded-full text-text-secondary hover:bg-lightgray lg:hidden">
+                  <ArrowLeft size={18} />
+                </button>
                 <div className="relative inline-flex">
                   <Avatar name={counterName} size={38} />
                   <span style={{ position: 'absolute', bottom: 1, right: 1, width: 10, height: 10, borderRadius: '50%', background: '#22C55E', border: '2px solid white' }} />
@@ -245,7 +248,6 @@ export default function MessagingPage() {
                     className="w-24 border-none bg-transparent text-[13px] text-[#111827] outline-none placeholder:text-[#9ca3af] focus:w-36 transition-[background-color,border-color,color,box-shadow,transform,opacity]"
                   />
                 </div>
-                <IconAction icon={<MoreHorizontal size={17} />} tone="faint" size="lg" shape="circle" hover={false} className="border border-[#eef2f7] hover:text-[#111827]" aria-label="More" />
               </div>
             </div>
 
@@ -295,7 +297,6 @@ export default function MessagingPage() {
             )}
 
             <div className="flex items-center gap-3 border-t border-card px-5 py-4">
-              <button aria-label="Attach" className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-text-tertiary hover:bg-lightgray"><Paperclip size={18} /></button>
               <input value={text} onChange={handleCompose} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
                 placeholder="Type your message..." className="h-11 flex-1 rounded-pill bg-[#f6f8fc] px-4 text-small text-text outline-none placeholder:text-text-tertiary" />
               <button onClick={submit} disabled={!text.trim() || send.isPending}
@@ -309,10 +310,6 @@ export default function MessagingPage() {
       {/* ================= RIGHT PANEL ================= */}
       {thread && (
         <aside className="premium-scroll hidden w-[300px] shrink-0 flex-col overflow-y-auto rounded-2xl border border-card bg-surface p-5 shadow-card xl:flex">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <IconAction icon={<ChevronDown size={16} className="rotate-90" />} tone="faint" size="lg" shape="circle" hover={false} className="border border-[#eef2f7] hover:text-[#111827]" aria-label="Collapse panel" />
-            <IconAction icon={<Video size={16} />} tone="primary" size="lg" shape="circle" hover={false} className="bg-primary-soft" aria-label="Video call" />
-          </div>
           <div className="flex flex-col items-center text-center">
             <div className="rounded-full p-1 ring-1 ring-[#c9d8ff]">
               <Avatar name={counterName} size={84} />
@@ -351,7 +348,7 @@ export default function MessagingPage() {
               <div className="mb-2 text-caption font-bold uppercase tracking-wide text-text-tertiary">Related Records</div>
               <div className="flex flex-col gap-1.5">
                 {recCats.map((c) => (
-                  <button key={c.label} className="flex items-center gap-3 rounded-control p-2.5 text-left transition-colors hover:bg-[#f6f8fc]">
+                  <button key={c.label} onClick={() => router.push('/records')} className="flex items-center gap-3 rounded-control p-2.5 text-left transition-colors hover:bg-[#f6f8fc]">
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-control" style={{ background: `${c.hue}1a`, color: c.hue }}><Search size={15} /></span>
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-small font-bold text-text">{c.label}</div>

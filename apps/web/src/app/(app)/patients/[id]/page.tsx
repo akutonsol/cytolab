@@ -4,14 +4,17 @@ import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ArrowLeft, ArrowUpRight, Download, Filter, MoreHorizontal, Plus, Search, Star,
+  ArrowLeft, ArrowUpRight, Download, MoreHorizontal, Plus, Search, Star,
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { deriveAge } from '@/lib/age';
 import { useFeatures } from '@/lib/feature-context';
 import { FeatureGate } from '@/components/FeatureGate';
 import { AddCorrelationModal } from '@/components/AddCorrelationModal';
+import { RecordFormDrawer } from '@/components/RecordFormDrawer';
+import { PatientFormDrawer } from '@/components/PatientFormDrawer';
+import { type FormType } from '@/lib/specimen-types';
 import { RESULT_META as CORR_META, shortDate as corrDate, type CorrelationCase } from '@/lib/correlation';
 import { STATUS_META as RECALL_META, dueColor, dueLabel, shortDate as recallDate, type Recall } from '@/lib/recall';
 import { Card, IconAction } from '@/components/ui';
@@ -135,6 +138,11 @@ export default function PatientProfilePage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [addCorr, setAddCorr] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [addChoose, setAddChoose] = useState(false);
+  const [recordDrawer, setRecordDrawer] = useState<FormType | null>(null);
+  const qc = useQueryClient();
+  const openAdd = () => setAddChoose(true);
   const { isEnabled } = useFeatures();
   useEffect(() => {
     const t = setInterval(() => setCurrentIdx((i) => (i + 1) % AVATARS.length), 4000);
@@ -232,9 +240,8 @@ export default function PatientProfilePage() {
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
                   <div className="absolute right-0 top-11 z-20 w-44 overflow-hidden rounded-xl border border-[#EEF2F7] bg-white py-1 shadow-lg">
-                    {['Edit patient', 'Print profile', 'Archive'].map((m) => (
-                      <button key={m} onClick={() => setMenuOpen(false)} className="block w-full px-4 py-2 text-left text-[13px] font-medium text-[#374151] hover:bg-[#f5f7fd]">{m}</button>
-                    ))}
+                    <button onClick={() => { setMenuOpen(false); setEditOpen(true); }} className="block w-full px-4 py-2 text-left text-[13px] font-medium text-[#374151] hover:bg-[#f5f7fd]">Edit patient</button>
+                    <button onClick={() => { setMenuOpen(false); window.print(); }} className="block w-full px-4 py-2 text-left text-[13px] font-medium text-[#374151] hover:bg-[#f5f7fd]">Print profile</button>
                   </div>
                 </>
               )}
@@ -273,7 +280,7 @@ export default function PatientProfilePage() {
           <div className="flex items-center justify-between">
             <h2 className="text-[16px] font-bold text-[#111827]">Current findings</h2>
             <div className="flex items-center gap-2">
-              <button aria-label="Add" className={`${iconBtn} border border-[#EEF2F7] text-[#6b7280] hover:text-[#111827]`}><Plus size={16} /></button>
+              <button onClick={openAdd} aria-label="Add record" className={`${iconBtn} border border-[#EEF2F7] text-[#6b7280] hover:text-[#111827]`}><Plus size={16} /></button>
               <button onClick={() => router.push('/records')} aria-label="Open" className={`${iconBtn} bg-[#4f46e5] text-white hover:bg-[#4338ca]`}><ArrowUpRight size={16} /></button>
             </div>
           </div>
@@ -309,8 +316,7 @@ export default function PatientProfilePage() {
                 <Search size={16} />
                 <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Search.." className="w-32 border-none bg-transparent text-[13px] text-[#111827] outline-none placeholder:text-[#9CA3AF]" />
               </div>
-              <button aria-label="Filter" className={`h-10 w-10 ${iconBtn} border border-[#E5E7EB] text-[#6b7280] hover:text-[#111827]`}><Filter size={16} /></button>
-              <IconAction icon={<Plus size={17} />} tone="inverse" size="xl" shape="circle" className="hover:bg-[#4338ca] bg-[#4f46e5]" aria-label="Add" />
+              <IconAction icon={<Plus size={17} />} tone="inverse" size="xl" shape="circle" className="hover:bg-[#4338ca] bg-[#4f46e5]" aria-label="Add record" onClick={openAdd} />
             </div>
           </div>
 
@@ -406,7 +412,7 @@ export default function PatientProfilePage() {
         <Card as="section" radius="lg" elevation="glow" border="hairline" surface={false} className="flex flex-col p-5" style={{ background: '#F0F0FF' }}>
           <div className="flex items-center justify-between">
             <h2 className="text-[18px] font-bold text-[#111827]">Current examinations</h2>
-            <IconAction icon={<Plus size={16} />} tone="inverse" shape="circle" className="hover:bg-black bg-[#111827]" aria-label="Add examination" />
+            <IconAction icon={<Plus size={16} />} tone="inverse" shape="circle" className="hover:bg-black bg-[#111827]" aria-label="Add examination" onClick={openAdd} />
           </div>
           <div className="mt-3 flex flex-col">
             {exams.length === 0 && <div className="py-8 text-center text-[13px] text-[#9CA3AF]">No examinations yet.</div>}
@@ -452,6 +458,27 @@ export default function PatientProfilePage() {
         </Card>
       </div>
       {addCorr && <AddCorrelationModal defaultPatientId={id} onClose={() => setAddCorr(false)} />}
+
+      {/* New-record chooser — pick the form type, then open the record drawer with this patient preselected. */}
+      {addChoose && (
+        <div className="fixed inset-0 z-[1000] grid place-items-center bg-black/40 p-4" onClick={() => setAddChoose(false)}>
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[16px] font-bold text-[#111827]">New record for {fullName}</h3>
+            <p className="mt-1 text-[13px] text-[#6B7280]">Choose the specimen category.</p>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              {(['Gynecology', 'NonGynecology'] as FormType[]).map((ft) => (
+                <button key={ft} onClick={() => { setAddChoose(false); setRecordDrawer(ft); }} className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 py-7 transition-colors hover:border-[#4f46e5] hover:bg-indigo-50">
+                  <Plus size={22} className="text-[#4f46e5]" /><span className="text-sm font-bold text-[#111827]">{ft === 'Gynecology' ? 'Gynecology' : 'Non-Gynecology'}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {recordDrawer && (
+        <RecordFormDrawer open formType={recordDrawer} initialPatientId={id} onClose={() => { setRecordDrawer(null); qc.invalidateQueries({ queryKey: ['patient-records', id] }); }} />
+      )}
+      <PatientFormDrawer open={editOpen} patient={patient} onClose={() => { setEditOpen(false); qc.invalidateQueries({ queryKey: ['patient', id] }); }} />
     </div>
   );
 }

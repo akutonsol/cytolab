@@ -3,7 +3,7 @@
 import { Fragment, useCallback, useMemo, useState } from 'react';
 import {
   AlertTriangle, Building2, Calendar, CheckCircle2, Clock, Download, Eye, FileText, MoreHorizontal,
-  Pencil, Plus, RotateCcw, Search, SlidersHorizontal, Sparkles, X,
+  Pencil, Plus, RotateCcw, Search, Sparkles, X,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PieChart, Pie, Cell } from 'recharts';
@@ -69,8 +69,8 @@ const NEXT_STATUS: Record<string, string[]> = {
   OnHold: ['Submitted', 'Processing', 'Disabled'],
 };
 
-// AI confidence has no source field — derived from status (illustrative), with a
-// per-record jitter so the column reads naturally.
+// Workflow readiness — derived from the record's status (not AI; PathOS performs no
+// diagnostic image inference). A small per-record jitter keeps the column readable.
 const confOf = (r: Rec) => {
   let h = 0; for (let i = 0; i < r.id.length; i++) h = (h * 31 + r.id.charCodeAt(i)) >>> 0;
   const base = AUTHORIZED_STATUSES.includes(r.status) ? 90 : ['Resulted', 'Completed'].includes(r.status) ? 80 : ['Processing', 'Partial'].includes(r.status) ? 68 : 55;
@@ -252,6 +252,26 @@ export default function ResultSheetsPage() {
   const completedCount = all.filter((r) => isAuthorized(r)).length;
   const urgentCount = all.filter((r) => r.urgent).length;
   const completedPct = total ? Math.round((completedCount / total) * 100) : 0;
+
+  // Export the currently-filtered result sheets to CSV (respects the active filters/search).
+  const exportCsv = () => {
+    const rows = filtered.map((r) => ({
+      'Lab #': r.labNumber ?? '',
+      Patient: patientName(r),
+      Client: clientOffice(r),
+      Status: r.status,
+      Authorized: isAuthorized(r) ? 'Yes' : 'No',
+      Created: new Date(r.createdAt).toLocaleDateString(),
+    }));
+    const headers = ['Lab #', 'Patient', 'Client', 'Status', 'Authorized', 'Created'];
+    const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const csv = [headers.join(','), ...rows.map((row) => headers.map((h) => esc((row as Record<string, unknown>)[h])).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `result-sheets-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  };
   const avgReviewHrs = useMemo(() => {
     let sum = 0, n = 0;
     for (const r of all) { const a = firstEventAt(r.statusHistory, 'Resulted'), b = firstEventAt(r.statusHistory, 'Approved'); if (a && b && b >= a) { sum += b - a; n++; } }
@@ -431,10 +451,9 @@ export default function ResultSheetsPage() {
             <select aria-label="Filter by specimen type" className={SELECT} value={specType} onChange={(e) => { setSpecType(e.target.value); }}><option value="all">All Types</option>{specOptions.map((s) => <option key={s} value={s}>{specMeta(s).label}</option>)}</select>
             <select aria-label="Filter by client" className={SELECT} value={clientF} onChange={(e) => { setClientF(e.target.value); }}><option value="all">All Clients</option>{clientOptions.map((c) => <option key={c} value={c}>{c}</option>)}</select>
             <select aria-label="Filter by date range" className={SELECT} value={dateRange} onChange={(e) => { setDateRange(e.target.value); }}><option value="7">Last 7 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option><option value="all">All Time</option></select>
-            <select aria-label="Filter by AI confidence" className={SELECT} value={confF} onChange={(e) => { setConfF(e.target.value); }}><option value="all">AI Confidence</option><option value="High">High</option><option value="Moderate">Moderate</option><option value="Low">Low</option></select>
-            <button className="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 hover:bg-slate-50"><SlidersHorizontal size={15} /> Filters</button>
+            <select aria-label="Filter by readiness" className={SELECT} value={confF} onChange={(e) => { setConfF(e.target.value); }}><option value="all">Readiness</option><option value="High">High</option><option value="Moderate">Moderate</option><option value="Low">Low</option></select>
             <Button onClick={() => setSheetFor(all[0] ?? null)}><Plus size={16} /> New Result Sheet</Button>
-            <IconAction icon={<Download size={16} />} size="xl" shape="soft" className="hover:bg-slate-50 border border-slate-200" aria-label="Export" />
+            <IconAction icon={<Download size={16} />} size="xl" shape="soft" className="hover:bg-slate-50 border border-slate-200" aria-label="Export" onClick={exportCsv} />
           </Card>
 
           {isError && (
@@ -452,7 +471,7 @@ export default function ResultSheetsPage() {
                 <thead>
                   <tr className="border-b border-slate-100">
                     <th className={TH}>Lab # / Specimen</th><th className={TH}>Patient</th><th className={TH}>Client / Physician</th>
-                    <th className={TH}>Collected</th><th className={TH}>AI Confidence</th><th className={TH}>Status</th><th className={TH}>Urgency</th><th className={`${TH} text-right`}>Actions</th>
+                    <th className={TH}>Collected</th><th className={TH}>Readiness</th><th className={TH}>Status</th><th className={TH}>Urgency</th><th className={`${TH} text-right`}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -509,10 +528,10 @@ export default function ResultSheetsPage() {
               </div>
             ) : (
               <ul className="flex flex-col gap-2.5 text-[13px] text-white/90">
-                <li><span className="font-semibold text-white">{aiHigh}</span> reports have high AI confidence (≥90%)</li>
-                <li><span className="font-semibold text-white">{aiReview}</span> reports require pathologist review (confidence &lt;70%)</li>
-                <li><span className="font-semibold text-white">{aiConflict}</span> reports have conflicting AI findings</li>
-                <li>Avg AI confidence: <span className="font-semibold text-white">{aiAvg}%</span></li>
+                <li><span className="font-semibold text-white">{aiHigh}</span> reports are authorized-ready (≥90%)</li>
+                <li><span className="font-semibold text-white">{aiReview}</span> reports are still in progress (&lt;70%)</li>
+                <li><span className="font-semibold text-white">{aiConflict}</span> urgent reports are pending review</li>
+                <li>Avg readiness: <span className="font-semibold text-white">{aiAvg}%</span></li>
               </ul>
             )}
             <button onClick={() => { setConfF('Low'); setTab('all'); }} className="mt-4 bg-transparent text-[13px] font-semibold text-white hover:underline">View AI Recommendations →</button>

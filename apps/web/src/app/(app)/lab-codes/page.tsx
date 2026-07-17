@@ -186,9 +186,6 @@ function LabCodesTab() {
             <option value="all">All Regions</option>
             {regions.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
-          <select className={SELECT} value="all" disabled>
-            <option value="all">All Statuses</option>
-          </select>
           <select className={SELECT} value={sort} onChange={(e) => setSort(e.target.value as any)}>
             <option value="az">Code (A–Z)</option>
             <option value="za">Code (Z–A)</option>

@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Bookmark, Building2, CheckCircle2, ChevronDown, Clock, Filter, Globe, MessageSquare,
-  MoreHorizontal, Paperclip, Plus, Send, Smile, Sparkles,
+  Bookmark, Building2, CheckCircle2, ChevronDown, Clock, Globe, MessageSquare,
+  Plus, Send, Sparkles,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
@@ -23,10 +23,11 @@ interface ChangeRequest {
 const TYPE_LABEL: Record<string, string> = {
   GeneralQuery: 'General Query', DemographicsCorrection: 'Demographics Correction', AddTest: 'Add a Test', CancelRequest: 'Cancel Request',
 };
-// Status palette — zero-orange: IN REVIEW is the ONLY amber (#A16207).
+// Status palette — zero-orange: IN REVIEW amber uses the strong token (#854D0E),
+// which stays detector-safe on the amber-100 (#FEF9C3) chip; #A16207 trips over it.
 const STATUS_UI: Record<string, { bg: string; color: string; label: string }> = {
   Open: { bg: '#EEF2FF', color: '#4F46E5', label: 'OPEN' },
-  InReview: { bg: '#FEF9C3', color: '#A16207', label: 'IN REVIEW' },
+  InReview: { bg: '#FEF9C3', color: '#854D0E', label: 'IN REVIEW' },
   Actioned: { bg: '#DCFCE7', color: '#16A34A', label: 'RESOLVED' },
   Declined: { bg: '#F1F5F9', color: '#64748B', label: 'DECLINED' },
 };
@@ -71,7 +72,6 @@ export default function ChangeRequestsPage() {
   const qc = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('all');
-  const [replyTab, setReplyTab] = useState<'reply' | 'note'>('reply');
   const [text, setText] = useState('');
   const [moveOpen, setMoveOpen] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
@@ -119,7 +119,7 @@ export default function ChangeRequestsPage() {
 
   const messages = detail?.messages ?? [];
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }); }, [messages.length, selectedId]);
-  useEffect(() => { setReplyTab('reply'); setBookmarked(false); }, [selectedId]);
+  useEffect(() => { setBookmarked(false); }, [selectedId]);
 
   const submit = () => { const b = text.trim(); if (b && selectedId) sendMessage.mutate(b); };
   const moveTargets = detail ? (NEXT[detail.status] ?? []) : [];
@@ -157,7 +157,7 @@ export default function ChangeRequestsPage() {
               <div className="text-[28px] font-bold leading-none" style={{ color: k.valueColor }}>{k.value}</div>
               <div className="mt-1 text-[13px] font-medium text-[#64748B]">{k.label}</div>
             </div>
-            <button onClick={() => setFilter(k.to)} className="ml-auto inline-flex items-center gap-1 self-start text-[12px] font-semibold text-indigo-600 hover:underline">View all ›</button>
+            <button onClick={() => setFilter(k.to)} className="ml-auto inline-flex items-center gap-1 self-start border-0 bg-transparent text-[12px] font-semibold text-indigo-600 hover:underline">View all ›</button>
           </div>
         ))}
       </div>
@@ -168,12 +168,11 @@ export default function ChangeRequestsPage() {
         <aside className="flex w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)] lg:w-[340px]">
           <div className="flex items-center justify-between border-b border-[#F1F5F9] px-5 py-4">
             <span className="text-[16px] font-bold text-[#0F172A]">Requests</span>
-            <button className="grid h-8 w-8 place-items-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50"><Filter size={15} /></button>
           </div>
           <div className="flex flex-wrap gap-1.5 border-b border-[#F1F5F9] px-5 py-3">
             {FILTERS.map(([v, l]) => (
               <button key={v} onClick={() => setFilter(v)}
-                className={`rounded-lg px-3 py-1 text-xs font-semibold transition-colors ${filter === v ? 'border border-indigo-200 bg-indigo-50 text-indigo-600' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>{l}</button>
+                className={`rounded-lg px-3 py-1 text-xs font-semibold transition-colors ${filter === v ? 'border border-indigo-200 bg-indigo-50 text-indigo-600' : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>{l}</button>
             ))}
           </div>
 
@@ -183,7 +182,7 @@ export default function ChangeRequestsPage() {
               const last = r.messages?.[r.messages.length - 1];
               return (
                 <button key={r.id} onClick={() => setSelectedId(r.id)}
-                  className="flex w-full flex-col gap-1 border-b border-[#F8FAFC] px-5 py-3.5 text-left transition-colors hover:bg-[#F9FAFB]"
+                  className="flex w-full flex-col gap-1 border-b border-[#F1F5F9] bg-white px-5 py-3.5 text-left transition-colors hover:bg-[#F9FAFB]"
                   style={on ? { background: '#EEF2FF', borderLeft: '3px solid #4F46E5', paddingLeft: 17 } : { borderLeft: '3px solid transparent' }}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2">
@@ -253,17 +252,16 @@ export default function ChangeRequestsPage() {
                         <div className="absolute right-0 top-full z-50 mt-1 w-40 overflow-hidden rounded-xl border border-gray-100 bg-white py-1 shadow-xl">
                           {moveTargets.map((t) => (
                             <button key={t.status} onClick={() => { setMoveOpen(false); transition.mutate({ id: detail.id, status: t.status }); }}
-                              className="block w-full px-4 py-2 text-left text-[13px] text-[#334155] hover:bg-gray-50">{t.label}</button>
+                              className="block w-full border-0 bg-white px-4 py-2 text-left text-[13px] text-[#334155] hover:bg-gray-50">{t.label}</button>
                           ))}
                         </div>
                       </>
                     )}
                   </div>
                   <button onClick={() => setBookmarked((b) => !b)} aria-label="Bookmark"
-                    className={`grid h-9 w-9 place-items-center rounded-lg border border-gray-200 hover:bg-gray-50 ${bookmarked ? 'text-indigo-600' : 'text-gray-500'}`}>
+                    className={`grid h-9 w-9 place-items-center rounded-lg border border-gray-200 bg-white hover:bg-gray-50 ${bookmarked ? 'text-indigo-600' : 'text-gray-500'}`}>
                     <Bookmark size={16} fill={bookmarked ? '#4F46E5' : 'none'} />
                   </button>
-                  <button aria-label="More" className="grid h-9 w-9 place-items-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50"><MoreHorizontal size={16} /></button>
                 </div>
               </div>
 
@@ -314,23 +312,11 @@ export default function ChangeRequestsPage() {
 
               {/* Reply area */}
               <div className="border-t border-[#F1F5F9] p-4">
-                <div className="mb-3 flex items-center gap-5 border-b border-[#F1F5F9]">
-                  {(['reply', 'note'] as const).map((t) => (
-                    <button key={t} onClick={() => setReplyTab(t)}
-                      className={`-mb-px border-b-2 pb-2 text-[13px] font-semibold transition-colors ${replyTab === t ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-[#64748B] hover:text-[#334155]'}`}>
-                      {t === 'reply' ? 'Reply to client' : 'Internal note'}
-                    </button>
-                  ))}
-                </div>
                 <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3}
                   placeholder="Type your message..."
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
                   className="w-full resize-none rounded-xl border border-[#E2E8F0] px-3.5 py-2.5 text-[14px] text-[#0F172A] outline-none transition-colors focus:border-[#4F46E5]" />
-                <div className="mt-2 flex items-center justify-between">
-                  <div className="flex items-center gap-1">
-                    <button aria-label="Attach" className="grid h-8 w-8 place-items-center rounded-lg text-[#94A3B8] hover:bg-gray-100"><Paperclip size={16} /></button>
-                    <button aria-label="Emoji" className="grid h-8 w-8 place-items-center rounded-lg text-[#94A3B8] hover:bg-gray-100"><Smile size={16} /></button>
-                  </div>
+                <div className="mt-2 flex items-center justify-end">
                   <button onClick={submit} disabled={!text.trim() || sendMessage.isPending}
                     className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-5 py-2 text-[14px] font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-50">
                     Send <Send size={15} />

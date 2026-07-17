@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  CheckCheck, CheckCircle2, ClipboardCheck, Clock, Eye, FlaskConical, Filter,
+  CheckCheck, CheckCircle2, ClipboardCheck, Clock, Eye, FlaskConical,
   MoreVertical, RefreshCw, Search, ShieldCheck, TrendingUp,
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -313,9 +313,6 @@ export default function AuthorizerPage() {
           <option value="Gynecology">GYN</option>
           <option value="NonGynecology">Non-GYN</option>
         </select>
-        <select className={SELECT} value={tab} disabled>
-          <option value="awaiting">All Statuses</option>
-        </select>
         <select className={SELECT} value={specimenFilter} onChange={(e) => { setSpecimenFilter(e.target.value); }}>
           <option value="all">All Types</option>
           {specimenOptions.map((t) => <option key={t} value={t}>{specLabel(t)}</option>)}
@@ -324,9 +321,6 @@ export default function AuthorizerPage() {
           <option value="all">All Clients</option>
           {clientOptions.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
-        <button className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 hover:bg-slate-50">
-          <Filter size={15} /> More Filters
-        </button>
       </Card>
 
       {/* Main split */}
@@ -486,30 +480,9 @@ export default function AuthorizerPage() {
             </div>
           </Card>
 
-          {/* AI Confidence Overview */}
-          <Card radius="sm" elevation="sm" border="subtle" className="p-5">
-            <div className="mb-3 flex items-center gap-2">
-              <div className="text-sm font-semibold text-charcoal-heading">AI Confidence Overview</div>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Sample</span>
-            </div>
-            <div className="flex flex-col gap-3">
-              {[
-                { label: 'High (≥90%)', n: aiHigh, color: '#16A34A' },
-                { label: 'Medium (70–89%)', n: aiMed, color: '#FACC15' },
-                { label: 'Low (<70%)', n: aiLow, color: '#EF4444' },
-              ].map(({ label, n, color }) => (
-                <div key={label}>
-                  <div className="mb-1 flex items-center justify-between text-xs">
-                    <span className="text-slate-500">{label}</span>
-                    <span className="font-semibold text-charcoal-heading">{n} ({aiPct(n)}%)</span>
-                  </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                    <div className="h-full rounded-full" style={{ width: `${aiPct(n)}%`, background: color }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
+          {/* AI Confidence Overview removed (Program 1 · P1-1C): the distribution was a
+              fabricated sample with no real model-confidence source. PathOS performs no
+              diagnostic image inference today. */}
         </div>
       </div>
 

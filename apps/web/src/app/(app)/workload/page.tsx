@@ -11,7 +11,7 @@ import {
   PRIORITY_META, avatarColor, progressColor,
   type AssignmentHistoryRow, type QueueRecord, type TatPriority, type WorkloadUser,
 } from '@/lib/workload';
-import { EmptyState } from '@/components/ui';
+import { EmptyState, PageHeader } from '@/components/ui';
 import { notify } from '@/lib/notify';
 
 function PriorityBadge({ p }: { p: TatPriority }) {
@@ -108,10 +108,10 @@ export default function WorkloadPage() {
 
   return (
     <div className="min-h-full pb-10 pt-4" style={{ background: '#F8FAFC' }}>
-      <div className="mb-6">
-        <h1 className="text-[32px] font-bold leading-tight tracking-tight text-[#0F172A]">Workload &amp; Case Assignment</h1>
-        <p className="mt-1.5 text-[16px] text-[#6B7280]">Assign cases to pathologists and balance workload against daily targets.</p>
-      </div>
+      <PageHeader
+        title="Workload & Case Assignment"
+        description="Assign cases to pathologists and balance workload against daily targets."
+      />
 
       {/* Team overview */}
       <div className="mb-7">
@@ -123,11 +123,11 @@ export default function WorkloadPage() {
               <div className="flex items-center gap-3.5">
                 <Avatar name={u.userName} initials={u.avatarInitials} />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-[17px] font-bold text-[#0F172A]">{u.userName}</div>
+                  <div className="truncate text-[17px] font-bold text-charcoal-heading">{u.userName}</div>
                   <div className="text-[13px] text-[#475569]">{u.role}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[28px] font-bold leading-none text-[#0F172A]">{u.assignedTotal}</div>
+                  <div className="text-[28px] font-bold leading-none text-charcoal-heading">{u.assignedTotal}</div>
                   <div className="text-[12px] text-[#475569]">open cases</div>
                 </div>
               </div>
@@ -151,7 +151,7 @@ export default function WorkloadPage() {
         {/* Unassigned */}
         <div className="rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#EEF2F7] p-5">
-            <div className="text-[17px] font-bold text-[#0F172A]">Unassigned Cases ({unassigned.length})</div>
+            <div className="text-[17px] font-bold text-charcoal-heading">Unassigned Cases ({unassigned.length})</div>
             {canAssign && selected.size > 0 && (
               <div className="flex items-center gap-2">
                 <select value={bulkUser} onChange={(e) => setBulkUser(e.target.value)} className="h-9 rounded-lg border border-[#E2E8F0] px-2.5 text-[14px] outline-none focus:border-[#4F46E5]">
@@ -183,7 +183,7 @@ export default function WorkloadPage() {
                   <tr key={r.id} className="border-b border-[#F1F5F9]">
                     {canAssign && <td className="px-4 py-3.5"><input type="checkbox" className="h-4 w-4" checked={selected.has(r.id)} onChange={() => toggle(r.id)} style={{ accentColor: '#4F46E5' }} /></td>}
                     <td className="px-4 py-3.5"><PriorityBadge p={r.tatPriority} /></td>
-                    <td className="px-4 py-3.5 font-semibold text-[#0F172A]">{r.labNumber ?? r.identifier}</td>
+                    <td className="px-4 py-3.5 font-semibold text-charcoal-heading">{r.labNumber ?? r.identifier}</td>
                     <td className="px-4 py-3.5 text-[#334155]">{r.patientName}</td>
                     <td className="px-4 py-3.5 text-[#475569]">{r.specimenType ?? '—'}</td>
                     <td className="px-4 py-3.5 text-[#475569]">{r.hoursElapsed}h</td>
@@ -206,7 +206,7 @@ export default function WorkloadPage() {
         {/* My queue */}
         {isReviewer && (
           <div className="rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-            <div className="border-b border-[#EEF2F7] p-5 text-[17px] font-bold text-[#0F172A]">My Queue ({myQueue.length})</div>
+            <div className="border-b border-[#EEF2F7] p-5 text-[17px] font-bold text-charcoal-heading">My Queue ({myQueue.length})</div>
             <div className="flex flex-col">
               {myQueue.length === 0 ? (
                 <div className="px-4 py-12 text-center text-[15px] text-[#475569]">No cases assigned to you</div>
@@ -214,7 +214,7 @@ export default function WorkloadPage() {
                 <div key={r.id} className="flex items-center gap-3 border-b border-[#F1F5F9] px-5 py-4">
                   <PriorityBadge p={r.tatPriority} />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-[14px] font-semibold text-[#0F172A]">{r.labNumber ?? r.identifier} · {r.patientName}</div>
+                    <div className="truncate text-[14px] font-semibold text-charcoal-heading">{r.labNumber ?? r.identifier} · {r.patientName}</div>
                     <div className="text-[13px] text-[#475569]">{r.specimenType ?? '—'} · {r.hoursElapsed}h elapsed</div>
                   </div>
                   <button onClick={() => router.push(`/records/${r.id}`)} className="rounded-lg bg-[#EEF2FF] px-4 py-2 text-[13px] font-semibold text-[#4F46E5]">Open</button>
@@ -227,7 +227,7 @@ export default function WorkloadPage() {
 
       {/* Assignment history */}
       <div className="mt-6 rounded-2xl border border-[#EEF2F7] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-        <div className="border-b border-[#EEF2F7] p-5 text-[17px] font-bold text-[#0F172A]">Assignment History</div>
+        <div className="border-b border-[#EEF2F7] p-5 text-[17px] font-bold text-charcoal-heading">Assignment History</div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[14px]">
             <thead>
@@ -244,7 +244,7 @@ export default function WorkloadPage() {
                 <tr><td colSpan={5} className="px-4 py-10 text-center text-[15px] text-[#475569]">No assignments yet.</td></tr>
               ) : history.map((h) => (
                 <tr key={`${h.recordId}-${h.assignedAt}`} className="border-b border-[#F1F5F9]">
-                  <td className="px-4 py-3.5 font-semibold text-[#0F172A]">{h.labNumber}</td>
+                  <td className="px-4 py-3.5 font-semibold text-charcoal-heading">{h.labNumber}</td>
                   <td className="px-4 py-3.5 text-[#334155]">{h.patientName}</td>
                   <td className="px-4 py-3.5 text-[#334155]">{h.assignedTo}</td>
                   <td className="px-4 py-3.5 text-[#475569]">{h.assignedBy}</td>
