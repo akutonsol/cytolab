@@ -20,7 +20,8 @@
 export type AuditMetadataContractId =
   | 'phi.access.v1'
   | 'record.status_change.v1'
-  | 'maintenance.disposition.v1';
+  | 'maintenance.disposition.v1'
+  | 'config.setting_change.v1';
 
 export type AuditMetadataScalar = string | number | boolean | null;
 export type AuditMetadataValue = Record<string, AuditMetadataScalar>;
@@ -60,6 +61,13 @@ const CONTRACTS: Record<AuditMetadataContractId, MetadataContract> = {
       operation: { kind: 'string', required: true, maxLength: 48 },
       affectedCount: { kind: 'number', required: true },
       approvalReference: { kind: 'string', required: true, maxLength: 96 },
+    },
+  },
+  'config.setting_change.v1': {
+    id: 'config.setting_change.v1',
+    fields: {
+      settingKey: { kind: 'string', required: true, maxLength: 64 },
+      scope: { kind: 'string', maxLength: 24 }, // e.g. "lab" | "system"
     },
   },
 };

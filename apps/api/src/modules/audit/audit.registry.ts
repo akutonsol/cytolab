@@ -58,6 +58,26 @@ export const exactKey = (
 ): AuditExactKey => `${category}:${actionCode}:v${eventVersion}`;
 
 /**
+ * P2-3R durability truthfulness. A registry `durabilityClass` describes the guarantee the
+ * CURRENT runtime provides, not a desired future one:
+ *   - OPERATIONAL          → best-effort synchronous append; a failure is logged and dropped,
+ *                            no eventual-delivery claim. All wired Phase-1 pilot events are here.
+ *   - CRITICAL_TRANSACTIONAL → append only inside a supplied owner transaction; without one the
+ *                            recorder fails closed. Held by events NOT wired to a non-transactional
+ *                            owner (e.g. RECORD_STATUS_CHANGED, GOVERNED_DELETION_EXECUTED).
+ *   - REQUIRED_DURABLE     → NOT supported in P2-3 (no durable outbox exists); the recorder fails
+ *                            CLOSED if such an event is emitted — it is never log-and-swallowed.
+ *                            Held only by events NOT wired to a live owner (LAB_FEATURE_TOGGLED,
+ *                            EVIDENCE_EXPORTED v1), so no live path fails.
+ * PROMOTION CANDIDATES (after a durable outbox / owner transactions land, P2-3+): LOGIN_SUCCEEDED,
+ * LOGIN_FAILED → REQUIRED_DURABLE; RECORD_CREATED, RECORD_SUBMITTED, SETTING_CHANGED →
+ * CRITICAL_TRANSACTIONAL (per contract §9, which lists clinical-lifecycle + authorization changes
+ * as durable). Promotion changes a delivery guarantee; because no event was ever emitted under the
+ * pre-P2-3R classification (capture activates only in the uncommitted P2-3), correcting v1 in place
+ * rewrites no historical evidence — a new event version is NOT required for this correction.
+ */
+
+/**
  * All registered definitions (every version of every event). `DATA_EXPORT/EVIDENCE_EXPORTED`
  * is intentionally carried at v1 (historical) AND v2 (current) to prove version-aware
  * resolution: v2 raised severity to CRITICAL, but v1 must remain resolvable for old evidence.
@@ -71,7 +91,9 @@ const ENTRIES: AuditRegistryEntry[] = [
     phiIndicator: false,
     dataClass: 'INTERNAL',
     retentionClass: 'STANDARD',
-    durabilityClass: 'REQUIRED_DURABLE',
+    // P2-3R: OPERATIONAL (best-effort) — the login flow has no durable delivery. Promotion
+    // candidate to REQUIRED_DURABLE once a durable audit outbox exists (see durability note).
+    durabilityClass: 'OPERATIONAL',
     attributionPolicy: 'HTTP_REQUEST',
     metadataContractId: null,
   },
@@ -123,6 +145,112 @@ const ENTRIES: AuditRegistryEntry[] = [
     attributionPolicy: 'HTTP_REQUEST',
     metadataContractId: null,
   },
+  // --- P2-3 Phase-1 owner capture set --------------------------------------
+  {
+    category: 'AUTHENTICATION',
+    actionCode: 'LOGIN_FAILED',
+    eventVersion: 1,
+    defaultSeverity: 'WARNING',
+    phiIndicator: false,
+    dataClass: 'INTERNAL',
+    retentionClass: 'STANDARD',
+    // P2-3R: OPERATIONAL (best-effort). Promotion candidate to REQUIRED_DURABLE (security signal)
+    // once a durable audit outbox exists.
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    metadataContractId: null,
+  },
+  {
+    category: 'AUTHENTICATION',
+    actionCode: 'LOGOUT',
+    eventVersion: 1,
+    defaultSeverity: 'INFO',
+    phiIndicator: false,
+    dataClass: 'INTERNAL',
+    retentionClass: 'STANDARD',
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    metadataContractId: null,
+  },
+  {
+    category: 'RECORD_LIFECYCLE',
+    actionCode: 'RECORD_CREATED',
+    eventVersion: 1,
+    defaultSeverity: 'NOTICE',
+    phiIndicator: false,
+    dataClass: 'CONFIDENTIAL',
+    retentionClass: 'EXTENDED',
+    // P2-3R: OPERATIONAL (best-effort) — records.create is not transactional. Promotion candidate
+    // to CRITICAL_TRANSACTIONAL once the create runs in an owner transaction (contract §9 lists
+    // clinical-lifecycle actions as durable).
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    metadataContractId: null,
+  },
+  {
+    category: 'RECORD_LIFECYCLE',
+    actionCode: 'RECORD_UPDATED',
+    eventVersion: 1,
+    defaultSeverity: 'INFO',
+    phiIndicator: false,
+    dataClass: 'CONFIDENTIAL',
+    retentionClass: 'EXTENDED',
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    metadataContractId: null,
+  },
+  {
+    category: 'RECORD_LIFECYCLE',
+    actionCode: 'RECORD_SUBMITTED',
+    eventVersion: 1,
+    defaultSeverity: 'NOTICE',
+    phiIndicator: false,
+    dataClass: 'CONFIDENTIAL',
+    retentionClass: 'EXTENDED',
+    // P2-3R: OPERATIONAL (best-effort) — the status transition is not transactional. Promotion
+    // candidate to CRITICAL_TRANSACTIONAL once transition() runs in an owner transaction.
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    metadataContractId: null,
+  },
+  {
+    category: 'SYSTEM',
+    actionCode: 'JOB_STARTED',
+    eventVersion: 1,
+    defaultSeverity: 'INFO',
+    phiIndicator: false,
+    dataClass: 'INTERNAL',
+    retentionClass: 'SHORT',
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'BACKGROUND_JOB',
+    metadataContractId: null,
+  },
+  {
+    category: 'SYSTEM',
+    actionCode: 'JOB_COMPLETED',
+    eventVersion: 1,
+    defaultSeverity: 'INFO',
+    phiIndicator: false,
+    dataClass: 'INTERNAL',
+    retentionClass: 'SHORT',
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'BACKGROUND_JOB',
+    metadataContractId: null,
+  },
+  {
+    category: 'CONFIGURATION',
+    actionCode: 'SETTING_CHANGED',
+    eventVersion: 1,
+    defaultSeverity: 'WARNING',
+    phiIndicator: false,
+    dataClass: 'INTERNAL',
+    retentionClass: 'EXTENDED',
+    // P2-3R: OPERATIONAL (best-effort) — toggle() is not transactional. Promotion candidate to
+    // CRITICAL_TRANSACTIONAL once the feature upsert runs in an owner transaction.
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    metadataContractId: 'config.setting_change.v1',
+  },
   // Two-version demonstration event (see note above).
   {
     category: 'DATA_EXPORT',
@@ -157,10 +285,18 @@ const ENTRIES: AuditRegistryEntry[] = [
  */
 const CURRENT_VERSIONS: Record<AuditEventKey, number> = {
   'AUTHENTICATION:LOGIN_SUCCEEDED': 1,
+  'AUTHENTICATION:LOGIN_FAILED': 1,
+  'AUTHENTICATION:LOGOUT': 1,
   'PHI_ACCESS:PATIENT_RECORD_VIEWED': 1,
   'RECORD_LIFECYCLE:RECORD_STATUS_CHANGED': 1,
+  'RECORD_LIFECYCLE:RECORD_CREATED': 1,
+  'RECORD_LIFECYCLE:RECORD_UPDATED': 1,
+  'RECORD_LIFECYCLE:RECORD_SUBMITTED': 1,
   'DATA_MAINTENANCE:GOVERNED_DELETION_EXECUTED': 1,
   'CONFIGURATION:LAB_FEATURE_TOGGLED': 1,
+  'CONFIGURATION:SETTING_CHANGED': 1,
+  'SYSTEM:JOB_STARTED': 1,
+  'SYSTEM:JOB_COMPLETED': 1,
   'DATA_EXPORT:EVIDENCE_EXPORTED': 2,
 };
 

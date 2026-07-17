@@ -44,6 +44,17 @@ describe('owner boundary: only the Audit owner touches the AuditEvent model', ()
     }
     expect(offenders).toEqual([]);
   });
+
+  it('no owner reaches AuditPersistenceService — the only producer path is AuditRecorder', () => {
+    // Owners may import AuditRecorder; AuditPersistenceService must stay internal to the owner.
+    const offenders: string[] = [];
+    for (const file of walk(SRC_ROOT)) {
+      if (file.startsWith(AUDIT_DIR)) continue;
+      const text = fs.readFileSync(file, 'utf8');
+      if (/AuditPersistenceService/.test(text)) offenders.push(path.relative(SRC_ROOT, file));
+    }
+    expect(offenders).toEqual([]);
+  });
 });
 
 describe('immutability: the persistence surface is append-only', () => {

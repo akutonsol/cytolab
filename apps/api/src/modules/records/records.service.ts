@@ -6,6 +6,7 @@ import { NotificationsHelper } from '../notifications/notifications.helper';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { allocateSequence, isUniqueConflict } from '../../common/util/lab-sequence';
+import { AuditRecorder } from '../audit/audit-recorder.service';
 import { TAT_PRIORITY_RANK, hoursElapsed, tatPriority } from '../../common/util/tat-priority';
 import {
   CreateRecordDto,
@@ -134,6 +135,7 @@ export class RecordsService {
     private prisma: PrismaService,
     private labContext: LabContext,
     private notifs: NotificationsHelper,
+    private audit: AuditRecorder,
   ) {}
 
   // Record queries are lab-scoped automatically by the tenancy extension; nested
@@ -300,6 +302,15 @@ export class RecordsService {
       this.suggestCorrelation(record.id, record.patientId, record.patient).catch(() => undefined);
     }
 
+    // Enterprise audit (P2-3): attribution (actor/lab/request) comes from the ExecutionContext.
+    await this.audit.record({
+      category: 'RECORD_LIFECYCLE',
+      actionCode: 'RECORD_CREATED',
+      resource: { type: 'Record', id: record.id },
+      outcome: { status: 'SUCCESS' },
+      producerModule: 'records',
+    });
+
     return this.findOne(record.id);
   }
 
@@ -366,6 +377,14 @@ export class RecordsService {
     if (gynFeatures || nonGynFeatures || rest.formType !== undefined) {
       await this.writeClinicalFeatures(id, formType, gynFeatures, nonGynFeatures);
     }
+    // Enterprise audit (P2-3).
+    await this.audit.record({
+      category: 'RECORD_LIFECYCLE',
+      actionCode: 'RECORD_UPDATED',
+      resource: { type: 'Record', id },
+      outcome: { status: 'SUCCESS' },
+      producerModule: 'records',
+    });
     return this.findOne(id);
   }
 
@@ -538,6 +557,18 @@ export class RecordsService {
       },
       select: recordSelect,
     });
+
+    // Enterprise audit (P2-3): the shared transition chokepoint serves several status changes;
+    // only the Pending→Submitted hand-off is captured in the Phase-1 pilot set.
+    if (newStatus === RecordStatus.Submitted) {
+      await this.audit.record({
+        category: 'RECORD_LIFECYCLE',
+        actionCode: 'RECORD_SUBMITTED',
+        resource: { type: 'Record', id },
+        outcome: { status: 'SUCCESS' },
+        producerModule: 'records',
+      });
+    }
 
     // Batch fulfillment: cache the line's fulfilled flag off this record's new
     // status, then recompute the parent requisition's Partial/Completed status.

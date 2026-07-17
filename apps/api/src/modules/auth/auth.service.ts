@@ -16,6 +16,8 @@ import { LoginProtectionService } from '../security/login-protection.service';
 import { MfaService } from '../security/mfa.service';
 import { SessionService, REFRESH_COOKIE } from '../security/session.service';
 import { buildRequestContext } from '../security/request-context.util';
+import { ExecutionContextService } from '../../common/execution-context/execution-context.service';
+import { AuditRecorder } from '../audit/audit-recorder.service';
 import { LoginDto, RegisterLabDto } from './dto/login.dto';
 
 const GENERIC_LOGIN_ERROR = 'Invalid username or password.';
@@ -71,6 +73,8 @@ export class AuthService {
     private loginProtection: LoginProtectionService,
     private mfa: MfaService,
     private sessions: SessionService,
+    private executionContext: ExecutionContextService,
+    private audit: AuditRecorder,
   ) {}
 
   /** Bootstrap: create a Lab, its Account, default Workspace, Superuser role, and first user. */
@@ -155,6 +159,15 @@ export class AuthService {
         email,
         ctx,
         reason: user ? 'bad_password' : 'unknown_user',
+      });
+      // Enterprise audit (P2-3): a failed login has no authenticated actor — the attempted user
+      // is the resource; attribution otherwise comes from the ExecutionContext (ANONYMOUS).
+      await this.audit.record({
+        category: 'AUTHENTICATION',
+        actionCode: 'LOGIN_FAILED',
+        resource: { type: 'User', id: user?.id ?? null },
+        outcome: { status: 'FAILURE', reasonCode: user ? 'bad_password' : 'unknown_user' },
+        producerModule: 'auth',
       });
       throw new UnauthorizedException(GENERIC_LOGIN_ERROR);
     }
@@ -265,6 +278,14 @@ export class AuthService {
     const raw = this.readRefreshToken(req);
     await this.sessions.revokeByRefreshToken(raw);
     this.sessions.clearAuthCookies(res);
+    // Enterprise audit (P2-3): actor/lab come from the authenticated ExecutionContext.
+    await this.audit.record({
+      category: 'AUTHENTICATION',
+      actionCode: 'LOGOUT',
+      resource: { type: 'Session' },
+      outcome: { status: 'SUCCESS' },
+      producerModule: 'auth',
+    });
     return { status: 'OK' as const };
   }
 
@@ -371,6 +392,22 @@ export class AuthService {
     const { sessionId, refreshToken } = await this.sessions.createSession(user.id, ctx);
     const accessToken = await this.buildAccessToken(user, sessionId);
     this.sessions.setAuthCookies(res, accessToken, refreshToken);
+    // Enterprise audit (P2-3): login is the point where identity becomes known, so we bind the
+    // now-authenticated staff principal into the ExecutionContext (the login route has no JWT
+    // guard to do it) before recording — the audit event then carries the real actor + lab.
+    this.executionContext.bindPrincipal({
+      kind: 'staff',
+      userId: user.id,
+      labId: user.labId,
+      sessionId,
+    });
+    await this.audit.record({
+      category: 'AUTHENTICATION',
+      actionCode: 'LOGIN_SUCCEEDED',
+      resource: { type: 'User', id: user.id },
+      outcome: { status: 'SUCCESS' },
+      producerModule: 'auth',
+    });
     return { status: 'OK' as const, user: this.userSummary(user) };
   }
 

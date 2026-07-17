@@ -20,7 +20,7 @@ describeIf('Results workflow (integration)', () => {
   const raw = new PrismaClient();
   const labContext = new LabContext();
   const prisma = new PrismaService(labContext);
-  const records = new RecordsService(prisma, labContext, { notifyUser: async () => {}, notifyPermission: async () => {} } as any);
+  const records = new RecordsService(prisma, labContext, { notifyUser: async () => {}, notifyPermission: async () => {} } as any, { record: async () => {} } as any);
   const realtimeStub = { emitToLab() {}, emitToUser() {}, emitToSuperusers() {} } as any;
   const resultSheets = new ResultSheetsService(prisma, records, { evaluateRecord: async () => {} } as any, { hasBlockingOpenOrders: async () => ({ blocked: false, total: 0 }) } as any, labContext, realtimeStub);
 

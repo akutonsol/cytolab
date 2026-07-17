@@ -15,7 +15,7 @@ describeIf('Requisition fulfillment recompute (integration)', () => {
   const raw = new PrismaClient();
   const labContext = new LabContext();
   const prisma = new PrismaService(labContext);
-  const records = new RecordsService(prisma, labContext, { notifyUser: async () => {}, notifyPermission: async () => {} } as any);
+  const records = new RecordsService(prisma, labContext, { notifyUser: async () => {}, notifyPermission: async () => {} } as any, { record: async () => {} } as any);
 
   const tag = `ful-${Date.now().toString(36)}`;
   let labId: string;

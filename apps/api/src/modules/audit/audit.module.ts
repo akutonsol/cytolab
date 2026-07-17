@@ -1,22 +1,24 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { PrismaModule } from '../../database/prisma.module';
 import { AuditPersistenceService } from './audit-persistence.service';
+import { AuditRecorder } from './audit-recorder.service';
 
 /**
- * Program 2 · P2-1 — Enterprise Audit owner module (foundation).
+ * Program 2 · P2-3 — Enterprise Audit owner module (ACTIVE).
  *
- * Owns the AuditEvent ledger and its contract/registry/validation surface. It provides
- * only the internal append-only persistence boundary; the producer-facing capture API
- * (AuditRecorder), request enrichment, and hash chain are P2-2..P2-4.
+ * Owns the AuditEvent ledger and its contract/registry/validation surface. It exposes
+ * exactly one producer-facing capture API — {@link AuditRecorder} — and keeps the
+ * append-only {@link AuditPersistenceService} internal to the owner (NOT exported), so no
+ * domain owner can reach persistence or Prisma AuditEvent directly. Attribution comes from
+ * the P2-2 ExecutionContext (global); classification from the registry. Hash chain / sequence
+ * remain inactive until P2-4.
  *
- * DELIBERATELY NOT registered in AppModule yet: registering it would imply live capture,
- * which does not exist in P2-1. Wiring the owner into the application (and exposing
- * AuditRecorder to domain owners) happens in P2-3. The service is exported so that future
- * checkpoint modules can import it once capture is real.
+ * As of P2-3 this module is intentionally registered in AppModule to activate capture.
  */
+@Global()
 @Module({
   imports: [PrismaModule],
-  providers: [AuditPersistenceService],
-  exports: [AuditPersistenceService],
+  providers: [AuditPersistenceService, AuditRecorder],
+  exports: [AuditRecorder],
 })
 export class AuditModule {}

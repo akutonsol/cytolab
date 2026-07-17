@@ -4,6 +4,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { LabContext } from '../../common/tenancy/lab-context';
 import { ALL_FEATURE_KEYS, BUILT_FEATURES, FEATURE_TIERS } from './feature-catalog';
 import { ToggleFeatureDto } from './dto/lab-features.dto';
+import { AuditRecorder } from '../audit/audit-recorder.service';
 
 const featureSelect = {
   featureKey: true,
@@ -29,6 +30,7 @@ export class LabFeaturesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly labContext: LabContext,
+    private readonly audit: AuditRecorder,
   ) {}
 
   /** The caller's own lab (from the JWT — never the body). */
@@ -127,7 +129,7 @@ export class LabFeaturesService {
     }
     const { labId, isEnabled, notes } = dto;
 
-    return this.labContext.runSystem(async () => {
+    const row = await this.labContext.runSystem(async () => {
       const lab = await this.prisma.lab.findUnique({ where: { id: labId }, select: { id: true } });
       if (!lab) throw new NotFoundException('Lab not found');
 
@@ -152,5 +154,20 @@ export class LabFeaturesService {
       });
       return this.toRow(updated);
     });
+
+    // Enterprise audit (P2-3): emitted OUTSIDE runSystem so the acting principal's attribution
+    // (from the ExecutionContext) is intact — runSystem opens an attribution-less system store.
+    // resource.labId records which lab's setting changed (may differ from the actor's lab for a
+    // superuser cross-lab change).
+    await this.audit.record({
+      category: 'CONFIGURATION',
+      actionCode: 'SETTING_CHANGED',
+      resource: { type: 'LabFeature', id: featureKey, labId },
+      outcome: { status: 'SUCCESS' },
+      metadata: { settingKey: featureKey, scope: 'lab' },
+      producerModule: 'lab-features',
+    });
+
+    return row;
   }
 }

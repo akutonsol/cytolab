@@ -8,6 +8,7 @@ import { LabContextMiddleware } from './common/tenancy/lab-context.middleware';
 import { TenancyModule } from './common/tenancy/tenancy.module';
 import { ExecutionContextModule } from './common/execution-context/execution-context.module';
 import { ExecutionContextMiddleware } from './common/execution-context/execution-context.middleware';
+import { AuditModule } from './modules/audit/audit.module';
 import { PrismaModule } from './database/prisma.module';
 import { HealthController } from './health.controller';
 import { AuthModule } from './modules/auth/auth.module';
@@ -107,6 +108,7 @@ import { ScreeningBatchesModule } from './modules/screening-batches/screening-ba
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     TenancyModule,
     ExecutionContextModule,
+    AuditModule,
     PrismaModule,
     RealtimeModule,
     AuthModule,
