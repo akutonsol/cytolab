@@ -9,9 +9,10 @@ import {
   AuditRecordInput,
   AuditResourceInput,
 } from './audit.contract';
+import { PrismaService } from '../../database/prisma.service';
 import { AuditMetadataValue } from './audit-metadata';
 import { AuditPersistenceService } from './audit-persistence.service';
-import { resolveCurrent } from './audit.registry';
+import { resolveCurrent, UnknownAuditEventError } from './audit.registry';
 
 /**
  * Producer-facing intent. Owners publish semantic intent only — WHAT happened and to WHICH
@@ -95,48 +96,69 @@ export class AuditRecorder {
   constructor(
     private readonly persistence: AuditPersistenceService,
     private readonly executionContext: ExecutionContextService,
+    private readonly prisma: PrismaService,
   ) {}
 
   /**
    * Record an audit event. The registry — never the producer — is the sole durability authority.
    * Each class is honored TRUTHFULLY for what the P2-3 runtime can actually provide (no outbox /
    * retry queue exists yet):
-   *   - CRITICAL_TRANSACTIONAL → requires a supplied owner transaction; the append runs in that
-   *     same tx and any failure propagates so the owner mutation rolls back. Called WITHOUT a tx
-   *     it fails closed (AuditTransactionRequiredError) — it never appends outside a transaction.
-   *   - REQUIRED_DURABLE → NOT supported for live non-transactional capture in P2-3; it fails
-   *     closed (AuditDurabilityUnsupportedError) BEFORE any append. It must never log-and-swallow,
-   *     because that would silently lose an event the registry promises is durable.
-   *   - OPERATIONAL → synchronous best-effort append; a failure is logged and swallowed, making
-   *     no eventual-delivery claim and never breaking the business operation.
+   *   - CRITICAL_TRANSACTIONAL → requires a supplied owner transaction; the chained append runs on
+   *     that same tx and any failure propagates so the owner mutation rolls back. Called WITHOUT a
+   *     tx it fails closed (AuditTransactionRequiredError) — it never appends outside a transaction.
+   *   - REQUIRED_DURABLE → NOT supported for live capture; it fails closed
+   *     (AuditDurabilityUnsupportedError) BEFORE any append. It must never log-and-swallow.
+   *   - OPERATIONAL → the recorder opens ONE recorder-owned transaction (needed because the append
+   *     is now multi-statement chain work) and performs the chained append inside it; a failure is
+   *     logged and swallowed (best-effort, no durability claim, never breaks the business op). The
+   *     transaction exists only for chain consistency, not for stronger durability — a rolled-back
+   *     append consumes no sequence.
    * An unregistered event fails closed (propagates), so a mis-registered producer is surfaced.
    */
   async record(intent: AuditRecordIntent, opts?: AuditRecordOptions): Promise<void> {
     const durability = this.resolveDurability(intent);
 
-    // Fail closed BEFORE capture for any class the P2-3 runtime cannot truthfully honor.
+    // Fail closed BEFORE capture for any class the runtime cannot truthfully honor.
     if (durability === 'REQUIRED_DURABLE') {
       throw new AuditDurabilityUnsupportedError(intent.category, intent.actionCode);
+    }
+    if (durability === 'UNKNOWN') {
+      // Unregistered event — cannot be classified/chained. Surface the precise registry error.
+      try {
+        resolveCurrent(intent.category, intent.actionCode);
+      } catch (err) {
+        throw new AuditCaptureError(intent.category, intent.actionCode, err);
+      }
+      throw new AuditCaptureError(
+        intent.category,
+        intent.actionCode,
+        new UnknownAuditEventError(intent.category, intent.actionCode),
+      );
     }
     if (durability === 'CRITICAL_TRANSACTIONAL' && !opts?.tx) {
       throw new AuditTransactionRequiredError(intent.category, intent.actionCode);
     }
 
-    try {
-      const input = this.enrich(intent);
-      await this.persistence.append(input, opts?.tx);
-    } catch (err) {
-      if (durability === 'OPERATIONAL') {
-        // Best-effort: no durability was claimed, so a failure is logged (not silent) and dropped
-        // rather than breaking the business operation.
+    const input = this.enrich(intent);
+
+    if (durability === 'OPERATIONAL') {
+      // Recorder-owned transaction, purely for chain-append atomicity. Best-effort: swallow on fail.
+      try {
+        await this.prisma.$transaction((tx) => this.persistence.append(input, tx));
+      } catch {
         this.logger.warn(
           `OPERATIONAL audit capture failed (${intent.category}, ${intent.actionCode}); dropped ` +
             `(best-effort — no durability claim).`,
         );
-        return;
       }
-      // CRITICAL_TRANSACTIONAL (with tx) or UNKNOWN → propagate so the owner tx rolls back and a
-      // mis-registered producer (UnknownAuditEventError) is surfaced rather than hidden.
+      return;
+    }
+
+    // CRITICAL_TRANSACTIONAL — append on the owner-supplied transaction; failure propagates so the
+    // owner mutation rolls back together with the event and the chain-head advance.
+    try {
+      await this.persistence.append(input, opts!.tx!);
+    } catch (err) {
       throw new AuditCaptureError(intent.category, intent.actionCode, err);
     }
   }

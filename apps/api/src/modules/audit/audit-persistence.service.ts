@@ -1,13 +1,17 @@
+import { randomUUID } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditRecordInput, PLATFORM_OWNED_FIELDS } from './audit.contract';
 import { resolveCurrent } from './audit.registry';
-import { validateMetadata } from './audit-metadata';
+import { validateMetadata, AuditMetadataValue } from './audit-metadata';
 import {
   assertOrganizationScope,
   validateChangeEvidence,
 } from './audit-validation';
+import { AUDIT_HASH_ALGORITHM, deriveChainId } from './audit-chain';
+import { AuditCanonicalFields, computeSelfHash } from './audit-hash';
+import { AuditChainService } from './audit-chain.service';
 
 export class AuditPlatformFieldError extends Error {
   constructor(field: string) {
@@ -23,51 +27,72 @@ export class AuditPlatformFieldError extends Error {
 export const AUDIT_SCHEMA_VERSION = 1;
 
 /**
- * Program 2 · P2-1 — Audit ledger persistence boundary (append-only).
+ * Program 2 · P2-4C — Audit ledger persistence boundary (append-only, hash-chained).
  *
- * This is the ONLY code permitted to touch the Prisma `AuditEvent` model. It exposes a
- * single append path and DELIBERATELY provides NO update or delete method — the audit
- * ledger is immutable by contract (§Immutability). Row-level UPDATE/DELETE revocation at
- * the database role level is a P2-10 certification obligation, not claimed here.
+ * The ONLY code permitted to touch the Prisma `AuditEvent` model. It exposes a single append
+ * path and provides NO update/delete method — the ledger is immutable by contract. DB-role
+ * revocation is a P2-10 obligation.
  *
- * It is NOT the producer-facing capture API. AuditRecorder (request enrichment, attribution
- * enforcement, hash-chain assignment) is P2-2..P2-4. This service is intentionally not wired
- * into any domain owner in P2-1; it exists so the owner boundary and immutability guarantees
- * can be built and tested truthfully without implying live capture.
+ * `append` now runs the full chain activation INSIDE the caller-supplied transaction: derive the
+ * trusted chainId, allocate a gapless sequence + prevHash under a chain-head lock, app-stamp id +
+ * recordedAt, compute selfHash via the shared P2-4B helper, insert the event, and advance the head
+ * — all atomically. It never opens its own transaction; the caller (recorder for OPERATIONAL, owner
+ * for CRITICAL_TRANSACTIONAL) owns the transaction. Legacy pre-P2-4 rows are never touched.
  */
 @Injectable()
 export class AuditPersistenceService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly chain: AuditChainService,
+  ) {}
 
   /**
-   * Validate an event against the contract and append it to the ledger. Resolves all
-   * platform-owned classification from the registry (severity, data/PHI/retention/durability,
-   * eventVersion) — a producer cannot set them. Runs inside the caller's transaction when a
-   * `tx` client is supplied (CRITICAL_TRANSACTIONAL durability, P2-3).
+   * Validate, chain-link, and insert an audit event within the supplied transaction. Resolves all
+   * platform-owned classification + integrity (chainId, sequence, prevHash, selfHash, hashAlgorithm)
+   * — a producer can set none of them. The insert and the chain-head advance commit or roll back
+   * together, so a rolled-back write consumes no sequence.
    *
    * @returns the new event's id (eventId). No mutable handle to the row is returned.
    */
-  async append(
-    input: AuditRecordInput,
-    tx?: Prisma.TransactionClient,
-  ): Promise<string> {
+  async append(input: AuditRecordInput, tx: Prisma.TransactionClient): Promise<string> {
+    // Validation + registry classification (throws for unregistered / platform-field / scope / etc.)
     const data = this.buildCreateData(input);
-    const client = tx ?? this.prisma;
-    const created = await client.auditEvent.create({
-      data,
+
+    // Trusted chain partition (derived from the resolved scope, never the producer) + allocation.
+    const chainId = deriveChainId(input.organization.scope, input.organization.labId ?? null);
+    const { sequence, prevHash } = await this.chain.allocate(tx, chainId);
+
+    // App-stamp identity + record time BEFORE hashing (a post-insert UPDATE would break append-only).
+    const id = randomUUID();
+    const recordedAt = new Date();
+    const selfHash = computeSelfHash(
+      this.toCanonicalFields(data, { id, recordedAt, chainId, sequence, prevHash }),
+    );
+
+    await tx.auditEvent.create({
+      data: {
+        ...data,
+        id,
+        recordedAt,
+        chainId,
+        sequence,
+        prevHash,
+        selfHash,
+        hashAlgorithm: AUDIT_HASH_ALGORITHM,
+      },
       select: { id: true },
     });
-    return created.id;
+
+    await this.chain.advance(tx, chainId, sequence, selfHash);
+    return id;
   }
 
   /**
-   * The COMPLETE validation boundary. `append()` is the only insertion route and it calls this
-   * — there is no unchecked, raw, or Prisma-shaped path into the ledger. Exposed (internal to
-   * the owner) so the boundary can be unit-tested without a database. Order:
-   *   reject platform-owned fields → resolve current registry definition → resolve platform
-   *   eventVersion → apply registry defaults → validate scope → validate metadata contract →
-   *   validate change evidence → map only validated canonical values to Prisma.
-   * A producer can never set eventVersion or any platform-owned field.
+   * The COMPLETE validation boundary (no integrity yet). Exposed (internal to the owner) so the
+   * boundary can be unit-tested without a database. Order: reject platform-owned fields → resolve
+   * current registry definition + eventVersion → validate scope → validate metadata → validate
+   * change evidence → map only validated canonical values. A producer can never set eventVersion,
+   * any platform-owned field, or any integrity field.
    */
   buildCreateData(input: AuditRecordInput): Prisma.AuditEventCreateInput {
     this.rejectPlatformOwnedFields(input);
@@ -80,7 +105,7 @@ export class AuditPersistenceService {
     validateChangeEvidence(input.change);
 
     return {
-      // identity — platform-owned; id/recordedAt default, sequence/integrity stay null (P2-4)
+      // identity/time — id + recordedAt are app-stamped in append(); integrity is added there too.
       occurredAt: input.occurredAt ?? new Date(),
       schemaVersion: AUDIT_SCHEMA_VERSION,
       eventVersion: entry.eventVersion,
@@ -142,6 +167,61 @@ export class AuditPersistenceService {
       producerModule: input.producerModule,
       executionId: input.executionId ?? null,
       metadata: (metadata ?? undefined) as Prisma.InputJsonValue | undefined,
+    };
+  }
+
+  /**
+   * Map the validated create-data + the allocated integrity values into the shared canonical
+   * fields (P2-4B). Runtime values are plain scalars; the casts widen Prisma's enum/union types to
+   * the canonical `string` shape. `selfHash` is intentionally NOT part of its own input. NOTE:
+   * per the approved P2-4A/B field list, request/session/correlation context is attribution — it
+   * is persisted but NOT part of the integrity hash (covered by append-only immutability).
+   */
+  private toCanonicalFields(
+    data: Prisma.AuditEventCreateInput,
+    integ: { id: string; recordedAt: Date; chainId: string; sequence: bigint; prevHash: string },
+  ): AuditCanonicalFields {
+    return {
+      id: integ.id,
+      occurredAt: data.occurredAt as Date,
+      recordedAt: integ.recordedAt,
+      schemaVersion: data.schemaVersion as number,
+      eventVersion: data.eventVersion as number,
+      category: data.category as string,
+      actionCode: data.actionCode as string,
+      detailCode: (data.detailCode ?? null) as string | null,
+      severity: data.severity as string,
+      phiIndicator: data.phiIndicator as boolean,
+      dataClass: data.dataClass as string,
+      retentionClass: data.retentionClass as string,
+      durabilityClass: data.durabilityClass as string,
+      actorType: data.actorType as string,
+      actorId: (data.actorId ?? null) as string | null,
+      onBehalfOfActorId: (data.onBehalfOfActorId ?? null) as string | null,
+      servicePrincipal: (data.servicePrincipal ?? null) as string | null,
+      organizationScope: data.organizationScope as string,
+      scopeLabId: (data.scopeLabId ?? null) as string | null,
+      organizationId: (data.organizationId ?? null) as string | null,
+      resourceType: data.resourceType as string,
+      resourceId: (data.resourceId ?? null) as string | null,
+      resourceLabId: (data.resourceLabId ?? null) as string | null,
+      parentResourceType: (data.parentResourceType ?? null) as string | null,
+      parentResourceId: (data.parentResourceId ?? null) as string | null,
+      patientRef: (data.patientRef ?? null) as string | null,
+      outcome: data.outcome as string,
+      statusCode: (data.statusCode ?? null) as number | null,
+      errorCode: (data.errorCode ?? null) as string | null,
+      reasonCode: (data.reasonCode ?? null) as string | null,
+      changedFields: (data.changedFields as string[] | undefined) ?? [],
+      beforeHash: (data.beforeHash ?? null) as string | null,
+      afterHash: (data.afterHash ?? null) as string | null,
+      producerModule: data.producerModule as string,
+      executionId: (data.executionId ?? null) as string | null,
+      hashAlgorithm: AUDIT_HASH_ALGORITHM,
+      metadata: (data.metadata ?? null) as AuditMetadataValue | null,
+      sequence: integ.sequence,
+      chainId: integ.chainId,
+      prevHash: integ.prevHash,
     };
   }
 

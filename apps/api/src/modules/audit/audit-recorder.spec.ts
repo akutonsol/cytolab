@@ -1,5 +1,6 @@
 import { LabContext } from '../../common/tenancy/lab-context';
 import { ExecutionContextService } from '../../common/execution-context/execution-context.service';
+import { PrismaService } from '../../database/prisma.service';
 import { AuditPersistenceService } from './audit-persistence.service';
 import {
   AuditRecorder,
@@ -10,17 +11,21 @@ import {
 import { AuditRecordInput } from './audit.contract';
 
 /**
- * Program 2 · P2-3 — AuditRecorder unit tests. Persistence is mocked (we assert what the
- * recorder ENRICHES and how it handles durability); the ExecutionContext is real so we prove
- * attribution flows from P2-2, never from the producer.
+ * Program 2 · P2-3/P2-4C — AuditRecorder unit tests. Persistence is mocked (we assert what the
+ * recorder ENRICHES and how it handles durability + transactions); the ExecutionContext is real so
+ * we prove attribution flows from P2-2, never from the producer. The mock prisma.$transaction runs
+ * its callback with a sentinel tx client, so OPERATIONAL's recorder-owned transaction is observable.
  */
 function setup(appendImpl?: jest.Mock) {
   const append = appendImpl ?? jest.fn().mockResolvedValue('evt-1');
   const persistence = { append } as unknown as AuditPersistenceService;
   const labContext = new LabContext();
   const execCtx = new ExecutionContextService(labContext);
-  const recorder = new AuditRecorder(persistence, execCtx);
-  return { append, labContext, execCtx, recorder };
+  const ownTx = { __recorderOwnedTx: true } as any;
+  const $transaction = jest.fn((fn: any) => fn(ownTx));
+  const prisma = { $transaction } as unknown as PrismaService;
+  const recorder = new AuditRecorder(persistence, execCtx, prisma);
+  return { append, labContext, execCtx, recorder, prisma, $transaction, ownTx };
 }
 
 const fakeReq = () =>
@@ -138,17 +143,19 @@ describe('AuditRecorder — durability (registry is the sole authority; no false
 });
 
 describe('AuditRecorder — transactions', () => {
-  it('appends inside a supplied transaction client', async () => {
-    const { append, recorder } = setup();
-    const tx = { marker: 'tx' } as any;
-    await recorder.record(intent(), { tx });
-    expect(append).toHaveBeenCalledWith(expect.any(Object), tx);
+  it('CRITICAL appends on the owner-supplied transaction (no recorder-owned tx opened)', async () => {
+    const { append, recorder, $transaction } = setup();
+    const ownerTx = { __ownerTx: true } as any;
+    await recorder.record(intent({ actionCode: 'RECORD_STATUS_CHANGED' }), { tx: ownerTx });
+    expect(append).toHaveBeenCalledWith(expect.any(Object), ownerTx);
+    expect($transaction).not.toHaveBeenCalled();
   });
 
-  it('appends without a transaction when none is supplied', async () => {
-    const { append, recorder } = setup();
-    await recorder.record(intent());
-    expect(append).toHaveBeenCalledWith(expect.any(Object), undefined);
+  it('OPERATIONAL opens ONE recorder-owned transaction and appends inside it', async () => {
+    const { append, recorder, $transaction, ownTx } = setup();
+    await recorder.record(intent()); // RECORD_CREATED = OPERATIONAL
+    expect($transaction).toHaveBeenCalledTimes(1);
+    expect(append).toHaveBeenCalledWith(expect.any(Object), ownTx);
   });
 });
 

@@ -11,7 +11,8 @@ import { UnknownAuditEventError } from './audit.registry';
  * Program 2 · P2-1 — contract & validation boundary tests. `buildCreateData` is pure
  * (no DB), so the service is constructed with a null Prisma client.
  */
-const svc = new AuditPersistenceService(null as any);
+// buildCreateData is pure (no DB, no chain) — both deps are unused here.
+const svc = new AuditPersistenceService(null as any, null as any);
 
 const base: AuditRecordInput = {
   category: 'AUTHENTICATION',
