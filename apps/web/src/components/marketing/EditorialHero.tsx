@@ -70,7 +70,6 @@ export function EditorialHero() {
               fontWeight: 700,
               textTransform: 'uppercase',
               color: RED,
-              whiteSpace: 'nowrap',
               gap: 10,
             }}
           >
@@ -102,7 +101,7 @@ export function EditorialHero() {
             className="hero-rise"
             style={{ animationDelay: '580ms', maxWidth: 520, fontSize: 22, lineHeight: 1.75, fontWeight: 400, color: '#6A7280', margin: 0 }}
           >
-            CYTOLAB unifies every step of your workflow with AI-powered screening, intelligent
+            CYTOLAB unifies every step of your workflow with AI-assisted reporting, intelligent
             workflows, and real-time insights—so you can focus on what matters most: better outcomes.
           </p>
         </div>

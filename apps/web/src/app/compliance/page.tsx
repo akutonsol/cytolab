@@ -36,16 +36,16 @@ const PILLARS: { Icon: typeof Lock; tint: string; title: string; desc: string; p
   },
   {
     Icon: EyeOff, tint: INDIGO, title: 'Responsible AI data handling',
-    desc: 'AI screening runs with redaction and strict boundaries around protected data.',
+    desc: 'AI-assisted reporting runs with redaction and strict boundaries around protected data.',
     points: ['PHI redaction before processing', 'No training on your patient data', 'Graceful degradation, never blocking', 'Scoped, auditable AI access'],
   },
 ];
 
 const CERTS: { label: string; sub: string }[] = [
-  { label: 'HIPAA', sub: 'Compliant' },
-  { label: 'SOC 2', sub: 'Type II' },
-  { label: 'CAP / CLIA', sub: 'Validated workflows' },
-  { label: 'GDPR', sub: 'Ready' },
+  { label: 'HIPAA', sub: 'Aligned' },
+  { label: 'SOC 2', sub: 'Roadmap' },
+  { label: 'CAP / CLIA', sub: 'Workflow support' },
+  { label: 'GDPR', sub: 'Roadmap' },
 ];
 
 export default function SecurityPage() {

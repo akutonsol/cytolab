@@ -3,17 +3,17 @@ import { useEffect, useRef } from 'react'
 import SectionReveal from './SectionReveal'
 
 const steps = [
-  'Full-slide AI scan',
-  'Abnormal cell clustering',
-  'Explainable heatmap + confidence score',
-  'Urgency-based routing',
-  'Live EMR delivery — HL7/FHIR · under 2s',
+  'Structured case data assembled',
+  'Patient identifiers redacted',
+  'Language model drafts a narrative',
+  'Pathologist reviews and edits',
+  'Human authorizes — AI never signs out',
 ]
 
 const outcomes = [
-  { tag: 'Detection accuracy', value: '97%', blue: false },
-  { tag: 'Review time saved', value: '91%', blue: true },
-  { tag: 'Per-slide speed', value: '~0.8s', blue: false },
+  { tag: 'Every draft', value: 'Human-reviewed', blue: false },
+  { tag: 'Sign-out', value: 'Always human', blue: true },
+  { tag: 'Model inputs', value: 'Redacted', blue: false },
 ]
 
 export default function AISection() {
@@ -48,11 +48,11 @@ export default function AISection() {
       <div className="section-counter" aria-hidden="true">04</div>
 
       <div ref={tickerRef} style={{ padding: 'var(--section-md) var(--section-gutter) 0' }}>
-        <div style={{ marginBottom: 'var(--space-40)' }}>{sTag('03 · CYTO AI')}</div>
+        <div style={{ marginBottom: 'var(--space-40)' }}>{sTag('03 · ASSISTIVE AI')}</div>
         {[
-          [{ text: 'Your new', ghost: false, blue: false }],
-          [{ text: 'digital', ghost: true, blue: false }],
-          [{ text: 'cytotechnologist.', ghost: false, blue: true }],
+          [{ text: 'AI drafts.', ghost: false, blue: false }],
+          [{ text: 'You', ghost: true, blue: false }],
+          [{ text: 'decide.', ghost: false, blue: true }],
         ].map((line, li) => (
           <div key={li} style={{ display: 'block', lineHeight: 0.88, marginBottom: 'var(--space-4)' }}>
             {line.map(({ text, ghost, blue }, wi) => (

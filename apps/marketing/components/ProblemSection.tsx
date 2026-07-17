@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react'
 import SectionReveal from './SectionReveal'
 
 const problems = [
-  { text: 'Legacy LIS — no AI, no cloud', tag: '15–20 yr old' },
+  { text: 'Legacy LIS — on-prem, no cloud', tag: '15–20 yr old' },
   { text: 'Excel for QA tracking', tag: 'No audit trail' },
   { text: 'Disconnected billing', tag: 'Manual errors' },
   { text: 'Paper requisitions', tag: 'HIPAA risk' },
@@ -11,10 +11,10 @@ const problems = [
 ]
 
 const solutions = [
-  'AI screening on every specimen, live',
+  'AI-assisted report drafting, human-reviewed',
   'HL7/FHIR to Epic in under 2 seconds',
   'Billing, workforce, and QA — unified',
-  'HIPAA · CAP · CLIA — out of the box',
+  'HIPAA-aligned security — out of the box',
 ]
 
 export default function ProblemSection() {

@@ -1,4 +1,4 @@
-const items = ['HIPAA', 'CAP Ready', 'FHIR R4', 'HL7 v2.5', 'SOC 2 Type II', 'CLIA Certified', 'Epic Integration', 'Google Cloud', 'Argon2id', 'Multi-Lab Tenancy']
+const items = ['HIPAA', 'Role-Based Access', 'FHIR R4', 'HL7 v2.5', 'SOC 2 Type II', 'Audit Trails', 'Epic Integration', 'Google Cloud', 'Argon2id', 'Multi-Lab Tenancy']
 
 export default function Marquee() {
   return (

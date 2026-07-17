@@ -7,11 +7,11 @@ const plans = [
   },
   {
     tier: 'Regional Labs', name: 'Regional Labs', featured: true,
-    features: ['Everything in Community', 'CYTO AI screening', 'WSI digital slide viewer', 'HL7 / FHIR R4 integrations', 'Workforce and payroll', 'Priority support'],
+    features: ['Everything in Community', 'AI-assisted report drafting', 'WSI digital slide viewer', 'HL7 / FHIR R4 integrations', 'Workforce and payroll', 'Priority support'],
   },
   {
     tier: 'Health Systems', name: 'Enterprise Health Systems', featured: false,
-    features: ['Everything in Regional', 'Multi-lab tenancy', 'Custom AI model training', 'Dedicated infrastructure', 'SLA guarantee', 'Dedicated success team'],
+    features: ['Everything in Regional', 'Multi-lab tenancy', 'Custom onboarding & configuration', 'Dedicated infrastructure', 'SLA guarantee', 'Dedicated success team'],
   },
 ]
 

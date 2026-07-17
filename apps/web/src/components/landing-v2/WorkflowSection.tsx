@@ -55,7 +55,7 @@ export function WorkflowSection() {
           {[
             ['Average turnaround', '18.4 hrs', '↓ 22% vs. manual'],
             ['Pathologist time saved', '45%', 'per case, on average'],
-            ['AI pre-screen accuracy', '99.1%', 'on par with experts'],
+            ['AI drafting', 'Assistive', 'human-reviewed'],
             ['Fully auditable', '100%', 'every step logged'],
           ].map(([label, value, sub]) => (
             <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 160 }}>

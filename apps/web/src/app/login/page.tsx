@@ -28,8 +28,8 @@ interface MfaState {
 }
 
 const FEATURES = [
-  { Icon: LineChart, label: 'AI-Assisted Screening', desc: 'Surface abnormal cytology and prioritize the cases that need a pathologist first.' },
-  { Icon: ShieldCheck, label: 'HIPAA-Grade Security', desc: 'CLIA-ready workflows, complete audit trails, and encryption on every specimen record.' },
+  { Icon: LineChart, label: 'AI-Assisted Reporting', desc: 'Human-reviewed draft narratives that speed up structured reporting — the pathologist decides.' },
+  { Icon: ShieldCheck, label: 'HIPAA-Grade Security', desc: 'Role-based access, audit trails, and encryption on every specimen record.' },
   { Icon: Users, label: 'Lab-to-Clinician Handoff', desc: 'Accession, sign out, and deliver results across pathologists and referring clinics.' },
 ];
 

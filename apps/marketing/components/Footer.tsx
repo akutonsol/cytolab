@@ -1,7 +1,7 @@
 'use client'
 
 const cols = [
-  { title: 'Product', links: ['Platform', 'CYTO AI', 'Integrations', 'Security'] },
+  { title: 'Product', links: ['Platform', 'AI Reporting', 'Integrations', 'Security'] },
   { title: 'Resources', links: ['Documentation', 'API', 'Status', 'Changelog'] },
   { title: 'Company', links: ['About', 'Support', 'Privacy', 'Terms'] },
 ]
@@ -16,7 +16,7 @@ export default function Footer() {
             CYTOLAB
           </div>
           <p className="body-sm" style={{ color: 'rgba(240,239,233,0.18)', marginTop: 'var(--space-12)', maxWidth: 'var(--measure-sm)' }}>
-            The AI-powered laboratory operating system for modern cytology and pathology labs. Built by Akuton Solutions, Jamaica.
+            The laboratory operating system for modern cytology and pathology labs. Built by Akuton Solutions, Jamaica.
           </p>
         </div>
         {cols.map(({ title, links }) => (

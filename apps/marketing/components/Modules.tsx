@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react'
 import SectionReveal from './SectionReveal'
 
 const modules = [
-  { n: '01', name: 'AI Cytology Screening', tag: 'AI CORE', tagColor: '#4F46E5' },
+  { n: '01', name: 'AI-Assisted Reporting', tag: 'ASSISTIVE AI', tagColor: '#4F46E5' },
   { n: '02', name: 'Specimen Management', tag: 'CORE', tagColor: '#3f97ef' },
   { n: '03', name: 'Analytics and Reporting', tag: 'CORE', tagColor: '#3f97ef' },
   { n: '04', name: 'EMR Interoperability', tag: 'ENTERPRISE', tagColor: 'rgba(9,9,14,0.28)' },

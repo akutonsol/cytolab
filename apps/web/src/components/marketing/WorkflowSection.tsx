@@ -20,15 +20,15 @@ const STAGES: Stage[] = [
   { key: 'process', title: 'Process', lead: 'Preparation & imaging', Icon: ScanLine,
     time: '~8 min', ai: 'Assisted',
     bullets: ['Automated preparation', 'Digital imaging', 'Quality verification'] },
-  { key: 'ai', title: 'AI Analysis', lead: 'Screening intelligence', Icon: BrainCircuit, active: true,
-    time: '14 sec', ai: 'Full screening',
-    bullets: ['Deep learning inference', 'Region detection', 'Confidence scoring'] },
+  { key: 'ai', title: 'AI Draft Assist', lead: 'Assistive reporting', Icon: BrainCircuit, active: true,
+    time: '14 sec', ai: 'Draft assist',
+    bullets: ['Draft narrative', 'Structured suggestions', 'Human review'] },
   { key: 'review', title: 'Review', lead: 'Pathologist verification', Icon: ClipboardCheck,
     time: '~5 min', ai: 'Human-in-loop',
     bullets: ['Pathologist verification', 'Annotation tools', 'Diagnostic approval'] },
   { key: 'report', title: 'Report', lead: 'Structured delivery', Icon: FileCheck2,
     time: 'instant', ai: 'Formatting',
-    bullets: ['CAP-compliant reporting', 'LIS delivery', 'FHIR integration'] },
+    bullets: ['Structured reporting', 'LIS delivery', 'FHIR integration'] },
 ];
 
 // Deterministic ambient field (no Math.random → SSR-safe). Out-of-focus "cells"
@@ -145,7 +145,7 @@ export function WorkflowSection() {
             Built for the way<br />pathology labs <em>work.</em>
           </h2>
           <p className="wf-lede">
-            From specimen collection to AI-powered diagnosis and structured reporting,
+            From specimen collection through structured reporting,
             CYTOLAB connects every step into one intelligent workflow.
           </p>
           <div className="wf-actions">

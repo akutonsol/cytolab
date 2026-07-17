@@ -31,7 +31,7 @@ export default function Nav() {
         CYTOLAB
       </div>
       <div style={{ display: 'flex', gap: 'var(--space-40)' }}>
-        {['Platform', 'CYTO AI', 'Security', 'Pricing'].map(item => (
+        {['Platform', 'AI Reporting', 'Security', 'Pricing'].map(item => (
           <a key={item} href={`#${item.toLowerCase().replace(' ', '-')}`}
             style={{
               fontFamily: 'var(--font-sans)', fontSize: '0.68rem', fontWeight: 700,

@@ -69,7 +69,7 @@ export default function BookDemoPage() {
             </h1>
             <p style={{ fontSize: 17, lineHeight: 1.65, color: '#4a4a5a', maxWidth: 460, marginBottom: 36 }}>
               Book a personalized walkthrough with our clinical team. We&apos;ll show you exactly how CYTOLAB
-              fits your lab — from specimen intake to AI screening to signed-out report.
+              fits your lab — from specimen intake to AI-assisted drafting to signed-out report.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

@@ -14,7 +14,7 @@ const SECTIONS: LegalSection[] = [
     'Access to the CYTOLAB platform is provisioned to authorized users of a subscribing laboratory. You are responsible for safeguarding your credentials and for activity under your account.',
   ] },
   { id: 'clinical', heading: 'Clinical use disclaimer', body: [
-    'CYTOLAB is a laboratory information and workflow platform, including AI-assisted screening tools intended to support — not replace — qualified professional judgment. Final diagnostic decisions remain the responsibility of licensed personnel.',
+    'CYTOLAB is a laboratory information and workflow platform, including AI-assisted reporting tools intended to support — not replace — qualified professional judgment. Final diagnostic decisions remain the responsibility of licensed personnel.',
   ] },
   { id: 'ip', heading: 'Intellectual property', body: [
     'The website, platform, and all associated software, content, and trademarks are the property of CYTOLAB or its licensors and are protected by applicable law. No rights are granted except as expressly set out in your agreement.',

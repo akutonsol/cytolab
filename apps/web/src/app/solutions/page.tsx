@@ -9,7 +9,7 @@ import { MarketingPage } from '@/components/landing/marketing-chrome';
 import { RED, INK, INDIGO, VIOLET, GREEN, Card, IconTile, CheckItem, Section, PageHero } from '@/components/landing/marketing-ui';
 
 const CAPABILITIES: { Icon: typeof BrainCircuit; tint: string; title: string; desc: string }[] = [
-  { Icon: BrainCircuit, tint: RED, title: 'AI-assisted screening', desc: 'Prioritize abnormal cases and cut routine workload with models trained on 50M+ cells.' },
+  { Icon: BrainCircuit, tint: RED, title: 'AI-assisted reporting', desc: 'Draft structured narratives with human-reviewed AI assistance, cutting routine reporting workload.' },
   { Icon: Workflow, tint: INDIGO, title: 'Workflow automation', desc: 'Standardize intake, accessioning, review, and sign-out into one connected pipeline.' },
   { Icon: BarChart3, tint: VIOLET, title: 'Analytics & QA', desc: 'Bethesda distributions, turnaround times, and correlation surfaced in real time.' },
   { Icon: Users, tint: GREEN, title: 'Client & referral portal', desc: 'Give referring clinicians secure access to results, requisitions, and reports.' },
@@ -36,7 +36,7 @@ const AUDIENCES: { Icon: typeof Microscope; title: string; desc: string; points:
   {
     Icon: TrendingUp, title: 'Independent & growing labs',
     desc: 'Enterprise-grade tooling at a footprint that fits a lean team.',
-    points: ['Fast onboarding', 'Unlimited AI screening', 'Predictable pricing'],
+    points: ['Fast onboarding', 'Unlimited AI-assisted drafting', 'Predictable pricing'],
   },
 ];
 
@@ -47,7 +47,7 @@ export default function SolutionsPage() {
         eyebrow="Solutions"
         title="One platform, tailored to how"
         accent="your lab works."
-        sub="Whether you run a focused cytology practice or a multi-site reference lab, CYTOLAB adapts to your workflow — bringing AI screening, automation, and analytics into a single system."
+        sub="Whether you run a focused cytology practice or a multi-site reference lab, CYTOLAB adapts to your workflow — bringing AI-assisted reporting, automation, and analytics into a single system."
       >
         <div style={{ display: 'flex', gap: 14 }}>
           <Link href="/book-demo" style={{ background: RED, color: '#fff', padding: '14px 26px', borderRadius: 11, fontWeight: 700, fontSize: 15, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}>

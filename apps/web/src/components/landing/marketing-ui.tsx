@@ -71,7 +71,7 @@ export function CheckItem({ children }: { children: ReactNode }) {
 }
 
 export function TrustStrip() {
-  const items = ['HIPAA Compliant', 'SOC 2 Type II', '256-bit AES Encryption', 'CAP / CLIA Validated'];
+  const items = ['HIPAA-aligned', 'SOC 2 Type II', '256-bit AES Encryption', 'FHIR R4 Interoperability'];
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
       {items.map((t) => (

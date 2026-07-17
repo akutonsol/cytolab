@@ -77,7 +77,7 @@ export default function CTA() {
       <SectionReveal direction="right">
         <div style={{ padding: 'var(--section-xl) var(--section-gutter) var(--section-xl) var(--space-48)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <p className="body-lg" style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 'var(--space-48)', maxWidth: 'var(--measure-sm)' }}>
-            Join the next generation of pathology laboratories using AI to process more specimens, reduce turnaround time, and improve diagnostic confidence.
+            Join the next generation of pathology laboratories streamlining operations, reducing turnaround time, and standardizing reporting.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)', maxWidth: '280px' }}>
             <button className="mag-btn" style={{ background: '#fff', border: 'none', color: '#4F46E5', padding: '14px 30px', borderRadius: '2px', fontFamily: 'var(--font-sans)', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', cursor: 'pointer' }}>
@@ -88,7 +88,7 @@ export default function CTA() {
             </button>
           </div>
           <div style={{ marginTop: 'var(--space-48)', paddingTop: 'var(--space-32)', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: 'var(--space-8)', flexWrap: 'wrap' }}>
-            {['HIPAA', 'SOC 2', 'CAP', 'FHIR R4', 'CLIA'].map(b => (
+            {['HIPAA', 'SOC 2', 'FHIR R4', 'HL7 v2.5', 'Argon2id'].map(b => (
               <span key={b} style={{ fontFamily: 'var(--font-mono)', fontSize: '0.52rem', fontWeight: 700, color: 'rgba(255,255,255,0.32)', border: '1px solid rgba(255,255,255,0.12)', padding: '4px 10px', borderRadius: '2px', letterSpacing: '0.07em' }}>{b}</span>
             ))}
           </div>

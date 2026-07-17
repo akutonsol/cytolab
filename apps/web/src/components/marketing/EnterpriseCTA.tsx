@@ -9,7 +9,7 @@ const BioScene = dynamic(() => import('./BioScene').then((m) => ({ default: m.Bi
   loading: () => null,
 });
 
-const BADGES = ['HIPAA', 'CAP', 'CLIA', 'SOC 2 Type II', 'Enterprise Ready', 'HL7', 'FHIR', 'LIS Integration'];
+const BADGES = ['HIPAA', 'SOC 2 Type II', 'Enterprise Ready', 'HL7', 'FHIR', 'LIS Integration'];
 
 interface MetricDef { target: number; decimals: number; suffix: string; label: string; }
 const METRICS: MetricDef[] = [

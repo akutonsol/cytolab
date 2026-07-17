@@ -93,7 +93,7 @@ export default function InteractiveExperience() {
             <circle cx="16" cy="16" r="2.8" fill="#E63946" />
           </svg>
           <span className="xp-brand-n">CYTOLAB</span>
-          <span className="xp-brand-tag">Live Experience</span>
+          <span className="xp-brand-tag">Concept demo · no image analysis</span>
         </div>
 
         <div className="xp-cases">
@@ -210,20 +210,17 @@ function RightPanel({ c, stageId, conf, cells, concur, setConcur, exportState, r
       <Meta k="Scanner" v="Aperio GT 450 · Scanner-02" />
       <Meta k="Magnification" v="40× · 0.25 µm/px" />
       <Meta k="Focus" v="Passed · 100% tiles" />
-      <div className="xp-donebar"><Check size={14} strokeWidth={3} /> Digitized & ready for AI</div>
+      <div className="xp-donebar"><Check size={14} strokeWidth={3} /> Digitized for review</div>
       <p className="xp-note">The physical slide is now a navigable whole-slide image. Pan and zoom the viewer to explore any region at full resolution.</p>
     </>
   );
 
   if (stageId === 'analyzing') return (
     <>
-      <PanelHead icon={<Cpu size={16} />} title="CYTOLAB AI v3.2" tint="#8b5cf6" live />
-      <div className="xp-metric"><span>AI Confidence</span><b style={{ color: c.accent }}>{conf.toFixed(1)}%</b></div>
+      <PanelHead icon={<Cpu size={16} />} title="Concept demonstration" tint="#8b5cf6" />
+      <div className="xp-metric"><span>Walkthrough</span><b style={{ color: c.accent }}>{Math.round(conf)}%</b></div>
       <div className="xp-prog"><span style={{ width: `${conf}%`, background: c.accent }} /></div>
-      <div className="xp-metric"><span>Cells Analyzed</span><b>{Math.round(cells).toLocaleString()}</b></div>
-      <div className="xp-prog"><span style={{ width: `${(cells / c.cellsAnalyzed) * 100}%`, background: '#8b5cf6' }} /></div>
-      <div className="xp-metric"><span>Regions of interest</span><b>{c.detections.length}</b></div>
-      <p className="xp-note">Deep-learning models screen every cell, ranking regions by risk to build the heat map shown on the slide.</p>
+      <p className="xp-note">This is a concept demonstration — PathOS performs no slide-image analysis. The illustration shows how findings would be surfaced for a pathologist to review.</p>
     </>
   );
 
@@ -255,16 +252,16 @@ function RightPanel({ c, stageId, conf, cells, concur, setConcur, exportState, r
       <PanelHead icon={<UserCheck size={16} />} title="Pathologist review" tint={c.accent} />
       <div className="xp-md"><span className="xp-md-av" style={{ background: c.autoSigned ? '#10B981' : 'linear-gradient(150deg,#8b5cf6,#6d28d9)' }}>{c.pathologist.initials}</span>
         <div><b>{c.pathologist.name}</b><span>{c.autoSigned ? 'Workflow automation' : 'Cytopathology'}</span></div></div>
-      <div className="xp-airec"><span>AI recommendation</span><b style={{ color: c.accent }}>{c.finding}</b></div>
+      <div className="xp-airec"><span>Suggested category (demo)</span><b style={{ color: c.accent }}>{c.finding}</b></div>
       {c.autoSigned ? (
-        <div className="xp-rule"><ShieldCheck size={15} /> Meets auto-sign rule R-07 (NILM · confidence ≥ 99%). No manual review required.</div>
+        <div className="xp-rule"><ShieldCheck size={15} /> Every result is authorized by a pathologist — nothing is auto-signed.</div>
       ) : (
         <button className={`xp-concur ${concur ? 'on' : ''}`} onClick={() => setConcur(!concur)}>
           <span className="xp-concur-box">{concur && <Check size={13} strokeWidth={3} />}</span>
-          Concur with AI findings
+          Concur and continue
         </button>
       )}
-      <p className="xp-note">{c.autoSigned ? 'Low-risk cases flow through automatically — freeing pathologists for the cases that need them.' : 'The pathologist confirms or overrides every AI finding. The human is always in control.'}</p>
+      <p className="xp-note">{c.autoSigned ? 'A pathologist authorizes every result — the human is always in control.' : 'The pathologist confirms or overrides every finding. The human is always in control.'}</p>
     </>
   );
 

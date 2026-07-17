@@ -2,12 +2,12 @@
 import { useEffect, useRef } from 'react'
 import SectionReveal from './SectionReveal'
 
-const navItems = ['AI Queue', 'Specimens', 'Patients', 'Analytics', 'Reports', 'Billing', 'Workforce', 'Settings']
+const navItems = ['Case Queue', 'Specimens', 'Patients', 'Analytics', 'Reports', 'Billing', 'Workforce', 'Settings']
 const findings = [
-  { id: 'SP-2026-0842', result: 'HSIL', conf: '97%', color: '#f87171', bg: 'rgba(239,68,68,0.1)' },
-  { id: 'SP-2026-0839', result: 'ASC-US', conf: '88%', color: '#3f97ef', bg: 'rgba(63,151,239,0.1)' },
-  { id: 'SP-2026-0836', result: 'NILM', conf: '99%', color: '#4ade80', bg: 'rgba(74,222,128,0.1)' },
-  { id: 'SP-2026-0833', result: 'ASC-H', conf: '92%', color: '#60a5fa', bg: 'rgba(63,151,239,0.1)' },
+  { id: 'SP-2026-0842', result: 'HSIL', conf: 'Signed out', color: '#f87171', bg: 'rgba(239,68,68,0.1)' },
+  { id: 'SP-2026-0839', result: 'ASC-US', conf: 'In review', color: '#3f97ef', bg: 'rgba(63,151,239,0.1)' },
+  { id: 'SP-2026-0836', result: 'NILM', conf: 'Signed out', color: '#4ade80', bg: 'rgba(74,222,128,0.1)' },
+  { id: 'SP-2026-0833', result: 'ASC-H', conf: 'In review', color: '#60a5fa', bg: 'rgba(63,151,239,0.1)' },
 ]
 const accuracy = [
   { label: 'NILM', pct: 99, color: '#4ade80' },
@@ -92,7 +92,7 @@ export default function Dashboard() {
 
           <div style={{ padding: 'var(--space-24)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 'var(--space-8)', marginBottom: 'var(--space-8)' }}>
-              {[['Queue','147','↑12 today','#3f97ef'],['Screened','89','84% conf.','#3f97ef'],['Pending','23','4 high risk','#3f97ef'],['Avg TAT','18h','↓54h faster','#3f97ef']].map(([l,v,d,dc]) => (
+              {[['Queue','147','↑12 today','#3f97ef'],['Reported','89','AI-assisted','#3f97ef'],['Pending','23','awaiting review','#3f97ef'],['Avg TAT','18h','↓54h faster','#3f97ef']].map(([l,v,d,dc]) => (
                 <div key={l} style={{ background: 'rgba(240,239,233,0.025)', border: '1px solid rgba(240,239,233,0.05)', borderRadius: '2px', padding: 'var(--space-16)' }}>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.18)', marginBottom: 'var(--space-4)' }}>{l}</div>
                   <div style={{ fontFamily: 'var(--font-serif)', fontSize: '2.2rem', color: 'rgba(240,239,233,0.9)', lineHeight: 1 }}>{v}</div>
@@ -102,7 +102,7 @@ export default function Dashboard() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-8)' }}>
               <div style={{ background: 'rgba(240,239,233,0.025)', border: '1px solid rgba(240,239,233,0.05)', borderRadius: '2px', padding: 'var(--space-16)' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.18)', marginBottom: 'var(--space-8)' }}>AI Findings</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.18)', marginBottom: 'var(--space-8)' }}>Recent Results</div>
                 {findings.map(f => (
                   <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', padding: 'var(--space-8) 0', borderBottom: '1px solid rgba(240,239,233,0.03)', fontSize: '0.68rem', color: 'rgba(240,239,233,0.35)' }}>
                     <span style={{ minWidth: '100px', fontSize: '0.65rem' }}>{f.id}</span>
@@ -112,7 +112,7 @@ export default function Dashboard() {
                 ))}
               </div>
               <div style={{ background: 'rgba(240,239,233,0.025)', border: '1px solid rgba(240,239,233,0.05)', borderRadius: '2px', padding: 'var(--space-16)' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.18)', marginBottom: 'var(--space-8)' }}>CYTO AI</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(240,239,233,0.18)', marginBottom: 'var(--space-8)' }}>Bethesda Mix</div>
                 {accuracy.map((a, i) => (
                   <div key={a.label} style={{ marginBottom: 'var(--space-8)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', color: 'rgba(240,239,233,0.2)', marginBottom: '3px' }}>

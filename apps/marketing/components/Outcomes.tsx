@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 const stats = [
   { n: 43, suffix: '%', label: 'Faster turnaround time', ghost: '43' },
   { n: 91, suffix: '%', label: 'Less manual review', ghost: '91' },
-  { n: 97, suffix: '%', label: 'HSIL detection accuracy', ghost: '97' },
+  { n: 100, suffix: '%', label: 'Human-authorized results', ghost: '100' },
   { n: 99.98, suffix: '%', label: 'Platform uptime SLA', ghost: '99', float: true },
 ]
 

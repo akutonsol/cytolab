@@ -95,9 +95,9 @@ export const CASES: DemoCase[] = [
     audit: [
       { t: '10:21:04', actor: 'System', action: 'Specimen accessioned · DM26-07-912' },
       { t: '10:22:37', actor: 'Scanner-02', action: 'Whole-slide image captured (40×)' },
-      { t: '10:23:11', actor: 'CYTOLAB AI v3.2', action: 'Screening complete · 61,840 cells · HSIL 98.4%' },
+      { t: '10:23:11', actor: 'AI Assist', action: 'Draft narrative generated for review' },
       { t: '10:31:52', actor: 'Dr. Sarah Mitchell', action: 'Findings reviewed · concurred with AI' },
-      { t: '10:44:09', actor: 'CYTOLAB AI v3.2', action: 'Draft report generated' },
+      { t: '10:44:09', actor: 'AI Assist', action: 'Draft report generated' },
       { t: '10:45:20', actor: 'Dr. Sarah Mitchell', action: 'Report electronically signed' },
       { t: '10:45:23', actor: 'Integration', action: 'Result delivered to LIS (HL7 ORU^R01)' },
     ],
@@ -140,7 +140,7 @@ export const CASES: DemoCase[] = [
     audit: [
       { t: '09:40:12', actor: 'System', action: 'Specimen accessioned · DM26-07-908' },
       { t: '09:41:48', actor: 'Scanner-01', action: 'Whole-slide image captured (40×)' },
-      { t: '09:42:20', actor: 'CYTOLAB AI v3.2', action: 'Screening complete · 54,210 cells · LSIL 93.6%' },
+      { t: '09:42:20', actor: 'AI Assist', action: 'Draft narrative generated for review' },
       { t: '11:02:31', actor: 'Dr. Sarah Mitchell', action: 'Findings reviewed · concurred with AI' },
       { t: '11:14:55', actor: 'Dr. Sarah Mitchell', action: 'Report electronically signed' },
       { t: '11:14:58', actor: 'Integration', action: 'Result delivered to LIS (HL7 ORU^R01)' },
@@ -183,7 +183,7 @@ export const CASES: DemoCase[] = [
     audit: [
       { t: '09:12:03', actor: 'System', action: 'Specimen accessioned · DM26-07-906' },
       { t: '09:13:40', actor: 'Scanner-01', action: 'Whole-slide image captured (40×)' },
-      { t: '09:14:07', actor: 'CYTOLAB AI v3.2', action: 'Screening complete · 49,870 cells · ASC-US 84.9%' },
+      { t: '09:14:07', actor: 'AI Assist', action: 'Draft narrative generated for review' },
       { t: '12:20:14', actor: 'Dr. David Chen', action: 'Findings reviewed · reflex HPV ordered' },
       { t: '12:33:41', actor: 'Dr. David Chen', action: 'Report electronically signed' },
       { t: '12:33:44', actor: 'Integration', action: 'Result delivered to LIS (HL7 ORU^R01)' },
@@ -226,7 +226,7 @@ export const CASES: DemoCase[] = [
     audit: [
       { t: '08:40:09', actor: 'System', action: 'Specimen accessioned · DM26-07-901' },
       { t: '08:41:33', actor: 'Scanner-02', action: 'Whole-slide image captured (40×)' },
-      { t: '08:42:01', actor: 'CYTOLAB AI v3.2', action: 'Screening complete · 38,460 cells · NILM 99.2%' },
+      { t: '08:42:01', actor: 'AI Assist', action: 'Draft narrative generated for review' },
       { t: '08:42:05', actor: 'Workflow rule R-07', action: 'NILM + confidence ≥ 99% → auto-sign eligible' },
       { t: '08:42:06', actor: 'CYTOLAB', action: 'Report auto-signed and delivered to LIS' },
     ],
@@ -249,11 +249,11 @@ export type Stage = {
 export const STAGES: Stage[] = [
   { id: 'received', n: 1, title: 'Specimen Arrives', short: 'Received', caption: 'A specimen is accessioned and enters the workflow — barcoded and tracked from the first second.' },
   { id: 'scanned', n: 2, title: 'Slide Scanned', short: 'Scanned', caption: 'The glass slide is digitized into a whole-slide image at 40× magnification.' },
-  { id: 'analyzing', n: 3, title: 'AI Analysis Begins', short: 'AI Analysis', caption: 'CYTOLAB AI screens tens of thousands of cells in seconds, building a risk heat map.' },
-  { id: 'detected', n: 4, title: 'Abnormal Cells Detected', short: 'Detection', caption: 'The model flags regions of interest with per-cell confidence — click any detection to inspect it.' },
-  { id: 'review', n: 5, title: 'Pathologist Reviews', short: 'Review', caption: 'A pathologist validates the AI findings with full context — the human stays in control.' },
-  { id: 'draft', n: 6, title: 'AI Generates Draft Report', short: 'Draft Report', caption: 'A structured, Bethesda-compliant report is drafted automatically from the confirmed findings.' },
-  { id: 'signed', n: 7, title: 'Pathologist Signs', short: 'Sign-out', caption: 'The pathologist signs out — or low-risk cases auto-sign by workflow rule.' },
+  { id: 'analyzing', n: 3, title: 'Analysis (concept)', short: 'Analysis', caption: 'Concept demonstration — Osieri performs no slide-image analysis. The illustration shows how findings would be surfaced.' },
+  { id: 'detected', n: 4, title: 'Illustrative Findings', short: 'Findings', caption: 'Illustrative regions of interest — click any to inspect. No image analysis is performed.' },
+  { id: 'review', n: 5, title: 'Pathologist Reviews', short: 'Review', caption: 'A pathologist validates the findings with full context — the human stays in control.' },
+  { id: 'draft', n: 6, title: 'AI-Assisted Draft Report', short: 'Draft Report', caption: 'A structured, Bethesda-style report is drafted with AI assistance from the confirmed findings, for the pathologist to review and edit.' },
+  { id: 'signed', n: 7, title: 'Pathologist Signs', short: 'Sign-out', caption: 'The pathologist reviews and signs out the finalized report.' },
   { id: 'delivered', n: 8, title: 'Report Delivered', short: 'Delivered', caption: 'The signed report is delivered to the LIS/EHR and the audit trail is sealed.' },
 ];
 

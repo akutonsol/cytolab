@@ -39,8 +39,8 @@ const spaceMono = Space_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'CYTOLAB — AI-Powered Digital Pathology Operating System',
-  description: 'The AI operating system built for modern cytology and pathology laboratories. CYTO AI screening, specimen management, EMR interoperability, and full lab operations in one platform.',
+  title: 'CYTOLAB — Digital Pathology Operating System',
+  description: 'The operating system for modern cytology and pathology laboratories: specimen and case management, quality and turnaround operations, structured reporting with human-reviewed AI drafting assistance, and EMR interoperability — in one platform.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

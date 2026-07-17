@@ -110,8 +110,8 @@ export default function Hero() {
 
   const liveData = [
     { label: 'Queue', value: '147', change: '↑12', changeColor: '#3f97ef' },
-    { label: 'AI Screened', value: '89', change: '84% conf.', changeColor: '#3f97ef' },
-    { label: 'High Risk', value: '4', valueColor: '#f87171', change: 'HSIL/ASC-H', changeColor: 'rgba(240,239,233,0.15)' },
+    { label: 'Reports drafted', value: '89', change: 'AI-assisted', changeColor: '#3f97ef' },
+    { label: 'Awaiting sign-out', value: '4', valueColor: '#f87171', change: 'Pending review', changeColor: 'rgba(240,239,233,0.15)' },
     { label: 'Avg TAT', value: '18h', valueColor: '#4ade80', change: '↓54h', changeColor: '#3f97ef' },
   ]
 
@@ -146,7 +146,7 @@ export default function Hero() {
             display: 'flex', alignItems: 'center', gap: 'var(--space-8)', marginBottom: 'var(--space-48)',
           }}>
             <span style={{ width: 24, height: 1, background: 'rgba(9,9,14,0.2)', display: 'inline-block' }} />
-            AI Operating System &middot; Cytology Labs
+            Operating System &middot; Cytology Labs
           </div>
 
           {/* Headline */}
@@ -186,7 +186,7 @@ export default function Hero() {
             color: 'rgba(9,9,14,0.45)',
             maxWidth: 'var(--measure-sm)', marginBottom: 'var(--space-32)',
           }}>
-            One AI-powered platform. Specimen tracking, CYTO AI screening, reporting,
+            One platform. Specimen tracking, case management, structured reporting,
             billing, workforce, and full EMR interoperability.
           </p>
           <div style={{ display: 'flex', gap: 'var(--space-8)', marginBottom: 'var(--space-56)' }}>
@@ -203,7 +203,7 @@ export default function Hero() {
             }}>Watch product tour</button>
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-56)' }}>
-            {[['43%', 'Faster TAT'], ['91%', 'Less manual review'], ['97%', 'AI accuracy']].map(([num, label]) => (
+            {[['43%', 'Faster TAT'], ['91%', 'Less manual review'], ['100%', 'Human-authorized']].map(([num, label]) => (
               <div key={label} className="hero-kpi" style={{ borderLeft: '2px solid #4F46E5', paddingLeft: 'var(--space-16)' }}>
                 <div className="metric-lg" style={{ color: '#09090E' }}>{num}</div>
                 <div className="ui-xs" style={{ textTransform: 'uppercase', color: 'rgba(9,9,14,0.3)', marginTop: '3px' }}>{label}</div>
@@ -233,7 +233,7 @@ export default function Hero() {
             padding: 'var(--space-32) var(--space-32) 0', fontFamily: 'var(--font-mono)', fontSize: '0.55rem',
             fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase',
             color: 'rgba(240,239,233,0.18)',
-          }}>CYTOLAB &middot; Live &middot; AI Queue</div>
+          }}>CYTOLAB &middot; Live &middot; Case Queue</div>
           <div style={{ padding: 'var(--space-20) var(--space-32) var(--space-40)' }}>
             {liveData.map(({ label, value, valueColor, change, changeColor }) => (
               <div key={label} style={{

@@ -17,7 +17,7 @@ const TIERS = [
   },
   {
     name: 'Enterprise', price: 'Custom', unit: '', blurb: 'For health systems with residency, scale and compliance needs.',
-    features: ['Multi-site deployment', 'Single-tenant / on-prem', 'Data residency controls', 'Dedicated success team', '99.99% uptime SLA', 'Custom AI models'],
+    features: ['Multi-site deployment', 'Single-tenant / on-prem', 'Data residency controls', 'Dedicated success team', '99.99% uptime SLA', 'Custom integrations'],
     cta: 'Talk to sales', highlight: false,
   },
 ];

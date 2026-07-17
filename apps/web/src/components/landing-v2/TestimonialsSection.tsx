@@ -19,7 +19,7 @@ const QUOTES = [
   {
     quote: 'The auditability is what sold our compliance team. Every AI suggestion and every sign-off is traceable. It feels built for how we actually work.',
     name: 'Dr. Priya Nair', role: 'Molecular Pathologist', org: 'Coastal Diagnostics',
-    stat: '99.1%', statLabel: 'AI concordance',
+    stat: '99.1%', statLabel: 'On-time sign-out',
   },
 ];
 

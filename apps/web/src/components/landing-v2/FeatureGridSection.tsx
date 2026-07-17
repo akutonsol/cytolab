@@ -6,7 +6,7 @@ import { PURPLE, DARK, INK_SOFT, Section, SectionHeader, Reveal, glassCard } fro
 
 const FEATURES = [
   { Icon: Brain, title: 'AI Pre-Screening', desc: 'Detect, quantify and grade nuclei, mitoses and IHC before a case ever reaches a pathologist.' },
-  { Icon: ScanSearch, title: 'Whole-Slide Viewer', desc: 'Buttery 40× navigation, annotations and side-by-side AI overlays — all in the browser.' },
+  { Icon: ScanSearch, title: 'Whole-Slide Viewer', desc: 'Buttery 40× navigation and annotations — all in the browser.' },
   { Icon: FileText, title: 'Synoptic Reporting', desc: 'Structured, guideline-compliant reports auto-drafted directly from the analysis.' },
   { Icon: LayoutGrid, title: 'Case Management', desc: 'Route, prioritise and track every case with SLA-aware, sub-specialty worklists.' },
   { Icon: BadgeCheck, title: 'Quality Control', desc: 'Automated QC flags, second-read routing and real-time concordance tracking.' },
