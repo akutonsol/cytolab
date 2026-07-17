@@ -6,6 +6,8 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { LabContextMiddleware } from './common/tenancy/lab-context.middleware';
 import { TenancyModule } from './common/tenancy/tenancy.module';
+import { ExecutionContextModule } from './common/execution-context/execution-context.module';
+import { ExecutionContextMiddleware } from './common/execution-context/execution-context.middleware';
 import { PrismaModule } from './database/prisma.module';
 import { HealthController } from './health.controller';
 import { AuthModule } from './modules/auth/auth.module';
@@ -104,6 +106,7 @@ import { ScreeningBatchesModule } from './modules/screening-batches/screening-ba
     // per-handler via @Throttle (login/refresh: 5/min).
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     TenancyModule,
+    ExecutionContextModule,
     PrismaModule,
     RealtimeModule,
     AuthModule,
@@ -178,7 +181,12 @@ import { ScreeningBatchesModule } from './modules/screening-batches/screening-ba
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // Open a tenant context for every request before guards/handlers run.
-    consumer.apply(LabContextMiddleware).forRoutes('*');
+    // Open a tenant context for every request before guards/handlers run, then enrich it with
+    // transport attribution (correlation/request ids, IP/UA). Order matters: the execution
+    // context writes onto the store the tenancy middleware opens. Attribution only — no tenancy
+    // or authorization behaviour changes.
+    consumer
+      .apply(LabContextMiddleware, ExecutionContextMiddleware)
+      .forRoutes('*');
   }
 }

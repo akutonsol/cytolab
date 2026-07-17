@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AsyncLocalStorage } from 'node:async_hooks';
+import type { ExecutionAttribution } from '../execution-context/execution-context.types';
 
 export interface TenantStore {
   /** The lab (tenant) the current request is scoped to. Populated from the JWT, never the body. */
@@ -15,6 +16,13 @@ export interface TenantStore {
   portal?: boolean;
   /** When true, tenancy is intentionally bypassed (auth/bootstrap cross-lab lookups only). */
   system?: boolean;
+  /**
+   * P2-2 execution attribution (who/where/request/execution). Populated post-authentication
+   * by the execution-context middleware/interceptor and by job/system execution helpers.
+   * ATTRIBUTION ONLY — the tenancy guard ignores it and it never affects permissions. Optional
+   * so every existing code path (which never sets it) is unaffected.
+   */
+  attribution?: ExecutionAttribution;
 }
 
 /**
@@ -46,6 +54,17 @@ export class LabContext {
    */
   async runSystem<T>(fn: () => T | Promise<T>): Promise<T> {
     return this.als.run({ system: true }, async () => await fn());
+  }
+
+  /**
+   * Run a callback in a brand-new store (awaiting inside the scope, like {@link runSystem}, so a
+   * lazily-executed PrismaPromise still runs inside it). Additive helper used by the P2-2
+   * execution-context service to open job / system / nested-child scopes with attribution. The
+   * tenancy semantics come entirely from the tenancy fields on `store` (labId/system/portal),
+   * exactly as with {@link run}; attribution rides alongside and never affects them.
+   */
+  async runScoped<T>(store: TenantStore, fn: () => T | Promise<T>): Promise<T> {
+    return this.als.run(store, async () => await fn());
   }
 
   getStore(): TenantStore | undefined {
