@@ -18,7 +18,8 @@
  */
 
 export type AuditMetadataContractId =
-  | 'phi.access.v1'
+  | 'phi.access.v1' // retired from active registry use (P2-5B); kept as a historical definition
+  | 'phi.access.v2'
   | 'record.status_change.v1'
   | 'maintenance.disposition.v1'
   | 'config.setting_change.v1';
@@ -31,7 +32,65 @@ interface FieldSpec {
   kind: FieldKind;
   required?: boolean;
   maxLength?: number; // strings only
+  values?: readonly string[]; // strings: closed, bounded enum (P2-5B) — the primary guard
+  min?: number; // numbers only
+  max?: number; // numbers only
+  integer?: boolean; // numbers only
 }
+
+// ---------------------------------------------------------------------------
+// P2-5B — bounded enums for the PHI-access metadata contract (phi.access.v2).
+// Exported so future producers (P2-5C/D) and tests reference constants, never string
+// literals. Every value is a short, non-PHI code — no names, DOB, MRN, or free text.
+// ---------------------------------------------------------------------------
+export const PHI_ACCESS_SURFACES = [
+  'patient_detail',
+  'record_detail',
+  'result_sheet',
+  'report_pdf',
+  'sign_out_case',
+  'diagnostic_case',
+  'slide',
+  'coding',
+  'list',
+  'search',
+  'export',
+] as const;
+export const PHI_ACCESS_MODES = ['view', 'download', 'print', 'export'] as const;
+export const PHI_DOCUMENT_TYPES = [
+  'report',
+  'result_sheet',
+  'slide',
+  'attachment',
+  'coding',
+  'patient',
+  'record',
+  'none',
+] as const;
+export const PHI_FILTER_CLASSES = ['none', 'status', 'date_range', 'client', 'patient', 'text', 'mixed'] as const;
+export const PHI_REDACTION_STATES = ['none', 'partial', 'redacted'] as const;
+export const PHI_REASON_CODES = [
+  'clinical_review',
+  'quality_control',
+  'billing',
+  'administrative',
+  'correction',
+  'disclosure',
+] as const;
+export const PHI_PRODUCER_MODULES = [
+  'patients',
+  'records',
+  'result-sheets',
+  'reports',
+  'signout',
+  'diagnostic-case',
+  'bethesda',
+  'wsi',
+  'coding',
+  'search',
+  'files',
+  'portal',
+] as const;
 
 interface MetadataContract {
   id: AuditMetadataContractId;
@@ -68,6 +127,23 @@ const CONTRACTS: Record<AuditMetadataContractId, MetadataContract> = {
     fields: {
       settingKey: { kind: 'string', required: true, maxLength: 64 },
       scope: { kind: 'string', maxLength: 24 }, // e.g. "lab" | "system"
+    },
+  },
+  // P2-5B — PHI-access metadata: bounded enums + counts only. No free text, no reason prompt,
+  // no raw search terms, no patient identifiers. accessSurface + accessMode + producerModule are
+  // required; the rest are optional bounded fields.
+  'phi.access.v2': {
+    id: 'phi.access.v2',
+    fields: {
+      accessSurface: { kind: 'string', required: true, values: PHI_ACCESS_SURFACES },
+      accessMode: { kind: 'string', required: true, values: PHI_ACCESS_MODES },
+      producerModule: { kind: 'string', required: true, values: PHI_PRODUCER_MODULES },
+      documentType: { kind: 'string', values: PHI_DOCUMENT_TYPES },
+      resultCount: { kind: 'number', min: 0, integer: true },
+      pageSize: { kind: 'number', min: 1, max: 1000, integer: true },
+      filterClass: { kind: 'string', values: PHI_FILTER_CLASSES },
+      redactionState: { kind: 'string', values: PHI_REDACTION_STATES },
+      reasonCode: { kind: 'string', values: PHI_REASON_CODES },
     },
   },
 };
@@ -119,6 +195,13 @@ export function validateMetadata(
       if (typeof v !== 'string') {
         throw new InvalidAuditMetadataError(`key "${key}" must be a string`);
       }
+      if (spec.values && !spec.values.includes(v)) {
+        // Closed enum is the primary guard — anything outside it (incl. raw search terms or
+        // identifiers) is rejected without relying on a heuristic.
+        throw new InvalidAuditMetadataError(
+          `key "${key}" is not an allowed value`,
+        );
+      }
       if (spec.maxLength && v.length > spec.maxLength) {
         throw new InvalidAuditMetadataError(
           `key "${key}" exceeds ${spec.maxLength} chars`,
@@ -132,6 +215,15 @@ export function validateMetadata(
     } else if (spec.kind === 'number') {
       if (typeof v !== 'number' || !Number.isFinite(v)) {
         throw new InvalidAuditMetadataError(`key "${key}" must be a finite number`);
+      }
+      if (spec.integer && !Number.isInteger(v)) {
+        throw new InvalidAuditMetadataError(`key "${key}" must be an integer`);
+      }
+      if (spec.min !== undefined && v < spec.min) {
+        throw new InvalidAuditMetadataError(`key "${key}" must be >= ${spec.min}`);
+      }
+      if (spec.max !== undefined && v > spec.max) {
+        throw new InvalidAuditMetadataError(`key "${key}" must be <= ${spec.max}`);
       }
     } else if (spec.kind === 'boolean') {
       if (typeof v !== 'boolean') {

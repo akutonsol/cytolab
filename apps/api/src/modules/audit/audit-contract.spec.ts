@@ -31,7 +31,7 @@ describe('AuditRecordInput → persistence mapping', () => {
       category: 'PHI_ACCESS',
       action: { code: 'PATIENT_RECORD_VIEWED' },
       resource: { type: 'Record', id: 'rec-1', patientRef: 'pt_opaque_123' },
-      metadata: { accessReason: 'clinical_review' },
+      metadata: { accessSurface: 'record_detail', accessMode: 'view', producerModule: 'records' },
     });
     // registry-resolved fields
     expect(data.eventVersion).toBe(1);
@@ -39,7 +39,7 @@ describe('AuditRecordInput → persistence mapping', () => {
     expect(data.phiIndicator).toBe(true);
     expect(data.dataClass).toBe('PHI');
     expect(data.retentionClass).toBe('PERMANENT');
-    expect(data.durabilityClass).toBe('CRITICAL_TRANSACTIONAL');
+    expect(data.durabilityClass).toBe('OPERATIONAL'); // P2-5B: reclassified from CRITICAL_TRANSACTIONAL
     // schema version is owner-owned
     expect(data.schemaVersion).toBe(1);
     // producer never sets sequence / integrity — they are absent (null-at-DB)
@@ -186,19 +186,19 @@ describe('typed, bounded metadata', () => {
         category: 'PHI_ACCESS',
         action: { code: 'PATIENT_RECORD_VIEWED' },
         resource: { type: 'Record', id: 'r1' },
-        metadata: { accessReason: 'ok', notes: 'freeform' },
+        metadata: { accessSurface: 'record_detail', accessMode: 'view', producerModule: 'records', notes: 'freeform' },
       }),
     ).toThrow(InvalidAuditMetadataError);
   });
 
-  it('rejects a free-text / identifier value', () => {
+  it('rejects a value outside the bounded enum (e.g. a raw search term)', () => {
     expect(() =>
       svc.buildCreateData({
         ...base,
         category: 'PHI_ACCESS',
         action: { code: 'PATIENT_RECORD_VIEWED' },
         resource: { type: 'Record', id: 'r1' },
-        metadata: { accessReason: 'contact patient at jane.doe@example.com' },
+        metadata: { accessSurface: 'contact patient at jane.doe@example.com', accessMode: 'view', producerModule: 'records' },
       }),
     ).toThrow(InvalidAuditMetadataError);
   });

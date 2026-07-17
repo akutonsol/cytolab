@@ -14,7 +14,7 @@ describe('audit registry — current resolution', () => {
     const entry = resolveCurrent('PHI_ACCESS', 'PATIENT_RECORD_VIEWED');
     expect(entry.eventVersion).toBe(1);
     expect(entry.attributionPolicy).toBe('HTTP_REQUEST');
-    expect(entry.metadataContractId).toBe('phi.access.v1');
+    expect(entry.metadataContractId).toBe('phi.access.v2'); // P2-5B: v2 bounded-enum contract
   });
 
   it('throws for an unregistered (category, actionCode)', () => {
@@ -29,6 +29,32 @@ describe('audit registry — current resolution', () => {
       exactKey(e.category, e.actionCode, e.eventVersion),
     );
     expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  describe('P2-5B PHI-access taxonomy', () => {
+    const phiEvents = ['PATIENT_RECORD_VIEWED', 'PATIENT_LIST_QUERIED', 'PHI_EXPORTED'];
+
+    it('all three PHI-access events are registered, OPERATIONAL, PHI, PERMANENT, phi.access.v2', () => {
+      for (const action of phiEvents) {
+        const e = resolveCurrent('PHI_ACCESS', action);
+        expect(e.durabilityClass).toBe('OPERATIONAL'); // truthful for non-transactional reads
+        expect(e.phiIndicator).toBe(true);
+        expect(e.dataClass).toBe('PHI');
+        expect(e.retentionClass).toBe('PERMANENT');
+        expect(e.metadataContractId).toBe('phi.access.v2');
+        expect(e.attributionPolicy).toBe('HTTP_REQUEST');
+      }
+    });
+
+    it('PATIENT_RECORD_VIEWED is no longer CRITICAL_TRANSACTIONAL', () => {
+      expect(resolveCurrent('PHI_ACCESS', 'PATIENT_RECORD_VIEWED').durabilityClass).not.toBe(
+        'CRITICAL_TRANSACTIONAL',
+      );
+    });
+
+    it('PHI_EXPORTED carries a WARNING severity', () => {
+      expect(resolveCurrent('PHI_ACCESS', 'PHI_EXPORTED').defaultSeverity).toBe('WARNING');
+    });
   });
 
   it('the governed-maintenance event carries GOVERNED_MAINTENANCE attribution', () => {

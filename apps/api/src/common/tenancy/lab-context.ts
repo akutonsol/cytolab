@@ -23,6 +23,13 @@ export interface TenantStore {
    * so every existing code path (which never sets it) is unaffected.
    */
   attribution?: ExecutionAttribution;
+  /**
+   * P2-5B request-local scratch: the set of PHI-access dedupe keys already emitted in this
+   * execution. Request-scoped (lives and dies with this AsyncLocalStorage store — no global state,
+   * no timer, no cross-request leakage). Owned by the PHI-access dedup helper; NOT attribution and
+   * NOT used for authorization. Optional so every existing path is unaffected.
+   */
+  phiAccessSeen?: Set<string>;
 }
 
 /**

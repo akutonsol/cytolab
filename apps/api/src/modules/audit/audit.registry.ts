@@ -97,17 +97,47 @@ const ENTRIES: AuditRegistryEntry[] = [
     attributionPolicy: 'HTTP_REQUEST',
     metadataContractId: null,
   },
+  // P2-5B PHI-access taxonomy (small + stable): single-subject VIEWED, aggregate LIST_QUERIED,
+  // and multi-subject EXPORTED. All are OPERATIONAL (PHI reads are non-transactional and
+  // side-effect-free; CRITICAL_TRANSACTIONAL would be untruthful, REQUIRED_DURABLE is unsupported).
+  // Promotion target OPERATIONAL → REQUIRED_DURABLE only after a governed durable outbox exists.
   {
     category: 'PHI_ACCESS',
-    actionCode: 'PATIENT_RECORD_VIEWED',
+    actionCode: 'PATIENT_RECORD_VIEWED', // successful single-subject access; surface in metadata
     eventVersion: 1,
     defaultSeverity: 'NOTICE',
     phiIndicator: true,
     dataClass: 'PHI',
     retentionClass: 'PERMANENT',
-    durabilityClass: 'CRITICAL_TRANSACTIONAL',
+    // P2-5B: reclassified CRITICAL_TRANSACTIONAL → OPERATIONAL (in-place; never emitted, so no
+    // historical evidence is reinterpreted and no new event version is required).
+    durabilityClass: 'OPERATIONAL',
     attributionPolicy: 'HTTP_REQUEST',
-    metadataContractId: 'phi.access.v1',
+    metadataContractId: 'phi.access.v2',
+  },
+  {
+    category: 'PHI_ACCESS',
+    actionCode: 'PATIENT_LIST_QUERIED', // aggregate multi-patient read; ONE event per request, patientRef null
+    eventVersion: 1,
+    defaultSeverity: 'NOTICE',
+    phiIndicator: true,
+    dataClass: 'PHI',
+    retentionClass: 'PERMANENT',
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    metadataContractId: 'phi.access.v2',
+  },
+  {
+    category: 'PHI_ACCESS',
+    actionCode: 'PHI_EXPORTED', // multi-subject export artifact; ONE event per export operation
+    eventVersion: 1,
+    defaultSeverity: 'WARNING',
+    phiIndicator: true,
+    dataClass: 'PHI',
+    retentionClass: 'PERMANENT',
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    metadataContractId: 'phi.access.v2',
   },
   {
     category: 'RECORD_LIFECYCLE',
@@ -288,6 +318,8 @@ const CURRENT_VERSIONS: Record<AuditEventKey, number> = {
   'AUTHENTICATION:LOGIN_FAILED': 1,
   'AUTHENTICATION:LOGOUT': 1,
   'PHI_ACCESS:PATIENT_RECORD_VIEWED': 1,
+  'PHI_ACCESS:PATIENT_LIST_QUERIED': 1,
+  'PHI_ACCESS:PHI_EXPORTED': 1,
   'RECORD_LIFECYCLE:RECORD_STATUS_CHANGED': 1,
   'RECORD_LIFECYCLE:RECORD_CREATED': 1,
   'RECORD_LIFECYCLE:RECORD_UPDATED': 1,

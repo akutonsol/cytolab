@@ -85,6 +85,19 @@ export class ExecutionContextService {
     return this.getAttribution()?.organization;
   }
 
+  /**
+   * P2-5B — the request-local PHI-access dedupe seen-set for the current execution, lazily created
+   * on the current store. Returns undefined when no store is open (outside a request/execution),
+   * so the dedup helper falls back to emit-always rather than crash. This is request-local scratch
+   * space, not attribution and not authorization; it is auto-collected when the store ends.
+   */
+  getPhiAccessSeenSet(): Set<string> | undefined {
+    const store = this.labContext.getStore();
+    if (!store) return undefined;
+    if (!store.phiAccessSeen) store.phiAccessSeen = new Set<string>();
+    return store.phiAccessSeen;
+  }
+
   // --- HTTP population (middleware, then interceptor) ----------------------
 
   /**
