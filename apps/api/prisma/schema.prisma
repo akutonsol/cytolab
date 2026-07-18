@@ -272,6 +272,12 @@ model Lab {
   recordCodings           RecordCoding[]
   fhirEndpoints           FHIREndpoint[]
   fhirTransmissions       FHIRTransmission[]
+  // Platform-level billing: the platform invoicing THIS lab as a customer
+  // (distinct from Bill/Payment, which is the lab billing its own clients).
+  billingProfile          LabBillingProfile?
+  billingItems            LabBillingItem[]
+  labInvoices             LabInvoice[]
+  labInvoiceLines         LabInvoiceLine[]
 }
 
 model Account {
@@ -598,6 +604,12 @@ model RequisitionLine {
   lab           Lab                 @relation(fields: [labId], references: [id])
   requisitionId String
   requisition   Requisition         @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  // Per-item reference number (legacy: the clickable 12-digit accession on each
+  // requisition row). Generated per-line at requisition create via a seeded
+  // per-lab counter; unique per lab. This is the item's stable identity — the
+  // link that opens the patient form — and exists before the line is accessioned
+  // into a Record.
+  referenceNo   String?
   // Cytology test class (Gyn/NonGyn), separate from the specimen material.
   formType      RequisitionFormType @default(Gynecology)
   isUrgent      Boolean             @default(false)
@@ -610,6 +622,7 @@ model RequisitionLine {
   recordId      String?
   record        Record?             @relation(fields: [recordId], references: [id])
 
+  @@unique([labId, referenceNo])
   @@index([labId])
   @@index([requisitionId])
   @@index([recordId])
@@ -1662,6 +1675,8 @@ enum NotificationType {
   PAYMENT_RECEIVED
   APPOINTMENT_REMINDER
   SYSTEM_ALERT
+  // Platform billing: a recurring lab invoice was generated/issued for the lab.
+  INVOICE_ISSUED
 }
 
 // Per-user delivery preferences for in-app notifications (Settings > General >
@@ -4114,4 +4129,117 @@ model AuditChainHead {
   lastSequence BigInt
   lastSelfHash String
   updatedAt    DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PLATFORM BILLING — the platform invoicing a Lab as its customer.
+// Distinct from Bill/BillLine/Payment (which is a lab billing ITS OWN clients
+// for a case). Configured by a superuser in the control center; a daily cron
+// generates invoices for labs whose billingDayOfMonth matches today.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum LabInvoiceStatus {
+  Draft
+  Sent
+  Paid
+  Overdue
+  Void
+}
+
+/// One recurring-billing configuration per lab. The template line items live on
+/// LabBillingItem. A flat monthly fee is simply a single line item.
+model LabBillingProfile {
+  id                String           @id @default(uuid())
+  labId             String           @unique
+  lab               Lab              @relation(fields: [labId], references: [id])
+  active            Boolean          @default(false)
+  // Day of month (1–28) the invoice auto-generates. Capped at 28 so it exists in
+  // every month.
+  billingDayOfMonth Int              @default(1)
+  // Net terms: invoice is due this many days after it is issued.
+  dueDays           Int              @default(14)
+  // When true, generation marks the invoice Sent + notifies the lab immediately;
+  // otherwise it lands as Draft for the superuser to review/send.
+  autoSend          Boolean          @default(true)
+  // Snapshot of the billing currency (defaults from Lab.currency at creation).
+  currency          String           @default("JMD")
+  notes             String?
+  // Idempotency guard: the "YYYY-MM" period the cron last generated for.
+  lastRunPeriod     String?
+  lastRunAt         DateTime?
+  items             LabBillingItem[]
+  invoices          LabInvoice[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([active, billingDayOfMonth])
+}
+
+/// A recurring template line on a lab's billing profile. Copied (snapshotted)
+/// onto each generated invoice's LabInvoiceLine rows.
+model LabBillingItem {
+  id          String            @id @default(uuid())
+  labId       String
+  lab         Lab               @relation(fields: [labId], references: [id])
+  profileId   String
+  profile     LabBillingProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Int               @default(1)
+  // Unit price in minor units (cents). Never a float.
+  unitPrice   Int               @default(0)
+  sortOrder   Int               @default(0)
+
+  @@index([labId])
+  @@index([profileId])
+}
+
+/// A generated platform invoice billed to a lab.
+model LabInvoice {
+  id          String             @id @default(uuid())
+  labId       String
+  lab         Lab                @relation(fields: [labId], references: [id])
+  profileId   String?
+  profile     LabBillingProfile? @relation(fields: [profileId], references: [id])
+  // Human invoice number, e.g. INV-202607-0001 (per-lab seeded sequence).
+  number      String
+  periodLabel String // "July 2026"
+  periodStart DateTime
+  periodEnd   DateTime
+  status      LabInvoiceStatus   @default(Draft)
+  currency    String
+  // Amounts in minor units (cents). subtotal == total for now (no platform tax).
+  subtotal    Int                @default(0)
+  total       Int                @default(0)
+  issueDate   DateTime           @default(now())
+  dueDate     DateTime?
+  sentAt      DateTime?
+  paidAt      DateTime?
+  voidedAt    DateTime?
+  // "system" (cron) or a superuser userId.
+  generatedBy String             @default("system")
+  notes       String?
+  lines       LabInvoiceLine[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([labId, number])
+  @@index([labId])
+  @@index([status])
+  @@index([profileId])
+}
+
+/// A snapshot line on a generated invoice.
+model LabInvoiceLine {
+  id          String     @id @default(uuid())
+  labId       String
+  lab         Lab        @relation(fields: [labId], references: [id])
+  invoiceId   String
+  invoice     LabInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Int        @default(1)
+  unitPrice   Int        @default(0)
+  amount      Int        @default(0)
+
+  @@index([labId])
+  @@index([invoiceId])
 }

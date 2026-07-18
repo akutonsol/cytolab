@@ -12,11 +12,12 @@ import { useAuth } from '@/lib/auth';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { RequisitionFormDrawer } from '@/components/RequisitionFormDrawer';
+import { RequisitionDetailDrawer } from '@/components/RequisitionDetailDrawer';
 import { RequisitionReportModal } from '@/components/RequisitionReportModal';
 import { PendingBatchesTab } from '@/components/requisitions/PendingBatchesTab';
 import { Card, Button, TableEmpty } from '@/components/ui';
 
-interface RequisitionLine { id: string; isCompleted: boolean }
+interface RequisitionLine { id: string; isCompleted: boolean; referenceNo?: string | null; record?: { labNumber?: string | null } | null }
 interface Requisition {
   id: string;
   referenceNo?: string | null;
@@ -68,6 +69,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function RequisitionsPage() {
   const { can } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [tab, setTab] = useState<'requisitions' | 'batches'>('requisitions');
   const [search, setSearch] = useState('');
@@ -105,7 +107,10 @@ export default function RequisitionsPage() {
     const q = search.trim().toLowerCase();
     const cutoff = dateRange === 'all' ? 0 : Date.now() - Number(dateRange) * 86_400_000;
     const list = all.filter((r) => {
-      if (q && !`${r.referenceNo ?? ''} ${clientName(r)} ${r.client?.accountNo ?? ''}`.toLowerCase().includes(q)) return false;
+      // Searchable text: requisition ref, client, accession, AND every item's
+      // reference number + linked Lab No. — so a copied item ref finds its batch.
+      const itemRefs = (r.lines ?? []).map((l) => `${l.referenceNo ?? ''} ${l.record?.labNumber ?? ''}`).join(' ');
+      if (q && !`${r.referenceNo ?? ''} ${clientName(r)} ${r.client?.accountNo ?? ''} ${itemRefs}`.toLowerCase().includes(q)) return false;
       if (statusF !== 'all' && r.status !== statusF) return false;
       if (clientF !== 'all' && clientName(r) !== clientF) return false;
       if (cutoff) { const d = r.dateReceived ?? r.createdAt; if (new Date(d).getTime() < cutoff) return false; }
@@ -165,7 +170,7 @@ export default function RequisitionsPage() {
       <Card radius="sm" elevation="sm" border="subtle" className="mb-6 flex flex-wrap items-center gap-3 p-4">
         <div className="flex h-12 min-w-[280px] flex-1 items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 text-slate-500">
           <Search size={18} />
-          <input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search by ref #, client, or accession..." className="w-full border-none bg-transparent text-base text-slate-700 outline-none placeholder:text-slate-500" />
+          <input value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="Search by ref #, item #, Lab No., client, or accession..." className="w-full border-none bg-transparent text-base text-slate-700 outline-none placeholder:text-slate-500" />
         </div>
         <select className={SELECT} value={statusF} onChange={(e) => { setStatusF(e.target.value); }}><option value="all">All Statuses</option>{statusOptions.map((s) => <option key={s} value={s}>{statusUI(s).label}</option>)}</select>
         <select className={SELECT} value={clientF} onChange={(e) => { setClientF(e.target.value); }}><option value="all">All Clients</option>{clientOptions.map((c) => <option key={c} value={c}>{c}</option>)}</select>
@@ -207,8 +212,12 @@ export default function RequisitionsPage() {
                   {pageRows.map((r) => {
                     const name = clientName(r);
                     return (
-                      <tr key={r.id} className="border-b border-slate-100 transition-colors hover:bg-slate-50">
-                        <td className={CELL}><span className="text-sm font-bold text-charcoal-heading">{r.referenceNo ?? '—'}</span></td>
+                      <tr
+                        key={r.id}
+                        onClick={() => setDetailId(r.id)}
+                        className="cursor-pointer border-b border-slate-100 transition-colors hover:bg-slate-50"
+                      >
+                        <td className={CELL}><span className="text-sm font-bold text-primary hover:underline">{r.referenceNo ?? '—'}</span></td>
                         <td className={CELL}>
                           <div className="flex items-center gap-3">
                             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[11px] font-semibold text-white" style={{ background: avatarBg(name) }}>{initialsOf(name)}</span>
@@ -294,6 +303,7 @@ export default function RequisitionsPage() {
       )}
 
       <RequisitionFormDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <RequisitionDetailDrawer requisitionId={detailId} open={!!detailId} onClose={() => setDetailId(null)} canEdit={can('requisition:create')} />
       <RequisitionReportModal open={reportOpen} onClose={() => setReportOpen(false)} clients={reportClients} />
     </div>
   );

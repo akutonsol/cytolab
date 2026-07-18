@@ -1,7 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { CreateRequisitionDto, RequisitionQueryDto, RequisitionReportDto } from './dto/requisition.dto';
+import {
+  CreateRequisitionDto,
+  RequisitionQueryDto,
+  RequisitionReportDto,
+  UpdateRequisitionLineDto,
+} from './dto/requisition.dto';
 import { RequisitionsService } from './requisitions.service';
 
 @ApiTags('requisitions')
@@ -40,6 +45,12 @@ export class RequisitionsController {
   @RequirePermissions('requisition:create')
   create(@Body() dto: CreateRequisitionDto) {
     return this.requisitions.create(dto);
+  }
+
+  @Patch('requisition/line/:id')
+  @RequirePermissions('requisition:create')
+  updateLine(@Param('id') id: string, @Body() dto: UpdateRequisitionLineDto) {
+    return this.requisitions.updateLine(id, dto);
   }
 
   @Delete('requisition/delete/:id')

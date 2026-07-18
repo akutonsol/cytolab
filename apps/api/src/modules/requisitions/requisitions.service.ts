@@ -6,7 +6,12 @@ import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { allocateSequence, isUniqueConflict } from '../../common/util/lab-sequence';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
-import { CreateRequisitionDto, RequisitionQueryDto, RequisitionReportDto } from './dto/requisition.dto';
+import {
+  CreateRequisitionDto,
+  RequisitionQueryDto,
+  RequisitionReportDto,
+  UpdateRequisitionLineDto,
+} from './dto/requisition.dto';
 
 // Human-facing requisition number (legacy Ref#, e.g. 1460). Plain numeric, no
 // prefix. Fresh lab starts at REF_BASE+1; migration seeds to max(numeric
@@ -15,25 +20,38 @@ const REF_SEQUENCE = 'requisitionRef';
 const REF_BASE = 1_000n;
 const MAX_REF_RETRIES = 5;
 
+// Per-item reference number (legacy: the clickable accession on each row). A
+// separate per-lab seeded counter from the requisition Ref# — 12-digit range so
+// it reads like the legacy item references. One allocation per line at create.
+const ITEM_REF_SEQUENCE = 'requisitionItemRef';
+const ITEM_REF_BASE = 700_000_000_000n;
+
 const requisitionSelect = {
   id: true,
   referenceNo: true,
   status: true,
   amount: true,
   clientId: true,
-  client: { select: { id: true, firstName: true, lastName: true, officeName: true, accountNo: true } },
+  client: { select: { id: true, firstName: true, lastName: true, officeName: true, accountNo: true, email: true } },
   workspaceId: true,
   dateReceived: true,
   lines: {
     select: {
       id: true,
+      referenceNo: true,
       formType: true,
       isUrgent: true,
       isCompleted: true,
       notes: true,
       amount: true,
       recordId: true,
+      // Linked patient form (once accessioned): lets the detail view render the
+      // reference as a live link and show the case's own Lab No. + status.
+      record: { select: { id: true, labNumber: true, status: true } },
     },
+    // Item refs are allocated sequentially at create, so ordering by them keeps
+    // the lines in the order they were added (Item 1, 2, 3 …).
+    orderBy: { referenceNo: 'asc' },
   },
   // Ordered/Fulfilled counts for the list view.
   _count: { select: { lines: true } },
@@ -176,10 +194,18 @@ export class RequisitionsService {
     const { lines, ...rest } = dto;
     // Batch total = Σ line costs (cents).
     const amount = (lines ?? []).reduce((sum, l) => sum + (l.amount ?? 0), 0);
+    // Allocate a per-item reference for every line up front (atomic seeded
+    // counter). Done before the requisition-create retry loop so a Ref# collision
+    // retry doesn't burn item refs; gaps in item refs are harmless. Allocated
+    // SEQUENTIALLY (not Promise.all) so ref order matches the order items were
+    // added — the detail view orders lines by referenceNo (Item 1, 2, 3 …).
+    const itemRefs: string[] = [];
+    for (const _ of lines ?? []) itemRefs.push(await this.allocateItemReferenceNo());
     const linesCreate = lines?.length
       ? {
-          create: lines.map((l) =>
+          create: lines.map((l, i) =>
             tenantCreate<Prisma.RequisitionLineUncheckedCreateWithoutRequisitionInput>({
+              referenceNo: itemRefs[i],
               formType: l.formType ?? undefined,
               isUrgent: l.isUrgent ?? false,
               notes: l.notes,
@@ -235,6 +261,55 @@ export class RequisitionsService {
     return value.toString();
   }
 
+  /** Allocate the next per-item reference number for the current lab. */
+  private async allocateItemReferenceNo(): Promise<string> {
+    const labId = this.labContext.getLabId();
+    if (!labId) throw new Error('Cannot allocate an item reference with no lab context');
+    const value = await allocateSequence(this.prisma, labId, ITEM_REF_SEQUENCE, ITEM_REF_BASE);
+    return value.toString();
+  }
+
+  /**
+   * Edit a single requisition line (form type / urgent / notes / cost). The line
+   * is lab-scoped by the tenancy guard. When the cost changes, the parent
+   * requisition's amount (Σ line costs) is recomputed so the batch total and the
+   * list-view Amount stay correct. `isCompleted` is intentionally NOT editable
+   * here — it is derived from the linked record's status (see
+   * RecordsService.syncRequisitionForRecord).
+   */
+  async updateLine(lineId: string, dto: UpdateRequisitionLineDto) {
+    const line = await this.prisma.requisitionLine.findFirst({
+      where: { id: lineId },
+      select: { id: true, requisitionId: true },
+    });
+    if (!line) throw new NotFoundException('Requisition line not found');
+
+    await this.prisma.requisitionLine.update({
+      where: { id: lineId },
+      data: {
+        formType: dto.formType ?? undefined,
+        isUrgent: dto.isUrgent ?? undefined,
+        notes: dto.notes ?? undefined,
+        amount: dto.amount ?? undefined,
+      },
+    });
+
+    if (dto.amount !== undefined) await this.recomputeAmount(line.requisitionId);
+    return this.findOne(line.requisitionId);
+  }
+
+  /** Recompute a requisition's amount from its current line costs (cents). */
+  private async recomputeAmount(requisitionId: string) {
+    const agg = await this.prisma.requisitionLine.aggregate({
+      where: { requisitionId },
+      _sum: { amount: true },
+    });
+    await this.prisma.requisition.update({
+      where: { id: requisitionId },
+      data: { amount: agg._sum.amount ?? 0 },
+    });
+  }
+
   async remove(id: string) {
     await this.findOne(id);
     await this.prisma.requisition.delete({ where: { id } });
@@ -247,6 +322,8 @@ export class RequisitionsService {
     const line = await this.prisma.requisitionLine.findFirst({ where: { id: lineId } });
     if (!line) throw new NotFoundException('Requisition line not found');
     await this.prisma.requisitionLine.delete({ where: { id: lineId } });
+    // Removing a line drops its cost from the batch total.
+    await this.recomputeAmount(line.requisitionId);
     return { deleted: true };
   }
 }

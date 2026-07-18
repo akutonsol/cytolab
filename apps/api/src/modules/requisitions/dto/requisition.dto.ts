@@ -5,7 +5,6 @@ import {
   IsEnum,
   IsIn,
   IsInt,
-  IsNotEmpty,
   IsOptional,
   IsString,
   Min,
@@ -37,7 +36,8 @@ export class CreateRequisitionDto {
 }
 
 export class UpdateRequisitionLineDto {
-  @IsString() @IsNotEmpty() id!: string;
+  // Line id comes from the URL param; the body carries only the editable fields.
+  @IsString() @IsOptional() id?: string;
   @IsEnum(RequisitionFormType) @IsOptional() formType?: RequisitionFormType;
   @IsBoolean() @IsOptional() isUrgent?: boolean;
   @IsBoolean() @IsOptional() isCompleted?: boolean;

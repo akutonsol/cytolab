@@ -60,6 +60,7 @@ import { CorrelationModule } from './modules/correlation/correlation.module';
 import { ProficiencyModule } from './modules/proficiency/proficiency.module';
 import { ReagentModule } from './modules/reagent/reagent.module';
 import { RecallModule } from './modules/recall/recall.module';
+import { PlatformBillingModule } from './modules/platform-billing/platform-billing.module';
 import { WsiModule } from './modules/wsi/wsi.module';
 import { AIScreeningModule } from './modules/ai-screening/ai-screening.module';
 import { TeleconsultModule } from './modules/teleconsult/teleconsult.module';
@@ -159,6 +160,7 @@ import { ScreeningBatchesModule } from './modules/screening-batches/screening-ba
     ProficiencyModule,
     ReagentModule,
     RecallModule,
+    PlatformBillingModule,
     WsiModule,
     AIScreeningModule,
     TeleconsultModule,

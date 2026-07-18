@@ -71,9 +71,15 @@ interface Props {
   recordId?: string;
   /** When set (create mode), preselects this patient — e.g. opened from a patient's page. */
   initialPatientId?: string;
+  /**
+   * When set (create mode), links the new record back to this requisition line —
+   * accessioning that item. Opened from the requisition detail view when a line
+   * has no patient form yet.
+   */
+  requisitionLineId?: string;
 }
 
-export function RecordFormDrawer({ open, onClose, formType, recordId, initialPatientId }: Props) {
+export function RecordFormDrawer({ open, onClose, formType, recordId, initialPatientId, requisitionLineId }: Props) {
   const { modal } = App.useApp();
   const qc = useQueryClient();
   const [form] = Form.useForm();
@@ -168,11 +174,21 @@ export function RecordFormDrawer({ open, onClose, formType, recordId, initialPat
     });
   }, [open, isEdit, record, form]);
 
+  // The schema-driven "Registration No." field is display-only (excluded from
+  // the payload) — echo the selected/loaded patient's registration number so it
+  // isn't left blank on the form.
+  useEffect(() => {
+    if (open && patient?.registrationNo) form.setFieldsValue({ registrationNo: patient.registrationNo });
+  }, [open, patient, form]);
+
   const buildPayload = (values: any) => {
     const base: any = {
       patientId: values.patientId,
       clientId: values.clientId,
       formType,
+      // Accession this record against a requisition line when the drawer was
+      // opened from the requisition detail view (create mode only).
+      ...(requisitionLineId ? { requisitionLineId } : {}),
       doctor: values.doctor,
       clinicalDiagnosis: values.clinicalDiagnosis,
       specimenDate: values.specimenDate ? dayjs(values.specimenDate).toISOString() : undefined,
@@ -253,6 +269,12 @@ export function RecordFormDrawer({ open, onClose, formType, recordId, initialPat
       if (draftKey) clearDraft(draftKey); // saved for real — drop the local draft
       qc.invalidateQueries({ queryKey: ['records'] });
       if (isEdit) qc.invalidateQueries({ queryKey: ['record', recordId] });
+      // Accessioning a line changes the requisition's Ordered/Fulfilled + line
+      // linkage — refresh the list and any open detail view.
+      if (requisitionLineId) {
+        qc.invalidateQueries({ queryKey: ['requisitions'] });
+        qc.invalidateQueries({ queryKey: ['requisition'] });
+      }
       onClose();
     },
     onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Save failed'),
