@@ -138,9 +138,19 @@ export class ResultSheetsService {
           _count: { select: { resultEntries: true, reports: true } },
         },
       }),
+
       this.prisma.resultSheet.count({ where }),
     ]);
-    return paginate(data, total, page, pageSize);
+    const result = paginate(data, total, page, pageSize);
+    // Enterprise audit (P2-5D): aggregate PHI list read.
+    await this.audit.recordPhiList({
+      accessSurface: 'list',
+      producerModule: 'result-sheets',
+      resultCount: result.data.length,
+      pageSize: result.pageSize,
+      resourceType: 'ResultSheetList',
+    });
+    return result;
   }
 
   async findOne(id: string) {

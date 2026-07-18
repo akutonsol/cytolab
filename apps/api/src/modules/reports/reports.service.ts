@@ -97,7 +97,16 @@ export class ReportsService {
       }),
       this.prisma.report.count({ where }),
     ]);
-    return paginate(data, total, page, pageSize);
+    const result = paginate(data, total, page, pageSize);
+    // Enterprise audit (P2-5D): aggregate PHI list read.
+    await this.audit.recordPhiList({
+      accessSurface: 'list',
+      producerModule: 'reports',
+      resultCount: result.data.length,
+      pageSize: result.pageSize,
+      resourceType: 'ReportList',
+    });
+    return result;
   }
 
   async findOne(id: string) {

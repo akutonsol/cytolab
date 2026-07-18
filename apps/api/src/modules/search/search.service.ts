@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { AuditRecorder } from '../audit/audit-recorder.service';
 
 export interface SearchHit {
   id: string;
@@ -23,7 +24,7 @@ const EMPTY: SearchResults = { patients: [], records: [], clients: [], bills: []
 
 @Injectable()
 export class SearchService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private audit: AuditRecorder) {}
 
   /**
    * Cross-entity global search. Every query is lab-scoped by the tenancy guard;
@@ -79,6 +80,17 @@ export class SearchService {
       }),
     ]);
 
+    // Enterprise audit (P2-5D): ONE aggregate event for the full user-visible search surface.
+    // resultCount = PHI-bearing items returned (patients + records; clients/bills are business/
+    // financial, not counted as clinical PHI). filterClass='text' — a search always has a text
+    // query, but the raw term is NEVER stored. Emits only when PHI items were returned (>0).
+    await this.audit.recordPhiList({
+      accessSurface: 'search',
+      producerModule: 'search',
+      resultCount: patients.length + records.length,
+      filterClass: 'text',
+      resourceType: 'SearchResults',
+    });
     return {
       patients: patients.map((p) => ({
         id: p.id,

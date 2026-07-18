@@ -15,6 +15,7 @@ import {
   PhiAccessMode,
   PhiAccessSurface,
   PhiDocumentType,
+  PhiFilterClass,
   PhiProducerModule,
   PhiReasonCode,
   PhiRedactionState,
@@ -37,6 +38,37 @@ export interface PhiReadCapture {
   producerModule: PhiProducerModule;
   resource: { type: string; id?: string | null; labId?: string | null };
   documentType?: PhiDocumentType;
+  redactionState?: PhiRedactionState;
+  reasonCode?: PhiReasonCode;
+}
+
+/**
+ * Program 2 · P2-5D — producer input for a SUCCESSFUL aggregate PHI list/search/queue read
+ * (PATIENT_LIST_QUERIED, patientRef null). One event per (action, surface, execution). Owners supply
+ * only the bounded shape + a truthful resultCount; the recorder dedupes and records (OPERATIONAL).
+ */
+export interface PhiListCapture {
+  accessSurface: PhiAccessSurface; // 'list' | 'search'
+  producerModule: PhiProducerModule;
+  resultCount: number; // PHI-bearing items returned in THIS response
+  resourceType: string;
+  pageSize?: number;
+  filterClass?: PhiFilterClass;
+  redactionState?: PhiRedactionState;
+  reasonCode?: PhiReasonCode;
+}
+
+/**
+ * Program 2 · P2-5D — producer input for a SUCCESSFUL export artifact (PHI_EXPORTED, patientRef
+ * null). One event per (action, surface, execution). Emitted only after the export success boundary.
+ */
+export interface PhiExportCapture {
+  accessSurface: PhiAccessSurface; // 'export'
+  producerModule: PhiProducerModule;
+  resourceType: string;
+  resultCount?: number; // rows/artifacts exported, when known
+  documentType?: PhiDocumentType;
+  filterClass?: PhiFilterClass;
   redactionState?: PhiRedactionState;
   reasonCode?: PhiReasonCode;
 }
@@ -163,6 +195,79 @@ export class AuditRecorder {
       // OPERATIONAL best-effort extends to the whole PHI-capture path (derivation/dedupe/record).
       this.logger.warn(
         `PHI-access capture failed (${input.accessSurface}); dropped (best-effort — the read is unaffected).`,
+      );
+    }
+  }
+
+  /**
+   * Program 2 · P2-5D — capture a SUCCESSFUL aggregate PHI list/search/queue read
+   * (PATIENT_LIST_QUERIED, patientRef null). ONE event per (action, surface, execution) via the
+   * frozen aggregate dedup. Emits ONLY when `resultCount > 0` (a zero-result response exposes no
+   * PHI). Best-effort — never throws, so it cannot break the list read.
+   */
+  async recordPhiList(input: PhiListCapture): Promise<void> {
+    try {
+      if (input.resultCount <= 0) return; // zero-result → no PHI exposed → no event
+      if (!this.phiDedup.shouldEmitAggregate({ actionCode: 'PATIENT_LIST_QUERIED', accessSurface: input.accessSurface })) {
+        return;
+      }
+      const metadata: AuditMetadataValue = {
+        accessSurface: input.accessSurface,
+        accessMode: 'view',
+        producerModule: input.producerModule,
+        resultCount: input.resultCount,
+        ...(input.pageSize !== undefined ? { pageSize: input.pageSize } : {}),
+        ...(input.filterClass ? { filterClass: input.filterClass } : {}),
+        ...(input.redactionState ? { redactionState: input.redactionState } : {}),
+        ...(input.reasonCode ? { reasonCode: input.reasonCode } : {}),
+      };
+      await this.record({
+        category: 'PHI_ACCESS',
+        actionCode: 'PATIENT_LIST_QUERIED',
+        resource: { type: input.resourceType, patientRef: null }, // aggregate — no single patient
+        outcome: { status: 'SUCCESS' },
+        metadata,
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(
+        `PHI list capture failed (${input.accessSurface}); dropped (best-effort — the read is unaffected).`,
+      );
+    }
+  }
+
+  /**
+   * Program 2 · P2-5D — capture a SUCCESSFUL export artifact (PHI_EXPORTED, patientRef null). ONE
+   * event per (action, surface, execution). Emitted only after the export success boundary; a known
+   * empty export (`resultCount === 0`) exposes no PHI and emits nothing. Best-effort — never throws.
+   */
+  async recordPhiExport(input: PhiExportCapture): Promise<void> {
+    try {
+      if (input.resultCount !== undefined && input.resultCount <= 0) return; // empty export → no PHI
+      if (!this.phiDedup.shouldEmitAggregate({ actionCode: 'PHI_EXPORTED', accessSurface: input.accessSurface })) {
+        return;
+      }
+      const metadata: AuditMetadataValue = {
+        accessSurface: input.accessSurface,
+        accessMode: 'export',
+        producerModule: input.producerModule,
+        ...(input.documentType ? { documentType: input.documentType } : {}),
+        ...(input.resultCount !== undefined ? { resultCount: input.resultCount } : {}),
+        ...(input.filterClass ? { filterClass: input.filterClass } : {}),
+        ...(input.redactionState ? { redactionState: input.redactionState } : {}),
+        ...(input.reasonCode ? { reasonCode: input.reasonCode } : {}),
+      };
+      await this.record({
+        category: 'PHI_ACCESS',
+        actionCode: 'PHI_EXPORTED',
+        resource: { type: input.resourceType, patientRef: null },
+        outcome: { status: 'SUCCESS' },
+        metadata,
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(
+        `PHI export capture failed (${input.accessSurface}); dropped (best-effort — the export is unaffected).`,
       );
     }
   }

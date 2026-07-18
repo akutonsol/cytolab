@@ -46,7 +46,17 @@ export class PortalRecordsService {
       this.prisma.record.findMany({ where, skip, take: pageSize, orderBy: { createdAt: 'desc' }, select: portalRecordSelect }),
       this.prisma.record.count({ where }),
     ]);
-    return paginate(data, total, page, pageSize);
+    const result = paginate(data, total, page, pageSize);
+    // Enterprise audit (P2-5D): aggregate PHI list read via the SEPARATE portal owner. PORTAL
+    // attribution + client scope from the ExecutionContext; resultCount = client-visible items.
+    await this.audit.recordPhiList({
+      accessSurface: 'list',
+      producerModule: 'portal',
+      resultCount: result.data.length,
+      pageSize: result.pageSize,
+      resourceType: 'RecordList',
+    });
+    return result;
   }
 
   async findOne(id: string) {

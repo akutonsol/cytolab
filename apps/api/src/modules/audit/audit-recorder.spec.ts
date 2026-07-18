@@ -240,3 +240,74 @@ describe('AuditRecorder — recordPhiRead (P2-5C single-subject PHI capture)', (
     });
   });
 });
+
+describe('AuditRecorder — recordPhiList / recordPhiExport (P2-5D aggregate capture)', () => {
+  it('recordPhiList emits PATIENT_LIST_QUERIED with patientRef null + bounded metadata', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordPhiList({ accessSurface: 'list', producerModule: 'records', resultCount: 12, pageSize: 20, resourceType: 'RecordList' });
+    });
+    expect(append).toHaveBeenCalledTimes(1);
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(input.action.code).toBe('PATIENT_LIST_QUERIED');
+    expect(input.resource.patientRef ?? null).toBeNull();
+    expect(input.metadata).toEqual({ accessSurface: 'list', accessMode: 'view', producerModule: 'records', resultCount: 12, pageSize: 20 });
+  });
+
+  it('recordPhiList emits NOTHING for a zero-result response', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordPhiList({ accessSurface: 'list', producerModule: 'records', resultCount: 0, resourceType: 'RecordList' });
+    });
+    expect(append).not.toHaveBeenCalled();
+  });
+
+  it('search carries filterClass but never a raw term', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordPhiList({ accessSurface: 'search', producerModule: 'search', resultCount: 3, filterClass: 'text', resourceType: 'SearchResults' });
+    });
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(input.metadata).toEqual({ accessSurface: 'search', accessMode: 'view', producerModule: 'search', resultCount: 3, filterClass: 'text' });
+    expect(JSON.stringify(input.metadata)).not.toMatch(/term|query|keyword/i);
+  });
+
+  it('aggregate dedup: same action+surface once; different surface and different action each emit', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordPhiList({ accessSurface: 'list', producerModule: 'records', resultCount: 1, resourceType: 'RecordList' });
+      await recorder.recordPhiList({ accessSurface: 'list', producerModule: 'records', resultCount: 1, resourceType: 'RecordList' }); // dup → skip
+      await recorder.recordPhiList({ accessSurface: 'search', producerModule: 'search', resultCount: 1, resourceType: 'SearchResults' }); // diff surface
+      await recorder.recordPhiExport({ accessSurface: 'export', producerModule: 'coding', resultCount: 1, documentType: 'coding', resourceType: 'CodingExport' }); // diff action
+    });
+    expect(append).toHaveBeenCalledTimes(3);
+  });
+
+  it('recordPhiExport emits PHI_EXPORTED (patientRef null, accessMode export, documentType)', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordPhiExport({ accessSurface: 'export', producerModule: 'coding', resultCount: 42, documentType: 'coding', filterClass: 'date_range', resourceType: 'CodingExport' });
+    });
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(input.action.code).toBe('PHI_EXPORTED');
+    expect(input.resource.patientRef ?? null).toBeNull();
+    expect(input.metadata).toEqual({ accessSurface: 'export', accessMode: 'export', producerModule: 'coding', documentType: 'coding', resultCount: 42, filterClass: 'date_range' });
+  });
+
+  it('recordPhiExport emits NOTHING for a known-empty export (resultCount 0)', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordPhiExport({ accessSurface: 'export', producerModule: 'coding', resultCount: 0, documentType: 'coding', resourceType: 'CodingExport' });
+    });
+    expect(append).not.toHaveBeenCalled();
+  });
+
+  it('aggregate capture is best-effort — an append failure is swallowed', async () => {
+    const append = jest.fn().mockRejectedValue(new Error('db down'));
+    const { labContext, recorder } = setup(append);
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await expect(recorder.recordPhiList({ accessSurface: 'list', producerModule: 'records', resultCount: 5, resourceType: 'RecordList' })).resolves.toBeUndefined();
+      await expect(recorder.recordPhiExport({ accessSurface: 'export', producerModule: 'coding', resultCount: 5, resourceType: 'CodingExport' })).resolves.toBeUndefined();
+    });
+  });
+});

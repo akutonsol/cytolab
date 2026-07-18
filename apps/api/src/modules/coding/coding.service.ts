@@ -4,6 +4,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { deriveShortCode } from '../bethesda/bethesda.service';
 import { AssignCodeDto, CodeQueryDto, CreateCodeDto, ExportQueryDto, UpdateCodeDto } from './dto/coding.dto';
+import { AuditRecorder } from '../audit/audit-recorder.service';
 
 // Specimen (formType) → LOINC procedure code.
 const SPECIMEN_LOINC: Record<string, string> = { Gynecology: '10524-7', NonGynecology: 'LP7786-0' };
@@ -30,7 +31,7 @@ const initials = (f?: string, l?: string) => `${(f?.[0] ?? '').toUpperCase()}${(
 
 @Injectable()
 export class CodingService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private audit: AuditRecorder) {}
 
   // ── Dictionary ─────────────────────────────────────────────────────────────
   listCodes(query: CodeQueryDto) {
@@ -142,7 +143,7 @@ export class CodingService {
       orderBy: { createdAt: 'desc' },
       take: 500,
     });
-    return recs.map((r) => {
+    const rows = recs.map((r) => {
       const types = new Set(r.codings.map((c) => c.codeType));
       const status = r.codings.length === 0 ? 'Uncoded' : (types.has('Procedure') && types.has('Diagnosis')) ? 'Coded' : 'Partial';
       return {
@@ -155,6 +156,16 @@ export class CodingService {
         status,
       };
     });
+    // Enterprise audit (P2-5DR): the coding worklist IS PHI-bearing — it links identifiable records
+    // (recordId, labNo, patient initials) to the Bethesda diagnostic interpretation. Aggregate PHI
+    // read on the 'coding' surface; bounded metadata only (never initials/codes/IDs). Emit if > 0.
+    await this.audit.recordPhiList({
+      accessSurface: 'coding',
+      producerModule: 'coding',
+      resultCount: rows.length,
+      resourceType: 'CodingWorklist',
+    });
+    return rows;
   }
 
   // ── Stats ────────────────────────────────────────────────────────────────
@@ -199,10 +210,12 @@ export class CodingService {
       date: r.createdAt.toISOString().slice(0, 10),
       codes: r.codings.map((c) => ({ system: c.code.system, code: c.code.code, display: c.code.display, codeType: c.codeType })),
     }));
+    // P2-5DR: exportData only RETRIEVES + SHAPES the export dataset — it is not the artifact. The
+    // PHI_EXPORTED event is emitted at the artifact-generation boundary (toCsv), not here.
     return { generatedAt: new Date().toISOString(), period: { from: from.toISOString(), to: to.toISOString() }, count: records.length, records };
   }
 
-  toCsv(data: { records: { labNo: string; patientInitials: string; specimenType: string; date: string; codes: { system: string; code: string; display: string; codeType: string }[] }[] }) {
+  async toCsv(data: { records: { labNo: string; patientInitials: string; specimenType: string; date: string; codes: { system: string; code: string; display: string; codeType: string }[] }[] }) {
     const header = ['Lab No', 'Patient', 'Specimen', 'Date', 'System', 'Code', 'Display', 'Type'];
     const rows: string[] = [header.join(',')];
     const esc = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
@@ -210,6 +223,17 @@ export class CodingService {
       if (r.codes.length === 0) rows.push([r.labNo, r.patientInitials, r.specimenType, r.date, '', '', '', ''].map(esc).join(','));
       for (const c of r.codes) rows.push([r.labNo, r.patientInitials, r.specimenType, r.date, c.system, c.code, c.display, c.codeType].map(esc).join(','));
     }
-    return rows.join('\n');
+    const csv = rows.join('\n');
+    // P2-5DR: this is the CSV artifact-generation success boundary — the event is emitted ONLY after
+    // the CSV bytes are successfully built (a build failure above never reaches here). Bounded
+    // metadata only: no filenames/URLs/rows/PHI. Known-empty export (count 0) emits nothing.
+    await this.audit.recordPhiExport({
+      accessSurface: 'export',
+      producerModule: 'coding',
+      documentType: 'coding',
+      resultCount: data.records.length,
+      resourceType: 'CodingExport',
+    });
+    return csv;
   }
 }

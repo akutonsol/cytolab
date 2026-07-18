@@ -92,6 +92,13 @@ export class WsiService {
 
   async list() {
     const rows = await this.prisma.digitalSlide.findMany({ orderBy: { uploadedAt: 'desc' }, select: slideSelect, take: 500 });
+    // Enterprise audit (P2-5D): aggregate PHI slide-list read (exposes patient identifiers).
+    await this.audit.recordPhiList({
+      accessSurface: 'list',
+      producerModule: 'wsi',
+      resultCount: rows.length,
+      resourceType: 'SlideList',
+    });
     return rows.map((s) => this.toRow(s));
   }
 

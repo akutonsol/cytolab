@@ -94,7 +94,17 @@ export class PatientsService {
       this.prisma.patient.findMany({ where, select: patientSelect, skip, take: pageSize, orderBy: { createdAt: 'desc' } }),
       this.prisma.patient.count({ where }),
     ]);
-    return paginate(data, total, page, pageSize);
+    const result = paginate(data, total, page, pageSize);
+    // Enterprise audit (P2-5D): successful aggregate PHI list read (patientRef null, one per
+    // action+surface+execution). resultCount = PHI-bearing items returned; emit only if > 0.
+    await this.audit.recordPhiList({
+      accessSurface: 'list',
+      producerModule: 'patients',
+      resultCount: result.data.length,
+      pageSize: result.pageSize,
+      resourceType: 'PatientList',
+    });
+    return result;
   }
 
   async findByClient(clientId: string, query: PatientQueryDto) {

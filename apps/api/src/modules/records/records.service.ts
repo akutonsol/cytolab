@@ -536,7 +536,17 @@ export class RecordsService {
       }),
       this.prisma.record.count({ where }),
     ]);
-    return paginate(data, total, page, pageSize);
+    const result = paginate(data, total, page, pageSize);
+    // Enterprise audit (P2-5D): the shared record-list chokepoint (findAll/approved/byClient/
+    // byPatient route here). Aggregate PHI list read; emit only if PHI-bearing items were returned.
+    await this.audit.recordPhiList({
+      accessSurface: 'list',
+      producerModule: 'records',
+      resultCount: result.data.length,
+      pageSize: result.pageSize,
+      resourceType: 'RecordList',
+    });
+    return result;
   }
 
   private async transition(
@@ -737,6 +747,10 @@ export class RecordsService {
         specimens: { select: { type: true }, take: 1 },
       },
     });
+    // Enterprise audit (P2-5D): personal-queue worklist (aggregate PHI list).
+    await this.audit.recordPhiList({
+      accessSurface: 'list', producerModule: 'records', resultCount: rows.length, resourceType: 'RecordQueue',
+    });
     return this.decorateAndSort(rows, threshold);
   }
 
@@ -751,6 +765,10 @@ export class RecordsService {
         patient: { select: { firstName: true, lastName: true } },
         specimens: { select: { type: true }, take: 1 },
       },
+    });
+    // Enterprise audit (P2-5D): unassigned worklist (aggregate PHI list).
+    await this.audit.recordPhiList({
+      accessSurface: 'list', producerModule: 'records', resultCount: rows.length, resourceType: 'RecordQueue',
     });
     return this.decorateAndSort(rows, threshold);
   }
