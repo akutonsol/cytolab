@@ -65,11 +65,21 @@ export class UsersService {
     });
     // Enterprise audit (P2-6C): administrative principal provisioning. After successful persistence.
     await this.audit.recordEntityCreated({ resource: { type: 'User', id: user.id }, producerModule: 'users' });
+    // Enterprise audit (P2-6D): initial role-set assignment on the new principal (counts only).
+    if (dto.roleIds?.length) {
+      await this.audit.recordRoleAssignmentChanged({
+        userId: user.id,
+        rolesAddedCount: dto.roleIds.length,
+        rolesRemovedCount: 0,
+        resultingRoleCount: dto.roleIds.length,
+        producerModule: 'users',
+      });
+    }
     return this.flatten(user);
   }
 
   async update(id: string, dto: UpdateUserDto) {
-    await this.findOne(id);
+    const prev = await this.findOne(id);
     const user = await this.prisma.user.update({
       where: { id },
       data: {
@@ -96,6 +106,24 @@ export class UsersService {
         changedFields: [...changedFields],
         producerModule: 'users',
       });
+    }
+    // Enterprise audit (P2-6D): role-set replacement (AUTHORIZATION). ONE event after the successful
+    // replacement, counts only. A no-op re-submission of the same set (added == removed == 0) is not
+    // a privilege change and emits nothing (consistent with the P2-6C no-op state guard).
+    if (dto.roleIds !== undefined) {
+      const prevRoleIds: string[] = prev.roles.map((r: { id: string }) => r.id);
+      const newRoleIds = dto.roleIds;
+      const rolesAddedCount = newRoleIds.filter((rid) => !prevRoleIds.includes(rid)).length;
+      const rolesRemovedCount = prevRoleIds.filter((rid) => !newRoleIds.includes(rid)).length;
+      if (rolesAddedCount > 0 || rolesRemovedCount > 0) {
+        await this.audit.recordRoleAssignmentChanged({
+          userId: id,
+          rolesAddedCount,
+          rolesRemovedCount,
+          resultingRoleCount: newRoleIds.length,
+          producerModule: 'users',
+        });
+      }
     }
     return this.flatten(user);
   }

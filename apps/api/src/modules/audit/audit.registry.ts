@@ -335,6 +335,59 @@ const ENTRIES: AuditRegistryEntry[] = [
     attributionPolicy: 'HTTP_REQUEST',
     metadataContractId: null,
   },
+  // --- P2-6D Authorization governance capture -------------------------------
+  // Role lifecycle + role-set assignment. ROLE_* resource is the Role; ROLE_ASSIGNMENT_CHANGED
+  // resource is the grantee User (counts-only metadata). All OPERATIONAL (best-effort) — no owner
+  // transaction / durable outbox exists (P2-6B §durability). Non-PHI, CONFIDENTIAL.
+  {
+    category: 'AUTHORIZATION',
+    actionCode: 'ROLE_CREATED',
+    eventVersion: 1,
+    defaultSeverity: 'NOTICE',
+    phiIndicator: false,
+    dataClass: 'CONFIDENTIAL',
+    retentionClass: 'EXTENDED',
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    metadataContractId: null,
+  },
+  {
+    category: 'AUTHORIZATION',
+    actionCode: 'ROLE_UPDATED',
+    eventVersion: 1,
+    defaultSeverity: 'WARNING', // a permission-set change is security-relevant
+    phiIndicator: false,
+    dataClass: 'CONFIDENTIAL',
+    retentionClass: 'EXTENDED',
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    // "What changed" rides change.changedFields (names only, e.g. 'permissions').
+    metadataContractId: null,
+  },
+  {
+    category: 'AUTHORIZATION',
+    actionCode: 'ROLE_DELETED',
+    eventVersion: 1,
+    defaultSeverity: 'WARNING',
+    phiIndicator: false,
+    dataClass: 'CONFIDENTIAL',
+    retentionClass: 'PERMANENT', // authorization deletion is irreversible governance
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    metadataContractId: null,
+  },
+  {
+    category: 'AUTHORIZATION',
+    actionCode: 'ROLE_ASSIGNMENT_CHANGED',
+    eventVersion: 1,
+    defaultSeverity: 'WARNING', // a privilege change on a principal
+    phiIndicator: false,
+    dataClass: 'CONFIDENTIAL',
+    retentionClass: 'EXTENDED',
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    metadataContractId: 'authz.role_assignment.v1',
+  },
   // Two-version demonstration event (see note above).
   {
     category: 'DATA_EXPORT',
@@ -385,6 +438,10 @@ const CURRENT_VERSIONS: Record<AuditEventKey, number> = {
   'ADMINISTRATIVE:ENTITY_UPDATED': 1,
   'ADMINISTRATIVE:ENTITY_STATE_CHANGED': 1,
   'ADMINISTRATIVE:ENTITY_DELETED': 1,
+  'AUTHORIZATION:ROLE_CREATED': 1,
+  'AUTHORIZATION:ROLE_UPDATED': 1,
+  'AUTHORIZATION:ROLE_DELETED': 1,
+  'AUTHORIZATION:ROLE_ASSIGNMENT_CHANGED': 1,
   'SYSTEM:JOB_STARTED': 1,
   'SYSTEM:JOB_COMPLETED': 1,
   'DATA_EXPORT:EVIDENCE_EXPORTED': 2,

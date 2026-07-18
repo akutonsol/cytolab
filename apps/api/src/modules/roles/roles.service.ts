@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { RoleScope } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { AuditRecorder } from '../audit/audit-recorder.service';
 
 export interface RoleBody {
   name: string;
@@ -12,7 +13,10 @@ export interface RoleBody {
 
 @Injectable()
 export class RolesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private audit: AuditRecorder,
+  ) {}
 
   findRoles() {
     return this.prisma.role.findMany({
@@ -25,8 +29,8 @@ export class RolesService {
     return this.prisma.permission.findMany({ orderBy: { code: 'asc' } });
   }
 
-  createRole(body: RoleBody) {
-    return this.prisma.role.create({
+  async createRole(body: RoleBody) {
+    const created = await this.prisma.role.create({
       data: {
         name: body.name,
         description: body.description,
@@ -39,12 +43,15 @@ export class RolesService {
       },
       include: { permissions: { include: { permission: true } } },
     });
+    // Enterprise audit (P2-6D): role (permission bundle) created, after successful persistence.
+    await this.audit.recordRoleCreated({ roleId: created.id, producerModule: 'roles' });
+    return created;
   }
 
   async updateRole(id: string, body: Partial<RoleBody>) {
     const role = await this.prisma.role.findUnique({ where: { id } });
     if (!role) throw new NotFoundException('Role not found');
-    return this.prisma.role.update({
+    const updated = await this.prisma.role.update({
       where: { id },
       data: {
         name: body.name,
@@ -62,12 +69,22 @@ export class RolesService {
       },
       include: { permissions: { include: { permission: true } } },
     });
+    // Enterprise audit (P2-6D): role attribute/permission-set change. Field NAMES only — the
+    // permission list is a security-relevant fact recorded as 'permissions', never enumerated.
+    const changedFields = (['name', 'description', 'isSuperRole', 'scope'] as const).filter((f) => body[f] !== undefined) as string[];
+    if (body.permissionIds !== undefined) changedFields.push('permissions');
+    if (changedFields.length > 0) {
+      await this.audit.recordRoleUpdated({ roleId: id, changedFields, producerModule: 'roles' });
+    }
+    return updated;
   }
 
   async deleteRole(id: string) {
     const role = await this.prisma.role.findUnique({ where: { id } });
     if (!role) throw new NotFoundException('Role not found');
     await this.prisma.role.delete({ where: { id } });
+    // Enterprise audit (P2-6D): role deletion, after the delete commits.
+    await this.audit.recordRoleDeleted({ roleId: id, producerModule: 'roles' });
     return { deleted: true };
   }
 }

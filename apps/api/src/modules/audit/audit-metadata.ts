@@ -23,7 +23,8 @@ export type AuditMetadataContractId =
   | 'record.status_change.v1'
   | 'maintenance.disposition.v1'
   | 'config.setting_change.v1'
-  | 'admin.state_change.v1'; // P2-6C — administrative activation/block state transitions
+  | 'admin.state_change.v1' // P2-6C — administrative activation/block state transitions
+  | 'authz.role_assignment.v1'; // P2-6D — role-set replacement on a principal (counts only)
 
 export type AuditMetadataScalar = string | number | boolean | null;
 export type AuditMetadataValue = Record<string, AuditMetadataScalar>;
@@ -161,6 +162,16 @@ const CONTRACTS: Record<AuditMetadataContractId, MetadataContract> = {
       stateKey: { kind: 'string', required: true, values: ADMIN_STATE_KEYS },
       previousValue: { kind: 'boolean' }, // prior flag value, when known
       newValue: { kind: 'boolean', required: true },
+    },
+  },
+  // P2-6D — role-set replacement on a principal. COUNTS ONLY — never role ids, role names,
+  // permission lists, user names, or free text (the scalar-only rule forbids arrays outright).
+  'authz.role_assignment.v1': {
+    id: 'authz.role_assignment.v1',
+    fields: {
+      rolesAddedCount: { kind: 'number', required: true, integer: true, min: 0 },
+      rolesRemovedCount: { kind: 'number', required: true, integer: true, min: 0 },
+      resultingRoleCount: { kind: 'number', integer: true, min: 0 }, // optional
     },
   },
   // P2-5B — PHI-access metadata: bounded enums + counts only. No free text, no reason prompt,

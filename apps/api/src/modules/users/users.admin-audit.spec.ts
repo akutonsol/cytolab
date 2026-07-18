@@ -11,6 +11,7 @@ function rec() {
     recordEntityUpdated: jest.fn(),
     recordEntityStateChanged: jest.fn(),
     recordEntityDeleted: jest.fn(),
+    recordRoleAssignmentChanged: jest.fn(), // P2-6D — UsersService.update now also emits this
   };
 }
 const flat = (o: any) => ({ id: 'u1', isActive: true, roles: [], ...o });

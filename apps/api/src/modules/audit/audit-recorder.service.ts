@@ -413,6 +413,105 @@ export class AuditRecorder {
   }
 
   /**
+   * Program 2 · P2-6D — authorization governance capture (AUTHORIZATION, OPERATIONAL best-effort).
+   * Role lifecycle (ROLE_CREATED/UPDATED/DELETED — resource is the Role) and role-set assignment
+   * (ROLE_ASSIGNMENT_CHANGED — resource is the grantee User, counts-only metadata). Emitted from the
+   * authoritative owner AFTER authorization + validation + successful persistence. Best-effort: never
+   * throws, so an authorization change is never blocked by an audit failure. No role ids/names,
+   * permission lists, user names, or free text ever enter the payload.
+   */
+  async recordRoleCreated(input: {
+    roleId: string;
+    producerModule: string;
+  }): Promise<void> {
+    try {
+      await this.record({
+        category: 'AUTHORIZATION',
+        actionCode: 'ROLE_CREATED',
+        resource: { type: 'Role', id: input.roleId },
+        outcome: { status: 'SUCCESS' },
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(`ROLE_CREATED capture failed; dropped (best-effort — the change is unaffected).`);
+    }
+  }
+
+  /**
+   * ROLE_UPDATED — a role's attributes/permission set changed. `changedFields` carries field NAMES
+   * only (the change-evidence channel) — never values. By contract, a permission-bundle change is
+   * recorded as the single field name 'permissions', NEVER the individual permission ids or the
+   * permission list; this is the intended, fixed semantics for future maintainers.
+   */
+  async recordRoleUpdated(input: {
+    roleId: string;
+    changedFields: string[];
+    producerModule: string;
+  }): Promise<void> {
+    try {
+      await this.record({
+        category: 'AUTHORIZATION',
+        actionCode: 'ROLE_UPDATED',
+        resource: { type: 'Role', id: input.roleId },
+        outcome: { status: 'SUCCESS' },
+        change: { changedFields: input.changedFields },
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(`ROLE_UPDATED capture failed; dropped (best-effort — the change is unaffected).`);
+    }
+  }
+
+  /** ROLE_DELETED — a role was deleted. Emitted after the delete commits. */
+  async recordRoleDeleted(input: {
+    roleId: string;
+    producerModule: string;
+  }): Promise<void> {
+    try {
+      await this.record({
+        category: 'AUTHORIZATION',
+        actionCode: 'ROLE_DELETED',
+        resource: { type: 'Role', id: input.roleId },
+        outcome: { status: 'SUCCESS' },
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(`ROLE_DELETED capture failed; dropped (best-effort — the change is unaffected).`);
+    }
+  }
+
+  /**
+   * ROLE_ASSIGNMENT_CHANGED — the set of roles held by a principal was replaced. ONE event per
+   * replacement (never per-role, never split add/remove). Counts-only metadata via
+   * authz.role_assignment.v1 — no role ids, names, permission lists, or user names.
+   */
+  async recordRoleAssignmentChanged(input: {
+    userId: string;
+    rolesAddedCount: number;
+    rolesRemovedCount: number;
+    resultingRoleCount?: number;
+    producerModule: string;
+  }): Promise<void> {
+    try {
+      const metadata: AuditMetadataValue = {
+        rolesAddedCount: input.rolesAddedCount,
+        rolesRemovedCount: input.rolesRemovedCount,
+        ...(input.resultingRoleCount !== undefined ? { resultingRoleCount: input.resultingRoleCount } : {}),
+      };
+      await this.record({
+        category: 'AUTHORIZATION',
+        actionCode: 'ROLE_ASSIGNMENT_CHANGED',
+        resource: { type: 'User', id: input.userId },
+        outcome: { status: 'SUCCESS' },
+        metadata,
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(`ROLE_ASSIGNMENT_CHANGED capture failed; dropped (best-effort — the change is unaffected).`);
+    }
+  }
+
+  /**
    * Record an audit event. The registry — never the producer — is the sole durability authority.
    * Each class is honored TRUTHFULLY for what the P2-3 runtime can actually provide (no outbox /
    * retry queue exists yet):

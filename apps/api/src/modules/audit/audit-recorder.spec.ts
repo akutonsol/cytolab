@@ -412,3 +412,63 @@ describe('AuditRecorder — P2-6C administrative lifecycle helpers', () => {
     });
   });
 });
+
+describe('AuditRecorder — P2-6D authorization governance helpers', () => {
+  it('recordRoleCreated → AUTHORIZATION/ROLE_CREATED, resource=Role, no metadata', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordRoleCreated({ roleId: 'role1', producerModule: 'roles' });
+    });
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(input.category).toBe('AUTHORIZATION');
+    expect(input.action.code).toBe('ROLE_CREATED');
+    expect(input.resource).toEqual({ type: 'Role', id: 'role1' });
+    expect(input.metadata).toBeUndefined();
+  });
+
+  it('recordRoleUpdated → change.changedFields (names only, e.g. permissions), no metadata', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordRoleUpdated({ roleId: 'role1', changedFields: ['name', 'permissions'], producerModule: 'roles' });
+    });
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(input.action.code).toBe('ROLE_UPDATED');
+    expect(input.change).toEqual({ changedFields: ['name', 'permissions'] });
+    expect(input.metadata).toBeUndefined();
+  });
+
+  it('recordRoleDeleted → AUTHORIZATION/ROLE_DELETED', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordRoleDeleted({ roleId: 'role1', producerModule: 'roles' });
+    });
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(input.action.code).toBe('ROLE_DELETED');
+    expect(input.category).toBe('AUTHORIZATION');
+  });
+
+  it('recordRoleAssignmentChanged → resource=User, counts-only metadata, NO ids/names', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordRoleAssignmentChanged({ userId: 'u1', rolesAddedCount: 2, rolesRemovedCount: 1, resultingRoleCount: 3, producerModule: 'users' });
+    });
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(input.category).toBe('AUTHORIZATION');
+    expect(input.action.code).toBe('ROLE_ASSIGNMENT_CHANGED');
+    expect(input.resource).toEqual({ type: 'User', id: 'u1' });
+    expect(input.metadata).toEqual({ rolesAddedCount: 2, rolesRemovedCount: 1, resultingRoleCount: 3 });
+    // No role ids / names / permission lists anywhere in the payload.
+    expect(JSON.stringify(input.metadata)).not.toMatch(/role[-_]?id|name|permission|Admin/i);
+  });
+
+  it('all four authz helpers are best-effort — an append failure is swallowed', async () => {
+    const append = jest.fn().mockRejectedValue(new Error('db down'));
+    const { labContext, recorder } = setup(append);
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await expect(recorder.recordRoleCreated({ roleId: 'r1', producerModule: 'roles' })).resolves.toBeUndefined();
+      await expect(recorder.recordRoleUpdated({ roleId: 'r1', changedFields: ['name'], producerModule: 'roles' })).resolves.toBeUndefined();
+      await expect(recorder.recordRoleDeleted({ roleId: 'r1', producerModule: 'roles' })).resolves.toBeUndefined();
+      await expect(recorder.recordRoleAssignmentChanged({ userId: 'u1', rolesAddedCount: 1, rolesRemovedCount: 0, producerModule: 'users' })).resolves.toBeUndefined();
+    });
+  });
+});
