@@ -4,7 +4,7 @@ import { SecurityService } from './security.service';
  * Program 2 · P2-6E — SecurityService security-administration emit placement: the right helper fires
  * after successful governing persistence, ALWAYS through the runSystemAsCurrentActor bridge (proving
  * SYSTEM scope + preserved actor, per the bridge's own unit proof), and never on failure. Single-
- * session termination is intentionally NOT wired (deferred pending the revokeSession contract).
+ * session termination emits SESSION_TERMINATED{single} with the truthful count (P2-6E1).
  */
 function audit() {
   return {
@@ -81,10 +81,33 @@ describe('SecurityService — P2-6E security administration audit', () => {
     expect(rec.recordSessionTerminated).toHaveBeenCalledWith(expect.objectContaining({ scope: 'all', terminatedCount: 0 }));
   });
 
-  it('terminateSession (single) is DEFERRED — emits nothing (revokeSession contract does not guarantee revocation)', async () => {
-    const sessions = { revokeSession: jest.fn().mockResolvedValue(undefined) };
+  it('terminateSession (single, revoked) emits ONE SESSION_TERMINATED{single, count 1} on UserSession', async () => {
+    const sessions = { revokeSession: jest.fn().mockResolvedValue(true) };
     const { svc, rec } = make({ sessions });
     await svc.terminateSession('sess1');
+    expect(rec.recordSessionTerminated).toHaveBeenCalledTimes(1);
+    expect(rec.recordSessionTerminated).toHaveBeenCalledWith({
+      scope: 'single',
+      terminatedCount: 1,
+      resource: { type: 'UserSession', id: 'sess1' },
+      producerModule: 'security',
+    });
+  });
+
+  it('terminateSession (single, no-op) still emits ONE SESSION_TERMINATED{single, count 0} — no suppression', async () => {
+    const sessions = { revokeSession: jest.fn().mockResolvedValue(false) };
+    const { svc, rec } = make({ sessions });
+    await svc.terminateSession('missing');
+    expect(rec.recordSessionTerminated).toHaveBeenCalledTimes(1);
+    expect(rec.recordSessionTerminated).toHaveBeenCalledWith(
+      expect.objectContaining({ scope: 'single', terminatedCount: 0, resource: { type: 'UserSession', id: 'missing' } }),
+    );
+  });
+
+  it('terminateSession does NOT emit if revokeSession rejects', async () => {
+    const sessions = { revokeSession: jest.fn().mockRejectedValue(new Error('db')) };
+    const { svc, rec } = make({ sessions });
+    await expect(svc.terminateSession('sess1')).rejects.toThrow();
     expect(rec.recordSessionTerminated).not.toHaveBeenCalled();
   });
 

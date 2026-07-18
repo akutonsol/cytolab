@@ -163,18 +163,32 @@ export class SessionService {
   }
 
   /** Revoke a single session and all its refresh tokens. */
-  async revokeSession(sessionId: string): Promise<void> {
-    await this.labContext.runSystem(async () => {
-      const session = await this.prisma.userSession.findUnique({ where: { id: sessionId } });
-      if (!session) return;
-      await this.prisma.userSession.update({
+  /**
+   * Revoke a single session. Returns a TRUTHFUL outcome (P2-6E1): `true` iff an ACTIVE session with
+   * this id existed and was revoked by THIS call; `false` when nothing revocable changed (missing or
+   * already-revoked session). The truth comes from the atomic `updateMany` affected-row count guarded
+   * on `revokedAt: null` — not from a read-then-write inference — so a concurrent revocation cannot
+   * make it stale. Callers that relied on the old silent no-op keep that behavior via `false`; no new
+   * exception is introduced. Best-effort device-token cleanup runs only when a session was revoked.
+   */
+  async revokeSession(sessionId: string): Promise<boolean> {
+    return this.labContext.runSystem(async () => {
+      const res = await this.prisma.userSession.updateMany({
+        where: { id: sessionId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      if (res.count === 0) return false; // no active/revocable session changed
+      const session = await this.prisma.userSession.findUnique({
         where: { id: sessionId },
-        data: { revokedAt: new Date() },
+        select: { userId: true, deviceId: true },
       });
-      await this.prisma.refreshToken.updateMany({
-        where: { userId: session.userId, deviceId: session.deviceId, revokedAt: null },
-        data: { revokedAt: new Date() },
-      });
+      if (session) {
+        await this.prisma.refreshToken.updateMany({
+          where: { userId: session.userId, deviceId: session.deviceId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+      }
+      return true;
     });
   }
 

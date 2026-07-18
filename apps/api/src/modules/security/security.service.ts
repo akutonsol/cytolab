@@ -110,12 +110,19 @@ export class SecurityService {
   }
 
   async terminateSession(id: string) {
-    await this.sessions.revokeSession(id);
-    // P2-6E — single-session SESSION_TERMINATED audit is DEFERRED pending an owner-contract decision:
-    // SessionService.revokeSession returns void and NO-OPS on a missing session (`if (!session) return`),
-    // so a successful return does NOT guarantee the target session was actually revoked. Emitting
-    // terminatedCount = 1 here would be untruthful. Reported for review (recommend revokeSession
-    // return a boolean/count). No event is emitted until that contract is resolved.
+    // P2-6E1: revokeSession now returns a truthful outcome (true iff an active session was revoked).
+    const revoked = await this.sessions.revokeSession(id);
+    // Enterprise audit (P2-6E1): ONE SESSION_TERMINATED{single} event with the truthful count. A
+    // zero-count success still emits — the governance fact is that an authorized admin executed the
+    // single-session termination, whose outcome was zero affected rows.
+    await this.emitSystemScoped(() =>
+      this.audit.recordSessionTerminated({
+        scope: 'single',
+        terminatedCount: revoked ? 1 : 0,
+        resource: { type: 'UserSession', id },
+        producerModule: 'security',
+      }),
+    );
     return { status: 'OK' as const };
   }
 
