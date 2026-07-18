@@ -6,6 +6,7 @@ import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { CreatePatientDto, PatientQueryDto, UpdatePatientDto } from './dto/patient.dto';
 import { allocateSequence, isUniqueConflict } from '../../common/util/lab-sequence';
+import { AuditRecorder } from '../audit/audit-recorder.service';
 
 // The registration-number counter (LabSequence "patientRegNo") starts here for a
 // lab with no migration seed, so the first generated number is REG_BASE + 1
@@ -78,6 +79,7 @@ export class PatientsService {
   constructor(
     private prisma: PrismaService,
     private labContext: LabContext,
+    private audit: AuditRecorder,
   ) {}
 
   // Every query below is automatically scoped to the caller's lab by the Prisma
@@ -106,6 +108,15 @@ export class PatientsService {
   async findOne(id: string) {
     const patient = await this.prisma.patient.findFirst({ where: { id }, select: patientSelect });
     if (!patient) throw new NotFoundException('Patient not found');
+    // Enterprise audit (P2-5C): successful single-subject PHI read. Emitted AFTER authorization,
+    // tenancy scoping, and the successful query — best-effort, never breaks the read.
+    await this.audit.recordPhiRead({
+      patientId: patient.id,
+      accessSurface: 'patient_detail',
+      accessMode: 'view',
+      producerModule: 'patients',
+      resource: { type: 'Patient', id: patient.id },
+    });
     return patient;
   }
 

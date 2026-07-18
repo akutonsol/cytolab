@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { paginate } from '../../../common/dto/pagination.dto';
 import { PortalRecordQueryDto } from './dto/portal-record.dto';
+import { AuditRecorder } from '../../audit/audit-recorder.service';
 
 // The status timeline (RecordStatusEvent) is NOT client-scoped, so it is read
 // ONLY as an include off the (client-scoped) Record — never queried directly.
@@ -32,7 +33,7 @@ const portalRecordSelect = {
  */
 @Injectable()
 export class PortalRecordsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private audit: AuditRecorder) {}
 
   async findAll(query: PortalRecordQueryDto) {
     const page = query.page ?? 1;
@@ -51,8 +52,25 @@ export class PortalRecordsService {
   async findOne(id: string) {
     // Client-scoped: a record belonging to another client returns null -> 404,
     // indistinguishable from a record that does not exist.
-    const record = await this.prisma.record.findFirst({ where: { id }, select: portalRecordSelect });
-    if (!record) throw new NotFoundException('Record not found');
+    // P2-5CR: the query projection is expanded to fetch patientId in the SAME query (no second
+    // round-trip). It is used for audit ONLY and stripped from the response — the external portal
+    // client must never receive the internal patient UUID (portalRecordSelect deliberately omits it).
+    const full = await this.prisma.record.findFirst({
+      where: { id },
+      select: { ...portalRecordSelect, patientId: true },
+    });
+    if (!full) throw new NotFoundException('Record not found');
+    const { patientId, ...record } = full; // patientId is audit-only; NOT returned to the external client
+    // Enterprise audit (P2-5C): successful single-subject PHI read via the SEPARATE portal owner
+    // (does not reuse RecordsService). PORTAL attribution comes from the ExecutionContext.
+    // Best-effort; never breaks the read.
+    await this.audit.recordPhiRead({
+      patientId,
+      accessSurface: 'record_detail',
+      accessMode: 'view',
+      producerModule: 'portal',
+      resource: { type: 'Record', id },
+    });
     return record;
   }
 }

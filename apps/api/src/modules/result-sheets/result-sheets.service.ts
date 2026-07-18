@@ -6,6 +6,7 @@ import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { LabContext } from '../../common/tenancy/lab-context';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { RecordsService } from '../records/records.service';
+import { AuditRecorder } from '../audit/audit-recorder.service';
 import { EscalationService } from '../escalation/escalation.service';
 import { AncillaryOrdersService } from '../ancillary-orders/ancillary-orders.service';
 import {
@@ -56,6 +57,7 @@ export class ResultSheetsService {
     private ancillary: AncillaryOrdersService,
     private labContext: LabContext,
     private realtime: RealtimeGateway,
+    private audit: AuditRecorder,
   ) {}
 
   // Build the nested entries/lines create payload. The tenancy guard stamps
@@ -142,8 +144,23 @@ export class ResultSheetsService {
   }
 
   async findOne(id: string) {
-    const sheet = await this.prisma.resultSheet.findFirst({ where: { id }, select: resultSheetSelect });
-    if (!sheet) throw new NotFoundException('Result sheet not found');
+    // ResultSheet has no direct patientId (only recordId → record relation), so the query projection
+    // is expanded to fetch record.patientId in the SAME query (P2-5CR — no second round-trip). It is
+    // used for audit only and stripped from the returned sheet, so the response DTO is unchanged.
+    const full = await this.prisma.resultSheet.findFirst({
+      where: { id },
+      select: { ...resultSheetSelect, record: { select: { patientId: true } } },
+    });
+    if (!full) throw new NotFoundException('Result sheet not found');
+    const { record, ...sheet } = full; // record.patientId is audit-only; not part of the response DTO
+    // Enterprise audit (P2-5C): successful single-subject PHI read. Best-effort — never breaks the read.
+    await this.audit.recordPhiRead({
+      patientId: record.patientId,
+      accessSurface: 'result_sheet',
+      accessMode: 'view',
+      producerModule: 'result-sheets',
+      resource: { type: 'ResultSheet', id: sheet.id },
+    });
     return sheet;
   }
 

@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { CreateAnnotationDto, CreateSlideDto, UpdateAnnotationDto } from './dto/wsi.dto';
+import { AuditRecorder } from '../audit/audit-recorder.service';
 
 const slideSelect = {
   id: true, slideUrl: true, format: true, magnification: true, stain: true, scanner: true,
@@ -20,7 +21,21 @@ type Row = Prisma.DigitalSlideGetPayload<{ select: typeof slideSelect }>;
 
 @Injectable()
 export class WsiService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private audit: AuditRecorder) {}
+
+  /** P2-5C: emit a successful single-subject slide PHI read (best-effort). patientRef from the
+   *  slide's already-selected record.patient.id — no extra query. */
+  private async auditSlideRead(slide: Row) {
+    const patientId = slide.record?.patient?.id;
+    if (!patientId) return;
+    await this.audit.recordPhiRead({
+      patientId,
+      accessSurface: 'slide',
+      accessMode: 'view',
+      producerModule: 'wsi',
+      resource: { type: 'DigitalSlide', id: slide.id },
+    });
+  }
 
   private toRow(s: Row) {
     return {
@@ -54,7 +69,9 @@ export class WsiService {
   /** Latest slide for a record, or null. */
   async getByRecord(recordId: string) {
     const slide = await this.prisma.digitalSlide.findFirst({ where: { recordId }, orderBy: { uploadedAt: 'desc' }, select: slideSelect });
-    return slide ? this.toRow(slide) : null;
+    if (!slide) return null;
+    await this.auditSlideRead(slide);
+    return this.toRow(slide);
   }
 
   /**
@@ -90,6 +107,7 @@ export class WsiService {
   async detail(slideId: string) {
     const slide = await this.prisma.digitalSlide.findFirst({ where: { id: slideId }, select: slideSelect });
     if (!slide) throw new NotFoundException('Slide not found');
+    await this.auditSlideRead(slide);
     return this.toRow(slide);
   }
 

@@ -22,9 +22,9 @@ describeIf('AI-assisted reporting (integration)', () => {
   const raw = new PrismaClient();
   const labContext = new LabContext();
   const prisma = new PrismaService(labContext);
-  const records = new RecordsService(prisma, labContext, { notifyUser: async () => {}, notifyPermission: async () => {} } as any, { record: async () => {} } as any);
+  const records = new RecordsService(prisma, labContext, { notifyUser: async () => {}, notifyPermission: async () => {} } as any, { record: async () => {}, recordPhiRead: async () => {} } as any);
   const realtimeStub = { emitToLab() {}, emitToUser() {}, emitToSuperusers() {} } as any;
-  const resultSheets = new ResultSheetsService(prisma, records, { evaluateRecord: async () => {} } as any, { hasBlockingOpenOrders: async () => ({ blocked: false, total: 0 }) } as any, labContext, realtimeStub);
+  const resultSheets = new ResultSheetsService(prisma, records, { evaluateRecord: async () => {} } as any, { hasBlockingOpenOrders: async () => ({ blocked: false, total: 0 }) } as any, labContext, realtimeStub, { recordPhiRead: async () => {} } as any);
 
   // Stubbed AI: available + returns a fixed draft. Swapped per-test for the down case.
   const okAi = { hasApiKey: () => true, generate: jest.fn(async () => ({ available: true, output: 'AI DRAFT narrative', model: 'claude-sonnet-4-6' })) };

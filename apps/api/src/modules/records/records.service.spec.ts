@@ -13,7 +13,7 @@ describe('RecordsService.findBillable', () => {
     const findMany = jest.fn().mockResolvedValue([]);
     const count = jest.fn().mockResolvedValue(0);
     const prisma = { record: { findMany, count } } as unknown as PrismaService;
-    return { service: new RecordsService(prisma, {} as any, { notifyUser: async () => {}, notifyPermission: async () => {} } as any, { record: async () => {} } as any), findMany, count };
+    return { service: new RecordsService(prisma, {} as any, { notifyUser: async () => {}, notifyPermission: async () => {} } as any, { record: async () => {}, recordPhiRead: async () => {} } as any), findMany, count };
   }
 
   it('queries only Approved, unbilled records', async () => {

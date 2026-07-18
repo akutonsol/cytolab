@@ -92,6 +92,14 @@ export const PHI_PRODUCER_MODULES = [
   'portal',
 ] as const;
 
+// Member types for typed producer/owner call sites (P2-5C).
+export type PhiAccessSurface = (typeof PHI_ACCESS_SURFACES)[number];
+export type PhiAccessMode = (typeof PHI_ACCESS_MODES)[number];
+export type PhiDocumentType = (typeof PHI_DOCUMENT_TYPES)[number];
+export type PhiRedactionState = (typeof PHI_REDACTION_STATES)[number];
+export type PhiReasonCode = (typeof PHI_REASON_CODES)[number];
+export type PhiProducerModule = (typeof PHI_PRODUCER_MODULES)[number];
+
 interface MetadataContract {
   id: AuditMetadataContractId;
   fields: Record<string, FieldSpec>;

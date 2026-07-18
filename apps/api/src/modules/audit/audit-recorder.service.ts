@@ -10,9 +10,36 @@ import {
   AuditResourceInput,
 } from './audit.contract';
 import { PrismaService } from '../../database/prisma.service';
-import { AuditMetadataValue } from './audit-metadata';
+import {
+  AuditMetadataValue,
+  PhiAccessMode,
+  PhiAccessSurface,
+  PhiDocumentType,
+  PhiProducerModule,
+  PhiReasonCode,
+  PhiRedactionState,
+} from './audit-metadata';
 import { AuditPersistenceService } from './audit-persistence.service';
 import { resolveCurrent, UnknownAuditEventError } from './audit.registry';
+import { derivePatientRef } from './phi-ref';
+import { PhiAccessDedup } from './phi-access-dedup';
+
+/**
+ * Program 2 · P2-5C — producer-facing input for a SUCCESSFUL single-subject PHI read. Owners
+ * supply only intent + owner-derived patientId + bounded metadata; the recorder derives the
+ * patientRef, dedupes per request, and records (OPERATIONAL). Owners never build patientRef,
+ * never touch AuditPersistenceService, and never see audit state.
+ */
+export interface PhiReadCapture {
+  patientId: string;
+  accessSurface: PhiAccessSurface;
+  accessMode: PhiAccessMode;
+  producerModule: PhiProducerModule;
+  resource: { type: string; id?: string | null; labId?: string | null };
+  documentType?: PhiDocumentType;
+  redactionState?: PhiRedactionState;
+  reasonCode?: PhiReasonCode;
+}
 
 /**
  * Producer-facing intent. Owners publish semantic intent only — WHAT happened and to WHICH
@@ -97,7 +124,48 @@ export class AuditRecorder {
     private readonly persistence: AuditPersistenceService,
     private readonly executionContext: ExecutionContextService,
     private readonly prisma: PrismaService,
+    private readonly phiDedup: PhiAccessDedup,
   ) {}
+
+  /**
+   * Program 2 · P2-5C — capture a SUCCESSFUL single-subject PHI read. THE producer-facing PHI path
+   * (AuditRecorder remains the only exported capture boundary; PhiAccessDedup + derivePatientRef
+   * stay internal). Owners call this AFTER authorization/tenancy have passed and the read returned
+   * actual PHI, with an owner-derived patientId. It:
+   *   derives patientRef (internal UUID) → dedupes per (patientRef, surface, execution) → records
+   *   PATIENT_RECORD_VIEWED (OPERATIONAL) with bounded phi.access.v2 metadata.
+   * It is BEST-EFFORT and NEVER throws — a bad id, a dedupe miss, or an append failure is logged at
+   * WARN and swallowed, so PHI capture can never break the clinical read it observes.
+   */
+  async recordPhiRead(input: PhiReadCapture): Promise<void> {
+    try {
+      const patientRef = derivePatientRef({ patientId: input.patientId });
+      if (!this.phiDedup.shouldEmitSingleSubject({ patientRef, accessSurface: input.accessSurface })) {
+        return; // already recorded this patient+surface in this request
+      }
+      const metadata: AuditMetadataValue = {
+        accessSurface: input.accessSurface,
+        accessMode: input.accessMode,
+        producerModule: input.producerModule,
+        ...(input.documentType ? { documentType: input.documentType } : {}),
+        ...(input.redactionState ? { redactionState: input.redactionState } : {}),
+        ...(input.reasonCode ? { reasonCode: input.reasonCode } : {}),
+      };
+      await this.record({
+        category: 'PHI_ACCESS',
+        actionCode: 'PATIENT_RECORD_VIEWED',
+        resource: { type: input.resource.type, id: input.resource.id ?? null, labId: input.resource.labId ?? null, patientRef },
+        outcome: { status: 'SUCCESS' },
+        metadata,
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      // OPERATIONAL best-effort extends to the whole PHI-capture path (derivation/dedupe/record).
+      this.logger.warn(
+        `PHI-access capture failed (${input.accessSurface}); dropped (best-effort — the read is unaffected).`,
+      );
+    }
+  }
 
   /**
    * Record an audit event. The registry — never the producer — is the sole durability authority.

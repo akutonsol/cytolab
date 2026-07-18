@@ -16,7 +16,7 @@ describeIf('PatientsService — registration number (integration)', () => {
   const raw = new PrismaClient();
   const labContext = new LabContext();
   const prisma = new PrismaService(labContext);
-  const service = new PatientsService(prisma, labContext);
+  const service = new PatientsService(prisma, labContext, { recordPhiRead: async () => {} } as any);
 
   const tag = `regno-${Date.now().toString(36)}`;
   let labId: string;

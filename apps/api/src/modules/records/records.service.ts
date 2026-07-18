@@ -232,6 +232,16 @@ export class RecordsService {
   async findOne(id: string) {
     const record = await this.prisma.record.findFirst({ where: { id }, select: recordSelect });
     if (!record) throw new NotFoundException('Record not found');
+    // Enterprise audit (P2-5C): successful single-subject PHI read. This is the shared record-by-id
+    // boundary the sign-out + diagnostic-case aggregators funnel through, so request-scoped dedup
+    // collapses their repeated reads. Best-effort — never breaks the read. patientRef from record.patientId.
+    await this.audit.recordPhiRead({
+      patientId: record.patientId,
+      accessSurface: 'record_detail',
+      accessMode: 'view',
+      producerModule: 'records',
+      resource: { type: 'Record', id: record.id },
+    });
     return record;
   }
 

@@ -3,6 +3,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { LabContext } from '../../common/tenancy/lab-context';
 import { ExecutionContextService } from '../../common/execution-context/execution-context.service';
 import { AuditPersistenceService } from './audit-persistence.service';
+import { PhiAccessDedup } from './phi-access-dedup';
 import { AuditChainService } from './audit-chain.service';
 import { AuditRecorder } from './audit-recorder.service';
 import { computeSelfHash, AuditCanonicalFields } from './audit-hash';
@@ -18,7 +19,7 @@ const chain = new AuditChainService();
 const persistence = new AuditPersistenceService(prisma as unknown as PrismaService, chain);
 const labContext = new LabContext();
 const execCtx = new ExecutionContextService(labContext);
-const recorder = new AuditRecorder(persistence, execCtx, prisma as unknown as PrismaService);
+const recorder = new AuditRecorder(persistence, execCtx, prisma as unknown as PrismaService, new PhiAccessDedup(execCtx));
 
 const MARKER = 'p2-4c-recorder-it';
 const LAB_ID = 'it-rec-p24c';

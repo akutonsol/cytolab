@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { paginate } from '../../common/dto/pagination.dto';
+import { AuditRecorder } from '../audit/audit-recorder.service';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { CreateReportDto, ReportQueryDto } from './dto/report.dto';
 import { ReportPdfService } from './report-pdf.service';
@@ -46,6 +47,7 @@ export class ReportsService {
   constructor(
     private prisma: PrismaService,
     private pdf: ReportPdfService,
+    private audit: AuditRecorder,
   ) {}
 
   /**
@@ -145,6 +147,7 @@ export class ReportsService {
             lab: { select: { name: true, address: true, phone: true, email: true, logoUrl: true } },
             patient: {
               select: {
+                id: true, // P2-5C: owner-derived patientRef for audit (not exposed in the return DTO)
                 firstName: true,
                 lastName: true,
                 middleName: true,
@@ -242,6 +245,20 @@ export class ReportsService {
     };
 
     const buffer = await this.pdf.render(data);
+    // Enterprise audit (P2-5C): successful single-subject PHI read — emitted after the auth gate and
+    // a successful render. The PDF is served inline (accessMode=view). No report content, storage
+    // URL, or filename in metadata. patientRef from the internal record.patient.id (return DTO
+    // unchanged). Shared UI + portal render boundary — dedup prevents any portal double-emit.
+    if (r.patient?.id) {
+      await this.audit.recordPhiRead({
+        patientId: r.patient.id,
+        accessSurface: 'report_pdf',
+        accessMode: 'view',
+        producerModule: 'reports',
+        documentType: 'report',
+        resource: { type: 'Report', id: recordId },
+      });
+    }
     return { buffer, record: { identifier: r.identifier } };
   }
 

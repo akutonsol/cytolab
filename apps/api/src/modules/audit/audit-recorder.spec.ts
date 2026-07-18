@@ -2,6 +2,7 @@ import { LabContext } from '../../common/tenancy/lab-context';
 import { ExecutionContextService } from '../../common/execution-context/execution-context.service';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditPersistenceService } from './audit-persistence.service';
+import { PhiAccessDedup } from './phi-access-dedup';
 import {
   AuditRecorder,
   AuditCaptureError,
@@ -24,7 +25,7 @@ function setup(appendImpl?: jest.Mock) {
   const ownTx = { __recorderOwnedTx: true } as any;
   const $transaction = jest.fn((fn: any) => fn(ownTx));
   const prisma = { $transaction } as unknown as PrismaService;
-  const recorder = new AuditRecorder(persistence, execCtx, prisma);
+  const recorder = new AuditRecorder(persistence, execCtx, prisma, new PhiAccessDedup(execCtx));
   return { append, labContext, execCtx, recorder, prisma, $transaction, ownTx };
 }
 
@@ -171,5 +172,71 @@ describe('AuditRecorder — background job attribution', () => {
     expect(input.executionId).toBeTruthy();
     expect(input.request?.correlationId).toBeTruthy();
     expect(input.request?.requestId ?? null).toBeNull(); // no fabricated HTTP request id
+  });
+});
+
+describe('AuditRecorder — recordPhiRead (P2-5C single-subject PHI capture)', () => {
+  const UUID = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
+  const UUID2 = '11111111-2222-4333-8444-555566667777';
+
+  it('emits PATIENT_RECORD_VIEWED with derived patientRef and bounded phi.access.v2 metadata', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordPhiRead({
+        patientId: UUID,
+        accessSurface: 'record_detail',
+        accessMode: 'view',
+        producerModule: 'records',
+        resource: { type: 'Record', id: 'rec-1' },
+      });
+    });
+    expect(append).toHaveBeenCalledTimes(1);
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(input.category).toBe('PHI_ACCESS');
+    expect(input.action.code).toBe('PATIENT_RECORD_VIEWED');
+    expect(input.resource.patientRef).toBe(UUID); // owner-derived internal UUID, no raw PHI
+    expect(input.metadata).toEqual({ accessSurface: 'record_detail', accessMode: 'view', producerModule: 'records' });
+  });
+
+  it('dedupes the same patient+surface within one execution, but not different surfaces/patients', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordPhiRead({ patientId: UUID, accessSurface: 'record_detail', accessMode: 'view', producerModule: 'records', resource: { type: 'Record', id: 'r1' } });
+      await recorder.recordPhiRead({ patientId: UUID, accessSurface: 'record_detail', accessMode: 'view', producerModule: 'records', resource: { type: 'Record', id: 'r1' } }); // dup → skip
+      await recorder.recordPhiRead({ patientId: UUID, accessSurface: 'report_pdf', accessMode: 'view', producerModule: 'reports', resource: { type: 'Report', id: 'r1' } }); // diff surface
+      await recorder.recordPhiRead({ patientId: UUID2, accessSurface: 'record_detail', accessMode: 'view', producerModule: 'records', resource: { type: 'Record', id: 'r2' } }); // diff patient
+    });
+    expect(append).toHaveBeenCalledTimes(3);
+  });
+
+  it('a new execution re-emits (dedup is request-scoped)', async () => {
+    const { append, labContext, recorder } = setup();
+    const once = () =>
+      labContext.runScoped({ labId: 'lab1' }, () =>
+        recorder.recordPhiRead({ patientId: UUID, accessSurface: 'patient_detail', accessMode: 'view', producerModule: 'patients', resource: { type: 'Patient', id: UUID } }),
+      );
+    await once();
+    await once();
+    expect(append).toHaveBeenCalledTimes(2);
+  });
+
+  it('is best-effort: an invalid patientId neither emits nor throws', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await expect(
+        recorder.recordPhiRead({ patientId: 'REG-000123', accessSurface: 'record_detail', accessMode: 'view', producerModule: 'records', resource: { type: 'Record', id: 'r1' } }),
+      ).resolves.toBeUndefined();
+    });
+    expect(append).not.toHaveBeenCalled();
+  });
+
+  it('is best-effort: an append failure is swallowed (the read is unaffected)', async () => {
+    const append = jest.fn().mockRejectedValue(new Error('db down'));
+    const { labContext, recorder } = setup(append);
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await expect(
+        recorder.recordPhiRead({ patientId: UUID, accessSurface: 'record_detail', accessMode: 'view', producerModule: 'records', resource: { type: 'Record', id: 'r1' } }),
+      ).resolves.toBeUndefined();
+    });
   });
 });
