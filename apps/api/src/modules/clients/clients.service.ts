@@ -6,6 +6,7 @@ import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { allocateSequence, isUniqueConflict } from '../../common/util/lab-sequence';
 import { PortalUsersService } from '../portal/portal-users/portal-users.service';
+import { AuditRecorder } from '../audit/audit-recorder.service';
 import { ClientQueryDto, CreateClientDto, CreateClientTypeDto, UpdateClientDto } from './dto/client.dto';
 
 // Client account number (legacy AC#, e.g. CYLB-577071): lab-code prefix + a
@@ -49,6 +50,7 @@ export class ClientsService {
     private prisma: PrismaService,
     private portalUsers: PortalUsersService,
     private labContext: LabContext,
+    private audit: AuditRecorder,
   ) {}
 
   /** Allocate a lab-unique account number: <PREFIX>-<seeded counter>. */
@@ -150,6 +152,13 @@ export class ClientsService {
       }
     }
 
+    // Enterprise audit (P2-6C): client provisioning success boundary (the client row is persisted).
+    // Portal-login provisioning below is a fire-after side effect, not part of the create boundary.
+    await this.audit.recordEntityCreated({
+      resource: { type: 'Client', id: client.id, labId: this.labContext.getLabId() },
+      producerModule: 'clients',
+    });
+
     // Auth Information → create the client's PORTAL login and email the F2 setup
     // invite. Staff never set the password.
     if (createPortalLogin && rest.email) {
@@ -166,7 +175,7 @@ export class ClientsService {
   }
 
   async update(id: string, dto: UpdateClientDto) {
-    await this.findOne(id);
+    const prev = await this.findOne(id);
     const { addresses, clientType, ...rest } = dto;
     const data: Prisma.ClientUncheckedUpdateInput = { ...rest };
     const clientTypeId = await this.resolveClientTypeId(clientType);
@@ -174,12 +183,47 @@ export class ClientsService {
     if (addresses !== undefined) {
       data.addresses = { deleteMany: {}, ...this.addressCreate(addresses) };
     }
-    return this.prisma.client.update({ where: { id }, data, select: clientSelect });
+    const updated = await this.prisma.client.update({ where: { id }, data, select: clientSelect });
+
+    // Enterprise audit (P2-6C). active/blocked are activation/block STATE transitions
+    // (ENTITY_STATE_CHANGED); all other attribute writes are an ENTITY_UPDATED (field names only).
+    const labId = this.labContext.getLabId();
+    const resource = { type: 'Client', id, labId };
+    if (dto.active !== undefined && dto.active !== prev.active) {
+      await this.audit.recordEntityStateChanged({
+        resource,
+        stateKey: 'client_active',
+        previousValue: prev.active,
+        newValue: dto.active,
+        producerModule: 'clients',
+      });
+    }
+    if (dto.blocked !== undefined && dto.blocked !== prev.blocked) {
+      await this.audit.recordEntityStateChanged({
+        resource,
+        stateKey: 'client_blocked',
+        previousValue: prev.blocked,
+        newValue: dto.blocked,
+        producerModule: 'clients',
+      });
+    }
+    const changedFields = Object.keys(rest).filter((k) => k !== 'active' && k !== 'blocked');
+    if (clientType !== undefined) changedFields.push('clientType');
+    if (addresses !== undefined) changedFields.push('addresses');
+    if (changedFields.length > 0) {
+      await this.audit.recordEntityUpdated({ resource, changedFields, producerModule: 'clients' });
+    }
+    return updated;
   }
 
   async remove(id: string) {
     await this.findOne(id);
     await this.prisma.client.delete({ where: { id } });
+    // Enterprise audit (P2-6C): routine administrative deletion (distinct from governed remediation).
+    await this.audit.recordEntityDeleted({
+      resource: { type: 'Client', id, labId: this.labContext.getLabId() },
+      producerModule: 'clients',
+    });
     return { deleted: true };
   }
 
@@ -189,8 +233,16 @@ export class ClientsService {
   }
 
   async createClientType(dto: CreateClientTypeDto) {
-    return this.prisma.clientType.create({
+    const created = await this.prisma.clientType.create({
       data: tenantCreate<Prisma.ClientTypeUncheckedCreateInput>({ ...dto }),
     });
+    // Enterprise audit (P2-6C): explicit client-type provisioning. (The find-or-create in
+    // resolveClientTypeId is an internal helper of client create/update, not an authoritative
+    // client-type operation, and is intentionally not audited as a separate ENTITY_CREATED.)
+    await this.audit.recordEntityCreated({
+      resource: { type: 'ClientType', id: created.id, labId: this.labContext.getLabId() },
+      producerModule: 'clients',
+    });
+    return created;
   }
 }

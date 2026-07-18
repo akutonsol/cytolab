@@ -116,6 +116,14 @@ export class AuthService {
         return { labId: lab.id, userId: user.id };
       }),
     );
+    // Enterprise audit (P2-6C): tenant provisioning (lab genesis), after the bootstrap transaction
+    // commits. Organization scope resolves to SYSTEM from the (unauthenticated) execution context —
+    // there is no pre-existing tenant. The genesis account/workspace/superuser/user rows are
+    // constituents of this atomic provisioning act and are not separately audited here.
+    await this.audit.recordEntityCreated({
+      resource: { type: 'Lab', id: result.labId, labId: result.labId },
+      producerModule: 'auth',
+    });
     return result;
   }
 

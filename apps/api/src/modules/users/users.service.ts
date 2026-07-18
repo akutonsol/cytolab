@@ -9,6 +9,7 @@ import * as argon2 from 'argon2';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
+import { AuditRecorder } from '../audit/audit-recorder.service';
 import { ChangePasswordDto, CreateUserDto, UpdateUserDto } from './dto/user.dto';
 
 const userSelect = {
@@ -23,7 +24,10 @@ const userSelect = {
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private audit: AuditRecorder,
+  ) {}
 
   // All queries are lab-scoped automatically by the tenancy extension: labId
   // comes from the JWT request context, never from the request body.
@@ -59,6 +63,8 @@ export class UsersService {
       }),
       select: userSelect,
     });
+    // Enterprise audit (P2-6C): administrative principal provisioning. After successful persistence.
+    await this.audit.recordEntityCreated({ resource: { type: 'User', id: user.id }, producerModule: 'users' });
     return this.flatten(user);
   }
 
@@ -80,16 +86,35 @@ export class UsersService {
       },
       select: userSelect,
     });
+    // Enterprise audit (P2-6C): administrative attribute update. Only the profile field NAMES are
+    // recorded (change-evidence channel) — no values. Role-set changes (dto.roleIds) are an
+    // AUTHORIZATION concern owned by P2-6D and are deliberately NOT audited here.
+    const changedFields = (['firstName', 'lastName'] as const).filter((f) => dto[f] !== undefined);
+    if (changedFields.length > 0) {
+      await this.audit.recordEntityUpdated({
+        resource: { type: 'User', id },
+        changedFields: [...changedFields],
+        producerModule: 'users',
+      });
+    }
     return this.flatten(user);
   }
 
   /** Legacy parity: PATCH /user/authAccess/{id} — enable/disable login */
   async setActive(id: string, isActive: boolean) {
-    await this.findOne(id);
+    const prev = await this.findOne(id);
     const user = await this.prisma.user.update({
       where: { id },
       data: { isActive },
       select: userSelect,
+    });
+    // Enterprise audit (P2-6C): account activation/deactivation state transition.
+    await this.audit.recordEntityStateChanged({
+      resource: { type: 'User', id },
+      stateKey: 'account_active',
+      previousValue: prev.isActive,
+      newValue: isActive,
+      producerModule: 'users',
     });
     return this.flatten(user);
   }

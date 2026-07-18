@@ -352,3 +352,63 @@ describe('AuditRecorder — recordSettingChanged (P2-6 administrative configurat
     });
   });
 });
+
+describe('AuditRecorder — P2-6C administrative lifecycle helpers', () => {
+  it('recordEntityCreated → ADMINISTRATIVE/ENTITY_CREATED, resource carried, no metadata', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordEntityCreated({ resource: { type: 'User', id: 'u1' }, producerModule: 'users' });
+    });
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(input.category).toBe('ADMINISTRATIVE');
+    expect(input.action.code).toBe('ENTITY_CREATED');
+    expect(input.resource).toEqual({ type: 'User', id: 'u1', labId: null });
+    expect(input.outcome.status).toBe('SUCCESS');
+    expect(input.producerModule).toBe('users');
+    expect(input.metadata).toBeUndefined();
+  });
+
+  it('recordEntityUpdated → change.changedFields (names only), no values, no metadata', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordEntityUpdated({ resource: { type: 'Client', id: 'c1', labId: 'lab1' }, changedFields: ['firstName', 'email'], producerModule: 'clients' });
+    });
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(input.category).toBe('ADMINISTRATIVE');
+    expect(input.action.code).toBe('ENTITY_UPDATED');
+    expect(input.change).toEqual({ changedFields: ['firstName', 'email'] });
+    expect(input.metadata).toBeUndefined();
+  });
+
+  it('recordEntityStateChanged → admin.state_change.v1 metadata (stateKey + booleans only)', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordEntityStateChanged({ resource: { type: 'User', id: 'u1' }, stateKey: 'account_active', previousValue: true, newValue: false, producerModule: 'users' });
+    });
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(input.category).toBe('ADMINISTRATIVE');
+    expect(input.action.code).toBe('ENTITY_STATE_CHANGED');
+    expect(input.metadata).toEqual({ stateKey: 'account_active', newValue: false, previousValue: true });
+  });
+
+  it('recordEntityDeleted → ADMINISTRATIVE/ENTITY_DELETED', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordEntityDeleted({ resource: { type: 'Workspace', id: 'w1' }, producerModule: 'workspaces' });
+    });
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(input.action.code).toBe('ENTITY_DELETED');
+    expect(input.category).toBe('ADMINISTRATIVE');
+  });
+
+  it('all four helpers are best-effort — an append failure is swallowed', async () => {
+    const append = jest.fn().mockRejectedValue(new Error('db down'));
+    const { labContext, recorder } = setup(append);
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await expect(recorder.recordEntityCreated({ resource: { type: 'User', id: 'u1' }, producerModule: 'users' })).resolves.toBeUndefined();
+      await expect(recorder.recordEntityUpdated({ resource: { type: 'User', id: 'u1' }, changedFields: ['firstName'], producerModule: 'users' })).resolves.toBeUndefined();
+      await expect(recorder.recordEntityStateChanged({ resource: { type: 'User', id: 'u1' }, stateKey: 'account_active', newValue: true, producerModule: 'users' })).resolves.toBeUndefined();
+      await expect(recorder.recordEntityDeleted({ resource: { type: 'User', id: 'u1' }, producerModule: 'users' })).resolves.toBeUndefined();
+    });
+  });
+});

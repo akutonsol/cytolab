@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
+import { AuditRecorder } from '../audit/audit-recorder.service';
 import { CreateWorkspaceDto, UpdateWorkspaceDto, WorkspaceQueryDto } from './dto/workspace.dto';
 
 const listSelect = {
@@ -20,7 +21,10 @@ const listSelect = {
  */
 @Injectable()
 export class WorkspacesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private audit: AuditRecorder,
+  ) {}
 
   async findAll(query: WorkspaceQueryDto) {
     const page = query.page ?? 1;
@@ -44,15 +48,25 @@ export class WorkspacesService {
     const accountId = dto.accountId ?? (await this.prisma.account.findFirst({ select: { id: true } }))?.id;
     if (!accountId) throw new BadRequestException('No account available for this lab');
 
-    return this.prisma.workspace.create({
+    const workspace = await this.prisma.workspace.create({
       data: tenantCreate<Prisma.WorkspaceUncheckedCreateInput>({ name: dto.name.trim(), accountId }),
       select: listSelect,
     });
+    // Enterprise audit (P2-6C): workspace provisioning, after successful persistence.
+    await this.audit.recordEntityCreated({ resource: { type: 'Workspace', id: workspace.id }, producerModule: 'workspaces' });
+    return workspace;
   }
 
   async update(id: string, dto: UpdateWorkspaceDto) {
     await this.findOne(id); // lab-scoped existence check
-    return this.prisma.workspace.update({ where: { id }, data: { name: dto.name.trim() }, select: listSelect });
+    const workspace = await this.prisma.workspace.update({ where: { id }, data: { name: dto.name.trim() }, select: listSelect });
+    // Enterprise audit (P2-6C): only the field name is recorded — no values.
+    await this.audit.recordEntityUpdated({
+      resource: { type: 'Workspace', id },
+      changedFields: ['name'],
+      producerModule: 'workspaces',
+    });
+    return workspace;
   }
 
   async remove(id: string) {
@@ -71,6 +85,8 @@ export class WorkspacesService {
       throw new BadRequestException(`Cannot delete — reassign ${parts.join(', ')} first.`);
     }
     await this.prisma.workspace.delete({ where: { id } });
+    // Enterprise audit (P2-6C): workspace deletion, after the delete commits.
+    await this.audit.recordEntityDeleted({ resource: { type: 'Workspace', id }, producerModule: 'workspaces' });
     return { deleted: true };
   }
 }

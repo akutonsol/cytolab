@@ -20,7 +20,12 @@ describeIf('Requisition Ref# and Client AC# — concurrency (integration)', () =
   const requisitions = new RequisitionsService(prisma, labContext, realtimeStub);
   // ClientsService only touches PortalUsersService when createPortalLogin is set,
   // which these creates don't — so a stub is safe.
-  const clients = new ClientsService(prisma, {} as any, labContext);
+  const clients = new ClientsService(prisma, {} as any, labContext, {
+    recordEntityCreated: async () => {},
+    recordEntityUpdated: async () => {},
+    recordEntityStateChanged: async () => {},
+    recordEntityDeleted: async () => {},
+  } as any);
 
   const tag = `ids-${Date.now().toString(36)}`;
   let labId: string;

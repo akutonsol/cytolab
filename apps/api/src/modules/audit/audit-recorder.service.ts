@@ -11,6 +11,7 @@ import {
 } from './audit.contract';
 import { PrismaService } from '../../database/prisma.service';
 import {
+  AdminStateKey,
   AuditMetadataValue,
   PhiAccessMode,
   PhiAccessSurface,
@@ -297,6 +298,116 @@ export class AuditRecorder {
     } catch (err) {
       this.logger.warn(
         `SETTING_CHANGED capture failed (${input.settingKey}); dropped (best-effort — the change is unaffected).`,
+      );
+    }
+  }
+
+  /**
+   * Program 2 · P2-6C — administrative lifecycle capture (ADMINISTRATIVE, OPERATIONAL best-effort).
+   * Four entity-neutral verbs; the entity is carried by `resource.type` (User | Client | ClientType |
+   * Lab | Workspace). Emitted from the authoritative owner AFTER authorization + validation +
+   * successful persistence. Organization scope + actor come from the ExecutionContext (never producer-
+   * set). Every helper is best-effort: it NEVER throws, so an administrative success is never blocked
+   * by an audit failure. No entity values, secrets, PHI, URLs, or free text ever enter the payload.
+   */
+  async recordEntityCreated(input: {
+    resource: { type: string; id?: string | null; labId?: string | null };
+    producerModule: string;
+  }): Promise<void> {
+    try {
+      await this.record({
+        category: 'ADMINISTRATIVE',
+        actionCode: 'ENTITY_CREATED',
+        resource: { type: input.resource.type, id: input.resource.id ?? null, labId: input.resource.labId ?? null },
+        outcome: { status: 'SUCCESS' },
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(
+        `ENTITY_CREATED capture failed (${input.resource.type}); dropped (best-effort — the change is unaffected).`,
+      );
+    }
+  }
+
+  /**
+   * ENTITY_UPDATED — mutable attributes of an existing administrative entity changed. `changedFields`
+   * carries field NAMES only (the change-evidence channel); no before/after values are recorded.
+   * By contract, `changedFields` lists the REQUESTED mutable fields written by the owner, not
+   * semantically value-diffed fields — owners must NOT perform deep before/after value comparison to
+   * populate it (that would risk reading/leaking values). Requested-fields is the intended semantics.
+   */
+  async recordEntityUpdated(input: {
+    resource: { type: string; id?: string | null; labId?: string | null };
+    changedFields: string[];
+    producerModule: string;
+  }): Promise<void> {
+    try {
+      await this.record({
+        category: 'ADMINISTRATIVE',
+        actionCode: 'ENTITY_UPDATED',
+        resource: { type: input.resource.type, id: input.resource.id ?? null, labId: input.resource.labId ?? null },
+        outcome: { status: 'SUCCESS' },
+        change: { changedFields: input.changedFields },
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(
+        `ENTITY_UPDATED capture failed (${input.resource.type}); dropped (best-effort — the change is unaffected).`,
+      );
+    }
+  }
+
+  /**
+   * ENTITY_STATE_CHANGED — an activation/block state transition. Bounded stateKey + before/after
+   * booleans via admin.state_change.v1 (no values, PHI, or free text).
+   */
+  async recordEntityStateChanged(input: {
+    resource: { type: string; id?: string | null; labId?: string | null };
+    stateKey: AdminStateKey;
+    previousValue?: boolean;
+    newValue: boolean;
+    producerModule: string;
+  }): Promise<void> {
+    try {
+      const metadata: AuditMetadataValue = {
+        stateKey: input.stateKey,
+        newValue: input.newValue,
+        ...(input.previousValue !== undefined ? { previousValue: input.previousValue } : {}),
+      };
+      await this.record({
+        category: 'ADMINISTRATIVE',
+        actionCode: 'ENTITY_STATE_CHANGED',
+        resource: { type: input.resource.type, id: input.resource.id ?? null, labId: input.resource.labId ?? null },
+        outcome: { status: 'SUCCESS' },
+        metadata,
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(
+        `ENTITY_STATE_CHANGED capture failed (${input.resource.type}/${input.stateKey}); dropped (best-effort).`,
+      );
+    }
+  }
+
+  /**
+   * ENTITY_DELETED — an administrative entity was deleted (routine admin CRUD, distinct from
+   * DATA_MAINTENANCE:GOVERNED_DELETION_EXECUTED). Emitted after the delete commits.
+   */
+  async recordEntityDeleted(input: {
+    resource: { type: string; id?: string | null; labId?: string | null };
+    producerModule: string;
+  }): Promise<void> {
+    try {
+      await this.record({
+        category: 'ADMINISTRATIVE',
+        actionCode: 'ENTITY_DELETED',
+        resource: { type: input.resource.type, id: input.resource.id ?? null, labId: input.resource.labId ?? null },
+        outcome: { status: 'SUCCESS' },
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(
+        `ENTITY_DELETED capture failed (${input.resource.type}); dropped (best-effort — the change is unaffected).`,
       );
     }
   }

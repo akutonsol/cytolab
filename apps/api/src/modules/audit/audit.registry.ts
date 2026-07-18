@@ -281,6 +281,60 @@ const ENTRIES: AuditRegistryEntry[] = [
     attributionPolicy: 'HTTP_REQUEST',
     metadataContractId: 'config.setting_change.v1',
   },
+  // --- P2-6C Administrative lifecycle capture -------------------------------
+  // Entity-neutral lifecycle verbs; the entity is carried by resourceType (User | Client |
+  // ClientType | Lab | Workspace), mirroring the RECORD_* precedent. All OPERATIONAL
+  // (best-effort) — no owner transaction / durable outbox exists (P2-6B §durability). Non-PHI.
+  {
+    category: 'ADMINISTRATIVE',
+    actionCode: 'ENTITY_CREATED',
+    eventVersion: 1,
+    defaultSeverity: 'NOTICE',
+    phiIndicator: false,
+    dataClass: 'CONFIDENTIAL',
+    retentionClass: 'EXTENDED',
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    metadataContractId: null,
+  },
+  {
+    category: 'ADMINISTRATIVE',
+    actionCode: 'ENTITY_UPDATED',
+    eventVersion: 1,
+    defaultSeverity: 'INFO',
+    phiIndicator: false,
+    dataClass: 'CONFIDENTIAL',
+    retentionClass: 'EXTENDED',
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    // "What changed" rides the change-evidence channel (change.changedFields — names only).
+    metadataContractId: null,
+  },
+  {
+    category: 'ADMINISTRATIVE',
+    actionCode: 'ENTITY_STATE_CHANGED',
+    eventVersion: 1,
+    defaultSeverity: 'NOTICE',
+    phiIndicator: false,
+    dataClass: 'CONFIDENTIAL',
+    retentionClass: 'EXTENDED',
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    metadataContractId: 'admin.state_change.v1',
+  },
+  {
+    category: 'ADMINISTRATIVE',
+    actionCode: 'ENTITY_DELETED',
+    eventVersion: 1,
+    defaultSeverity: 'WARNING',
+    phiIndicator: false,
+    dataClass: 'CONFIDENTIAL',
+    // Deletion is irreversible governance — retained permanently.
+    retentionClass: 'PERMANENT',
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    metadataContractId: null,
+  },
   // Two-version demonstration event (see note above).
   {
     category: 'DATA_EXPORT',
@@ -327,6 +381,10 @@ const CURRENT_VERSIONS: Record<AuditEventKey, number> = {
   'DATA_MAINTENANCE:GOVERNED_DELETION_EXECUTED': 1,
   'CONFIGURATION:LAB_FEATURE_TOGGLED': 1,
   'CONFIGURATION:SETTING_CHANGED': 1,
+  'ADMINISTRATIVE:ENTITY_CREATED': 1,
+  'ADMINISTRATIVE:ENTITY_UPDATED': 1,
+  'ADMINISTRATIVE:ENTITY_STATE_CHANGED': 1,
+  'ADMINISTRATIVE:ENTITY_DELETED': 1,
   'SYSTEM:JOB_STARTED': 1,
   'SYSTEM:JOB_COMPLETED': 1,
   'DATA_EXPORT:EVIDENCE_EXPORTED': 2,

@@ -22,7 +22,8 @@ export type AuditMetadataContractId =
   | 'phi.access.v2'
   | 'record.status_change.v1'
   | 'maintenance.disposition.v1'
-  | 'config.setting_change.v1';
+  | 'config.setting_change.v1'
+  | 'admin.state_change.v1'; // P2-6C — administrative activation/block state transitions
 
 export type AuditMetadataScalar = string | number | boolean | null;
 export type AuditMetadataValue = Record<string, AuditMetadataScalar>;
@@ -92,6 +93,20 @@ export const PHI_PRODUCER_MODULES = [
   'portal',
 ] as const;
 
+// ---------------------------------------------------------------------------
+// P2-6C — bounded state-key enum for the administrative state-change contract
+// (admin.state_change.v1). Each value names the boolean flag whose transition is being
+// recorded — never a value, secret, or free text. Exported so owners/tests reference the
+// constant, never a string literal.
+// ---------------------------------------------------------------------------
+export const ADMIN_STATE_KEYS = [
+  'account_active', // User.isActive — activation/deactivation of a staff login
+  'client_active', // Client.active — client activation/deactivation
+  'client_blocked', // Client.blocked — client block/unblock
+  'lab_active', // Lab activation flag (reserved; no owner emits it in P2-6C)
+] as const;
+export type AdminStateKey = (typeof ADMIN_STATE_KEYS)[number];
+
 // Member types for typed producer/owner call sites (P2-5C).
 export type PhiAccessSurface = (typeof PHI_ACCESS_SURFACES)[number];
 export type PhiAccessMode = (typeof PHI_ACCESS_MODES)[number];
@@ -136,6 +151,16 @@ const CONTRACTS: Record<AuditMetadataContractId, MetadataContract> = {
     fields: {
       settingKey: { kind: 'string', required: true, maxLength: 64 },
       scope: { kind: 'string', maxLength: 24 }, // e.g. "lab" | "system"
+    },
+  },
+  // P2-6C — administrative activation/block state transitions. Bounded state key + before/after
+  // booleans ONLY. No entity attribute values, names, PHI, or free text.
+  'admin.state_change.v1': {
+    id: 'admin.state_change.v1',
+    fields: {
+      stateKey: { kind: 'string', required: true, values: ADMIN_STATE_KEYS },
+      previousValue: { kind: 'boolean' }, // prior flag value, when known
+      newValue: { kind: 'boolean', required: true },
     },
   },
   // P2-5B — PHI-access metadata: bounded enums + counts only. No free text, no reason prompt,
