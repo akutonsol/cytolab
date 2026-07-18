@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { AuditRecorder } from '../audit/audit-recorder.service';
 import { LabContext } from '../../common/tenancy/lab-context';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { FilesService } from '../files/files.service';
@@ -28,6 +29,7 @@ export class LabService {
     private labContext: LabContext,
     private realtime: RealtimeGateway,
     private files: FilesService,
+    private audit: AuditRecorder,
   ) {}
 
   private labId(): string {
@@ -78,6 +80,14 @@ export class LabService {
         ...(dto.currency && dto.currency.trim() ? { currency: dto.currency.trim() } : {}),
       },
     });
+    // Enterprise audit (P2-6): administrative CONFIGURATION change — company profile settings.
+    // Bounded metadata only (settingKey/scope); never the changed values. Emitted after success.
+    await this.audit.recordSettingChanged({
+      settingKey: 'company_profile',
+      scope: 'lab',
+      producerModule: 'lab',
+      resource: { type: 'Lab', id: this.labId(), labId: this.labId() },
+    });
     await this.broadcastBranding();
     return this.getProfile();
   }
@@ -95,6 +105,13 @@ export class LabService {
       where: { id: this.labId() },
       data: { logoUrl: storageUrl },
     });
+    // Enterprise audit (P2-6): branding config change. No storage URL in metadata.
+    await this.audit.recordSettingChanged({
+      settingKey: 'company_logo',
+      scope: 'lab',
+      producerModule: 'lab',
+      resource: { type: 'Lab', id: this.labId(), labId: this.labId() },
+    });
     await this.broadcastBranding();
     return { logoUrl: storageUrl };
   }
@@ -103,6 +120,13 @@ export class LabService {
     await this.prisma.lab.update({
       where: { id: this.labId() },
       data: { logoUrl: null },
+    });
+    // Enterprise audit (P2-6): branding config change.
+    await this.audit.recordSettingChanged({
+      settingKey: 'company_logo',
+      scope: 'lab',
+      producerModule: 'lab',
+      resource: { type: 'Lab', id: this.labId(), labId: this.labId() },
     });
     await this.broadcastBranding();
     return this.getProfile();

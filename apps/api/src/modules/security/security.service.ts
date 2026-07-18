@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { LabContext } from '../../common/tenancy/lab-context';
+import { AuditRecorder } from '../audit/audit-recorder.service';
 import { SessionService } from './session.service';
 import { MfaService } from './mfa.service';
 import { PasswordPolicyService, PasswordPolicy } from './password-policy.service';
@@ -19,6 +20,7 @@ export class SecurityService {
     private sessions: SessionService,
     private mfa: MfaService,
     private passwordPolicy: PasswordPolicyService,
+    private audit: AuditRecorder,
   ) {}
 
   private userSelect = {
@@ -280,6 +282,14 @@ export class SecurityService {
     await this.labContext.runSystem(() =>
       this.prisma.user.update({ where: { id: userId }, data: { mfaRequired: required } }),
     );
+    // Enterprise audit (P2-6): administrative MFA-requirement policy change, emitted OUTSIDE
+    // runSystem so the acting admin's attribution is intact. Bounded metadata only.
+    await this.audit.recordSettingChanged({
+      settingKey: 'mfa_required',
+      scope: 'user',
+      producerModule: 'security',
+      resource: { type: 'User', id: userId },
+    });
     return { status: 'OK' as const };
   }
 
@@ -322,7 +332,16 @@ export class SecurityService {
     return this.passwordPolicy.getPolicy();
   }
 
-  updatePasswordPolicy(patch: Partial<PasswordPolicy>) {
-    return this.passwordPolicy.updatePolicy(patch);
+  async updatePasswordPolicy(patch: Partial<PasswordPolicy>) {
+    const next = await this.passwordPolicy.updatePolicy(patch);
+    // Enterprise audit (P2-6): administrative security-policy change (password policy). Bounded
+    // metadata only — the policy VALUES are never logged, only that the policy changed.
+    await this.audit.recordSettingChanged({
+      settingKey: 'password_policy',
+      scope: 'system',
+      producerModule: 'security',
+      resource: { type: 'SystemConfig', id: 'password_policy' },
+    });
+    return next;
   }
 }

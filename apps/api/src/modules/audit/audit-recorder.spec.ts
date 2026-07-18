@@ -311,3 +311,44 @@ describe('AuditRecorder — recordPhiList / recordPhiExport (P2-5D aggregate cap
     });
   });
 });
+
+describe('AuditRecorder — recordSettingChanged (P2-6 administrative configuration capture)', () => {
+  it('emits CONFIGURATION/SETTING_CHANGED with bounded { settingKey, scope } metadata', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordSettingChanged({
+        settingKey: 'password_policy',
+        scope: 'system',
+        producerModule: 'security',
+        resource: { type: 'SystemConfig', id: 'password_policy' },
+      });
+    });
+    expect(append).toHaveBeenCalledTimes(1);
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(input.category).toBe('CONFIGURATION');
+    expect(input.action.code).toBe('SETTING_CHANGED');
+    expect(input.producerModule).toBe('security');
+    expect(input.resource).toEqual({ type: 'SystemConfig', id: 'password_policy', labId: null });
+    expect(input.metadata).toEqual({ settingKey: 'password_policy', scope: 'system' });
+    expect(input.resource.patientRef ?? null).toBeNull(); // administrative — no patient
+  });
+
+  it('never carries the changed values — only the setting key/scope', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordSettingChanged({ settingKey: 'mfa_required', scope: 'user', producerModule: 'security', resource: { type: 'User', id: 'u1' } });
+    });
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(JSON.stringify(input.metadata)).not.toMatch(/true|false|password|secret|token/i);
+  });
+
+  it('is best-effort — an append failure is swallowed (the admin change is unaffected)', async () => {
+    const append = jest.fn().mockRejectedValue(new Error('db down'));
+    const { labContext, recorder } = setup(append);
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await expect(
+        recorder.recordSettingChanged({ settingKey: 'company_profile', scope: 'lab', producerModule: 'lab', resource: { type: 'Lab', id: 'lab1', labId: 'lab1' } }),
+      ).resolves.toBeUndefined();
+    });
+  });
+});

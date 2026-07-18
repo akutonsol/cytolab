@@ -273,6 +273,35 @@ export class AuditRecorder {
   }
 
   /**
+   * Program 2 · P2-6 — capture a SUCCESSFUL administrative CONFIGURATION change (SETTING_CHANGED,
+   * OPERATIONAL). Emitted after authorization + validation + successful persistence, from the
+   * authoritative owner. Uses the frozen registry action + config.setting_change.v1 metadata
+   * ({ settingKey, scope } — bounded codes only; NEVER secrets/tokens/credentials/PHI). Best-effort:
+   * never throws, so administrative success is never blocked by an audit failure.
+   */
+  async recordSettingChanged(input: {
+    settingKey: string; // a bounded setting/config/policy code — never a secret or free text
+    scope: string; // 'lab' | 'system' | 'user'
+    producerModule: string;
+    resource: { type: string; id?: string | null; labId?: string | null };
+  }): Promise<void> {
+    try {
+      await this.record({
+        category: 'CONFIGURATION',
+        actionCode: 'SETTING_CHANGED',
+        resource: { type: input.resource.type, id: input.resource.id ?? null, labId: input.resource.labId ?? null },
+        outcome: { status: 'SUCCESS' },
+        metadata: { settingKey: input.settingKey, scope: input.scope },
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(
+        `SETTING_CHANGED capture failed (${input.settingKey}); dropped (best-effort — the change is unaffected).`,
+      );
+    }
+  }
+
+  /**
    * Record an audit event. The registry — never the producer — is the sole durability authority.
    * Each class is honored TRUTHFULLY for what the P2-3 runtime can actually provide (no outbox /
    * retry queue exists yet):
