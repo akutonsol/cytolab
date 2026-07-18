@@ -24,7 +24,9 @@ export type AuditMetadataContractId =
   | 'maintenance.disposition.v1'
   | 'config.setting_change.v1'
   | 'admin.state_change.v1' // P2-6C — administrative activation/block state transitions
-  | 'authz.role_assignment.v1'; // P2-6D — role-set replacement on a principal (counts only)
+  | 'authz.role_assignment.v1' // P2-6D — role-set replacement on a principal (counts only)
+  | 'security.session_termination.v1' // P2-6E — administrative session termination (scope + count)
+  | 'security.ip_block.v1'; // P2-6E — administrative IP block add (durability flag only)
 
 export type AuditMetadataScalar = string | number | boolean | null;
 export type AuditMetadataValue = Record<string, AuditMetadataScalar>;
@@ -108,6 +110,11 @@ export const ADMIN_STATE_KEYS = [
 ] as const;
 export type AdminStateKey = (typeof ADMIN_STATE_KEYS)[number];
 
+// P2-6E — bounded scope enum for administrative session termination. `single` = one session;
+// `all` = every active session for a user. Never a session id or token.
+export const SESSION_TERMINATION_SCOPES = ['single', 'all'] as const;
+export type SessionTerminationScope = (typeof SESSION_TERMINATION_SCOPES)[number];
+
 // Member types for typed producer/owner call sites (P2-5C).
 export type PhiAccessSurface = (typeof PHI_ACCESS_SURFACES)[number];
 export type PhiAccessMode = (typeof PHI_ACCESS_MODES)[number];
@@ -172,6 +179,23 @@ const CONTRACTS: Record<AuditMetadataContractId, MetadataContract> = {
       rolesAddedCount: { kind: 'number', required: true, integer: true, min: 0 },
       rolesRemovedCount: { kind: 'number', required: true, integer: true, min: 0 },
       resultingRoleCount: { kind: 'number', integer: true, min: 0 }, // optional
+    },
+  },
+  // P2-6E — administrative session termination. Bounded scope + non-negative count ONLY. Never a
+  // session id, token, user name, IP, or free text.
+  'security.session_termination.v1': {
+    id: 'security.session_termination.v1',
+    fields: {
+      terminationScope: { kind: 'string', required: true, values: SESSION_TERMINATION_SCOPES },
+      terminatedCount: { kind: 'number', required: true, integer: true, min: 0 },
+    },
+  },
+  // P2-6E — administrative IP block add. Durability flag ONLY. NEVER the raw IP, block reason,
+  // notes, or request source.
+  'security.ip_block.v1': {
+    id: 'security.ip_block.v1',
+    fields: {
+      permanent: { kind: 'boolean', required: true },
     },
   },
   // P2-5B — PHI-access metadata: bounded enums + counts only. No free text, no reason prompt,

@@ -13,6 +13,7 @@ import { PrismaService } from '../../database/prisma.service';
 import {
   AdminStateKey,
   AuditMetadataValue,
+  SessionTerminationScope,
   PhiAccessMode,
   PhiAccessSurface,
   PhiDocumentType,
@@ -508,6 +509,140 @@ export class AuditRecorder {
       });
     } catch (err) {
       this.logger.warn(`ROLE_ASSIGNMENT_CHANGED capture failed; dropped (best-effort — the change is unaffected).`);
+    }
+  }
+
+  /**
+   * Program 2 · P2-6E — security-administration capture (SECURITY, OPERATIONAL best-effort). Each
+   * helper emits ONE SUCCESS-only event from the authoritative SecurityService method after the
+   * governing persistence completes, wrapped by the caller in the P2-6E0 runSystemAsCurrentActor
+   * bridge so the event is SYSTEM-scoped yet retains the acting administrator's attribution. Bounded
+   * resource ids + bounded metadata ONLY — never a raw IP, token, session token, device fingerprint,
+   * email, block reason, or alert text. Best-effort: never throws, so a completed security action is
+   * never blocked by an audit failure.
+   */
+  async recordAccountUnlocked(input: { userId: string; producerModule: string }): Promise<void> {
+    try {
+      await this.record({
+        category: 'SECURITY',
+        actionCode: 'ACCOUNT_UNLOCKED',
+        resource: { type: 'User', id: input.userId },
+        outcome: { status: 'SUCCESS' },
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(`ACCOUNT_UNLOCKED capture failed; dropped (best-effort — the change is unaffected).`);
+    }
+  }
+
+  async recordPasswordResetForced(input: { userId: string; producerModule: string }): Promise<void> {
+    try {
+      await this.record({
+        category: 'SECURITY',
+        actionCode: 'PASSWORD_RESET_FORCED',
+        resource: { type: 'User', id: input.userId },
+        outcome: { status: 'SUCCESS' },
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(`PASSWORD_RESET_FORCED capture failed; dropped (best-effort — the change is unaffected).`);
+    }
+  }
+
+  async recordUserMfaReset(input: { userId: string; producerModule: string }): Promise<void> {
+    try {
+      await this.record({
+        category: 'SECURITY',
+        actionCode: 'USER_MFA_RESET',
+        resource: { type: 'User', id: input.userId },
+        outcome: { status: 'SUCCESS' },
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(`USER_MFA_RESET capture failed; dropped (best-effort — the change is unaffected).`);
+    }
+  }
+
+  /**
+   * SESSION_TERMINATED — ONE event per termination operation (never per-session fan-out).
+   * `single` → resource is the UserSession; `all` → resource is the User. Bounded scope + count only.
+   */
+  async recordSessionTerminated(input: {
+    scope: SessionTerminationScope;
+    terminatedCount: number;
+    resource: { type: string; id?: string | null };
+    producerModule: string;
+  }): Promise<void> {
+    try {
+      await this.record({
+        category: 'SECURITY',
+        actionCode: 'SESSION_TERMINATED',
+        resource: { type: input.resource.type, id: input.resource.id ?? null },
+        outcome: { status: 'SUCCESS' },
+        metadata: { terminationScope: input.scope, terminatedCount: input.terminatedCount },
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(`SESSION_TERMINATED capture failed; dropped (best-effort — the change is unaffected).`);
+    }
+  }
+
+  /** IP_BLOCK_ADDED — resource is the durable BlockedIp row id; metadata carries only `permanent`. */
+  async recordIpBlockAdded(input: { blockedIpId: string; permanent: boolean; producerModule: string }): Promise<void> {
+    try {
+      await this.record({
+        category: 'SECURITY',
+        actionCode: 'IP_BLOCK_ADDED',
+        resource: { type: 'BlockedIp', id: input.blockedIpId },
+        outcome: { status: 'SUCCESS' },
+        metadata: { permanent: input.permanent },
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(`IP_BLOCK_ADDED capture failed; dropped (best-effort — the change is unaffected).`);
+    }
+  }
+
+  /** IP_BLOCK_REMOVED — resource is the removed BlockedIp row id (never the raw IP); no metadata. */
+  async recordIpBlockRemoved(input: { blockedIpId: string; producerModule: string }): Promise<void> {
+    try {
+      await this.record({
+        category: 'SECURITY',
+        actionCode: 'IP_BLOCK_REMOVED',
+        resource: { type: 'BlockedIp', id: input.blockedIpId },
+        outcome: { status: 'SUCCESS' },
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(`IP_BLOCK_REMOVED capture failed; dropped (best-effort — the change is unaffected).`);
+    }
+  }
+
+  async recordTrustedDeviceRevoked(input: { trustedDeviceId: string; producerModule: string }): Promise<void> {
+    try {
+      await this.record({
+        category: 'SECURITY',
+        actionCode: 'TRUSTED_DEVICE_REVOKED',
+        resource: { type: 'TrustedDevice', id: input.trustedDeviceId },
+        outcome: { status: 'SUCCESS' },
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(`TRUSTED_DEVICE_REVOKED capture failed; dropped (best-effort — the change is unaffected).`);
+    }
+  }
+
+  async recordSecurityAlertResolved(input: { alertId: string; producerModule: string }): Promise<void> {
+    try {
+      await this.record({
+        category: 'SECURITY',
+        actionCode: 'SECURITY_ALERT_RESOLVED',
+        resource: { type: 'SecurityAlert', id: input.alertId },
+        outcome: { status: 'SUCCESS' },
+        producerModule: input.producerModule,
+      });
+    } catch (err) {
+      this.logger.warn(`SECURITY_ALERT_RESOLVED capture failed; dropped (best-effort — the change is unaffected).`);
     }
   }
 

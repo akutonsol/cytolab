@@ -10,7 +10,8 @@ function make() {
   const labContext = { runSystem: (fn: any) => fn() } as any; // execute the callback inline
   const prisma = { user: { update: jest.fn().mockResolvedValue({}) } } as any;
   const passwordPolicy = { updatePolicy: jest.fn().mockResolvedValue({ minLength: 8 }) } as any;
-  const svc = new SecurityService(prisma, labContext, {} as any, {} as any, passwordPolicy, audit);
+  const execCtx = { runSystemAsCurrentActor: (fn: any) => fn() } as any;
+  const svc = new SecurityService(prisma, labContext, {} as any, {} as any, passwordPolicy, audit, execCtx);
   return { svc, recordSettingChanged, prisma, passwordPolicy };
 }
 

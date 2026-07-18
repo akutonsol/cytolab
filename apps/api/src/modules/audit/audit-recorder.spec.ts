@@ -503,3 +503,72 @@ describe('AuditRecorder — P2-6E0 system-as-current-actor enrichment', () => {
     expect(input.organization).toEqual({ scope: 'LAB', labId: 'lab1', organizationId: null });
   });
 });
+
+describe('AuditRecorder — P2-6E security-administration helpers', () => {
+  it('recordAccountUnlocked → SECURITY/ACCOUNT_UNLOCKED, resource=User, no metadata', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, () => recorder.recordAccountUnlocked({ userId: 'u1', producerModule: 'security' }));
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(input.category).toBe('SECURITY');
+    expect(input.action.code).toBe('ACCOUNT_UNLOCKED');
+    expect(input.resource).toEqual({ type: 'User', id: 'u1' });
+    expect(input.metadata).toBeUndefined();
+  });
+
+  it('recordPasswordResetForced / recordUserMfaReset → correct action, resource=User, no metadata', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordPasswordResetForced({ userId: 'u1', producerModule: 'security' });
+      await recorder.recordUserMfaReset({ userId: 'u1', producerModule: 'security' });
+    });
+    expect((append.mock.calls[0][0] as AuditRecordInput).action.code).toBe('PASSWORD_RESET_FORCED');
+    expect((append.mock.calls[1][0] as AuditRecordInput).action.code).toBe('USER_MFA_RESET');
+    expect((append.mock.calls[1][0] as AuditRecordInput).metadata).toBeUndefined();
+  });
+
+  it('recordSessionTerminated(all) → resource=User, bounded scope+count metadata', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, () =>
+      recorder.recordSessionTerminated({ scope: 'all', terminatedCount: 3, resource: { type: 'User', id: 'u1' }, producerModule: 'security' }),
+    );
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(input.action.code).toBe('SESSION_TERMINATED');
+    expect(input.resource).toEqual({ type: 'User', id: 'u1' });
+    expect(input.metadata).toEqual({ terminationScope: 'all', terminatedCount: 3 });
+  });
+
+  it('recordIpBlockAdded → resource=BlockedIp row id + only { permanent } (never the raw IP)', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, () =>
+      recorder.recordIpBlockAdded({ blockedIpId: 'blk1', permanent: true, producerModule: 'security' }),
+    );
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(input.action.code).toBe('IP_BLOCK_ADDED');
+    expect(input.resource).toEqual({ type: 'BlockedIp', id: 'blk1' });
+    expect(input.metadata).toEqual({ permanent: true });
+    expect(JSON.stringify(input)).not.toMatch(/\d+\.\d+\.\d+\.\d+/); // no dotted-quad IP anywhere
+  });
+
+  it('recordIpBlockRemoved / recordTrustedDeviceRevoked / recordSecurityAlertResolved → row id, no metadata', async () => {
+    const { append, labContext, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await recorder.recordIpBlockRemoved({ blockedIpId: 'blk1', producerModule: 'security' });
+      await recorder.recordTrustedDeviceRevoked({ trustedDeviceId: 'dev1', producerModule: 'security' });
+      await recorder.recordSecurityAlertResolved({ alertId: 'al1', producerModule: 'security' });
+    });
+    expect((append.mock.calls[0][0] as AuditRecordInput).resource).toEqual({ type: 'BlockedIp', id: 'blk1' });
+    expect((append.mock.calls[1][0] as AuditRecordInput).resource).toEqual({ type: 'TrustedDevice', id: 'dev1' });
+    expect((append.mock.calls[2][0] as AuditRecordInput).resource).toEqual({ type: 'SecurityAlert', id: 'al1' });
+    expect((append.mock.calls[2][0] as AuditRecordInput).metadata).toBeUndefined();
+  });
+
+  it('all P2-6E helpers are best-effort — an append failure is swallowed', async () => {
+    const append = jest.fn().mockRejectedValue(new Error('db down'));
+    const { labContext, recorder } = setup(append);
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await expect(recorder.recordAccountUnlocked({ userId: 'u1', producerModule: 'security' })).resolves.toBeUndefined();
+      await expect(recorder.recordSessionTerminated({ scope: 'all', terminatedCount: 0, resource: { type: 'User', id: 'u1' }, producerModule: 'security' })).resolves.toBeUndefined();
+      await expect(recorder.recordIpBlockAdded({ blockedIpId: 'b', permanent: false, producerModule: 'security' })).resolves.toBeUndefined();
+    });
+  });
+});
