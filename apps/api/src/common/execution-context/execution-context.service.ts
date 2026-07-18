@@ -218,6 +218,50 @@ export class ExecutionContextService {
   }
 
   /**
+   * Program 2 · P2-6E0 — run `fn` as the CURRENTLY-authenticated actor while forcing the
+   * organization dimension to SYSTEM (scopeLabId null). It preserves actor, request, session, and
+   * correlation from the current store and overrides ONLY organization scope — decoupling "who
+   * acted" (kept) from "what tenant" (SYSTEM). For authoritative, already-authorized platform-scoped
+   * admin work (the superuser-gated Security Center) that must stay accountable to the acting
+   * administrator yet is not tenant-scoped.
+   *
+   * This is NOT a general scope override:
+   *   - it is a context method, not a recorder/DTO/HTTP argument — no producer can pass an
+   *     organization object, and {@link AuditRecordIntent} still has no organization field;
+   *   - the target scope is hard-coded to SYSTEM (no parameter selects LAB/CROSS_LAB or a labId);
+   *   - it can only re-label the scope of the ALREADY-bound authenticated actor — it cannot forge a
+   *     different actor, and it refuses (throws) when no authenticated actor is present rather than
+   *     fabricating one (use {@link runSystemExecution} for genuine system-actor work);
+   *   - tenancy is set to `system: true` for the callback (unscoped DB, matching the platform nature
+   *     of the work), exactly like {@link runSystem}.
+   * Request-local (AsyncLocalStorage via runScoped): it auto-restores the prior context after the
+   * callback returns OR throws, and concurrent requests never share it.
+   */
+  async runSystemAsCurrentActor<T>(fn: () => T | Promise<T>): Promise<T> {
+    const attribution = this.labContext.getStore()?.attribution;
+    if (!attribution?.actor) {
+      throw new ExecutionContextReplacementError(
+        'a system-as-current-actor scope requires an already-bound authenticated actor ' +
+          '(use runSystemExecution for system-actor work)',
+      );
+    }
+    const store: TenantStore = {
+      system: true, // tenancy: unscoped for the callback, exactly like runSystem
+      attribution: {
+        correlationId: attribution.correlationId,
+        // Override ONLY the organization dimension → SYSTEM; no labId (enrich maps this to
+        // scopeLabId = null). Actor/request/session/execution are carried forward verbatim.
+        organization: { scope: 'SYSTEM' },
+        actor: { ...attribution.actor },
+        session: attribution.session,
+        request: attribution.request,
+        execution: attribution.execution,
+      },
+    };
+    return this.labContext.runScoped(store, fn);
+  }
+
+  /**
    * Run a NESTED child execution. The child inherits the parent's tenancy, actor, organization,
    * session, and correlation id unchanged; it may only ADD execution metadata (jobName/
    * executionId/source) and declare delegation via onBehalfOfActorId. It can never silently

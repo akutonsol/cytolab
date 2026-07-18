@@ -472,3 +472,34 @@ describe('AuditRecorder — P2-6D authorization governance helpers', () => {
     });
   });
 });
+
+describe('AuditRecorder — P2-6E0 system-as-current-actor enrichment', () => {
+  it('wrapping record() in runSystemAsCurrentActor emits SYSTEM org (null scopeLabId) + preserved actor', async () => {
+    const { append, labContext, execCtx, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      execCtx.initHttpRequest(fakeReq());
+      execCtx.bindPrincipal({ kind: 'staff', userId: 'admin1', labId: 'lab1', sessionId: 'sess1' });
+      await execCtx.runSystemAsCurrentActor(() =>
+        recorder.record(intent({ category: 'SYSTEM', actionCode: 'JOB_COMPLETED', resource: { type: 'Job', id: 'x' } })),
+      );
+    });
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    // Organization: SYSTEM, scopeLabId null (no tenant fabricated from the admin's labId).
+    expect(input.organization).toEqual({ scope: 'SYSTEM', labId: null, organizationId: null });
+    // Actor + request + session accountability preserved (this is the whole point of the bridge).
+    expect(input.actor).toEqual({ type: 'STAFF', id: 'admin1', onBehalfOfId: null, servicePrincipal: null });
+    expect(input.request?.requestId).toBeTruthy();
+    expect(input.session).toEqual({ sessionId: 'sess1', sessionKind: 'staff' });
+  });
+
+  it('the same record() WITHOUT the bridge enriches as LAB (proves the bridge is what changes scope)', async () => {
+    const { append, labContext, execCtx, recorder } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      execCtx.initHttpRequest(fakeReq());
+      execCtx.bindPrincipal({ kind: 'staff', userId: 'admin1', labId: 'lab1', sessionId: 'sess1' });
+      await recorder.record(intent({ category: 'SYSTEM', actionCode: 'JOB_COMPLETED', resource: { type: 'Job', id: 'x' } }));
+    });
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(input.organization).toEqual({ scope: 'LAB', labId: 'lab1', organizationId: null });
+  });
+});
