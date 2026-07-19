@@ -210,6 +210,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
           onError: (error, query) => {
             // Background refetches fail quietly; only a visible, first-load failure speaks.
             if (query.state.data !== undefined) return;
+            // Opt-in per-query suppression (mirrors the mutationCache): a query that renders its own
+            // failure/concealment experience sets `meta.silent` so no redundant toast appears (P2-8D:
+            // the audit detail's single concealed state; fail-closed PHI shows its own notice).
+            const meta = query.meta as { silent?: boolean } | undefined;
+            if (meta?.silent) return;
             notify.error(errorMessage(error, 'Could not load this data. Please retry.'));
           },
         }),

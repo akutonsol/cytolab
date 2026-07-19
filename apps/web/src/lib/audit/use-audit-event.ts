@@ -27,5 +27,8 @@ export function useAuditEvent(id: string, phi: boolean, enabled = true) {
     enabled: enabled && !!id,
     retry: false, // 403/404/malformed are terminal — never retry (and never re-attempt a PHI read)
     staleTime: 15_000,
+    // Detail renders its own state (concealed / unauthorized / error / fail-closed) — suppress the
+    // global first-load toast so concealment is one experience (P2-8C/8D).
+    meta: { silent: true },
   });
 }

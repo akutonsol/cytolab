@@ -17,5 +17,8 @@ export function useAuditEvents(state: AuditFilterState, cursor: string | null, e
     enabled,
     placeholderData: keepPreviousData,
     staleTime: 15_000,
+    // In PHI mode, a failure is handled by the fail-closed auto-revert (which shows one clear
+    // "PHI unavailable" message), so suppress the generic global toast. Base failures still toast.
+    meta: state.phi ? { silent: true } : undefined,
   });
 }

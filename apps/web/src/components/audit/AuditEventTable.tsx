@@ -21,8 +21,9 @@ const resourceLabel = (e: AuditEventView) => (e.resource.id ? `${e.resource.type
 
 const COLUMNS = ['Recorded', 'Category', 'Action', 'Actor', 'Scope', 'Outcome', 'Resource', 'PHI', 'Correlation'];
 
-/** `onSelect` (P2-8C) makes each row/card open the detail; omit it for a plain, non-interactive list. */
-export function AuditEventTable({ events, onSelect }: { events: AuditEventView[]; onSelect?: (id: string) => void }) {
+/** `onSelect` (P2-8C) makes each row/card open the detail. `phi` (P2-8D) surfaces the returned
+ *  patientRef in the PHI column — only ever shown when the PHI projection returned it. */
+export function AuditEventTable({ events, onSelect, phi = false }: { events: AuditEventView[]; onSelect?: (id: string) => void; phi?: boolean }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white">
       {/* Desktop table */}
@@ -31,18 +32,18 @@ export function AuditEventTable({ events, onSelect }: { events: AuditEventView[]
           <thead>
             <tr className="border-b border-slate-100 text-left">
               {COLUMNS.map((c) => (
-                <Th key={c} density="snug" className="text-xs">{c}</Th>
+                <Th key={c} density="snug" className="text-xs">{c === 'PHI' && phi ? 'Patient ref' : c}</Th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {events.map((e) => <AuditRow key={e.id} e={e} onSelect={onSelect} />)}
+            {events.map((e) => <AuditRow key={e.id} e={e} onSelect={onSelect} phi={phi} />)}
           </tbody>
         </table>
       </div>
       {/* Mobile card list — same data, one card per event; no horizontal body scroll. */}
       <ul className="divide-y divide-slate-100 md:hidden">
-        {events.map((e) => <AuditCard key={e.id} e={e} onSelect={onSelect} />)}
+        {events.map((e) => <AuditCard key={e.id} e={e} onSelect={onSelect} phi={phi} />)}
       </ul>
     </div>
   );
@@ -62,13 +63,15 @@ function selectProps(onSelect: ((id: string) => void) | undefined, id: string) {
   };
 }
 
-const AuditRow = memo(function AuditRow({ e, onSelect }: { e: AuditEventView; onSelect?: (id: string) => void }) {
+const AuditRow = memo(function AuditRow({ e, onSelect, phi }: { e: AuditEventView; onSelect?: (id: string) => void; phi: boolean }) {
   const t = fmtTime(e.recordedAt);
+  const patientRef = phi ? e.patientRef : undefined;
   return (
     <tr
       {...selectProps(onSelect, e.id)}
       className={cn(
         'border-b border-slate-50 last:border-0 hover:bg-slate-50/60',
+        patientRef && 'bg-primary-soft/40',
         onSelect && 'cursor-pointer focus:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
       )}
     >
@@ -79,18 +82,25 @@ const AuditRow = memo(function AuditRow({ e, onSelect }: { e: AuditEventView; on
       <Td density="snug"><span className="text-slate-600">{scopeLabel(e)}</span></Td>
       <Td density="snug"><OutcomeBadge value={e.outcome} /></Td>
       <Td density="snug"><span className="text-slate-600">{resourceLabel(e)}</span></Td>
-      <Td density="snug">{e.phiIndicator ? <ShieldAlert size={15} className="text-primary" aria-label="PHI-bearing event" /> : <span className="text-slate-300" aria-hidden>—</span>}</Td>
+      <Td density="snug">
+        {patientRef
+          ? <span className="rounded bg-primary-soft px-1.5 py-0.5 font-mono text-xs text-primary" title={patientRef}>{patientRef.length > 12 ? `${patientRef.slice(0, 10)}…` : patientRef}</span>
+          : e.phiIndicator
+            ? <ShieldAlert size={15} className="text-primary" aria-label="PHI-bearing event" />
+            : <span className="text-slate-300" aria-hidden>—</span>}
+      </Td>
       <Td density="snug"><CorrChip value={e.correlationId} /></Td>
     </tr>
   );
 });
 
-const AuditCard = memo(function AuditCard({ e, onSelect }: { e: AuditEventView; onSelect?: (id: string) => void }) {
+const AuditCard = memo(function AuditCard({ e, onSelect, phi }: { e: AuditEventView; onSelect?: (id: string) => void; phi: boolean }) {
   const t = fmtTime(e.recordedAt);
+  const patientRef = phi ? e.patientRef : undefined;
   return (
     <li
       {...selectProps(onSelect, e.id)}
-      className={cn('flex flex-col gap-2 px-4 py-3', onSelect && 'cursor-pointer focus:bg-slate-50 focus:outline-none')}
+      className={cn('flex flex-col gap-2 px-4 py-3', patientRef && 'border-l-2 border-primary', onSelect && 'cursor-pointer focus:bg-slate-50 focus:outline-none')}
     >
       <div className="flex items-center gap-2">
         <CategoryBadge value={e.category} />
@@ -104,6 +114,7 @@ const AuditCard = memo(function AuditCard({ e, onSelect }: { e: AuditEventView; 
         <span>Scope: <span className="text-slate-700">{scopeLabel(e)}</span></span>
         <span>Resource: <span className="text-slate-700">{resourceLabel(e)}</span></span>
         <span>Corr: <span className="text-slate-700">{e.correlationId ?? '—'}</span></span>
+        {patientRef && <span className="col-span-2">Patient ref: <span className="font-mono text-primary">{patientRef}</span></span>}
       </div>
     </li>
   );

@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
-import { Copy, Check } from 'lucide-react';
-import { cn } from '@/components/ui';
+import { type ReactNode } from 'react';
+import { ShieldAlert } from 'lucide-react';
+import { Badge } from '@/components/ui';
 import type { AuditEventView } from '@/lib/audit/audit-types';
 import { CategoryBadge, SeverityBadge, OutcomeBadge } from './AuditBadge';
 import { MetadataViewer } from './MetadataViewer';
+import { AuditPatientPanel } from './AuditPatientPanel';
+import { CopyValue } from './CopyValue';
 
 /**
  * Program 2 · P2-8C — the read-only detail envelope, exactly the frozen P2-8A section structure.
@@ -19,10 +21,15 @@ function fmt(iso: string): string {
 const dash = (v: string | null | undefined) => (v == null || v === '' ? '—' : v);
 
 export function AuditEventCard({ event }: { event: AuditEventView }) {
+  // patientRef is present ONLY when the PHI projection returned it — that is the "PHI revealed" signal.
+  const phiRevealed = typeof event.patientRef === 'string' && event.patientRef.length > 0;
   return (
-    <div className="flex flex-col gap-4">
+    <div className={phiRevealed ? 'flex flex-col gap-4 border-l-2 border-primary pl-4' : 'flex flex-col gap-4'}>
+      {phiRevealed && (
+        <Badge tone="primary-strong" size="sm" icon={<ShieldAlert size={12} />}>PHI revealed</Badge>
+      )}
       <Section title="Identity & time">
-        <Row label="Event id"><Copyable value={event.id} /></Row>
+        <Row label="Event id"><CopyValue value={event.id} /></Row>
         <Row label="Occurred at">{fmt(event.occurredAt)}</Row>
         <Row label="Recorded at">{fmt(event.recordedAt)}</Row>
         <Row label="Schema version">{event.schemaVersion}</Row>
@@ -54,13 +61,15 @@ export function AuditEventCard({ event }: { event: AuditEventView }) {
       <Section title="Context">
         <Row label="Request id">{dash(event.request.requestId)}</Row>
         <Row label="Session id">{dash(event.session.sessionId)}</Row>
-        <Row label="Correlation id">{event.correlationId ? <Copyable value={event.correlationId} /> : '—'}</Row>
+        <Row label="Correlation id">{event.correlationId ? <CopyValue value={event.correlationId} /> : '—'}</Row>
         <Row label="Producer module">{event.producerModule}</Row>
       </Section>
 
       <Section title="Metadata">
         <MetadataViewer status={event.metadataStatus} metadata={event.metadata} />
       </Section>
+
+      {phiRevealed && <AuditPatientPanel patientRef={event.patientRef as string} />}
     </div>
   );
 }
@@ -86,28 +95,3 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Copyable({ value }: { value: string }) {
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1200);
-    } catch {
-      /* clipboard unavailable — no-op */
-    }
-  };
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className="break-all font-mono text-xs text-slate-700">{value}</span>
-      <button
-        type="button"
-        onClick={copy}
-        aria-label={copied ? 'Copied' : `Copy ${value}`}
-        className={cn('rounded p-1 text-slate-400 transition-colors duration-fast ease-standard hover:text-slate-700')}
-      >
-        {copied ? <Check size={13} className="text-primary" /> : <Copy size={13} />}
-      </button>
-    </span>
-  );
-}

@@ -1,16 +1,19 @@
 'use client';
 
-import { Suspense, useEffect, useMemo } from 'react';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FileClock } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { SectionContainer, PageHeader, Skeleton } from '@/components/ui';
+import { notify } from '@/lib/notify';
 import { parseAuditFilters, serializeAuditFilters, auditPredicateKey, AuditFilterState } from '@/lib/audit/audit-filters';
 import { useAuditCapabilities } from '@/lib/audit/audit-capabilities';
 import { useAuditEvents } from '@/lib/audit/use-audit-events';
 import { useAuditCursorStore } from '@/lib/audit/audit-cursor-store';
+import { shouldPhiFailClosedRevert } from '@/lib/audit/audit-phi';
 import { AuditFilters } from '@/components/audit/AuditFilters';
 import { AuditScopeSelector } from '@/components/audit/AuditScopeSelector';
-import { PhiToggle } from '@/components/audit/PhiToggle';
+import { PhiRevealControl } from '@/components/audit/PhiRevealControl';
+import { PhiActiveNotice } from '@/components/audit/PhiActiveNotice';
 import { AuditQueryBoundary } from '@/components/audit/AuditQueryBoundary';
 import { AuditEventTable } from '@/components/audit/AuditEventTable';
 import { AuditCursorPager } from '@/components/audit/AuditCursorPager';
@@ -51,6 +54,20 @@ function AuditListContent() {
     router.replace(qs ? `/audit?${qs}` : '/audit');
   };
 
+  // Fail-closed: a PHI list failure (5xx/network — NOT 403/404) reverts to base, drops only the PHI
+  // cache, and explains PHI is unavailable. Never partially render PHI, never stay silently in PHI.
+  const queryClient = useQueryClient();
+  const revertedKey = useRef<string>('');
+  useEffect(() => {
+    if (!q.isError || !shouldPhiFailClosedRevert(state.phi, q.error)) return;
+    const key = auditPredicateKey(state);
+    if (revertedKey.current === key) return; // guard against double-fire
+    revertedKey.current = key;
+    queryClient.removeQueries({ queryKey: ['audit-events', key] }); // PHI cache only (predicate encodes phi)
+    pushUrl({ ...state, phi: false });
+    notify.error('PHI is unavailable right now — showing the standard view.');
+  }, [q.isError, q.error, state, queryClient]);
+
   return (
     <SectionContainer>
       <PageHeader
@@ -67,10 +84,12 @@ function AuditListContent() {
                 onLabIds={(labIds) => pushUrl({ ...state, labIds })}
               />
             )}
-            {caps.canPhi && <PhiToggle on={state.phi} onChange={(phi) => pushUrl({ ...state, phi })} />}
+            {caps.canPhi && <PhiRevealControl on={state.phi} onChange={(phi) => pushUrl({ ...state, phi })} />}
           </div>
         }
       />
+
+      {state.phi && <PhiActiveNotice />}
 
       <AuditFilters value={state} onApply={pushUrl} />
 
@@ -83,6 +102,7 @@ function AuditListContent() {
       >
         <AuditEventTable
           events={items}
+          phi={state.phi}
           onSelect={(id) => {
             const listQs = new URLSearchParams(serializeAuditFilters(state)).toString();
             const params = new URLSearchParams({ back: listQs ? `/audit?${listQs}` : '/audit' });
