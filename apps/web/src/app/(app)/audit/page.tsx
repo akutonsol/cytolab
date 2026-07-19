@@ -17,6 +17,7 @@ import { PhiActiveNotice } from '@/components/audit/PhiActiveNotice';
 import { AuditQueryBoundary } from '@/components/audit/AuditQueryBoundary';
 import { AuditEventTable } from '@/components/audit/AuditEventTable';
 import { AuditCursorPager } from '@/components/audit/AuditCursorPager';
+import { AuditExportButton } from '@/components/audit/AuditExportButton';
 
 /** Program 2 · P2-8B — Audit Event List. Read-only consumer of the frozen P2-7 API via
  *  AuditQueryClient. Filters live in the URL; the keyset cursor lives in the store (opaque + bound to
@@ -85,6 +86,9 @@ function AuditListContent() {
               />
             )}
             {caps.canPhi && <PhiRevealControl on={state.phi} onChange={(phi) => pushUrl({ ...state, phi })} />}
+            {/* P2-9B — governed export of the current predicate (projection is chosen in the dialog, not
+                inherited from the PHI toggle). Does not touch URL/cursor/list projection. */}
+            {caps.canRead && <AuditExportButton state={state} canPhi={caps.canPhi} canSystem={caps.canSystem} />}
           </div>
         }
       />

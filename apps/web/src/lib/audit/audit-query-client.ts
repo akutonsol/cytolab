@@ -7,7 +7,9 @@
  */
 import { api } from '../api';
 import type { AuditEventPage, AuditEventView } from './audit-types';
-import { AuditFilterState, filtersToApiParams } from './audit-filters';
+import { AuditFilterState, filtersToApiParams, filtersToExportBody } from './audit-filters';
+import type { AuditExportRequest, AuditExportResult } from './audit-export';
+import { safeExportFilename, parseContentDispositionFilename } from './audit-export';
 
 export class AuditQueryResponseError extends Error {
   constructor(message: string) {
@@ -76,6 +78,24 @@ export const AuditQueryClient = {
     const params = phi ? { includePhi: 'true' } : {};
     const { data } = await api.get<unknown>(`/audit/events/${encodeURIComponent(id)}`, { params });
     return validateAuditEvent(data);
+  },
+
+  /**
+   * Program 2 · P2-9B — governed export of the CURRENT predicate. POSTs to the frozen egress endpoint
+   * with the explicit format + projection (projection is NOT derived from the list PHI toggle) and the
+   * predicate serialized by the shared filter helper (cursor/pageSize/phi excluded). Requests a binary
+   * artifact (blob) and returns the server-provided filename hint (sanitized) + the truthful truncation
+   * header. It does NOT trigger the download and does NOT classify errors — the caller owns UX; a
+   * non-2xx rejects with the axios error (status only; the error body is never read).
+   */
+  async exportAuditEvents(state: AuditFilterState, req: AuditExportRequest): Promise<AuditExportResult> {
+    const body = filtersToExportBody(state, req);
+    const res = await api.post<Blob>('/audit/events/export', body, { responseType: 'blob' });
+    const headers = (res.headers ?? {}) as Record<string, string>;
+    const truncated = String(headers['x-audit-export-truncated'] ?? '').toLowerCase() === 'true';
+    const contentType = String(headers['content-type'] ?? '');
+    const filename = safeExportFilename(parseContentDispositionFilename(headers['content-disposition']), req);
+    return { blob: res.data, filename, truncated, contentType };
   },
 };
 

@@ -5,6 +5,7 @@
  * Bounds mirror the frozen P2-7 validator (advisory on the client; the API re-enforces).
  */
 import type { AuditQueryScopeKind } from './audit-types';
+import type { AuditExportFormat, AuditExportProjection } from './audit-export';
 
 export const DEFAULT_PAGE_SIZE = 50;
 export const MAX_PAGE_SIZE = 100;
@@ -111,4 +112,50 @@ export function filtersToApiParams(state: AuditFilterState): Record<string, stri
  */
 export function auditPredicateKey(state: AuditFilterState): string {
   return JSON.stringify(serializeAuditFilters(state));
+}
+
+/** POST body for the governed export endpoint — the same predicate contract as GET /audit/events. */
+export interface AuditExportBody {
+  timeFrom?: string;
+  timeTo?: string;
+  category?: string[];
+  actionCode?: string[];
+  actorType?: string;
+  actorId?: string;
+  resourceType?: string;
+  resourceId?: string;
+  outcome?: string;
+  correlationId?: string;
+  scope?: 'lab' | 'system' | 'cross_lab';
+  labIds?: string[];
+  format: AuditExportFormat;
+  projection: AuditExportProjection;
+}
+
+/**
+ * Program 2 · P2-9B — map the CURRENT list predicate + explicit format/projection to the export POST
+ * body. Reuses this module's field set + scope mapping (NOT a second parser). Deliberately EXCLUDES:
+ *   - `cursor`  — not part of the predicate; the server owns bounded assembly;
+ *   - `pageSize`— the server controls the export page size and cap;
+ *   - `phi`     — the export projection is an EXPLICIT choice, never inherited from the list toggle.
+ * `projection` is the single source of truth for whether PHI leaves.
+ */
+export function filtersToExportBody(
+  state: AuditFilterState,
+  opts: { format: AuditExportFormat; projection: AuditExportProjection },
+): AuditExportBody {
+  const b: AuditExportBody = { format: opts.format, projection: opts.projection };
+  if (state.scope) b.scope = SCOPE_TO_URL[state.scope] as AuditExportBody['scope'];
+  if (state.labIds?.length) b.labIds = state.labIds.slice(0, MAX_MULTI_VALUES);
+  if (state.category?.length) b.category = state.category.slice(0, MAX_MULTI_VALUES);
+  if (state.actionCode?.length) b.actionCode = state.actionCode.slice(0, MAX_MULTI_VALUES);
+  if (state.actorType) b.actorType = state.actorType;
+  if (state.actorId) b.actorId = state.actorId;
+  if (state.resourceType) b.resourceType = state.resourceType;
+  if (state.resourceId) b.resourceId = state.resourceId;
+  if (state.outcome) b.outcome = state.outcome;
+  if (state.correlationId) b.correlationId = state.correlationId;
+  if (state.timeFrom) b.timeFrom = state.timeFrom;
+  if (state.timeTo) b.timeTo = state.timeTo;
+  return b;
 }
