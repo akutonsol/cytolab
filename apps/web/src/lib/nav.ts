@@ -208,6 +208,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'MFA Management', path: '/security/mfa', permission: 'system:security', icon: KeyRound },
       { label: 'Security Alerts', path: '/security/alerts', permission: 'system:security', icon: BellRing },
       { label: 'Password Policy', path: '/security/password-policy', permission: 'system:security', icon: KeySquare },
+      { label: 'Audit Log', path: '/audit', permission: 'audit:read', icon: FileClock },
     ],
   },
   {
