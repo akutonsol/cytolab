@@ -208,6 +208,24 @@ sensitive act and is itself captured as `SECURITY:AUDIT_EVENT_PHI_ACCESSED`:
   suppressed); a later query that returns a prior capture event is legitimate historical accountability, not
   recursion. Chain **verification** remains outside the query API (P2-9/P2-10).
 
+### 11b. Audit Query API — certification (P2-7D)
+The Audit Query API (P2-7A–C) is certified as complete and operationally ready:
+- **Coverage:** every PHI-bearing response path (LAB / SYSTEM / CROSS_LAB / elevated-explicit-LAB × list / detail
+  × zero-result / single / multi-page) emits **exactly one** capture; every base/redacted path emits **none**.
+- **Fail-closed:** a failure in the capture append **or** the recursion guard withholds the PHI response (no
+  base fallback, no silent downgrade). **Base/redacted reads remain fully available** even when the capture
+  (ledger-write) path is unavailable — an intentional accountability-over-availability trade for PHI reads only.
+- **Ownership:** `AuditQueryService` is the sole production operational reader of the ledger; append and verifier
+  are untouched; no other direct `prisma.auditEvent` reader exists (architecture-tested).
+- **Pagination/filters/projection:** opaque keyset cursor (`recordedAt` desc, `id` desc) is duplicate-/skip-free
+  across equal timestamps; filters are allow-listed and bounded (24h default, 31d max, page ≤ 100, ≤ 25
+  multi-values); base projection never selects `patientRef`; unknown metadata versions are redacted.
+- **Performance/index:** every predicate is index-backed (`[scopeLabId, recordedAt]`, `[recordedAt]`,
+  `[category|actorId|correlationId|resourceType,…]`, PK for the id tie-break); time-bounded + `take = pageSize+1`
+  keeps reads O(page); the capture append is O(1). No index/schema change is required.
+- **Concurrency:** the AsyncLocalStorage recursion guard isolates concurrent requests — no duplicate, missed, or
+  cross-leaked captures.
+
 ## 12. Prohibitions (by contract)
 1. No update or delete of any audit event, ever (immutable).
 2. `AuditRecorder` is the only writer; no `prisma.auditEvent` outside the Audit owner.
