@@ -7,6 +7,7 @@ import { PhiAccessDedup } from './phi-access-dedup';
 import { AuditRecorder } from './audit-recorder.service';
 import { AuditQueryService } from './query/audit-query.service';
 import { AuditQueryController } from './query/audit-query.controller';
+import { AuditQueryReadCaptureGuard } from './query/audit-query-read-capture.guard';
 
 /**
  * Program 2 · P2-3 — Enterprise Audit owner module (ACTIVE).
@@ -32,6 +33,8 @@ import { AuditQueryController } from './query/audit-query.controller';
     AuditRecorder,
     // P2-7B — governed read-only query owner (the only non-verifier reader of prisma.auditEvent).
     AuditQueryService,
+    // P2-7C — async-context recursion guard for PHI read-access capture.
+    AuditQueryReadCaptureGuard,
   ],
   exports: [AuditRecorder, AuditQueryService],
 })

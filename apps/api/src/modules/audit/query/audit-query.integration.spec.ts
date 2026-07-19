@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { AuditQueryService } from './audit-query.service';
+import { AuditQueryReadCaptureGuard } from './audit-query-read-capture.guard';
 import { AUDIT_READ, AUDIT_SYSTEM_READ, AUDIT_PHI_READ } from './audit-query.permissions';
 
 /**
@@ -11,7 +12,10 @@ import { AUDIT_READ, AUDIT_SYSTEM_READ, AUDIT_PHI_READ } from './audit-query.per
  * The accepted P2-4 SYSTEM-chain isolation debt is untouched.
  */
 const prisma = new PrismaClient();
-const service = new AuditQueryService(prisma as unknown as PrismaService);
+// P2-7B integration keeps capture as a no-op stub (P2-7C capture has its own integration spec).
+const stubRecorder = { recordAuditEventPhiAccessed: async () => undefined } as any;
+const stubExecCtx = { runSystemAsCurrentActor: (fn: any) => fn() } as any;
+const service = new AuditQueryService(prisma as unknown as PrismaService, stubRecorder, stubExecCtx, new AuditQueryReadCaptureGuard());
 
 const MARKER = 'p27b-query-it';
 const LAB1 = 'p27b-lab1';

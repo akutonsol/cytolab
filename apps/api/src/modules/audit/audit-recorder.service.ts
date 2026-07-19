@@ -647,6 +647,50 @@ export class AuditRecorder {
   }
 
   /**
+   * Program 2 · P2-7C — capture a SUCCESSFUL PHI-projection read of the audit ledger
+   * (SECURITY:AUDIT_EVENT_PHI_ACCESSED). Unlike the best-effort admin producers, this is FAIL-CLOSED:
+   * the registry classifies it CRITICAL_TRANSACTIONAL, so this helper appends inside a recorder-owned
+   * transaction and any failure PROPAGATES (it is NOT swallowed) — letting AuditQueryService withhold
+   * the PHI response when capture fails. Actor/request/session/correlation come from the execution
+   * context (never the producer); organization scope is context-derived (LAB, or SYSTEM via the P2-6E0
+   * bridge at the call site). Bounded, NON-PHI metadata only — never patientRef, queried metadata,
+   * filter values, cursors, or lab-id lists. The queried events are never mutated.
+   */
+  async recordAuditEventPhiAccessed(input: {
+    accessMode: 'list' | 'detail';
+    queryScope: 'LAB' | 'SYSTEM' | 'CROSS_LAB';
+    resultCount: number;
+    selectedLabCount?: number;
+    pageSize?: number;
+    hasMore?: boolean;
+    resource: { type: string; id: string };
+  }): Promise<void> {
+    const metadata: AuditMetadataValue = {
+      accessMode: input.accessMode,
+      queryScope: input.queryScope,
+      resultCount: input.resultCount,
+      ...(input.selectedLabCount !== undefined ? { selectedLabCount: input.selectedLabCount } : {}),
+      ...(input.pageSize !== undefined ? { pageSize: input.pageSize } : {}),
+      ...(input.hasMore !== undefined ? { hasMore: input.hasMore } : {}),
+    };
+    // Fail-closed: append inside a recorder-owned transaction; a failure propagates (no best-effort
+    // swallow). record() honors CRITICAL_TRANSACTIONAL by appending on this supplied tx.
+    await this.prisma.$transaction((tx) =>
+      this.record(
+        {
+          category: 'SECURITY',
+          actionCode: 'AUDIT_EVENT_PHI_ACCESSED',
+          resource: { type: input.resource.type, id: input.resource.id },
+          outcome: { status: 'SUCCESS' },
+          metadata,
+          producerModule: 'audit-query',
+        },
+        { tx },
+      ),
+    );
+  }
+
+  /**
    * Record an audit event. The registry — never the producer — is the sole durability authority.
    * Each class is honored TRUTHFULLY for what the P2-3 runtime can actually provide (no outbox /
    * retry queue exists yet):

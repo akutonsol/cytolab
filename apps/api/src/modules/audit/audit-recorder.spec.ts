@@ -572,3 +572,38 @@ describe('AuditRecorder — P2-6E security-administration helpers', () => {
     });
   });
 });
+
+describe('AuditRecorder — P2-7C recordAuditEventPhiAccessed (fail-closed)', () => {
+  it('appends SECURITY/AUDIT_EVENT_PHI_ACCESSED with bounded metadata + resource, inside a tx', async () => {
+    const { append, labContext, execCtx, recorder, $transaction } = setup();
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      execCtx.initHttpRequest(fakeReq());
+      execCtx.bindPrincipal({ kind: 'staff', userId: 'admin1', labId: 'lab1', sessionId: 's1' });
+      await recorder.recordAuditEventPhiAccessed({
+        accessMode: 'list',
+        queryScope: 'LAB',
+        resultCount: 5,
+        pageSize: 50,
+        hasMore: false,
+        resource: { type: 'AuditEventCollection', id: 'audit-events' },
+      });
+    });
+    expect($transaction).toHaveBeenCalledTimes(1); // recorder-owned tx
+    const input = append.mock.calls[0][0] as AuditRecordInput;
+    expect(input.category).toBe('SECURITY');
+    expect(input.action.code).toBe('AUDIT_EVENT_PHI_ACCESSED');
+    expect(input.resource).toEqual({ type: 'AuditEventCollection', id: 'audit-events' });
+    expect(input.metadata).toEqual({ accessMode: 'list', queryScope: 'LAB', resultCount: 5, pageSize: 50, hasMore: false });
+    expect(input.actor).toEqual({ type: 'STAFF', id: 'admin1', onBehalfOfId: null, servicePrincipal: null });
+  });
+
+  it('PROPAGATES an append failure (fail-closed) — NOT swallowed like best-effort producers', async () => {
+    const append = jest.fn().mockRejectedValue(new Error('db down'));
+    const { labContext, recorder } = setup(append);
+    await labContext.runScoped({ labId: 'lab1' }, async () => {
+      await expect(
+        recorder.recordAuditEventPhiAccessed({ accessMode: 'detail', queryScope: 'LAB', resultCount: 1, resource: { type: 'AuditEvent', id: 'e1' } }),
+      ).rejects.toBeTruthy();
+    });
+  });
+});

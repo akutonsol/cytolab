@@ -26,7 +26,8 @@ export type AuditMetadataContractId =
   | 'admin.state_change.v1' // P2-6C — administrative activation/block state transitions
   | 'authz.role_assignment.v1' // P2-6D — role-set replacement on a principal (counts only)
   | 'security.session_termination.v1' // P2-6E — administrative session termination (scope + count)
-  | 'security.ip_block.v1'; // P2-6E — administrative IP block add (durability flag only)
+  | 'security.ip_block.v1' // P2-6E — administrative IP block add (durability flag only)
+  | 'security.audit_event_phi_access.v1'; // P2-7C — PHI-projection read of the audit ledger (counts/enums only)
 
 export type AuditMetadataScalar = string | number | boolean | null;
 export type AuditMetadataValue = Record<string, AuditMetadataScalar>;
@@ -115,6 +116,13 @@ export type AdminStateKey = (typeof ADMIN_STATE_KEYS)[number];
 export const SESSION_TERMINATION_SCOPES = ['single', 'all'] as const;
 export type SessionTerminationScope = (typeof SESSION_TERMINATION_SCOPES)[number];
 
+// P2-7C — bounded enums for a PHI-projection read of the audit ledger. `accessMode` = whether it was
+// a list or a detail read; `queryScope` = the governed query scope (NOT copied from raw HTTP input).
+export const AUDIT_QUERY_ACCESS_MODES = ['list', 'detail'] as const;
+export type AuditQueryAccessMode = (typeof AUDIT_QUERY_ACCESS_MODES)[number];
+export const AUDIT_QUERY_SCOPES = ['LAB', 'SYSTEM', 'CROSS_LAB'] as const;
+export type AuditQueryScopeMeta = (typeof AUDIT_QUERY_SCOPES)[number];
+
 // Member types for typed producer/owner call sites (P2-5C).
 export type PhiAccessSurface = (typeof PHI_ACCESS_SURFACES)[number];
 export type PhiAccessMode = (typeof PHI_ACCESS_MODES)[number];
@@ -196,6 +204,21 @@ const CONTRACTS: Record<AuditMetadataContractId, MetadataContract> = {
     id: 'security.ip_block.v1',
     fields: {
       permanent: { kind: 'boolean', required: true },
+    },
+  },
+  // P2-7C — a successful PHI-projection read of the audit ledger. BOUNDED enums + counts/booleans
+  // ONLY. NEVER patientRef, queried-event metadata, raw filter values, cursors, exact lab-id lists,
+  // actor email/IP/token, or hashes. (filterNames was considered but omitted: the scalar-only
+  // contract forbids arrays, and an encoded string risks free-text drift — see the P2-7C deliverable.)
+  'security.audit_event_phi_access.v1': {
+    id: 'security.audit_event_phi_access.v1',
+    fields: {
+      accessMode: { kind: 'string', required: true, values: AUDIT_QUERY_ACCESS_MODES },
+      queryScope: { kind: 'string', required: true, values: AUDIT_QUERY_SCOPES },
+      resultCount: { kind: 'number', required: true, integer: true, min: 0 },
+      selectedLabCount: { kind: 'number', integer: true, min: 0 }, // CROSS_LAB only; count, never the ids
+      pageSize: { kind: 'number', integer: true, min: 1, max: 1000 }, // list only
+      hasMore: { kind: 'boolean' }, // list only
     },
   },
   // P2-5B — PHI-access metadata: bounded enums + counts only. No free text, no reason prompt,

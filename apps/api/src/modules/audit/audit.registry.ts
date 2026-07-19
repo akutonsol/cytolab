@@ -488,6 +488,24 @@ const ENTRIES: AuditRegistryEntry[] = [
     attributionPolicy: 'HTTP_REQUEST',
     metadataContractId: null,
   },
+  // --- P2-7C Audit-query PHI read capture -----------------------------------
+  // A permitted operator successfully received a PHI-bearing projection from the immutable audit
+  // ledger (via AuditQueryService). It records the FACT of access — not patient data — so it is
+  // NON-PHI (phiIndicator false). CRITICAL_TRANSACTIONAL so the append PROPAGATES on failure: the
+  // recorder helper supplies a recorder-owned tx and the PHI read fails closed if capture fails
+  // (this is NOT a best-effort producer event). WARNING/PERMANENT: a durable, retained access log.
+  {
+    category: 'SECURITY',
+    actionCode: 'AUDIT_EVENT_PHI_ACCESSED',
+    eventVersion: 1,
+    defaultSeverity: 'WARNING',
+    phiIndicator: false,
+    dataClass: 'CONFIDENTIAL',
+    retentionClass: 'PERMANENT',
+    durabilityClass: 'CRITICAL_TRANSACTIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    metadataContractId: 'security.audit_event_phi_access.v1',
+  },
   // Two-version demonstration event (see note above).
   {
     category: 'DATA_EXPORT',
@@ -550,6 +568,7 @@ const CURRENT_VERSIONS: Record<AuditEventKey, number> = {
   'SECURITY:IP_BLOCK_REMOVED': 1,
   'SECURITY:TRUSTED_DEVICE_REVOKED': 1,
   'SECURITY:SECURITY_ALERT_RESOLVED': 1,
+  'SECURITY:AUDIT_EVENT_PHI_ACCESSED': 1,
   'SYSTEM:JOB_STARTED': 1,
   'SYSTEM:JOB_COMPLETED': 1,
   'DATA_EXPORT:EVIDENCE_EXPORTED': 2,

@@ -188,6 +188,26 @@ No fabricated/sentinel lab id is ever used. `organization.scope` governs tenancy
 - `scope = cross-lab` → `labId` **absent**; affected lab ids belong in bounded `resource`/`metadata`, and a cross-lab event **must never masquerade as belonging to one tenant**.
 Audit queries are lab-scoped by default; cross-lab/system visibility is a superuser scope (interaction with the tenancy extension is a P2-6 design point).
 
+### 11a. Audit-ledger reads are themselves audited (P2-7C)
+Reading the audit ledger with the **PHI projection** (`includePhi=true`, authorized by `audit:read_phi`) is a
+sensitive act and is itself captured as `SECURITY:AUDIT_EVENT_PHI_ACCESSED`:
+- **Granularity:** exactly **one** event per successful PHI request (never per returned row). List records the
+  number of items released (`resultCount`; **zero still emits**); detail records `resultCount = 1` and the
+  accessed event as the `resource`.
+- **Not captured:** base/redacted queries (no PHI projection), rejected authorization, malformed requests, failed
+  queries, and inaccessible/nonexistent detail rows.
+- **Fail-closed:** the PHI response is released **only after** the capture event is durably appended. If capture
+  fails the response is withheld (it never downgrades to the base projection). Base/redacted reads are unaffected.
+- **Scope of the capture:** ordinary own-lab reads capture as **LAB**; any elevated/system-authorized read
+  (SYSTEM/CROSS_LAB scope, or an explicit lab selection made under `audit:read_system`) captures as **SYSTEM** via
+  the P2-6E0 `runSystemAsCurrentActor` bridge, preserving the acting operator's attribution. `metadata.queryScope`
+  records the governed query scope; the envelope scope records the authority context.
+- **Privacy:** the capture event is **non-PHI** (`phiIndicator=false`) and its bounded metadata carries no
+  `patientRef`, no queried-event metadata, no raw filter values, no cursor, and no exact lab-id list.
+- **Recursion** is guarded async-context-locally (a capture → recorder → query → capture execution loop is
+  suppressed); a later query that returns a prior capture event is legitimate historical accountability, not
+  recursion. Chain **verification** remains outside the query API (P2-9/P2-10).
+
 ## 12. Prohibitions (by contract)
 1. No update or delete of any audit event, ever (immutable).
 2. `AuditRecorder` is the only writer; no `prisma.auditEvent` outside the Audit owner.

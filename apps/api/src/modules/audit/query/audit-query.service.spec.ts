@@ -1,5 +1,6 @@
 import { ForbiddenException } from '@nestjs/common';
 import { AuditQueryService } from './audit-query.service';
+import { AuditQueryReadCaptureGuard } from './audit-query-read-capture.guard';
 import { AUDIT_READ, AUDIT_SYSTEM_READ, AUDIT_PHI_READ } from './audit-query.permissions';
 import { encodeAuditCursor } from './audit-query.cursor';
 
@@ -14,7 +15,10 @@ function svc(rows: any[] = []) {
   const findMany = jest.fn().mockResolvedValue(rows);
   const findFirst = jest.fn().mockResolvedValue(rows[0] ?? null);
   const prisma = { auditEvent: { findMany, findFirst } } as any;
-  return { service: new TestQueryService(prisma), findMany, findFirst, prisma };
+  const recorder = { recordAuditEventPhiAccessed: jest.fn().mockResolvedValue(undefined) } as any;
+  const execCtx = { runSystemAsCurrentActor: (fn: any) => fn() } as any;
+  const guard = new AuditQueryReadCaptureGuard();
+  return { service: new TestQueryService(prisma, recorder, execCtx, guard), findMany, findFirst, prisma, recorder };
 }
 
 const P = (over: Partial<{ labId: string; permissions: string[]; isSuperRole: boolean }>) => ({ permissions: [], ...over }) as any;

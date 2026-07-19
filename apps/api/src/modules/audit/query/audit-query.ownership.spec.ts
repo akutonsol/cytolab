@@ -44,16 +44,18 @@ describe('P2-7B — audit-query ownership boundary', () => {
     expect(src).not.toMatch(ACCESSOR);
   });
 
-  it('the query service calls no auditEvent mutation, imports no recorder, invokes no verifier', () => {
+  it('the query service writes no auditEvent directly and invokes no verifier (capture goes via the recorder)', () => {
     const src = fs.readFileSync(path.join(AUDIT_DIR, 'query', 'audit-query.service.ts'), 'utf8');
-    expect(src).not.toMatch(MUTATION);
+    // P2-7C: the service DOES import AuditRecorder to emit fail-closed PHI read-access capture, but it
+    // must never write the ledger directly, run a raw tx, or touch the verifier.
+    expect(src).not.toMatch(MUTATION); // no direct auditEvent.create/update/delete/etc
     expect(src).not.toContain('$executeRaw');
-    expect(src).not.toContain('$transaction');
-    expect(src).not.toMatch(/from '[^']*audit-recorder'/);
+    expect(src).not.toContain('$transaction'); // the recorder owns the capture tx, not the query service
     expect(src).not.toMatch(/from '[^']*audit-verification'/);
     expect(src).not.toMatch(/verifyChain\(/);
-    // Only read accessors are present.
+    // Read accessors present; capture delegated to the recorder helper.
     expect(src).toMatch(/auditEvent\.findMany/);
     expect(src).toMatch(/auditEvent\.findFirst/);
+    expect(src).toMatch(/recordAuditEventPhiAccessed/);
   });
 });

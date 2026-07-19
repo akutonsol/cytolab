@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
+import { ExecutionContextService } from '../../../common/execution-context/execution-context.service';
+import { AuditRecorder } from '../audit-recorder.service';
+import { AuditQueryReadCaptureGuard } from './audit-query-read-capture.guard';
 import {
   AuditQueryPort,
   AuditQueryListInput,
   AuditQueryGetInput,
 } from './audit-query.port';
-import { AuditEventPage, AuditEventView, AuditEventPhiView, ResolvedAuditScope } from './audit-query.types';
-import { resolveAuditQueryScope, resolveAuditPhiAccess, resolveAuditDetailVisibility } from './audit-query.policy';
+import { AuditEventPage, AuditEventView, AuditEventPhiView, ResolvedAuditScope, AuditReaderPrincipal } from './audit-query.types';
+import { resolveAuditQueryScope, resolveAuditPhiAccess, resolveAuditDetailVisibility, isSystemReader } from './audit-query.policy';
 import { validateAuditQueryFilters, NormalizedAuditQueryFilters } from './audit-query.filters';
 import { decodeAuditCursor, encodeAuditCursor, AuditQueryCursor } from './audit-query.cursor';
 import { projectAuditEvent, projectAuditEventPhi, RawAuditEventRow } from './audit-query.projection';
@@ -60,7 +63,13 @@ const BASE_SELECT = {
 
 @Injectable()
 export class AuditQueryService implements AuditQueryPort {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    // P2-7C — fail-closed PHI read-access capture (recorder + SYSTEM bridge + recursion guard).
+    private readonly recorder: AuditRecorder,
+    private readonly executionContext: ExecutionContextService,
+    private readonly captureGuard: AuditQueryReadCaptureGuard,
+  ) {}
 
   /** Overridable seam for deterministic tests; not caller-influenced. */
   protected now(): Date {
@@ -131,6 +140,21 @@ export class AuditQueryService implements AuditQueryPort {
     const last = pageRows[pageRows.length - 1];
     const nextCursor = hasMore && last ? encodeAuditCursor({ recordedAt: last.recordedAt, id: last.id }) : null;
 
+    // P2-7C — fail-closed capture of a successful PHI list read. Emitted AFTER selection/projection,
+    // BEFORE release: one event per request, truthful resultCount (0 still emits). Base reads emit
+    // nothing. A capture failure PROPAGATES → the PHI page is not released.
+    if (phi) {
+      await this.capturePhiAccess(input.principal, {
+        accessMode: 'list',
+        queryScope: scope.kind,
+        resultCount: items.length,
+        selectedLabCount: scope.kind === 'CROSS_LAB' ? scope.labIds.length : undefined,
+        pageSize: filters.pageSize,
+        hasMore: nextCursor !== null,
+        resource: { type: 'AuditEventCollection', id: 'audit-events' },
+      });
+    }
+
     return {
       items,
       nextCursor,
@@ -149,7 +173,51 @@ export class AuditQueryService implements AuditQueryPort {
       select: { ...BASE_SELECT, ...(phi ? { patientRef: true } : {}) },
     })) as unknown as RawAuditEventRow | null;
 
-    if (!row) return null; // not-found === out-of-scope (existence never revealed)
-    return phi ? projectAuditEventPhi(row) : projectAuditEvent(row);
+    if (!row) return null; // not-found === out-of-scope (existence never revealed); no capture
+    const view = phi ? projectAuditEventPhi(row) : projectAuditEvent(row);
+
+    // P2-7C — fail-closed capture of a successful PHI detail read (one event; resultCount = 1;
+    // resource = the accessed AuditEvent). Base reads and null/out-of-scope reads emit nothing.
+    if (phi) {
+      await this.capturePhiAccess(input.principal, {
+        accessMode: 'detail',
+        queryScope: visibility.kind === 'ALL' ? 'SYSTEM' : 'LAB',
+        resultCount: 1,
+        resource: { type: 'AuditEvent', id: row.id },
+      });
+    }
+    return view;
+  }
+
+  // --- P2-7C capture ------------------------------------------------------------------------------
+
+  /**
+   * Emit exactly ONE fail-closed PHI read-access event for the current request. Ordinary own-lab
+   * readers capture as LAB (normal enrichment). Any SYSTEM-authorized (elevated) reader — SYSTEM/
+   * CROSS_LAB scope, or an explicit LAB selection made under audit:read_system — captures as SYSTEM
+   * via the frozen P2-6E0 bridge, which preserves actor/request/session/correlation while overriding
+   * only organization scope. The recursion guard suppresses a nested capture (execution loop); it
+   * never suppresses a legitimate later request. Errors propagate so the PHI response fails closed.
+   */
+  private async capturePhiAccess(
+    principal: AuditReaderPrincipal,
+    input: {
+      accessMode: 'list' | 'detail';
+      queryScope: 'LAB' | 'SYSTEM' | 'CROSS_LAB';
+      resultCount: number;
+      selectedLabCount?: number;
+      pageSize?: number;
+      hasMore?: boolean;
+      resource: { type: string; id: string };
+    },
+  ): Promise<void> {
+    if (this.captureGuard.isCapturing()) return; // nested execution loop — suppress (never user-facing)
+    const emit = () => this.captureGuard.runCapture(() => this.recorder.recordAuditEventPhiAccessed(input));
+    // Elevated authority (holds audit:read_system) → SYSTEM-scoped envelope; ordinary LAB reader → LAB.
+    if (isSystemReader(principal)) {
+      await this.executionContext.runSystemAsCurrentActor(emit);
+    } else {
+      await emit();
+    }
   }
 }
