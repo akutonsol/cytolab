@@ -9,6 +9,9 @@
     "start:prod": "node dist/main",
     "lint": "eslint \"src/**/*.ts\"",
     "test": "jest",
+    "test:audit": "jest src/modules/audit test",
+    "db:test:prepare": "node scripts/audit-test-db.cjs prepare",
+    "db:test:reset": "node scripts/audit-test-db.cjs reset",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"

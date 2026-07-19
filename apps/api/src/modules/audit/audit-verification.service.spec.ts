@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { createTestPrisma, resetIsolatedChain } from '@test/test-database';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditRecordInput } from './audit.contract';
 import { AuditPersistenceService } from './audit-persistence.service';
@@ -168,7 +169,7 @@ describe('verifyChainRows (pure) — bounded anchor start', () => {
 // DB integration: real chains via persistence.append; anchor/legacy/no-writes.
 // ---------------------------------------------------------------------------
 
-const prisma = new PrismaClient();
+const prisma = createTestPrisma();
 const chain = new AuditChainService();
 const persistence = new AuditPersistenceService(prisma as unknown as PrismaService, chain);
 const verifier = new AuditVerificationService(prisma as unknown as PrismaService);
@@ -191,7 +192,11 @@ const appendTx = (i: AuditRecordInput) => prisma.$transaction((tx) => persistenc
 
 async function cleanup() {
   await prisma.auditEvent.deleteMany({ where: { producerModule: MARKER } });
-  await prisma.$executeRaw`DELETE FROM "AuditChainHead" WHERE "chainId" LIKE ${LAB_CHAINS + '%'} OR "chainId" IN ('system','cross-lab')`;
+  await prisma.$executeRaw`DELETE FROM "AuditChainHead" WHERE "chainId" LIKE ${LAB_CHAINS + '%'}`;
+  // P2-R016A — this spec exercises the shared SYSTEM and CROSS_LAB chains; reset them via the guarded
+  // helper (isolated test DB only), replacing the former `… IN ('system','cross-lab')` head delete
+  // that caused R-016.
+  await resetIsolatedChain(prisma, 'system', 'cross-lab');
 }
 beforeAll(cleanup);
 afterAll(async () => {

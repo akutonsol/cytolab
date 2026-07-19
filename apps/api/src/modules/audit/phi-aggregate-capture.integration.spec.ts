@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { createTestPrisma } from '@test/test-database';
 import { PrismaService } from '../../database/prisma.service';
 import { LabContext } from '../../common/tenancy/lab-context';
 import { ExecutionContextService } from '../../common/execution-context/execution-context.service';
@@ -13,7 +14,7 @@ import { AuditRecorder } from './audit-recorder.service';
  * emit correctly (patientRef null, bounded metadata), append to the lab chain, coexist with P2-5C
  * single-subject events, and keep the chain valid. Includes a bounded contention benchmark.
  */
-const prisma = new PrismaClient();
+const prisma = createTestPrisma();
 const chain = new AuditChainService();
 const persistence = new AuditPersistenceService(prisma as unknown as PrismaService, chain);
 const labContext = new LabContext();

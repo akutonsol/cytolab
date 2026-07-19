@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { createTestPrisma } from '@test/test-database';
 import { PrismaService } from '../../../database/prisma.service';
 import { LabContext } from '../../../common/tenancy/lab-context';
 import { ExecutionContextService } from '../../../common/execution-context/execution-context.service';
@@ -17,7 +18,7 @@ import { AUDIT_READ, AUDIT_PHI_READ } from './audit-query.permissions';
  * shared `system` chain (the accepted P2-4 isolation debt). Capture goes through the REAL recorder /
  * append / chain path.
  */
-const prisma = new PrismaClient();
+const prisma = createTestPrisma();
 const chain = new AuditChainService();
 const persistence = new AuditPersistenceService(prisma as unknown as PrismaService, chain);
 const labContext = new LabContext();

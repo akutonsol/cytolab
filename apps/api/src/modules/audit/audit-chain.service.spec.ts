@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { createTestPrisma } from '@test/test-database';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditRecordInput } from './audit.contract';
 import { AuditPersistenceService } from './audit-persistence.service';
@@ -10,7 +11,7 @@ import { GENESIS_PREV_HASH } from './audit-chain';
  * directly on a supplied transaction (the CRITICAL_TRANSACTIONAL shape): genesis, linking, gapless
  * concurrency, cross-chain independence, rollback, and the UNIQUE(chainId, sequence) guard.
  */
-const prisma = new PrismaClient();
+const prisma = createTestPrisma();
 const chain = new AuditChainService();
 const persistence = new AuditPersistenceService(prisma as unknown as PrismaService, chain);
 

@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { createTestPrisma } from '@test/test-database';
 
 /**
  * Program 2 · P2-1R — database-layer verification of the organization-scope CHECK
@@ -8,7 +9,7 @@ import { PrismaClient } from '@prisma/client';
  *
  * Requires the local/test Postgres (the same DB the migration was applied to).
  */
-const prisma = new PrismaClient();
+const prisma = createTestPrisma();
 const MARKER = 'p2-1r-constraint-test';
 
 function baseRow(overrides: Record<string, unknown>) {

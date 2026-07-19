@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { createTestPrisma } from '@test/test-database';
 import { PrismaService } from '../../database/prisma.service';
 import { LabContext } from '../../common/tenancy/lab-context';
 import { ExecutionContextService } from '../../common/execution-context/execution-context.service';
@@ -13,7 +14,7 @@ import { AuditRecorder } from './audit-recorder.service';
  * (recordPhiRead → dedup → record → chained append). Proves the event, its bounded metadata, the
  * owner-derived patientRef, request-scoped dedup, chain integrity (P2-4D verifier), and concurrency.
  */
-const prisma = new PrismaClient();
+const prisma = createTestPrisma();
 const chain = new AuditChainService();
 const persistence = new AuditPersistenceService(prisma as unknown as PrismaService, chain);
 const labContext = new LabContext();

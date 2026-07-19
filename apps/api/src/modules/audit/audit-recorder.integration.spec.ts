@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { createTestPrisma, resetIsolatedChain } from '@test/test-database';
 import { PrismaService } from '../../database/prisma.service';
 import { LabContext } from '../../common/tenancy/lab-context';
 import { ExecutionContextService } from '../../common/execution-context/execution-context.service';
@@ -14,7 +15,7 @@ import { GENESIS_PREV_HASH } from './audit-chain';
  * persistence → chained AuditEvent row, against the local DB. Proves integrity fields are now
  * POPULATED and that the stored selfHash equals a recomputation via the shared P2-4B helper.
  */
-const prisma = new PrismaClient();
+const prisma = createTestPrisma();
 const chain = new AuditChainService();
 const persistence = new AuditPersistenceService(prisma as unknown as PrismaService, chain);
 const labContext = new LabContext();
@@ -28,6 +29,9 @@ const LAB_CHAIN = `lab:${LAB_ID}`;
 async function cleanup() {
   await prisma.auditEvent.deleteMany({ where: { producerModule: MARKER } });
   await prisma.$executeRaw`DELETE FROM "AuditChainHead" WHERE "chainId" = ${LAB_CHAIN}`;
+  // P2-R016A — this spec exercises the shared SYSTEM chain; reset it via the guarded helper (isolated
+  // test DB only) instead of a raw literal-identity head delete (the R-016 anti-pattern).
+  await resetIsolatedChain(prisma, 'system');
 }
 beforeAll(cleanup);
 afterAll(async () => {
