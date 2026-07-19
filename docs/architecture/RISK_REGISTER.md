@@ -4,7 +4,7 @@
 **Scope:** Backend (`apps/api`), web (`apps/web`), and cross-cutting concerns (security, observability, testing, design-system debt). Marketing site is out of scope except where noted.
 **Status:** Living document — active.
 **Owner:** PathOS Engineering (unassigned).
-**Last Updated:** 2026-07-18.
+**Last Updated:** 2026-07-19.
 
 ---
 
@@ -303,24 +303,24 @@
 | **Owner** | Unassigned |
 | **Notes** | Explicitly **not fixed** and **not introduced by** A12/Final Polish — certified as a pre-existing, global limitation. Tracked here per the Phase-3A certification (ARCHITECTURE_LEDGER.md §15). |
 
-## R-016 — Backend transactional audit-chain integrity (Program 2 Certification Blocker)
+## R-016 — Backend transactional audit-chain integrity (Program 2 RELEASE Blocker)
 
 | Field | Value |
 |---|---|
 | **Risk ID** | R-016 |
-| **Title** | SYSTEM-scoped PHI audit capture fails on the shared `system` hash chain |
+| **Title** | SYSTEM-scoped CRITICAL_TRANSACTIONAL audit capture fails on the shared `system` hash chain |
 | **Category** | Security — audit persistence integrity |
-| **Description** | The `AUDIT_EVENT_PHI_ACCESSED` capture is `CRITICAL_TRANSACTIONAL` and appends to a per-scope hash chain. For the SYSTEM scope, orphaned pre-existing rows (P2-4 `tat` scheduler writes) collide on the chain sequence, so the transactional append raises and the read that triggered the capture returns 500. The Audit UI **correctly fails closed** (reverts to base, drops PHI cache, neutral "PHI is unavailable" notice); the backend **correctly refuses** rather than emit partial/unrecorded PHI access. |
-| **Current impact** | SYSTEM-scoped PHI reads via the audit query API are unavailable (fail closed). LAB-scoped audit and all non-PHI reads are unaffected. No data leaks; the failure is safe. Blocks live verification of the PHI-success detail view. |
-| **Evidence** | Observed during P2-8D/P2-8E live drive (superuser PHI list `[500,500,200]`, auto-revert confirmed). Chain-collision root cause is the P2-4 shared `system` chain. Recorder tx: `apps/api/src/modules/audit/audit-recorder.service.ts` (`recordAuditEventPhiAccessed`); capture: `apps/api/src/modules/audit/query/audit-query.service.ts`. |
-| **Affected modules** | audit (recorder/query), and the shared `system` chain seeded by tat scheduler |
-| **Severity** | High |
-| **Likelihood** | High (deterministic on SYSTEM-scoped PHI reads today) |
-| **Recommended checkpoint** | Dedicated backend audit-chain remediation (chain segmentation / orphan-row reconciliation). **Not** a UI checkpoint; **not** in Program 2's P2-9/P2-10 scope. |
-| **Status** | Open |
-| **Verification required** | SYSTEM-scoped PHI capture succeeds transactionally and the chain verifier passes end-to-end; then re-drive the PHI-success detail view. |
+| **Description** | Any `CRITICAL_TRANSACTIONAL` capture emitted SYSTEM-scoped appends to the shared `system` per-scope hash chain, where orphaned pre-existing rows (P2-4 `tat` scheduler writes) collide on the chain sequence, so the transactional append raises and the triggering request returns 500. This affects **both** SYSTEM-scoped PHI reads (`AUDIT_EVENT_PHI_ACCESSED`) **and** governed exports (`AUDIT_EXPORTED`). Because both captures are scoped by `isSystemReader(principal)` (the P2-7C precedent), **every export by an elevated/system-authorized reader captures SYSTEM regardless of the export's query scope** — so a superuser's base, LAB-selected, CSV, NDJSON, and PHI exports all fail closed. The Audit UI **correctly fails closed** (no file / no partial PHI); the backend **correctly refuses** rather than emit an unrecorded egress or PHI access. |
+| **Current impact** | (1) SYSTEM-scoped PHI reads via the audit query API are unavailable (fail closed). (2) **ALL governed exports by an elevated/system reader are unavailable** — base + PHI, CSV + NDJSON — because `AUDIT_EXPORTED` captures SYSTEM for elevated readers. A **non-elevated LAB reader** (audit:read, no read_system, non-superuser) captures on the intact LAB chain and is unaffected. LAB-scoped non-PHI *reads* are unaffected. No data leaks; every failure is safe (capture-before-egress → zero bytes). |
+| **Evidence** | PHI: P2-8D/P2-8E live drive (superuser PHI list `[500,500,200]`, auto-revert). Exports: P2-9B live drive (superuser base CSV / base NDJSON / PHI all POST 500, no file, fail-closed error toast). Identical mechanism. Recorder tx: `audit-recorder.service.ts` (`recordAuditEventPhiAccessed`, `recordAuditExported`); scoping via `runSystemAsCurrentActor` at the `audit-query.service.ts` / `audit-export.coordinator.ts` call sites; root cause is the P2-4 shared `system` chain. |
+| **Affected modules** | audit (recorder / query / export), and the shared `system` chain seeded by the tat scheduler |
+| **Severity** | High (now a release blocker — a required Enterprise Audit capability, export, is universally unusable for elevated readers) |
+| **Likelihood** | High (deterministic on every SYSTEM-scoped critical capture today) |
+| **Recommended checkpoint** | **P2-R016** — a dedicated, design-only-first backend audit-chain **forensic + remediation scope audit** (chain segmentation / orphan-row reconciliation) BEFORE any chain data or persistence code is touched. It must NOT reopen or weaken P2-9A/P2-9B, change durability, reroute elevated captures, or introduce fallback behavior. Sequenced **before P2-10**. |
+| **Status** | Open — **Program 2 release blocker** (gates P2-10 final certification) |
+| **Verification required** | SYSTEM-scoped critical captures (PHI access + export) succeed transactionally and the chain verifier passes end-to-end; then re-drive the PHI-success detail view AND a successful elevated-reader export (download + filename + truncation). |
 | **Owner** | Unassigned (backend) |
-| **Notes** | UI: PASS. Backend security (fail-closed): PASS. Backend persistence integrity: FAIL. Certified in PROGRAM_2_CERTIFICATION_RECORD.md §5; the Audit UI is correct and requires no change. Do **not** clean/repair the shared chain inside a UI checkpoint. |
+| **Notes** | UI: PASS. Export UI: PASS. Backend security (fail-closed): PASS. Backend persistence integrity: FAIL. P2-9A/P2-9B are correct and require no change; R-016 is external. Do **not** clean/repair the shared chain inside a UI/feature checkpoint — it is P2-R016's scope. |
 
 ---
 

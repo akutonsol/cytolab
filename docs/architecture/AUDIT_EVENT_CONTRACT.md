@@ -251,9 +251,13 @@ predicate, scope, and projection. Export authority never exceeds interactive rea
 - **Privacy of the capture:** bounded, non-PHI metadata only — `projection`, `format`, governed `queryScope`,
   `selectedLabCount` (count, never lab ids), `exportedCount`, `truncated`, `cap`, and a value-free `filterClass`
   (predicate shape, never the raw filters). No raw predicate, lab id, patient id, correlation id, or free text.
-- **R-016 fail-closed:** a SYSTEM-scoped export captures SYSTEM via the P2-6E0 bridge and therefore fails closed on
-  the shared `system` chain exactly like a SYSTEM PHI read — no fallback, no durability downgrade, zero bytes.
-  P2-9A implements backend governance only; the confirm-and-download UX is P2-9B.
+- **R-016 fail-closed:** the export capture is scoped by `isSystemReader(principal)` (the P2-7C precedent), so **any
+  elevated/system-authorized reader captures SYSTEM regardless of the export's query scope** and therefore fails
+  closed on the corrupted shared `system` chain exactly like a SYSTEM PHI read — no fallback, no durability
+  downgrade, zero bytes. Demonstrated in P2-9B: **all** elevated-reader exports (base + PHI, CSV + NDJSON) fail
+  closed; a non-elevated LAB reader captures on the intact LAB chain. This makes R-016 a Program 2 **release
+  blocker** (RISK_REGISTER.md R-016; remediation = the P2-R016 checkpoint, before P2-10). P2-9A/P2-9B are correct
+  and unchanged. The confirm-and-download UX is P2-9B.
 
 ## 12. Prohibitions (by contract)
 1. No update or delete of any audit event, ever (immutable).
