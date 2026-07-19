@@ -27,7 +27,8 @@ export type AuditMetadataContractId =
   | 'authz.role_assignment.v1' // P2-6D — role-set replacement on a principal (counts only)
   | 'security.session_termination.v1' // P2-6E — administrative session termination (scope + count)
   | 'security.ip_block.v1' // P2-6E — administrative IP block add (durability flag only)
-  | 'security.audit_event_phi_access.v1'; // P2-7C — PHI-projection read of the audit ledger (counts/enums only)
+  | 'security.audit_event_phi_access.v1' // P2-7C — PHI-projection read of the audit ledger (counts/enums only)
+  | 'data_export.audit_export.v1'; // P2-9A — governed audit-log export (projection/format/scope/counts only)
 
 export type AuditMetadataScalar = string | number | boolean | null;
 export type AuditMetadataValue = Record<string, AuditMetadataScalar>;
@@ -122,6 +123,17 @@ export const AUDIT_QUERY_ACCESS_MODES = ['list', 'detail'] as const;
 export type AuditQueryAccessMode = (typeof AUDIT_QUERY_ACCESS_MODES)[number];
 export const AUDIT_QUERY_SCOPES = ['LAB', 'SYSTEM', 'CROSS_LAB'] as const;
 export type AuditQueryScopeMeta = (typeof AUDIT_QUERY_SCOPES)[number];
+
+// P2-9A — bounded enums for the governed audit-export contract. `projection` is the AUTHORITATIVE
+// statement of which certified projection left the system (there is deliberately no separate `phi`
+// boolean — projection is the single source of truth). `filterClass` is a coarse, value-free shape of
+// the predicate: never the raw filters, lab ids, or any user string.
+export const AUDIT_EXPORT_PROJECTIONS = ['base', 'phi'] as const;
+export type AuditExportProjection = (typeof AUDIT_EXPORT_PROJECTIONS)[number];
+export const AUDIT_EXPORT_FORMATS = ['csv', 'ndjson'] as const;
+export type AuditExportFormat = (typeof AUDIT_EXPORT_FORMATS)[number];
+export const AUDIT_EXPORT_FILTER_CLASSES = ['none', 'time_only', 'single_dimension', 'multi_dimension'] as const;
+export type AuditExportFilterClass = (typeof AUDIT_EXPORT_FILTER_CLASSES)[number];
 
 // Member types for typed producer/owner call sites (P2-5C).
 export type PhiAccessSurface = (typeof PHI_ACCESS_SURFACES)[number];
@@ -219,6 +231,25 @@ const CONTRACTS: Record<AuditMetadataContractId, MetadataContract> = {
       selectedLabCount: { kind: 'number', integer: true, min: 0 }, // CROSS_LAB only; count, never the ids
       pageSize: { kind: 'number', integer: true, min: 1, max: 1000 }, // list only
       hasMore: { kind: 'boolean' }, // list only
+    },
+  },
+  // P2-9A — governed audit-log export. Closed key set; scalar-only; bounded. NEVER raw filters, JSON
+  // predicates, encoded filters, lab ids, patient identifiers, correlation ids, request timestamps, or
+  // exported content. `projection` is the single source of truth (no separate `phi` boolean).
+  // These fields describe the governed LOGICAL export (what was authorized + prepared) — NOT transport
+  // delivery. `exportedCount`/`truncated` are dataset facts; there is deliberately NO byte-count or
+  // delivery-confirmation field (capture commits before egress and cannot observe client receipt).
+  'data_export.audit_export.v1': {
+    id: 'data_export.audit_export.v1',
+    fields: {
+      projection: { kind: 'string', required: true, values: AUDIT_EXPORT_PROJECTIONS },
+      format: { kind: 'string', required: true, values: AUDIT_EXPORT_FORMATS },
+      queryScope: { kind: 'string', required: true, values: AUDIT_QUERY_SCOPES },
+      selectedLabCount: { kind: 'number', integer: true, min: 0 }, // CROSS_LAB only; count, never the ids
+      exportedCount: { kind: 'number', required: true, integer: true, min: 0 }, // rows egressed (0 valid)
+      truncated: { kind: 'boolean', required: true }, // more matched than the applied cap
+      cap: { kind: 'number', required: true, integer: true, min: 1 }, // applied server-owned maximum
+      filterClass: { kind: 'string', required: true, values: AUDIT_EXPORT_FILTER_CLASSES },
     },
   },
   // P2-5B — PHI-access metadata: bounded enums + counts only. No free text, no reason prompt,

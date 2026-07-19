@@ -531,6 +531,26 @@ const ENTRIES: AuditRegistryEntry[] = [
     attributionPolicy: 'HTTP_REQUEST',
     metadataContractId: null,
   },
+  // --- P2-9A Governed audit-log export --------------------------------------
+  // The FACT of a governed audit-log export (via the P2-9A egress endpoint). Distinct from the
+  // broader EVIDENCE_EXPORTED ("evidence left the system") — this narrowly records that a bounded
+  // AuditEventView projection was exported. NON-PHI (phiIndicator false): the event records the fact
+  // of export, never patient data; which projection left the system is stated by the `projection`
+  // metadata value (base | phi), NOT by a separate action. CRITICAL_TRANSACTIONAL so capture
+  // PROPAGATES on failure and the egress fails closed — no audit evidence leaves without a durable
+  // record that it left (this is the capture-before-egress guarantee; see the export coordinator).
+  {
+    category: 'DATA_EXPORT',
+    actionCode: 'AUDIT_EXPORTED',
+    eventVersion: 1,
+    defaultSeverity: 'WARNING',
+    phiIndicator: false,
+    dataClass: 'CONFIDENTIAL',
+    retentionClass: 'PERMANENT',
+    durabilityClass: 'CRITICAL_TRANSACTIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    metadataContractId: 'data_export.audit_export.v1',
+  },
 ];
 
 /**
@@ -572,6 +592,7 @@ const CURRENT_VERSIONS: Record<AuditEventKey, number> = {
   'SYSTEM:JOB_STARTED': 1,
   'SYSTEM:JOB_COMPLETED': 1,
   'DATA_EXPORT:EVIDENCE_EXPORTED': 2,
+  'DATA_EXPORT:AUDIT_EXPORTED': 1,
 };
 
 const BY_EXACT: ReadonlyMap<AuditExactKey, AuditRegistryEntry> = new Map(

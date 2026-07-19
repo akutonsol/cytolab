@@ -226,6 +226,35 @@ The Audit Query API (P2-7A–C) is certified as complete and operationally ready
 - **Concurrency:** the AsyncLocalStorage recursion guard isolates concurrent requests — no duplicate, missed, or
   cross-leaked captures.
 
+### 11c. Governed audit-log export (P2-9A)
+Exporting the audit ledger is a governed **egress** boundary (`POST /api/v1/audit/events/export`), NOT a second
+query. It reuses the frozen `AuditQueryService` reader + the certified `AuditEventView` projection (CSV/NDJSON
+serialization only; no export-specific data model), so authorization, resolved scope, PHI gating, and concealment
+are inherited — an export can only ever contain rows the same principal could read interactively under the same
+predicate, scope, and projection. Export authority never exceeds interactive read authority (`audit:read`,
+`+audit:read_system` for SYSTEM/CROSS_LAB, `+audit:read_phi` for `projection=phi`); no new permission exists.
+- **Single action:** the export is captured as `DATA_EXPORT:AUDIT_EXPORTED` (**not** `EVIDENCE_EXPORTED`, which is
+  the broader "evidence left the system"; **not** `PHI_ACCESS:PHI_EXPORTED`). PHI is an **attribute** of the
+  export, expressed by `metadata.projection` (`base | phi`) — there is deliberately **no** separate `phi` boolean
+  and no separate PHI-export action. `CRITICAL_TRANSACTIONAL`, non-PHI, `PERMANENT`.
+- **Capture-before-egress:** the bounded snapshot is assembled and serialized in memory, then the export event is
+  captured **transactionally, before any response byte is written**. A capture failure propagates → zero bytes.
+- **Logical export, NOT transport delivery.** `AUDIT_EXPORTED` records the governed **logical** export — *this
+  export was authorized and prepared for egress* — **not** a guarantee that the client received every transmitted
+  byte. Because capture commits before egress begins, it cannot observe the socket; a post-commit client
+  disconnect does not un-happen the authorized export. The metadata therefore carries dataset facts
+  (`exportedCount`, `truncated`) and **deliberately no byte-count or delivery-confirmation field**. A future
+  transport-receipt concern, if ever needed, is a **distinct** event — never an extension of this one.
+- **Bounded + coherent snapshot:** assembly iterates the frozen keyset reader up to a server-owned cap
+  (`truncated` is truthful) with the page-1 time window **pinned** across all pages (no `now()` drift); the export
+  never contains its own `AUDIT_EXPORTED` row (it is appended after assembly).
+- **Privacy of the capture:** bounded, non-PHI metadata only — `projection`, `format`, governed `queryScope`,
+  `selectedLabCount` (count, never lab ids), `exportedCount`, `truncated`, `cap`, and a value-free `filterClass`
+  (predicate shape, never the raw filters). No raw predicate, lab id, patient id, correlation id, or free text.
+- **R-016 fail-closed:** a SYSTEM-scoped export captures SYSTEM via the P2-6E0 bridge and therefore fails closed on
+  the shared `system` chain exactly like a SYSTEM PHI read — no fallback, no durability downgrade, zero bytes.
+  P2-9A implements backend governance only; the confirm-and-download UX is P2-9B.
+
 ## 12. Prohibitions (by contract)
 1. No update or delete of any audit event, ever (immutable).
 2. `AuditRecorder` is the only writer; no `prisma.auditEvent` outside the Audit owner.

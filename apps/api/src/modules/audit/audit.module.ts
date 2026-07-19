@@ -8,6 +8,8 @@ import { AuditRecorder } from './audit-recorder.service';
 import { AuditQueryService } from './query/audit-query.service';
 import { AuditQueryController } from './query/audit-query.controller';
 import { AuditQueryReadCaptureGuard } from './query/audit-query-read-capture.guard';
+import { AuditExportController } from './query/audit-export.controller';
+import { AuditExportCoordinator } from './query/audit-export.coordinator';
 
 /**
  * Program 2 · P2-3 — Enterprise Audit owner module (ACTIVE).
@@ -24,7 +26,7 @@ import { AuditQueryReadCaptureGuard } from './query/audit-query-read-capture.gua
 @Global()
 @Module({
   imports: [PrismaModule],
-  controllers: [AuditQueryController],
+  controllers: [AuditQueryController, AuditExportController],
   providers: [
     AuditPersistenceService,
     AuditChainService,
@@ -35,6 +37,8 @@ import { AuditQueryReadCaptureGuard } from './query/audit-query-read-capture.gua
     AuditQueryService,
     // P2-7C — async-context recursion guard for PHI read-access capture.
     AuditQueryReadCaptureGuard,
+    // P2-9A — governed audit-log export coordinator (assemble → serialize → capture → egress).
+    AuditExportCoordinator,
   ],
   exports: [AuditRecorder, AuditQueryService],
 })

@@ -691,6 +691,39 @@ export class AuditRecorder {
   }
 
   /**
+   * Program 2 · P2-9A — capture a SUCCESSFUL governed audit-log export (DATA_EXPORT:AUDIT_EXPORTED).
+   * Like recordAuditEventPhiAccessed this is FAIL-CLOSED: the registry classifies it
+   * CRITICAL_TRANSACTIONAL, so it appends inside a recorder-owned transaction and any failure
+   * PROPAGATES — letting the export coordinator withhold ALL egress when capture fails (capture-before-
+   * egress). It owns the transaction here precisely so the export path never imports Prisma. Attribution
+   * (actor/request/session/correlation) comes from the execution context; organization scope is context-
+   * derived (LAB, or SYSTEM via the P2-6E0 bridge at the call site for an elevated reader). Bounded,
+   * NON-PHI metadata only — never raw filters, lab ids, patient identifiers, or exported content. The
+   * exported dataset is the snapshot assembled BEFORE this event is appended, so an export never
+   * contains its own AUDIT_EXPORTED event.
+   *
+   * SEMANTICS: this records the governed LOGICAL export (authorized + prepared for egress), NOT
+   * transport delivery of every byte — capture commits before egress begins and cannot observe the
+   * socket. The metadata therefore carries dataset facts (exportedCount/truncated) and deliberately no
+   * byte-count/delivery field; do not extend it to represent client receipt.
+   */
+  async recordAuditExported(metadata: AuditMetadataValue): Promise<void> {
+    await this.prisma.$transaction((tx) =>
+      this.record(
+        {
+          category: 'DATA_EXPORT',
+          actionCode: 'AUDIT_EXPORTED',
+          resource: { type: 'AuditEventCollection', id: 'audit-events' },
+          outcome: { status: 'SUCCESS' },
+          metadata,
+          producerModule: 'audit-export',
+        },
+        { tx },
+      ),
+    );
+  }
+
+  /**
    * Record an audit event. The registry — never the producer — is the sole durability authority.
    * Each class is honored TRUTHFULLY for what the P2-3 runtime can actually provide (no outbox /
    * retry queue exists yet):
