@@ -28,8 +28,12 @@ describe('P2-7A — audit-query scope policy', () => {
     });
   });
 
-  describe('SYSTEM reader (AUDIT_SYSTEM_READ)', () => {
-    const sys = P({ labId: 'lab1', permissions: [AUDIT_SYSTEM_READ] });
+  describe('SYSTEM reader (AUDIT_READ + AUDIT_SYSTEM_READ)', () => {
+    const sys = P({ labId: 'lab1', permissions: [AUDIT_READ, AUDIT_SYSTEM_READ] });
+
+    it('a lone audit:read_system (without audit:read) is denied — locked model', () => {
+      expect(() => resolveAuditQueryScope(P({ labId: 'lab1', permissions: [AUDIT_SYSTEM_READ] }))).toThrow(ForbiddenException);
+    });
 
     it('defaults to SYSTEM (no broad lab visibility from holding a labId)', () => {
       expect(resolveAuditQueryScope(sys)).toEqual({ kind: 'SYSTEM' });

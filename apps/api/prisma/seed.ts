@@ -49,6 +49,11 @@ const SPECIAL_OBJECTS: Record<string, string[]> = {
   // Knowledge Base authoring (view is open to all authed users; managing/editing
   // articles is gated). Assigned to no default role — super roles reach it.
   kb: ['manage'],
+  // P2-7B — Audit Query API read gates. Independent dimensions: read = own-lab ledger read;
+  // read_system = SYSTEM/CROSS_LAB + explicit lab selection; read_phi = patientRef + PHI projection.
+  // Assigned to NO default role (byPrefix below never selects 'audit'); super roles reach them via
+  // the guard bypass, matching the Security Center. NOT a reuse of system:security.
+  audit: ['read', 'read_system', 'read_phi'],
 };
 
 async function main() {

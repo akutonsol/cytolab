@@ -20,6 +20,28 @@ export function isSystemReader(p: AuditReaderPrincipal): boolean {
 }
 
 /**
+ * P2-7B locked model: EVERY audit-query reader requires audit:read (a superuser satisfies it via
+ * bypass). SYSTEM/PHI are additive on top. Throws otherwise. (Corrects the P2-7A resolver, which
+ * treated a lone audit:read_system as sufficient base access — see the P2-7B deliverable §29.)
+ */
+export function assertBaseAuditRead(p: AuditReaderPrincipal): void {
+  if (!has(p, AUDIT_READ)) throw new ForbiddenException('Missing permission: audit:read');
+}
+
+/**
+ * Detail visibility for a by-id read: a LAB reader sees only their own lab's LAB rows; a SYSTEM
+ * reader sees everything they are authorized for (no scope restriction). Base audit:read required.
+ */
+export function resolveAuditDetailVisibility(
+  p: AuditReaderPrincipal,
+): { kind: 'ALL' } | ResolvedAuditScope {
+  assertBaseAuditRead(p);
+  if (isSystemReader(p)) return { kind: 'ALL' };
+  if (!p.labId) throw new ForbiddenException('No lab context for a lab-scoped audit read');
+  return { kind: 'LAB', labId: p.labId };
+}
+
+/**
  * Resolve the authorized query scope. LAB readers are pinned to their own lab; SYSTEM readers may
  * select SYSTEM, a single lab, or a bounded CROSS_LAB set, and default (unspecified) to SYSTEM —
  * never inheriting broad lab visibility merely from holding a labId.
@@ -28,9 +50,8 @@ export function resolveAuditQueryScope(
   principal: AuditReaderPrincipal,
   requested: RequestedAuditScope = {},
 ): ResolvedAuditScope {
+  assertBaseAuditRead(principal); // locked model: every reader needs audit:read
   const systemReader = isSystemReader(principal);
-  const baseReader = has(principal, AUDIT_READ) || systemReader;
-  if (!baseReader) throw new ForbiddenException('Missing permission: audit read');
 
   const wantsSystemOrCross = requested.scope === 'SYSTEM' || requested.scope === 'CROSS_LAB';
   if (wantsSystemOrCross && !systemReader) {

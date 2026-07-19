@@ -5,6 +5,8 @@ import { AuditChainService } from './audit-chain.service';
 import { AuditVerificationService } from './audit-verification.service';
 import { PhiAccessDedup } from './phi-access-dedup';
 import { AuditRecorder } from './audit-recorder.service';
+import { AuditQueryService } from './query/audit-query.service';
+import { AuditQueryController } from './query/audit-query.controller';
 
 /**
  * Program 2 · P2-3 — Enterprise Audit owner module (ACTIVE).
@@ -21,13 +23,16 @@ import { AuditRecorder } from './audit-recorder.service';
 @Global()
 @Module({
   imports: [PrismaModule],
+  controllers: [AuditQueryController],
   providers: [
     AuditPersistenceService,
     AuditChainService,
     AuditVerificationService,
     PhiAccessDedup,
     AuditRecorder,
+    // P2-7B — governed read-only query owner (the only non-verifier reader of prisma.auditEvent).
+    AuditQueryService,
   ],
-  exports: [AuditRecorder],
+  exports: [AuditRecorder, AuditQueryService],
 })
 export class AuditModule {}
