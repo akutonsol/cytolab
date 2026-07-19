@@ -36,12 +36,46 @@ export function validateAuditEventPage(data: unknown): AuditEventPage {
   return data as unknown as AuditEventPage;
 }
 
+/** Validate a single detail response into a typed view (symmetric with validateAuditEventPage). */
+export function validateAuditEvent(data: unknown): AuditEventView {
+  if (!isObj(data)) throw new AuditQueryResponseError('event is not an object');
+  const s = (k: string) => typeof data[k] === 'string';
+  const n = (k: string) => typeof data[k] === 'number';
+  const nullableStr = (v: unknown) => v === null || typeof v === 'string';
+  if (!(s('id') && s('occurredAt') && s('recordedAt') && s('category') && s('actionCode') && s('severity') && s('dataClass') && s('outcome') && s('producerModule'))) {
+    throw new AuditQueryResponseError('missing/!string envelope field');
+  }
+  if (!(n('schemaVersion') && n('eventVersion'))) throw new AuditQueryResponseError('missing/!number version');
+  if (typeof data.phiIndicator !== 'boolean') throw new AuditQueryResponseError('phiIndicator must be boolean');
+  if (!['included', 'redacted_phi', 'redacted_unknown_version'].includes(data.metadataStatus as string)) {
+    throw new AuditQueryResponseError('invalid metadataStatus');
+  }
+  if (!(data.metadata === null || isObj(data.metadata))) throw new AuditQueryResponseError('metadata must be object|null');
+  const actor = data.actor, org = data.organization, res = data.resource, req = data.request, sess = data.session;
+  if (!isObj(actor) || typeof actor.type !== 'string' || !nullableStr(actor.id)) throw new AuditQueryResponseError('malformed actor');
+  if (!isObj(org) || typeof org.scope !== 'string' || !nullableStr(org.labId) || !nullableStr(org.organizationId)) throw new AuditQueryResponseError('malformed organization');
+  if (!isObj(res) || typeof res.type !== 'string' || !nullableStr(res.id)) throw new AuditQueryResponseError('malformed resource');
+  if (!isObj(req) || !nullableStr(req.requestId)) throw new AuditQueryResponseError('malformed request');
+  if (!isObj(sess) || !nullableStr(sess.sessionId)) throw new AuditQueryResponseError('malformed session');
+  if (!nullableStr(data.correlationId)) throw new AuditQueryResponseError('malformed correlationId');
+  // patientRef is validated ONLY when present (never synthesized/inferred).
+  if ('patientRef' in data && !nullableStr(data.patientRef)) throw new AuditQueryResponseError('malformed patientRef');
+  return data as unknown as AuditEventView;
+}
+
 export const AuditQueryClient = {
   /** List audit events under a governed scope + allow-listed filters, keyset-paginated by `cursor`. */
   async list(state: AuditFilterState, cursor: string | null): Promise<AuditEventPage> {
     const params = { ...filtersToApiParams(state), ...(cursor ? { cursor } : {}) };
     const { data } = await api.get<unknown>('/audit/events', { params });
     return validateAuditEventPage(data);
+  },
+
+  /** Fetch one audit event by id under the same scope + PHI policy as list (server-authoritative). */
+  async getById(id: string, phi: boolean): Promise<AuditEventView> {
+    const params = phi ? { includePhi: 'true' } : {};
+    const { data } = await api.get<unknown>(`/audit/events/${encodeURIComponent(id)}`, { params });
+    return validateAuditEvent(data);
   },
 };
 

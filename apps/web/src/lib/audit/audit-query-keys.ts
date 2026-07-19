@@ -9,3 +9,8 @@ import { AuditFilterState, auditPredicateKey } from './audit-filters';
 export function auditEventsQueryKey(state: AuditFilterState, cursor: string | null) {
   return ['audit-events', auditPredicateKey(state), cursor ?? 'first'] as const;
 }
+
+/** P2-8C — detail key. `phi` segment keeps the base and PHI detail caches completely separate. */
+export function auditEventQueryKey(id: string, phi: boolean) {
+  return ['audit-event', id, phi ? 'phi' : 'base'] as const;
+}

@@ -81,7 +81,15 @@ function AuditListContent() {
         isEmpty={!q.isLoading && items.length === 0}
         onRetry={() => q.refetch()}
       >
-        <AuditEventTable events={items} />
+        <AuditEventTable
+          events={items}
+          onSelect={(id) => {
+            const listQs = new URLSearchParams(serializeAuditFilters(state)).toString();
+            const params = new URLSearchParams({ back: listQs ? `/audit?${listQs}` : '/audit' });
+            if (state.phi) params.set('phi', '1'); // carry the PHI predicate to detail (transport only)
+            router.push(`/audit/${encodeURIComponent(id)}?${params.toString()}`);
+          }}
+        />
         <AuditCursorPager
           count={items.length}
           canPrev={canPrev}

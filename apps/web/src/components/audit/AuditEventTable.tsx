@@ -21,7 +21,8 @@ const resourceLabel = (e: AuditEventView) => (e.resource.id ? `${e.resource.type
 
 const COLUMNS = ['Recorded', 'Category', 'Action', 'Actor', 'Scope', 'Outcome', 'Resource', 'PHI', 'Correlation'];
 
-export function AuditEventTable({ events }: { events: AuditEventView[] }) {
+/** `onSelect` (P2-8C) makes each row/card open the detail; omit it for a plain, non-interactive list. */
+export function AuditEventTable({ events, onSelect }: { events: AuditEventView[]; onSelect?: (id: string) => void }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white">
       {/* Desktop table */}
@@ -35,22 +36,42 @@ export function AuditEventTable({ events }: { events: AuditEventView[] }) {
             </tr>
           </thead>
           <tbody>
-            {events.map((e) => <AuditRow key={e.id} e={e} />)}
+            {events.map((e) => <AuditRow key={e.id} e={e} onSelect={onSelect} />)}
           </tbody>
         </table>
       </div>
       {/* Mobile card list — same data, one card per event; no horizontal body scroll. */}
       <ul className="divide-y divide-slate-100 md:hidden">
-        {events.map((e) => <AuditCard key={e.id} e={e} />)}
+        {events.map((e) => <AuditCard key={e.id} e={e} onSelect={onSelect} />)}
       </ul>
     </div>
   );
 }
 
-const AuditRow = memo(function AuditRow({ e }: { e: AuditEventView }) {
+/** Keyboard + click affordance for opening the detail; only applied when onSelect is provided. */
+function selectProps(onSelect: ((id: string) => void) | undefined, id: string) {
+  if (!onSelect) return {};
+  return {
+    role: 'link' as const,
+    tabIndex: 0,
+    'aria-label': `Open audit event ${id}`,
+    onClick: () => onSelect(id),
+    onKeyDown: (ev: React.KeyboardEvent) => {
+      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onSelect(id); }
+    },
+  };
+}
+
+const AuditRow = memo(function AuditRow({ e, onSelect }: { e: AuditEventView; onSelect?: (id: string) => void }) {
   const t = fmtTime(e.recordedAt);
   return (
-    <tr className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60">
+    <tr
+      {...selectProps(onSelect, e.id)}
+      className={cn(
+        'border-b border-slate-50 last:border-0 hover:bg-slate-50/60',
+        onSelect && 'cursor-pointer focus:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+      )}
+    >
       <Td density="snug" nowrap><span className="tabular-nums text-slate-600" title={t.title}>{t.label}</span></Td>
       <Td density="snug"><CategoryBadge value={e.category} /></Td>
       <Td density="snug"><span className="font-medium text-slate-800">{e.actionCode}</span></Td>
@@ -64,10 +85,13 @@ const AuditRow = memo(function AuditRow({ e }: { e: AuditEventView }) {
   );
 });
 
-const AuditCard = memo(function AuditCard({ e }: { e: AuditEventView }) {
+const AuditCard = memo(function AuditCard({ e, onSelect }: { e: AuditEventView; onSelect?: (id: string) => void }) {
   const t = fmtTime(e.recordedAt);
   return (
-    <li className="flex flex-col gap-2 px-4 py-3">
+    <li
+      {...selectProps(onSelect, e.id)}
+      className={cn('flex flex-col gap-2 px-4 py-3', onSelect && 'cursor-pointer focus:bg-slate-50 focus:outline-none')}
+    >
       <div className="flex items-center gap-2">
         <CategoryBadge value={e.category} />
         <OutcomeBadge value={e.outcome} />
