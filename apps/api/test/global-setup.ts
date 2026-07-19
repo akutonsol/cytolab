@@ -3,12 +3,13 @@
  * tests never touch the development database, and gives every run a clean audit ledger (so no test
  * needs to delete shared chain heads). FAIL-CLOSED: any uncertainty aborts the whole run.
  *
- * Steps: load .env → resolve + guard the isolated `_test` URLs → ensure the DB exists → ensure the
- * schema is applied (migrate deploy via a temp env dir, so the dev .env never leaks in) → reset the
- * audit tables. It only ever acts on a database whose name passes {@link assertIsolatedTestDatabase}.
+ * Steps: load .env → resolve + guard the isolated `_test` URLs → ensure the DB exists → build the
+ * schema from the datamodel (order-independent; sidesteps the pre-existing migration-ordering defect) →
+ * reset the audit tables → restore + verify the authoritative CHECK constraint (P2-R016A-2a). It only
+ * ever acts on a database whose name passes {@link assertIsolatedTestDatabase}.
  */
 import { execSync } from 'child_process';
-import { mkdtempSync, writeFileSync, rmSync } from 'fs';
+import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { PrismaClient } from '@prisma/client';
@@ -98,6 +99,47 @@ async function resetAuditTables(migrationUrl: string): Promise<void> {
   }
 }
 
+/**
+ * Program 2 · P2-R016A-2a — the authoritative CANONICAL form of AuditEvent_organization_scope_check as
+ * Postgres reports it (pg_get_constraintdef) after applying the migration-defined constraint. Sourced
+ * from prisma/migrations/20260717000000_audit_event_ledger + test/audit-check-constraints.sql. globalSetup
+ * asserts the installed constraint matches this; any divergence fails the run (never masked).
+ */
+const AUTHORITATIVE_ORG_SCOPE_CHECK =
+  `CHECK (((("organizationScope" = 'LAB'::"AuditOrganizationScope") AND ("scopeLabId" IS NOT NULL)) OR ` +
+  `(("organizationScope" = ANY (ARRAY['SYSTEM'::"AuditOrganizationScope", 'CROSS_LAB'::"AuditOrganizationScope"])) ` +
+  `AND ("scopeLabId" IS NULL))))`;
+
+const normalizeConstraintDef = (s: string): string => s.replace(/\s+/g, ' ').trim().toLowerCase();
+
+/**
+ * Program 2 · P2-R016A-2a — restore the AuditEvent org-scope CHECK constraint (which Prisma's datamodel
+ * does not model, so datamodel-diff provisioning omits it) to the ISOLATED test database, from the
+ * repository-authoritative SQL. Idempotent. Then VERIFY the installed definition matches the authoritative
+ * canonical form and FAIL if it is missing, malformed, or divergent — a test DB that isn't
+ * production-equivalent must not run the constraint tests. Does NOT read the dev database.
+ */
+async function restoreAndVerifyCheckConstraints(migrationUrl: string): Promise<void> {
+  const p = new PrismaClient({ datasourceUrl: migrationUrl });
+  try {
+    const ddl = readFileSync(join(__dirname, 'audit-check-constraints.sql'), 'utf8');
+    await p.$executeRawUnsafe(ddl); // idempotent (guarded to the isolated DB by the caller)
+    const rows = await p.$queryRawUnsafe<Array<{ def: string }>>(
+      `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint WHERE conname = 'AuditEvent_organization_scope_check'`,
+    );
+    if (rows.length === 0) {
+      throw new Error('AuditEvent_organization_scope_check is MISSING after restoration');
+    }
+    if (normalizeConstraintDef(rows[0].def) !== normalizeConstraintDef(AUTHORITATIVE_ORG_SCOPE_CHECK)) {
+      throw new Error(
+        `AuditEvent_organization_scope_check DIVERGES from the authoritative definition — installed: ${rows[0].def}`,
+      );
+    }
+  } finally {
+    await p.$disconnect();
+  }
+}
+
 export default async function globalSetup(): Promise<void> {
   loadDotenv();
 
@@ -109,19 +151,31 @@ export default async function globalSetup(): Promise<void> {
   assertIsolatedTestDatabase(runtimeUrl, 'audit test runtime database');
   assertIsolatedTestDatabase(migrationUrl, 'audit test migration database');
 
+  let provisioned = false;
   try {
     await ensureDatabaseExists(migrationUrl);
     if (!(await schemaApplied(runtimeUrl))) {
       applySchema(migrationUrl);
     }
     await resetAuditTables(migrationUrl);
-    // eslint-disable-next-line no-console
-    console.log(`[P2-R016A] isolated audit test database ready & reset: ${redactDbUrl(runtimeUrl)}`);
+    provisioned = true;
   } catch (err) {
+    // Soft: connectivity/provisioning failure warns and lets unit tests run; audit integration tests
+    // then fail-closed at createTestPrisma.
     // eslint-disable-next-line no-console
     console.warn(
       `[P2-R016A] could not provision the isolated audit test database (${redactDbUrl(runtimeUrl)}); ` +
         `audit integration tests will fail-closed at createTestPrisma. Cause: ${(err as Error).message}`,
+    );
+  }
+
+  if (provisioned) {
+    // P2-R016A-2a — HARD fail-closed: once the DB is provisioned it MUST be production-equivalent.
+    // A missing/divergent authoritative CHECK constraint aborts the run rather than testing a wrong schema.
+    await restoreAndVerifyCheckConstraints(migrationUrl);
+    // eslint-disable-next-line no-console
+    console.log(
+      `[P2-R016A] isolated audit test database ready & reset (+ authoritative CHECK constraints verified): ${redactDbUrl(runtimeUrl)}`,
     );
   }
 }
