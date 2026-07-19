@@ -4,7 +4,7 @@
 **Scope:** Backend (`apps/api`), web (`apps/web`), and cross-cutting concerns (security, observability, testing, design-system debt). Marketing site is out of scope except where noted.
 **Status:** Living document — active.
 **Owner:** PathOS Engineering (unassigned).
-**Last Updated:** 2026-07-13.
+**Last Updated:** 2026-07-18.
 
 ---
 
@@ -303,6 +303,25 @@
 | **Owner** | Unassigned |
 | **Notes** | Explicitly **not fixed** and **not introduced by** A12/Final Polish — certified as a pre-existing, global limitation. Tracked here per the Phase-3A certification (ARCHITECTURE_LEDGER.md §15). |
 
+## R-016 — Backend transactional audit-chain integrity (Program 2 Certification Blocker)
+
+| Field | Value |
+|---|---|
+| **Risk ID** | R-016 |
+| **Title** | SYSTEM-scoped PHI audit capture fails on the shared `system` hash chain |
+| **Category** | Security — audit persistence integrity |
+| **Description** | The `AUDIT_EVENT_PHI_ACCESSED` capture is `CRITICAL_TRANSACTIONAL` and appends to a per-scope hash chain. For the SYSTEM scope, orphaned pre-existing rows (P2-4 `tat` scheduler writes) collide on the chain sequence, so the transactional append raises and the read that triggered the capture returns 500. The Audit UI **correctly fails closed** (reverts to base, drops PHI cache, neutral "PHI is unavailable" notice); the backend **correctly refuses** rather than emit partial/unrecorded PHI access. |
+| **Current impact** | SYSTEM-scoped PHI reads via the audit query API are unavailable (fail closed). LAB-scoped audit and all non-PHI reads are unaffected. No data leaks; the failure is safe. Blocks live verification of the PHI-success detail view. |
+| **Evidence** | Observed during P2-8D/P2-8E live drive (superuser PHI list `[500,500,200]`, auto-revert confirmed). Chain-collision root cause is the P2-4 shared `system` chain. Recorder tx: `apps/api/src/modules/audit/audit-recorder.service.ts` (`recordAuditEventPhiAccessed`); capture: `apps/api/src/modules/audit/query/audit-query.service.ts`. |
+| **Affected modules** | audit (recorder/query), and the shared `system` chain seeded by tat scheduler |
+| **Severity** | High |
+| **Likelihood** | High (deterministic on SYSTEM-scoped PHI reads today) |
+| **Recommended checkpoint** | Dedicated backend audit-chain remediation (chain segmentation / orphan-row reconciliation). **Not** a UI checkpoint; **not** in Program 2's P2-9/P2-10 scope. |
+| **Status** | Open |
+| **Verification required** | SYSTEM-scoped PHI capture succeeds transactionally and the chain verifier passes end-to-end; then re-drive the PHI-success detail view. |
+| **Owner** | Unassigned (backend) |
+| **Notes** | UI: PASS. Backend security (fail-closed): PASS. Backend persistence integrity: FAIL. Certified in PROGRAM_2_CERTIFICATION_RECORD.md §5; the Audit UI is correct and requires no change. Do **not** clean/repair the shared chain inside a UI checkpoint. |
+
 ---
 
 ## Related documents
@@ -312,6 +331,7 @@
 - THEME_MIGRATION.md (R-009)
 - SECURITY_ARCHITECTURE.md (R-003, R-004, R-005)
 - ACCESSIBILITY_DEBT_REGISTER.md (R-010)
+- PROGRAM_2_CERTIFICATION_RECORD.md (R-016)
 - PRODUCTION_READINESS_CHECKLIST.md (cross-cutting)
 
 ## Future revisions

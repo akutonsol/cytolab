@@ -4,7 +4,7 @@
 **Scope:** The Diagnostic Case aggregate and the platform architecture principles it embodies, plus the Premium UI foundation and the boundaries certified through Phase 3A. Backend `apps/api`, web `apps/web`. Committed architecture only.
 **Status:** Living architectural record — active. Phase 3A entries are CERTIFIED AND FROZEN.
 **Owner:** PathOS Engineering (unassigned).
-**Last Updated:** 2026-07-13.
+**Last Updated:** 2026-07-18.
 **Certified baseline commit:** `c352deecdf27fcc9168067cb26dd88686eb833fe` (A12 `ea9f383` + Final Polish `c352dee`). Governance docs baseline: `cd8cf6a0306f8ca147d751c6ccfd666007ac725c`.
 **Relationship to governance documents:** This ledger is the authoritative record of *what was decided and why*; the eight governance documents (RISK_REGISTER, PERMISSION_MATRIX, LOGGING_STANDARD, TEST_STRATEGY, THEME_MIGRATION, SECURITY_ARCHITECTURE, ACCESSIBILITY_DEBT_REGISTER, PRODUCTION_READINESS_CHECKLIST) remain the operational detail for their domains. The ledger references them; it does not duplicate or supersede them.
 **Relationship to future ADRs:** This ledger predates a formal ADR series. Future one-decision-per-file ADRs may be introduced later; when they are, each should link back to the relevant ledger section. No ADR files are created in this checkpoint.
@@ -326,6 +326,35 @@ The working method, frozen as practice:
 **Certification result (against committed bytes):** clean API TypeScript, clean Web TypeScript, clean API build, clean Web build, API boot, route verification (`GET /diagnostic-case/:recordId/overview`), owner integrity (single reads, no mutation, Sign-Out untouched), full state matrix, clinical truthfulness, data-safety allowlist, full workspace UI (one h1, nine h2 in frozen order), responsive checks (no DC horizontal overflow; ~390px global app-shell clipping noted as pre-existing/out-of-scope), zero-orange, and **no production blocker**.
 
 *This is an engineering certification of the committed architecture. It is **not** a regulatory certification and makes **no** claim of WCAG conformance.*
+
+---
+
+## Section 21 — Program 2 (Enterprise Audit Platform) certification record
+
+- **Program 2 Audit UI status:** **CERTIFIED AND FROZEN** (P2-6 → P2-8).
+- **Certified baseline:** `3f450e0` (P2-8D). P2-8A (architecture) and P2-8E (certification) are
+  design/verification-only — no code commit.
+- **Full record:** PROGRAM_2_CERTIFICATION_RECORD.md (commit boundaries, traceability matrix,
+  verification artifacts, verdict).
+
+**Certification result (P2-8E, against committed bytes):** clean Web TypeScript, 40 audit-logic
+unit assertions, clean production build, full List/Detail state matrix driven live (desktop +
+mobile), `@axe-core/playwright` audit (no audit-authored a11y violation), zero-orange (0 ×6
+surfaces), zero horizontal overflow, zero runtime errors. **No implementation defect; no code
+change; no boundary violation.**
+
+**Two findings carried out of Program 2 (recorded, not fixed):**
+- **R-016** — backend transactional audit-chain integrity (SYSTEM-scoped PHI capture fails closed
+  on the shared `system` chain). UI PASS; backend security PASS; backend persistence integrity
+  FAIL. Owned by a dedicated backend remediation checkpoint, **not** P2-9/P2-10.
+- **Design-system contrast** — four AA shortfalls in shared Tier-2 tokens the Audit UI consumes
+  (RISK_REGISTER.md R-009/R-010; ACCESSIBILITY_DEBT_REGISTER.md Contrast). Not an Audit-UI defect.
+
+**Still open in Program 2:** P2-9 (Export & Compliance), P2-10 (Program 2 Final Certification).
+After P2-10, a full re-evaluation against `PathOS-Enterprise-Audit.pdf` is planned.
+
+*Engineering certification of the committed architecture — **not** a regulatory certification;
+**no** claim of WCAG conformance or HIPAA attestation.*
 
 ---
 

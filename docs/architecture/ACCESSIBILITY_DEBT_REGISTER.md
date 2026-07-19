@@ -4,7 +4,7 @@
 **Scope:** `apps/web` product UI. Reflects observations from the 2026-07-13 frontend survey. This register records observations; it fixes nothing.
 **Status:** Living document — active backlog.
 **Owner:** PathOS Engineering (unassigned).
-**Last Updated:** 2026-07-13.
+**Last Updated:** 2026-07-18.
 
 ---
 
@@ -55,6 +55,16 @@ Each category lists observed issues with representative evidence and severity. C
 
 - Color usage is mid-migration (raw hex + Tailwind color utilities), so contrast is not centrally guaranteed. The zero-orange rule constrains palette but does not by itself ensure WCAG contrast ratios. **Severity: Medium (Unknown per screen).**
 - Recommendation (Deferred): audit contrast after token migration (THEME_MIGRATION.md), checking foreground against actual background at every alpha.
+- **Tooled evidence (axe, 2026-07-18, P2-8E Audit UI certification).** First `@axe-core/playwright` run against shipped product surfaces. The Audit UI itself authored **no** contrast violation; every AA shortfall traces to **shared Tier-2 tokens** it merely consumes, so these are product-wide, not audit-specific:
+
+  | Token / role | fg | bg | ratio | need | consumers |
+  |---|---|---|---|---|---|
+  | `--color-text-tertiary` (PageHeader eyebrow) | #9ca3af | #f8f9fd | 2.41 | 4.5 | ~16 pages |
+  | `--color-neutral-badge` (Badge/neutral) | #6b7280 | #eef2f7 | 4.30 | 4.5 | ~47 files (Badge) |
+  | `--color-success` (Badge/success) | #22c55e | #dcfce7 | 2.07 | 4.5 | ~47 files (Badge) |
+  | `--color-info` (Badge/info) | #4f7df9 | #eaf1ff | 3.28 | 4.5 | ~47 files (Badge) |
+
+  Recommendation (Deferred, DS track): darker on-soft foreground pairs (e.g. green-700-on-green-100) at the token layer — **never** a per-component override (locked decision: editing a Tier-2 value recolors 600+ sites). Tracked in RISK_REGISTER.md R-009/R-010; certified as out-of-scope for the Audit UI in PROGRAM_2_CERTIFICATION_RECORD.md §5.
 
 ---
 
