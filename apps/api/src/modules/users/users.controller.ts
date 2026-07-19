@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Patch, Post, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { ChangePasswordDto, CreateUserDto, SaveSignatureDto, UpdateUserDto } from './dto/user.dto';
+import { ChangePasswordDto, CreateUserDto, SaveSignatureDto, UpdatePreferencesDto, UpdateUserDto } from './dto/user.dto';
 import { UsersService } from './users.service';
 
 @ApiTags('users')
@@ -21,6 +21,17 @@ export class UsersController {
   @Put('me/signature')
   saveMySignature(@CurrentUser() user: AuthUser, @Body() dto: SaveSignatureDto) {
     return this.users.saveMySignature(user.userId, dto.signatureDataUri);
+  }
+
+  // ── Own UI preferences (guided assistance) — a user manages their own. ──
+  @Get('me/preferences')
+  getMyPreferences(@CurrentUser() user: AuthUser) {
+    return this.users.getMyPreferences(user.userId);
+  }
+
+  @Patch('me/preferences')
+  updateMyPreferences(@CurrentUser() user: AuthUser, @Body() dto: UpdatePreferencesDto) {
+    return this.users.updateMyPreferences(user.userId, dto);
   }
 
   // Queries are lab-scoped automatically by the tenancy guard (labId from JWT).

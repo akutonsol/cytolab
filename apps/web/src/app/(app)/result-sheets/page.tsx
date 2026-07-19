@@ -15,6 +15,7 @@ import { RecordFormDrawer } from '@/components/RecordFormDrawer';
 import type { FormType } from '@/lib/specimen-types';
 import { Card, Button, IconAction } from '@/components/ui';
 import { notify } from '@/lib/notify';
+import { fireGuideSignal } from '@/lib/guide/store';
 
 interface Rec {
   id: string;
@@ -452,7 +453,7 @@ export default function ResultSheetsPage() {
             <select aria-label="Filter by client" className={SELECT} value={clientF} onChange={(e) => { setClientF(e.target.value); }}><option value="all">All Clients</option>{clientOptions.map((c) => <option key={c} value={c}>{c}</option>)}</select>
             <select aria-label="Filter by date range" className={SELECT} value={dateRange} onChange={(e) => { setDateRange(e.target.value); }}><option value="7">Last 7 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option><option value="all">All Time</option></select>
             <select aria-label="Filter by readiness" className={SELECT} value={confF} onChange={(e) => { setConfF(e.target.value); }}><option value="all">Readiness</option><option value="High">High</option><option value="Moderate">Moderate</option><option value="Low">Low</option></select>
-            <Button onClick={() => setSheetFor(all[0] ?? null)}><Plus size={16} /> New Result Sheet</Button>
+            <Button data-guide="add-result-sheet" onClick={() => setSheetFor(all[0] ?? null)}><Plus size={16} /> New Result Sheet</Button>
             <IconAction icon={<Download size={16} />} size="xl" shape="soft" className="hover:bg-slate-50 border border-slate-200" aria-label="Export" onClick={exportCsv} />
           </Card>
 

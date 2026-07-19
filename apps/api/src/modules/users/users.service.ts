@@ -168,6 +168,24 @@ export class UsersService {
     return { signatureUrl: user?.signatureUrl ?? null };
   }
 
+  /** The caller's own UI preferences (guided assistance). */
+  async getMyPreferences(userId: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId },
+      select: { guidedAssistanceEnabled: true },
+    });
+    return { guidedAssistanceEnabled: user?.guidedAssistanceEnabled ?? false };
+  }
+
+  async updateMyPreferences(userId: string, dto: { guidedAssistanceEnabled?: boolean }) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { guidedAssistanceEnabled: dto.guidedAssistanceEnabled ?? undefined },
+      select: { guidedAssistanceEnabled: true },
+    });
+    return { guidedAssistanceEnabled: user.guidedAssistanceEnabled };
+  }
+
   async saveMySignature(userId: string, signatureDataUri: string) {
     // Validate it's a PNG data URI.
     if (!signatureDataUri.startsWith('data:image/png;base64,')) {

@@ -1,4 +1,4 @@
-import { IsArray, IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsArray, IsBoolean, IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class CreateUserDto {
   @IsEmail()
@@ -36,4 +36,8 @@ export class SaveSignatureDto {
   // A PNG data URI (data:image/png;base64,...). Validated more strictly in the
   // service so an actionable error message is returned.
   @IsString() @IsNotEmpty() signatureDataUri!: string;
+}
+
+export class UpdatePreferencesDto {
+  @IsBoolean() @IsOptional() guidedAssistanceEnabled?: boolean;
 }

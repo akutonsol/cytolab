@@ -37,6 +37,7 @@ import { DictationTextarea } from './DictationTextarea';
 import type { DictationButtonHandle } from './DictationButton';
 import { FeatureGate } from './FeatureGate';
 import { notify } from '@/lib/notify';
+import { fireGuideSignal } from '@/lib/guide/store';
 
 interface RecordLite {
   id: string;
@@ -209,7 +210,7 @@ export function AuthorizationModal({ open, onClose, record }: Props) {
         await api.put('/users/me/signature', { signatureDataUri }).catch(() => {});
       }
     },
-    onSuccess: () => { notify.success('Signed off — record Approved, report releasable'); if (draftKey) clearDraft(draftKey); invalidate(); onClose(); },
+    onSuccess: () => { notify.success('Signed off — record Approved, report releasable'); if (draftKey) clearDraft(draftKey); fireGuideSignal('record:approved'); invalidate(); onClose(); },
     onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Sign-off failed'),
   });
 

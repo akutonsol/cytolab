@@ -37,6 +37,7 @@ import { DraftRestoreBanner } from '@/components/DraftRestoreBanner';
 import { useAutosaveDraft, loadDraft, clearDraft, type Draft } from '@/lib/session-drafts';
 import { encodeForm, decodeForm } from '@/lib/form-draft';
 import { notify } from '@/lib/notify';
+import { fireGuideSignal } from '@/lib/guide/store';
 
 export interface PatientRecord {
   id: string;
@@ -152,6 +153,7 @@ export function PatientFormDrawer({ open, onClose, patient, onCreated }: Props) 
       notify.success(isEdit ? 'Patient updated' : 'Patient created');
       if (draftKey) clearDraft(draftKey); // saved for real — drop the local draft
       qc.invalidateQueries({ queryKey: ['patients'] });
+      if (!isEdit) fireGuideSignal('patient:created'); // advance guided assistance
       if (!isEdit && onCreated) onCreated(saved);
       onClose();
     },

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, CheckCircle2, ChevronDown, ChevronRight, ShieldCheck } from 'lucide-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
+import { fireGuideSignal } from '@/lib/guide/store';
 import { useInfiniteScroll, clientPage } from '@/hooks/useInfiniteScroll';
 import { ScrollSentinel } from '@/components/ui/ScrollSentinel';
 import { money, monthYear, thisMonth, fmtDate, previewAdvice, type RunDetail } from '@/lib/payroll';
@@ -67,7 +68,7 @@ export default function PayrollWizardPage() {
       };
       return api.post<RunDetail>('/payroll/runs/process', payload).then((r) => r.data);
     },
-    onSuccess: (d) => { setResult(d); setErr(null); setStep(3); },
+    onSuccess: (d) => { setResult(d); setErr(null); setStep(3); fireGuideSignal('payroll:processed'); },
     onError: (e: any) => setErr(e?.response?.data?.message ?? 'Processing failed'),
   });
 

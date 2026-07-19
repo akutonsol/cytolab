@@ -7,6 +7,7 @@ import { AiSettingsPane } from '@/components/AiSettingsPane';
 import { CompanySettingsPane } from '@/components/settings/CompanySettingsPane';
 import { NotificationSettingsPane } from '@/components/settings/NotificationSettingsPane';
 import { DepartmentsSettingsPane } from '@/components/settings/DepartmentsSettingsPane';
+import { GuidedAssistancePane } from '@/components/settings/GuidedAssistancePane';
 import { DrawPad } from '@/components/DrawPad';
 import { api } from '@/lib/api';
 import { Card, Button } from '@/components/ui';
@@ -15,7 +16,7 @@ import { notify } from '@/lib/notify';
 type SectionId =
   | 'labcodes' | 'codesheet' | 'codefindings'
   | 'services' | 'taxes'
-  | 'ai' | 'signature' | 'company' | 'notification' | 'departments';
+  | 'ai' | 'signature' | 'company' | 'notification' | 'departments' | 'guidance';
 
 const NAV_GROUPS: { title: string; items: { id: SectionId; label: string }[] }[] = [
   {
@@ -36,6 +37,7 @@ const NAV_GROUPS: { title: string; items: { id: SectionId; label: string }[] }[]
   {
     title: 'General',
     items: [
+      { id: 'guidance', label: 'Guided Assistance' },
       { id: 'ai', label: 'AI Assistance' },
       { id: 'signature', label: 'My Signature' },
       { id: 'company', label: 'Company' },
@@ -169,6 +171,8 @@ export default function SettingsPage() {
         return <NotificationSettingsPane />;
       case 'departments':
         return <DepartmentsSettingsPane />;
+      case 'guidance':
+        return <GuidedAssistancePane />;
       default: {
         const label = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.id === active)?.label ?? 'Settings';
         return <ComingSoon label={label} />;

@@ -186,7 +186,7 @@ export default function PayrollDashboard() {
         {/* Top bar */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-3xl font-bold text-charcoal-heading">Payroll</h1>
-          <Button className="!h-12 !px-6 !text-[15px]" onClick={() => router.push('/payroll/wizard')}><Calculator size={18} /> Run Salary Payroll</Button>
+          <Button data-guide="run-payroll" className="!h-12 !px-6 !text-[15px]" onClick={() => router.push('/payroll/wizard')}><Calculator size={18} /> Run Salary Payroll</Button>
         </div>
 
         {wf && (

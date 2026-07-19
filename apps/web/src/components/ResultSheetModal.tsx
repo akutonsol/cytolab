@@ -10,6 +10,7 @@ import { DrawerHeader, PremiumFormStyles } from '@/components/DrawerChrome';
 import { DraftRestoreBanner } from '@/components/DraftRestoreBanner';
 import { useAutosaveDraft, loadDraft, clearDraft, type Draft } from '@/lib/session-drafts';
 import { notify } from '@/lib/notify';
+import { fireGuideSignal } from '@/lib/guide/store';
 
 interface CodeSheet {
   id: string;
@@ -77,6 +78,7 @@ export function ResultSheetModal({ open, onClose, record }: Props) {
     onSuccess: () => {
       notify.success('Result sheet created — record moved to Resulted');
       if (draftKey) clearDraft(draftKey);
+      fireGuideSignal('result:saved'); // advance guided assistance
       qc.invalidateQueries({ queryKey: ['records'] });
       onClose();
     },

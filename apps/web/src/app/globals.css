@@ -2039,3 +2039,24 @@ html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
 .lenis.lenis-stopped { overflow: hidden; }
 .lenis.lenis-scrolling iframe { pointer-events: none; }
+
+/* ── Guided assistance (coachmark highlight) ──────────────────────────────
+   The current step's target element gets `.guide-target`. An outline is the
+   ring (never clipped by overflow, always pixel-perfect on the element); a
+   box-shadow adds the animated pulse. Indigo only (zero-orange). The base
+   outline survives the prefers-reduced-motion backstop so the target stays
+   marked even without motion. */
+.guide-target {
+  outline: 2px solid rgba(79, 70, 229, 0.95);
+  outline-offset: 3px;
+  border-radius: inherit;
+  position: relative;
+  z-index: 1;
+  animation: guide-pulse 1.6s var(--ease-out, cubic-bezier(0, 0, 0.2, 1)) infinite;
+}
+@keyframes guide-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.45); }
+  70%  { box-shadow: 0 0 0 12px rgba(79, 70, 229, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .guide-target { animation: none !important; } }

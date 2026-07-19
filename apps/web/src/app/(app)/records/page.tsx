@@ -314,7 +314,7 @@ export default function SamplesPage() {
           <p className="mt-1 text-sm text-secondary">Real-time status tracking for clinical diagnostic samples.</p>
         </div>
         <div className="flex items-center gap-2.5">
-          {can('record:create') && <Button onClick={openChoose}><Plus size={16} /> New Sample</Button>}
+          {can('record:create') && <Button data-guide="new-sample" onClick={openChoose}><Plus size={16} /> New Sample</Button>}
         </div>
       </div>
 

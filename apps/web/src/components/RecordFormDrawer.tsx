@@ -31,6 +31,7 @@ import { DraftRestoreBanner } from '@/components/DraftRestoreBanner';
 import { useAutosaveDraft, loadDraft, clearDraft, type Draft } from '@/lib/session-drafts';
 import { encodeForm, decodeForm } from '@/lib/form-draft';
 import { notify } from '@/lib/notify';
+import { fireGuideSignal } from '@/lib/guide/store';
 
 // Specimen type multi-select rendered as dark pill chips (legacy form language).
 // Integrates with Form.Item via the injected value/onChange props.
@@ -267,6 +268,7 @@ export function RecordFormDrawer({ open, onClose, formType, recordId, initialPat
     onSuccess: (_r, opts) => {
       notify.success(isEdit ? 'Record updated' : opts.submit ? 'Record submitted to Cytolab' : 'Record saved');
       if (draftKey) clearDraft(draftKey); // saved for real — drop the local draft
+      if (!isEdit) fireGuideSignal('record:created'); // advance guided assistance
       qc.invalidateQueries({ queryKey: ['records'] });
       if (isEdit) qc.invalidateQueries({ queryKey: ['record', recordId] });
       // Accessioning a line changes the requisition's Ordered/Fulfilled + line

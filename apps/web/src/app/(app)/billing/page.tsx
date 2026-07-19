@@ -10,6 +10,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { Card, IconAction, PageHeader, SkeletonRows } from '@/components/ui';
 import { notify } from '@/lib/notify';
+import { fireGuideSignal } from '@/lib/guide/store';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (cents: number) => '$' + ((cents ?? 0) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -151,6 +152,10 @@ function BillingWorkspace() {
   }
   const calYears = [0, 1, 2, 3].map((i) => now.getFullYear() - i);
   const firstName = overview?.greeting?.firstName || 'there';
+  // Time-of-day greeting (was hardcoded "Good morning"). Matches the app shell's
+  // greeting split: morning < 12:00, afternoon < 17:00, evening after.
+  const hour = now.getHours();
+  const timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const targetPct = target ? Number(target) : null;
 
   return (
@@ -191,7 +196,7 @@ function BillingWorkspace() {
                   <Search size={16} />
                   <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search bills…" className="w-full border-none bg-transparent text-[14px] text-[var(--slate-900)] outline-none placeholder:text-[var(--color-text-muted)]" />
                 </div>
-                <button onClick={() => setCreateOpen(true)} className="flex h-10 items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[var(--color-primary-hover)]"><Receipt size={16} /> Create Invoice</button>
+                <button data-guide="create-invoice" onClick={() => setCreateOpen(true)} className="flex h-10 items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[var(--color-primary-hover)]"><Receipt size={16} /> Create Invoice</button>
               </div>
             </div>
 
@@ -260,7 +265,7 @@ function BillingWorkspace() {
           {/* Financial health */}
           <Card radius="lg" elevation="raised" border="hairline" className="overflow-hidden">
             <div style={{ background: 'linear-gradient(135deg,var(--indigo-50) 0%,var(--status-success-soft) 100%)', padding: 32 }}>
-              <div className="text-[30px] font-bold leading-tight text-[var(--slate-900)]">Good morning, {firstName}</div>
+              <div className="text-[30px] font-bold leading-tight text-[var(--slate-900)]">{timeGreeting}, {firstName}</div>
               <div className="mt-1.5 text-[16px] text-[var(--slate-600)]">Here is your lab financial health</div>
               <div className="mt-5 inline-flex gap-1 rounded-full bg-white/70 p-1">
                 {([['month', 'This Month'], ['last', 'Last Month'], ['ytd', 'YTD']] as const).map(([v, l]) => (
@@ -546,7 +551,7 @@ function BillDrawer({ id, onClose, onPay, onChanged }: { id: string; onClose: ()
             {/* Actions */}
             <div className="flex flex-wrap gap-3 border-t border-[var(--color-light-gray)] pt-4">
               {(bill.status === 'Issued' || bill.status === 'Draft' || bill.status === 'PartiallyPaid') && out > 0 && (
-                <button onClick={() => onPay(bill)} className="flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-[14px] font-semibold text-white hover:bg-[var(--color-primary-hover)]"><CreditCard size={15} /> Record Payment</button>
+                <button data-guide="record-payment" onClick={() => onPay(bill)} className="flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-[14px] font-semibold text-white hover:bg-[var(--color-primary-hover)]"><CreditCard size={15} /> Record Payment</button>
               )}
               {bill.status === 'Draft' && (
                 <button onClick={() => issue.mutate()} disabled={issue.isPending} className="rounded-xl border border-[var(--color-primary)] px-4 py-2.5 text-[14px] font-semibold text-[var(--color-primary)] hover:bg-[var(--indigo-50)] disabled:opacity-60">Issue Bill</button>
@@ -603,7 +608,7 @@ function CreateInvoiceModal({ presetRecordId, onClose, onCreated }: { presetReco
       if (issue) await api.put(`/bill/billed/${bill.id}`);
       return bill;
     },
-    onSuccess: onCreated,
+    onSuccess: () => { fireGuideSignal('bill:created'); onCreated(); },
     onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not create invoice'),
   });
 
@@ -699,7 +704,7 @@ function PaymentModal({ bill, onClose, onPaid }: { bill: Bill; onClose: () => vo
 
   const pay = useMutation({
     mutationFn: () => api.post('/payment/create', { billId: bill.id, amount: Math.round(Number(amount) * 100), type, referenceNo: referenceNo || undefined }).then((r) => r.data),
-    onSuccess: onPaid,
+    onSuccess: () => { fireGuideSignal('payment:created'); onPaid(); },
     onError: (e: any) => notify.error(e?.response?.data?.message ?? 'Could not record payment'),
   });
   const cents = Math.round(Number(amount) * 100);

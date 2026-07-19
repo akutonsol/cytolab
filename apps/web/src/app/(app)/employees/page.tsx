@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type Paginated } from '@/lib/api';
 import { Button, IconAction } from '@/components/ui';
 import { notify } from '@/lib/notify';
+import { fireGuideSignal } from '@/lib/guide/store';
 
 type EmploymentType = 'FullTime' | 'PartTime' | 'Contract';
 interface Employee {
@@ -87,7 +88,7 @@ export default function EmployeesPage() {
             <h1 className="font-headline-lg text-headline-lg text-charcoal-heading">Employees</h1>
             <p className="mt-1 font-body-sm text-body-sm text-secondary">Staff HR records, employment and payroll details.</p>
           </div>
-          <Button onClick={() => { setEditing(null); setModalOpen(true); }}><UserPlus size={16} /> New Employee</Button>
+          <Button data-guide="new-employee" onClick={() => { setEditing(null); setModalOpen(true); }}><UserPlus size={16} /> New Employee</Button>
         </div>
 
         <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -258,7 +259,7 @@ function EmployeeModal({ employee, departments, onClose, onSaved, onError }: {
         ? api.put(`/employees/update/${employee!.id}`, common)
         : api.post('/employees', { userId: f.userId, ...common });
     },
-    onSuccess: onSaved,
+    onSuccess: () => { if (!isEdit) fireGuideSignal('employee:created'); onSaved(); },
     onError: (e: any) => onError(e?.response?.data?.message ?? 'Save failed'),
   });
 

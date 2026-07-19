@@ -24,6 +24,7 @@ import { useAuth, useAuthStore } from '@/lib/auth';
 import { api, refreshSession, validatePersistedSession } from '@/lib/api';
 import { playNotificationSound } from '@/lib/notification-sound';
 import { GlobalProgress } from '@/components/GlobalProgress';
+import { GuideOverlay } from '@/components/guide/GuideOverlay';
 
 interface Announcement { id: string; title: string; body: string; type: string }
 // Announcement banner palette (zero-orange: WARNING uses amber #A16207).
@@ -300,6 +301,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Idle-timeout warning + auto-draft of open work (authed app only). */}
       <GlobalProgress />
       <SessionTimeoutProvider />
+      {/* Guided assistance overlay (spotlight + coach panel); no-op unless enabled in Settings. */}
+      <GuideOverlay />
 
       <header className="top-navigation">
         <div className="nav-inner page-container" style={{ flexDirection: 'column', alignItems: 'stretch', justifyContent: 'center', gap: 6, paddingTop: showCenter ? 8 : 6, paddingBottom: 6 }}>

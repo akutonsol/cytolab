@@ -384,6 +384,9 @@ model User {
   passwordChangedAt       DateTime?
   passwordExpiresAt       DateTime?
   mfaRequired             Boolean                     @default(false)
+  // Per-user UI preference: the guided-assistance coach (follows the user across
+  // devices). Off by default.
+  guidedAssistanceEnabled Boolean                     @default(false)
   lastLoginAt             DateTime?
   lastLoginIp             String?
   failedLoginCount        Int                         @default(0)

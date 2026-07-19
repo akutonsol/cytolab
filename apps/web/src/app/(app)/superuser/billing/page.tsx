@@ -132,7 +132,9 @@ function ConfigDrawer({ lab, onClose, onSaved }: { lab: LabRow | null; onClose: 
     setDay(p?.billingDayOfMonth ?? 1);
     setDueDays(p?.dueDays ?? 14);
     setNotes(p?.notes ?? '');
-    setItems((p?.items ?? [{ description: 'Platform license', quantity: 1, unitPrice: 0 }]).map((it) => ({ description: it.description, quantity: it.quantity, unitPrice: it.unitPrice / 100 })));
+    // New (unconfigured) labs start with a single blank row — no preset label,
+    // so nothing on the form reads as canned/static data.
+    setItems((p?.items ?? [{ description: '', quantity: 1, unitPrice: 0 }]).map((it) => ({ description: it.description, quantity: it.quantity, unitPrice: it.unitPrice / 100 })));
   }, [lab]);
 
   const total = items.reduce((s, it) => s + (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0), 0);

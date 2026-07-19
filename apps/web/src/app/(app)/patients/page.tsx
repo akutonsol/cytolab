@@ -167,7 +167,7 @@ export default function PatientsPage() {
             }}
           />
           {can('patient:create') && (
-            <Button onClick={openCreate}><Plus size={16} /> New Patient</Button>
+            <Button data-guide="new-patient" onClick={openCreate}><Plus size={16} /> New Patient</Button>
           )}
         </div>
       </div>
