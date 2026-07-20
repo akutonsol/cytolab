@@ -1658,6 +1658,8 @@ model Notification {
   body       String
   read       Boolean          @default(false)
   readAt     DateTime?
+  archived   Boolean          @default(false)
+  archivedAt DateTime?
   link       String? // e.g. /records/xxx or /authorizer
   entityId   String? // recordId, changeRequestId etc
   entityType String? // 'record', 'changerequest', 'appointment'
@@ -1665,6 +1667,7 @@ model Notification {
 
   @@index([labId, userId])
   @@index([labId, userId, read])
+  @@index([labId, userId, archived])
 }
 
 enum NotificationType {
@@ -3182,12 +3185,15 @@ model WorkforceNotification {
   title             String
   body              String
   isRead            Boolean                   @default(false)
+  archived          Boolean                   @default(false)
+  archivedAt        DateTime?
   relatedEntityId   String?
   relatedEntityType String?
   createdAt         DateTime                  @default(now())
 
   @@index([labId, recipientId, isRead])
   @@index([recipientId, createdAt])
+  @@index([labId, recipientId, archived])
 }
 
 enum LeaveRequestStatus {
@@ -3883,7 +3889,7 @@ model AncillaryOrder {
 // aggregate's lifecycle, membership, batch→screener assignment, and completion
 // state (D-002/D-014). It references Record and Lab but writes ONLY its own tables;
 // it never writes Record.status, Record.assignedTo* (workload), QC, AI, Result
-// Sheet, or Sign-Out (D-004/D-019). Plan: docs/platform/PATHOS_SCREENING_BATCH_IMPLEMENTATION_PLAN.md (C1).
+// Sheet, or Sign-Out (D-004/D-019). Plan: docs/platform/OSIERI_SCREENING_BATCH_IMPLEMENTATION_PLAN.md (C1).
 
 enum ScreeningBatchStatus {
   Draft // membership being assembled
