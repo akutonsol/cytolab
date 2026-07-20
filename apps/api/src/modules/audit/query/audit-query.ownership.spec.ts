@@ -26,6 +26,9 @@ describe('P2-7B — audit-query ownership boundary', () => {
     // P2-R016B-B1 — the chain allocator reads the ledger (count/aggregate/findFirst) to prove
     // head↔ledger consistency before allocating. Read-only; asserted below.
     'audit-chain.service.ts',
+    // P2-R016B-C — the integrity monitor reads the ledger (groupBy/count/aggregate/findFirst/findUnique)
+    // to run report-only verification sweeps. Read-only; asserted below.
+    'audit-integrity-monitor.service.ts',
   ]);
 
   // Actual accessor calls (any Prisma method on the model), not prose mentions.
@@ -46,6 +49,12 @@ describe('P2-7B — audit-query ownership boundary', () => {
     const src = fs.readFileSync(path.join(AUDIT_DIR, 'audit-chain.service.ts'), 'utf8');
     expect(src).toMatch(ACCESSOR); // it reads (count/aggregate/findFirst) for the B1 guard
     expect(src).not.toMatch(MUTATION); // ...but never creates/updates/deletes auditEvent rows
+  });
+
+  it('the integrity monitor reads the ledger for its sweeps but never mutates auditEvent', () => {
+    const src = fs.readFileSync(path.join(AUDIT_DIR, 'audit-integrity-monitor.service.ts'), 'utf8');
+    expect(src).toMatch(ACCESSOR); // it reads (groupBy/count/aggregate/findFirst/findUnique) to verify
+    expect(src).not.toMatch(MUTATION); // ...report-only; never writes the ledger
   });
 
   it('the query controller has no Prisma dependency and no ledger accessor', () => {

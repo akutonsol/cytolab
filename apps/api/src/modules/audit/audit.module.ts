@@ -10,6 +10,7 @@ import { AuditQueryController } from './query/audit-query.controller';
 import { AuditQueryReadCaptureGuard } from './query/audit-query-read-capture.guard';
 import { AuditExportController } from './query/audit-export.controller';
 import { AuditExportCoordinator } from './query/audit-export.coordinator';
+import { AuditIntegrityMonitorService } from './audit-integrity-monitor.service';
 
 /**
  * Program 2 · P2-3 — Enterprise Audit owner module (ACTIVE).
@@ -39,7 +40,9 @@ import { AuditExportCoordinator } from './query/audit-export.coordinator';
     AuditQueryReadCaptureGuard,
     // P2-9A — governed audit-log export coordinator (assemble → serialize → capture → egress).
     AuditExportCoordinator,
+    // P2-R016B-C — read-only, report-only integrity monitor (startup + scheduled verification sweeps).
+    AuditIntegrityMonitorService,
   ],
-  exports: [AuditRecorder, AuditQueryService],
+  exports: [AuditRecorder, AuditQueryService, AuditIntegrityMonitorService],
 })
 export class AuditModule {}
