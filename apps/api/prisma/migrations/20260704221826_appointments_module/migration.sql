@@ -44,8 +44,9 @@ ADD COLUMN     "reminderSentAt" TIMESTAMP(3),
 ADD COLUMN     "resultRecordId" TEXT,
 ALTER COLUMN "title" SET DEFAULT '';
 
--- AddForeignKey
-ALTER TABLE "Appointment" ADD CONSTRAINT "Appointment_recallRecordId_fkey" FOREIGN KEY ("recallRecordId") REFERENCES "RecallRecord"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- NOTE: the Appointment -> RecallRecord FK is added in the later
+-- 20260704260000_add_patient_recall migration, which creates RecallRecord.
+-- (Adding it here fails a clean `migrate deploy` — RecallRecord doesn't exist yet.)
 
 -- AddForeignKey
 ALTER TABLE "Appointment" ADD CONSTRAINT "Appointment_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;

@@ -43,3 +43,7 @@ ALTER TABLE "RecallRecord" ADD CONSTRAINT "RecallRecord_patientId_fkey" FOREIGN 
 -- AddForeignKey
 ALTER TABLE "RecallRecord" ADD CONSTRAINT "RecallRecord_triggerRecordId_fkey" FOREIGN KEY ("triggerRecordId") REFERENCES "Record"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- AddForeignKey — moved here from 20260704221826_appointments_module so it runs
+-- AFTER RecallRecord is created (fixes a clean `migrate deploy` from empty).
+ALTER TABLE "Appointment" ADD CONSTRAINT "Appointment_recallRecordId_fkey" FOREIGN KEY ("recallRecordId") REFERENCES "RecallRecord"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
