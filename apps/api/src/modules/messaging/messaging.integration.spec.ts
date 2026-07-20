@@ -61,9 +61,18 @@ describeIf('MessagingService (integration)', () => {
       expect(row.unread).toBe(true);
       expect(row.participants).toHaveLength(2);
 
-      // Bob authored the last message → not unread for Bob.
-      const listB = await service.listThreads(userB, { page: 1, pageSize: 20 });
-      expect(listB.data[0].unread).toBe(false);
+      // Read-receipt model (messaging.service.ts, commit 79352586): a thread is
+      // unread when it holds inbound messages the viewer has not READ — NOT merely
+      // when someone else authored the latest one. Bob still has Alice's "First from
+      // Alice" unread, so his thread reads as unread until he marks it read.
+      const listBBeforeRead = await service.listThreads(userB, { page: 1, pageSize: 20 });
+      expect(listBBeforeRead.data[0].unread).toBe(true);
+
+      // markThreadRead sets readAt on the inbound messages, which clears unread.
+      // (getThread only marks them DELIVERED — delivery is not read.)
+      await service.markThreadRead(userB, thread.id);
+      const listBAfterRead = await service.listThreads(userB, { page: 1, pageSize: 20 });
+      expect(listBAfterRead.data[0].unread).toBe(false);
 
       // getThread returns both messages in chronological order.
       const full = await service.getThread(userA, thread.id);
