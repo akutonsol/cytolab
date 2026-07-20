@@ -19,7 +19,7 @@ describeIf('Portal reports — authorized-only + ownership (e2e)', () => {
 
   const slug = `prep-${Date.now().toString(36)}`;
   const staffEmail = `staff-${slug}@e2e.test`;
-  const password = 'password123';
+  const password = 'E2eTestPassword1!';
   const portalEmail = `a-${slug}@e2e.test`;
   const portalPassword = 'portal-password-123';
 

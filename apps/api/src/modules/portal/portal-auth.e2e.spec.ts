@@ -18,7 +18,7 @@ describeIf('Portal auth (e2e)', () => {
 
   const slug = `pe2e-${Date.now().toString(36)}`;
   const staffEmail = `staff-${slug}@e2e.test`;
-  const staffPassword = 'password123';
+  const staffPassword = 'E2eTestPassword1!';
   const portalEmail = `portal-${slug}@e2e.test`;
   const portalPassword = 'portal-password-123';
 

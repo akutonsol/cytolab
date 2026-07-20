@@ -17,7 +17,7 @@ describeIf('Auth (e2e)', () => {
 
   const slug = `e2e-${Date.now().toString(36)}`;
   const email = `${slug}@e2e.test`;
-  const password = 'password123';
+  const password = 'E2eTestPassword1!';
   let labId: string;
 
   beforeAll(async () => {

@@ -18,7 +18,7 @@ describeIf('Portal records — cross-client isolation (e2e)', () => {
 
   const slug = `pr2e-${Date.now().toString(36)}`;
   const staffEmail = `staff-${slug}@e2e.test`;
-  const password = 'password123';
+  const password = 'E2eTestPassword1!';
   const portalEmail = `a-${slug}@e2e.test`;
   const portalPassword = 'portal-password-123';
 
