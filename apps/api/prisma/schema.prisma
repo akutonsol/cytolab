@@ -188,6 +188,17 @@ model Lab {
   // monthlyVolumeTarget: expected specimens/month (null -> derived from history).
   targetTatDays           Int                          @default(3)
   monthlyVolumeTarget     Int?
+  // --- Hybrid tenancy (pool + silo). Additive + BEHAVIOR-NEUTRAL: every existing
+  // lab defaults to POOL, so nothing changes until a lab is flipped to SILO.
+  // See docs/architecture/HYBRID_TENANCY_AND_CUSTOM_DOMAINS.md.
+  tenancyMode             TenancyMode                  @default(POOL)
+  // SILO only: a *reference* (e.g. GCP Secret Manager resource name) to the lab's
+  // dedicated DB connection secret — NEVER the raw connection string. Null for POOL.
+  databaseSecretRef       String?
+  migrationSecretRef      String?
+  // Optional data-residency / instance placement hint.
+  dataRegion              String?
+  domains                 LabDomain[]
   createdAt               DateTime                     @default(now())
   updatedAt               DateTime                     @updatedAt
   accounts                Account[]
@@ -278,6 +289,39 @@ model Lab {
   billingItems            LabBillingItem[]
   labInvoices             LabInvoice[]
   labInvoiceLines         LabInvoiceLine[]
+}
+
+/// How a lab's DATA-PLANE storage is provisioned. Control-plane rows (Lab, LabDomain,
+/// auth/identity needed to route a request) always live in the shared pool database.
+enum TenancyMode {
+  POOL // clinical data in the shared pool DB, isolated by labId (default)
+  SILO // clinical data in the lab's OWN dedicated database (still labId-governed)
+}
+
+/// Custom domains that route to a lab (a lab may have several: apex, www, app subdomain).
+/// The domain resolver maps an inbound Host header -> labId (-> its DB + branding).
+model LabDomain {
+  id         String       @id @default(uuid())
+  labId      String
+  lab        Lab          @relation(fields: [labId], references: [id], onDelete: Cascade)
+  /// Fully-qualified host, lowercased, no scheme/port. Globally unique across ALL labs.
+  hostname   String       @unique
+  /// Canonical domain for this lab (redirect target, cookie domain, branding origin).
+  isPrimary  Boolean      @default(false)
+  status     DomainStatus @default(PENDING)
+  verifiedAt DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([labId])
+  @@index([status])
+}
+
+enum DomainStatus {
+  PENDING // added, ownership/TLS not yet confirmed
+  VERIFYING // DNS/ACME challenge in flight
+  ACTIVE // serving with a valid cert
+  DISABLED
 }
 
 model Account {
