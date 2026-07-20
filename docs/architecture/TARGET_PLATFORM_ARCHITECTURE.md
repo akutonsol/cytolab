@@ -56,6 +56,23 @@ Control-plane surfaces (features, modules, security, cross-lab admin, etc.) rend
 superusers/Control-Center roles. Lab users never see control-plane nav — the lab-facing app is a
 strict subset. (The Control Center already sits behind its own gate/login.)
 
+### Feature flags & config across silos
+A lab's **feature flags (`LabFeature`) and per-lab config are control-plane data** — they describe
+*how a lab is set up*, not its clinical data. So every lab, **pooled or silo, appears in the Control
+Center list and its features are toggled there**.
+
+Design rule that makes this work for silos: **store/resolve feature flags in the control plane, not
+inside each lab's data-plane DB.**
+- **Pooled labs:** flags already live centrally → toggling is instant.
+- **Silo labs (own DB/account):** if flags lived only in the silo DB, the Control Center couldn't
+  reach them across accounts. Instead the control plane owns the flags and each silo instance
+  **reads its flags from the control plane (fetch + cache)**. One toggle then drives every lab
+  uniformly.
+
+This rides the **same control-plane↔silo channel** as cross-account telemetry (§3, §6): until that
+channel exists, silo-in-own-account toggles don't propagate. Build `LabFeature` as control-plane
+config that silos read centrally, and feature management is identical for pooled and silo labs.
+
 ## 4. Release pipeline — how "updates reach everyone"
 
 ```mermaid
@@ -102,7 +119,9 @@ design; the legacy→Osieri ETL; the demo dataset.
 1. **App deployment** — containerize `apps/web` + `apps/api`; host (Cloud Run recommended);
    secrets; per-env config. (Data migration is solved; app hosting is new.)
 2. **CI/CD release pipeline** — build one image → deploy to demo + pooled prod + each silo.
-3. **Cross-account silo telemetry** — so Control Center monitors silos.
+3. **Cross-account silo channel** — control-plane↔silo link that carries both **telemetry** (so
+   Control Center monitors silos) and **config/feature flags** (so Control Center toggles silo
+   features); `LabFeature` resolved from the control plane.
 4. **Custom-domain routing** — Host→lab resolution, managed SSL (tenancy doc §5).
 5. **Role-gated nav audit** — ensure no control-plane surface leaks to lab roles.
 
