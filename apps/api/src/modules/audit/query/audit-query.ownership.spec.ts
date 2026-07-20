@@ -2,8 +2,9 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 /**
- * P2-7B — ownership + read-only architecture guards. Only the three approved owners may touch
- * prisma.auditEvent (append, verifier, and the new query reader); the query service is read-only.
+ * P2-7B — ownership + read-only architecture guards. Only the approved owners may touch
+ * prisma.auditEvent (append, verifier, the query reader, and — P2-R016B-B1 — the chain allocator's
+ * read-only integrity guard); the query service and the chain allocator never mutate the ledger.
  */
 const AUDIT_DIR = path.join(__dirname, '..');
 
@@ -22,6 +23,9 @@ describe('P2-7B — audit-query ownership boundary', () => {
     'audit-persistence.service.ts',
     'audit-verification.service.ts',
     path.join('query', 'audit-query.service.ts'),
+    // P2-R016B-B1 — the chain allocator reads the ledger (count/aggregate/findFirst) to prove
+    // head↔ledger consistency before allocating. Read-only; asserted below.
+    'audit-chain.service.ts',
   ]);
 
   // Actual accessor calls (any Prisma method on the model), not prose mentions.
@@ -36,6 +40,12 @@ describe('P2-7B — audit-query ownership boundary', () => {
       if (ACCESSOR.test(fs.readFileSync(file, 'utf8'))) offenders.push(rel);
     }
     expect(offenders).toEqual([]);
+  });
+
+  it('the chain allocator reads the ledger for its integrity guard but never mutates auditEvent', () => {
+    const src = fs.readFileSync(path.join(AUDIT_DIR, 'audit-chain.service.ts'), 'utf8');
+    expect(src).toMatch(ACCESSOR); // it reads (count/aggregate/findFirst) for the B1 guard
+    expect(src).not.toMatch(MUTATION); // ...but never creates/updates/deletes auditEvent rows
   });
 
   it('the query controller has no Prisma dependency and no ledger accessor', () => {

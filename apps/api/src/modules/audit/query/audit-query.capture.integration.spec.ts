@@ -52,6 +52,10 @@ const captures = () =>
 
 async function cleanCaptures() {
   await prisma.auditEvent.deleteMany({ where: { producerModule: 'audit-query', scopeLabId: LAB1 } });
+  // P2-R016B-B1 — the chained capture events are this lab chain's only history (the FIX fixtures carry
+  // chainId=NULL). Reset the head with them, so each test starts from a clean genesis instead of a head
+  // orphaned above an empty ledger — which the writer's fail-closed integrity guard now (correctly) rejects.
+  await prisma.$executeRaw`DELETE FROM "AuditChainHead" WHERE "chainId" = ${LAB_CHAIN}`;
 }
 async function cleanAll() {
   await cleanCaptures();

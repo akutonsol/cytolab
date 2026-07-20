@@ -46,6 +46,18 @@ describe('P2-R016A — SYSTEM-chain contamination cannot recur', () => {
       await prisma.$transaction(async (tx) => {
         const alloc = await chain.allocate(tx as never, SYSTEM);
         seqs.push(alloc.sequence.toString());
+        // P2-R016B-B1 — insert the event so the head advance stays consistent with the ledger (the real
+        // append shape). The B1 guard now fails closed on a head that has advanced past an empty ledger,
+        // so allocate+advance can no longer be driven without persisting the event they describe.
+        await (tx as never as typeof prisma).auditEvent.create({
+          data: {
+            occurredAt: new Date(), eventVersion: 1, category: 'SYSTEM', severity: 'INFO',
+            dataClass: 'INTERNAL', retentionClass: 'EXTENDED', durabilityClass: 'OPERATIONAL',
+            actorType: 'SYSTEM', organizationScope: 'SYSTEM', resourceType: 'Job', actionCode: 'JOB_STARTED',
+            outcome: 'SUCCESS', producerModule: 'p2-r016a-sys-regression',
+            chainId: SYSTEM, sequence: alloc.sequence, prevHash: alloc.prevHash, selfHash: hash, hashAlgorithm: 'sha256/v1',
+          },
+        });
         await chain.advance(tx as never, SYSTEM, alloc.sequence, hash);
       });
     }

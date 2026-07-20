@@ -23,6 +23,7 @@ import {
   PhiRedactionState,
 } from './audit-metadata';
 import { AuditPersistenceService } from './audit-persistence.service';
+import { AuditChainIntegrityError } from './audit-chain.service';
 import { resolveCurrent, UnknownAuditEventError } from './audit.registry';
 import { derivePatientRef } from './phi-ref';
 import { PhiAccessDedup } from './phi-access-dedup';
@@ -769,11 +770,22 @@ export class AuditRecorder {
       // Recorder-owned transaction, purely for chain-append atomicity. Best-effort: swallow on fail.
       try {
         await this.prisma.$transaction((tx) => this.persistence.append(input, tx));
-      } catch {
-        this.logger.warn(
-          `OPERATIONAL audit capture failed (${intent.category}, ${intent.actionCode}); dropped ` +
-            `(best-effort — no durability claim).`,
-        );
+      } catch (err) {
+        if (err instanceof AuditChainIntegrityError) {
+          // P2-R016B-B1 — a fail-closed integrity incident. The transaction rolled back, so the chain
+          // was NOT mutated. Surface it distinctly (ERROR) rather than as a routine best-effort drop,
+          // so monitoring/operators can act; availability policy is unchanged (still swallowed).
+          this.logger.error(
+            `AUDIT CHAIN INTEGRITY INCIDENT [${err.kind}] on OPERATIONAL capture ` +
+              `(${intent.category}, ${intent.actionCode}) for chain "${err.chainId}"; append refused, ` +
+              `chain left unchanged. ${err.message}`,
+          );
+        } else {
+          this.logger.warn(
+            `OPERATIONAL audit capture failed (${intent.category}, ${intent.actionCode}); dropped ` +
+              `(best-effort — no durability claim).`,
+          );
+        }
       }
       return;
     }
