@@ -94,6 +94,11 @@ describeIf('Change requests (e2e)', () => {
       await raw.authAttempt.deleteMany({ where: { email: { in: [staffEmail, portalEmail, `b-${slug}@e2e.test`] } } });
       await raw.portalUser.deleteMany({ where: { labId } });
       await raw.client.deleteMany({ where: { labId } });
+      // Notifications raised for the staff user by the change-request activity hold a
+      // required User FK (Notification.userId, onDelete: Restrict) and a Lab FK, so they
+      // must be removed before the User (and Lab) rows they reference. UserRole,
+      // PasswordHistory, RefreshToken and UserSession all cascade on user delete.
+      await raw.notification.deleteMany({ where: { labId } });
       await raw.user.deleteMany({ where: { labId } });
       await raw.workspace.deleteMany({ where: { labId } });
       await raw.account.deleteMany({ where: { labId } });
