@@ -26,7 +26,14 @@ function parseArgs(argv: string[]) {
     return hit ? hit.slice(f.length + 1) : undefined;
   };
   const sinceRaw = val('--since');
-  return { dryRun: has('--dry-run'), full: has('--full'), incremental: has('--incremental'), since: sinceRaw ? new Date(sinceRaw) : null };
+  const limitRaw = val('--limit');
+  return {
+    dryRun: has('--dry-run'),
+    full: has('--full'),
+    incremental: has('--incremental'),
+    since: sinceRaw ? new Date(sinceRaw) : null,
+    limit: limitRaw ? Number(limitRaw) : null,
+  };
 }
 
 async function main() {
@@ -43,7 +50,9 @@ async function main() {
     password: process.env.LEGACY_PGPASSWORD,
     database: process.env.LEGACY_PGDATABASE,
     since: args.since,
+    limit: args.limit,
   });
+  if (args.limit) console.log(`[sample mode] processing at most ${args.limit} rows per table`);
   const prisma = new PrismaClient();
   // Dry-run never writes, so an in-memory id-map is enough; real runs need the
   // durable store so re-runs and the nightly sync stay idempotent.

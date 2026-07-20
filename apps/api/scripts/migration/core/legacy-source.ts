@@ -15,19 +15,23 @@ import { Client, ClientConfig } from 'pg';
 export interface LegacySourceConfig extends ClientConfig {
   /** High-water mark for incremental sync: only rows with dateupdated > since. */
   since?: Date | null;
+  /** Smoke-test cap: process at most this many rows PER TABLE (dry-run sampling). */
+  limit?: number | null;
 }
 
 export class LegacySource {
   private client: Client;
   constructor(private cfg: LegacySourceConfig) {
-    this.client = new Client(cfg);
+    // Fail fast if the tunnel/proxy isn't actually up, instead of hanging forever.
+    this.client = new Client({ connectionTimeoutMillis: 15000, ...cfg });
   }
 
   async connect(): Promise<void> {
     await this.client.connect();
     // Belt-and-suspenders: make the whole session read-only.
     await this.client.query('SET default_transaction_read_only = on');
-    await this.client.query('SET statement_timeout = 0');
+    // Bound any single query so a bad plan can't hang the run forever (10 min).
+    await this.client.query('SET statement_timeout = 600000');
   }
 
   async end(): Promise<void> {
@@ -40,11 +44,18 @@ export class LegacySource {
     return res.rows as T[];
   }
 
-  /** Exact row count for a table (for reconciliation). */
+  /**
+   * Row count for reconciliation. With a sample `limit` set, returns
+   * min(realCount, limit) so a sampled dry-run reconciles source == target.
+   */
   async count(table: string, whereSince = false): Promise<number> {
     const where = whereSince && this.cfg.since ? 'WHERE dateupdated > $1' : '';
     const params = whereSince && this.cfg.since ? [this.cfg.since] : [];
-    const res = await this.client.query(`SELECT count(*)::int AS n FROM public.${table} ${where}`, params);
+    const inner = `SELECT 1 FROM public.${table} ${where}`;
+    const sql = this.cfg.limit
+      ? `SELECT count(*)::int AS n FROM (${inner} LIMIT ${this.cfg.limit}) t`
+      : `SELECT count(*)::int AS n FROM public.${table} ${where}`;
+    const res = await this.client.query(sql, params);
     return res.rows[0].n as number;
   }
 
@@ -59,19 +70,24 @@ export class LegacySource {
     const batchSize = opts.batchSize ?? 1000;
     const key = opts.orderBy ?? 'id';
     const sinceClause = opts.incremental && this.cfg.since ? 'AND dateupdated > $2' : '';
+    const limit = this.cfg.limit ?? Infinity;
     let last = -1;
+    let yielded = 0;
     // eslint-disable-next-line no-constant-condition
     while (true) {
+      if (yielded >= limit) return;
+      const take = Math.min(batchSize, limit - yielded);
       const params: unknown[] = [last];
       if (sinceClause) params.push(this.cfg.since);
       const res = await this.client.query(
-        `SELECT * FROM public.${table} WHERE ${key} > $1 ${sinceClause} ORDER BY ${key} ASC LIMIT ${batchSize}`,
+        `SELECT * FROM public.${table} WHERE ${key} > $1 ${sinceClause} ORDER BY ${key} ASC LIMIT ${take}`,
         params,
       );
       if (res.rows.length === 0) return;
       yield res.rows as T[];
+      yielded += res.rows.length;
       last = (res.rows[res.rows.length - 1] as Record<string, number>)[key];
-      if (res.rows.length < batchSize) return;
+      if (res.rows.length < take) return;
     }
   }
 
