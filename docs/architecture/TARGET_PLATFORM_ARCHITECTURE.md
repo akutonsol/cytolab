@@ -73,6 +73,18 @@ This rides the **same control-plane↔silo channel** as cross-account telemetry 
 channel exists, silo-in-own-account toggles don't propagate. Build `LabFeature` as control-plane
 config that silos read centrally, and feature management is identical for pooled and silo labs.
 
+**Already built (audited 2026-07-20):** for POOLED labs this fully works today.
+- Control Center → **Features** (`/superuser/features`) lists **all labs** (`/lab-features/all-labs`),
+  offers a **lab selector**, toggles a feature **per selected lab** (`PATCH /lab-features/:key {labId}`),
+  and shows per-lab `isActive / online / activeSessions`.
+- **Role-gating is correct with defense-in-depth:** nav filters by `can(permission)`; the
+  control-plane surfaces (Modules/Features, Security, System Health, Superuser) require
+  `system:health` / `system:security`, which are granted to **no default role** (superuser-bypass
+  only); the API guards each endpoint; and the pages themselves redirect non-superusers.
+- **Silo-readiness (the only remaining piece, lands with the Phase-D silo channel):** keep
+  `LabFeature` on the **pool (control-plane) client** even for SILO labs — i.e. `ConnectionManager`
+  routes `LabFeature` to the pool, and each silo instance reads its flags from the control plane.
+
 ## 4. Release pipeline — how "updates reach everyone"
 
 ```mermaid
