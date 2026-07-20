@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { AppModule } from '../../app.module';
 
 /**
@@ -23,8 +24,11 @@ describeIf('Auth (e2e)', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
-    // Mirror production bootstrap so routes/validation match main.ts.
+    // Mirror production bootstrap so routes/validation match main.ts, including
+    // cookie-parser — the staff session is delivered as HttpOnly cookies and the
+    // JWT strategy reads the access token from `req.cookies`.
     app.setGlobalPrefix('api/v1');
+    app.use(cookieParser());
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
     await app.init();
 
@@ -54,29 +58,38 @@ describeIf('Auth (e2e)', () => {
       .expect(401);
   });
 
-  it('logs in with valid credentials and returns access + refresh tokens', async () => {
+  it('logs in with valid credentials and sets HttpOnly access + refresh session cookies', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email, password })
       .expect(201);
-    expect(res.body.accessToken).toEqual(expect.any(String));
-    expect(res.body.refreshToken).toEqual(expect.any(String));
+    // The staff session is delivered as HttpOnly cookies, not body tokens; the
+    // response body carries the authenticated user summary.
+    expect(res.body.status).toBe('OK');
     expect(res.body.user.email).toBe(email);
+    const setCookie = (res.headers['set-cookie'] ?? []) as unknown as string[];
+    expect(setCookie.some((c) => c.startsWith('access_token='))).toBe(true);
+    expect(setCookie.some((c) => c.startsWith('refresh_token='))).toBe(true);
+    // Session cookies are HttpOnly (not readable by client-side JS).
+    expect(setCookie.find((c) => c.startsWith('access_token='))).toMatch(/HttpOnly/i);
   });
 
   it('rejects GET /auth/me without a token (401)', async () => {
     await request(app.getHttpServer()).get('/api/v1/auth/me').expect(401);
   });
 
-  it('returns the current user from GET /auth/me with a bearer token', async () => {
+  it('returns the current user from GET /auth/me with the session cookie', async () => {
     const login = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ email, password });
-    const token = login.body.accessToken;
+      .send({ email, password })
+      .expect(201);
+    const cookie = ((login.headers['set-cookie'] ?? []) as unknown as string[])
+      .map((c) => c.split(';')[0])
+      .join('; ');
 
     const me = await request(app.getHttpServer())
       .get('/api/v1/auth/me')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', cookie)
       .expect(200);
 
     expect(me.body.email).toBe(email);

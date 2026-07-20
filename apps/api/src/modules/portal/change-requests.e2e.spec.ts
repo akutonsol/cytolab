@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { ChangeRequestStatus, ChangeRequestType, PrismaClient } from '@prisma/client';
 import * as argon2 from 'argon2';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { AppModule } from '../../app.module';
 
 /**
@@ -26,17 +27,21 @@ describeIf('Change requests (e2e)', () => {
   let clientBId: string;
   let portalUserBId: string;
   let portalToken: string;
-  let staffToken: string;
+  let staffCookie: string;
   let crAId: string; // created by portal user A
   let crBId: string; // belongs to client B
 
   const portalAuth = (req: request.Test) => req.set('Authorization', `Bearer ${portalToken}`);
-  const staffAuth = (req: request.Test) => req.set('Authorization', `Bearer ${staffToken}`);
+  // Staff auth is a HttpOnly cookie session; replay the captured Set-Cookie header.
+  const staffAuth = (req: request.Test) => req.set('Cookie', staffCookie);
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api/v1');
+    // Mirror production bootstrap: cookie-parser is required for the staff JWT
+    // strategy to read the access token from the HttpOnly session cookie.
+    app.use(cookieParser());
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
     await app.init();
 
@@ -70,7 +75,14 @@ describeIf('Change requests (e2e)', () => {
     });
     crBId = crB.id;
 
-    staffToken = (await request(app.getHttpServer()).post('/api/v1/auth/login').send({ email: staffEmail, password })).body.accessToken;
+    // Staff auth is a HttpOnly cookie session; capture the Set-Cookie header to replay on staff routes.
+    const staffLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: staffEmail, password })
+      .expect(201);
+    staffCookie = ((staffLogin.headers['set-cookie'] ?? []) as unknown as string[])
+      .map((c) => c.split(';')[0])
+      .join('; ');
     portalToken = (await request(app.getHttpServer()).post('/api/v1/portal/auth/login').send({ email: portalEmail, password: portalPassword })).body.accessToken;
   });
 

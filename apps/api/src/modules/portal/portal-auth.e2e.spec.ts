@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import * as argon2 from 'argon2';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { AppModule } from '../../app.module';
 
 /**
@@ -24,13 +25,17 @@ describeIf('Portal auth (e2e)', () => {
 
   let labId: string;
   let clientId: string;
-  let staffToken: string;
+  let staffCookie: string;
+  let staffAccessJwt: string;
   let portalToken: string;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api/v1');
+    // Mirror production bootstrap: cookie-parser is required for the staff JWT
+    // strategy to read the access token from the HttpOnly session cookie.
+    app.use(cookieParser());
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
     await app.init();
 
@@ -59,9 +64,19 @@ describeIf('Portal auth (e2e)', () => {
       },
     });
 
-    staffToken = (
-      await request(app.getHttpServer()).post('/api/v1/auth/login').send({ email: staffEmail, password: staffPassword })
-    ).body.accessToken;
+    // Staff auth is a HttpOnly cookie session: capture the Set-Cookie header to
+    // replay on staff routes, and the raw access-token JWT to prove the portal
+    // token family rejects it (audience isolation).
+    const staffLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: staffEmail, password: staffPassword })
+      .expect(201);
+    const staffSetCookie = (staffLogin.headers['set-cookie'] ?? []) as unknown as string[];
+    staffCookie = staffSetCookie.map((c) => c.split(';')[0]).join('; ');
+    staffAccessJwt = (staffSetCookie.find((c) => c.startsWith('access_token=')) ?? '')
+      .split(';')[0]
+      .replace('access_token=', '');
+    // Portal auth remains a bearer token returned in the body (separate family).
     portalToken = (
       await request(app.getHttpServer()).post('/api/v1/portal/auth/login').send({ email: portalEmail, password: portalPassword })
     ).body.accessToken;
@@ -82,8 +97,10 @@ describeIf('Portal auth (e2e)', () => {
     await app?.close();
   });
 
-  it('issues both token families on their own login endpoints', () => {
-    expect(staffToken).toEqual(expect.any(String));
+  it('issues both credential families on their own login endpoints', () => {
+    // Staff: a HttpOnly access-token cookie session. Portal: a bearer token.
+    expect(staffAccessJwt).toEqual(expect.any(String));
+    expect(staffAccessJwt.length).toBeGreaterThan(0);
     expect(portalToken).toEqual(expect.any(String));
   });
 
@@ -96,16 +113,18 @@ describeIf('Portal auth (e2e)', () => {
     });
 
     it('a STAFF token is REJECTED on a portal route', async () => {
+      // The raw staff access JWT, presented as a bearer, fails the portal
+      // strategy's separate secret + audience.
       await request(app.getHttpServer())
         .get('/api/v1/portal/auth/me')
-        .set('Authorization', `Bearer ${staffToken}`)
+        .set('Authorization', `Bearer ${staffAccessJwt}`)
         .expect(401);
     });
 
-    it('each token IS accepted on its own side (sanity)', async () => {
+    it('each credential IS accepted on its own side (sanity)', async () => {
       const staffMe = await request(app.getHttpServer())
         .get('/api/v1/auth/me')
-        .set('Authorization', `Bearer ${staffToken}`)
+        .set('Cookie', staffCookie)
         .expect(200);
       expect(staffMe.body.email).toBe(staffEmail);
 
