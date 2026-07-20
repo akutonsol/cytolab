@@ -1,4 +1,8 @@
 /** @type {import('next').NextConfig} */
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Keep production builds OUT of the dev server's build dir. `next dev` runs with
 // NODE_ENV=development and uses `.next`; `next build`/`next start` run with
@@ -14,13 +18,19 @@ const devDistDir = process.env.NEXT_DIST_DIR || '.next';
 
 const nextConfig = {
   distDir: isProd ? '.next-prod' : devDistDir,
+  // Standalone output for lean container images. Trace the monorepo root so
+  // workspace deps (@cytolab/*) are bundled into .next-prod/standalone.
+  output: 'standalone',
+  outputFileTracingRoot: join(__dirname, '../../'),
   // Transpile workspace packages that ship raw TypeScript.
   transpilePackages: ['@cytolab/animations', '@cytolab/types', '@cytolab/config'],
   async rewrites() {
     return [
       {
         source: '/api/v1/:path*',
-        destination: 'http://localhost:4000/api/v1/:path*', // proxy to NestJS in dev
+        // Dev proxies to the local NestJS; in containers set API_INTERNAL_URL to
+        // the API service URL (e.g. the API Cloud Run URL).
+        destination: `${process.env.API_INTERNAL_URL || 'http://localhost:4000'}/api/v1/:path*`,
       },
     ];
   },

@@ -1,0 +1,15 @@
+# Keep build contexts lean and reproducible.
+**/node_modules
+**/.next
+**/.next-prod
+**/dist
+**/.turbo
+**/coverage
+**/.git
+**/.env
+**/.env.*
+**/*.log
+apps/marketing
+docs
+Roadmap
+**/.DS_Store

@@ -1,0 +1,86 @@
+# Osieri release pipeline — build ONE image per app, deploy to every environment.
+# This is the mechanism behind "updates reach all labs, including silos": the same
+# image is deployed to demo, pooled prod, and each silo target.
+#
+# SCAFFOLD — wire the secrets/vars below before enabling. Nothing here runs until
+# the repo has the required secrets and you remove the `if: false` guard on deploy.
+#
+# Prereqs (per target GCP project — demo / prod / cytolabs-silo):
+#   - Artifact Registry repo (e.g. `osieri`)
+#   - Cloud Run services: `osieri-web`, `osieri-api`
+#   - Cloud SQL instance + a DB connection secret in Secret Manager
+#   - Workload Identity Federation (recommended) or a deploy service-account key
+# Repo secrets/vars to set:
+#   vars:    GCP_PROJECT, GCP_REGION, AR_REPO, WEB_SERVICE, API_SERVICE, CLOUDSQL_INSTANCE
+#   secrets: GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_DEPLOY_SA, DATABASE_URL_SECRET (secret name)
+
+name: release
+
+on:
+  push:
+    branches: [main] # promote on merge to main; add tags/environments as you grow
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build + test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck --workspaces --if-present
+      - run: cd apps/api && npx prisma generate && npm run build
+      - run: cd apps/web && NODE_ENV=production npm run build
+      # Container build/push happens in `deploy` so untested code never ships.
+
+  deploy:
+    name: deploy (${{ matrix.env }})
+    needs: build
+    if: false # <-- flip to true once secrets/vars are set
+    runs-on: ubuntu-latest
+    permissions: { contents: read, id-token: write } # id-token: WIF
+    strategy:
+      matrix:
+        env: [demo, prod] # add each silo (e.g. cytolabs) as its own entry/project
+    environment: ${{ matrix.env }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Build + push images
+        run: |
+          IMG="${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT }}/${{ vars.AR_REPO }}"
+          gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev -q
+          docker build -f apps/api/Dockerfile -t "$IMG/api:${{ github.sha }}" .
+          docker build -f apps/web/Dockerfile -t "$IMG/web:${{ github.sha }}" .
+          docker push "$IMG/api:${{ github.sha }}"
+          docker push "$IMG/web:${{ github.sha }}"
+      - name: Migrate database (prisma migrate deploy)
+        run: |
+          gcloud run jobs deploy osieri-migrate \
+            --image "${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT }}/${{ vars.AR_REPO }}/api:${{ github.sha }}" \
+            --region ${{ vars.GCP_REGION }} --set-cloudsql-instances ${{ vars.CLOUDSQL_INSTANCE }} \
+            --set-secrets DATABASE_URL=${{ secrets.DATABASE_URL_SECRET }}:latest,DATABASE_MIGRATION_URL=${{ secrets.DATABASE_URL_SECRET }}:latest \
+            --command npx --args "prisma,migrate,deploy" --execute-now --wait
+      - name: Deploy API
+        run: |
+          gcloud run deploy ${{ vars.API_SERVICE }} \
+            --image "${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT }}/${{ vars.AR_REPO }}/api:${{ github.sha }}" \
+            --region ${{ vars.GCP_REGION }} --set-cloudsql-instances ${{ vars.CLOUDSQL_INSTANCE }} \
+            --set-secrets DATABASE_URL=${{ secrets.DATABASE_URL_SECRET }}:latest \
+            --allow-unauthenticated
+      - name: Deploy Web
+        run: |
+          gcloud run deploy ${{ vars.WEB_SERVICE }} \
+            --image "${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT }}/${{ vars.AR_REPO }}/web:${{ github.sha }}" \
+            --region ${{ vars.GCP_REGION }} --allow-unauthenticated
