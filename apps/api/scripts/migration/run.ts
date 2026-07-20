@@ -56,7 +56,7 @@ async function main() {
   const prisma = new PrismaClient();
   // Dry-run never writes, so an in-memory id-map is enough; real runs need the
   // durable store so re-runs and the nightly sync stay idempotent.
-  const idMap = new IdMap(args.dryRun ? new MemoryIdMapStore() : new PrismaIdMapStore(prisma));
+  const idMap = new IdMap(args.dryRun ? new MemoryIdMapStore() : new PrismaIdMapStore(prisma), args.dryRun);
 
   await legacy.connect();
   try {

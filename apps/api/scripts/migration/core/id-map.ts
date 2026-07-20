@@ -33,7 +33,13 @@ export class MemoryIdMapStore implements IdMapStore {
 
 export class IdMap {
   private cache = new Map<string, Map<number, string>>();
-  constructor(private store: IdMapStore) {}
+  /**
+   * @param lenient when true (dry-run only), `require` mints a placeholder for a
+   * missing FK target instead of throwing — necessary because `--limit` sampling
+   * pulls a record whose patient/parent may be outside the sample. Real loads
+   * pass false so a genuine dangling FK still fails the run.
+   */
+  constructor(private store: IdMapStore, private lenient = false) {}
 
   private async table(table: string): Promise<Map<number, string>> {
     let m = this.cache.get(table);
@@ -78,6 +84,8 @@ export class IdMap {
     }
     const uuid = await this.get(table, legacyId);
     if (!uuid) {
+      // Dry-run with --limit: the FK target may simply be outside the sample.
+      if (this.lenient) return this.getOrCreate(table, legacyId);
       throw new Error(`idMap.require(${table}, ${legacyId}): no mapping — load ${table} before its dependents`);
     }
     return uuid;
