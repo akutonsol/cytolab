@@ -4,7 +4,7 @@
  * so writtenById stays null; the typed name survives via the report signature.
  */
 import { EtlContext } from '../core/context';
-import { flush } from '../core/writer';
+import { writeBatch, UpsertRow } from '../core/writer';
 import { cleanString, parseBool, parseDate } from '../transforms/coerce';
 
 interface LegacyResultSheet {
@@ -17,10 +17,10 @@ interface LegacyResultSheet {
 }
 
 export async function resultSheetStage(ctx: EtlContext): Promise<void> {
-  const { legacy, prisma, idMap, labId } = ctx;
+  const { legacy, idMap, labId } = ctx;
   let count = 0;
   for await (const batch of legacy.stream<LegacyResultSheet>('result_sheet', { incremental: ctx.incremental })) {
-    const ops: unknown[] = [];
+    const rows: UpsertRow[] = [];
     for (const row of batch) {
       const id = await idMap.getOrCreate('result_sheet', row.id);
       const data = {
@@ -32,10 +32,10 @@ export async function resultSheetStage(ctx: EtlContext): Promise<void> {
         authorizedAt: parseBool(row.authorized) ? parseDate(row.datecreated) : null,
         createdAt: parseDate(row.datecreated) ?? undefined,
       };
-      if (!ctx.dryRun) ops.push(prisma.resultSheet.upsert({ where: { id }, create: data, update: data }));
+      rows.push({ where: { id }, data });
       count++;
     }
-    await flush(ctx, ops);
+    await writeBatch(ctx, 'resultSheet', rows);
   }
   ctx.recon.push({ table: 'result_sheet', source: await legacy.count('result_sheet', ctx.incremental), target: count });
 }
@@ -48,10 +48,10 @@ interface LegacyResultEntry {
 }
 
 export async function resultEntryStage(ctx: EtlContext): Promise<void> {
-  const { legacy, prisma, idMap, labId } = ctx;
+  const { legacy, idMap, labId } = ctx;
   let count = 0;
   for await (const batch of legacy.stream<LegacyResultEntry>('result_entry', { incremental: ctx.incremental })) {
-    const ops: unknown[] = [];
+    const rows: UpsertRow[] = [];
     for (const row of batch) {
       const id = await idMap.getOrCreate('result_entry', row.id);
       const data = {
@@ -60,10 +60,10 @@ export async function resultEntryStage(ctx: EtlContext): Promise<void> {
         resultSheetId: await idMap.require('result_sheet', row.resultsheet_id),
         specimenId: await idMap.optional('specimen', row.specimen_id),
       };
-      if (!ctx.dryRun) ops.push(prisma.resultEntry.upsert({ where: { id }, create: data, update: data }));
+      rows.push({ where: { id }, data });
       count++;
     }
-    await flush(ctx, ops);
+    await writeBatch(ctx, 'resultEntry', rows);
   }
   ctx.recon.push({ table: 'result_entry', source: await legacy.count('result_entry', ctx.incremental), target: count });
 }
@@ -79,10 +79,10 @@ interface LegacyResultLine {
 }
 
 export async function resultLineStage(ctx: EtlContext): Promise<void> {
-  const { legacy, prisma, idMap, labId } = ctx;
+  const { legacy, idMap, labId } = ctx;
   let count = 0;
   for await (const batch of legacy.stream<LegacyResultLine>('result_line', { incremental: ctx.incremental })) {
-    const ops: unknown[] = [];
+    const rows: UpsertRow[] = [];
     for (const row of batch) {
       const id = await idMap.getOrCreate('result_line', row.id);
       const data = {
@@ -94,10 +94,10 @@ export async function resultLineStage(ctx: EtlContext): Promise<void> {
         findings: cleanString(row.findings),
         abnormalFinding: parseBool(row.abnormalfinding),
       };
-      if (!ctx.dryRun) ops.push(prisma.resultLine.upsert({ where: { id }, create: data, update: data }));
+      rows.push({ where: { id }, data });
       count++;
     }
-    await flush(ctx, ops);
+    await writeBatch(ctx, 'resultLine', rows);
     if (count % 20000 === 0) ctx.log(`  result_line: ${count} processed`);
   }
   ctx.recon.push({ table: 'result_line', source: await legacy.count('result_line', ctx.incremental), target: count });
@@ -116,10 +116,10 @@ interface LegacyReport {
 }
 
 export async function reportStage(ctx: EtlContext): Promise<void> {
-  const { legacy, prisma, idMap, labId } = ctx;
+  const { legacy, idMap, labId } = ctx;
   let count = 0;
   for await (const batch of legacy.stream<LegacyReport>('report', { incremental: ctx.incremental })) {
-    const ops: unknown[] = [];
+    const rows: UpsertRow[] = [];
     for (const row of batch) {
       const id = await idMap.getOrCreate('report', row.id);
       const data = {
@@ -135,10 +135,10 @@ export async function reportStage(ctx: EtlContext): Promise<void> {
         signature: cleanString(row.writtenby),
         releasedAt: parseDate(row.datecreated) ?? undefined,
       };
-      if (!ctx.dryRun) ops.push(prisma.report.upsert({ where: { id }, create: data, update: data }));
+      rows.push({ where: { id }, data });
       count++;
     }
-    await flush(ctx, ops);
+    await writeBatch(ctx, 'report', rows);
   }
   ctx.recon.push({ table: 'report', source: await legacy.count('report', ctx.incremental), target: count });
 }

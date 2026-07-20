@@ -86,6 +86,9 @@ export async function runEtl(opts: EngineOptions): Promise<ReconReport> {
     idMap: opts.idMap,
     dryRun: opts.dryRun,
     incremental: opts.incremental,
+    // Full loads (non-incremental) go into a freshly-reset DB -> bulk createMany.
+    // Incremental deltas need per-row upsert to update existing rows.
+    bulk: !opts.incremental,
     log,
     recon: [],
   };

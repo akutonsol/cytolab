@@ -8,7 +8,7 @@
  * migrated in this pass (assigned in-app).
  */
 import { EtlContext } from '../core/context';
-import { flush } from '../core/writer';
+import { writeBatch, UpsertRow } from '../core/writer';
 import { cleanString, parseBool } from '../transforms/coerce';
 import { mapAuthorizerDesignation } from '../transforms/enums';
 
@@ -24,10 +24,10 @@ interface LegacyCabinet {
 }
 
 export async function cabinetStage(ctx: EtlContext): Promise<void> {
-  const { legacy, prisma, idMap, labId } = ctx;
+  const { legacy, idMap, labId } = ctx;
   let count = 0;
   for await (const batch of legacy.stream<LegacyCabinet>('cabinet', { incremental: ctx.incremental })) {
-    const ops: unknown[] = [];
+    const rows: UpsertRow[] = [];
     for (const row of batch) {
       const id = await idMap.getOrCreate('cabinet', row.id);
       const data = {
@@ -38,10 +38,10 @@ export async function cabinetStage(ctx: EtlContext): Promise<void> {
         color: cleanString(row.color),
         clientId: await idMap.optional('client', row.client_id),
       };
-      if (!ctx.dryRun) ops.push(prisma.cabinet.upsert({ where: { id }, create: data, update: data }));
+      rows.push({ where: { id }, data });
       count++;
     }
-    await flush(ctx, ops);
+    await writeBatch(ctx, 'cabinet', rows);
   }
   ctx.recon.push({ table: 'cabinet', source: await legacy.count('cabinet', ctx.incremental), target: count });
 }
@@ -56,11 +56,11 @@ interface LegacyUser {
 }
 
 export async function userStage(ctx: EtlContext): Promise<void> {
-  const { legacy, prisma, idMap, labId, accountId } = ctx;
+  const { legacy, idMap, labId, accountId } = ctx;
   let count = 0;
   let skipped = 0;
   for await (const batch of legacy.stream<LegacyUser>('users', { incremental: ctx.incremental })) {
-    const ops: unknown[] = [];
+    const rows: UpsertRow[] = [];
     for (const row of batch) {
       const email = cleanString(row.email);
       if (!email) {
@@ -85,10 +85,10 @@ export async function userStage(ctx: EtlContext): Promise<void> {
         authorizerDesignation: (mapAuthorizerDesignation(auth?.type) ?? null) as
           | 'Pathologist' | 'Cytologist' | null,
       };
-      if (!ctx.dryRun) ops.push(prisma.user.upsert({ where: { labId_email: { labId, email } }, create: data, update: data }));
+      rows.push({ where: { labId_email: { labId, email } }, data });
       count++;
     }
-    await flush(ctx, ops);
+    await writeBatch(ctx, 'user', rows);
   }
   ctx.recon.push({
     table: 'users',

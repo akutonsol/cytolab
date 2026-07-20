@@ -5,7 +5,7 @@
  * runs AFTER record (it optionally links a record).
  */
 import { EtlContext } from '../core/context';
-import { flush } from '../core/writer';
+import { writeBatch, UpsertRow } from '../core/writer';
 import { cleanString, parseBool, parseDate } from '../transforms/coerce';
 import { toCents } from '../transforms/money';
 import { mapRequisitionStatus, mapFormType } from '../transforms/enums';
@@ -21,10 +21,10 @@ interface LegacyRequisition {
 }
 
 export async function requisitionStage(ctx: EtlContext): Promise<void> {
-  const { legacy, prisma, idMap, labId } = ctx;
+  const { legacy, idMap, labId } = ctx;
   let count = 0;
   for await (const batch of legacy.stream<LegacyRequisition>('requsition', { incremental: ctx.incremental })) {
-    const ops: unknown[] = [];
+    const rows: UpsertRow[] = [];
     for (const row of batch) {
       const id = await idMap.getOrCreate('requsition', row.id);
       const referenceNo = `LEG-REQ-${row.id}`;
@@ -39,14 +39,10 @@ export async function requisitionStage(ctx: EtlContext): Promise<void> {
         dateReceived: parseDate(row.datereceived),
         createdAt: parseDate(row.datecreated) ?? undefined,
       };
-      if (!ctx.dryRun) {
-        ops.push(
-          prisma.requisition.upsert({ where: { labId_referenceNo: { labId, referenceNo } }, create: data, update: data }),
-        );
-      }
+      rows.push({ where: { labId_referenceNo: { labId, referenceNo } }, data });
       count++;
     }
-    await flush(ctx, ops);
+    await writeBatch(ctx, 'requisition', rows);
   }
   ctx.recon.push({ table: 'requsition', source: await legacy.count('requsition', ctx.incremental), target: count });
 }
@@ -64,10 +60,10 @@ interface LegacyRequisitionLine {
 }
 
 export async function requisitionLineStage(ctx: EtlContext): Promise<void> {
-  const { legacy, prisma, idMap, labId } = ctx;
+  const { legacy, idMap, labId } = ctx;
   let count = 0;
   for await (const batch of legacy.stream<LegacyRequisitionLine>('requisition_line', { incremental: ctx.incremental })) {
-    const ops: unknown[] = [];
+    const rows: UpsertRow[] = [];
     for (const row of batch) {
       const id = await idMap.getOrCreate('requisition_line', row.id);
       const referenceNo = `LEG-RL-${row.id}`;
@@ -83,14 +79,10 @@ export async function requisitionLineStage(ctx: EtlContext): Promise<void> {
         amount: toCents(row.amount),
         recordId: await idMap.optional('record', row.record_id),
       };
-      if (!ctx.dryRun) {
-        ops.push(
-          prisma.requisitionLine.upsert({ where: { labId_referenceNo: { labId, referenceNo } }, create: data, update: data }),
-        );
-      }
+      rows.push({ where: { labId_referenceNo: { labId, referenceNo } }, data });
       count++;
     }
-    await flush(ctx, ops);
+    await writeBatch(ctx, 'requisitionLine', rows);
   }
   ctx.recon.push({
     table: 'requisition_line',

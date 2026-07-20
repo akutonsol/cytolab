@@ -19,6 +19,8 @@ export interface EtlContext {
   dryRun: boolean;
   /** Incremental (nightly) mode: only rows with dateupdated > since. */
   incremental: boolean;
+  /** Bulk mode (full loads): createMany (one INSERT/batch) instead of per-row upsert. */
+  bulk: boolean;
   log: (msg: string) => void;
   recon: ReconRow[];
 }

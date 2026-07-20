@@ -7,7 +7,7 @@
  * collected and surfaced in the reconciliation note (never silently dropped).
  */
 import { EtlContext } from '../core/context';
-import { flush } from '../core/writer';
+import { writeBatch, UpsertRow } from '../core/writer';
 import { mapFormType } from '../transforms/enums';
 import { pivotClinicalItems, LegacyClinicalItem } from '../transforms/clinical-features';
 
@@ -19,7 +19,7 @@ interface LegacyRecordLite {
 }
 
 export async function clinicalFeaturesStage(ctx: EtlContext): Promise<void> {
-  const { legacy, prisma, idMap, labId } = ctx;
+  const { legacy, idMap, labId } = ctx;
   let gynCount = 0;
   let nonGynCount = 0;
   const unmapped = new Set<string>();
@@ -37,25 +37,25 @@ export async function clinicalFeaturesStage(ctx: EtlContext): Promise<void> {
       arr.push(it);
     }
 
-    const ops: unknown[] = [];
+    const gynRows: UpsertRow[] = [];
+    const nonGynRows: UpsertRow[] = [];
     for (const rec of batch) {
       const recordId = await idMap.require('record', rec.id);
       const formType = (mapFormType(rec.formtype) ?? 'Gynecology') as 'Gynecology' | 'NonGynecology';
-      const rows = rec.clinicalfeatures_id != null ? byFeature.get(rec.clinicalfeatures_id) ?? [] : [];
-      const pivot = pivotClinicalItems(rows, formType);
+      const items = rec.clinicalfeatures_id != null ? byFeature.get(rec.clinicalfeatures_id) ?? [] : [];
+      const pivot = pivotClinicalItems(items, formType);
       pivot.unmapped.forEach((n) => unmapped.add(n));
 
       if (pivot.gyn) {
-        const data = { id: await idMap.getOrCreate('gynFeatures', rec.id), labId, recordId, ...pivot.gyn };
-        if (!ctx.dryRun) ops.push(prisma.gynClinicalFeatures.upsert({ where: { recordId }, create: data, update: pivot.gyn }));
+        gynRows.push({ where: { recordId }, data: { id: await idMap.getOrCreate('gynFeatures', rec.id), labId, recordId, ...pivot.gyn } });
         gynCount++;
       } else if (pivot.nonGyn) {
-        const data = { id: await idMap.getOrCreate('nonGynFeatures', rec.id), labId, recordId, ...pivot.nonGyn };
-        if (!ctx.dryRun) ops.push(prisma.nonGynClinicalFeatures.upsert({ where: { recordId }, create: data, update: pivot.nonGyn }));
+        nonGynRows.push({ where: { recordId }, data: { id: await idMap.getOrCreate('nonGynFeatures', rec.id), labId, recordId, ...pivot.nonGyn } });
         nonGynCount++;
       }
     }
-    await flush(ctx, ops);
+    await writeBatch(ctx, 'gynClinicalFeatures', gynRows);
+    await writeBatch(ctx, 'nonGynClinicalFeatures', nonGynRows);
     ctx.log(`  clinicalFeatures: ${gynCount} gyn / ${nonGynCount} nongyn`);
   }
 

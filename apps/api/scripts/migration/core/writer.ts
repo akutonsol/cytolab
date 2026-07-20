@@ -1,14 +1,23 @@
 /**
- * Batched write helper. Mappers collect a stream-batch's upserts as unexecuted
- * Prisma promises and flush them in ONE `$transaction` round-trip instead of
- * awaiting per row. Over a proxy/tunnel this is the difference between ~13
- * rows/sec and thousands/sec. No-op in dry-run.
+ * Batched write helper. Mappers collect a stream-batch's rows and flush them in
+ * ONE round-trip:
+ *   - bulk mode (full load, fresh DB): `createMany({ skipDuplicates })` — a single
+ *     multi-row INSERT per batch (thousands of rows/sec even over a proxy/tunnel).
+ *   - non-bulk (incremental sync): `$transaction` of upserts so existing rows update.
+ * No-op in dry-run.
  */
 import type { EtlContext } from './context';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function flush(ctx: EtlContext, ops: any[]): Promise<void> {
-  if (ctx.dryRun || ops.length === 0) return;
+export interface UpsertRow { where: any; data: any }
+
+export async function writeBatch(ctx: EtlContext, model: string, rows: UpsertRow[]): Promise<void> {
+  if (ctx.dryRun || rows.length === 0) return;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await ctx.prisma.$transaction(ops as any);
+  const delegate = (ctx.prisma as any)[model];
+  if (ctx.bulk) {
+    await delegate.createMany({ data: rows.map((r) => r.data), skipDuplicates: true });
+  } else {
+    await ctx.prisma.$transaction(rows.map((r) => delegate.upsert({ where: r.where, create: r.data, update: r.data })));
+  }
 }
