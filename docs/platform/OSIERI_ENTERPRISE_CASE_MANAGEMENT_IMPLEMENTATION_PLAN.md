@@ -1,4 +1,4 @@
-# PATHOS — Enterprise Case Management Platform (Phase 5)
+# OSIERI — Enterprise Case Management Platform (Phase 5)
 ### Architecture Audit → Owner-First Orchestration Design → Implementation Plan (E0, binding)
 
 | Field | Value |
@@ -296,7 +296,7 @@ MVP = **E1 + E2 + E3**.
 | Permission | `record:view` for all aggregate reads |
 | Architecture | owner-first · read-only · tenant-scoped · failure-isolated · exact-count-safe · pagination-safe · **no direct Prisma** · **no owner mutation** |
 | E3 (Command Center UI) | **Implemented & certified (E3A–E3C)** — see [E3 — Enterprise Command Center](#e3--enterprise-command-center-implementation--certification) |
-| E4 (Manager / Assignment) | **Not started** |
+| E4 (Manager / Assignment) | **Complete & certified (E4A–E4C — delegation)** — see [E4 — Manager / Assignment](#e4--manager--assignment-implementation--certification) |
 
 Certification (E2E) result: **PASS WITH DOCUMENTED NON-BLOCKING DEBT** — certification only, **no implementation commit, no files changed**.
 
@@ -402,7 +402,7 @@ Enterprise Record row (exact): `id`, `identifier`, `labNumber`, `formType`, `sta
 - Certification result: **PASS WITH DOCUMENTED NON-BLOCKING DEBT**
 - Release blockers: **None**
 - Classification: **Production-ready behind existing RBAC**
-- E2: implementation complete · certification complete · documentation recorded · **E3 (Command Center UI) complete & certified (E3A–E3C)** · **E4 (Manager / Assignment) not started**
+- E2: implementation complete · certification complete · documentation recorded · **E3 (Command Center UI) complete & certified (E3A–E3C)** · **E4 (Manager / Assignment) complete & certified (E4A–E4C — delegation)** · **E5 (Final Certification) not started**
 
 ### Rollback map (additive, reverse-order; no schema/permission/seed/DB rollback required)
 | CP | Revert | Effect |
@@ -428,7 +428,7 @@ Reverse-order rollback **E2D → E2A** removes E2 cleanly. The aggregate owns no
 | Permission | **`record:view`** (the only gate — same code the backend enforces) |
 | Feature gate | **Option B — navigation + existing permission only** (no feature key) |
 | Backend / aggregate / API / permissions / schema | **unchanged** (frontend-only) |
-| E4 (Manager / Assignment) | **Not started** |
+| E4 (Manager / Assignment) | **Complete & certified (E4A–E4C — delegation)** — see [E4 — Manager / Assignment](#e4--manager--assignment-implementation--certification) |
 
 ### Checkpoint ledger
 | CP | Commit | Deliverable |
@@ -462,7 +462,66 @@ No enterprise/worklist/command-center/case-management feature key exists in `fea
 | E3B | `git revert ec3fa69c75b3dfeb17321b07d17db9995bc0b62c` | returns the seven files to the E3A shell |
 | E3A | `git revert eb7bb104e47c28173f7fe7095e8630cbe6395ef2` | removes the Command Center route entirely |
 
-No schema/permission/seed/backend rollback anywhere in E3 (frontend-only). **E4 (Manager / Assignment) — not started.**
+No schema/permission/seed/backend rollback anywhere in E3 (frontend-only). **E4 (Manager / Assignment) — complete & certified (E4A–E4C); see the [E4 section](#e4--manager--assignment-implementation--certification).**
 
 ### Documentation-only environment note
 During E3C's real-backend verification, the stale `:4000` API process (a build predating E2) was replaced with the **current committed API build** so the three `/enterprise` routes were served live; no application code, data, or owner state was modified.
+
+---
+
+## E4 — Manager / Assignment: Implementation & Certification
+
+> **Authoritative E4 record (E4 closeout, 2026-07-16).** Owner-delegated **assignment** from the Command Center. Frontend-only; it changes no backend, aggregate, API contract, permission, schema, DTO, or owner. The Command Center exposes assignment as an **action that calls the Records owner routes** — never a local mutation (D-002). Supersedes the plan-era §6a "Team Work" row and any "E4 not started" wording.
+
+### Status
+| Field | Value |
+|---|---|
+| Phase 5 E4 — Manager / Assignment | **CERTIFIED (delegation architecture)** |
+| Scope delivered | single + bulk record assignment/unassignment, delegated to `RecordsService` |
+| Mutation ownership | **`RecordsService` only** (`record:change`) — the aggregate stays read-only |
+| Manager / Team visibility | already provided by the existing **`/workload`** workspace (in nav; `record:view` + `CASE_ASSIGNMENT`) |
+| Team Work queue | **deferred** (architectural enhancement — not unfinished E4; see below) |
+| E5 (Final Certification) | **Not started** |
+
+### Checkpoint ledger
+| CP | Commit | Deliverable |
+|---|---|---|
+| E4A | *audit only — no commit* | Manager/Assignment architecture audit; confirmed the owner already ships single **and** atomic bulk endpoints + DTOs; recommended delegation + `/workload` handoff, and flagged Team Work as blocked |
+| E4B | `2ba9ad07305ad24f66d18119878d8fb7d9dba0b1` | **Single-record assignment delegation** (one web file) |
+| E4C | `b251d1d14e9a962e391aa51512b9feb669e9b9a4` | **Bulk assignment / unassignment delegation** (three web files: `BulkAssignToolbar.tsx` + `QueueDetailPanel.tsx` + `page.tsx`) |
+
+### E4B — single-record assignment delegation
+- **Owner delegation only** — a row-level control calls **`PATCH /records/:id/assign`** with the owner **`AssignRecordDto`** `{ assignedToId }` (empty = unassign → `null`). No client validation/authorization/lifecycle/notification/audit; the owner performs all of it.
+- **Reused, not added:** `record:change` (backend gate) + the app's **`CASE_ASSIGNMENT`** feature convention gate the control; assignees come from the existing `GET /workload/summary` read.
+- On success: `notify` toast + refetch of the three enterprise caches (assignment changes queue membership + counts). **No optimistic UI.**
+- **Read-only aggregate preserved** — no `EnterpriseCaseManagementService`/controller/types change.
+
+### E4C — bulk assignment / unassignment delegation
+- **Owner delegation only** — a dedicated **`BulkAssignToolbar`** calls **`PATCH /records/bulk-assign`** (one atomic owner `updateMany`) with the owner **`BulkAssignDto`** `{ recordIds, assignedToId }`. **No client loop** over the single-record route.
+- **Explicit bulk Unassign** — a deliberate picker action submits `{ recordIds, assignedToId: null }` (the empty placeholder is not an action).
+- **Page-scoped selection only** — checkboxes select rows on the current page; a **tri-state select-all** covers the current page; selection never reconstructs owner queue membership and is discarded only via a **confirmed** page/queue change.
+- **Truthful messaging** — the owner count is surfaced verbatim as **"N of M assigned"** / **"N of M unassigned"**; no per-record outcome is fabricated.
+- **Three-cache refresh only** (`enterprise-summary` · `enterprise-queues` · `enterprise-queue`); **no optimistic UI**; full **pending-state locking** (row checkboxes, header, toolbar, and the E4B single-assign control disable while a bulk mutation is in flight).
+- **Read-only aggregate preserved** — no aggregate/owner/schema/DTO/permission change.
+
+### Deferred work (explicit — not unfinished E4)
+
+**Team Work queue — deferred architectural enhancement.** Bringing Team Work into the Command Center aggregate requires, together: (1) a new **owner multi-assignee read capability** — an `assignedToIds?: string[]` filter on `RecordsService.listForOrchestration` (the current filter supports only a single `assignedToId`) plus a mutation-free team-member-ids read; (2) a **governed reopening of the certified E2 13-key taxonomy** (`team-work` is presently a retired/excluded key); and (3) **future re-certification** of the aggregate. It is a deliberate, deferred enhancement — **not** incomplete E4 scope. Until then, whole-team load is available in the existing `/workload` workspace.
+
+**WorkloadService export (E1B).** Remains **not exported** and **not required** — the manager-facing experience (per-reviewer team load, targets, unassigned, assignment history) already exists at the **`/workload`** workspace (navigable, `record:view` + `CASE_ASSIGNMENT`). The Command Center reuses only the existing `GET /workload/summary` HTTP read for its assignee picker; it does not import or extend the direct-Prisma `WorkloadService` (D-002/D-003).
+
+### E4 certification summary
+- The **Enterprise aggregate remains read-only** — it exposes **no mutation endpoint**; assignment is a web action against owner routes.
+- **`RecordsService` owns all assignment mutations** (`assign` / `bulkAssign`, `record:change`); `Record.assignedToId` is mutated only by the owner.
+- **No duplicated business logic** — assignee validation (active + in-lab), tenancy scoping, and batch atomicity live in the owner.
+- **No duplicated authorization** — `record:change` is enforced by the owner route; the UI merely gates visibility with the same code + the existing `CASE_ASSIGNMENT` flag; no role-name authorization.
+- **No duplicated lifecycle / notifications / audit** — the owner sets assignment fields, notifies the assignee, and the assignment history (`WorkloadService.history()` + `Record.assignedBy/At`) is owner-recorded.
+- **E4 completed through a delegation architecture** — single (E4B) and bulk (E4C) assignment, owner-authoritative, aggregate untouched.
+
+### E4 rollback map (frontend-only; reverse order)
+| CP | Revert | Effect |
+|---|---|---|
+| E4C | `git revert b251d1d14e9a962e391aa51512b9feb669e9b9a4` | removes bulk assignment (toolbar + selection); preserves E4B single-assign |
+| E4B | `git revert 2ba9ad07305ad24f66d18119878d8fb7d9dba0b1` | removes single-record assignment; restores the E3D-certified read-only panel |
+
+No schema/permission/seed/DTO/backend rollback anywhere in E4 (frontend-only). **Next: E5 — Final Certification.**

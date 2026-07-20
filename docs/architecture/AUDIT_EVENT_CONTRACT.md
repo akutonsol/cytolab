@@ -1,4 +1,4 @@
-# PathOS — Canonical Audit Event Contract
+# Osieri — Canonical Audit Event Contract
 
 **Program:** 2 — Enterprise Audit Platform · **Checkpoint:** P2-0A-R (contract & governance baseline).
 **Status:** Governance document. Binding contract for every audit producer. **Design only** — this
@@ -15,7 +15,7 @@ API, UI, or export. Those are separate, separately-reviewed checkpoints (P2-1…
 
 ## 1. Authority & ownership
 The **Audit Platform** is a new owner-first bounded context and the system of record for every
-security- and compliance-sensitive event in PathOS. It **records facts; it never mutates domain
+security- and compliance-sensitive event in Osieri. It **records facts; it never mutates domain
 state**, and no other owner mutates audit rows (consistent with Decision Records D-002 one-owner,
 D-011 events-are-history, D-019 compositions-never-write).
 

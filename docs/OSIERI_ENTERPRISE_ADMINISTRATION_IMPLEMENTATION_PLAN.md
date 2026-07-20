@@ -1,11 +1,11 @@
-# PathOS — Enterprise Administration & Controls Workspace (Phase 2D) implementation plan
+# Osieri — Enterprise Administration & Controls Workspace (Phase 2D) implementation plan
 
 | Field | Value |
 |---|---|
 | Status | Binding implementation contract — architecture only; no code, no schema, no Helix change until each checkpoint is separately approved |
-| Current Phase | PathOS Phase 2D (Enterprise Administration & Controls Workspace) |
+| Current Phase | Osieri Phase 2D (Enterprise Administration & Controls Workspace) |
 | Owner | Founder |
-| Dependencies | [PATHOS_ENTERPRISE_ADMINISTRATION_WORKSPACE.md](PATHOS_ENTERPRISE_ADMINISTRATION_WORKSPACE.md) (architecture), [PATHOS_ENTERPRISE_ADMINISTRATION_FEASIBILITY_AUDIT.md](PATHOS_ENTERPRISE_ADMINISTRATION_FEASIBILITY_AUDIT.md) (feasibility), [PATHOS_QUALITY_IMPLEMENTATION_PLAN.md](PATHOS_QUALITY_IMPLEMENTATION_PLAN.md) (method), Helix v1.0 (frozen) |
+| Dependencies | [OSIERI_ENTERPRISE_ADMINISTRATION_WORKSPACE.md](OSIERI_ENTERPRISE_ADMINISTRATION_WORKSPACE.md) (architecture), [OSIERI_ENTERPRISE_ADMINISTRATION_FEASIBILITY_AUDIT.md](OSIERI_ENTERPRISE_ADMINISTRATION_FEASIBILITY_AUDIT.md) (feasibility), [OSIERI_QUALITY_IMPLEMENTATION_PLAN.md](OSIERI_QUALITY_IMPLEMENTATION_PLAN.md) (method), Helix v1.0 (frozen) |
 | Last Updated | 2026-07-12 |
 | Priority | P1 (follows Phase 2C, closed) |
 | Expected Next Milestone | Plan approval → checkpoint A1; each checkpoint separately approved, isolated commit, verified against §10 |
@@ -405,13 +405,13 @@ audit ledger. Each remains a named gap, never simulated.
 
 ## Conflict check
 
-No conflict with [PATHOS_ENTERPRISE_ADMINISTRATION_WORKSPACE.md](PATHOS_ENTERPRISE_ADMINISTRATION_WORKSPACE.md)
-or [PATHOS_ENTERPRISE_ADMINISTRATION_FEASIBILITY_AUDIT.md](PATHOS_ENTERPRISE_ADMINISTRATION_FEASIBILITY_AUDIT.md):
+No conflict with [OSIERI_ENTERPRISE_ADMINISTRATION_WORKSPACE.md](OSIERI_ENTERPRISE_ADMINISTRATION_WORKSPACE.md)
+or [OSIERI_ENTERPRISE_ADMINISTRATION_FEASIBILITY_AUDIT.md](OSIERI_ENTERPRISE_ADMINISTRATION_FEASIBILITY_AUDIT.md):
 this plan builds only the compose-only "Buildable today" set and defers every schema-gated capability.
 It reuses the Operations/Sign-Out/Quality orchestration contract without modification and preserves the
-Helix v1.0 freeze. No conflict with Phases 2A ([PATHOS_OPERATIONS_WORKSPACE.md](PATHOS_OPERATIONS_WORKSPACE.md)),
-2B ([PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md)), or 2C
-([PATHOS_QUALITY_WORKSPACE.md](PATHOS_QUALITY_WORKSPACE.md)).
+Helix v1.0 freeze. No conflict with Phases 2A ([OSIERI_OPERATIONS_WORKSPACE.md](OSIERI_OPERATIONS_WORKSPACE.md)),
+2B ([OSIERI_SIGNOUT_WORKSPACE.md](OSIERI_SIGNOUT_WORKSPACE.md)), or 2C
+([OSIERI_QUALITY_WORKSPACE.md](OSIERI_QUALITY_WORKSPACE.md)).
 
 ---
 

@@ -1,18 +1,18 @@
-# PathOS — Frozen Section operations: data-model audit (no module built)
+# Osieri — Frozen Section operations: data-model audit (no module built)
 
 | Field | Value |
 |---|---|
 | Status | Audit complete — module NOT built (out of current domain; data model insufficient) |
-| Current Phase | PathOS Phase 2A (Operations) |
+| Current Phase | Osieri Phase 2A (Operations) |
 | Owner | Founder |
-| Dependencies | [docs/PATHOS_OPERATIONS_WORKSPACE.md](PATHOS_OPERATIONS_WORKSPACE.md) §4 A2; [docs/PATHOS_v2.md](PATHOS_v2.md) §7 |
+| Dependencies | [docs/OSIERI_OPERATIONS_WORKSPACE.md](OSIERI_OPERATIONS_WORKSPACE.md) §4 A2; [docs/OSIERI_v2.md](OSIERI_v2.md) §7 |
 | Last Updated | 2026-07-10 |
 | Priority | P2 |
-| Expected Next Milestone | Product decision on whether intraoperative frozen-section support is in PathOS scope |
+| Expected Next Milestone | Product decision on whether intraoperative frozen-section support is in Osieri scope |
 
-Following the same read-only methodology as the [IHC Return Queue audit](PATHOS_IHC_RETURN_QUEUE_AUDIT.md),
+Following the same read-only methodology as the [IHC Return Queue audit](OSIERI_IHC_RETURN_QUEUE_AUDIT.md),
 the Frozen Section increment began with an audit of the data model. The conclusion is that
-PathOS **cannot today represent truthful Frozen Section operations** — and, more fundamentally,
+Osieri **cannot today represent truthful Frozen Section operations** — and, more fundamentally,
 frozen sections are a **surgical-pathology intraoperative** workflow that lies outside this
 product's current **cytology** domain. Per "prefer no feature over a misleading feature," **no
 module was built**. No code or schema was changed.
@@ -63,14 +63,14 @@ case to attach to.
 
 **Do not build Frozen Section operations.** A module would have to invent the designation, the
 operating room, and a ~20-minute timer with no real start event — every core element fabricated.
-That is the misleading feature the directive forbids. PathOS remains an intelligence layer during
+That is the misleading feature the directive forbids. Osieri remains an intelligence layer during
 Phase 2A.
 
 This is not merely a missing-fields gap (as with IHC); it is a **scope** question. Frozen
 sections belong to surgical pathology / histology. The product **vision** names them as a
-signature intraoperative experience ([docs/PATHOS_v2.md](PATHOS_v2.md) §7), but the **current
+signature intraoperative experience ([docs/OSIERI_v2.md](OSIERI_v2.md) §7), but the **current
 data model is cytology-only**, so frozen-section support is a future capability contingent first
-on a product decision about whether PathOS supports intraoperative surgical workflows at all.
+on a product decision about whether Osieri supports intraoperative surgical workflows at all.
 
 ## 5. What a truthful frozen-section capability would require (future, not implemented)
 

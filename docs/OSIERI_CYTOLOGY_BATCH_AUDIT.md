@@ -1,18 +1,18 @@
-# PathOS — Cytology Batch Management: data-model audit (no module built)
+# Osieri — Cytology Batch Management: data-model audit (no module built)
 
 | Field | Value |
 |---|---|
 | Status | Audit complete — screening-batch module NOT built (no screening batch is modeled) |
-| Current Phase | PathOS Phase 2A (Operations) |
+| Current Phase | Osieri Phase 2A (Operations) |
 | Owner | Founder |
-| Dependencies | [docs/PATHOS_OPERATIONS_WORKSPACE.md](PATHOS_OPERATIONS_WORKSPACE.md) §4 B4 |
+| Dependencies | [docs/OSIERI_OPERATIONS_WORKSPACE.md](OSIERI_OPERATIONS_WORKSPACE.md) §4 B4 |
 | Last Updated | 2026-07-10 |
 | Priority | P1 |
 | Expected Next Milestone | Product decision on a persistent ScreeningBatch model |
 
 Read-only audit for Cytology Batch Management (cytotechnologist screening batches), using the
-same methodology as the [IHC](PATHOS_IHC_RETURN_QUEUE_AUDIT.md) and
-[Frozen Section](PATHOS_FROZEN_SECTION_AUDIT.md) audits. Conclusion: PathOS has real, persistent
+same methodology as the [IHC](OSIERI_IHC_RETURN_QUEUE_AUDIT.md) and
+[Frozen Section](OSIERI_FROZEN_SECTION_AUDIT.md) audits. Conclusion: Osieri has real, persistent
 batches — but **none of them is a cytology *screening* batch**. The one persistent batch
 (`RequisitionBatch`) is a client requisition-submission/billing batch; the only screening-adjacent
 "batch" (`batch-authorize`) is a transient bulk action that persists nothing. Building the
@@ -66,7 +66,7 @@ The directive's four categories, applied to every batch-like thing in the codeba
 test: `RequisitionBatch` would mislabel a billing/intake batch as a screening batch and cannot
 answer the screening questions (5, 6, 7); `batch-authorize` is transient and persists no batch;
 grouping by shared status/date/assignee is forbidden inference. A screening-batch surface built on
-any of these would be misleading. PathOS remains an intelligence layer during Phase 2A.
+any of these would be misleading. Osieri remains an intelligence layer during Phase 2A.
 
 ## 4. A truthful but *different* surface exists (noted, not built here)
 

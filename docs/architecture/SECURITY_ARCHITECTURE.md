@@ -1,9 +1,9 @@
 # SECURITY_ARCHITECTURE.md
 
-**Purpose:** Document the current security architecture of PathOS / CYTOLAB — authentication, authorization, sessions, tenancy, secrets, encryption, and the financial/clinical trust boundaries — so future hardening builds on an accurate map rather than assumptions.
+**Purpose:** Document the current security architecture of Osieri / CYTOLAB — authentication, authorization, sessions, tenancy, secrets, encryption, and the financial/clinical trust boundaries — so future hardening builds on an accurate map rather than assumptions.
 **Scope:** `apps/api` primarily, with the web portal auth surface where relevant. Reflects architecture verified 2026-07-13. Describes **current** state only; recommendations are marked as such and are not implemented.
 **Status:** Living document — active.
-**Owner:** PathOS Engineering (unassigned).
+**Owner:** Osieri Engineering (unassigned).
 **Last Updated:** 2026-07-13.
 
 ---

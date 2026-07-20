@@ -1,4 +1,4 @@
-# PathOS — Experience Report (Sprint 7)
+# Osieri — Experience Report (Sprint 7)
 
 > **Discovery only. No code was changed in this sprint.**
 > Helix v1 is frozen: no tokens, primitives, component APIs, or migrations were touched.

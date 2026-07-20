@@ -6,7 +6,7 @@
 // (GET /quality-governance/overview) that returns the descriptive permission map (ready)
 // and the ten evidence sections as `deferred`. No quality evidence, counters, charts,
 // scores, or rankings are shown. Each evidence region hydrates in a later checkpoint.
-// Contract: docs/PATHOS_QUALITY_IMPLEMENTATION_PLAN.md (§1 Orchestration Rule, §3, §9).
+// Contract: docs/OSIERI_QUALITY_IMPLEMENTATION_PLAN.md (§1 Orchestration Rule, §3, §9).
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';

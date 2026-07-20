@@ -23,7 +23,7 @@ export default function HeroV2Preview() {
             })}
             <circle cx="16" cy="16" r="3" fill="#7C5CFF" />
           </svg>
-          <span style={{ fontWeight: 800, fontSize: 22, letterSpacing: '-0.01em', color: DARK }}>PathOS</span>
+          <span style={{ fontWeight: 800, fontSize: 22, letterSpacing: '-0.01em', color: DARK }}>Osieri</span>
         </div>
         <div style={{ display: 'flex', gap: 34, fontSize: 15 }}>
           {nav.map((n) => (

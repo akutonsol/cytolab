@@ -1,18 +1,18 @@
-# PathOS — Laboratory Operations Experience Layer
+# Osieri — Laboratory Operations Experience Layer
 
 | Field | Value |
 |---|---|
 | Status | Draft — experience refinement of the approved Operations architecture |
-| Current Phase | PathOS Phase 2A (Foundation and adoption) |
+| Current Phase | Osieri Phase 2A (Foundation and adoption) |
 | Owner | Founder |
-| Dependencies | [docs/PATHOS_OPERATIONS_WORKSPACE.md](PATHOS_OPERATIONS_WORKSPACE.md), [docs/PATHOS_v2.md](PATHOS_v2.md), Helix v1.0 (frozen) |
+| Dependencies | [docs/OSIERI_OPERATIONS_WORKSPACE.md](OSIERI_OPERATIONS_WORKSPACE.md), [docs/OSIERI_v2.md](OSIERI_v2.md), Helix v1.0 (frozen) |
 | Last Updated | 2026-07-10 |
 | Priority | P0 |
 | Expected Next Milestone | Experience approval → implementation of the Operations Workspace |
 
 The operational architecture is approved. This document refines its **experience**. It does not
 change the modules, their contracts, or their relationships
-([docs/PATHOS_OPERATIONS_WORKSPACE.md](PATHOS_OPERATIONS_WORKSPACE.md) stands in full). It refines
+([docs/OSIERI_OPERATIONS_WORKSPACE.md](OSIERI_OPERATIONS_WORKSPACE.md) stands in full). It refines
 five things: **hierarchy, naming, prioritization, prediction, and emotional feel** — so the
 workspace stops reading as a collection of operational modules and starts reading as a **living
 representation of laboratory health**.
@@ -163,9 +163,9 @@ knows what is coming. **Foresight** is woven through every vital rather than par
   next hour unless acted on." The reading and its trajectory are one thing.
 - **Lab State is forward-aware.** The lab can be Calm-but-heading-toward-Strained, and it says so.
   This is the difference between a monitor and an early-warning system, and it is the blueprint's
-  signature operational behavior — *SLA risk surfaced before breach* ([docs/PATHOS_v2.md](PATHOS_v2.md)
+  signature operational behavior — *SLA risk surfaced before breach* ([docs/OSIERI_v2.md](OSIERI_v2.md)
   §4, §9) — generalized to the whole body.
-- **Foresight is drawn from the approved Operational AI** ([docs/PATHOS_OPERATIONS_WORKSPACE.md](PATHOS_OPERATIONS_WORKSPACE.md)
+- **Foresight is drawn from the approved Operational AI** ([docs/OSIERI_OPERATIONS_WORKSPACE.md](OSIERI_OPERATIONS_WORKSPACE.md)
   §8): predicted breach, redistribution, bottleneck detection, overload, queue forecast. It is
   assistive, states its basis and confidence, and degrades gracefully — under a degraded AI the vitals
   still read the present truth; only the forward-lean quiets. The lab never lies about the future to
@@ -204,7 +204,7 @@ How the feeling is built, honestly:
   Watch/Strained use the safe warning family (`--color-warning` `#a16207`, `--status-warning-strong`
   `#854D0E`); Critical uses danger, sparingly. **Zero-orange is absolute** — a health monitor is
   exactly where warm amber tempts a violation; every warm state uses the detector-safe tokens and is
-  verified by the pixel detector, not by eye ([docs/PATHOS_v2.md](PATHOS_v2.md) §10;
+  verified by the pixel detector, not by eye ([docs/OSIERI_v2.md](OSIERI_v2.md) §10;
   [../CLAUDE.md](../CLAUDE.md) zero-orange rule).
 - **Silence is a feature.** The lab is quiet when it is well. It does not celebrate normality or fill
   space with reassurance. Confidence is the absence of noise.
@@ -256,12 +256,12 @@ anything beyond Helix v1.0.
 
 | This layer refines | Traces to |
 |---|---|
-| State + Vitals hierarchy over the module grid | [docs/PATHOS_OPERATIONS_WORKSPACE.md](PATHOS_OPERATIONS_WORKSPACE.md) §3 information hierarchy |
-| Vitals fed by the sixteen modules | [docs/PATHOS_OPERATIONS_WORKSPACE.md](PATHOS_OPERATIONS_WORKSPACE.md) §4 (all modules unchanged) |
-| Foresight woven through vitals | [docs/PATHOS_OPERATIONS_WORKSPACE.md](PATHOS_OPERATIONS_WORKSPACE.md) §8 Operational AI |
-| SLA risk before breach, generalized to Lab State | [docs/PATHOS_v2.md](PATHOS_v2.md) §4, §9 |
-| Reduce cognitive load; calm, honest feel | [docs/PATHOS_v2.md](PATHOS_v2.md) §2 design principles |
-| Motion grammar, reduced motion, zero-orange, budgets | [../HELIX_v1.0.md](../HELIX_v1.0.md) §5, §8; [docs/PATHOS_v2.md](PATHOS_v2.md) §10 |
+| State + Vitals hierarchy over the module grid | [docs/OSIERI_OPERATIONS_WORKSPACE.md](OSIERI_OPERATIONS_WORKSPACE.md) §3 information hierarchy |
+| Vitals fed by the sixteen modules | [docs/OSIERI_OPERATIONS_WORKSPACE.md](OSIERI_OPERATIONS_WORKSPACE.md) §4 (all modules unchanged) |
+| Foresight woven through vitals | [docs/OSIERI_OPERATIONS_WORKSPACE.md](OSIERI_OPERATIONS_WORKSPACE.md) §8 Operational AI |
+| SLA risk before breach, generalized to Lab State | [docs/OSIERI_v2.md](OSIERI_v2.md) §4, §9 |
+| Reduce cognitive load; calm, honest feel | [docs/OSIERI_v2.md](OSIERI_v2.md) §2 design principles |
+| Motion grammar, reduced motion, zero-orange, budgets | [../HELIX_v1.0.md](../HELIX_v1.0.md) §5, §8; [docs/OSIERI_v2.md](OSIERI_v2.md) §10 |
 
 This layer conflicts with nothing in the approved architecture; it re-registers its presentation and
 sets its emotional register.
@@ -270,7 +270,7 @@ sets its emotional register.
 
 ## 10. Experience success metrics
 
-Beyond the operational metrics ([docs/PATHOS_OPERATIONS_WORKSPACE.md](PATHOS_OPERATIONS_WORKSPACE.md)
+Beyond the operational metrics ([docs/OSIERI_OPERATIONS_WORKSPACE.md](OSIERI_OPERATIONS_WORKSPACE.md)
 §12), the experience succeeds when the workspace reads as a living, trustworthy body.
 
 | Metric | Definition | Direction |

@@ -6,7 +6,7 @@ import { Badge, Card, IconAction } from '@/components/ui';
 import { formatAge, SEVERITY_DOMAIN, type OperationsOverview } from './types';
 
 /**
- * A1 — Attention Rail (docs/PATHOS_OPERATIONS_WORKSPACE.md §4 Group A).
+ * A1 — Attention Rail (docs/OSIERI_OPERATIONS_WORKSPACE.md §4 Group A).
  * The standing answer to "what needs a human now?". Ranked, de-duplicated, each
  * item one reason + one action. When empty it shows a TRUE steady state — a real
  * in-flight count, never a false zero. Renders only with loaded data (the page

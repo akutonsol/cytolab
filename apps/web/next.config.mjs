@@ -33,6 +33,8 @@ const nextConfig = {
       { source: '/specimens/:path*', destination: '/records', permanent: false },
       { source: '/results', destination: '/result-sheets', permanent: false },
       { source: '/results/:path*', destination: '/result-sheets', permanent: false },
+      // Osieri platform: alias for the pathology product homepage.
+      { source: '/products/pathology', destination: '/pathology', permanent: false },
     ];
   },
 };

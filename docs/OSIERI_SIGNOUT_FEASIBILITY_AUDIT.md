@@ -1,11 +1,11 @@
-# PathOS — Sign-Out Workspace (Phase 2B-1) composition feasibility audit
+# Osieri — Sign-Out Workspace (Phase 2B-1) composition feasibility audit
 
 | Field | Value |
 |---|---|
 | Status | Audit complete — composition is feasible and truthful, with named conditions |
-| Current Phase | PathOS Phase 2B-1 (compose existing capabilities) |
+| Current Phase | Osieri Phase 2B-1 (compose existing capabilities) |
 | Owner | Founder |
-| Dependencies | [PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md), existing diagnosis modules |
+| Dependencies | [OSIERI_SIGNOUT_WORKSPACE.md](OSIERI_SIGNOUT_WORKSPACE.md), existing diagnosis modules |
 | Last Updated | 2026-07-11 |
 | Priority | P0 |
 | Expected Next Milestone | Approval of the composition path (foundation first; flagship differentiators remain gated) |
@@ -16,14 +16,14 @@ the stable WSI / result-sheet / authorizer / report screens.
 
 ## The one question, answered
 
-**Yes — PathOS can create a truthful unified Sign-Out Workspace now by composing existing
+**Yes — Osieri can create a truthful unified Sign-Out Workspace now by composing existing
 capabilities; it would not merely hide disconnected systems behind one shell — *provided* the four
 conditions below hold.** The capabilities are not disconnected: they share a real anchor (every one
 keys off `recordId`, priors off `patientId`), one tenancy model (lab-scoped via the injected Prisma
 client), and a coherent permission set. A case-centric workspace is therefore a genuine composition,
 not a cosmetic wrapper. The honest boundary: the composable-now surface is the **foundation** —
 unified read + evidence + priors + report + sign — **not** the flagship Read→Reveal experience,
-which stays gated on a data-model decision ([PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md)
+which stays gated on a data-model decision ([OSIERI_SIGNOUT_WORKSPACE.md](OSIERI_SIGNOUT_WORKSPACE.md)
 §5, §9, §14).
 
 **Conditions for truthfulness:**
@@ -62,7 +62,7 @@ the injected Prisma client (established pattern).
 | 14 | Existing annotations | partially supported | `POST /wsi/:slideId/annotations`, PATCH/DELETE; `SlideAnnotation` (**point `x,y`+label+color only** — no regions/polygons/measurements); `record:change` — do not claim rich annotation |
 
 **Prohibited to simulate** (not a class of the 14, but binding): Read→Reveal, the Concordance
-Ledger, and AI quantification ([PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md) §5, §9,
+Ledger, and AI quantification ([OSIERI_SIGNOUT_WORKSPACE.md](OSIERI_SIGNOUT_WORKSPACE.md) §5, §9,
 §14); and the mock content in the existing `ClinicalWorkstation` (§3 below).
 
 ## 2. Cross-cutting findings
@@ -139,5 +139,5 @@ mock content as real.
 Nothing was implemented; this is a read-only audit. No code, schema, or Helix change; no stable
 screen touched. Every capability class cites its real route, endpoint, model, permission, and UI
 surface. The composable-now foundation is truthful; the flagship differentiators remain honestly
-gated. Traces to [PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md), [PATHOS_v2.md](PATHOS_v2.md)
+gated. Traces to [OSIERI_SIGNOUT_WORKSPACE.md](OSIERI_SIGNOUT_WORKSPACE.md), [OSIERI_v2.md](OSIERI_v2.md)
 §4, and [../HELIX_v1.0.md](../HELIX_v1.0.md).

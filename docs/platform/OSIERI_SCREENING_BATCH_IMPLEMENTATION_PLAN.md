@@ -1,12 +1,12 @@
-# PATHOS — Screening Batch Management Platform (Phase 4.2)
+# OSIERI — Screening Batch Management Platform (Phase 4.2)
 ### Architecture Audit → Owner-First Design → Implementation Plan
 
 | Field | Value |
 |---|---|
 | Status | **CERTIFIED WITH DOCUMENTED NON-BLOCKING DEBT.** Phase 4.2 implemented (C1–C8; C2 skipped under Option A; C5 satisfied within C3) and certified in C9 after the C8 commit `54f6ab49c9afa9b00a95a4a612b6083e21abf7fe` (C9 is read-only — no implementation commit). See [Final Status — Phase 4.2 Certification & Closeout (C9)](#final-status--phase-42-certification--closeout-c9) below. The STEP 0–10 sections below are the original pre-implementation plan, retained as history. |
 | Phase | Phase 4.2 (first capability) |
-| Precursor audit | [PATHOS_CYTOLOGY_BATCH_AUDIT.md](../PATHOS_CYTOLOGY_BATCH_AUDIT.md) (2026-07-10) — proved no screening batch is modeled; deferred pending a product decision. **This plan is that decision.** |
-| Dependencies | [ARCHITECTURE_LEDGER §19](../architecture/ARCHITECTURE_LEDGER.md) (frozen-aggregate extension rules), [DECISION_RECORDS.md](../architecture/DECISION_RECORDS.md) (D-001…D-020), [PERMISSION_CAPABILITY_CATALOG.md](PERMISSION_CAPABILITY_CATALOG.md), [ENTERPRISE_DOMAIN_ENTITY_MODEL.md](ENTERPRISE_DOMAIN_ENTITY_MODEL.md), [PATHOS_OPERATIONS_WORKSPACE.md](../PATHOS_OPERATIONS_WORKSPACE.md), Phase 3A + Phase 4.1A frozen baselines |
+| Precursor audit | [OSIERI_CYTOLOGY_BATCH_AUDIT.md](../OSIERI_CYTOLOGY_BATCH_AUDIT.md) (2026-07-10) — proved no screening batch is modeled; deferred pending a product decision. **This plan is that decision.** |
+| Dependencies | [ARCHITECTURE_LEDGER §19](../architecture/ARCHITECTURE_LEDGER.md) (frozen-aggregate extension rules), [DECISION_RECORDS.md](../architecture/DECISION_RECORDS.md) (D-001…D-020), [PERMISSION_CAPABILITY_CATALOG.md](PERMISSION_CAPABILITY_CATALOG.md), [ENTERPRISE_DOMAIN_ENTITY_MODEL.md](ENTERPRISE_DOMAIN_ENTITY_MODEL.md), [OSIERI_OPERATIONS_WORKSPACE.md](../OSIERI_OPERATIONS_WORKSPACE.md), Phase 3A + Phase 4.1A frozen baselines |
 | Governing precedent | Phase 4.1A (Ancillary Ordering) — same owner-first, checkpointed, isolated-schema/permission methodology |
 | Last Updated | 2026-07-15 |
 
@@ -22,7 +22,7 @@ Every claim below was verified by direct inspection of `apps/api/prisma/schema.p
 
 | Concept searched | Found in schema? | What actually exists |
 |---|---|---|
-| `ScreeningBatch` / `ScreeningWorklist` / `ScreeningAssignment` / `ScreeningSession` | **None** | No such model or field. Confirmed by full-schema sweep and by [PATHOS_CYTOLOGY_BATCH_AUDIT.md](../PATHOS_CYTOLOGY_BATCH_AUDIT.md). |
+| `ScreeningBatch` / `ScreeningWorklist` / `ScreeningAssignment` / `ScreeningSession` | **None** | No such model or field. Confirmed by full-schema sweep and by [OSIERI_CYTOLOGY_BATCH_AUDIT.md](../OSIERI_CYTOLOGY_BATCH_AUDIT.md). |
 | `RequisitionBatch` (schema:3708) | Yes | **Client-owned intake/billing batch** — `batchNumber` (`BATCH-2026-XXXX`), `clientId`, `submittedById`, `BatchStatus (DRAFT→PENDING_PAYMENT→PAID→SUBMITTED→PROCESSING→COMPLETED→REJECTED)`, `totalForms`, `forms DigitalRequisitionForm[]`. Groups *submission forms* under a **referring clinician**, not screening *cases* under a cytotechnologist. |
 | `WorkloadTarget` (schema:2161) | Yes | Per-pathologist daily/weekly throughput targets (Case Assignment tier). Not a batch. |
 | `AIScreeningResult` (schema:2689) | Yes | AI pre-screening flags, **per record** (`recordId @unique`), `AIScreenStatus (Pending/…/Failed)`, reviewer relation. Per-case, never per-batch. |
@@ -58,7 +58,7 @@ Existing pages: `operations`, `workload`, `qc`, `ai-screening`, `batch-authorize
 
 ### 1.6 Documentation
 
-`PATHOS_CYTOLOGY_BATCH_AUDIT.md` (P1, 2026-07-10) is the governing precursor: *"prefer no module over a misleading module — no module was built."* Its recommendation was a **product decision on a persistent `ScreeningBatch` model** — supplied here.
+`OSIERI_CYTOLOGY_BATCH_AUDIT.md` (P1, 2026-07-10) is the governing precursor: *"prefer no module over a misleading module — no module was built."* Its recommendation was a **product decision on a persistent `ScreeningBatch` model** — supplied here.
 
 **Audit verdict:** the screening-batch capability is **entirely unbuilt and entirely unmodeled**. There is no code to refactor, only a new owner to add.
 

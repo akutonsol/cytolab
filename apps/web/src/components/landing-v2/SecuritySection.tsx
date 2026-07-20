@@ -28,7 +28,7 @@ export function SecuritySection() {
             Built for the most regulated<br />environments in medicine.
           </h2>
           <p style={{ margin: '18px 0 0', maxWidth: 560, fontSize: 18, lineHeight: 1.6, color: 'rgba(255,255,255,0.62)' }}>
-            Diagnostic data demands more than best-effort security. PathOS is engineered for HIPAA, SOC&nbsp;2 and clinical-grade auditability from the ground up.
+            Diagnostic data demands more than best-effort security. Osieri is engineered for HIPAA, SOC&nbsp;2 and clinical-grade auditability from the ground up.
           </p>
         </Reveal>
 

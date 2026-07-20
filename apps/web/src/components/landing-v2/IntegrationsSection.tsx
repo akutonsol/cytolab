@@ -18,7 +18,7 @@ export function IntegrationsSection() {
       <SectionHeader
         eyebrow="Integrations"
         title={<>Fits the stack you already run.</>}
-        subtitle="Bi-directional HL7 / FHIR, DICOM whole-slide imaging and vendor-neutral scanner support — PathOS slots into your environment instead of replacing it."
+        subtitle="Bi-directional HL7 / FHIR, DICOM whole-slide imaging and vendor-neutral scanner support — Osieri slots into your environment instead of replacing it."
       />
       <div style={{ marginTop: 56, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
         {SYSTEMS.map((s, i) => (

@@ -1,9 +1,9 @@
 # THEME_MIGRATION.md
 
-**Purpose:** Define how PathOS / CYTOLAB migrates from raw color literals to semantic design tokens safely, incrementally, and verifiably — without recoloring the product or breaking the premium visual language.
+**Purpose:** Define how Osieri / CYTOLAB migrates from raw color literals to semantic design tokens safely, incrementally, and verifiably — without recoloring the product or breaking the premium visual language.
 **Scope:** `apps/web` component and page color usage against the token layer in `apps/web/src/app/globals.css`. Reflects state verified 2026-07-13. Marketing/landing is largely out of scope (scope-lock).
 **Status:** Living document — active. No migration has been performed; this defines the future process.
-**Owner:** PathOS Engineering (unassigned).
+**Owner:** Osieri Engineering (unassigned).
 **Last Updated:** 2026-07-13.
 
 ---

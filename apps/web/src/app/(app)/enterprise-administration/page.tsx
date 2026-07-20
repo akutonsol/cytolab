@@ -6,7 +6,7 @@
 // sections stay truthfully `deferred`. NO owner data, NO configuration values, NO counters/KPIs,
 // NO secrets, NO mutations/forms/modals. Each section resolves independently so a future failure
 // isolates to it and never collapses the permission map, siblings, or the shell.
-// Contract: docs/PATHOS_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md (§1, §3, §4, §5, §8).
+// Contract: docs/OSIERI_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md (§1, §3, §4, §5, §8).
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';

@@ -1,9 +1,9 @@
 # RISK_REGISTER.md
 
-**Purpose:** Maintain an authoritative, evolving register of engineering risks in PathOS / CYTOLAB so that future checkpoints remediate from a shared, evidence-backed source of truth rather than ad-hoc discovery.
+**Purpose:** Maintain an authoritative, evolving register of engineering risks in Osieri / CYTOLAB so that future checkpoints remediate from a shared, evidence-backed source of truth rather than ad-hoc discovery.
 **Scope:** Backend (`apps/api`), web (`apps/web`), and cross-cutting concerns (security, observability, testing, design-system debt). Marketing site is out of scope except where noted.
 **Status:** Living document — active.
-**Owner:** PathOS Engineering (unassigned).
+**Owner:** Osieri Engineering (unassigned).
 **Last Updated:** 2026-07-19.
 
 ---

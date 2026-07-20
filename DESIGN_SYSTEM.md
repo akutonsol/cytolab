@@ -34,7 +34,7 @@ component that says `--teal-600` forces a hunt through the app; one that says
 *UI* meaning.
 
 Tier 1 and Tier 2 are product-agnostic and are what a future shared design system
-would own. Tier 2.5 is **per-product**: PathOS declares `--specimen-urine`; a fitness
+would own. Tier 2.5 is **per-product**: Osieri declares `--specimen-urine`; a fitness
 product would declare `--workout-strength`; an infra product `--deployment-live`.
 The core never learns what a specimen is.
 
@@ -55,7 +55,7 @@ data-encoding change (a *Failed* record must not turn green under a green theme)
 > Changing a Tier-2 *value* silently recolours the whole app. To retire a raw hex,
 > point it at a **Tier 1** token; do not "fix" Tier 2 to match the hex.
 
-### 1c. Tier 2.5 — PathOS domain tokens
+### 1c. Tier 2.5 — Osieri domain tokens
 
 Every family ships an `fg` token and a `-soft` background pair.
 
@@ -70,7 +70,7 @@ Every family ships an `fg` token and a `-soft` background pair.
 | Gauge | `--gauge-{low, low-mid, mid, mid-high, high}` |
 | Identity | `--identity-1..6` (hashed avatar palette; carries no meaning) |
 
-`--priority-low`/`-medium` are declared but unused: PathOS models priority as a
+`--priority-low`/`-medium` are declared but unused: Osieri models priority as a
 boolean today, and the four-level scale lets the domain grow without a component
 rewrite.
 

@@ -220,7 +220,7 @@ function RightPanel({ c, stageId, conf, cells, concur, setConcur, exportState, r
       <PanelHead icon={<Cpu size={16} />} title="Concept demonstration" tint="#8b5cf6" />
       <div className="xp-metric"><span>Walkthrough</span><b style={{ color: c.accent }}>{Math.round(conf)}%</b></div>
       <div className="xp-prog"><span style={{ width: `${conf}%`, background: c.accent }} /></div>
-      <p className="xp-note">This is a concept demonstration — PathOS performs no slide-image analysis. The illustration shows how findings would be surfaced for a pathologist to review.</p>
+      <p className="xp-note">This is a concept demonstration — Osieri performs no slide-image analysis. The illustration shows how findings would be surfaced for a pathologist to review.</p>
     </>
   );
 

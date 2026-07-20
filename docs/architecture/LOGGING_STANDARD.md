@@ -1,9 +1,9 @@
 # LOGGING_STANDARD.md
 
-**Purpose:** Define the authoritative logging standard for PathOS / CYTOLAB — levels, structure, correlation, and the privacy rules required for a HIPAA-adjacent cytology platform — so that observability can be added without leaking PHI/PII and without changing runtime behavior.
+**Purpose:** Define the authoritative logging standard for Osieri / CYTOLAB — levels, structure, correlation, and the privacy rules required for a HIPAA-adjacent cytology platform — so that observability can be added without leaking PHI/PII and without changing runtime behavior.
 **Scope:** `apps/api` server-side logging. Client-side telemetry is out of scope (Deferred). Reflects infrastructure verified 2026-07-13.
 **Status:** Living document — active. The AUDIT and SECURITY streams below are partially Deferred (see each section).
-**Owner:** PathOS Engineering (unassigned).
+**Owner:** Osieri Engineering (unassigned).
 **Last Updated:** 2026-07-13.
 
 ---

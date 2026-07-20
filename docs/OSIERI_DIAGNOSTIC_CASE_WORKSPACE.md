@@ -1,11 +1,11 @@
-# PathOS — Diagnostic Case Workspace (Phase 3A architecture)
+# Osieri — Diagnostic Case Workspace (Phase 3A architecture)
 
 | Field | Value |
 |---|---|
 | Status | Draft — architecture only; no implementation, no schema, no Helix change, no permission/seed change, no roadmap edit, no commit |
-| Current Phase | PathOS Phase 3A (Diagnostic Case Workspace) — D1 architecture |
+| Current Phase | Osieri Phase 3A (Diagnostic Case Workspace) — D1 architecture |
 | Owner | Founder |
-| Dependencies | [PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md) (the record-centric read-prototype this extends), [PATHOS_ENTERPRISE_ADMINISTRATION_WORKSPACE.md](PATHOS_ENTERPRISE_ADMINISTRATION_WORKSPACE.md) (composition contract, closed), [F4_AI_REPORTING_DESIGN.md](F4_AI_REPORTING_DESIGN.md), Helix v1.0 (frozen), existing clinical modules (audit §4) |
+| Dependencies | [OSIERI_SIGNOUT_WORKSPACE.md](OSIERI_SIGNOUT_WORKSPACE.md) (the record-centric read-prototype this extends), [OSIERI_ENTERPRISE_ADMINISTRATION_WORKSPACE.md](OSIERI_ENTERPRISE_ADMINISTRATION_WORKSPACE.md) (composition contract, closed), [F4_AI_REPORTING_DESIGN.md](F4_AI_REPORTING_DESIGN.md), Helix v1.0 (frozen), existing clinical modules (audit §4) |
 | Last Updated | 2026-07-12 |
 | Priority | P1 (the primary clinical workspace; follows the Phase 2 workspace suite, all closed) |
 | Expected Next Milestone | Architecture approval → composition feasibility audit (D2) → binding implementation plan (D3) → checkpointed compose-only build (read/reveal/invoke first; authoring/synoptic/amendment/collaboration gated on data-model decisions) |
@@ -33,7 +33,7 @@ lifecycle logic — and it may **never present simulated output as real inferenc
 
 ## 1. Purpose
 
-PathOS already contains a complete diagnostic surface — but it is **scattered.** To work one case today a
+Osieri already contains a complete diagnostic surface — but it is **scattered.** To work one case today a
 pathologist touches `/records/[id]` (which itself fans out to ~6 owner endpoints), `/sign-out/[recordId]`,
 `/wsi`, `/coding`, `/correlation`, `/bethesda-analytics`, `/escalations`, `/qc`, `/tat`, `/recalls`,
 `/teleconsult`, `/ai-screening`, `/result-sheets`, `/authorizer`, `/reports`, and `/files`. There is **no
@@ -51,7 +51,7 @@ Patient page, Result page, or Sign-Out page — it is the unified orchestration 
 
 1. **Compose, never duplicate.** Every panel reads from an existing owner and links to the owner's real screen for any change. The workspace writes nothing.
 2. **Owner modules remain authoritative** for validation, persistence, lifecycle, authorization, image delivery, AI generation, and audit.
-3. **Diagnosis is never synthesized.** PathOS has **no first-class `Diagnosis` model** (§4a); diagnostic meaning is split across `BethesdaResult`, `ResultSheet.narrative`/`ResultLine`, `Report.content`, and `RecordCoding`. The workspace surfaces each owner's representation **verbatim** and never computes, merges, or infers "the diagnosis."
+3. **Diagnosis is never synthesized.** Osieri has **no first-class `Diagnosis` model** (§4a); diagnostic meaning is split across `BethesdaResult`, `ResultSheet.narrative`/`ResultLine`, `Report.content`, and `RecordCoding`. The workspace surfaces each owner's representation **verbatim** and never computes, merges, or infers "the diagnosis."
 4. **Findings are never reinterpreted.** Free text is shown as recorded; only deterministic derivations already owned by a module (e.g. Bethesda `shortCode`) are surfaced.
 5. **Assistive ≠ diagnostic; real ≠ simulated.** `ai` (AiDraft) is real, redacted, provenance-tracked, assistive. `ai-screening` (AIScreeningResult) is a **random-number simulation** in the current code (`ai-screening.service.ts:78-99`). Neither is ever presented as a diagnosis; the simulation is labeled experimental wherever surfaced (§12).
 6. **Recorded, not inferred; absence is not a claim.** No QC note ≠ QC passed; no TAT alert ≠ on-time; no notification ≠ no event; null Bethesda HPV ≠ negative (§11).
@@ -709,6 +709,6 @@ schema-gated capabilities are named and classified (§6, §23), not assumed. The
 
 **This document does not begin D2. No implementation, no schema, no permission change, no commit. It stops
 here for architectural review.** On approval, the next step is the **composition feasibility audit (D2)** in
-the manner of [PATHOS_SIGNOUT_FEASIBILITY_AUDIT.md](PATHOS_SIGNOUT_FEASIBILITY_AUDIT.md),
-[PATHOS_QUALITY_FEASIBILITY_AUDIT.md](PATHOS_QUALITY_FEASIBILITY_AUDIT.md), and
-[PATHOS_ENTERPRISE_ADMINISTRATION_FEASIBILITY_AUDIT.md](PATHOS_ENTERPRISE_ADMINISTRATION_FEASIBILITY_AUDIT.md).
+the manner of [OSIERI_SIGNOUT_FEASIBILITY_AUDIT.md](OSIERI_SIGNOUT_FEASIBILITY_AUDIT.md),
+[OSIERI_QUALITY_FEASIBILITY_AUDIT.md](OSIERI_QUALITY_FEASIBILITY_AUDIT.md), and
+[OSIERI_ENTERPRISE_ADMINISTRATION_FEASIBILITY_AUDIT.md](OSIERI_ENTERPRISE_ADMINISTRATION_FEASIBILITY_AUDIT.md).

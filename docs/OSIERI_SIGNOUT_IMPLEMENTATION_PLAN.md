@@ -1,11 +1,11 @@
-# PathOS — Unified Sign-Out Workspace (Phase 2B-1) implementation plan
+# Osieri — Unified Sign-Out Workspace (Phase 2B-1) implementation plan
 
 | Field | Value |
 |---|---|
 | Status | Draft — binding engineering plan, pending approval; no implementation |
-| Current Phase | PathOS Phase 2B-1 (compose existing capabilities) |
+| Current Phase | Osieri Phase 2B-1 (compose existing capabilities) |
 | Owner | Founder |
-| Dependencies | [PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md), [PATHOS_SIGNOUT_FEASIBILITY_AUDIT.md](PATHOS_SIGNOUT_FEASIBILITY_AUDIT.md), Helix v1.0 (frozen) |
+| Dependencies | [OSIERI_SIGNOUT_WORKSPACE.md](OSIERI_SIGNOUT_WORKSPACE.md), [OSIERI_SIGNOUT_FEASIBILITY_AUDIT.md](OSIERI_SIGNOUT_FEASIBILITY_AUDIT.md), Helix v1.0 (frozen) |
 | Last Updated | 2026-07-11 |
 | Priority | P0 |
 | Expected Next Milestone | Approval → build checkpoint B1 |
@@ -330,8 +330,8 @@ files.
 
 ## Conflict check
 
-No conflicts found with [PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md) or
-[PATHOS_SIGNOUT_FEASIBILITY_AUDIT.md](PATHOS_SIGNOUT_FEASIBILITY_AUDIT.md). This plan builds only the
+No conflicts found with [OSIERI_SIGNOUT_WORKSPACE.md](OSIERI_SIGNOUT_WORKSPACE.md) or
+[OSIERI_SIGNOUT_FEASIBILITY_AUDIT.md](OSIERI_SIGNOUT_FEASIBILITY_AUDIT.md). This plan builds only the
 "foundation" the feasibility audit recommended (composition around `recordId`, invoke-not-redesign,
 per-capability permissions, no unified-fetch/timeline reinvention beyond a read-only aggregate), and
 honors every exclusion in the architecture doc (Read→Reveal, Concordance, quantification, rich
@@ -421,5 +421,5 @@ B11 authorized record **d2a7da86**'s result sheet through the owner endpoint to 
 ## Status of this document
 
 Binding engineering plan. Phase 2B implemented checkpoint by checkpoint (B1…B13), each traced here and
-to [PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md), verified against §11, and recorded in
+to [OSIERI_SIGNOUT_WORKSPACE.md](OSIERI_SIGNOUT_WORKSPACE.md), verified against §11, and recorded in
 [../Roadmap/08_RELEASES.md](../Roadmap/08_RELEASES.md). **Phase 2B is complete and verified.**

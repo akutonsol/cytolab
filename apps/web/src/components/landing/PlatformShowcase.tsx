@@ -175,7 +175,7 @@ export default function PlatformShowcase() {
               })}
               <circle cx="16" cy="16" r="2.8" fill={RED} />
             </svg>
-            <span className="ps-brand-name">PathOS</span>
+            <span className="ps-brand-name">Osieri</span>
           </div>
           <nav className="ps-nav">
             {NAV.map((n, i) => (
@@ -351,7 +351,7 @@ export default function PlatformShowcase() {
       {/* ── MODULE STATUS ── */}
       <div className="ps-modules">
         <div className="ps-modules-head">
-          <span>PathOS Modules</span>
+          <span>Osieri Modules</span>
           <span className="ps-modules-live"><i /> Live activity</span>
         </div>
         <div className="ps-module-card">
@@ -368,7 +368,7 @@ export default function PlatformShowcase() {
         </div>
       </div>
 
-      <div className="ps-audiences" aria-label="PathOS audiences">
+      <div className="ps-audiences" aria-label="Osieri audiences">
         <span className="ps-audiences-label">Built for</span>
         <div className="ps-audience-list">
           {AUDIENCES.map((audience) => (

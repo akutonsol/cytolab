@@ -481,7 +481,7 @@ export default function AuthorizerPage() {
           </Card>
 
           {/* AI Confidence Overview removed (Program 1 · P1-1C): the distribution was a
-              fabricated sample with no real model-confidence source. PathOS performs no
+              fabricated sample with no real model-confidence source. Osieri performs no
               diagnostic image inference today. */}
         </div>
       </div>

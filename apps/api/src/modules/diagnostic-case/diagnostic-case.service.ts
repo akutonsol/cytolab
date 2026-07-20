@@ -19,7 +19,7 @@ import { ScreeningBatchesService } from '../screening-batches/screening-batches.
 // returns the nine frozen clinical bands as `deferred` and hydrates only the descriptive
 // permission map (`permissions` → ready). Owner composition arrives band-by-band in A3+ by CALLING
 // the same owner service methods Sign-Out already calls (never by importing Sign-Out's internals).
-// Contract: docs/PATHOS_DIAGNOSTIC_CASE_IMPLEMENTATION_PLAN.md (A2; §3 aggregate contract, §6
+// Contract: docs/OSIERI_DIAGNOSTIC_CASE_IMPLEMENTATION_PLAN.md (A2; §3 aggregate contract, §6
 // permission model, §7 five-state contract). This shape must not be reshaped after A2.
 
 // ── Frozen section contract (identical to the proven Sign-Out contract; reused, not imported) ──

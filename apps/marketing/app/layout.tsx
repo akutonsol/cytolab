@@ -4,7 +4,7 @@ import LenisProvider from '@/components/LenisProvider'
 import MotionLayer from '@/components/MotionLayer'
 import './globals.css'
 
-// ── PathOS marketing typography fonts (loaded once, at the app root) ──────────
+// ── Osieri marketing typography fonts (loaded once, at the app root) ──────────
 // --font-display : editorial serif for hero + major section headlines
 //                  (Newsreader — premium, clinical, Linear/Stripe-editorial feel).
 // --font-sans    : Inter — SaaS body, headings, labels, metrics, UI text.

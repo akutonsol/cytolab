@@ -19,9 +19,9 @@ export function WorkflowSection() {
   return (
     <Section id="workflow" tint="white">
       <SectionHeader
-        eyebrow="The PathOS Workflow"
+        eyebrow="The Osieri Workflow"
         title={<>From specimen to signed report,<br />on one intelligent pipeline.</>}
-        subtitle="Every diagnosis begins with a specimen. PathOS carries it through six connected stages — with AI accelerating the work and pathologists always in command."
+        subtitle="Every diagnosis begins with a specimen. Osieri carries it through six connected stages — with AI accelerating the work and pathologists always in command."
       />
 
       <Reveal delay={0.1} style={{ marginTop: 72, position: 'relative' }}>

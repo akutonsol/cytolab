@@ -3,12 +3,12 @@
 **Purpose:** A permanent, contemporaneous certification artifact for **Program 2 — Enterprise
 Audit Platform** (audit capture → query API → audit UI). It fixes the commit boundaries,
 verification evidence, traceability, and open findings *as they stood at certification time*,
-so a later re-evaluation against the original `PathOS-Enterprise-Audit.pdf` reads
+so a later re-evaluation against the original `Osieri-Enterprise-Audit.pdf` reads
 contemporaneous evidence rather than reconstructing it.
 **Scope:** Program 2 checkpoints P2-6 → P2-8. P2-9 (Export & Compliance) and P2-10 (Program 2
 Final Certification) are **not** covered here — they remain open.
 **Status:** Living until P2-10; the P2-8 Audit-UI section below is **frozen**.
-**Owner:** PathOS Engineering.
+**Owner:** Osieri Engineering.
 **Last Updated:** 2026-07-18.
 
 > This is an **engineering** certification of the committed architecture. It is **not** a
@@ -146,4 +146,4 @@ status. No implementation defect was discovered, no boundary was violated, and n
 required. The two open findings are correctly external to the Audit UI and owned elsewhere
 (R-016 backend; DS contrast). Program 2 proceeds to **P2-9 (Export & Compliance)** and then
 **P2-10 (Program 2 Final Certification)**, after which the planned full re-evaluation against
-`PathOS-Enterprise-Audit.pdf` is performed.
+`Osieri-Enterprise-Audit.pdf` is performed.

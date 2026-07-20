@@ -1,9 +1,9 @@
 # PERMISSION_MATRIX.md
 
-**Purpose:** Document the current authorization architecture of PathOS / CYTOLAB so future work can extend it without reverse-engineering the guard stack, and so the known fail-open default is remediated from an explicit map.
+**Purpose:** Document the current authorization architecture of Osieri / CYTOLAB so future work can extend it without reverse-engineering the guard stack, and so the known fail-open default is remediated from an explicit map.
 **Scope:** `apps/api` request authorization — authentication gates, permission model, route/owner/sub-source permissions, and alternate guards. Data-layer tenancy is summarized here and detailed in SECURITY_ARCHITECTURE.md.
 **Status:** Living document — active. Reflects architecture verified 2026-07-13.
-**Owner:** PathOS Engineering (unassigned).
+**Owner:** Osieri Engineering (unassigned).
 **Last Updated:** 2026-07-13.
 
 ---

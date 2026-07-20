@@ -1,6 +1,6 @@
 # Helix Design System — v1.0.0
 
-**Status: FROZEN — feature complete.** Helix v1.0 is the mature foundation PathOS /
+**Status: FROZEN — feature complete.** Helix v1.0 is the mature foundation Osieri /
 CYTOLAB (product #1) is built on. From this milestone forward the architecture does not
 change except through a versioned release justified by a real product requirement.
 
@@ -28,7 +28,7 @@ Tier 1  PRIMITIVE   raw ramps + motion primitives   --slate-600, --indigo-600, -
 Tier 2  SEMANTIC    the UI contract                  --color-primary, --surface, --motion-hover
    ↓                (Helix core; themes override ONLY this tier)
 Tier 2.5 DOMAIN     business semantics (per product) --specimen-*, --workflow-*, --status-*
-   ↓                (PathOS-specific; 12 Circle supplies its own)
+   ↓                (Osieri-specific; 12 Circle supplies its own)
 Tier 3  THEME       per-product re-pointing          [data-theme] re-points Tier 2
    ↓
 Tier 4  COMPONENT   consumes Tier 2 / 2.5 + motion   <Card>, <Button>, <Badge>, <Th/Td>
@@ -43,7 +43,7 @@ tokens — **never a raw hex, never a raw duration or easing curve, never a hue 
 The core (Tiers 1–2) knows nothing about pathology. A product = Helix core + one theme +
 its own Tier 2.5. This is what makes the system reusable across future products (12 Circle
 Fitness, etc.) — but per the long-term plan, **that extraction happens on product #2, not
-by refactoring PathOS now.**
+by refactoring Osieri now.**
 
 ---
 
@@ -55,7 +55,7 @@ by refactoring PathOS now.**
 - **Tier 2 — semantic UI tokens** (`:root`): the public contract — `--color-primary`
   (`#4F46E5` → indigo), `--surface`, `--color-text-*`, `--color-danger/-success/-warning`,
   borders, table text (`--color-table-header/-cell`). **Themes override only this tier.**
-- **Tier 2.5 — domain tokens** (PathOS): business semantics, each shipping a `fg` /
+- **Tier 2.5 — domain tokens** (Osieri): business semantics, each shipping a `fg` /
   `-soft` pair — `--specimen-*`, `--workflow-*`, `--priority-*`, `--status-*`, `--billing-*`,
   `--chart-*`, `--gauge-*`, `--identity-*`. A component never names a hue; a status pill
   asks for a role.
@@ -354,5 +354,5 @@ Semantic intent for the line:
 **Do not begin Helix v1.1 until a genuine product requirement justifies it.** When one does:
 open a v1.x line, add the minimum capability the product needs (under the existing tiers,
 without breaking the contract), record it in the changelog, and ship it as a versioned release.
-Product work takes priority over framework work. Helix is done until PathOS — or the next
+Product work takes priority over framework work. Helix is done until Osieri — or the next
 product — proves it insufficient.

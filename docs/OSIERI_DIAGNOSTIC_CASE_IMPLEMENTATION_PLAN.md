@@ -1,11 +1,11 @@
-# PathOS — Diagnostic Case Workspace: Implementation Plan (Phase 3A · D3 — binding contract)
+# Osieri — Diagnostic Case Workspace: Implementation Plan (Phase 3A · D3 — binding contract)
 
 | Field | Value |
 |---|---|
 | Status | Draft — binding implementation contract; no implementation, no schema, no Helix change, no permission/seed change, no roadmap edit, no commit until reviewed |
-| Current Phase | PathOS Phase 3A (Diagnostic Case Workspace) — D3 implementation plan |
+| Current Phase | Osieri Phase 3A (Diagnostic Case Workspace) — D3 implementation plan |
 | Owner | Founder |
-| Dependencies | [PATHOS_DIAGNOSTIC_CASE_WORKSPACE.md](PATHOS_DIAGNOSTIC_CASE_WORKSPACE.md) (D1, approved), [PATHOS_DIAGNOSTIC_CASE_FEASIBILITY_AUDIT.md](PATHOS_DIAGNOSTIC_CASE_FEASIBILITY_AUDIT.md) (D2, approved), [PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md) (Phase 2B, closed — reuse target, unchanged), [PATHOS_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md](PATHOS_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md) (plan precedent), [F4_AI_REPORTING_DESIGN.md](F4_AI_REPORTING_DESIGN.md), Helix v1.0 (frozen) |
+| Dependencies | [OSIERI_DIAGNOSTIC_CASE_WORKSPACE.md](OSIERI_DIAGNOSTIC_CASE_WORKSPACE.md) (D1, approved), [OSIERI_DIAGNOSTIC_CASE_FEASIBILITY_AUDIT.md](OSIERI_DIAGNOSTIC_CASE_FEASIBILITY_AUDIT.md) (D2, approved), [OSIERI_SIGNOUT_WORKSPACE.md](OSIERI_SIGNOUT_WORKSPACE.md) (Phase 2B, closed — reuse target, unchanged), [OSIERI_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md](OSIERI_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md) (plan precedent), [F4_AI_REPORTING_DESIGN.md](F4_AI_REPORTING_DESIGN.md), Helix v1.0 (frozen) |
 | Last Updated | 2026-07-13 |
 | Priority | P1 (the binding contract for the A1–A14 build) |
 | Expected Next Milestone | Plan approval → A1 (workspace shell) → checkpointed compose-only build through A14 closeout, each independently reviewed |
@@ -277,7 +277,7 @@ after its §8 gates pass. Commit messages follow the Phase 2 form and end with t
 - **Rollback boundary:** delete the route dir; nothing else references it.
 - **Known limitations:** placeholder only.
 - **Independence:** fully standalone.
-- **Commit message:** `PathOS v3 — A1 Diagnostic Case workspace shell`
+- **Commit message:** `Osieri v3 — A1 Diagnostic Case workspace shell`
 - **Review stop:** yes.
 
 ### A2 — Aggregate contract
@@ -294,7 +294,7 @@ after its §8 gates pass. Commit messages follow the Phase 2 form and end with t
 - **Rollback boundary:** remove the module + app.module registration; web query no-ops.
 - **Known limitations:** no data.
 - **Independence:** standalone after A1.
-- **Commit message:** `PathOS v3 — A2 Diagnostic Case aggregate contract`
+- **Commit message:** `Osieri v3 — A2 Diagnostic Case aggregate contract`
 - **Review stop:** yes.
 
 ### A3 — Case Identity (Band 1)
@@ -308,7 +308,7 @@ after its §8 gates pass. Commit messages follow the Phase 2 form and end with t
 - **Rollback boundary:** revert the loader + panel; other bands unaffected.
 - **Known limitations:** no `createdBy`; age derived.
 - **Independence:** standalone after A2.
-- **Commit message:** `PathOS v3 — A3 Diagnostic Case identity + clinical context`
+- **Commit message:** `Osieri v3 — A3 Diagnostic Case identity + clinical context`
 - **Review stop:** yes.
 
 ### A4 — Diagnostic Material: specimens (Band 2, part 1)
@@ -321,7 +321,7 @@ after its §8 gates pass. Commit messages follow the Phase 2 form and end with t
 - **Rollback boundary:** revert sub-section.
 - **Known limitations:** `SpecimenImage` is a stub; no Block/Slide sub-structure.
 - **Independence:** standalone after A3.
-- **Commit message:** `PathOS v3 — A4 Diagnostic Case specimens`
+- **Commit message:** `Osieri v3 — A4 Diagnostic Case specimens`
 - **Review stop:** yes.
 
 ### A5 — Diagnostic Material: WSI metadata (Band 2, part 2)
@@ -335,7 +335,7 @@ after its §8 gates pass. Commit messages follow the Phase 2 form and end with t
 - **Rollback boundary:** revert slide sub-section; specimens/attachments unaffected.
 - **Known limitations:** point annotations only; no slide↔specimen.
 - **Independence:** standalone after A4.
-- **Commit message:** `PathOS v3 — A5 Diagnostic Case WSI slide metadata`
+- **Commit message:** `Osieri v3 — A5 Diagnostic Case WSI slide metadata`
 - **Review stop:** yes.
 
 ### A6 — Diagnostic Material: attachments (Band 2, part 3)
@@ -349,7 +349,7 @@ after its §8 gates pass. Commit messages follow the Phase 2 form and end with t
 - **Rollback boundary:** revert attachment sub-section.
 - **Known limitations:** no typing/version/checksum/author; Record-level only.
 - **Independence:** standalone after A5.
-- **Commit message:** `PathOS v3 — A6 Diagnostic Case attachments`
+- **Commit message:** `Osieri v3 — A6 Diagnostic Case attachments`
 - **Review stop:** yes.
 
 ### A7 — Diagnostic Interpretation (Band 3)
@@ -366,7 +366,7 @@ after its §8 gates pass. Commit messages follow the Phase 2 form and end with t
 - **Rollback boundary:** revert Band 3 loaders + panels.
 - **Known limitations:** Bethesda cervical-only; no first-class diagnosis; no primary-code flag.
 - **Independence:** standalone after A6.
-- **Commit message:** `PathOS v3 — A7 Diagnostic Case interpretation metadata`
+- **Commit message:** `Osieri v3 — A7 Diagnostic Case interpretation metadata`
 - **Review stop:** yes.
 
 ### A8 — Decision Support (Band 4) — AI Reporting + **explicit simulated AI Screening disclosure**
@@ -387,7 +387,7 @@ after its §8 gates pass. Commit messages follow the Phase 2 form and end with t
 - **Rollback boundary:** revert Band 4; interpretation unaffected.
 - **Known limitations:** screening is a simulation; no image AI.
 - **Independence:** standalone after A7.
-- **Commit message:** `PathOS v3 — A8 Diagnostic Case decision support (AI reporting metadata + simulated-screening disclosure)`
+- **Commit message:** `Osieri v3 — A8 Diagnostic Case decision support (AI reporting metadata + simulated-screening disclosure)`
 - **Review stop:** yes (mandatory — AI-screening disclosure sign-off).
 
 ### A9 — Prior Evidence (Band 5)
@@ -403,7 +403,7 @@ after its §8 gates pass. Commit messages follow the Phase 2 form and end with t
 - **Rollback boundary:** revert Band 5.
 - **Known limitations:** correlation concordance is human-entered; `cytologyDiagnosis` is a snapshot.
 - **Independence:** standalone after A8.
-- **Commit message:** `PathOS v3 — A9 Diagnostic Case prior evidence + correlation`
+- **Commit message:** `Osieri v3 — A9 Diagnostic Case prior evidence + correlation`
 - **Review stop:** yes.
 
 ### A10 — Collaboration (Band 6)
@@ -421,7 +421,7 @@ after its §8 gates pass. Commit messages follow the Phase 2 form and end with t
 - **Rollback boundary:** revert Band 6.
 - **Known limitations:** no internal case-note model; no structured adjudication.
 - **Independence:** standalone after A9.
-- **Commit message:** `PathOS v3 — A10 Diagnostic Case collaboration`
+- **Commit message:** `Osieri v3 — A10 Diagnostic Case collaboration`
 - **Review stop:** yes.
 
 ### A11 — Reporting & Sign-Out integration (Band 7) — **reuse only, no Sign-Out modification**
@@ -439,7 +439,7 @@ after its §8 gates pass. Commit messages follow the Phase 2 form and end with t
 - **Rollback boundary:** revert Band 7; Sign-Out provably untouched throughout.
 - **Known limitations:** no amendment/versioning; content vs live PDF divergence surfaced honestly.
 - **Independence:** standalone after A10.
-- **Commit message:** `PathOS v3 — A11 Diagnostic Case reporting + sign-out invocation (reuse only)`
+- **Commit message:** `Osieri v3 — A11 Diagnostic Case reporting + sign-out invocation (reuse only)`
 - **Review stop:** yes (assert Sign-Out unchanged).
 
 ### A12 — Timeline & Provenance (Band 8)
@@ -455,7 +455,7 @@ after its §8 gates pass. Commit messages follow the Phase 2 form and end with t
 - **Rollback boundary:** revert Band 8.
 - **Known limitations:** no canonical ledger; QC notes pinned at current status.
 - **Independence:** standalone after A11.
-- **Commit message:** `PathOS v3 — A12 Diagnostic Case timeline + provenance`
+- **Commit message:** `Osieri v3 — A12 Diagnostic Case timeline + provenance`
 - **Review stop:** yes.
 
 ### A13 — Workflow continuity (Band 9 + entry)
@@ -473,7 +473,7 @@ after its §8 gates pass. Commit messages follow the Phase 2 form and end with t
 - **Rollback boundary:** revert nav + continuity wiring; the workspace still reachable by URL.
 - **Known limitations:** none beyond scope.
 - **Independence:** standalone after A12.
-- **Commit message:** `PathOS v3 — A13 Diagnostic Case workflow continuity`
+- **Commit message:** `Osieri v3 — A13 Diagnostic Case workflow continuity`
 - **Review stop:** yes.
 
 ### A14 — Final verification & closeout
@@ -489,7 +489,7 @@ after its §8 gates pass. Commit messages follow the Phase 2 form and end with t
 - **Rollback boundary:** documentation-only.
 - **Known limitations:** the deferred list (§11) remains deferred.
 - **Independence:** closeout.
-- **Commit message:** `PathOS v3 — Close out Phase 3A Diagnostic Case Workspace`
+- **Commit message:** `Osieri v3 — Close out Phase 3A Diagnostic Case Workspace`
 - **Review stop:** yes.
 
 ---

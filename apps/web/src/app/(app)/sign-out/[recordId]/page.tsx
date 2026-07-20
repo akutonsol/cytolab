@@ -4,7 +4,7 @@
 // summary, clinical context) from real data already returned by records.service.
 // Orchestration only; no domain logic, no writes, no inference, no mock data. Age
 // uses the canonical @/lib/age helper. Other regions remain visibly deferred.
-// Contract: docs/PATHOS_SIGNOUT_IMPLEMENTATION_PLAN.md (Orchestration Rule, §3/§4).
+// Contract: docs/OSIERI_SIGNOUT_IMPLEMENTATION_PLAN.md (Orchestration Rule, §3/§4).
 
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';

@@ -1,17 +1,17 @@
-# PathOS — IHC Return Queue: data-model audit (no module built)
+# Osieri — IHC Return Queue: data-model audit (no module built)
 
 | Field | Value |
 |---|---|
 | Status | Audit complete — module NOT built (data model insufficient) |
-| Current Phase | PathOS Phase 2A (Operations) |
+| Current Phase | Osieri Phase 2A (Operations) |
 | Owner | Founder |
-| Dependencies | [docs/PATHOS_OPERATIONS_WORKSPACE.md](PATHOS_OPERATIONS_WORKSPACE.md) §4 B3 |
+| Dependencies | [docs/OSIERI_OPERATIONS_WORKSPACE.md](OSIERI_OPERATIONS_WORKSPACE.md) §4 B3 |
 | Last Updated | 2026-07-10 |
 | Priority | P1 |
 | Expected Next Milestone | Decision on the proposed minimal data-model addition |
 
 The IHC Return Queue increment began, per instruction, with a **read-only audit** of the data
-model. The audit's conclusion is that PathOS **cannot today represent a truthful IHC Return
+model. The audit's conclusion is that Osieri **cannot today represent a truthful IHC Return
 Queue**, so — following "prefer no module over a misleading module" — **no module was built**.
 This document records what the codebase can and cannot observe, the classification of the
 evidence, and the smallest future data-model addition that would make a truthful queue possible.
@@ -142,7 +142,7 @@ timestamped SQL → `prisma migrate deploy`), plus the UI to place and resolve o
 is real rather than seeded. It should be scoped and approved as its own increment.
 
 **`AncillaryOrder` is recorded here as a deferred future capability**, requiring explicit
-product approval and a future schema evolution. It is **not** implemented. PathOS remains an
+product approval and a future schema evolution. It is **not** implemented. Osieri remains an
 intelligence layer during Phase 2A and does not add this model now; the IHC Return Queue is
 skipped until the capability is approved and built.
 

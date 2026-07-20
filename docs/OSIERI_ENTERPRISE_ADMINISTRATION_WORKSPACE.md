@@ -1,17 +1,17 @@
-# PathOS — Enterprise Administration & Controls Workspace (Phase 2D architecture)
+# Osieri — Enterprise Administration & Controls Workspace (Phase 2D architecture)
 
 | Field | Value |
 |---|---|
 | Status | Draft — architecture only; no implementation, no schema, no Helix change |
-| Current Phase | PathOS Phase 2D (Enterprise Administration & Controls Workspace) |
+| Current Phase | Osieri Phase 2D (Enterprise Administration & Controls Workspace) |
 | Owner | Founder |
-| Dependencies | [PATHOS_v2.md](PATHOS_v2.md) §4, Helix v1.0 (frozen), existing administration modules (audit below); follows Phase 2C ([PATHOS_QUALITY_WORKSPACE.md](PATHOS_QUALITY_WORKSPACE.md), closed) |
+| Dependencies | [OSIERI_v2.md](OSIERI_v2.md) §4, Helix v1.0 (frozen), existing administration modules (audit below); follows Phase 2C ([OSIERI_QUALITY_WORKSPACE.md](OSIERI_QUALITY_WORKSPACE.md), closed) |
 | Last Updated | 2026-07-12 |
 | Priority | P1 (follows Phase 2C Quality & Governance, now closed) |
 | Expected Next Milestone | Architecture approval → composition feasibility audit → checkpointed build (existing config first; hierarchy / credential vault / config-change ledger / notification templates gated on data-model decisions) |
 
 This is the architecture for the **Enterprise Administration & Controls Workspace** — the surface where
-a lab administrator configures and governs PathOS: laboratory identity, access, clients, lab codes,
+a lab administrator configures and governs Osieri: laboratory identity, access, clients, lab codes,
 workflow settings, integrations, notifications, commercial configuration, and platform controls. It is
 architecture only: **no code, no wireframes, no layout dimensions, no schema changes, no Helix changes,
 no roadmap edits.** Every claim traces to the read-only audit below; where a capability is missing it is
@@ -26,7 +26,7 @@ record status is never turned into a freely editable field.**
 
 ## 1. Purpose
 
-PathOS already contains a complete administration surface — but it is **scattered** across the Platform,
+Osieri already contains a complete administration surface — but it is **scattered** across the Platform,
 Security, and Superuser nav groups (`/settings`, `/settings/forms`, `/settings/features`, `/users`,
 `/roles`, `/workspaces`, `/departments`, `/clients`, `/lab-codes`, `/system`, `/system/logs`,
 `/security/*`, `/fhir`, `/billing`, `/payments`, `/services`, `/notifications`, `/superuser/features`).
@@ -181,7 +181,7 @@ Values are shown **verbatim**; secrets (MFA `totpSecret`, FHIR credentials) are 
 
 - **Owner:** `clients` (`Client`, `ClientType`, `ClientAddress`) + `portal` (`PortalUser`) for portal identities + `change-requests` for client-initiated requests.
 - **Composed read:** client directory with type, addresses, portal-access status, and billing relationship pointer; links to `/clients` and the portal admin surface for change.
-- **Truthful limitation:** PathOS has **no first-class `ReferringProvider` or `Facility` model** — a referring practice/provider is represented as a `Client` (with `ClientAddress`/`ClientType`); client account grouping is `Account` (tenant-level). The workspace surfaces this structure as-is and does not invent a provider registry.
+- **Truthful limitation:** Osieri has **no first-class `ReferringProvider` or `Facility` model** — a referring practice/provider is represented as a `Client` (with `ClientAddress`/`ClientType`); client account grouping is `Account` (tenant-level). The workspace surfaces this structure as-is and does not invent a provider registry.
 - **Portal access is superuser-only today** (`portaluser:*` is declared in controllers but **not seeded** → only `isSuperRole` reaches it). The workspace surfaces portal-admin as forbidden for non-superusers rather than exposing it.
 - It never manages billing relationships or portal credentials directly — those route to their owners.
 
@@ -342,7 +342,7 @@ Each checkpoint is separately approved; no schema, Helix, or permission change s
 
 ## 18. Success criterion
 
-> *Can PathOS provide one coherent enterprise-administration workspace by composing existing owner
+> *Can Osieri provide one coherent enterprise-administration workspace by composing existing owner
 > systems — without broadening permissions, duplicating configuration logic, exposing secrets, or
 > turning record status into a freely editable field?*
 
@@ -358,13 +358,13 @@ schema does not ship under this contract.
 
 Architecture only — no code, no wireframes, no schema, no Helix change, no roadmap edit, no commit until
 reviewed. On approval, the next step is a **composition feasibility audit** (in the manner of
-[PATHOS_SIGNOUT_FEASIBILITY_AUDIT.md](PATHOS_SIGNOUT_FEASIBILITY_AUDIT.md) and
-[PATHOS_QUALITY_FEASIBILITY_AUDIT.md](PATHOS_QUALITY_FEASIBILITY_AUDIT.md)) confirming the compose-only
+[OSIERI_SIGNOUT_FEASIBILITY_AUDIT.md](OSIERI_SIGNOUT_FEASIBILITY_AUDIT.md) and
+[OSIERI_QUALITY_FEASIBILITY_AUDIT.md](OSIERI_QUALITY_FEASIBILITY_AUDIT.md)) confirming the compose-only
 path in §16 is truthful against the current data model, before any checkpoint build begins. Every claim
 above traces to the read-only audit in §3; Missing/Future/schema-gated capabilities are named, not
-assumed. No conflict with Phases 2A ([PATHOS_OPERATIONS_WORKSPACE.md](PATHOS_OPERATIONS_WORKSPACE.md)),
-2B ([PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md)), or 2C
-([PATHOS_QUALITY_WORKSPACE.md](PATHOS_QUALITY_WORKSPACE.md)): this workspace composes configuration
+assumed. No conflict with Phases 2A ([OSIERI_OPERATIONS_WORKSPACE.md](OSIERI_OPERATIONS_WORKSPACE.md)),
+2B ([OSIERI_SIGNOUT_WORKSPACE.md](OSIERI_SIGNOUT_WORKSPACE.md)), or 2C
+([OSIERI_QUALITY_WORKSPACE.md](OSIERI_QUALITY_WORKSPACE.md)): this workspace composes configuration
 owners those workspaces do not touch and reuses their orchestration contract without modification.
 
 ---
@@ -380,4 +380,4 @@ expectations were tightened during the build: the record lifecycle is surfaced *
 `ALLOWED_TRANSITIONS` copy, no `RecordStatusEvent` creation, no status editor), and **Forms** proved
 non-composable read-only (its owner reads persist a default config). Full completion record, permission
 matrix, secret-safety, performance, and limitations:
-[PATHOS_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md](PATHOS_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md) §14.
+[OSIERI_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md](OSIERI_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md) §14.

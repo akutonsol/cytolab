@@ -1,18 +1,18 @@
-# PathOS — Laboratory Operations Workspace
+# Osieri — Laboratory Operations Workspace
 
 | Field | Value |
 |---|---|
 | Status | Draft — implementation contract for Phase 2A |
-| Current Phase | PathOS Phase 2A (Foundation and adoption) |
+| Current Phase | Osieri Phase 2A (Foundation and adoption) |
 | Owner | Founder |
-| Dependencies | [docs/PATHOS_v2.md](PATHOS_v2.md) (Workspace 2), Helix v1.0 (frozen), realtime gateway, LIS interfaces |
+| Dependencies | [docs/OSIERI_v2.md](OSIERI_v2.md) (Workspace 2), Helix v1.0 (frozen), realtime gateway, LIS interfaces |
 | Last Updated | 2026-07-10 |
 | Priority | P0 |
 | Expected Next Milestone | Contract approval → Operations implementation begins |
 
 This is the operational architecture for the Laboratory Operations Workspace — Workspace 2 of
-the approved blueprint ([docs/PATHOS_v2.md](PATHOS_v2.md) §4) and the first surface built in the
-resequenced roadmap ([docs/PATHOS_v2.md](PATHOS_v2.md) §11, Phase 2A). It is a design document:
+the approved blueprint ([docs/OSIERI_v2.md](OSIERI_v2.md) §4) and the first surface built in the
+resequenced roadmap ([docs/OSIERI_v2.md](OSIERI_v2.md) §11, Phase 2A). It is a design document:
 no code, no components, no implementation. Everything here consumes Helix v1.0 exactly as frozen
 ([../HELIX_v1.0.md](../HELIX_v1.0.md)) and traces to the blueprint; nothing invents a conflicting
 workflow or a new design-system abstraction.
@@ -27,7 +27,7 @@ center looks at *now* and enables action. Every element exists to support **oper
 (seeing the true state of the lab) and **operational action** (changing it).
 
 Primary users: the **Lab Operations Manager** and the **Lab Technician**
-([docs/PATHOS_v2.md](PATHOS_v2.md) §3). The Medical Director and pathologist are secondary
+([docs/OSIERI_v2.md](OSIERI_v2.md) §3). The Medical Director and pathologist are secondary
 consumers (quality alerts, worklist feed).
 
 Scope for Phase 2A: this workspace and the integration workstream (HL7 v2 / FHIR / DICOM) that
@@ -36,7 +36,7 @@ feeds it. It carries no diagnostic AI (that is Phase 2B/2C); its AI is **operati
 The design honors the blueprint's non-negotiables: SLA risk is surfaced **before** breach; the
 IHC re-review loop is **visible**; there is **no false empty state while loading**; navigation and
 content share one scroll container; every action is acknowledged once within the experience
-budgets ([docs/PATHOS_v2.md](PATHOS_v2.md) §4, §10).
+budgets ([docs/OSIERI_v2.md](OSIERI_v2.md) §4, §10).
 
 ---
 
@@ -61,7 +61,7 @@ before bottlenecks, and every answer ends in an action.
 ## 3. Information hierarchy
 
 Four layers, from most to least immediate. What is urgent is always visible; depth is revealed on
-demand (progressive disclosure, [docs/PATHOS_v2.md](PATHOS_v2.md) §2).
+demand (progressive disclosure, [docs/OSIERI_v2.md](OSIERI_v2.md) §2).
 
 - **Attention layer (always visible, real-time).** The standing answer to Question 1. A persistent
   rail that surfaces only what needs a human now: frozen sections in progress, imminent SLA
@@ -72,7 +72,7 @@ demand (progressive disclosure, [docs/PATHOS_v2.md](PATHOS_v2.md) §2).
   queues by stage, the timeliness strip (TAT, SLA risk), and the constraints strip (capacity,
   staffing, instruments, AI, integrations). This is the lab's live state on one surface.
 - **Drill-downs (progressive disclosure, real-time).** A queue expands to its case list; a case
-  expands to its **workflow timeline** ([docs/PATHOS_v2.md](PATHOS_v2.md) §9). Detail is one
+  expands to its **workflow timeline** ([docs/OSIERI_v2.md](OSIERI_v2.md) §9). Detail is one
   gesture away and carries full context.
 - **Historical (behind a deliberate toggle, not real-time).** Trends and distributions for
   planning — TAT over weeks, workload over shifts. Clearly marked as historical so it is never
@@ -121,7 +121,7 @@ existing surface it recomposes (blueprint §4 backing) and consumes Helix primit
 - **Actions:** Assign/claim, mark received/reported, escalate if unclaimed, open the case in
   Sign-Out.
 - **Relationships:** Feeds the Attention Rail at top priority; opens directly into Sign-Out's
-  frozen-section mode ([docs/PATHOS_v2.md](PATHOS_v2.md) §7).
+  frozen-section mode ([docs/OSIERI_v2.md](OSIERI_v2.md) §7).
 - **Success metrics:** Frozen turnaround (target ≤ 20 min); unclaimed time; on-target rate.
 - **Backed by:** `records` (frozen/STAT), `tat`.
 
@@ -174,7 +174,7 @@ existing surface it recomposes (blueprint §4 backing) and consumes Helix primit
 #### B3. IHC / Special-Stains Return Queue
 
 - **Purpose:** Make the re-review loop visible — cases a pathologist sent back for IHC that must
-  return for re-review ([docs/PATHOS_v2.md](PATHOS_v2.md) §7). The loop the linear pipeline hides.
+  return for re-review ([docs/OSIERI_v2.md](OSIERI_v2.md) §7). The loop the linear pipeline hides.
 - **Primary user:** Lab Technician (fulfillment) and Lab Operations Manager (flow).
 - **Inputs:** IHC/special-stain orders placed in Sign-Out, fulfillment status, expected-back time.
 - **Outputs:** Ordered stains with status (ordered → in process → ready) and the case they return
@@ -189,7 +189,7 @@ existing surface it recomposes (blueprint §4 backing) and consumes Helix primit
 #### B4. Cytology Batch Review
 
 - **Purpose:** The high-volume screening triage surface for the **cytotechnologist**
-  ([docs/PATHOS_v2.md](PATHOS_v2.md) §3) — confirm the normal en masse, flag the abnormal.
+  ([docs/OSIERI_v2.md](OSIERI_v2.md) §3) — confirm the normal en masse, flag the abnormal.
 - **Primary user:** Cytotechnologist; pathologist for flagged cases.
 - **Inputs:** Screening queue (Pap/cytology), AI screening pre-triage, Bethesda categorization.
 - **Outputs:** A batch triage view; normal cases confirmed rapidly, abnormals routed to the
@@ -216,7 +216,7 @@ existing surface it recomposes (blueprint §4 backing) and consumes Helix primit
 #### C2. SLA Risk
 
 - **Purpose:** Surface cases that will breach SLA **before** they do — the blueprint's signature
-  operational behavior ([docs/PATHOS_v2.md](PATHOS_v2.md) §4, §9).
+  operational behavior ([docs/OSIERI_v2.md](OSIERI_v2.md) §4, §9).
 - **Primary user:** Lab Operations Manager.
 - **Inputs:** Case age, remaining SLA budget, current stage, dependency state, predicted stage
   durations (from Operational AI).
@@ -290,7 +290,7 @@ existing surface it recomposes (blueprint §4 backing) and consumes Helix primit
 - **Primary user:** Lab Operations Manager.
 - **Inputs:** AI job throughput, backlog, degradation/unavailable events, per-stage AI coverage.
 - **Outputs:** AI throughput and a clear degraded/unavailable state (the AI never throws; its
-  absence is legible, [docs/PATHOS_v2.md](PATHOS_v2.md) §6).
+  absence is legible, [docs/OSIERI_v2.md](OSIERI_v2.md) §6).
 - **Actions:** Reprioritize AI queue, acknowledge degradation, route around AI when unavailable.
 - **Relationships:** Cytology Batch and Sign-Out consume AI output; degradation here explains
   downstream delay; feeds Capacity.
@@ -299,8 +299,8 @@ existing surface it recomposes (blueprint §4 backing) and consumes Helix primit
 
 #### D6. Integration Health / External Interfaces
 
-- **Purpose:** Show the health of the interfaces that connect PathOS to the LIS of record and
-  external systems — HL7 v2 (ORU), FHIR, DICOM WSI ([docs/PATHOS_v2.md](PATHOS_v2.md) §8).
+- **Purpose:** Show the health of the interfaces that connect Osieri to the LIS of record and
+  external systems — HL7 v2 (ORU), FHIR, DICOM WSI ([docs/OSIERI_v2.md](OSIERI_v2.md) §8).
 - **Primary user:** Lab Operations Manager; Administration/IT for configuration.
 - **Inputs:** Interface up/down, message throughput, error/retry counts, last-successful timestamps.
 - **Outputs:** Per-interface health; a failing interface raises a high-priority attention signal
@@ -323,7 +323,7 @@ through the board so that every answer ends in an action.
 
 Queues here do not merely sort — they **explain**. Every case in any queue answers five questions
 without the manager opening it. This is the operational expression of *reduce cognitive load*
-([docs/PATHOS_v2.md](PATHOS_v2.md) §2).
+([docs/OSIERI_v2.md](OSIERI_v2.md) §2).
 
 For every case row:
 
@@ -346,7 +346,7 @@ always present. A queue that cannot explain a case's presence is a defect.
 ## 6. Interaction model
 
 How the manager and technician work the board. Every interaction is acknowledged once within the
-experience budgets (interaction ≤ 100ms visible acknowledgement; [docs/PATHOS_v2.md](PATHOS_v2.md)
+experience budgets (interaction ≤ 100ms visible acknowledgement; [docs/OSIERI_v2.md](OSIERI_v2.md)
 §10), and mutations use the one feedback language.
 
 - **Prioritize work.** Raise a case's priority inline from any queue; the change is reflected on the
@@ -387,7 +387,7 @@ skeletons, never false zeros; steady states are true states.
 
 **Naming correction (architectural).** What this section previously called "Operational AI" is
 retired as a product concept. The feasibility audit
-([PATHOS_OPERATIONAL_AI_AUDIT.md](PATHOS_OPERATIONAL_AI_AUDIT.md)) established that what PathOS can
+([OSIERI_OPERATIONAL_AI_AUDIT.md](OSIERI_OPERATIONAL_AI_AUDIT.md)) established that what Osieri can
 produce truthfully today is **deterministic operational insight** (rules over recorded state), not
 AI. Calling deterministic thresholds "AI" would mislabel them, so the concept is renamed.
 
@@ -398,7 +398,7 @@ forecasting, workload optimization, recommendation systems, and machine learning
 the supporting recorded evidence exists.**
 
 **Status: not implemented.** This capability requires additional recorded operational signals
-before implementation. The deterministic operational insight PathOS can prove today is already
+before implementation. The deterministic operational insight Osieri can prove today is already
 surfaced by the delivered modules (SLA Risk, Pipeline, Integration Health, Quality Alerts, and the
 `/workload` view); no separate module is built, and no deterministic rule is labelled "AI". The
 recommendation and forecasting behaviors described in earlier drafts (predicted breach beyond a
@@ -411,7 +411,7 @@ promoted to active development):
 - longer, seasonality-aware operational history (throughput and TAT at daily/finer granularity);
 - staffing **capacity** (a recorded per-role/person caseload or throughput target);
 - **qualifications / subspecialties** on users and cases (to prove a reassignment target is competent);
-- **ancillary dependency tracking** (the [AncillaryOrder](PATHOS_IHC_RETURN_QUEUE_AUDIT.md) proposal);
+- **ancillary dependency tracking** (the [AncillaryOrder](OSIERI_IHC_RETURN_QUEUE_AUDIT.md) proposal);
 - richer operational events.
 
 Human approval remains mandatory for any future suggested action; no automated decisions.
@@ -424,21 +424,21 @@ Operations is a hub; it hands work to and receives signal from the other three w
 enterprise reporting. It owns operational state; it does not own clinical decisions, quality
 adjudication, or configuration.
 
-- **Sign-Out ([docs/PATHOS_v2.md](PATHOS_v2.md) §4 W1).** Operations feeds the pathologist's
+- **Sign-Out ([docs/OSIERI_v2.md](OSIERI_v2.md) §4 W1).** Operations feeds the pathologist's
   worklist and its priority/assignment. Opening a case from any queue lands in Sign-Out carrying
   full state. When a pathologist orders IHC in Sign-Out, the case returns to Operations' IHC Return
   Queue and re-enters the worklist as *ready* when stains complete. Frozen sections open directly
   into Sign-Out's frozen-section mode.
-- **Quality & Governance ([docs/PATHOS_v2.md](PATHOS_v2.md) §4 W3).** QC failures, discordances,
+- **Quality & Governance ([docs/OSIERI_v2.md](OSIERI_v2.md) §4 W3).** QC failures, discordances,
   recalls, and amendment tasks surface in Operations as Quality Alerts; Operations returns their
   operational resolution status. TAT breaches and overdue outcomes flow to Quality as quality
   signals. Operations executes; Quality adjudicates.
-- **Enterprise Administration ([docs/PATHOS_v2.md](PATHOS_v2.md) §4 W4).** Staffing schedules,
+- **Enterprise Administration ([docs/OSIERI_v2.md](OSIERI_v2.md) §4 W4).** Staffing schedules,
   roles/permissions, instrument configuration, and interface configuration are **owned by
   Administration and consumed by Operations**. A failing interface in Operations links to its config
   in Administration. Operations changes assignments and priorities; it does not change roles,
   schedules, or interface setup.
-- **Enterprise reporting ([docs/PATHOS_v2.md](PATHOS_v2.md) §8).** Operations emits the operational
+- **Enterprise reporting ([docs/OSIERI_v2.md](OSIERI_v2.md) §8).** Operations emits the operational
   history — TAT, SLA adherence, workload, throughput, instrument uptime, interface health — that
   feeds enterprise quality analytics and the Medical Director's dashboard. The command center shows
   *now*; enterprise reporting aggregates *over time*.
@@ -480,7 +480,7 @@ bending Helix.
 
 ## 11. Traceability to the blueprint
 
-| This document | Traces to [docs/PATHOS_v2.md](PATHOS_v2.md) |
+| This document | Traces to [docs/OSIERI_v2.md](OSIERI_v2.md) |
 |---|---|
 | The command center (not a dashboard) | §4 Workspace 2 (Laboratory Operations) |
 | Five operational questions | §1 operational blindness; §4 W2 purpose |
@@ -515,7 +515,7 @@ The Operations Workspace succeeds when the lab is more aware and more able to ac
 
 Foundational bars are inherited and non-negotiable: cold start ≤ 2000ms, route content ≤ 400ms /
 cue ≤ 200ms, interaction ≤ 100ms; zero silent actions; zero-orange 0px; no false empty state while
-loading ([docs/PATHOS_v2.md](PATHOS_v2.md) §10).
+loading ([docs/OSIERI_v2.md](OSIERI_v2.md) §10).
 
 ---
 
@@ -523,6 +523,6 @@ loading ([docs/PATHOS_v2.md](PATHOS_v2.md) §10).
 
 This is the implementation contract for the Phase 2A Operations Workspace. On approval,
 implementation proceeds module-by-module, each tracing to a section here and to
-[docs/PATHOS_v2.md](PATHOS_v2.md), composed from Helix v1.0, verified against the foundational
+[docs/OSIERI_v2.md](OSIERI_v2.md), composed from Helix v1.0, verified against the foundational
 quality bars, and recorded in [../Roadmap/08_RELEASES.md](../Roadmap/08_RELEASES.md). No feature is
 built unless it supports this operational architecture and the approved product architecture.

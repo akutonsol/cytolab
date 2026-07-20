@@ -1,4 +1,4 @@
-# PathOS / CYTOLAB
+# Osieri / CYTOLAB
 
 | Field | Value |
 |---|---|
@@ -8,9 +8,9 @@
 | Dependencies | Helix v1.0 (frozen), custom auth, GCS storage, Claude AI reporting |
 | Last Updated | 2026-07-10 |
 | Priority | P0 |
-| Expected Next Milestone | PathOS Phase 2 kickoff |
+| Expected Next Milestone | Osieri Phase 2 kickoff |
 
-The single source of truth for PathOS, the pathology operating system and product #1 on
+The single source of truth for Osieri, the pathology operating system and product #1 on
 Helix. This is the product roadmap; the original build-phase roadmap is
 [../ROADMAP.md](../ROADMAP.md) and system detail is in [../ARCHITECTURE.md](../ARCHITECTURE.md).
 
@@ -24,7 +24,7 @@ Helix. This is the product roadmap; the original build-phase roadmap is
 
 ## Vision
 
-PathOS is the operating system for modern pathology: one intelligent workflow from specimen
+Osieri is the operating system for modern pathology: one intelligent workflow from specimen
 intake to signed, structured report. It unifies the referring-clinician portal, lab
 operations, the pathologist workstation, AI-assisted reporting, and billing into a single
 premium product that a lab can run its entire diagnostic day on.
@@ -69,8 +69,8 @@ Depth and reliability on what already ships.
 
 ### Phase 2A — Operations Workspace (status)
 
-Design contract: [../docs/PATHOS_OPERATIONS_WORKSPACE.md](../docs/PATHOS_OPERATIONS_WORKSPACE.md);
-experience layer: [../docs/PATHOS_OPERATIONS_EXPERIENCE.md](../docs/PATHOS_OPERATIONS_EXPERIENCE.md).
+Design contract: [../docs/OSIERI_OPERATIONS_WORKSPACE.md](../docs/OSIERI_OPERATIONS_WORKSPACE.md);
+experience layer: [../docs/OSIERI_OPERATIONS_EXPERIENCE.md](../docs/OSIERI_OPERATIONS_EXPERIENCE.md).
 
 **Delivered (built on truthful recorded data):**
 
@@ -83,13 +83,13 @@ experience layer: [../docs/PATHOS_OPERATIONS_EXPERIENCE.md](../docs/PATHOS_OPERA
 **Intentionally declined** — the data model could not support a truthful module, so none was built
 (prefer no feature over a misleading one). Each references its audit as justification:
 
-- IHC Return Queue — [../docs/PATHOS_IHC_RETURN_QUEUE_AUDIT.md](../docs/PATHOS_IHC_RETURN_QUEUE_AUDIT.md)
+- IHC Return Queue — [../docs/OSIERI_IHC_RETURN_QUEUE_AUDIT.md](../docs/OSIERI_IHC_RETURN_QUEUE_AUDIT.md)
   (no ancillary-order model; recorded `AncillaryOrder` as a deferred future capability).
-- Frozen Section — [../docs/PATHOS_FROZEN_SECTION_AUDIT.md](../docs/PATHOS_FROZEN_SECTION_AUDIT.md)
+- Frozen Section — [../docs/OSIERI_FROZEN_SECTION_AUDIT.md](../docs/OSIERI_FROZEN_SECTION_AUDIT.md)
   (out of the cytology domain; no designation, OR field, or minute-level timer).
-- Cytology Batch — [../docs/PATHOS_CYTOLOGY_BATCH_AUDIT.md](../docs/PATHOS_CYTOLOGY_BATCH_AUDIT.md)
+- Cytology Batch — [../docs/OSIERI_CYTOLOGY_BATCH_AUDIT.md](../docs/OSIERI_CYTOLOGY_BATCH_AUDIT.md)
   (a persistent requisition/billing batch exists, but no cytology *screening* batch).
-- Operational AI — [../docs/PATHOS_OPERATIONAL_AI_AUDIT.md](../docs/PATHOS_OPERATIONAL_AI_AUDIT.md)
+- Operational AI — [../docs/OSIERI_OPERATIONAL_AI_AUDIT.md](../docs/OSIERI_OPERATIONAL_AI_AUDIT.md)
   (only deterministic insight is supported, and it is already surfaced; AI-grade forecasting and
   recommendation are not trustworthy on current data).
 
@@ -99,7 +99,7 @@ optimization, and recommendation capabilities built only from recorded laborator
 This capability **requires additional recorded operational signals before implementation** and is
 **not promoted to active development** (no timelines). Required future evidence: longer operational
 history, staffing capacity, qualifications/subspecialties, ancillary dependency tracking, and
-richer operational events. See [../docs/PATHOS_OPERATIONS_WORKSPACE.md](../docs/PATHOS_OPERATIONS_WORKSPACE.md) §8.
+richer operational events. See [../docs/OSIERI_OPERATIONS_WORKSPACE.md](../docs/OSIERI_OPERATIONS_WORKSPACE.md) §8.
 
 ### Phase 2A — next direction (deepen, do not add)
 

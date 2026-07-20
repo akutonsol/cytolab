@@ -7,7 +7,7 @@ import { PURPLE, DARK, GRAY, INK_SOFT, Section, SectionHeader, Reveal, glassCard
 
 const QUOTES = [
   {
-    quote: 'PathOS gave my team back their afternoons. The AI pre-screen surfaces exactly what needs a second look, so I spend my time where it matters.',
+    quote: 'Osieri gave my team back their afternoons. The AI pre-screen surfaces exactly what needs a second look, so I spend my time where it matters.',
     name: 'Dr. Elena Vasquez', role: 'Director of Pathology', org: 'Meridian Health',
     stat: '2.3×', statLabel: 'throughput increase',
   },
@@ -29,7 +29,7 @@ export function TestimonialsSection() {
       <SectionHeader
         eyebrow="Case Studies"
         title={<>Trusted by pathologists<br />who don&apos;t compromise.</>}
-        subtitle="From regional labs to academic centers, teams choose PathOS to move faster without giving up rigor."
+        subtitle="From regional labs to academic centers, teams choose Osieri to move faster without giving up rigor."
       />
       <div style={{ marginTop: 60, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
         {QUOTES.map((q, i) => (

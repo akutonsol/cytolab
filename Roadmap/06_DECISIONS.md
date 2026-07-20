@@ -72,7 +72,7 @@ Decisions are append-only; when superseded, mark the old entry and add a new one
 - Alternatives: Copy the design system into each product; a monorepo-only shared folder.
 - Reasoning: One source of truth for the contract; products stay thin (core + one theme).
 - Consequences: Extraction of product-specific pieces happens on product #2, not by
-  refactoring PathOS now.
+  refactoring Osieri now.
 - Status: Accepted.
 
 ### ADR-004 · Custom utilities are part of the merge contract

@@ -1,9 +1,9 @@
 # ACCESSIBILITY_DEBT_REGISTER.md
 
-**Purpose:** Track observed accessibility debt in the PathOS / CYTOLAB web app as a backlog to be remediated in a dedicated, isolated workstream — not mixed with security, logging, tests, or color migration.
+**Purpose:** Track observed accessibility debt in the Osieri / CYTOLAB web app as a backlog to be remediated in a dedicated, isolated workstream — not mixed with security, logging, tests, or color migration.
 **Scope:** `apps/web` product UI. Reflects observations from the 2026-07-13 frontend survey. This register records observations; it fixes nothing.
 **Status:** Living document — active backlog.
-**Owner:** PathOS Engineering (unassigned).
+**Owner:** Osieri Engineering (unassigned).
 **Last Updated:** 2026-07-18.
 
 ---

@@ -1,17 +1,17 @@
-# PathOS — Operational AI: feasibility audit (no new module built)
+# Osieri — Operational AI: feasibility audit (no new module built)
 
 | Field | Value |
 |---|---|
 | Status | Audit complete — no new module built (deterministic insight is real but already surfaced; AI-grade prediction is not trustworthy) |
-| Current Phase | PathOS Phase 2A (Operations) |
+| Current Phase | Osieri Phase 2A (Operations) |
 | Owner | Founder |
-| Dependencies | [docs/PATHOS_OPERATIONS_WORKSPACE.md](PATHOS_OPERATIONS_WORKSPACE.md) §8; existing operations endpoints |
+| Dependencies | [docs/OSIERI_OPERATIONS_WORKSPACE.md](OSIERI_OPERATIONS_WORKSPACE.md) §8; existing operations endpoints |
 | Last Updated | 2026-07-11 |
 | Priority | P1 |
 | Expected Next Milestone | Product decision on capacity / qualification / history data that would unlock genuine forecasting |
 
 Read-only feasibility audit for "Operational AI", using the same methodology as the prior
-Operations audits. The decisive finding: the recommendations PathOS can produce truthfully are
+Operations audits. The decisive finding: the recommendations Osieri can produce truthfully are
 **deterministic operational insight (rules over recorded state), not AI** — and **every one of
 them is already surfaced** by an existing surface. The genuinely predictive candidates (queue
 forecast, throughput-decline confidence) are not trustworthy from the current single-lab, coarse
@@ -114,10 +114,10 @@ this audit.
 - **Suggested reassignment (12):** a recorded **subspecialty / qualification** on users and cases,
   so a suggested target can be proven competent. Without it, only the imbalance is honest.
 - **Bottleneck causation (10):** a structured "why blocked" dependency per case (the
-  [AncillaryOrder](PATHOS_IHC_RETURN_QUEUE_AUDIT.md) proposal), to move from "where the backlog is"
+  [AncillaryOrder](OSIERI_IHC_RETURN_QUEUE_AUDIT.md) proposal), to move from "where the backlog is"
   to "why it is stuck".
 
-Each is a separately-approved data-model evolution, not a Phase 2A addition. PathOS remains an
+Each is a separately-approved data-model evolution, not a Phase 2A addition. Osieri remains an
 intelligence layer.
 
 ## 6. Verification note

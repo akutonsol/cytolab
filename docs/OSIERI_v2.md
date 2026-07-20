@@ -1,16 +1,16 @@
-# PathOS v2 — Product Design Blueprint
+# Osieri v2 — Product Design Blueprint
 
 | Field | Value |
 |---|---|
 | Status | Revised (post architecture review) — pending approval |
-| Current Phase | PathOS Phase 2 (product) |
+| Current Phase | Osieri Phase 2 (product) |
 | Owner | Founder |
 | Dependencies | Helix v1.0 (frozen), custom auth, GCS storage, Claude AI reporting path, LIS interfaces (HL7 v2 / FHIR / DICOM) |
 | Last Updated | 2026-07-10 |
 | Priority | P0 |
 | Expected Next Milestone | Blueprint approval → Phase 2A implementation begins |
 
-This is the master design document for PathOS from Phase 2 forward. Once approved, it is the
+This is the master design document for Osieri from Phase 2 forward. Once approved, it is the
 implementation contract: every feature traces back to a section here. It is a product
 architecture document — no code, no components, no implementation.
 
@@ -23,7 +23,7 @@ resequenced roadmap.
 
 Relationship to existing documentation (referenced, not duplicated):
 
-- Product roadmap and phases: [../Roadmap/02_PATHOS.md](../Roadmap/02_PATHOS.md)
+- Product roadmap and phases: [../Roadmap/02_OSIERI.md](../Roadmap/02_OSIERI.md)
 - Architecture review that shaped this revision: [../PRODUCT_ARCHITECTURE_REVIEW.md](../PRODUCT_ARCHITECTURE_REVIEW.md)
 - The design system this product consumes, frozen: [../HELIX_v1.0.md](../HELIX_v1.0.md)
 - AI reporting design already in place: [F4_AI_REPORTING_DESIGN.md](F4_AI_REPORTING_DESIGN.md)
@@ -39,9 +39,9 @@ surface is built from Helix primitives consuming Helix semantic, domain, and mot
 
 ## 1. Product vision
 
-### What PathOS is
+### What Osieri is
 
-PathOS is a **cytology-first diagnostic intelligence layer** for the pathology lab. It sits
+Osieri is a **cytology-first diagnostic intelligence layer** for the pathology lab. It sits
 alongside the laboratory's system of record, makes the lab's day observable, and gives the
 pathologist a calibrated second reader that quantifies what it claims and remembers every case.
 
@@ -49,37 +49,37 @@ pathologist a calibrated second reader that quantifies what it claims and rememb
 
 This is the load-bearing strategic decision, and it is now explicit.
 
-- **PathOS enters as an intelligence and workflow layer, not a rip-and-replace of the LIS of
-  record.** Labs run Epic Beaker, Cerner, or PowerPath as their system of record. PathOS
+- **Osieri enters as an intelligence and workflow layer, not a rip-and-replace of the LIS of
+  record.** Labs run Epic Beaker, Cerner, or PowerPath as their system of record. Osieri
   coexists with them: it ingests orders and specimens, runs the review, reporting, and AI
   workflow, and returns results to the LIS of record over standard interfaces (HL7 v2 ORU today,
   FHIR and DICOM WSI as adopted). This lowers the barrier to entry from a multi-year platform
   migration to an additive deployment.
-- **The option to evolve is deliberate.** For labs that want it, PathOS can progressively assume
+- **The option to evolve is deliberate.** For labs that want it, Osieri can progressively assume
   more of the record — accessioning, catalogs, operations — until it is the primary system.
   Coexistence is the default; replacement is a path, not a precondition.
 
 ### Regulatory posture
 
-- PathOS AI is **assistive** (computer-aided detection and quantification), never autonomous. A
+- Osieri AI is **assistive** (computer-aided detection and quantification), never autonomous. A
   human is always the decision of record. This is an architectural stance, not only a design
   principle (see [../Roadmap/06_DECISIONS.md](../Roadmap/06_DECISIONS.md) ADR-008).
 - **Quantification first.** The first AI capability shipped is measurement (counts, indices,
   scoring), which carries a lower regulatory bar and delivers immediate daily value, before
   diagnostic AI. Diagnostic assistance follows once validated.
-- PathOS ships **validation and verification tooling** so a lab can validate the AI and document
+- Osieri ships **validation and verification tooling** so a lab can validate the AI and document
   it for CAP inspection — turning a customer burden into a product capability.
 
 ### The problem it solves
 
-- **Fragmentation.** Context is lost at every tool boundary. PathOS holds the whole case in one
+- **Fragmentation.** Context is lost at every tool boundary. Osieri holds the whole case in one
   place, from accession to signed report, without replacing the LIS.
-- **Cognitive load.** The pathologist reconstructs the picture on every case. PathOS assembles
+- **Cognitive load.** The pathologist reconstructs the picture on every case. Osieri assembles
   evidence, prior specimens, and measurements in the order a diagnosis is actually made.
-- **Opaque, un-calibrated AI.** Competitors output a score with no track record. PathOS shows
+- **Opaque, un-calibrated AI.** Competitors output a score with no track record. Osieri shows
   evidence first, its concordance with the individual pathologist, and honest uncertainty.
 - **Operational blindness.** Labs cannot see turnaround, workload, and SLA risk until too late.
-  PathOS makes the operational state continuously visible.
+  Osieri makes the operational state continuously visible.
 
 ### What makes it fundamentally different
 
@@ -207,7 +207,7 @@ navigation inside it does not feel like leaving. Each is composed entirely from 
 
 ### Workspace 1 — Sign-Out Workspace (the signature; review and report merged)
 
-Review and reporting are one continuous act, not two places. This is the defining PathOS
+Review and reporting are one continuous act, not two places. This is the defining Osieri
 experience and the home the pathologist lives in.
 
 - **Purpose:** Take a case from "ready" to "signed out" — read, reveal AI, weigh evidence and
@@ -409,7 +409,7 @@ continuous surface; the report is not a separate trip.
 
 Cross-cutting capabilities every workspace inherits, answered explicitly for institutional buyers.
 
-- **LIS coexistence (system-of-record posture).** PathOS returns results to the LIS of record over
+- **LIS coexistence (system-of-record posture).** Osieri returns results to the LIS of record over
   **HL7 v2 (ORU)** today, with **FHIR** and **DICOM WSI** as adopted. Coexistence is the default;
   evolution to primary system is optional. *Backed by:* `fhir` plus interface work sequenced in
   Phase 2A.
@@ -420,7 +420,7 @@ Cross-cutting capabilities every workspace inherits, answered explicitly for ins
   surface in Quality & Governance, not a hidden log.
 - **Compliance.** HIPAA, SOC 2, CAP, CLIA posture evidenced in-product; redaction stays on the AI
   path. *Referenced:* [DATABASE_SECURITY.md](DATABASE_SECURITY.md), [SECURITY.md](SECURITY.md).
-- **Validation and verification tooling.** PathOS helps a lab validate the AI and document it for
+- **Validation and verification tooling.** Osieri helps a lab validate the AI and document it for
   CAP inspection — a customer burden turned into a capability.
 - **Multi-site labs.** Tenancy enforced structurally via `labId` + AsyncLocalStorage + a Prisma
   extension; never trusted from the request body. Multi-site administration and load balancing for
@@ -440,7 +440,7 @@ Cross-cutting capabilities every workspace inherits, answered explicitly for ins
 
 ## 9. Signature experiences
 
-Product behaviors, not animations — the interactions PathOS is remembered for. All implementable
+Product behaviors, not animations — the interactions Osieri is remembered for. All implementable
 with Helix v1.0 primitives and motion tokens. Ranked by memorability and defensibility.
 
 1. **Read → Reveal.** Commit your impression, then see whether the AI agrees. De-biases the read,
@@ -484,7 +484,7 @@ actions; zero-orange 0px; no false empty state while loading.
 ## 11. Roadmap and sequencing
 
 Resequenced to balance flagship product value with enterprise adoption. The signature Sign-Out
-experience arrives early enough to differentiate, but the lab can adopt PathOS — and PathOS can
+experience arrives early enough to differentiate, but the lab can adopt Osieri — and Osieri can
 earn revenue — before diagnostic AI is validated. Integration is foundational, not an afterthought.
 
 ### Phase 2A — Foundation and adoption (no FDA gate)
@@ -533,7 +533,7 @@ integration foundational; quality built on accumulated concordance data; scale l
 ## Status of this document
 
 This revised blueprint incorporates the accepted architecture-review outcomes and becomes the
-implementation contract for PathOS Phase 2 once approved. No implementation begins until then.
+implementation contract for Osieri Phase 2 once approved. No implementation begins until then.
 Features are built workspace-by-workspace and workflow-by-workflow, each tracing to a section
 here, verified against the foundational quality bars, and recorded in
 [../Roadmap/08_RELEASES.md](../Roadmap/08_RELEASES.md).

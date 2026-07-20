@@ -8,7 +8,7 @@
 // A2. Truthful loading + aggregate-error/Retry states; a failed request never renders deferred
 // placeholders as though it succeeded. Entry gate (record:view), validated returnTo, and one-shot
 // focus are preserved from A1. Workflow shortcuts + nav entry arrive in A13; Sign-Out is not touched.
-// Contract: docs/PATHOS_DIAGNOSTIC_CASE_IMPLEMENTATION_PLAN.md (A2; §3, §6, §7).
+// Contract: docs/OSIERI_DIAGNOSTIC_CASE_IMPLEMENTATION_PLAN.md (A2; §3, §6, §7).
 
 import { useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';

@@ -3,7 +3,7 @@
 import { ScanSearch } from 'lucide-react';
 
 /**
- * Diagnostic image analysis placeholder (Program 1 · P1-2). PathOS performs no
+ * Diagnostic image analysis placeholder (Program 1 · P1-2). Osieri performs no
  * slide-image inference today, so this card renders no results, confidence, findings,
  * flagged regions, or review actions — only an honest "not currently available" state.
  * It is gated by `<FeatureGate feature="AI_SCREENING">` at every call site and the flag

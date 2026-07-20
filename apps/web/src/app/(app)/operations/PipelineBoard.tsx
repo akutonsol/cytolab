@@ -4,7 +4,7 @@ import { Badge, Card } from '@/components/ui';
 import { formatAge, type OperationsOverview, type PipelineStage } from './types';
 
 /**
- * B1 — Pipeline Board (docs/PATHOS_OPERATIONS_WORKSPACE.md §4 Group B).
+ * B1 — Pipeline Board (docs/OSIERI_OPERATIONS_WORKSPACE.md §4 Group B).
  * The whole lab as a pipeline of lifecycle stages, each with count, oldest-case
  * age, and SLA risk. Stages are the real six in-flight RecordStatus values grouped
  * by the existing Intake → Processing → Review lifecycle — no fabricated sub-queues.

@@ -11,7 +11,7 @@
 | Expected Next Milestone | Reviewed each phase boundary |
 
 One place for all debt across every product, grouped by product. This is a register: it
-references the authoritative detail rather than duplicating it. The full PathOS/platform
+references the authoritative detail rather than duplicating it. The full Osieri/platform
 backlog lives in [../TECH_DEBT.md](../TECH_DEBT.md); Helix convergence debt is specified in
 [../HELIX_v1.0.md](../HELIX_v1.0.md) §12.
 
@@ -31,7 +31,7 @@ need (see [01_HELIX.md](01_HELIX.md)). Detail in [../HELIX_v1.0.md](../HELIX_v1.
 | Security Center geometry via escape-hatch builders | P3 | M | Structural convergence done; visual convergence deferred to a dedicated design pass. |
 | Documented colour exceptions (processing hue, delete danger, marketing indigo vs red, cabinet swatches) | P3 | S | Recorded deliberately; each is a decision to revisit, not a bug. |
 
-## PathOS
+## Osieri
 
 Authoritative backlog: [../TECH_DEBT.md](../TECH_DEBT.md) (TD-001…TD-010). Summary:
 

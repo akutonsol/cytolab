@@ -21,7 +21,7 @@ rules). Nothing here is a commitment or an implementation plan.
 Every entry must state:
 
 - **Problem discovered** — the concrete limitation, not a preference.
-- **Which product exposed it** — PathOS, Tierstrum, 12 Circle, or another real product.
+- **Which product exposed it** — Osieri, Tierstrum, 12 Circle, or another real product.
 - **Why v1.0 cannot solve it** — evidence that the current contract genuinely cannot express
   it, not that it is merely inconvenient.
 - **Impact** — what is blocked or degraded because of the gap.
@@ -52,7 +52,7 @@ These are directions to watch, not accepted entries. They become entries only wh
 product produces the evidence required above.
 
 - Dark-theme reference build — likely first exposed by 12 Circle or a Tierstrum surface.
-- Density mode (compact/comfortable) — likely first exposed by a data-dense PathOS screen.
+- Density mode (compact/comfortable) — likely first exposed by a data-dense Osieri screen.
 - Charting token expansion — if a product needs chart types beyond the current set.
 - Second theme extraction pass — expected when onboarding product #2 (12 Circle) reveals
-  which parts of the PathOS theme are genuinely product-specific.
+  which parts of the Osieri theme are genuinely product-specific.

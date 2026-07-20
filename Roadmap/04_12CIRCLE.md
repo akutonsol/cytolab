@@ -24,7 +24,7 @@ legible metric readouts; airier density; an athletic brand voice. It connects co
 clients around measurable progress.
 
 The four non-colour theme dimensions (type personality, motion character, density/radius,
-voice) are what make 12 Circle feel distinct from PathOS while sharing the same foundation.
+voice) are what make 12 Circle feel distinct from Osieri while sharing the same foundation.
 
 ## App roadmap
 
@@ -38,7 +38,7 @@ voice) are what make 12 Circle feel distinct from PathOS while sharing the same 
 - Coach dashboard: roster, adherence, at-a-glance client status.
 - Program builder and assignment.
 - Messaging and check-ins.
-- Reuses the roster/worklist and messaging patterns proven in PathOS.
+- Reuses the roster/worklist and messaging patterns proven in Osieri.
 
 ## Client experience
 

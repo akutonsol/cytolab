@@ -1,9 +1,9 @@
-# PathOS Architecture Ledger
+# Osieri Architecture Ledger
 
-**Purpose:** Record the canonical architectural decisions, owners, frozen invariants, deliberate exclusions, and extension rules for the architecture that currently exists in PathOS — so future work extends a documented system rather than re-deriving it. This is a decision ledger, not feature/API/user documentation.
+**Purpose:** Record the canonical architectural decisions, owners, frozen invariants, deliberate exclusions, and extension rules for the architecture that currently exists in Osieri — so future work extends a documented system rather than re-deriving it. This is a decision ledger, not feature/API/user documentation.
 **Scope:** The Diagnostic Case aggregate and the platform architecture principles it embodies, plus the Premium UI foundation and the boundaries certified through Phase 3A. Backend `apps/api`, web `apps/web`. Committed architecture only.
 **Status:** Living architectural record — active. Phase 3A entries are CERTIFIED AND FROZEN.
-**Owner:** PathOS Engineering (unassigned).
+**Owner:** Osieri Engineering (unassigned).
 **Last Updated:** 2026-07-18.
 **Certified baseline commit:** `c352deecdf27fcc9168067cb26dd88686eb833fe` (A12 `ea9f383` + Final Polish `c352dee`). Governance docs baseline: `cd8cf6a0306f8ca147d751c6ccfd666007ac725c`.
 **Relationship to governance documents:** This ledger is the authoritative record of *what was decided and why*; the eight governance documents (RISK_REGISTER, PERMISSION_MATRIX, LOGGING_STANDARD, TEST_STRATEGY, THEME_MIGRATION, SECURITY_ARCHITECTURE, ACCESSIBILITY_DEBT_REGISTER, PRODUCTION_READINESS_CHECKLIST) remain the operational detail for their domains. The ledger references them; it does not duplicate or supersede them.
@@ -351,7 +351,7 @@ change; no boundary violation.**
   (RISK_REGISTER.md R-009/R-010; ACCESSIBILITY_DEBT_REGISTER.md Contrast). Not an Audit-UI defect.
 
 **Still open in Program 2:** P2-9 (Export & Compliance), P2-10 (Program 2 Final Certification).
-After P2-10, a full re-evaluation against `PathOS-Enterprise-Audit.pdf` is planned.
+After P2-10, a full re-evaluation against `Osieri-Enterprise-Audit.pdf` is planned.
 
 *Engineering certification of the committed architecture — **not** a regulatory certification;
 **no** claim of WCAG conformance or HIPAA attestation.*

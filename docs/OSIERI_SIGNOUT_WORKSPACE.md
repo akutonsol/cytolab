@@ -1,21 +1,21 @@
-# PathOS — Sign-Out Workspace (Phase 2B architecture)
+# Osieri — Sign-Out Workspace (Phase 2B architecture)
 
 | Field | Value |
 |---|---|
 | Status | Draft — architecture only; implementation contract pending approval |
-| Current Phase | PathOS Phase 2B (Sign-Out Workspace) |
+| Current Phase | Osieri Phase 2B (Sign-Out Workspace) |
 | Owner | Founder |
-| Dependencies | [PATHOS_v2.md](PATHOS_v2.md) §4 W1 / §6 / §9, Helix v1.0 (frozen), existing diagnosis modules (audit below) |
+| Dependencies | [OSIERI_v2.md](OSIERI_v2.md) §4 W1 / §6 / §9, Helix v1.0 (frozen), existing diagnosis modules (audit below) |
 | Last Updated | 2026-07-11 |
 | Priority | P0 |
 | Expected Next Milestone | Contract approval → build sequencing (existing capabilities first; Read→Reveal + Concordance gated on a data-model decision) |
 
 This is the implementation contract for the Sign-Out Workspace — Workspace 1 of the approved
-blueprint ([PATHOS_v2.md](PATHOS_v2.md) §4), the flagship where a pathologist performs diagnosis,
+blueprint ([OSIERI_v2.md](OSIERI_v2.md) §4), the flagship where a pathologist performs diagnosis,
 review, reporting, and sign-out, and where they spend the majority of the day. It is architecture
 only: no code, no wireframes, no layout dimensions, no Helix changes. Everything traces to the
-approved architecture ([PATHOS_v2.md](PATHOS_v2.md), [../HELIX_v1.0.md](../HELIX_v1.0.md),
-[../Roadmap/02_PATHOS.md](../Roadmap/02_PATHOS.md)) and to the read-only audit below. Where a
+approved architecture ([OSIERI_v2.md](OSIERI_v2.md), [../HELIX_v1.0.md](../HELIX_v1.0.md),
+[../Roadmap/02_OSIERI.md](../Roadmap/02_OSIERI.md)) and to the read-only audit below. Where a
 capability is missing, it is stated honestly and identified as a future product decision, never
 silently assumed.
 
@@ -77,7 +77,7 @@ diagnosis is actually made, and it is designed so the pathologist can stay in it
 
 It consumes Helix v1.0 exactly as frozen ([../HELIX_v1.0.md](../HELIX_v1.0.md)); it introduces no
 new visual language. It is the concrete expression of blueprint Workspace 1
-([PATHOS_v2.md](PATHOS_v2.md) §4) and the AI interaction model ([PATHOS_v2.md](PATHOS_v2.md) §6).
+([OSIERI_v2.md](OSIERI_v2.md) §4) and the AI interaction model ([OSIERI_v2.md](OSIERI_v2.md) §6).
 
 ## 3. Primary users
 
@@ -89,11 +89,11 @@ new visual language. It is the concrete expression of blueprint Workspace 1
 - **Cytotechnologist (primary screener).** Screens and flags; routes flagged cases into the
   pathologist's worklist with context. In cytology the cytotech's screen precedes the pathologist's
   read. *(Backed by `ai-screening` / `bethesda`; batch screening was declined in Phase 2A —
-  [PATHOS_CYTOLOGY_BATCH_AUDIT.md](PATHOS_CYTOLOGY_BATCH_AUDIT.md).)*
+  [OSIERI_CYTOLOGY_BATCH_AUDIT.md](OSIERI_CYTOLOGY_BATCH_AUDIT.md).)*
 - **Medical Director / QA.** Consumes concordance and discrepancy signals produced here; oversees
   amendments. *(Concordance Ledger is a future capability — §9.)*
 
-Persona basis: [PATHOS_v2.md](PATHOS_v2.md) §3.
+Persona basis: [OSIERI_v2.md](OSIERI_v2.md) §3.
 
 ## 4. Diagnostic workflow (one continuous flow)
 
@@ -122,12 +122,12 @@ Persona basis: [PATHOS_v2.md](PATHOS_v2.md) §3.
    status/result events (existing); amendments via Deauthorize→Reauthorize (existing).*
 
 The specimen-pipeline substrate (accession → scan → QC → ready) is owned by Operations
-([PATHOS_OPERATIONS_WORKSPACE.md](PATHOS_OPERATIONS_WORKSPACE.md)); Sign-Out begins at *ready to
+([OSIERI_OPERATIONS_WORKSPACE.md](OSIERI_OPERATIONS_WORKSPACE.md)); Sign-Out begins at *ready to
 read* and hands finished cases back for archive/interoperability.
 
 ## 5. Read → Reveal (the flagship interaction)
 
-The defining PathOS interaction, and the clearest expression of *evidence before confidence*.
+The defining Osieri interaction, and the clearest expression of *evidence before confidence*.
 
 **The interaction.** (1) The pathologist reads the case. (2) They record an initial interpretation.
 (3) The AI remains hidden until that interpretation is committed. (4) The AI is revealed —
@@ -155,18 +155,18 @@ It is designed here as the flagship, and explicitly flagged as not-yet-supported
 faked with the existing agreement flag. See §14.
 
 Read→Reveal is configurable per workflow and user (mandatory for teaching/QA, optional for
-high-volume routine screening), consistent with [PATHOS_v2.md](PATHOS_v2.md) §6.
+high-volume routine screening), consistent with [OSIERI_v2.md](OSIERI_v2.md) §6.
 
 ## 6. AI model — how AI participates
 
 AI assists; it never decides. Its contributions are separated so evidence always leads and
-confidence never does ([PATHOS_v2.md](PATHOS_v2.md) §6):
+confidence never does ([OSIERI_v2.md](OSIERI_v2.md) §6):
 
 - **Evidence (existing).** What the AI observed and where — `AIScreeningResult.findings`
   (`[{region, finding, confidence}]`), `flaggedAreas`, linked to slide regions. Shown first.
 - **Quantification (missing).** Counts, indices, and scoring (e.g. mitotic count, Ki-67) — AI's
   safest, most defensible contribution. Not modeled today; a future capability (§14) and the
-  blueprint's stated quantification-first direction ([PATHOS_v2.md](PATHOS_v2.md) §6).
+  blueprint's stated quantification-first direction ([OSIERI_v2.md](OSIERI_v2.md) §6).
 - **Pattern detection (existing).** `primaryFinding` and flagged regions — the AI's pattern read,
   presented as evidence, not verdict.
 - **Suggested findings / coding (existing).** AI code suggestions and consistency checks in the
@@ -198,12 +198,12 @@ Pathology is longitudinal; the current case is read against the patient's histor
 **Honest gap:** the *data* for prior-aware review exists; a **prior-aware surface inside Sign-Out**
 (one gesture to the patient's priors and their delta) is **not built** — it is design work over
 existing data, not a new model. The prior-case pivot is a first-order need
-([PATHOS_v2.md](PATHOS_v2.md) §5), so it is a standing element of case context here.
+([OSIERI_v2.md](OSIERI_v2.md) §5), so it is a standing element of case context here.
 
 ## 8. Reporting (inside Sign-Out — not a separate workspace)
 
 Report drafting lives *inside* Sign-Out; there is no separate reporting workspace
-([PATHOS_v2.md](PATHOS_v2.md) §4, the merge of review and report):
+([OSIERI_v2.md](OSIERI_v2.md) §4, the merge of review and report):
 
 - **Draft.** The report is drafted from the result sheet (`ResultEntry`/`ResultLine`), AI-assisted
   where chosen (`AiDraft`: AI output → editable `finalText`, structured `editedDiff`). *Existing.*
@@ -216,7 +216,7 @@ Report drafting lives *inside* Sign-Out; there is no separate reporting workspac
 - **Version history.** `ResultSheetEvent` (Authorized/Deauthorized/Reauthorized) + `Report` re-issue.
   *Existing.*
 - **Traceability.** Every statement traceable to its evidence (§10). The report-to-pixel link is a
-  signature experience ([PATHOS_v2.md](PATHOS_v2.md) §9); the *linkage entity* between report
+  signature experience ([OSIERI_v2.md](OSIERI_v2.md) §9); the *linkage entity* between report
   statements and slide regions is not yet modeled (partial, §14).
 
 ## 9. Concordance
@@ -224,7 +224,7 @@ Report drafting lives *inside* Sign-Out; there is no separate reporting workspac
 The **Concordance Ledger** captures, per case and longitudinally: the **human interpretation**, the
 **AI interpretation**, **agreement / disagreement**, the **reason**, any **override**, and the
 **outcome** — becoming the lab's longitudinal learning and the trust mechanism
-([PATHOS_v2.md](PATHOS_v2.md) §6, §9).
+([OSIERI_v2.md](OSIERI_v2.md) §6, §9).
 
 **What exists:** a per-case `AIScreeningResult.agreedWithAI` (boolean), `pathologistNote`,
 `reviewedBy`, `reviewedAt`. This is a single agreement flag after review.
@@ -265,7 +265,7 @@ primitives only):
 - **Actions.** The workflow verbs (§12), including sign-out.
 
 Progressive disclosure governs depth; the default is the read, detail is one gesture away
-([PATHOS_v2.md](PATHOS_v2.md) §2). Navigation and content share one scroll container
+([OSIERI_v2.md](OSIERI_v2.md) §2). Navigation and content share one scroll container
 ([../CLAUDE.md](../CLAUDE.md)).
 
 ## 12. Interactions
@@ -274,7 +274,7 @@ Only interactions (no implementation): **Read** · **Reveal** (gated — future)
 **Accept** · **Modify** · **Reject** · **Annotate** (point today; regions/measurements future) ·
 **Quantify** (future) · **Open prior** · **Request review** (resident→attending; senior review) ·
 **Sign** · **Amend** · **Escalate**. Each is acknowledged once within the experience budgets and
-uses the one feedback language ([PATHOS_v2.md](PATHOS_v2.md) §10); each consequential action is
+uses the one feedback language ([OSIERI_v2.md](OSIERI_v2.md) §10); each consequential action is
 audited (§10).
 
 ## 13. Success metrics
@@ -293,7 +293,7 @@ Measurable outcomes for the flagship:
 | Read-before-reveal adoption | Independent interpretation committed before reveal *(requires §5)* | Increase |
 
 Foundational bars inherited from Helix and the experience budgets remain non-negotiable
-([PATHOS_v2.md](PATHOS_v2.md) §10).
+([OSIERI_v2.md](OSIERI_v2.md) §10).
 
 ## 14. Missing capabilities & future data-model decisions (consolidated)
 
@@ -326,7 +326,7 @@ Items 1–6 need schema evolution and product approval; item 7 is buildable on e
 - **WSI at scale.** Gigapixel slide streaming/storage is a real load concern (blueprint §8); the
   reading surface must degrade gracefully.
 - **Regulatory posture.** Diagnostic AI assistance is regulated; quantification-first is the lower-
-  risk entry ([PATHOS_v2.md](PATHOS_v2.md) §1). Do not ship diagnostic AI as authoritative.
+  risk entry ([OSIERI_v2.md](OSIERI_v2.md) §1). Do not ship diagnostic AI as authoritative.
 - **Scope creep into a separate report workspace.** Reporting must stay inside Sign-Out.
 
 ## 16. Architectural recommendations
@@ -348,12 +348,12 @@ Items 1–6 need schema evolution and product approval; item 7 is buildable on e
 
 | This document | Traces to |
 |---|---|
-| Vision, one-continuous-flow, merge of review+report | [PATHOS_v2.md](PATHOS_v2.md) §4 W1 |
-| Read → Reveal, evidence-before-confidence, AI model | [PATHOS_v2.md](PATHOS_v2.md) §6; §9 |
-| Prior-aware review, prior-case pivot | [PATHOS_v2.md](PATHOS_v2.md) §5, §6 |
-| Personas | [PATHOS_v2.md](PATHOS_v2.md) §3 |
+| Vision, one-continuous-flow, merge of review+report | [OSIERI_v2.md](OSIERI_v2.md) §4 W1 |
+| Read → Reveal, evidence-before-confidence, AI model | [OSIERI_v2.md](OSIERI_v2.md) §6; §9 |
+| Prior-aware review, prior-case pivot | [OSIERI_v2.md](OSIERI_v2.md) §5, §6 |
+| Personas | [OSIERI_v2.md](OSIERI_v2.md) §3 |
 | Helix-only, no new primitives/tokens | [../HELIX_v1.0.md](../HELIX_v1.0.md) |
-| Phase placement, delivered/declined discipline | [../Roadmap/02_PATHOS.md](../Roadmap/02_PATHOS.md) |
+| Phase placement, delivered/declined discipline | [../Roadmap/02_OSIERI.md](../Roadmap/02_OSIERI.md) |
 | AI-assists / migration / decision rules | [../Roadmap/06_DECISIONS.md](../Roadmap/06_DECISIONS.md) ADR-007, ADR-008 |
 | Every capability class | the audit (§1), real modules/models cited inline |
 

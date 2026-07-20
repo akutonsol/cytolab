@@ -1,11 +1,11 @@
-# PathOS — Enterprise Administration & Controls Workspace (Phase 2D) composition feasibility audit
+# Osieri — Enterprise Administration & Controls Workspace (Phase 2D) composition feasibility audit
 
 | Field | Value |
 |---|---|
 | Status | Audit complete — composition is feasible and truthful for the Existing/Reusable set; secrets are already owner-protected; schema-gated items named |
-| Current Phase | PathOS Phase 2D (Enterprise Administration & Controls Workspace) |
+| Current Phase | Osieri Phase 2D (Enterprise Administration & Controls Workspace) |
 | Owner | Founder |
-| Dependencies | [PATHOS_ENTERPRISE_ADMINISTRATION_WORKSPACE.md](PATHOS_ENTERPRISE_ADMINISTRATION_WORKSPACE.md) (approved architecture), [PATHOS_QUALITY_FEASIBILITY_AUDIT.md](PATHOS_QUALITY_FEASIBILITY_AUDIT.md) / [PATHOS_SIGNOUT_FEASIBILITY_AUDIT.md](PATHOS_SIGNOUT_FEASIBILITY_AUDIT.md) (method), Helix v1.0 (frozen) |
+| Dependencies | [OSIERI_ENTERPRISE_ADMINISTRATION_WORKSPACE.md](OSIERI_ENTERPRISE_ADMINISTRATION_WORKSPACE.md) (approved architecture), [OSIERI_QUALITY_FEASIBILITY_AUDIT.md](OSIERI_QUALITY_FEASIBILITY_AUDIT.md) / [OSIERI_SIGNOUT_FEASIBILITY_AUDIT.md](OSIERI_SIGNOUT_FEASIBILITY_AUDIT.md) (method), Helix v1.0 (frozen) |
 | Last Updated | 2026-07-12 |
 | Priority | P1 |
 | Expected Next Milestone | Architectural review of this audit → (separately) an implementation plan; nothing built until then |
@@ -268,9 +268,9 @@ Feasibility audit only — no code, no schema, no Helix change, no permission ch
 commit. Presented for architectural review. On approval, the next artefact is an implementation plan
 (checkpointed, existing-configuration-first, secret-free, observe-only lifecycle); nothing is built until
 that plan is separately approved. No conflict with Phases 2A
-([PATHOS_OPERATIONS_WORKSPACE.md](PATHOS_OPERATIONS_WORKSPACE.md)), 2B
-([PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md)), or 2C
-([PATHOS_QUALITY_WORKSPACE.md](PATHOS_QUALITY_WORKSPACE.md)).
+([OSIERI_OPERATIONS_WORKSPACE.md](OSIERI_OPERATIONS_WORKSPACE.md)), 2B
+([OSIERI_SIGNOUT_WORKSPACE.md](OSIERI_SIGNOUT_WORKSPACE.md)), or 2C
+([OSIERI_QUALITY_WORKSPACE.md](OSIERI_QUALITY_WORKSPACE.md)).
 
 ---
 
@@ -286,4 +286,4 @@ plans, delegated/multi-site admin, department hierarchy. Two items proved narrow
 **deferred, not simulated**: **Forms** (its only owner reads route through `getOrCreate`, which persists a
 default config — no mutation-free read exists) and **Notifications** (per-user reads only; no lab-wide
 administration-safe read). Lifecycle is **observation-only**. Full record:
-[PATHOS_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md](PATHOS_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md) §14.
+[OSIERI_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md](OSIERI_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md) §14.

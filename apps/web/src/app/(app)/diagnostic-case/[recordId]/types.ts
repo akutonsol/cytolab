@@ -3,7 +3,7 @@
 // (apps/api/src/modules/diagnostic-case/diagnostic-case.service.ts). A2: the five-state section
 // contract, the descriptive permission map, and the nine-band envelope. Clinical band field types
 // are NOT added yet — every band stays Section<null> until it hydrates in A3+.
-// Contract: docs/PATHOS_DIAGNOSTIC_CASE_IMPLEMENTATION_PLAN.md (A2; §3, §6, §7).
+// Contract: docs/OSIERI_DIAGNOSTIC_CASE_IMPLEMENTATION_PLAN.md (A2; §3, §6, §7).
 
 export type SectionStatus = 'ready' | 'empty' | 'forbidden' | 'error' | 'deferred';
 

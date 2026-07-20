@@ -1,4 +1,4 @@
-# PathOS — Premium UI, Responsiveness & Accessibility Audit (P0)
+# Osieri — Premium UI, Responsiveness & Accessibility Audit (P0)
 
 **Status:** Audit only. No implementation. Awaiting review before any P1+ work.
 **Scope:** Every production route in `apps/web` — staff app, client portal, public/marketing, auth.
@@ -332,7 +332,7 @@ These are **not** part of P0 and are already reviewed/approved; the audit simply
 
 At audit time: **51 modified + 18 untracked** files. Modified files include this session's approved work (dashboard, messaging, settings, operations/AttentionRail, security/ui, superuser/features, lab-features, EditorialHero, globals.css, portal messages, RecordFormDrawer, analytics, etc.) **and pre-existing unrelated dirty files** (`api/…/lab-codes.service.ts`, `api/…/patients.service.ts`, `records/[id]/page.tsx`, `SettingsListPane.tsx`, `hero-v2/*`, `landing/*`, `LenisProvider.tsx`, `theme-context.tsx`, `lib/features.ts`, `ui/index.ts`, `tsconfig.json`, `app/page.tsx`, `marketing-chrome.tsx`) plus untracked scratch files (`_*.mjs`, `.claude/`, some `public/*.png`).
 
-**This audit created exactly one file: `docs/PATHOS_PREMIUM_UI_AUDIT.md`.** No source file was modified, staged, reformatted, or committed. Every phase report will re-list changed files, unrelated files left untouched, and rollback boundary.
+**This audit created exactly one file: `docs/OSIERI_PREMIUM_UI_AUDIT.md`.** No source file was modified, staged, reformatted, or committed. Every phase report will re-list changed files, unrelated files left untouched, and rollback boundary.
 
 ---
 

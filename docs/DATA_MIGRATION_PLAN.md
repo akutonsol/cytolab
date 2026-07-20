@@ -9,6 +9,77 @@ Multi-lab tenancy (F1): every imported row is stamped with the destination
 `labId`. Imports run under `LabContext.runSystem()` (tenancy bypass) with the
 `labId` supplied explicitly per source lab.
 
+## Target environment & the demo database (decision — 2026-07-16)
+
+The legacy import lands in a **fresh, dedicated production database** — never the
+database that holds the demo/seed data. The demo data is **preserved** for ongoing
+client demos and must not be touched by any migration.
+
+- **Two separate databases/environments, not one multi-tenant DB.** Osieri is
+  multi-tenant (`labId`), so technically the legacy lab could be imported as a new
+  tenant alongside the demo lab in a single DB — **do not do this for production.**
+  Live patient PHI must never share a database with demo/test data (HIPAA blast
+  radius, backup/restore, accidental demo actions on real data).
+  - **Demo env/DB:** current `cytolab-demo` data, untouched, for sales/demos.
+  - **Production env/DB:** fresh Postgres, schema built via `prisma migrate deploy`,
+    then the legacy data ETL-imported into it. The migration only ever writes here.
+- **It is an ETL, not `pg_dump`/`pg_restore`.** Legacy (Java/Spring/JPA/Flyway, ~77
+  entities) and Osieri (Prisma, 130 models) have different schemas; the import scripts
+  extract from a **read-only legacy snapshot**, transform to Osieri's shape per the
+  rules below, and load through the tenancy-aware layer.
+- **Sequence:** stand up fresh prod Osieri → snapshot legacy Postgres (+ any Mongo) →
+  run import scripts → dry-run/reconcile on staging → cutover (legacy read-only during
+  the freeze) → verify + keep a rollback snapshot. Elasticsearch is a rebuildable
+  index — do not migrate it.
+
+### Per-lab dedicated database + custom domain (decision — 2026-07-19)
+
+Some labs (starting with **CytoLabs**, who already pay for a dedicated DB in the legacy
+system) must have their **own physically-separated database** and their **own domain**,
+while every other lab stays in the shared pool — all still governed by the same `labId`
+tenancy. This is the **pool + silo** model: fork the *connection*, not the tenancy *rules*.
+Full design + concrete schema draft (`TenancyMode`, `Lab.databaseSecretRef`, `LabDomain`,
+the `getPrismaForLab` seam, domain routing, N-way migrations): see
+[`docs/architecture/HYBRID_TENANCY_AND_CUSTOM_DOMAINS.md`](architecture/HYBRID_TENANCY_AND_CUSTOM_DOMAINS.md).
+
+**Migration tie-in:** at cutover, CytoLabs imports into its **own** Cloud SQL database
+(registered `SILO` + `databaseSecretRef` + a `LabDomain` for `app.cytologylab.com`),
+becoming the first silo; other migrated labs land as `labId`s in the shared pool DB.
+
+### Interim sync strategy — incremental re-sync (decision — 2026-07-19)
+
+**Chosen approach: Option B — idempotent incremental re-sync.** Not a one-shot import, and
+NOT continuous streaming CDC. The new DB is kept current by a repeatable job:
+
+1. **Initial load** — full ETL of the legacy Postgres (read-only snapshot) into the new DB.
+2. **Nightly incremental** — a scheduled job runs **daily at 19:00 (7 PM), after hours**, pulling
+   only legacy rows changed since the last run (by legacy `updatedAt` / an id high-water mark)
+   and **upserting** them into the new DB (keyed on the verbatim legacy id). Runs every day until
+   cutover, so the new DB is at most ~24h behind.
+3. **Final freeze-sync at cutover** — put legacy **read-only**, run one last incremental pass, verify
+   counts/reconciliation, then flip the domain. New DB is fully current at the switch.
+
+**Invariants:**
+- **Legacy remains the single source of truth until cutover.** The new Osieri DB is a **read-only
+  staging copy** during the interim — users must NOT enter data into both systems (no split-brain).
+- The ETL scripts are **idempotent** (safe to re-run; upsert, never blind insert) and **incremental**
+  (high-water mark per entity), preserving verbatim ids + seeded sequences (see rules below).
+- **Deletes:** polling can't see legacy hard-deletes directly. Handling TBD once we confirm the legacy
+  schema — if append-mostly, incremental insert/upsert suffices; else add periodic full reconciliation
+  or tombstone detection.
+
+**Prerequisites before the first real run (infra — need the user):**
+- **Read-only access to the legacy Postgres** (a read-replica connection or a periodic snapshot/export
+  from `cytolab-vm-instance`). Never run against the live legacy primary.
+- **The new production DB provisioned** (Cloud SQL) with the Osieri schema applied (`migrate deploy`).
+- **Confirm legacy schema facts:** which tables carry reliable `updatedAt`/modified timestamps, and
+  whether rows are hard-deleted or soft-deleted (drives delete handling above).
+- **The scheduler** for the 19:00 job (GCP Cloud Scheduler → a Cloud Run/Job that runs the ETL, or a
+  cron on the migration host). Target = the new prod DB; source = legacy read-only.
+
+**Open until we build:** exact entity dependency order, batch sizes, and per-entity change-detection
+columns — resolved against the real legacy schema when access is available.
+
 ---
 
 ## Patients

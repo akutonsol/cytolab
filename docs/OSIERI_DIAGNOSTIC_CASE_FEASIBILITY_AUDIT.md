@@ -1,11 +1,11 @@
-# PathOS — Diagnostic Case Workspace: Composition Feasibility Audit (Phase 3A · D2)
+# Osieri — Diagnostic Case Workspace: Composition Feasibility Audit (Phase 3A · D2)
 
 | Field | Value |
 |---|---|
 | Status | Draft — feasibility audit only; no implementation, no schema, no Helix change, no permission/seed change, no roadmap edit, no commit |
-| Current Phase | PathOS Phase 3A (Diagnostic Case Workspace) — D2 composition feasibility audit |
+| Current Phase | Osieri Phase 3A (Diagnostic Case Workspace) — D2 composition feasibility audit |
 | Owner | Founder |
-| Dependencies | [PATHOS_DIAGNOSTIC_CASE_WORKSPACE.md](PATHOS_DIAGNOSTIC_CASE_WORKSPACE.md) (D1, approved), [PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md) + [PATHOS_SIGNOUT_FEASIBILITY_AUDIT.md](PATHOS_SIGNOUT_FEASIBILITY_AUDIT.md) (Phase 2B, closed — the reuse target), [PATHOS_ENTERPRISE_ADMINISTRATION_FEASIBILITY_AUDIT.md](PATHOS_ENTERPRISE_ADMINISTRATION_FEASIBILITY_AUDIT.md) (contract precedent), [F4_AI_REPORTING_DESIGN.md](F4_AI_REPORTING_DESIGN.md), Helix v1.0 (frozen) |
+| Dependencies | [OSIERI_DIAGNOSTIC_CASE_WORKSPACE.md](OSIERI_DIAGNOSTIC_CASE_WORKSPACE.md) (D1, approved), [OSIERI_SIGNOUT_WORKSPACE.md](OSIERI_SIGNOUT_WORKSPACE.md) + [OSIERI_SIGNOUT_FEASIBILITY_AUDIT.md](OSIERI_SIGNOUT_FEASIBILITY_AUDIT.md) (Phase 2B, closed — the reuse target), [OSIERI_ENTERPRISE_ADMINISTRATION_FEASIBILITY_AUDIT.md](OSIERI_ENTERPRISE_ADMINISTRATION_FEASIBILITY_AUDIT.md) (contract precedent), [F4_AI_REPORTING_DESIGN.md](F4_AI_REPORTING_DESIGN.md), Helix v1.0 (frozen) |
 | Last Updated | 2026-07-12 |
 | Priority | P1 (gates D3 implementation plan) |
 | Expected Next Milestone | Feasibility approval → binding implementation plan (D3) → checkpointed compose-only build (A1–A14) |

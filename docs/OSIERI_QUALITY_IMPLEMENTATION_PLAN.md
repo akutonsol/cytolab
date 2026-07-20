@@ -1,21 +1,21 @@
-# PathOS — Quality & Governance Workspace (Phase 2C) implementation plan
+# Osieri — Quality & Governance Workspace (Phase 2C) implementation plan
 
 | Field | Value |
 |---|---|
 | Status | Binding implementation contract — architecture only; no code until checkpoints are approved |
-| Current Phase | PathOS Phase 2C (Quality & Governance Workspace) |
+| Current Phase | Osieri Phase 2C (Quality & Governance Workspace) |
 | Owner | Founder |
-| Dependencies | [PATHOS_QUALITY_WORKSPACE.md](PATHOS_QUALITY_WORKSPACE.md) (architecture), [PATHOS_QUALITY_FEASIBILITY_AUDIT.md](PATHOS_QUALITY_FEASIBILITY_AUDIT.md) (feasibility), [PATHOS_SIGNOUT_IMPLEMENTATION_PLAN.md](PATHOS_SIGNOUT_IMPLEMENTATION_PLAN.md) (proven pattern), Helix v1.0 (frozen) |
+| Dependencies | [OSIERI_QUALITY_WORKSPACE.md](OSIERI_QUALITY_WORKSPACE.md) (architecture), [OSIERI_QUALITY_FEASIBILITY_AUDIT.md](OSIERI_QUALITY_FEASIBILITY_AUDIT.md) (feasibility), [OSIERI_SIGNOUT_IMPLEMENTATION_PLAN.md](OSIERI_SIGNOUT_IMPLEMENTATION_PLAN.md) (proven pattern), Helix v1.0 (frozen) |
 | Last Updated | 2026-07-11 |
 | Priority | P1 |
 | Expected Next Milestone | Approval of this contract → checkpoint C1 (shell) only; each checkpoint reviewed before the next |
 
 This is the **binding implementation contract** for the Quality & Governance Workspace (Workspace 3 of
-[PATHOS_v2.md](PATHOS_v2.md)). It is architecture only: **no code, no schema, no Helix change, no
+[OSIERI_v2.md](OSIERI_v2.md)). It is architecture only: **no code, no schema, no Helix change, no
 permission change, no wireframes, no commit.** It inherits the composition contract proven end-to-end
-by the Sign-Out Workspace ([PATHOS_SIGNOUT_IMPLEMENTATION_PLAN.md](PATHOS_SIGNOUT_IMPLEMENTATION_PLAN.md),
+by the Sign-Out Workspace ([OSIERI_SIGNOUT_IMPLEMENTATION_PLAN.md](OSIERI_SIGNOUT_IMPLEMENTATION_PLAN.md),
 B1–B13) and every classification in the approved feasibility audit
-([PATHOS_QUALITY_FEASIBILITY_AUDIT.md](PATHOS_QUALITY_FEASIBILITY_AUDIT.md)).
+([OSIERI_QUALITY_FEASIBILITY_AUDIT.md](OSIERI_QUALITY_FEASIBILITY_AUDIT.md)).
 
 Governing principle (binding, from the feasibility audit):
 
@@ -117,7 +117,7 @@ payloads (§12). Drill-down uses the owner surfaces.
 ## 4. Composition strategy
 
 For every capability, exactly one strategy (verified owner in
-[PATHOS_QUALITY_FEASIBILITY_AUDIT.md](PATHOS_QUALITY_FEASIBILITY_AUDIT.md) §2):
+[OSIERI_QUALITY_FEASIBILITY_AUDIT.md](OSIERI_QUALITY_FEASIBILITY_AUDIT.md) §2):
 
 | Capability | Strategy | Owner |
 |---|---|---|
@@ -219,7 +219,7 @@ present them as *recorded corrective notes / resolution state*, nothing more.
 (`CorrectiveAction`: source ref, rootCause, action, owner, dueDate, effectivenessCheck, status) would
 require an approved schema decision. This plan does **not** design or build it; it is named so the
 display-only reality is not mistaken for a workflow. See
-[PATHOS_QUALITY_WORKSPACE.md](PATHOS_QUALITY_WORKSPACE.md) §6.
+[OSIERI_QUALITY_WORKSPACE.md](OSIERI_QUALITY_WORKSPACE.md) §6.
 
 ---
 
@@ -248,7 +248,7 @@ alias** one permission to another to widen access.
 by no role — so change-requests are **currently available only to superusers**. The workspace mirrors
 the real permission and shows the change-request governance source as `forbidden` for non-superusers.
 Seeding `changerequest:*` is a **separate, out-of-scope platform decision**; this plan changes no
-permission ([PATHOS_QUALITY_FEASIBILITY_AUDIT.md](PATHOS_QUALITY_FEASIBILITY_AUDIT.md) §3).
+permission ([OSIERI_QUALITY_FEASIBILITY_AUDIT.md](OSIERI_QUALITY_FEASIBILITY_AUDIT.md) §3).
 
 ---
 
@@ -531,8 +531,8 @@ and is not stolen on refetch; `prefers-reduced-motion` backstop present. Horizon
 
 ## Conflict check
 
-No conflicts with [PATHOS_QUALITY_WORKSPACE.md](PATHOS_QUALITY_WORKSPACE.md) or
-[PATHOS_QUALITY_FEASIBILITY_AUDIT.md](PATHOS_QUALITY_FEASIBILITY_AUDIT.md): this plan builds only the
+No conflicts with [OSIERI_QUALITY_WORKSPACE.md](OSIERI_QUALITY_WORKSPACE.md) or
+[OSIERI_QUALITY_FEASIBILITY_AUDIT.md](OSIERI_QUALITY_FEASIBILITY_AUDIT.md): this plan builds only the
 Existing/Partial-composable capabilities those documents classified as buildable, and defers every
 schema-gated capability (CAPA, Concordance Ledger, document control, complaints, accreditation
 register) and every blocked flagship (Read → Reveal, quantification). It inherits the Sign-Out
@@ -545,7 +545,7 @@ composition contract without modification and preserves the Helix v1.0 freeze
 ## Status of this document
 
 Binding engineering plan; architecture only. On approval, implementation proceeds checkpoint by
-checkpoint (C1…C13), each tracing here and to [PATHOS_QUALITY_WORKSPACE.md](PATHOS_QUALITY_WORKSPACE.md)
-and [PATHOS_QUALITY_FEASIBILITY_AUDIT.md](PATHOS_QUALITY_FEASIBILITY_AUDIT.md), verified against §11,
+checkpoint (C1…C13), each tracing here and to [OSIERI_QUALITY_WORKSPACE.md](OSIERI_QUALITY_WORKSPACE.md)
+and [OSIERI_QUALITY_FEASIBILITY_AUDIT.md](OSIERI_QUALITY_FEASIBILITY_AUDIT.md), verified against §11,
 and recorded in [../Roadmap/08_RELEASES.md](../Roadmap/08_RELEASES.md). No code, no schema, no Helix,
 no permission change, no commit until each checkpoint is separately approved.

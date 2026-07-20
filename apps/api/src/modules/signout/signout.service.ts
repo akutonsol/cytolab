@@ -15,7 +15,7 @@ import { AuthUser } from '../../common/decorators/current-user.decorator';
 // patient, and clinical context from that single existing call). Every section
 // carries its own status so later checkpoints can hydrate progressively WITHOUT
 // changing this contract, and a failure in one section never fails the others.
-// Contract: docs/PATHOS_SIGNOUT_IMPLEMENTATION_PLAN.md (Orchestration Rule, §3).
+// Contract: docs/OSIERI_SIGNOUT_IMPLEMENTATION_PLAN.md (Orchestration Rule, §3).
 
 export type SectionStatus = 'ready' | 'deferred' | 'forbidden' | 'error' | 'empty';
 export interface Section<T> {

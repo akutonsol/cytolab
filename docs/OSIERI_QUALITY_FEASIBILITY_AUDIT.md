@@ -1,17 +1,17 @@
-# PathOS — Quality & Governance Workspace (Phase 2C) composition feasibility audit
+# Osieri — Quality & Governance Workspace (Phase 2C) composition feasibility audit
 
 | Field | Value |
 |---|---|
 | Status | Audit complete — composition is feasible and truthful for the Existing/Partial set, with named schema-gated deferrals |
-| Current Phase | PathOS Phase 2C (Quality & Governance Workspace) |
+| Current Phase | Osieri Phase 2C (Quality & Governance Workspace) |
 | Owner | Founder |
-| Dependencies | [PATHOS_QUALITY_WORKSPACE.md](PATHOS_QUALITY_WORKSPACE.md) (approved architecture), [PATHOS_SIGNOUT_FEASIBILITY_AUDIT.md](PATHOS_SIGNOUT_FEASIBILITY_AUDIT.md) (method), Helix v1.0 (frozen) |
+| Dependencies | [OSIERI_QUALITY_WORKSPACE.md](OSIERI_QUALITY_WORKSPACE.md) (approved architecture), [OSIERI_SIGNOUT_FEASIBILITY_AUDIT.md](OSIERI_SIGNOUT_FEASIBILITY_AUDIT.md) (method), Helix v1.0 (frozen) |
 | Last Updated | 2026-07-11 |
 | Priority | P1 |
 | Expected Next Milestone | Architectural review of this audit → (separately) an implementation plan; nothing built until then |
 
 Read-only implementation-readiness audit for the Quality & Governance Workspace defined in
-[PATHOS_QUALITY_WORKSPACE.md](PATHOS_QUALITY_WORKSPACE.md). It determines, capability by capability,
+[OSIERI_QUALITY_WORKSPACE.md](OSIERI_QUALITY_WORKSPACE.md). It determines, capability by capability,
 whether the surface can be **truthfully composed from the existing production system** — no code, no
 schema, no Helix change, no wireframes, no implementation plan, no commit. Every claim traces to a
 verified route, service, model, permission, and recorded field (§9).
@@ -29,7 +29,7 @@ inference of its own.
 
 ## The one question, answered
 
-**Can PathOS build a truthful Quality & Governance Workspace today by composition alone?**
+**Can Osieri build a truthful Quality & Governance Workspace today by composition alone?**
 
 **Yes — for the Quality, Compliance, Medical-Director-oversight, and read-only Governance capabilities,
 which are all backed by real owners, routes, models, and recorded evidence.** It would be a genuine
@@ -231,7 +231,7 @@ the **schema-gated set (§5) stays deferred and is named, not faked.** Subject t
 a genuine composition, not theatre.
 
 Next step (separate, on approval): an implementation plan sequencing the checkpoints in
-[PATHOS_QUALITY_WORKSPACE.md](PATHOS_QUALITY_WORKSPACE.md) §9. **This audit does not authorise a
+[OSIERI_QUALITY_WORKSPACE.md](OSIERI_QUALITY_WORKSPACE.md) §9. **This audit does not authorise a
 build.**
 
 ---
@@ -281,4 +281,4 @@ maintenance, and notification delivery (composing only result-sheet authorizatio
 and change-request creation), and it is explicitly `nonCanonical`. The verification note (§8) was
 executed in full at C13 — end-to-end flow, per-section contract, deterministic permission matrix,
 failure isolation, owner invocation, accessibility, responsive, and performance all passed. Full
-record: [PATHOS_QUALITY_IMPLEMENTATION_PLAN.md](PATHOS_QUALITY_IMPLEMENTATION_PLAN.md) §14.
+record: [OSIERI_QUALITY_IMPLEMENTATION_PLAN.md](OSIERI_QUALITY_IMPLEMENTATION_PLAN.md) §14.

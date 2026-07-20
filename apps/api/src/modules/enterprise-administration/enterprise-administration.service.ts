@@ -29,7 +29,7 @@ import { RecordStatus } from '@prisma/client';
 // resolves; every other section is intentionally `deferred` until its checkpoint (A3–A9). The
 // section-status contract is FROZEN here and never re-shaped; later checkpoints only change a
 // section's `data` generic and status.
-// Contract: docs/PATHOS_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md (§1 Orchestration Rule, §3, §4, §5).
+// Contract: docs/OSIERI_ENTERPRISE_ADMINISTRATION_IMPLEMENTATION_PLAN.md (§1 Orchestration Rule, §3, §4, §5).
 
 export type SectionStatus = 'ready' | 'empty' | 'forbidden' | 'error' | 'deferred';
 export interface Section<T> {

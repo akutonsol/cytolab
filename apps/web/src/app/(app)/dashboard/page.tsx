@@ -634,7 +634,7 @@ export default function DashboardPage() {
                   <div className="mt-1 text-[10px] text-gray-400">Drafts assist reporting; they never diagnose or sign out.</div>
                 </div>
 
-                {/* Truthful capability boundary — PathOS performs no slide-image analysis
+                {/* Truthful capability boundary — Osieri performs no slide-image analysis
                     today, so there is no model confidence, probability, or prediction to show. */}
                 <div className="rounded-xl border border-gray-100 bg-white p-3">
                   <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-gray-400">Diagnostic image analysis</div>

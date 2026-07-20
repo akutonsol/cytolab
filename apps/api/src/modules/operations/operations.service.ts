@@ -419,7 +419,7 @@ export class OperationsService {
   }
 
   /**
-   * Integration Health — the honest state of PathOS's external interfaces.
+   * Integration Health — the honest state of Osieri's external interfaces.
    *
    * Only FHIR (outbound EMR) is modeled with message-level data, so it is the only
    * interface reported. Health is claimed ONLY from real signals: a delivered/failed

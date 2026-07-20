@@ -1,17 +1,17 @@
-# PathOS v2 — Product Architecture Review
+# Osieri v2 — Product Architecture Review
 
 | Field | Value |
 |---|---|
-| Status | Review — critique of [docs/PATHOS_v2.md](docs/PATHOS_v2.md) |
+| Status | Review — critique of [docs/OSIERI_v2.md](docs/OSIERI_v2.md) |
 | Current Phase | Product Architecture Review |
 | Owner | Founder |
-| Dependencies | docs/PATHOS_v2.md (draft), Helix v1.0 (frozen) |
+| Dependencies | docs/OSIERI_v2.md (draft), Helix v1.0 (frozen) |
 | Last Updated | 2026-07-10 |
 | Priority | P0 |
 | Expected Next Milestone | Blueprint revised, then approved as the implementation contract |
 
 This document critiques the blueprint. It does not rewrite it. The reviewer's stance is
-adversarial by design: the blueprint is complete, not yet correct. The goal is to make PathOS
+adversarial by design: the blueprint is complete, not yet correct. The goal is to make Osieri
 exceptional before a line of implementation code is written.
 
 **Overall verdict: conditional pass.** The blueprint has a genuinely strong spine — evidence
@@ -41,7 +41,7 @@ problem.
 ask two questions the document cannot answer, and stall:
 
 1. **System of record, or intelligence layer?** The vision says "one system, end to end… unifies
-   the entire diagnostic journey" (replacement) and also "integrate PathOS with hospital
+   the entire diagnostic journey" (replacement) and also "integrate Osieri with hospital
    systems" (layer). These are different products with different sales cycles, different risk,
    and different buyers. A CIO running Epic Beaker or Cerner CoPath will not rip out their LIS
    of record on a startup's promise. Leaving this ambiguous is the single biggest strategic risk
@@ -55,7 +55,7 @@ ask two questions the document cannot answer, and stall:
 **Weak / generic.** "Reduce cognitive load," "continuous observable workflow" are true of every
 modern clinical tool. The vision needs a sharper, defensible wedge than "we unify things."
 
-**Stronger alternative.** Declare the wedge explicitly: PathOS is a **cytology-first diagnostic
+**Stronger alternative.** Declare the wedge explicitly: Osieri is a **cytology-first diagnostic
 intelligence layer** that sits alongside the LIS of record, makes the lab's day observable, and
 gives the pathologist a calibrated second reader that is prior-case aware. Name the deployment
 model (coexist via HL7/FHIR now, replace later where the customer wants it). Name the regulatory
@@ -138,7 +138,7 @@ deserves to be a standing element of the case context.
 
 ### 5. AI interaction model — critiqued heavily
 
-This is the heart of PathOS, and it is the strongest section — and still not yet un-leaveable.
+This is the heart of Osieri, and it is the strongest section — and still not yet un-leaveable.
 
 **What is genuinely good.** Evidence before confidence; override as a first-class single gesture;
 explicit degradation; confidence as a supporting attribute rather than a floating number. These
@@ -213,7 +213,7 @@ operational substrate beneath it.
 **Would Mayo, Hopkins, Cleveland Clinic, Quest, or Labcorp find gaps? Yes.**
 
 - **System-of-record coexistence.** All of them run an LIS of record (Epic Beaker, Cerner,
-  PowerPath). The single most important enterprise question — how PathOS coexists with it — is
+  PowerPath). The single most important enterprise question — how Osieri coexists with it — is
   unanswered. Results must flow back to the LIS via **HL7 v2 (ORU)**, not only FHIR; most labs
   still run HL7 v2 interfaces. The blueprint names FHIR only.
 - **Gigapixel imaging at scale.** Whole-slide images are 1–4 GB each, gigapixel. Storage,
@@ -268,17 +268,17 @@ Compared against the current enterprise landscape (Paige, PathAI, Ibex, Proscia 
 Philips IntelliSite, Sectra, Aiforia; LIS incumbents Epic Beaker, Cerner CoPath, Sunquest
 PowerPath) — without copying them:
 
-- **Where PathOS exceeds.** Unified workflow across operations, review, reporting, and portal
+- **Where Osieri exceeds.** Unified workflow across operations, review, reporting, and portal
   (competitors are point solutions — image management *or* AI *or* LIS). Design and experience
   quality. Evidence-first + report-to-pixel traceability. One coherent system and one design
   language.
-- **Where PathOS is merely equal.** WSI viewing, region highlighting, side-by-side, basic AI
+- **Where Osieri is merely equal.** WSI viewing, region highlighting, side-by-side, basic AI
   findings, dashboards. These are commodity.
-- **Where PathOS is weaker.** No FDA-cleared AI (Paige and PathAI hold clearances; PathOS's AI is
+- **Where Osieri is weaker.** No FDA-cleared AI (Paige and PathAI hold clearances; Osieri's AI is
   unvalidated). LIS-of-record depth (Beaker/PowerPath). Gigapixel storage/streaming and DICOM/HL7
   breadth. Install base and institutional trust. Validation tooling.
 
-**The one capability that would make PathOS unquestionably different:** a **calibrated,
+**The one capability that would make Osieri unquestionably different:** a **calibrated,
 prior-aware second reader** — an AI positioned not as autopilot but as the best resident who
 remembers every case you have ever signed and every prior on this patient, shows its concordance
 with you, and quantifies what it claims. That is a position no incumbent owns, and it is
@@ -293,7 +293,7 @@ usable. Leading with it delays revenue and front-loads regulatory risk.
 **Value-optimal resequencing:**
 
 1. **Operations first.** Turnaround, workload, SLA visibility. No FDA, immediate ROI, sellable on
-   its own, and the wedge that gets PathOS into the building before the AI is validated.
+   its own, and the wedge that gets Osieri into the building before the AI is validated.
 2. **Sign-out (review + report) with traceability.** The differentiator, at a lower regulatory
    bar than diagnostic AI; quantification-first AI can ship here (measurement < diagnosis in
    regulatory risk).
@@ -355,7 +355,7 @@ usable. Leading with it delays revenue and front-loads regulatory risk.
 
 ## Recommendations
 
-1. **Resolve the strategic question in the vision:** declare PathOS a cytology-first intelligence
+1. **Resolve the strategic question in the vision:** declare Osieri a cytology-first intelligence
    layer that coexists with the LIS of record (HL7 v2 / FHIR / DICOM), with replacement as an
    option, not the default. State the assistive regulatory posture and quantification-first plan.
 2. **Rewrite personas around the lab:** promote Cytotechnologist, Resident/Fellow, and Medical
@@ -401,4 +401,4 @@ recommendations — most importantly the strategic/regulatory declaration (1), t
 (2), the Sign-out merge plus Quality workspace (3), and the day-shaped workflow (4) — and then
 re-reviewed. None of these require anything beyond Helix v1.0; they are product-architecture
 changes, not design-system changes. Once revised, this document and the updated
-[docs/PATHOS_v2.md](docs/PATHOS_v2.md) together become the implementation contract for Phase 2.
+[docs/OSIERI_v2.md](docs/OSIERI_v2.md) together become the implementation contract for Phase 2.

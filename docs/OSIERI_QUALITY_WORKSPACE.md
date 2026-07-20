@@ -1,21 +1,21 @@
-# PathOS — Quality & Governance Workspace (Phase 2C architecture)
+# Osieri — Quality & Governance Workspace (Phase 2C architecture)
 
 | Field | Value |
 |---|---|
 | Status | Draft — architecture only; no implementation, no schema, no Helix change |
-| Current Phase | PathOS Phase 2C (Quality & Governance Workspace) |
+| Current Phase | Osieri Phase 2C (Quality & Governance Workspace) |
 | Owner | Founder |
-| Dependencies | [PATHOS_v2.md](PATHOS_v2.md) §4 W3 / persona §"Medical Director / QA lead", Helix v1.0 (frozen), existing quality modules (audit below) |
+| Dependencies | [OSIERI_v2.md](OSIERI_v2.md) §4 W3 / persona §"Medical Director / QA lead", Helix v1.0 (frozen), existing quality modules (audit below) |
 | Last Updated | 2026-07-11 |
 | Priority | P1 (follows Phase 2B Sign-Out, now closed) |
 | Expected Next Milestone | Architecture approval → feasibility audit → build sequencing (existing evidence first; CAPA / document control / Concordance Ledger gated on data-model decisions) |
 
 This is the architecture for the **Quality & Governance Workspace** — Workspace 3 of the approved
-blueprint ([PATHOS_v2.md](PATHOS_v2.md) §4), where the Medical Director and QA lead ensure
+blueprint ([OSIERI_v2.md](OSIERI_v2.md) §4), where the Medical Director and QA lead ensure
 diagnostic quality and inspection readiness. It is architecture only: **no code, no wireframes, no
 layout dimensions, no schema changes, no Helix changes, no roadmap edits.** Everything traces to the
-approved architecture ([PATHOS_v2.md](PATHOS_v2.md), [../HELIX_v1.0.md](../HELIX_v1.0.md),
-[../Roadmap/02_PATHOS.md](../Roadmap/02_PATHOS.md)) and to the read-only audit below. Where a
+approved architecture ([OSIERI_v2.md](OSIERI_v2.md), [../HELIX_v1.0.md](../HELIX_v1.0.md),
+[../Roadmap/02_OSIERI.md](../Roadmap/02_OSIERI.md)) and to the read-only audit below. Where a
 capability is missing, it is stated honestly and identified as a future product decision requiring a
 schema evolution — never silently assumed.
 
@@ -28,7 +28,7 @@ domain behaviour; nothing is inferred that the data does not record.**
 ## 1. Read-only audit (first requirement)
 
 The Quality & Governance Workspace, like the Sign-Out Workspace before it
-([PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md)), is a **composition surface**, not a new
+([OSIERI_SIGNOUT_WORKSPACE.md](OSIERI_SIGNOUT_WORKSPACE.md)), is a **composition surface**, not a new
 system. Every capability below already has an owner module, routes, a service, a model, and recorded
 evidence. This audit is the ground truth for the classification in §5; nothing here is aspirational.
 
@@ -51,7 +51,7 @@ evidence. This audit is the ground truth for the classification in §5; nothing 
 
 The blueprint names the intended backing set for Workspace 3 as `proficiency`, `correlation`,
 `escalations`, `change-requests`, audit (`security`, `system`), `bethesda-analytics`, `analytics`
-([PATHOS_v2.md](PATHOS_v2.md) §4 W3). The audit confirms all of these exist.
+([OSIERI_v2.md](OSIERI_v2.md) §4 W3). The audit confirms all of these exist.
 
 ---
 
@@ -78,7 +78,7 @@ correlation logic, proficiency grading, QC rules, escalation transitions, or ame
 ## 3. Primary users
 
 - **Medical Director / QA lead (first-class persona,
-  [PATHOS_v2.md](PATHOS_v2.md)):** owns diagnostic quality and inspection readiness; runs
+  [OSIERI_v2.md](OSIERI_v2.md)):** owns diagnostic quality and inspection readiness; runs
   discrepancy and concordance review; oversees proficiency and amendments. The workspace's primary
   audience.
 - **Cytotechnologist / QA technologist:** administers QC, logs corrective notes, prepares proficiency
@@ -156,7 +156,7 @@ requires schema evolution) · **Future** (deliberately gated pending a data-mode
 
 - **Concordance Ledger** — the flagship two-way AI/human + human/human concordance record.
   Blocked in Phase 2B pending a data-model decision; it belongs to this workspace and remains
-  **deferred** here for the same reason ([PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md) §9).
+  **deferred** here for the same reason ([OSIERI_SIGNOUT_WORKSPACE.md](OSIERI_SIGNOUT_WORKSPACE.md) §9).
 - **Read → Reveal provenance** and **quantification** — remain blocked; the workspace must not claim
   either, and must not treat `AIScreeningResult.agreedWithAI` as proof of interpretation sequence.
 
@@ -186,7 +186,7 @@ capabilities are not mistaken for a complete quality system.
 
 1. A **Quality & Governance shell** that composes the existing owners into one workspace with
    per-section status (`ready`/`empty`/`forbidden`/`error`) and descriptive permissions — exactly the
-   contract proven in [PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md).
+   contract proven in [OSIERI_SIGNOUT_WORKSPACE.md](OSIERI_SIGNOUT_WORKSPACE.md).
 2. A **discordance queue** read from `CorrelationCase` (review-required, discordant results) — invoke
    the existing `/correlation/:id` owner surface, never re-implement review.
 3. A **proficiency overview** read from `ProficiencyService` analytics — invoke the existing
@@ -266,13 +266,13 @@ constraint are inherited unchanged ([../HELIX_v1.0.md](../HELIX_v1.0.md)).
 
 ## 11. Traceability
 
-- **Blueprint:** [PATHOS_v2.md](PATHOS_v2.md) §4 Workspace 3 (Quality & Governance) and the
+- **Blueprint:** [OSIERI_v2.md](OSIERI_v2.md) §4 Workspace 3 (Quality & Governance) and the
   Medical Director / QA-lead persona.
-- **Sibling workspaces (pattern source):** [PATHOS_SIGNOUT_WORKSPACE.md](PATHOS_SIGNOUT_WORKSPACE.md)
+- **Sibling workspaces (pattern source):** [OSIERI_SIGNOUT_WORKSPACE.md](OSIERI_SIGNOUT_WORKSPACE.md)
   (composition contract, section-status model, invoke-the-owner discipline) and
-  [PATHOS_OPERATIONS_WORKSPACE.md](PATHOS_OPERATIONS_WORKSPACE.md) (workspace question-spine and
+  [OSIERI_OPERATIONS_WORKSPACE.md](OSIERI_OPERATIONS_WORKSPACE.md) (workspace question-spine and
   Helix mapping).
-- **Roadmap:** [../Roadmap/02_PATHOS.md](../Roadmap/02_PATHOS.md); releases recorded in
+- **Roadmap:** [../Roadmap/02_OSIERI.md](../Roadmap/02_OSIERI.md); releases recorded in
   [../Roadmap/08_RELEASES.md](../Roadmap/08_RELEASES.md) (not modified by this document).
 - **Freeze:** [../HELIX_v1.0.md](../HELIX_v1.0.md).
 
@@ -282,7 +282,7 @@ constraint are inherited unchanged ([../HELIX_v1.0.md](../HELIX_v1.0.md)).
 
 Architecture only — no code, no wireframes, no schema, no Helix change, no roadmap edit, no commit
 until reviewed. On approval, the next step is a **feasibility audit** (in the manner of
-[PATHOS_SIGNOUT_FEASIBILITY_AUDIT.md](PATHOS_SIGNOUT_FEASIBILITY_AUDIT.md)) that confirms the
+[OSIERI_SIGNOUT_FEASIBILITY_AUDIT.md](OSIERI_SIGNOUT_FEASIBILITY_AUDIT.md)) that confirms the
 compose-only path in §7/§9 is truthful against the current data model, before any checkpoint build
 begins. Every claim above traces to the read-only audit in §1 and §5; Missing/Future capabilities are
 named, not assumed.
@@ -301,4 +301,4 @@ creation (record-status events, maintenance, and notifications were excluded as 
 misrepresenting); and Medical Director oversight surfaces recorded open/review-required states only,
 with no result-sheet-authorization oversight queue (no owner-actionable state exists). Full completion
 record, permission matrix, performance, and limitations:
-[PATHOS_QUALITY_IMPLEMENTATION_PLAN.md](PATHOS_QUALITY_IMPLEMENTATION_PLAN.md) §14.
+[OSIERI_QUALITY_IMPLEMENTATION_PLAN.md](OSIERI_QUALITY_IMPLEMENTATION_PLAN.md) §14.

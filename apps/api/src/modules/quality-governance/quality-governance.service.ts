@@ -16,7 +16,7 @@ import { AuthUser } from '../../common/decorators/current-user.decorator';
 // Only the descriptive permission map resolves; every evidence section is intentionally
 // `deferred` until its checkpoint (C3–C10). The section-status contract is FROZEN here and
 // never re-shaped; later checkpoints only change a section's `data` generic and status.
-// Contract: docs/PATHOS_QUALITY_IMPLEMENTATION_PLAN.md (§1 Orchestration Rule, §3, §9).
+// Contract: docs/OSIERI_QUALITY_IMPLEMENTATION_PLAN.md (§1 Orchestration Rule, §3, §9).
 
 export type SectionStatus = 'ready' | 'empty' | 'forbidden' | 'error' | 'deferred';
 export interface Section<T> {
@@ -848,7 +848,7 @@ const numOrNull = (v: unknown): number | null => (typeof v === 'number' && !Numb
 // Medical Director oversight ordering: every item is already an owner-recorded open/
 // review-required state (criterion 1), so ordering is oldest-open first (age), then a fixed
 // source order only for EXACT timestamp ties, then a stable id. This reflects recorded
-// workflow state and age only — it is NOT a PathOS-generated urgency, severity, or risk
+// workflow state and age only — it is NOT a Osieri-generated urgency, severity, or risk
 // ranking, and never orders by malignancy, cross-domain severity, benchmark, or staff.
 const OVERSIGHT_SOURCE_ORDER: Record<string, number> = { correlation: 0, escalation: 1, qc: 2, proficiency: 3 };
 function oversightSort(x: OversightItem, y: OversightItem): number {
@@ -932,7 +932,7 @@ function proficiencySort(x: ProficiencyTestRow, y: ProficiencyTestRow): number {
 
 // Escalation ordering: recorded OPEN lifecycle state first (Pending/Acknowledged/UnderReview
 // — the owner's own OPEN_STATUSES), then oldest open, then a stable id. This reflects
-// recorded workflow state — NOT a PathOS-generated urgency score. Severity is displayed
+// recorded workflow state — NOT a Osieri-generated urgency score. Severity is displayed
 // (stored) but is NOT ranked here, to avoid duplicating the owner's severity ordering.
 const ESCALATION_OPEN = new Set(['Pending', 'Acknowledged', 'UnderReview']);
 function escalationSort(x: EscalationRow, y: EscalationRow): number {

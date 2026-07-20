@@ -70,7 +70,7 @@ const NEXT_STATUS: Record<string, string[]> = {
   OnHold: ['Submitted', 'Processing', 'Disabled'],
 };
 
-// Workflow readiness — derived from the record's status (not AI; PathOS performs no
+// Workflow readiness — derived from the record's status (not AI; Osieri performs no
 // diagnostic image inference). A small per-record jitter keeps the column readable.
 const confOf = (r: Rec) => {
   let h = 0; for (let i = 0; i < r.id.length; i++) h = (h * 31 + r.id.charCodeAt(i)) >>> 0;

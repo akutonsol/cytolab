@@ -1,9 +1,9 @@
 # TEST_STRATEGY.md
 
-**Purpose:** Define the testing standards for PathOS / CYTOLAB — what each test class is for, where the current gaps are, and the invariants that must be pinned before the money and security layers can be trusted or refactored.
+**Purpose:** Define the testing standards for Osieri / CYTOLAB — what each test class is for, where the current gaps are, and the invariants that must be pinned before the money and security layers can be trusted or refactored.
 **Scope:** `apps/api` and `apps/web`. Reflects coverage verified 2026-07-13. This document defines standards; it adds no tests.
 **Status:** Living document — active. Several sections describe **Deferred** future capability (CI, performance, portal E2E).
-**Owner:** PathOS Engineering (unassigned).
+**Owner:** Osieri Engineering (unassigned).
 **Last Updated:** 2026-07-13.
 
 ---

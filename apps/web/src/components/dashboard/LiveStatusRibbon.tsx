@@ -1,7 +1,7 @@
 'use client';
 
 // Lab State surface — the single dominant read at the top of the Operations
-// Workspace (docs/PATHOS_OPERATIONS_EXPERIENCE.md §2, Register 1). Evolved from the
+// Workspace (docs/OSIERI_OPERATIONS_EXPERIENCE.md §2, Register 1). Evolved from the
 // former single-line status ribbon: it now LEADS with one synthesized state (Calm /
 // Watch / Strained / Critical) that sets the emotional register, and keeps the live
 // readings beneath it as the vital signs.

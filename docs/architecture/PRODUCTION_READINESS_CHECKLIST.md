@@ -1,9 +1,9 @@
 # PRODUCTION_READINESS_CHECKLIST.md
 
-**Purpose:** Provide an evolving, honest checklist of PathOS / CYTOLAB production readiness across security, reliability, compliance, and operations, so gaps are visible and tracked rather than discovered at release.
+**Purpose:** Provide an evolving, honest checklist of Osieri / CYTOLAB production readiness across security, reliability, compliance, and operations, so gaps are visible and tracked rather than discovered at release.
 **Scope:** Whole platform (`apps/api`, `apps/web`, operations). Reflects state verified 2026-07-13. Items are assessed from current code and configuration only.
 **Status:** Living document — active.
-**Owner:** PathOS Engineering (unassigned).
+**Owner:** Osieri Engineering (unassigned).
 **Last Updated:** 2026-07-13.
 
 ---

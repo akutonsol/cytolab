@@ -24,7 +24,7 @@ export function FinalCtaSection() {
                 Ready to give your lab an operating system?
               </h2>
               <p style={{ margin: '20px auto 0', maxWidth: 560, fontSize: 19, lineHeight: 1.6, color: 'rgba(255,255,255,0.82)' }}>
-                Bring your own cases to a live demo and watch PathOS carry a specimen from scan to signed report.
+                Bring your own cases to a live demo and watch Osieri carry a specimen from scan to signed report.
               </p>
               <div style={{ marginTop: 38, display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
                 <a href="#" className="v2-fcta" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, height: 56, padding: '0 32px', borderRadius: 16, background: '#fff', color: DARK, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>

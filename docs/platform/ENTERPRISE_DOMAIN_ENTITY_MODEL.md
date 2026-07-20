@@ -1,6 +1,6 @@
-# PathOS Enterprise Domain Entity Model
+# Osieri Enterprise Domain Entity Model
 
-**Purpose:** The canonical reference for every persistent domain entity implemented in PathOS/CYTOLAB. It is an **extraction** of the current source — the Prisma schema (`apps/api/prisma/schema.prisma`) and the backend owner modules (`apps/api/src/modules/*`). It documents only what is **proven by source**. Relationships, ownership, aggregate boundaries, and permissions are never inferred; where a fact cannot be proven from source it is marked **UNKNOWN**.
+**Purpose:** The canonical reference for every persistent domain entity implemented in Osieri/CYTOLAB. It is an **extraction** of the current source — the Prisma schema (`apps/api/prisma/schema.prisma`) and the backend owner modules (`apps/api/src/modules/*`). It documents only what is **proven by source**. Relationships, ownership, aggregate boundaries, and permissions are never inferred; where a fact cannot be proven from source it is marked **UNKNOWN**.
 
 **Status:** Documentation only — an extracted reference, not a design. It redesigns nothing, changes no schema, and authorizes no code change.
 **Scope:** 127 persistent Prisma models across 61 backend modules, as they exist in the working tree at extraction time.

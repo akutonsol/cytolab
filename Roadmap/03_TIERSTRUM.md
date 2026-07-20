@@ -41,18 +41,18 @@ are already in place.
 ## Marketing
 
 - Positioning: a studio that ships enterprise-grade products on a proven system.
-- Content: case studies from real products (PathOS first).
+- Content: case studies from real products (Osieri first).
 - Channels and cadence to be defined once the site is live.
 
 ## Portfolio
 
-- PathOS / CYTOLAB as the flagship reference.
+- Osieri / CYTOLAB as the flagship reference.
 - 12 Circle Fitness as the second product, demonstrating the framework across domains.
 - Each portfolio entry links to its roadmap in this directory.
 
 ## Case studies
 
-- PathOS: building a pathology operating system on Helix; the design-system freeze; the
+- Osieri: building a pathology operating system on Helix; the design-system freeze; the
   experience and feedback discipline.
 - Reusable narrative: how one foundation produces distinct products quickly.
 
@@ -66,7 +66,7 @@ are already in place.
 ## Client portal
 
 - A future authenticated surface for clients (project status, deliverables, billing).
-- Built on Helix; reuses the portal patterns proven in PathOS.
+- Built on Helix; reuses the portal patterns proven in Osieri.
 
 ## Future SaaS
 
@@ -77,7 +77,7 @@ are already in place.
 ## Business roadmap
 
 1. Establish brand and ship the public website.
-2. Publish the first case study (PathOS).
+2. Publish the first case study (Osieri).
 3. Stand up sales/contact and a lightweight pipeline.
 4. Deliver product #2 (12 Circle) as portfolio proof and the trigger for Helix theme
    extraction.
