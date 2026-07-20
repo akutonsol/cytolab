@@ -4,6 +4,7 @@
  * descriptive text is preserved in `other`.
  */
 import { EtlContext } from '../core/context';
+import { flush } from '../core/writer';
 import { cleanString, parseDate } from '../transforms/coerce';
 import { mapSpecimenType } from '../transforms/enums';
 
@@ -27,6 +28,7 @@ export async function specimenStage(ctx: EtlContext): Promise<void> {
   const { legacy, prisma, idMap, labId } = ctx;
   let count = 0;
   for await (const batch of legacy.stream<LegacySpecimen>('specimen', { incremental: ctx.incremental })) {
+    const ops: unknown[] = [];
     for (const row of batch) {
       const id = await idMap.getOrCreate('specimen', row.id);
       const data = {
@@ -45,9 +47,10 @@ export async function specimenStage(ctx: EtlContext): Promise<void> {
         clientId: await idMap.optional('client', row.client_id),
         dateReceived: parseDate(row.datereceived),
       };
-      if (!ctx.dryRun) await prisma.specimen.upsert({ where: { id }, create: data, update: data });
+      if (!ctx.dryRun) ops.push(prisma.specimen.upsert({ where: { id }, create: data, update: data }));
       count++;
     }
+    await flush(ctx, ops);
   }
   ctx.recon.push({ table: 'specimen', source: await legacy.count('specimen', ctx.incremental), target: count });
 }
@@ -66,6 +69,7 @@ export async function therapyStage(ctx: EtlContext): Promise<void> {
   const { legacy, prisma, idMap, labId } = ctx;
   let count = 0;
   for await (const batch of legacy.stream<LegacyTherapy>('therapy', { incremental: ctx.incremental })) {
+    const ops: unknown[] = [];
     for (const row of batch) {
       const id = await idMap.getOrCreate('therapy', row.id);
       const recordId = await idMap.require('record', row.record_id);
@@ -78,11 +82,10 @@ export async function therapyStage(ctx: EtlContext): Promise<void> {
         surgical: cleanString(row.surgical) != null,
         other: cleanString(row.other),
       };
-      if (!ctx.dryRun) {
-        await prisma.therapy.upsert({ where: { recordId }, create: data, update: data });
-      }
+      if (!ctx.dryRun) ops.push(prisma.therapy.upsert({ where: { recordId }, create: data, update: data }));
       count++;
     }
+    await flush(ctx, ops);
   }
   ctx.recon.push({ table: 'therapy', source: await legacy.count('therapy', ctx.incremental), target: count });
 }

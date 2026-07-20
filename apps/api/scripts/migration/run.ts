@@ -15,7 +15,6 @@
 import { PrismaClient } from '@prisma/client';
 import { LegacySource } from './core/legacy-source';
 import { IdMap, MemoryIdMapStore } from './core/id-map';
-import { PrismaIdMapStore } from './core/id-map-store';
 import { runEtl } from './engine';
 import { formatReport } from './core/reconcile';
 
@@ -54,9 +53,9 @@ async function main() {
   });
   if (args.limit) console.log(`[sample mode] processing at most ${args.limit} rows per table`);
   const prisma = new PrismaClient();
-  // Dry-run never writes, so an in-memory id-map is enough; real runs need the
-  // durable store so re-runs and the nightly sync stay idempotent.
-  const idMap = new IdMap(args.dryRun ? new MemoryIdMapStore() : new PrismaIdMapStore(prisma), args.dryRun);
+  // Deterministic ids => no persistence needed; the in-memory store just holds
+  // aliases (workspace<->client) for the duration of the run.
+  const idMap = new IdMap(new MemoryIdMapStore());
 
   await legacy.connect();
   try {

@@ -1,15 +1,22 @@
 /**
- * The legacy-int -> Osieri-uuid identity map. Every legacy integer PK is
- * translated to a stable UUID so foreign keys can be rewritten and re-runs stay
- * idempotent (the same legacy row always resolves to the same UUID).
+ * The legacy-int -> Osieri-uuid identity map.
  *
- * Persistence is pluggable. For a full run it is backed by a table in the
- * staging/target DB; in tests/dry-runs an in-memory store is enough. Because
- * `getOrCreate` is deterministic per (table,id) within a process and durable
- * across runs via the store, the nightly incremental sync can resolve updates
- * to already-migrated rows.
+ * UUIDs are DETERMINISTIC: uuid = f(table, legacyId) via a stable hash. This is
+ * the key to both performance and correctness — the same legacy row ALWAYS maps
+ * to the same uuid, in any run, with NO database round-trip and NO persistence.
+ * That removes a per-row write on the hot path and makes the nightly sync
+ * resolve FKs to already-migrated rows for free. The in-memory store only serves
+ * aliases (e.g. the workspace<->client pairing) within a run.
  */
-import { randomUUID } from 'crypto';
+import { createHash } from 'crypto';
+
+const NAMESPACE = 'osieri-legacy-etl:v1';
+
+/** Stable uuid-formatted string derived from (table, legacyId). */
+export function deterministicUuid(table: string, legacyId: number): string {
+  const h = createHash('sha1').update(`${NAMESPACE}:${table}:${legacyId}`).digest('hex');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
+}
 
 export interface IdMapStore {
   /** All (legacyId -> uuid) pairs for one legacy table. */
@@ -63,37 +70,38 @@ export class IdMap {
     await this.store.put(table, legacyId, uuid);
   }
 
-  /** Look up or mint-and-persist a uuid for a legacy id. Idempotent. */
+  /** The uuid for a legacy row: an alias if one was set, else the deterministic id. */
   async getOrCreate(table: string, legacyId: number): Promise<string> {
     const m = await this.table(table);
     const existing = m.get(legacyId);
     if (existing) return existing;
-    const uuid = randomUUID();
+    const uuid = deterministicUuid(table, legacyId);
     m.set(legacyId, uuid);
-    await this.store.put(table, legacyId, uuid);
     return uuid;
   }
 
   /**
-   * Resolve a REQUIRED foreign key. Throws if the referenced legacy row was
-   * never migrated — a dangling FK must fail the run, not silently null out.
+   * Resolve a REQUIRED foreign key. Uses an alias if present, else the
+   * deterministic id (so it always resolves — a genuinely dangling FK surfaces
+   * later as an insert-time FK violation, naming the constraint).
    */
   async require(table: string, legacyId: number | null | undefined): Promise<string> {
     if (legacyId === null || legacyId === undefined) {
       throw new Error(`idMap.require(${table}): missing legacy id`);
     }
-    const uuid = await this.get(table, legacyId);
-    if (!uuid) {
-      // Dry-run with --limit: the FK target may simply be outside the sample.
-      if (this.lenient) return this.getOrCreate(table, legacyId);
-      throw new Error(`idMap.require(${table}, ${legacyId}): no mapping — load ${table} before its dependents`);
-    }
-    return uuid;
+    return (await this.get(table, legacyId)) ?? deterministicUuid(table, legacyId);
   }
 
-  /** Resolve an OPTIONAL foreign key: null in -> null out; missing map -> null. */
+  /**
+   * Resolve an OPTIONAL foreign key: null in -> null out. A present-but-unaliased
+   * id resolves to its deterministic uuid unless it's an alias-only table.
+   */
   async optional(table: string, legacyId: number | null | undefined): Promise<string | null> {
     if (legacyId === null || legacyId === undefined) return null;
-    return this.get(table, legacyId);
+    if (this.aliasOnly.has(table)) return this.get(table, legacyId);
+    return (await this.get(table, legacyId)) ?? deterministicUuid(table, legacyId);
   }
+
+  /** Tables whose ids only ever come from an explicit alias (never deterministic). */
+  private aliasOnly = new Set<string>(['workspace', 'client']);
 }

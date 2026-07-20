@@ -12,8 +12,7 @@
  */
 import { PrismaClient } from '@prisma/client';
 import { LegacySource } from './core/legacy-source';
-import { IdMap } from './core/id-map';
-import { PrismaIdMapStore } from './core/id-map-store';
+import { IdMap, MemoryIdMapStore } from './core/id-map';
 import { SyncState } from './core/sync-state';
 import { runEtl } from './engine';
 import { formatReport } from './core/reconcile';
@@ -32,7 +31,7 @@ async function main() {
     database: process.env.LEGACY_PGDATABASE,
     since,
   });
-  const idMap = new IdMap(new PrismaIdMapStore(prisma));
+  const idMap = new IdMap(new MemoryIdMapStore());
 
   console.log(`[nightly] start ${runStart.toISOString()} — since ${since ? since.toISOString() : '(initial full)'}`);
   await legacy.connect();

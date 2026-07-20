@@ -13,6 +13,7 @@
  * without touching the target. Runs inside the customer cloud (PHI stays local).
  */
 import { EtlContext } from '../core/context';
+import { flush } from '../core/writer';
 import { cleanString, parseDate } from '../transforms/coerce';
 import { mapGender } from '../transforms/enums';
 
@@ -41,6 +42,7 @@ export async function patientStage(ctx: EtlContext): Promise<void> {
   let count = 0;
 
   for await (const batch of legacy.stream<LegacyPatient>('patient', { incremental: ctx.incremental })) {
+    const ops: unknown[] = [];
     for (const row of batch) {
       const id = await idMap.getOrCreate('patient', row.id);
       // workspace_id -> the paired Osieri Client (see mapping §3). Optional: a
@@ -69,14 +71,13 @@ export async function patientStage(ctx: EtlContext): Promise<void> {
       };
 
       if (!ctx.dryRun) {
-        await prisma.patient.upsert({
-          where: { labId_registrationNo: { labId, registrationNo } },
-          create: data,
-          update: data,
-        });
+        ops.push(
+          prisma.patient.upsert({ where: { labId_registrationNo: { labId, registrationNo } }, create: data, update: data }),
+        );
       }
       count++;
     }
+    await flush(ctx, ops);
     ctx.log(`  patient: ${count} processed`);
   }
 

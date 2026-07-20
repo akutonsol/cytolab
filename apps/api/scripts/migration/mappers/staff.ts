@@ -8,6 +8,7 @@
  * migrated in this pass (assigned in-app).
  */
 import { EtlContext } from '../core/context';
+import { flush } from '../core/writer';
 import { cleanString, parseBool } from '../transforms/coerce';
 import { mapAuthorizerDesignation } from '../transforms/enums';
 
@@ -26,6 +27,7 @@ export async function cabinetStage(ctx: EtlContext): Promise<void> {
   const { legacy, prisma, idMap, labId } = ctx;
   let count = 0;
   for await (const batch of legacy.stream<LegacyCabinet>('cabinet', { incremental: ctx.incremental })) {
+    const ops: unknown[] = [];
     for (const row of batch) {
       const id = await idMap.getOrCreate('cabinet', row.id);
       const data = {
@@ -36,9 +38,10 @@ export async function cabinetStage(ctx: EtlContext): Promise<void> {
         color: cleanString(row.color),
         clientId: await idMap.optional('client', row.client_id),
       };
-      if (!ctx.dryRun) await prisma.cabinet.upsert({ where: { id }, create: data, update: data });
+      if (!ctx.dryRun) ops.push(prisma.cabinet.upsert({ where: { id }, create: data, update: data }));
       count++;
     }
+    await flush(ctx, ops);
   }
   ctx.recon.push({ table: 'cabinet', source: await legacy.count('cabinet', ctx.incremental), target: count });
 }
@@ -57,10 +60,11 @@ export async function userStage(ctx: EtlContext): Promise<void> {
   let count = 0;
   let skipped = 0;
   for await (const batch of legacy.stream<LegacyUser>('users', { incremental: ctx.incremental })) {
+    const ops: unknown[] = [];
     for (const row of batch) {
       const email = cleanString(row.email);
       if (!email) {
-        skipped++; // cannot create a Osieri user without an email
+        skipped++; // cannot create an Osieri user without an email
         continue;
       }
       const id = await idMap.getOrCreate('users', row.id);
@@ -81,11 +85,10 @@ export async function userStage(ctx: EtlContext): Promise<void> {
         authorizerDesignation: (mapAuthorizerDesignation(auth?.type) ?? null) as
           | 'Pathologist' | 'Cytologist' | null,
       };
-      if (!ctx.dryRun) {
-        await prisma.user.upsert({ where: { labId_email: { labId, email } }, create: data, update: data });
-      }
+      if (!ctx.dryRun) ops.push(prisma.user.upsert({ where: { labId_email: { labId, email } }, create: data, update: data }));
       count++;
     }
+    await flush(ctx, ops);
   }
   ctx.recon.push({
     table: 'users',
