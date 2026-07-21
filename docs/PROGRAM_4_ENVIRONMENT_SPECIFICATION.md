@@ -1,8 +1,13 @@
 # Program 4 · Environment Specification
 
-**Status:** DRAFT — awaiting architectural review (not yet a frozen baseline)
-**Checkpoint:** Program 4 · Environment Specification (read-only documentation)
-**Date:** 2026-07-21
+**Status:** REVISION 2 — Identity Resolution (documentation-only; awaiting architectural review before
+commit). Base baseline frozen at `0bb120f`. This revision resolves the HIGH identity blockers (§5, and
+Open Decisions #1/#2/#4/#8/#9) into authoritative values; it provisions nothing.
+**Checkpoint:** Program 4 · Environment Specification Revision (Identity Resolution) — documentation only
+**Date:** 2026-07-21 (Rev 2)
+**Rev-2 identity decisions (owner-ratified):** pooled-prod = **new clean `osieri-prod`** project; demo =
+**Render + Neon (non-GCP, separate stream)**; deploy auth = **Deploy SA JSON key** (WIF declined for
+launch, retained as recommended future hardening).
 **Owner:** Osieri platform / deployment (individual owner TBD)
 **Governance:** This document, once reviewed and frozen, becomes the **immutable deployment
 baseline** that Phase D-2 (infrastructure provisioning) and Phase D-3 (deployment rehearsal &
@@ -159,20 +164,70 @@ concrete name is not yet chosen, the **convention** is recorded and the **value*
 
 ---
 
-## 5. Identity & IAM
+## 5. Identity & IAM  *(RESOLVED — Revision 2)*
 
-Established principles and roles; concrete service-account identities and bindings are `TBD` (not to
-be invented here).
+> **Scope of this revision:** authoritative identity **decisions + naming + role-level IAM** only. It
+> **provisions nothing** — no GCP projects, service accounts, keys, or bindings are created. Values below
+> are the ratified targets that Phase D-2 will *implement*.
 
-| Aspect | Decision | Status | Source |
-|---|---|---|---|
-| Deployment identity (CI) | **Workload Identity Federation recommended** (`id-token: write`); alternative deploy SA key | ✅ Established (recommended) | deploy.yml, DEPLOYMENT.md |
-| Deploy SA | `GCP_DEPLOY_SA` (secret); concrete identity `TBD` | Partial | deploy.yml |
-| WIF provider | `GCP_WORKLOAD_IDENTITY_PROVIDER` (secret); concrete provider `TBD` | Partial | deploy.yml |
-| Runtime identity (Cloud Run) | Dedicated runtime SA per service; needs Secret Manager accessor + Cloud SQL client + GCS access. Concrete SA + bindings `TBD` | Partial | DEPLOYMENT.md, CYTOLABS |
-| Least-privilege principle | Runtime SA gets only accessor/client roles; deploy SA scoped to deploy roles | ✅ Principle stated | CYTOLABS |
-| CytoLabs IAM (silo) | You receive IAM in CytoLabs' account to deploy/maintain (Cloud Run Admin, Cloud SQL Admin, Artifact Registry Admin, Secret Manager Admin, Service Account User) — **account-gated** | ✅ Listed / ⛔ not granted | CYTOLABS §1 |
-| Role assignments (concrete) | **Not decided — not invented here** | ⛔ `TBD` | — |
+### 5a. GCP project strategy *(resolves #1, #2, #4)*
+- **Pooled production → a NEW clean project `osieri-prod`** (region **`us-central1`**), with a **new
+  Cloud SQL for PostgreSQL instance** — connection name pattern `osieri-prod:us-central1:<instance>`
+  (instance id, DB name, and app/migrate DB users are D-2 provisioning details). The reconciled dataset
+  is **loaded into `osieri-prod` at cutover**; the legacy `compact-surfer-318619` / `pathos-prod`
+  instance is a **one-time, read-only migration source only**, not the launch target. **No production
+  runtime depends on the legacy project after migration + validation** — the cross-project link must not
+  silently become a permanent production dependency and is retired once cutover is validated.
+- **Demo → Render + Neon (non-GCP)** — a **separate deploy stream with NO GCP identity**; demo
+  authentication is Render/Neon-native. Demo is therefore **out of the GCP IAM model** and out of the
+  GCP deploy matrix (the `deploy.yml` `demo` entry moving to a Render path is a **D-2 CI task**, not done
+  here). **Demo owns its own deploy/secret/backup/operational controls; demo data is non-production and
+  must NOT contain PHI** unless separately governed and explicitly authorized.
+- **CytoLabs silo → account-gated (unchanged):** IAM is granted inside CytoLabs' own GCP account; it
+  remains a **separable stream** and does not block pooled-prod D-2.
+
+### 5b. Deployment (CI) identity *(resolves #8 — approved as a LAUNCH EXCEPTION)*
+- **Mechanism: Deploy Service-Account JSON key** (a **long-lived credential**), stored **only** as the
+  GitHub Actions secret **`GCP_SA_KEY`**. This is a **temporary launch exception, not the preferred
+  steady state.**
+- **WIF was deliberately DEFERRED — not implemented.** Workload Identity Federation (keyless OIDC bound
+  to `akutonsol/cytolab`) remains the **tracked hardening target**. The current `deploy.yml` WIF scaffold
+  (`id-token: write`, `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_DEPLOY_SA`) is **superseded** by the SA-key
+  path; reworking the workflow auth is a **D-2 CI task**.
+- **Deploy SA:** `osieri-deployer@osieri-prod.iam.gserviceaccount.com`.
+- **Key-handling rules (frozen):** the JSON key must **never** be committed, written to logs, embedded in
+  images, or stored anywhere outside the approved GitHub Actions secret store.
+- **Mandatory D-2 controls:** key **creation, rotation, revocation, and compromise response** are
+  required D-2 controls; migration to WIF remains a tracked hardening item (rotation policy `TBD`, #10).
+
+### 5c. Runtime service accounts *(resolves #9)* — one per service, least-privilege
+- **API:** `osieri-api-run@osieri-prod.iam.gserviceaccount.com`
+- **Web:** `osieri-web-run@osieri-prod.iam.gserviceaccount.com`
+- **Migration job:** `osieri-migrate@osieri-prod.iam.gserviceaccount.com` (runs the `osieri-migrate`
+  Cloud Run job with the privileged `DATABASE_MIGRATION_URL`).
+
+### 5d. Required IAM roles *(role level ONLY — do not provision)*
+
+| Principal | Roles (project `osieri-prod`) | Rationale |
+|---|---|---|
+| `osieri-deployer` (CI, SA key) | `roles/run.admin`, `roles/artifactregistry.writer`, `roles/iam.serviceAccountUser` (actAs the runtime SAs), `roles/serviceusage.serviceUsageConsumer` | Push images + deploy Cloud Run services/jobs + act-as runtime SAs. **No** data or secret roles. |
+| `osieri-api-run` | `roles/secretmanager.secretAccessor`, `roles/cloudsql.client`, `roles/storage.objectUser` (scoped to the uploads bucket), `roles/logging.logWriter` | Read runtime secrets, connect to Cloud SQL via the connector, GCS object access, logs. |
+| `osieri-web-run` | `roles/secretmanager.secretAccessor` (only if server-side secrets exist), `roles/logging.logWriter` | Minimal — the web service renders the app. |
+| `osieri-migrate` | `roles/cloudsql.client`, `roles/secretmanager.secretAccessor` | Privileged DB connection for `prisma migrate deploy`; read the migration-URL secret. |
+
+**Least-privilege invariants (frozen; validated against exact resources in D-2):**
+- **Deployment authority is not inherited by runtime identities** — the deployer holds **no** runtime
+  data/secret roles; runtime SAs **cannot deploy**.
+- **Migration authority is isolated** — the `osieri-migrate` SA is the **only** principal with the
+  privileged DB user / migrate roles; **normal API and web workloads never receive migration authority**.
+- **`roles/iam.serviceAccountUser` is scoped to the specific runtime SAs** (`osieri-api-run`,
+  `osieri-web-run`, `osieri-migrate`) — **never** granted project-wide.
+- **Secret access is granted at individual-secret scope where practical** (not blanket project
+  `secretAccessor`).
+- **Storage access is scoped to the required production bucket**, not all project buckets.
+- **`osieri-web-run` receives no privileged roles** unless a concrete runtime dependency requires them.
+- **No primitive roles** (`roles/owner`, `roles/editor`) may be used for any of these principals.
+- **Demo (Render/Neon) is outside this GCP boundary**; **CytoLabs uses its own account's IAM**.
 
 ---
 
@@ -282,15 +337,15 @@ noted. "Blocking" = whether it hard-blocks D-2 scope.
 
 | # | Decision | Owner | Status | Blocking impact |
 |---|---|---|---|---|
-| 1 | **Pooled-prod GCP project + Cloud SQL role**: is `compact-surfer-318619` / `pathos-prod` the launch pooled-prod, or recreate as clean `osieri-prod`? | User / platform | OPEN | **HIGH** — sets `GCP_PROJECT`, `CLOUDSQL_INSTANCE`, migration target |
-| 2 | **Demo environment host**: Cloud Run in a GCP project, **or** no-monthly-fee host (Render+Neon) to avoid GCP fees? | User | OPEN | **HIGH** — determines whether demo is in the GCP pipeline at all |
+| 1 | **Pooled-prod GCP project + Cloud SQL role** | User / platform | ✅ **RESOLVED (Rev 2)** — new clean project **`osieri-prod`** (`us-central1`) + new Cloud SQL instance; legacy `pathos-prod` = read-only migration source. Sets `GCP_PROJECT=osieri-prod`. | (was HIGH) |
+| 2 | **Demo environment host** | User | ✅ **RESOLVED (Rev 2)** — **Render + Neon (non-GCP)**; demo is a separate stream, **not** in the GCP pipeline/IAM model. | (was HIGH) |
 | 3 | **Staging environment**: introduce a dedicated staging env, or promote demo→prod only? | Platform | OPEN | **MEDIUM** — affects matrix + promotion model |
-| 4 | **Demo GCP project ID + region** (if Cloud Run) | User | OPEN | HIGH (if #2 = GCP) |
+| 4 | **Demo GCP project ID + region** (if Cloud Run) | User | ✅ **RESOLVED (Rev 2) — N/A** (demo is Render/Neon, non-GCP; no demo GCP project/region). | (moot) |
 | 5 | **CytoLabs silo project ID, region, and app host (Cloud Run vs VM)** | CytoLabs / user | OPEN (account-gated) | **HIGH** for silo D-2; not blocking pooled/demo D-2 |
 | 6 | **DNS ownership & registrar for `osieri.com`** (is it registered? zone location?) | User | OPEN | **HIGH** — managed SSL + LB depend on it |
 | 7 | **Prod Postgres version** (existing instance version + target) | Platform | OPEN | MEDIUM |
-| 8 | **WIF provider + deploy SA identity** (concrete) | Platform | OPEN | **HIGH** — CI cannot deploy without it |
-| 9 | **Runtime service-account identities + IAM bindings** (per env) | Platform | OPEN | **HIGH** |
+| 8 | **Deploy identity** (concrete) | Platform | ✅ **RESOLVED (Rev 2)** — **Deploy SA JSON key** `osieri-deployer@osieri-prod.iam.gserviceaccount.com` (GitHub secret `GCP_SA_KEY`); WIF **declined for launch**, retained as future hardening (§5b). | (was HIGH) |
+| 9 | **Runtime service-account identities + IAM bindings** | Platform | ✅ **RESOLVED (Rev 2)** — `osieri-api-run` / `osieri-web-run` / `osieri-migrate` in `osieri-prod` with the role-level IAM in §5d (concrete *bindings* provisioned in D-2). | (was HIGH) |
 | 10 | **Secret Manager secret names + rotation policy** (per env) | Platform | OPEN | **HIGH** for prod; rotation MEDIUM |
 | 11 | **Backup/DR policy** — schedule, retention, restore drills, RTO/RPO | Platform | OPEN | **HIGH** (prod PHI) |
 | 12 | **Redis in production** — managed Memorystore vs none; is it required? | Platform | OPEN | MEDIUM |
@@ -323,28 +378,36 @@ noted. "Blocking" = whether it hard-blocks D-2 scope.
 - **Tenancy** established: pool + silo, `labId` fail-closed; CytoLabs = own account/app/DB/domain.
 - A **fully-migrated, reconciled prod dataset** already exists in `pathos-prod`.
 
-### Unresolved items
-20 open decisions (§11), of which **9 are HIGH-blocking** for the *pooled-prod + demo* D-2 scope
-(#1, #2, #4, #6, #8, #9, #10, #11 — plus #5 HIGH but scoped to the silo, which is account-gated and
-separable). The remainder are MEDIUM/LOW and can be resolved during D-2 provisioning without blocking
-its start, provided they are tracked.
+### Unresolved items *(updated Rev 2)*
+The **identity/target HIGH blockers are now resolved** (#1, #2, #4, #8, #9 — see §5). Of the original
+set, the **remaining HIGH pre-provisioning items** for the *pooled-prod* D-2 scope are: **DNS ownership
+of `osieri.com` (#6)**, **Secret Manager secret values + names (#10)** — the **naming convention** is now
+fixed as `osieri-prod-<SECRET>` in `osieri-prod`, but the **values** and rotation remain `TBD` — and
+**backup/DR policy (#11, prod PHI)**. Demo is now a **separable Render/Neon stream** (no GCP identity);
+the **CytoLabs silo (#5)** and **cross-account channel (#18)** remain deferred to the account-gated silo
+phase. All other items are MEDIUM/LOW and can be tracked through D-2 without blocking its start.
 
-### Recommendation on whether Phase D-2 may begin
-**CONDITIONAL — do not begin general D-2 yet.** The build/image/networking/migration/CI mechanisms are
-established and frozen-ready, but D-2 provisioning cannot start meaningfully until the **HIGH-blocking
-identity decisions** are made — specifically the **pooled-prod project + Cloud SQL role (#1)**, the
-**demo hosting decision (#2/#4)**, **DNS ownership of `osieri.com` (#6)**, and the **deploy/runtime IAM
-identities (#8/#9)**. These define the very targets (`GCP_PROJECT`, `CLOUDSQL_INSTANCE`, WIF/SA) that
-D-2 would provision against; provisioning without them would invent configuration this checkpoint
-forbids.
+### Recommendation on whether Phase D-2 may begin *(updated Rev 2)*
+**The identity axis is resolved, but GENERAL Phase D-2 Infrastructure Provisioning remains BLOCKED**
+pending **DNS ownership (#6)**, **production secret-management policy (#10)**, and **backup/DR decisions
+(#11)**. "Identity resolved" is **not** authorization to begin unrestricted provisioning. A **narrowly
+scoped foundational D-2 checkpoint** (e.g. project + Artifact Registry + the SAs/role-bindings of §5) may
+be considered **only if it explicitly excludes** any resource dependent on those unresolved decisions
+(DNS/LB/managed-SSL, secret *values*, Cloud SQL backup/PITR policy). With Rev 2 the deploy + runtime
+identity model and target project (`osieri-prod`) are frozen, so the identity axis of D-2 is unblocked;
+the three HIGH items above must be resolved (ideally recorded back into this baseline) before **general**
+pooled-prod provisioning is authorized.
 
-**Suggested path:** (1) freeze this specification via architectural review; (2) resolve the ~4 HIGH
-identity/target decisions (#1, #2, #6, #8/#9) and record them **back into this frozen baseline** under
-a follow-up checkpoint; (3) then authorize **Phase D-2 · Infrastructure Provisioning** scoped to the
-**pooled-prod + demo** targets, deferring the **CytoLabs silo (#5, account-gated)** and the
-**cross-account channel (#18)** to a later, separately-authorized silo phase.
+**Suggested path:** (1) freeze this Rev-2 identity resolution via architectural review; (2) resolve the
+remaining HIGH items (#6, #10, #11); (3) authorize **Phase D-2 · Infrastructure Provisioning** scoped to
+**pooled-prod (`osieri-prod`)** — implementing the §5 identity model and creating the SAs/bindings/
+instance — with the **demo (Render/Neon)** and **CytoLabs silo (#5)** as separate, separately-authorized
+streams.
 
 ---
 
-*End of specification. This is a DRAFT pending architectural review; it is not staged or committed.
-No production code, infrastructure, cloud resources, or deployment were modified in producing it.*
+*End of specification. **Revision 2 (Identity Resolution)** is documentation-only and **pending
+architectural review**; it is not staged or committed. It resolves the HIGH identity blockers (§5,
+Open Decisions #1/#2/#4/#8/#9) into authoritative values and **provisions nothing** — no GCP projects,
+service accounts, keys, IAM bindings, infrastructure, or deployment were created or modified. The base
+specification remains frozen at `0bb120f` until this revision is reviewed and committed.*
