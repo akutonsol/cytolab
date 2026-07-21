@@ -1,0 +1,17 @@
+# Program 4 · Phase D-2A — EXAMPLE inputs. Copy to terraform.tfvars (git-ignored) and fill real values.
+# This example contains NO secrets and NO real account ids.
+
+project_id      = "osieri-prod"
+project_name    = "Osieri Production"
+region          = "us-central1"
+
+# Required at apply time (obtain from GCP org/billing admin):
+billing_account = "XXXXXX-XXXXXX-XXXXXX"   # billing account id
+org_id          = "000000000000"           # OR set folder_id instead
+# folder_id     = "000000000000"
+
+# Cloud Run: default false per D-2A ruling — all Cloud Run creation deferred to D-2C.
+create_cloud_run_shells   = false
+
+# Cloud SQL skeleton: leave false — deferred to D-2B (backup/PITR gated by #11).
+create_cloud_sql_skeleton = false

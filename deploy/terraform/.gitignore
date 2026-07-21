@@ -1,0 +1,10 @@
+# Program 4 · Phase D-2A — never commit real values, state, or credentials.
+terraform.tfvars
+*.auto.tfvars
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*-key.json
+*.json.key
+crash.log
