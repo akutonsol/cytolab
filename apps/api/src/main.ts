@@ -54,6 +54,11 @@ async function bootstrap() {
   // Route Nest's logs through Pino (structured JSON in prod, pretty in dev).
   app.useLogger(app.get(Logger));
 
+  // Graceful shutdown for container orchestrators (Cloud Run sends SIGTERM on
+  // scale-in / redeploy): stops accepting, drains in-flight HTTP, and runs
+  // onModuleDestroy so PrismaService closes its connections cleanly.
+  app.enableShutdownHooks();
+
   const prefix = process.env.API_PREFIX ?? 'api/v1';
   app.setGlobalPrefix(prefix);
 
@@ -102,16 +107,36 @@ async function bootstrap() {
     }),
   );
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Cytolab API')
-    .setDescription('Cytolab LIMS — rebuilt as a NestJS modular monolith')
-    .setVersion('2.0.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup(`${prefix}/docs`, app, document);
+  // API docs are OFF in production by default (do not expose the full surface);
+  // enable outside production, or explicitly with SWAGGER_ENABLED=true.
+  const swaggerEnabled = process.env.SWAGGER_ENABLED === 'true' || process.env.NODE_ENV !== 'production';
+  if (swaggerEnabled) {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('Cytolab API')
+      .setDescription('Cytolab LIMS — rebuilt as a NestJS modular monolith')
+      .setVersion('2.0.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup(`${prefix}/docs`, app, document);
+  }
 
   const port = Number(process.env.PORT ?? 4000);
+
+  // Bounded shutdown watchdog: enableShutdownHooks() above does the graceful
+  // drain/disconnect; this force-exits if that overruns the budget, so we never
+  // depend on the orchestrator's hard kill. `.unref()` keeps it off the event loop.
+  const shutdownTimeoutMs = Number(process.env.SHUTDOWN_TIMEOUT_MS ?? 10_000);
+  for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+    process.on(signal, () => {
+      setTimeout(() => {
+        // eslint-disable-next-line no-console
+        console.error(`Graceful shutdown exceeded ${shutdownTimeoutMs}ms — forcing exit`);
+        process.exit(1);
+      }, shutdownTimeoutMs).unref();
+    });
+  }
+
   await app.listen(port);
   console.log(`Cytolab API running on http://localhost:${port}/${prefix}`);
 }

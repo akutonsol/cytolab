@@ -20,5 +20,7 @@ COPY --from=build /app/apps/web/.next-prod/standalone ./
 # Static + public (served by the standalone server from <distDir>/static).
 COPY --from=build /app/apps/web/.next-prod/static ./apps/web/.next-prod/static
 COPY --from=build /app/apps/web/public ./apps/web/public
+# Drop root: the `node` base image ships an unprivileged `node` user (uid 1000).
+USER node
 EXPOSE 8080
 CMD ["node", "apps/web/server.js"]

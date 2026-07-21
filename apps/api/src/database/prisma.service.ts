@@ -4,13 +4,34 @@ import { LabContext } from '../common/tenancy/lab-context';
 import { tenancyExtension } from '../common/tenancy/tenancy.extension';
 import { phiEncryptionExtension } from '../common/crypto/phi-encryption.extension';
 
+/**
+ * Autoscale-friendly connection pooling. On Cloud Run, MANY instances each hold a
+ * pool, so the per-instance pool must be SMALL — size `connection_limit` so
+ * (max instances × limit) stays under the Cloud SQL `max_connections` budget.
+ *
+ * Config-only + behavior-neutral: when neither `DATABASE_CONNECTION_LIMIT` nor
+ * `DATABASE_POOL_TIMEOUT` is set, this returns `undefined` and Prisma uses the raw
+ * `DATABASE_URL` and its default pool exactly as before. Pure/exported for testing.
+ */
+export function poolDatasourceOptions(): { datasources: { db: { url: string } } } | undefined {
+  const url = process.env.DATABASE_URL;
+  const limit = process.env.DATABASE_CONNECTION_LIMIT;
+  const timeout = process.env.DATABASE_POOL_TIMEOUT;
+  if (!url || (!limit && !timeout)) return undefined; // no override → unchanged behavior
+  const u = new URL(url);
+  if (limit) u.searchParams.set('connection_limit', limit);
+  if (timeout) u.searchParams.set('pool_timeout', timeout);
+  return { datasources: { db: { url: u.toString() } } };
+}
+
 @Injectable()
 export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
   constructor(private readonly labContext: LabContext) {
-    super();
+    // Explicit, env-driven pool sizing for autoscale; undefined = Prisma default.
+    super(poolDatasourceOptions());
     // Apply the global tenancy guard. `$extends` returns a new, extended client;
     // returning it from the constructor makes every injected PrismaService
     // lab-scoped automatically. Cast back to PrismaService for DI typing — model

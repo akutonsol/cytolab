@@ -44,6 +44,20 @@ One image → deploy per environment (demo, pooled prod, each silo). Per target 
 Run `prisma migrate deploy` (as the `osieri-migrate` Cloud Run job) **before** rolling the API —
 the migrate-deploy-from-empty bug is fixed, so it applies cleanly. Never `migrate dev` in prod.
 
+### Runtime hardening (Program 4 · D-1)
+The API image is hardened for container orchestration:
+- **Health probes** (public, throttle-exempt): `GET /<API_PREFIX>/health` = **liveness** (instant,
+  no I/O); `GET /<API_PREFIX>/health/ready` = **readiness** (cheap `SELECT 1`; 503 if the DB is
+  unreachable). Point Cloud Run / the LB health check at these.
+- **Graceful shutdown**: on SIGTERM the app drains in-flight requests and closes DB connections;
+  `SHUTDOWN_TIMEOUT_MS` (default 10000) bounds it with a force-exit.
+- **Swagger**: OFF in production by default — set `SWAGGER_ENABLED=true` only if you deliberately
+  want `/<API_PREFIX>/docs` exposed there.
+- **Non-root containers**: both images run as the unprivileged `node` user.
+- **Connection pooling**: set `DATABASE_CONNECTION_LIMIT` (and optionally `DATABASE_POOL_TIMEOUT`)
+  so `(max Cloud Run instances × limit)` stays under Cloud SQL `max_connections`. Unset = Prisma
+  default.
+
 ## The release pipeline
 
 `.github/workflows/deploy.yml` builds one image per app on merge to `main`, then deploys the same
