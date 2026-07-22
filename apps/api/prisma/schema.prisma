@@ -2741,6 +2741,7 @@ enum SlideAssetRole {
   LABEL
   MACRO
   THUMBNAIL
+  MANIFEST // P5-3B.0 — the persisted canonical manifest bytes; sha256(bytes) == DerivativeGeneration.derivativeManifestChecksum. Single-per-sealed-generation is a sealing invariant (not a DB constraint).
 }
 
 // ─── Whole Slide Imaging (Tier 5 — Enterprise) ───────────────────────────────
@@ -2872,6 +2873,13 @@ model SlideProcessingJob {
   errorCode      String?
   errorDetail    String?
 
+  // P5-3B.0 — lease-based ownership (populated at claim time by the worker in P5-3B.1). Lease DURATION
+  // is policy and lives outside the schema; only the resulting expiry timestamp is stored. `workerId`
+  // is a LOGICAL worker identity (not necessarily a hostname/container id).
+  heartbeatAt    DateTime?
+  leaseExpiresAt DateTime?
+  workerId       String?
+
   generation DerivativeGeneration?
 
   createdAt DateTime @default(now())
@@ -2881,6 +2889,9 @@ model SlideProcessingJob {
   @@index([labId])
   @@index([ingestionId])
   @@index([labId, status])
+  @@index([status, leaseExpiresAt]) // P5-3B.0 — reclaimer scan (RUNNING jobs with an expired lease)
+  // P5-3B.0 migration adds a raw-SQL PARTIAL UNIQUE INDEX on (ingestionId) WHERE status IN
+  // ('QUEUED','RUNNING') — the DB backstop for "at most one active job per ingestion".
 }
 
 // One immutable, sealed derivative pyramid produced by a job. Publishable only when its
