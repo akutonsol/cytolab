@@ -83,8 +83,14 @@ finite, well-understood, and account/DNS-gated. None are architectural. Sources:
 > | 3 · Cloud Run | `osieri-api` + `osieri-web` services + `osieri-migrate` job; internal-LB ingress; 8 real secrets wired from Secret Manager; CONFIG env; Cloud SQL Auth Proxy socket; startup/liveness probes on `/api/v1/health` | `provision_cloud_run` | +5 (api/web/job + 2 invokers) |
 > | 4 · Secret wiring | 8 consumed secrets referenced by Cloud Run; `JWT_REFRESH_SECRET` + `REDIS_URL` deliberately left unwired (dead — no code reads them); `PORTAL_WEB_ORIGIN`/`ALLOWED_ORIGINS` set as CONFIG env, not secrets | (folded into Stage 3) | — |
 > | 5 · HTTPS LB + SSL | external ALB, reserved global IP, serverless NEGs, path routing (`/api/*`→api, default→web), Google-managed cert (apex+www), 80→443 redirect | `provision_lb` | full compute+edge = 18 add / 0 change / 0 destroy |
+> | 6 · Monitoring | Cloud Monitoring: email notification channel, HTTPS uptime check, alert policies (uptime, Cloud Run 5xx, Cloud SQL CPU>90%) | `provision_monitoring` | +6 |
+> | 7 · Backup / DR | backups+PITR+REGIONAL HA+deletion protection defined in Stage 2; DR runbook `docs/deploy/DISASTER_RECOVERY.md` (RTO/RPO targets + restore procedures); live restore drill → Program 9 | (config in Stage 2) | — |
+> | 8 · CI/CD + WIF | keyless GitHub Actions → `osieri-deployer` SA via Workload Identity Federation (pool + provider + impersonation, repo-scoped); `deploy.yml` already WIF-based, stays `if: false` until Program 9 | `provision_cicd` | +3 |
 >
-> Live provisioning of all the above is **deferred to Program 9** to avoid recurring cloud cost. No
+> **Full stack, all gates on:** `terraform plan` = **31 to add, 0 to change, 0 to destroy** — the entire
+> production runtime is defined as IaC yet the project stays idle (default plan makes no resource
+> changes; only output declarations resolve). Live provisioning of all the above is **deferred to
+> Program 9** to avoid recurring cloud cost. No
 > `terraform apply` was run; no DB credentials or Secret Manager values were generated. LAUNCH ORDERING
 > (Program 9): reserve LB IP → set registrar A record (apex+www) → managed cert validates → migrate →
 > health → smoke → verify. The registrar/DNS provider is external ("Other" — confirm at launch).

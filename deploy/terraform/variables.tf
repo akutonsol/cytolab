@@ -108,6 +108,30 @@ variable "domain" {
   default     = "osieri.com"
 }
 
+variable "provision_monitoring" {
+  description = "SAFETY GATE. Create Cloud Monitoring uptime checks + alert policies + notification channel. Default FALSE (readiness posture). Program 9 sets true. (Monitoring cost is negligible, but kept gated for a uniform posture.)"
+  type        = bool
+  default     = false
+}
+
+variable "alert_email" {
+  description = "Email address for the ops alert notification channel. Set to the real ops address at launch."
+  type        = string
+  default     = "alerts@osieri.com"
+}
+
+variable "provision_cicd" {
+  description = "SAFETY GATE. Create the Workload Identity Federation trust for GitHub Actions → deployer SA (keyless CI). Default FALSE (readiness posture). Program 9 sets true. (WIF itself has no recurring cost, but gated for a uniform posture.)"
+  type        = bool
+  default     = false
+}
+
+variable "github_repo" {
+  description = "GitHub repo (owner/name) allowed to impersonate the deployer SA via WIF."
+  type        = string
+  default     = "akutonsol/cytolab"
+}
+
 variable "create_cloud_sql_skeleton" {
   description = "DEPRECATED (superseded by the real Cloud SQL config in cloud_sql.tf). Retained to avoid breaking any external tfvars; no longer referenced."
   type        = bool

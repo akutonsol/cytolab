@@ -32,3 +32,13 @@ output "lb_ip_address" {
   description = "Reserved external LB IP — point the registrar A record (apex + www) here. Null until provisioned."
   value       = one(google_compute_global_address.lb_ip[*].address)
 }
+
+output "wif_provider_name" {
+  description = "Full WIF provider resource name → GitHub secret GCP_WORKLOAD_IDENTITY_PROVIDER. Null until provisioned."
+  value       = one(google_iam_workload_identity_pool_provider.github[*].name)
+}
+
+output "deployer_sa_email" {
+  description = "Deployer SA email → GitHub secret GCP_DEPLOY_SA."
+  value       = google_service_account.deployer.email
+}
