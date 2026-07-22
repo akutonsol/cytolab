@@ -10,12 +10,11 @@ terraform {
     }
   }
 
-  # State backend is a D-2B bootstrap step (the GCS bucket does not exist in D-2A).
-  # Intentionally left commented — local state by default until the bucket is provisioned.
-  # backend "gcs" {
-  #   bucket = "osieri-prod-tfstate"   # created during D-2B bootstrap
-  #   prefix = "d2a-foundation"
-  # }
+  # D-2B remote state — GCS backend (bucket bootstrapped in compact-surfer-318619, versioned).
+  backend "gcs" {
+    bucket = "osieri-tfstate-9317"
+    prefix = "d2a-foundation"
+  }
 }
 
 provider "google" {
