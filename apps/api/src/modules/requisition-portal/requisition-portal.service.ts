@@ -365,19 +365,42 @@ export class RequisitionPortalService {
     }
 
     return this.labContext.runSystem(async () => {
+      // Idempotency: a duplicate callback on an already-settled batch must not
+      // re-run gateway settlement (a second complete() capture) or re-write
+      // payment state. Short-circuit to the settled status.
+      const existing = await this.prisma.requisitionBatch.findUnique({
+        where: { id: batchId },
+        select: { paymentStatus: true },
+      });
+      if (existing?.paymentStatus === PaymentStatus.PAID) {
+        return { status: 'payment_processing', orderId: batchId };
+      }
+
       const done = await this.powertranz.complete(spiToken!);
       if (done.approved) {
         await this.markPaid(batchId, done.transactionId ?? undefined);
         return { status: 'payment_processing', orderId: batchId };
       }
-      await this.prisma.requisitionBatch.update({ where: { id: batchId }, data: { paymentStatus: PaymentStatus.FAILED } });
+      // Never clobber a PAID batch: guard the decline write the same way, so a
+      // late/replayed decline cannot flip a settled batch back to FAILED.
+      await this.prisma.requisitionBatch.updateMany({
+        where: { id: batchId, paymentStatus: { not: PaymentStatus.PAID } },
+        data: { paymentStatus: PaymentStatus.FAILED },
+      });
       return { status: 'declined', message: done.message, orderId: batchId };
     });
   }
 
-  private async markPaid(batchId: string, paymentRef?: string) {
-    await this.prisma.requisitionBatch.update({
-      where: { id: batchId },
+  /**
+   * Idempotent settlement transition. Only a batch that is NOT already PAID is
+   * flipped — `paymentStatus` is `@default(PENDING)` (never null), so `not: PAID`
+   * matches every unsettled batch. Returns whether THIS call performed the
+   * transition; a duplicate/replayed callback updates 0 rows and returns false,
+   * so `paymentPaidAt` / `paymentRef` are never overwritten by a replay.
+   */
+  private async markPaid(batchId: string, paymentRef?: string): Promise<boolean> {
+    const res = await this.prisma.requisitionBatch.updateMany({
+      where: { id: batchId, paymentStatus: { not: PaymentStatus.PAID } },
       data: {
         paymentStatus: PaymentStatus.PAID,
         paymentPaidAt: new Date(),
@@ -385,10 +408,16 @@ export class RequisitionPortalService {
         ...(paymentRef ? { paymentRef } : {}),
       },
     });
+    return res.count > 0;
   }
 
   async confirmPayment(id: string, dto: ConfirmPaymentDto) {
-    await this.getBatch(id);
+    const batch = await this.getBatch(id);
+    // Idempotent: a batch already settled is returned as-is — a re-confirm must
+    // not overwrite the recorded paymentRef / paymentPaidAt of the first settlement.
+    if (batch.paymentStatus === PaymentStatus.PAID) {
+      return batch;
+    }
     return this.prisma.requisitionBatch.update({
       where: { id },
       data: {

@@ -71,10 +71,14 @@
 | **Severity** | Critical |
 | **Likelihood** | Medium |
 | **Recommended checkpoint** | CP-2 (settlement hardening: idempotent `markPaid`, amount + token↔batch binding, gate `confirmPayment`). API-only. |
-| **Status** | Open |
-| **Verification required** | Replay no-op test; amount-mismatch rejection; cross-batch token rejection; `confirmPayment` authorization test. See TEST_STRATEGY.md §Financial. |
+| **Status** | **Partially Mitigated** — the idempotency dimension is closed; two dimensions intentionally remain open (see split below). |
+| **Closed** | • Callback settlement idempotency • Duplicate-callback protection (no second gateway `complete()` capture) • Paid-state overwrite protection (replay/late-decline cannot re-write or clobber a settled batch) |
+| **Remaining (Open)** | • Amount verification (settled vs. billed) • Token↔batch binding (an approved SpiToken for batch A must not settle batch B) |
+| **Closed by** | `fix(payments): make requisition payment callback settlement idempotent` (idempotency dimension only). |
+| **Verification** | Focused payment idempotency regression suite (`requisition-portal.payment.spec.ts`, 7 tests) ✅; TypeScript clean ✅. Remaining dimensions still need: amount-mismatch rejection ⏳; cross-batch token rejection ⏳; `confirmPayment` authorization test ⏳. See TEST_STRATEGY.md §Financial. |
 | **Owner** | Unassigned |
 | **Notes** | Discovered during R1 deep read; not in the original survey. |
+| **Resolution (idempotency)** | `markPaid` is now an atomic idempotent transition (`updateMany where paymentStatus not PAID`; `paymentStatus @default(PENDING)`, never null → the guard matches every unsettled batch; returns whether this call transitioned). `handlePaymentCallback` pre-checks the settled state and short-circuits **before** calling the gateway `complete()`, so a replayed callback triggers **no second capture** and **no re-write**; its decline write is likewise guarded so a late decline cannot flip a settled batch to FAILED. `confirmPayment` returns an already-PAID batch as-is (no overwrite of the first `paymentRef`/`paymentPaidAt`). **Evidence:** `apps/api/src/modules/requisition-portal/requisition-portal.payment.spec.ts` — 7 tests (duplicate callback = no `complete()` / no write; atomic markPaid true/false; confirmPayment idempotent + settles). `tsc --noEmit` clean. **Remaining (separate follow-up, NOT in this checkpoint):** settled-amount vs. billed-amount verification, and SpiToken↔batch binding (approved token for batch A must not settle batch B). |
 
 ## R-004 — Payment callback postMessage uses wildcard target origin; receiver validates neither origin nor source
 
