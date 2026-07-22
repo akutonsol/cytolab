@@ -365,29 +365,59 @@ export class RequisitionPortalService {
     }
 
     return this.labContext.runSystem(async () => {
-      // Idempotency: a duplicate callback on an already-settled batch must not
-      // re-run gateway settlement (a second complete() capture) or re-write
-      // payment state. Short-circuit to the settled status.
-      const existing = await this.prisma.requisitionBatch.findUnique({
+      const batch = await this.prisma.requisitionBatch.findUnique({
         where: { id: batchId },
-        select: { paymentStatus: true },
+        select: { paymentStatus: true, paymentRef: true, batchNumber: true, totalAmountCents: true },
       });
-      if (existing?.paymentStatus === PaymentStatus.PAID) {
+      if (!batch) return { status: 'declined', message: 'Unknown batch', orderId: batchId };
+
+      // Idempotency: a duplicate callback on an already-settled batch must not
+      // re-run gateway settlement (a second complete() capture) or re-write state.
+      if (batch.paymentStatus === PaymentStatus.PAID) {
         return { status: 'payment_processing', orderId: batchId };
       }
 
-      const done = await this.powertranz.complete(spiToken!);
-      if (done.approved) {
-        await this.markPaid(batchId, done.transactionId ?? undefined);
-        return { status: 'payment_processing', orderId: batchId };
+      // Token↔batch binding (pre-capture): if the callback names a transaction or
+      // order that does NOT belong to this batch, refuse BEFORE calling complete().
+      const callbackTxn = parsed.TransactionIdentifier ?? parsed.transactionIdentifier;
+      const callbackOrder = parsed.OrderIdentifier ?? parsed.orderIdentifier;
+      if (
+        (callbackTxn && batch.paymentRef && callbackTxn !== batch.paymentRef) ||
+        (callbackOrder && batch.batchNumber && callbackOrder !== batch.batchNumber)
+      ) {
+        this.logger.warn(`Payment callback identity mismatch for batch ${batchId} — refused pre-capture`);
+        return { status: 'declined', message: 'Payment validation failed', orderId: batchId };
       }
-      // Never clobber a PAID batch: guard the decline write the same way, so a
-      // late/replayed decline cannot flip a settled batch back to FAILED.
-      await this.prisma.requisitionBatch.updateMany({
-        where: { id: batchId, paymentStatus: { not: PaymentStatus.PAID } },
-        data: { paymentStatus: PaymentStatus.FAILED },
-      });
-      return { status: 'declined', message: done.message, orderId: batchId };
+
+      const done = await this.powertranz.complete(spiToken!);
+      if (!done.approved) {
+        // Never clobber a PAID batch: guard the decline write the same way, so a
+        // late/replayed decline cannot flip a settled batch back to FAILED.
+        await this.prisma.requisitionBatch.updateMany({
+          where: { id: batchId, paymentStatus: { not: PaymentStatus.PAID } },
+          data: { paymentStatus: PaymentStatus.FAILED },
+        });
+        return { status: 'declined', message: done.message, orderId: batchId };
+      }
+
+      // Authoritative token↔batch binding: the gateway-settled transaction MUST be
+      // the one minted for THIS batch (stored as paymentRef). An approved token for
+      // another batch (or an unknown transaction) must never mark this batch PAID.
+      if (!batch.paymentRef || !done.transactionId || done.transactionId !== batch.paymentRef) {
+        this.logger.error(`Payment token/batch binding mismatch for batch ${batchId} — settlement not applied`);
+        return { status: 'declined', message: 'Payment validation failed', orderId: batchId };
+      }
+
+      // Amount verification: the gateway-settled amount MUST equal the server-side
+      // billed total. Fail closed on missing/malformed/mismatched amount.
+      const settledCents = Math.round((done.settledAmount ?? Number.NaN) * 100);
+      if (!Number.isFinite(settledCents) || settledCents !== batch.totalAmountCents) {
+        this.logger.error(`Payment amount mismatch for batch ${batchId} — settlement not applied`);
+        return { status: 'declined', message: 'Payment validation failed', orderId: batchId };
+      }
+
+      await this.markPaid(batchId, done.transactionId);
+      return { status: 'payment_processing', orderId: batchId };
     });
   }
 

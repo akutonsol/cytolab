@@ -33,6 +33,9 @@ export interface CompleteResult {
   approved: boolean;
   authorizationCode?: string;
   transactionId?: string;
+  /** Gateway-confirmed settled amount, in gateway units (dollars, 2dp). Used for
+   *  server-side amount verification against the batch's billed total. */
+  settledAmount?: number;
   rrn?: string;
   cardBrand?: string;
   isoResponseCode?: string;
@@ -135,6 +138,7 @@ export class PowerTranzService {
         approved: true,
         authorizationCode: pt.AuthorizationCode,
         transactionId: pt.TransactionIdentifier,
+        settledAmount: typeof pt.TotalAmount === 'number' ? pt.TotalAmount : undefined,
         rrn: pt.RRN,
         cardBrand: pt.CardBrand,
         isoResponseCode: pt.IsoResponseCode,
