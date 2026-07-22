@@ -16,6 +16,12 @@ baseline** that Phase D-2 (infrastructure provisioning) and Phase D-3 (deploymen
 cutover) must follow. It records **only established facts**; every undecided value is marked
 **`TBD`**. It infers no cloud configuration and changes no code, infrastructure, or deployment.
 
+**Program 4 closeout (D-6, 2026-07-22):** Rev. 3 is the **frozen D-2B foundation baseline** for Program 4.
+The still-`TBD` items in **§11 Open Decisions** are the account-gated production-infrastructure work that
+Program 4 did not execute; they are carried, with disposition and blocking conditions, in
+**`PROGRAM_4_DEFERRED_ITEM_REGISTER.md` §E** (external DNS in §F). See **`PROGRAM_4_COMPLETION_REPORT.md`**
+for the readiness verdict. This note adds a cross-reference only; no provisioned value changes.
+
 **Source-of-truth inputs** (facts below are traced to these):
 `docs/architecture/TARGET_PLATFORM_ARCHITECTURE.md` ·
 `docs/architecture/HYBRID_TENANCY_AND_CUSTOM_DOMAINS.md` ·

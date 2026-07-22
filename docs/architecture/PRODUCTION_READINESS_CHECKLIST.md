@@ -1,10 +1,10 @@
 # PRODUCTION_READINESS_CHECKLIST.md
 
 **Purpose:** Provide an evolving, honest checklist of Osieri / CYTOLAB production readiness across security, reliability, compliance, and operations, so gaps are visible and tracked rather than discovered at release.
-**Scope:** Whole platform (`apps/api`, `apps/web`, operations). Reflects state verified 2026-07-13. Items are assessed from current code and configuration only.
+**Scope:** Whole platform (`apps/api`, `apps/web`, operations). Items are assessed from current code and configuration only.
 **Status:** Living document — active.
 **Owner:** Osieri Engineering (unassigned).
-**Last Updated:** 2026-07-13.
+**Last Updated:** 2026-07-22 — Program 4 closeout (D-6) status reconciliation. Rows whose blocking risk closed during Program 4 (R-001, R-002, R-003, R-004, R-005, R-007, R-008 engine divergence) are restated below; still-open items are unchanged. Deferred work is inventoried in `PROGRAM_4_DEFERRED_ITEM_REGISTER.md`.
 
 ---
 
@@ -22,16 +22,16 @@ Statuses reflect engineering observation, not a formal sign-off.
 | Item | Status | Notes |
 |---|---|---|
 | Authentication (staff + portal JWT) | Implemented | Global `JwtAuthGuard`; separate portal strategy. |
-| Authorization (permissions) | Partial | `PermissionsGuard` fail-open on missing metadata (R-001); appointments read hole (R-002). |
-| Session management (rotation, idle/max, revocation) | Implemented | Untested (R-007). |
-| MFA (TOTP/email/backup) | Implemented | Untested (R-007). |
-| Brute-force lockout + impossible-travel | Implemented | Untested (R-007). |
-| IP blocking | Implemented | Untested; X-Forwarded-For handling to verify. |
+| Authorization (permissions) | Implemented | R-001 CLOSED (fail-closed, CI-enforced authorization contract); R-002 CLOSED (appointment reads gated `appointment:view`). |
+| Session management (rotation, idle/max, revocation) | Implemented | R-007 CLOSED — regression coverage added. |
+| MFA (TOTP/email/backup) | Implemented | R-007 CLOSED — regression coverage added. |
+| Brute-force lockout + impossible-travel | Implemented | R-007 CLOSED — lockout ladder / stuffing / IP-block coverage added. |
+| IP blocking | Implemented | R-007 CLOSED — IP-block guard covered; X-Forwarded-For handling exercised. |
 | Tenant isolation | Implemented | Strong read-path tests; write-path/portal coverage to add. |
 | Secrets fail-hard startup checks + DB TLS | Implemented | `main.ts`. |
-| Helmet CSP / CORS allowlist / ValidationPipe | Implemented | CSP blocks payment callback inline script (R-005). |
-| Payment callback integrity (idempotency/amount/token binding) | Partial | Not idempotent; unverified `confirmPayment` (R-003). |
-| postMessage origin validation | Partial | Wildcard sender + unvalidated receiver (R-004). |
+| Helmet CSP / CORS allowlist / ValidationPipe | Implemented | R-005 CLOSED — route-scoped CSP (per-response nonce) on the payment callback; global Helmet unchanged. |
+| Payment callback integrity (idempotency/amount/token binding) | Implemented | R-003 CLOSED — settlement idempotency + gateway-amount check + token↔batch binding, all fail-closed. |
+| postMessage origin validation | Implemented | R-004 CLOSED — sender pinned to the portal origin; receiver validates origin/source/status/orderId. |
 | Penetration test | Deferred | Not performed. |
 | Unified audit log | Partial | Discrete events persisted; no unified subsystem. |
 
@@ -59,10 +59,10 @@ Statuses reflect engineering observation, not a formal sign-off.
 
 | Item | Status | Notes |
 |---|---|---|
-| Health endpoint | Implemented | `@Public()` `/health`; system-health checks exist. |
-| Metrics/APM | Unknown | Not confirmed from code. |
-| Alerting | Partial | Security alerts (impossible-travel, stuffing) persisted; general ops alerting Unknown. |
-| Error tracking (e.g. Sentry) | Unknown | Not confirmed. |
+| Health endpoint | Implemented | `@Public()` `/health` (liveness) + `/health/ready` (`SELECT 1`, 503 on DB failure); `health.controller.ts`. |
+| Metrics/APM | Deferred | No `/metrics` endpoint; see Deferred-Item Register §E. |
+| Alerting | Partial | Security alerts (impossible-travel, stuffing) persisted; ops alert routing/thresholds deferred (Register §E). |
+| Error tracking (e.g. Sentry) | Implemented | Sentry wired in-app (`instrument.ts`); alert routing deferred (Register §E). |
 
 ## Logging
 
@@ -101,7 +101,7 @@ Statuses reflect engineering observation, not a formal sign-off.
 | Item | Status | Notes |
 |---|---|---|
 | Reproducible build | Implemented | `next build` (`.next-prod`), Nest build. |
-| CI/CD pipeline | Deferred | No CI documented; Turborepo pipeline noted as Phase-1. |
+| CI/CD pipeline | Partial | `.github/workflows/deploy.yml` build+test job live; deploy job gated (`if: false`) pending secrets/WIF (Register §E). |
 | Migrations process | Implemented | `migrate diff` → timestamped SQL → `migrate deploy`; `db push` banned. |
 | Environment config validation | Implemented | Fail-hard secret/TLS checks at boot. |
 
@@ -119,7 +119,7 @@ Statuses reflect engineering observation, not a formal sign-off.
 |---|---|---|
 | Supported browser matrix | Unknown | Not documented. |
 | Classic/space-consuming scrollbar handling | Partial | Known constraint (shared scroll container); verify per screen. |
-| CSP-enforcing browser behavior (payment callback) | Partial | Inline script blocked under strict CSP (R-005). |
+| CSP-enforcing browser behavior (payment callback) | Implemented | R-005 CLOSED — route-scoped CSP with a per-response nonce on the callback; inline script no longer blocked. |
 
 ## Mobile
 
@@ -144,8 +144,8 @@ Statuses reflect engineering observation, not a formal sign-off.
 | Item | Status | Notes |
 |---|---|---|
 | Tenant isolation tests | Implemented | Strong. |
-| Security path tests (auth/session/MFA/IP) | Deferred | None; stale auth e2e (R-007). |
-| Financial path tests (billing/payments/payroll/tax) | Deferred | None; dual payroll engines diverge (R-008). |
+| Security path tests (auth/session/MFA/IP) | Implemented | R-007 CLOSED — focused regression suites (login-protection, MFA, IP-block, session lifecycle); e2e realigned to the cookie-session contract. |
+| Financial path tests (billing/payments/payroll/tax) | Partial | R-008 engine divergence CLOSED (single statutory core) + payroll integrity coverage; broader financial-path tests remain (Register §C). |
 | Route-level authorization tests | Partial | Guard tested in isolation only. |
 | Production verification workflow | Implemented | Manual per CLAUDE.md (typecheck/build/drive flow/pixel detector). |
 | Automated coverage gates | Deferred | No CI. |
@@ -170,6 +170,7 @@ Statuses reflect engineering observation, not a formal sign-off.
 
 ## Related documents
 - SECURITY_ARCHITECTURE.md, PERMISSION_MATRIX.md, LOGGING_STANDARD.md, TEST_STRATEGY.md, THEME_MIGRATION.md, ACCESSIBILITY_DEBT_REGISTER.md, RISK_REGISTER.md
+- PROGRAM_4_COMPLETION_REPORT.md (readiness verdict) · PROGRAM_4_DEFERRED_ITEM_REGISTER.md (deferred-work inventory)
 
 ## Future revisions
 - Resolve every **Unknown** by investigating monitoring, backups, DR, encryption-at-rest, browser matrix, and analytics, then restate the status.

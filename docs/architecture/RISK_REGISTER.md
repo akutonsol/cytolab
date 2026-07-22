@@ -4,7 +4,7 @@
 **Scope:** Backend (`apps/api`), web (`apps/web`), and cross-cutting concerns (security, observability, testing, design-system debt). Marketing site is out of scope except where noted.
 **Status:** Living document — active.
 **Owner:** Osieri Engineering (unassigned).
-**Last Updated:** 2026-07-19.
+**Last Updated:** 2026-07-22 — Program 4 closeout (D-6): the non-blocking risks not closed during Program 4 (R-006, R-009…R-013, R-015; R-014 already Deferred) are formally dispositioned **Deferred** and carried forward. Their origin/routing/blocking detail lives in `PROGRAM_4_DEFERRED_ITEM_REGISTER.md` (this register records the disposition, not a competing inventory).
 
 ---
 
@@ -136,7 +136,7 @@
 | **Severity** | Medium |
 | **Likelihood** | High |
 | **Recommended checkpoint** | CP-6 (add `catch (e)` + structured PHI-safe logs; extend pino redact). **Excludes** `diagnostic-case.service.ts` while it is under active Phase 3A work. |
-| **Status** | Open |
+| **Status** | Deferred — dispositioned at Program 4 closeout (D-6); carried in `PROGRAM_4_DEFERRED_ITEM_REGISTER.md` §A. |
 | **Verification required** | Confirm logs emit with safe structured context and zero behavior change to returned degraded state. See LOGGING_STANDARD.md. |
 | **Owner** | Unassigned |
 | **Notes** | `system-health.service.ts:64` echoes `e.message` into the HTTP response — review for host/connection-string leakage. Prisma `err.meta` must never be logged (echoes field values). |
@@ -175,12 +175,12 @@
 | **Severity** | High |
 | **Likelihood** | Medium |
 | **Recommended checkpoint** | CP-5. The two engines must be **characterized as-is** before any reconciliation. |
-| **Status** | **Divergence resolved** — both engines delegate to one authoritative statutory core. (Broader financial test expansion + the `integrityHash`/post-approval-edit tamper-evidence sub-item remain separate follow-ups.) |
+| **Status** | **Divergence resolved** — both engines delegate to one authoritative statutory core. The `integrityHash`/post-approval-edit tamper-evidence sub-item was subsequently **CLOSED** by Correctness Follow-up (1) (`fix(payroll): keep the integrity hash truthful and freeze approved runs`). Remaining follow-ups (pension pre-tax; broader financial-path tests) are carried in `PROGRAM_4_DEFERRED_ITEM_REGISTER.md` §C. |
 | **Forensic (design review)** | Two production-wired engines diverged in **three compounding** ways, all making the workforce engine over-deduct: (1) Education Tax on **gross** vs **gross−NIS**; (2) PAYE on annualised **gross** vs **gross−NIS** (NIS-deductibility); (3) PAYE nil band **1,500,096/yr** (outdated) vs **1,700,088/yr** (current). Worked example (gross JMD 300,000/mo): workforce net 23,450,200¢ vs payroll-wizard net 24,112,100¢ — a **JMD 6,619** gap per employee-month. |
 | **Resolution** | Extracted a single authoritative statutory core `common/payroll/statutory-deductions.ts` encoding the confirmed **2024/25** ruleset (NIS 3% capped; NHT 2%; statutory base = gross−NIS; Education Tax 2.25%; PAYE nil band 1,700,088/yr, 25% then 30% above 6,000,000/yr; round-per-component). **Both** engines (`payroll/payroll.service.ts` `computeAdvice`, `workforce/payroll-engine.service.ts`) now `calculateStatutoryDeductions(...)` — no duplicated NIS/NHT/EdTax/PAYE arithmetic remains in either. Engines still own gross construction, timesheet aggregation, manual/voluntary deductions, advice generation, persistence, and workflow. **Historical `PayrollEntry`/`PayAdvice` are NOT recomputed** — future calculations only. |
 | **Verification** | `common/payroll/statutory-deductions.spec.ts` — golden cases (below-band / 25% / 30% / NIS-ceiling), **characterization of the original divergence** (documents A net 23,450,200 vs B net 24,112,100, Δ 661,900), delegation equality, and a **no-duplication source-scan** (neither engine file re-implements the math). Engine B's existing specs (`payroll.compute.spec.ts`, `payroll.service.spec.ts`, `payroll.controller.spec.ts`) pass **unchanged** → behavior preserved. tsc clean. |
 | **Owner** | Unassigned |
-| **Notes** | Engine divergence is a latent correctness landmine, not merely a test gap. Out of this checkpoint (separate items): pension pre-tax deductibility; broader financial regression expansion; the `integrityHash`-not-recomputed-on-`updateAdvice` + edits-after-approval tamper-evidence defect. |
+| **Notes** | Engine divergence is a latent correctness landmine, not merely a test gap. Separate items: pension pre-tax deductibility and broader financial regression expansion remain deferred (Register §C). The `integrityHash`-not-recomputed-on-`updateAdvice` + edits-after-approval tamper-evidence defect was **CLOSED** by Correctness Follow-up (1). |
 
 ## R-009 — Design-system: raw hex and Tailwind color debt
 
@@ -196,7 +196,7 @@
 | **Severity** | Medium |
 | **Likelihood** | High (already realized as debt) |
 | **Recommended checkpoint** | CP-7 (token migration, presentation-only) on **clean files only**: `system/support`, `system`, `qc`. Dirty top offenders excluded. |
-| **Status** | Open |
+| **Status** | Deferred — dispositioned at Program 4 closeout (D-6); carried in `PROGRAM_4_DEFERRED_ITEM_REGISTER.md` §A. |
 | **Verification required** | Pixel/orange detector reports 0; visual diff unchanged. See THEME_MIGRATION.md. |
 | **Owner** | Unassigned |
 | **Notes** | Landing (`app/page.tsx`, `PlatformShowcase`, hero-v2) additionally under landing scope-lock. |
@@ -215,7 +215,7 @@
 | **Severity** | Medium |
 | **Likelihood** | High |
 | **Recommended checkpoint** | Separate future accessibility workstream (not merged with security/logging/color). |
-| **Status** | Open |
+| **Status** | Deferred — dispositioned at Program 4 closeout (D-6); carried in `PROGRAM_4_DEFERRED_ITEM_REGISTER.md` §B (WCAG applicability decision noted as its blocking condition). |
 | **Verification required** | Keyboard-only pass; axe/screen-reader audit. See ACCESSIBILITY_DEBT_REGISTER.md. |
 | **Owner** | Unassigned |
 | **Notes** | Adopting the `Modal`/`Input` primitives fixes focus-trapping and hex debt simultaneously. |
@@ -234,7 +234,7 @@
 | **Severity** | Low |
 | **Likelihood** | Medium |
 | **Recommended checkpoint** | Separate future realtime workstream. |
-| **Status** | Open |
+| **Status** | Deferred — dispositioned at Program 4 closeout (D-6); carried in `PROGRAM_4_DEFERRED_ITEM_REGISTER.md` §A. |
 | **Verification required** | Define an emit convention (mutation → event/scope) and confirm delivery. |
 | **Owner** | Unassigned |
 | **Notes** | — |
@@ -253,7 +253,7 @@
 | **Severity** | Low |
 | **Likelihood** | Medium |
 | **Recommended checkpoint** | Separate future UX workstream (per-route `loading.tsx`, standardize on primitives). |
-| **Status** | Open |
+| **Status** | Deferred — dispositioned at Program 4 closeout (D-6); carried in `PROGRAM_4_DEFERRED_ITEM_REGISTER.md` §A. |
 | **Verification required** | Experience-budget measurement (route loading ≤ 400ms / cue ≤ 200ms). |
 | **Owner** | Unassigned |
 | **Notes** | — |
@@ -272,7 +272,7 @@
 | **Severity** | Low |
 | **Likelihood** | Medium |
 | **Recommended checkpoint** | Separate future performance workstream (dynamic-import charts, split monoliths). |
-| **Status** | Open |
+| **Status** | Deferred — dispositioned at Program 4 closeout (D-6); carried in `PROGRAM_4_DEFERRED_ITEM_REGISTER.md` §A. |
 | **Verification required** | `measure:experience` on a production build (cold startup ≤ 2000ms). |
 | **Owner** | Unassigned |
 | **Notes** | Do not rewrite stable screens solely to adopt primitives (CLAUDE.md prime directive). |
@@ -291,7 +291,7 @@
 | **Severity** | Low |
 | **Likelihood** | Low |
 | **Recommended checkpoint** | Optional cleanup checkpoint (documentation-only for now; landing under scope-lock). |
-| **Status** | Deferred |
+| **Status** | Deferred — re-confirmed at Program 4 closeout (D-6); carried in `PROGRAM_4_DEFERRED_ITEM_REGISTER.md` §A. |
 | **Verification required** | Confirm zero imports before any removal. |
 | **Owner** | Unassigned |
 | **Notes** | Removal is out of scope for the current documentation checkpoint. |
@@ -310,7 +310,7 @@
 | **Severity** | Low |
 | **Likelihood** | Medium (reproducible on any ≤~700px viewport) |
 | **Recommended checkpoint** | Separate responsive-shell workstream (not part of Phase 3A; not a Diagnostic Case / A12 / Final Polish defect). |
-| **Status** | Open |
+| **Status** | Deferred — dispositioned at Program 4 closeout (D-6); carried in `PROGRAM_4_DEFERRED_ITEM_REGISTER.md` §A. |
 | **Verification required** | Define the supported-width policy; confirm the content column reflows below ~700px without clipping, verified at 390/768/1024/1440/1920. |
 | **Owner** | Unassigned |
 | **Notes** | Explicitly **not fixed** and **not introduced by** A12/Final Polish — certified as a pre-existing, global limitation. Tracked here per the Phase-3A certification (ARCHITECTURE_LEDGER.md §15). |
