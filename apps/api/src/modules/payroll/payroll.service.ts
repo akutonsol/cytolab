@@ -31,6 +31,37 @@ export function computeAdvice(i: AdviceInput): AdviceComputed {
   return { grossPay, nis, nht, edTax, paye, netPay: grossPay - totalDeductions };
 }
 
+/** Canonical inputs to the payroll run's tamper-evidence hash. */
+export interface PayrollIntegrityInput {
+  runNumber: number;
+  period: string;
+  payrollDate: Date | null;
+  totalGross: number;
+  totalNet: number;
+  advices: Array<{ employeeId: string; netPay: number }>;
+}
+
+/**
+ * The single source of truth for a payroll run's `integrityHash` (sha256 over the run's canonical
+ * financial state). Used at generation AND after every legitimate pre-approval mutation, so the
+ * stored hash always reflects the current data — never goes stale — and is a valid tamper-evidence
+ * anchor once the run is frozen at approval.
+ */
+export function computePayrollIntegrityHash(i: PayrollIntegrityInput): string {
+  return createHash('sha256')
+    .update(
+      JSON.stringify({
+        runNumber: i.runNumber,
+        period: i.period,
+        payrollDate: i.payrollDate ? i.payrollDate.toISOString() : null,
+        totalGross: i.totalGross,
+        totalNet: i.totalNet,
+        advices: i.advices.map((a) => ({ e: a.employeeId, n: a.netPay })).sort((x, y) => x.e.localeCompare(y.e)),
+      }),
+    )
+    .digest('hex');
+}
+
 const runListSelect = {
   id: true, period: true, status: true, runNumber: true, payrollDate: true,
   totalGross: true, totalDeductions: true, totalNet: true, employeeCount: true,
@@ -151,12 +182,9 @@ export class PayrollService {
     const maxRun = await this.prisma.payrollRun.aggregate({ _max: { runNumber: true } });
     const runNumber = (maxRun._max.runNumber ?? 0) + 1;
     const payrollDate = dto.payrollDate ? new Date(dto.payrollDate) : new Date();
-    const integrityHash = createHash('sha256')
-      .update(JSON.stringify({
-        runNumber, period: dto.period, payrollDate: payrollDate.toISOString(), totalGross, totalNet,
-        advices: advices.map((a) => ({ e: a.employeeId, n: a.netPay })).sort((x, y) => x.e.localeCompare(y.e)),
-      }))
-      .digest('hex');
+    const integrityHash = computePayrollIntegrityHash({
+      runNumber, period: dto.period, payrollDate, totalGross, totalNet, advices,
+    });
 
     const run = await this.prisma.payrollRun.create({
       data: {
@@ -234,6 +262,12 @@ export class PayrollService {
     });
     if (!a) throw new NotFoundException('Pay advice not found');
     if (a.status === PayAdviceStatus.Paid) throw new BadRequestException('A paid advice can no longer be edited');
+    // Approval freezes the run: an approved payroll is an immutable financial artifact. Corrections
+    // after approval require a separate reopen/re-approve workflow (out of scope), not an ordinary edit.
+    if (a.payrollRunId) {
+      const run = await this.prisma.payrollRun.findUnique({ where: { id: a.payrollRunId }, select: { approvedAt: true } });
+      if (run?.approvedAt) throw new BadRequestException('An approved payroll run is frozen; its advices can no longer be edited');
+    }
 
     const input: AdviceInput = {
       basicPay: a.basicPay,
@@ -267,12 +301,20 @@ export class PayrollService {
   }
 
   private async recomputeRunTotals(runId: string) {
-    const advices = await this.prisma.payAdvice.findMany({ where: { payrollRunId: runId }, select: { grossPay: true, netPay: true } });
+    const [run, advices] = await Promise.all([
+      this.prisma.payrollRun.findUnique({ where: { id: runId }, select: { runNumber: true, period: true, payrollDate: true } }),
+      this.prisma.payAdvice.findMany({ where: { payrollRunId: runId }, select: { employeeId: true, grossPay: true, netPay: true } }),
+    ]);
+    if (!run) return;
     const totalGross = advices.reduce((s, a) => s + a.grossPay, 0);
     const totalNet = advices.reduce((s, a) => s + a.netPay, 0);
+    // Recompute the tamper-evidence hash alongside the totals so it never goes stale.
+    const integrityHash = computePayrollIntegrityHash({
+      runNumber: run.runNumber, period: run.period, payrollDate: run.payrollDate, totalGross, totalNet, advices,
+    });
     await this.prisma.payrollRun.update({
       where: { id: runId },
-      data: { totalGross, totalNet, totalDeductions: totalGross - totalNet, employeeCount: advices.length },
+      data: { totalGross, totalNet, totalDeductions: totalGross - totalNet, employeeCount: advices.length, integrityHash },
     });
   }
 
