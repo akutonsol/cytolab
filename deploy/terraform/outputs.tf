@@ -27,3 +27,8 @@ output "db_app_password" {
   value       = one(random_password.db_app[*].result)
   sensitive   = true
 }
+
+output "lb_ip_address" {
+  description = "Reserved external LB IP — point the registrar A record (apex + www) here. Null until provisioned."
+  value       = one(google_compute_global_address.lb_ip[*].address)
+}

@@ -74,13 +74,20 @@ finite, well-understood, and account/DNS-gated. None are architectural. Sources:
 > **not applied**, so no Google Cloud costs are incurred and no production credentials are generated.
 > The "Routed To" column below therefore reads **Program 9** for these items.
 >
-> **Cloud SQL — readiness verdict (Stage 2, 2026-07-22):** the production PostgreSQL 16 definition
-> (`deploy/terraform/cloud_sql.tf` + `outputs.tf`: REGIONAL HA, `db-custom-1-3840`, automated backups
-> +PITR, `ssl_mode=ENCRYPTED_ONLY`, public IP / no authorized networks, deletion protection on both
-> layers, `osieri` DB, `osieri_app` user) was authored and validated. `terraform plan` = **4 to add,
-> 0 to change, 0 to destroy** — structurally ready for deployment; the existing foundation is untouched.
-> **Live provisioning intentionally deferred to Program 9 to avoid recurring cloud costs.** No
-> `terraform apply` was run; no DB credentials or Secret Manager values were generated.
+> **Readiness-validation status (each: Terraform authored + `validate` success + `plan`-clean, gated
+> OFF by default so the default plan is "No changes"; NO apply, NO credentials, NO secret values):**
+>
+> | Stage | Scope | Gate (default false) | Plan when enabled |
+> |---|---|---|---|
+> | 2 · Cloud SQL | PG16, REGIONAL HA, `db-custom-1-3840`, backups+PITR, `ssl_mode=ENCRYPTED_ONLY`, deletion protection, `osieri` DB + `osieri_app` user | `provision_cloud_sql` | 4 add / 0 change / 0 destroy |
+> | 3 · Cloud Run | `osieri-api` + `osieri-web` services + `osieri-migrate` job; internal-LB ingress; 8 real secrets wired from Secret Manager; CONFIG env; Cloud SQL Auth Proxy socket; startup/liveness probes on `/api/v1/health` | `provision_cloud_run` | +5 (api/web/job + 2 invokers) |
+> | 4 · Secret wiring | 8 consumed secrets referenced by Cloud Run; `JWT_REFRESH_SECRET` + `REDIS_URL` deliberately left unwired (dead — no code reads them); `PORTAL_WEB_ORIGIN`/`ALLOWED_ORIGINS` set as CONFIG env, not secrets | (folded into Stage 3) | — |
+> | 5 · HTTPS LB + SSL | external ALB, reserved global IP, serverless NEGs, path routing (`/api/*`→api, default→web), Google-managed cert (apex+www), 80→443 redirect | `provision_lb` | full compute+edge = 18 add / 0 change / 0 destroy |
+>
+> Live provisioning of all the above is **deferred to Program 9** to avoid recurring cloud cost. No
+> `terraform apply` was run; no DB credentials or Secret Manager values were generated. LAUNCH ORDERING
+> (Program 9): reserve LB IP → set registrar A record (apex+www) → managed cert validates → migrate →
+> health → smoke → verify. The registrar/DNS provider is external ("Other" — confirm at launch).
 
 | Item | Origin | Disposition | Routed To | Blocking Condition |
 |---|---|---|---|---|

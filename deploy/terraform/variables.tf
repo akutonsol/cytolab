@@ -55,9 +55,57 @@ variable "artifact_repo_id" {
 }
 
 variable "create_cloud_run_shells" {
-  description = "Create placeholder Cloud Run service/job shells now (true) or defer all Cloud Run to D-2C (false). Default false per D-2A architectural ruling — Cloud Run is created in D-2C after secrets/networking/DB/pipeline are finalized."
+  description = "DEPRECATED (superseded by the real Cloud Run definitions gated by var.provision_cloud_run). Retained to avoid breaking external tfvars; no longer referenced."
   type        = bool
   default     = false
+}
+
+variable "provision_cloud_run" {
+  description = "SAFETY GATE. Create the live, recurring-cost Cloud Run services/job. Default FALSE (readiness-validation posture). Program 9 sets this true to provision."
+  type        = bool
+  default     = false
+}
+
+variable "image_tag" {
+  description = "Container image tag to deploy (CI overrides with the commit SHA)."
+  type        = string
+  default     = "latest"
+}
+
+variable "api_prefix" {
+  description = "API global route prefix (must match the app's API_PREFIX)."
+  type        = string
+  default     = "api/v1"
+}
+
+variable "portal_web_origin" {
+  description = "Canonical portal origin for the payment iframe (app throws in prod if unset). Set to the real portal origin."
+  type        = string
+  default     = "https://osieri.com"
+}
+
+variable "allowed_origins" {
+  description = "Comma-separated CORS allow-list for the API."
+  type        = string
+  default     = "https://osieri.com,https://www.osieri.com"
+}
+
+variable "api_health_path" {
+  description = "API liveness path for Cloud Run probes (prefix + /health)."
+  type        = string
+  default     = "/api/v1/health"
+}
+
+variable "provision_lb" {
+  description = "SAFETY GATE. Create the external HTTPS load balancer + managed SSL (recurring cost + reserves a static IP). Default FALSE (readiness posture). Program 9 sets true."
+  type        = bool
+  default     = false
+}
+
+variable "domain" {
+  description = "Primary public domain. The apex + www are placed on the managed SSL certificate and routed to the web service (/api/* → the API service)."
+  type        = string
+  default     = "osieri.com"
 }
 
 variable "create_cloud_sql_skeleton" {
