@@ -3,6 +3,9 @@ terraform.tfvars
 *.auto.tfvars
 *.tfstate
 *.tfstate.*
+# Saved plan artifacts (binary, environment-specific, often credentialed) — never commit.
+*.tfplan
+plan.tfplan
 .terraform/
 .terraform.lock.hcl
 *-key.json
