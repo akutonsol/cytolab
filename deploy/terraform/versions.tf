@@ -8,6 +8,10 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 6.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 
   # D-2B remote state — GCS backend (bucket bootstrapped in compact-surfer-318619, versioned).

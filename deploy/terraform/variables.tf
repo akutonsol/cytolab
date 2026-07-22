@@ -61,9 +61,33 @@ variable "create_cloud_run_shells" {
 }
 
 variable "create_cloud_sql_skeleton" {
-  description = "Optional Cloud SQL instance skeleton. Default OFF — deferred to D-2B (backup/PITR gated by #11)."
+  description = "DEPRECATED (superseded by the real Cloud SQL config in cloud_sql.tf). Retained to avoid breaking any external tfvars; no longer referenced."
   type        = bool
   default     = false
+}
+
+variable "provision_cloud_sql" {
+  description = "SAFETY GATE. Create the live, recurring-cost Cloud SQL instance. Default FALSE for the production-readiness-VALIDATION posture (Terraform is authored + plan-clean but not applied). Program 9 — Production Launch Readiness Review sets this true to actually provision."
+  type        = bool
+  default     = false
+}
+
+variable "db_tier" {
+  description = "Cloud SQL machine tier (spec #15). Start lean — scalable live with a settings change."
+  type        = string
+  default     = "db-custom-1-3840" # 1 vCPU / 3.75 GB
+}
+
+variable "db_name" {
+  description = "Application database name."
+  type        = string
+  default     = "osieri"
+}
+
+variable "db_user" {
+  description = "Application database user. Cloud SQL grants it cloudsqlsuperuser; used by BOTH runtime and migrations for launch (future hardening: split runtime-CRUD vs migrate-DDL users)."
+  type        = string
+  default     = "osieri_app"
 }
 
 # ── Frozen identity locals (spec §5b/§5c) ─────────────────────────────────────

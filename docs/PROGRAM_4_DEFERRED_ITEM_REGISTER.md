@@ -68,6 +68,20 @@ The IaC **foundation** is applied (Artifact Registry, service accounts, IAM, ena
 Manager containers in `osieri-prod-9317`). The items below are the remaining **runtime provisioning** —
 finite, well-understood, and account/DNS-gated. None are architectural. Sources: `PROGRAM_4_PHASE_D_PRODUCTION_READINESS_AUDIT.md` §5 and `PROGRAM_4_ENVIRONMENT_SPECIFICATION.md` §11 (Open Decisions).
 
+> **Routing (decided 2026-07-22):** actual **live provisioning of every recurring-cost resource below is
+> deferred to `Program 9 — Production Launch Readiness Review`.** The current objective is
+> production-readiness *validation* only — Terraform is authored, validated, and `plan`-clean, but
+> **not applied**, so no Google Cloud costs are incurred and no production credentials are generated.
+> The "Routed To" column below therefore reads **Program 9** for these items.
+>
+> **Cloud SQL — readiness verdict (Stage 2, 2026-07-22):** the production PostgreSQL 16 definition
+> (`deploy/terraform/cloud_sql.tf` + `outputs.tf`: REGIONAL HA, `db-custom-1-3840`, automated backups
+> +PITR, `ssl_mode=ENCRYPTED_ONLY`, public IP / no authorized networks, deletion protection on both
+> layers, `osieri` DB, `osieri_app` user) was authored and validated. `terraform plan` = **4 to add,
+> 0 to change, 0 to destroy** — structurally ready for deployment; the existing foundation is untouched.
+> **Live provisioning intentionally deferred to Program 9 to avoid recurring cloud costs.** No
+> `terraform apply` was run; no DB credentials or Secret Manager values were generated.
+
 | Item | Origin | Disposition | Routed To | Blocking Condition |
 |---|---|---|---|---|
 | Cloud Run services (replace placeholder shells) | Phase-D §5 #1 | Blocked | Infra track (post-D-5) | Account/runtime provisioning |
