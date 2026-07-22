@@ -277,6 +277,10 @@ model Lab {
   recalls                 RecallRecord[]
   digitalSlides           DigitalSlide[]
   slideAnnotations        SlideAnnotation[]
+  slideIngestions         SlideIngestion[]
+  slideProcessingJobs     SlideProcessingJob[]
+  derivativeGenerations   DerivativeGeneration[]
+  slideAssets             SlideAsset[]
   aiScreenings            AIScreeningResult[]
   consultRequests         ConsultRequest[]
   medicalCodes            MedicalCode[]
@@ -784,6 +788,7 @@ model Specimen {
   dateReceived  DateTime?
   resultEntries ResultEntry[]
   images        SpecimenImage[]
+  digitalSlides DigitalSlide[] // P5-1 optional specimen-anchored slides (nullable link)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
@@ -2682,29 +2687,110 @@ model RecallRecord {
   @@index([patientId])
 }
 
+// ─── Digital Pathology — enums (Program 5A · P5-1A) ──────────────────────────
+enum SlideAvailabilityStatus {
+  DRAFT // no published derivative generation yet (or intake/processing in progress)
+  PUBLISHED // a sealed+verified generation is authoritative, OR a legacy external slide
+  ARCHIVED // withdrawn from clinical use; provenance retained
+}
+
+enum IngestionStatus {
+  UPLOADING
+  UPLOADED
+  VERIFIED // sourceChecksum computed + verified
+  FAILED
+}
+
+enum ProcessingJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  TIMED_OUT
+}
+
+enum GenerationStatus {
+  PROCESSING
+  QC_PENDING
+  QC_FAILED
+  READY // sealed + verified; NOT yet clinically published
+  PUBLISHED
+  SUPERSEDED
+  ARCHIVED
+  FAILED
+}
+
+enum TileSourceType {
+  IMAGE
+  DZI
+  IIIF
+  DICOMWEB
+}
+
+enum SlideSourceKind {
+  EXTERNAL_URL
+  UPLOAD
+  WATCH_FOLDER
+  SCANNER
+  DICOM
+}
+
+enum SlideAssetRole {
+  DZI_DESCRIPTOR
+  TILE_PYRAMID
+  LABEL
+  MACRO
+  THUMBNAIL
+}
+
 // ─── Whole Slide Imaging (Tier 5 — Enterprise) ───────────────────────────────
-// A digital whole-slide image attached to a record for remote review. The image
-// is referenced by URL (external tile server / object store); OpenSeadragon
-// renders it. A record may carry more than one slide (e.g. different stains);
-// the viewer/record-detail use the most recent.
+// Program 5A extends this from a URL-referenced slide into the root of the digital
+// pathology asset aggregate. `DigitalSlide` = the long-lived CLINICAL identity of a
+// slide; ingestion → processing job → derivative generation → asset are its
+// replaceable operational history (aggregate children). `Record` owns the clinical
+// relationship (accession/diagnosis/workflow); the slide owns the digital-asset
+// lifecycle. Legacy external `slideUrl` slides remain viewable during migration.
 model DigitalSlide {
   id       String @id @default(cuid())
   labId    String
   lab      Lab    @relation(fields: [labId], references: [id])
   recordId String
-  record   Record @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  record   Record @relation(fields: [recordId], references: [id], onDelete: Cascade) // clinical anchor; deletion policy unchanged in P5-1A
 
-  // Source image. `format` is the container/protocol (image, dzi, svs, …).
-  slideUrl      String
-  format        String  @default("image")
-  magnification String?
-  stain         String?
-  scanner       String?
-  fileSizeBytes Int?
+  // Optional specimen anchor (P5-1). Nullable by design — record-only slides remain
+  // valid. The specimen must belong to the same record + tenant (a service invariant).
+  specimenId String?
+  specimen   Specimen? @relation(fields: [specimenId], references: [id], onDelete: SetNull)
+
+  // Legacy source (retained for backward compatibility / dual-read).
+  slideUrl String
+  format   String @default("image") // legacy container hint; superseded by tileSourceType
+
+  // Acquisition metadata (intrinsic to the source image).
+  tileSourceType TileSourceType?  // backfilled from `format`; NOT NULL after backfill (Phase C)
+  sourceKind     SlideSourceKind? // backfilled EXTERNAL_URL; NOT NULL after backfill (Phase C)
+  storageKey     String?          // in-platform private source object key (null for legacy external)
+  objectivePower Float?
+  mpp            Float? // microns per pixel
+  sourceWidth    Int?
+  sourceHeight   Int?
+  magnification  String? // existing free-text (kept)
+  stain          String?
+  scanner        String?
+  fileSizeBytes  Int?
+
+  // Clinical availability + publication provenance (Refinement 3).
+  availabilityStatus    SlideAvailabilityStatus? // backfilled PUBLISHED; NOT NULL after backfill (Phase C)
+  publishedGenerationId String?               @unique
+  publishedGeneration   DerivativeGeneration? @relation("SlidePublished", fields: [publishedGenerationId], references: [id])
+  publishedAt           DateTime?
+  publishedById         String?
 
   uploadedById String?
   uploadedAt   DateTime @default(now())
 
+  ingestions  SlideIngestion[]
+  generations DerivativeGeneration[] @relation("SlideGenerations")
   annotations SlideAnnotation[]
 
   createdAt DateTime @default(now())
@@ -2712,6 +2798,9 @@ model DigitalSlide {
 
   @@index([labId])
   @@index([recordId])
+  @@index([specimenId])
+  @@index([labId, availabilityStatus])
+  @@index([labId, publishedGenerationId]) // Refinement 1 (operational lookup)
 }
 
 // A point annotation on a slide, positioned in normalized image coordinates
@@ -2734,6 +2823,121 @@ model SlideAnnotation {
 
   @@index([labId])
   @@index([slideId])
+}
+
+// ─── Digital Pathology — asset aggregate (Program 5A · P5-1A) ────────────────
+// Ingestion → ProcessingJob → DerivativeGeneration → SlideAsset. A job processes
+// exactly one ingestion; a generation is an immutable, sealed tiling result; an
+// asset belongs to exactly one generation (no cross-generation sharing).
+
+// One intake of a source object for a slide (+ source integrity).
+model SlideIngestion {
+  id      String       @id @default(cuid())
+  labId   String
+  lab     Lab          @relation(fields: [labId], references: [id])
+  slideId String
+  slide   DigitalSlide @relation(fields: [slideId], references: [id], onDelete: Cascade)
+
+  sourceKind       SlideSourceKind
+  status           IngestionStatus @default(UPLOADING)
+  sourceChecksum   String? // immutable once VERIFIED (service invariant)
+  sourceObjectKey  String? // private storage key of the uploaded original
+  originalFilename String?
+  sizeBytes        Int?
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  jobs SlideProcessingJob[]
+
+  @@index([labId])
+  @@index([slideId])
+  @@index([labId, sourceChecksum]) // duplicate-upload lookup
+}
+
+// One tiling attempt against an ingestion (executed by a background worker; system actor).
+model SlideProcessingJob {
+  id          String         @id @default(cuid())
+  labId       String
+  lab         Lab            @relation(fields: [labId], references: [id])
+  ingestionId String // Refinement 2 — a job processes exactly one ingestion
+  ingestion   SlideIngestion @relation(fields: [ingestionId], references: [id], onDelete: Cascade)
+
+  status         ProcessingJobStatus @default(QUEUED)
+  idempotencyKey String?
+  attempt        Int                 @default(1)
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  errorCode      String?
+  errorDetail    String?
+
+  generation DerivativeGeneration?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([labId, idempotencyKey])
+  @@index([labId])
+  @@index([ingestionId])
+  @@index([labId, status])
+}
+
+// One immutable, sealed derivative pyramid produced by a job. Publishable only when its
+// derivativeManifestChecksum is sealed + verified. `id` is the derivativeGenerationId.
+model DerivativeGeneration {
+  id      String             @id @default(cuid())
+  labId   String
+  lab     Lab                @relation(fields: [labId], references: [id])
+  slideId String
+  slide   DigitalSlide       @relation("SlideGenerations", fields: [slideId], references: [id], onDelete: Cascade)
+  jobId   String             @unique
+  job     SlideProcessingJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  status                     GenerationStatus @default(PROCESSING)
+  tileSourceType             TileSourceType
+  tiledWidth                 Int?
+  tiledHeight                Int?
+  tileSize                   Int?
+  levelCount                 Int?
+  derivativeManifestChecksum String? // whole-pyramid fingerprint (P5-0 §7); sealed+verified before publish
+  sealed                     Boolean   @default(false)
+  verified                   Boolean   @default(false)
+  sealedAt                   DateTime?
+  publishedAt                DateTime?
+
+  assets            SlideAsset[]
+  publishedForSlide DigitalSlide? @relation("SlidePublished")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([labId])
+  @@index([slideId])
+  @@index([slideId, status])
+  // P5-1A migration adds a raw-SQL PARTIAL UNIQUE INDEX on (slideId) WHERE status='PUBLISHED'
+  // to enforce "at most one published generation per slide" (Prisma cannot express the WHERE).
+}
+
+// One generated object within a generation (tile pyramid, descriptor, label, macro, thumbnail).
+model SlideAsset {
+  id           String               @id @default(cuid())
+  labId        String
+  lab          Lab                  @relation(fields: [labId], references: [id])
+  generationId String // single FK — an asset belongs to exactly one generation (no cross-generation sharing)
+  generation   DerivativeGeneration @relation(fields: [generationId], references: [id], onDelete: Cascade)
+
+  role       SlideAssetRole
+  storageKey String
+  checksum   String?
+  sizeBytes  Int?
+  purgedAt   DateTime? // heavy assets may be GC'd while the generation's provenance metadata is retained
+
+  createdAt DateTime @default(now())
+
+  @@index([labId])
+  @@index([generationId])
+  @@index([generationId, role])
 }
 
 // ─── AI Screening (Tier 5 — Enterprise) ──────────────────────────────────────
