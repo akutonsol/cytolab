@@ -41,10 +41,12 @@ describe('AppointmentsController — R-002 authorization contract', () => {
       expect(required).toEqual(['appointment:view']);
     });
 
-    it.each(WRITE_ROUTES)('write route %s remains permission-gated (not fail-open)', (method) => {
+    // R-008-follow-up: appointment writes gate on appointment:manage (the catalog's write-gate),
+    // NOT record:change — locks the fix against future permission drift.
+    it.each(WRITE_ROUTES)('write route %s requires appointment:manage (not record:change)', (method) => {
       const required = reflector.get<string[]>(PERMISSIONS_KEY, handlerFor(method));
-      expect(required).toBeDefined();
-      expect(required.length).toBeGreaterThan(0);
+      expect(required).toEqual(['appointment:manage']);
+      expect(required).not.toContain('record:change');
     });
   });
 
@@ -60,6 +62,33 @@ describe('AppointmentsController — R-002 authorization contract', () => {
     });
 
     it.each(READ_ROUTES)('%s ALLOWS a super role (guard bypass)', (method) => {
+      const user = { roles: ['Superuser'], permissions: [], isSuperRole: true };
+      expect(guard.canActivate(contextFor(method, user))).toBe(true);
+    });
+  });
+
+  describe('write-route enforcement (real guard) — appointment:manage', () => {
+    it.each(WRITE_ROUTES)('%s ALLOWS a front-desk role holding appointment:manage', (method) => {
+      const user = { roles: ['Receptionist'], permissions: ['appointment:view', 'appointment:manage'], isSuperRole: false };
+      expect(guard.canActivate(contextFor(method, user))).toBe(true);
+    });
+
+    it.each(WRITE_ROUTES)('%s ALLOWS a Lab Technician holding appointment:manage', (method) => {
+      const user = { roles: ['Lab Technician'], permissions: ['appointment:view', 'appointment:create', 'appointment:change', 'appointment:manage'], isSuperRole: false };
+      expect(guard.canActivate(contextFor(method, user))).toBe(true);
+    });
+
+    it.each(WRITE_ROUTES)('%s DENIES a sign-off role holding record:change but not appointment:manage', (method) => {
+      const user = { roles: ['Pathologist'], permissions: ['record:change', 'record:view'], isSuperRole: false };
+      expect(() => guard.canActivate(contextFor(method, user))).toThrow(ForbiddenException);
+    });
+
+    it.each(WRITE_ROUTES)('%s DENIES a principal with only appointment:view', (method) => {
+      const user = { roles: ['viewer'], permissions: ['appointment:view'], isSuperRole: false };
+      expect(() => guard.canActivate(contextFor(method, user))).toThrow(ForbiddenException);
+    });
+
+    it.each(WRITE_ROUTES)('%s ALLOWS a super role (guard bypass)', (method) => {
       const user = { roles: ['Superuser'], permissions: [], isSuperRole: true };
       expect(guard.canActivate(contextFor(method, user))).toBe(true);
     });

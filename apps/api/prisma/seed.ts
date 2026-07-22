@@ -122,6 +122,9 @@ async function main() {
           ['patient', 'client', 'record', 'recordstatus', 'requisition', 'resultentry', 'cabinet', 'message', 'notification', 'appointment'],
           ['view', 'create', 'change', 'submit'],
         ),
+        // Appointment writes gate on appointment:manage (the catalog's single write-gate); grant it so
+        // Lab Technicians retain their existing scheduling capability after the record:change → manage fix.
+        ...byPrefix(['appointment'], ['manage']),
         ...byPrefix(['workspace'], ['view', 'create', 'change']),
       ],
     },

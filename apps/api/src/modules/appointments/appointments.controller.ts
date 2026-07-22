@@ -36,7 +36,7 @@ export class AppointmentsController {
   stats() { return this.appts.stats(); }
 
   @Post()
-  @RequirePermissions('record:change')
+  @RequirePermissions('appointment:manage')
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateAppointmentDto) { return this.appts.create(dto, user.userId); }
 
   @Get(':id')
@@ -44,34 +44,34 @@ export class AppointmentsController {
   findOne(@Param('id') id: string) { return this.appts.findOne(id); }
 
   @Patch(':id')
-  @RequirePermissions('record:change')
+  @RequirePermissions('appointment:manage')
   update(@Param('id') id: string, @Body() dto: UpdateAppointmentDto) { return this.appts.update(id, dto); }
 
   @Delete(':id')
-  @RequirePermissions('record:change')
+  @RequirePermissions('appointment:manage')
   cancel(@Param('id') id: string, @Body() dto: CancelAppointmentDto) { return this.appts.cancel(id, dto); }
 
   @Post(':id/confirm')
-  @RequirePermissions('record:change')
+  @RequirePermissions('appointment:manage')
   confirm(@Param('id') id: string) { return this.appts.confirm(id); }
 
   @Post(':id/check-in')
-  @RequirePermissions('record:change')
+  @RequirePermissions('appointment:manage')
   checkIn(@Param('id') id: string) { return this.appts.checkIn(id); }
 
   @Post(':id/complete')
-  @RequirePermissions('record:change')
+  @RequirePermissions('appointment:manage')
   complete(@Param('id') id: string, @Body() dto: CompleteAppointmentDto) { return this.appts.complete(id, dto); }
 
   @Post(':id/no-show')
-  @RequirePermissions('record:change')
+  @RequirePermissions('appointment:manage')
   noShow(@Param('id') id: string) { return this.appts.noShow(id); }
 
   @Post(':id/reschedule')
-  @RequirePermissions('record:change')
+  @RequirePermissions('appointment:manage')
   reschedule(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: RescheduleAppointmentDto) { return this.appts.reschedule(id, dto, user.userId); }
 
   @Post(':id/send-reminder')
-  @RequirePermissions('record:change')
+  @RequirePermissions('appointment:manage')
   sendReminder(@Param('id') id: string) { return this.appts.sendReminder(id); }
 }
