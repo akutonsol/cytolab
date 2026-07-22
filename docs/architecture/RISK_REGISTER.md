@@ -51,10 +51,11 @@
 | **Severity** | High |
 | **Likelihood** | High (directly reachable today) |
 | **Recommended checkpoint** | CP-1 (add permission decorators to the six read routes + regression spec). Controller is clean in the working tree. |
-| **Status** | Open |
-| **Verification required** | Spec asserting each read route 403s a principal lacking the read permission. |
+| **Status** | **Mitigated / Closed (Platform Readiness · R-002, commit `fix(auth): close appointment read authorization gap`)** |
+| **Verification required** | Spec asserting each read route 403s a principal lacking the read permission. ✅ Met — see Resolution. |
 | **Owner** | Unassigned |
 | **Notes** | Smallest confirmed-security fix; isolated to one clean controller. |
+| **Resolution** | Gated all six read routes (`list`, `calendar`, `today`, `upcoming`, `stats`, `findOne`) with `@RequirePermissions('appointment:view')` — the correct catalog permission (NOT `record:view`, which Front Desk lacks). **Least-privilege decision (approved):** roles retaining schedule read = Superuser, Lab Technician, Receptionist; roles intentionally losing it = Authorizers, Pathologist (they hold no appointment permission by design). **Write routes unchanged** (still `record:change`); the `record:change` vs. intended `appointment:manage` write-gate mismatch is logged as a separate follow-up, deliberately out of this checkpoint's scope. **Evidence:** `apps/api/src/modules/appointments/appointments.controller.spec.ts` — 33 tests driving the real `PermissionsGuard` + real decorator metadata (per-route: requires `appointment:view`; denies a principal lacking it; allows a holder; allows super-role bypass; fails if any decorator is removed). `tsc --noEmit` clean; focused suite 33/33 green. |
 
 ## R-003 — Payment callback settlement is not idempotent and unverified
 

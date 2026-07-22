@@ -15,19 +15,24 @@ export class AppointmentsController {
   constructor(private readonly appts: AppointmentsService) {}
 
   @Get()
+  @RequirePermissions('appointment:view')
   list(@Query() q: AppointmentQueryDto) { return this.appts.list(q); }
 
   // Static routes before /:id.
   @Get('calendar')
+  @RequirePermissions('appointment:view')
   calendar(@Query() q: CalendarQueryDto) { return this.appts.calendar(q); }
 
   @Get('today')
+  @RequirePermissions('appointment:view')
   today() { return this.appts.today(); }
 
   @Get('upcoming')
+  @RequirePermissions('appointment:view')
   upcoming() { return this.appts.upcoming(); }
 
   @Get('stats')
+  @RequirePermissions('appointment:view')
   stats() { return this.appts.stats(); }
 
   @Post()
@@ -35,6 +40,7 @@ export class AppointmentsController {
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateAppointmentDto) { return this.appts.create(dto, user.userId); }
 
   @Get(':id')
+  @RequirePermissions('appointment:view')
   findOne(@Param('id') id: string) { return this.appts.findOne(id); }
 
   @Patch(':id')
