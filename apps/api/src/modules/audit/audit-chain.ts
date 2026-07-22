@@ -28,6 +28,25 @@ export class AuditChainScopeError extends Error {
 }
 
 /**
+ * R-016a — SYSTEM chain generations.
+ *
+ * Generation 0 (the bare `"system"` chainId) holds a small set of pre-P2-4C rows whose interior
+ * linkage predates the atomic head allocator, and whose `selfHash` covers `chainId` (verified in the
+ * R-016 forensic) — so they can be neither re-linked nor relocated without breaking their own hashes.
+ * That generation is FROZEN: nothing appends to it again. All new SYSTEM audit events route to the
+ * ACTIVE generation, which is genesis-fresh and fully verifiable from sequence 1.
+ *
+ * Boundary note (R-016a): the existing integrity monitor still enumerates the frozen generation and,
+ * under UNCHANGED semantics, reports it COMPROMISED. That is a known, accepted condition; the
+ * sealed-generation architecture that reclassifies it is deferred to R-016b. R-016a changes only the
+ * active write route — no monitor/verifier semantics, no historical rows, no hashes.
+ *
+ * Bump {@link ACTIVE_SYSTEM_CHAIN_ID} ONLY under an authorized generation rollover.
+ */
+export const LEGACY_SYSTEM_CHAIN_ID = 'system';
+export const ACTIVE_SYSTEM_CHAIN_ID = 'system:g1';
+
+/**
  * Derive the chain partition key from the TRUSTED organization scope (resolved from the
  * ExecutionContext, validated by the organization-scope CHECK) — never from a producer.
  *   LAB       → "lab:<scopeLabId>"   (per-tenant chain; requires scopeLabId)
@@ -46,7 +65,8 @@ export function deriveChainId(
       }
       return `lab:${scopeLabId}`;
     case 'SYSTEM':
-      return 'system';
+      // Route to the ACTIVE SYSTEM generation, never the frozen generation-0 "system" chain (R-016a).
+      return ACTIVE_SYSTEM_CHAIN_ID;
     case 'CROSS_LAB':
       return 'cross-lab';
     default: {

@@ -10,7 +10,7 @@ import {
   verifyChainRows,
 } from './audit-verification.service';
 import { AuditCanonicalFields, computeSelfHash } from './audit-hash';
-import { AUDIT_HASH_ALGORITHM, GENESIS_PREV_HASH } from './audit-chain';
+import { AUDIT_HASH_ALGORITHM, GENESIS_PREV_HASH, ACTIVE_SYSTEM_CHAIN_ID } from './audit-chain';
 
 // ---------------------------------------------------------------------------
 // Pure core (no DB): every corruption kind, using synthetic rows with real hashes.
@@ -196,7 +196,9 @@ async function cleanup() {
   // P2-R016A — this spec exercises the shared SYSTEM and CROSS_LAB chains; reset them via the guarded
   // helper (isolated test DB only), replacing the former `… IN ('system','cross-lab')` head delete
   // that caused R-016.
-  await resetIsolatedChain(prisma, 'system', 'cross-lab');
+  // R-016a: SYSTEM appends now route to the active generation; reset it too so the append below
+  // genesis-allocates cleanly (the frozen "system" chain is never written by an append anymore).
+  await resetIsolatedChain(prisma, 'system', 'cross-lab', ACTIVE_SYSTEM_CHAIN_ID);
 }
 beforeAll(cleanup);
 afterAll(async () => {
@@ -214,10 +216,10 @@ describe('AuditVerificationService.verifyChain (real DB)', () => {
     expect(res.firstError).toBeUndefined();
   });
 
-  it('verifies a SYSTEM chain and a CROSS_LAB chain', async () => {
+  it('verifies a SYSTEM chain (active generation) and a CROSS_LAB chain', async () => {
     await appendTx(mkInput('SYSTEM'));
     await appendTx(mkInput('CROSS_LAB'));
-    expect((await verifier.verifyChain({ chainId: 'system' })).verified).toBe(true);
+    expect((await verifier.verifyChain({ chainId: ACTIVE_SYSTEM_CHAIN_ID })).verified).toBe(true);
     expect((await verifier.verifyChain({ chainId: 'cross-lab' })).verified).toBe(true);
   });
 
@@ -303,7 +305,7 @@ describe('AuditVerificationService.verifyChain (real DB)', () => {
     const eventsBefore = await prisma.auditEvent.count();
     const headsBefore = await prisma.auditChainHead.count();
     await verifier.verifyChain({ chainId: 'lab:vf-lab' });
-    await verifier.verifyChain({ chainId: 'system' });
+    await verifier.verifyChain({ chainId: ACTIVE_SYSTEM_CHAIN_ID });
     expect(await prisma.auditEvent.count()).toBe(eventsBefore);
     expect(await prisma.auditChainHead.count()).toBe(headsBefore);
   });

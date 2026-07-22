@@ -8,7 +8,7 @@ import { PhiAccessDedup } from './phi-access-dedup';
 import { AuditChainService } from './audit-chain.service';
 import { AuditRecorder } from './audit-recorder.service';
 import { computeSelfHash, AuditCanonicalFields } from './audit-hash';
-import { GENESIS_PREV_HASH } from './audit-chain';
+import { GENESIS_PREV_HASH, ACTIVE_SYSTEM_CHAIN_ID, LEGACY_SYSTEM_CHAIN_ID } from './audit-chain';
 
 /**
  * Program 2 · P2-4C — end-to-end: the REAL recorder (OPERATIONAL → recorder-owned tx) → REAL
@@ -166,7 +166,9 @@ describe('AuditRecorder → chained AuditEvent (real DB, P2-4C)', () => {
     });
     expect(row!.organizationScope).toBe('SYSTEM');
     expect(row!.scopeLabId).toBeNull();
-    expect(row!.chainId).toBe('system');
+    // R-016a: SYSTEM events chain on the ACTIVE generation, never the frozen "system" chain.
+    expect(row!.chainId).toBe(ACTIVE_SYSTEM_CHAIN_ID);
+    expect(row!.chainId).not.toBe(LEGACY_SYSTEM_CHAIN_ID);
     expect(row!.sequence).not.toBeNull();
     expect(row!.selfHash).toMatch(/^[a-f0-9]{64}$/);
   });

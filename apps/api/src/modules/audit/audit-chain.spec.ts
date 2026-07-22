@@ -4,6 +4,8 @@ import {
   GENESIS_PREV_HASH,
   GENESIS_SEQUENCE,
   deriveChainId,
+  ACTIVE_SYSTEM_CHAIN_ID,
+  LEGACY_SYSTEM_CHAIN_ID,
 } from './audit-chain';
 
 describe('audit chain constants (P2-4B)', () => {
@@ -27,8 +29,12 @@ describe('deriveChainId (pure derivation, no allocation)', () => {
     expect(deriveChainId('LAB', 'lab-123')).toBe('lab:lab-123');
   });
 
-  it('SYSTEM scope → system chain', () => {
-    expect(deriveChainId('SYSTEM', null)).toBe('system');
+  it('SYSTEM scope → the ACTIVE system generation, never the frozen "system" chain (R-016a)', () => {
+    expect(deriveChainId('SYSTEM', null)).toBe(ACTIVE_SYSTEM_CHAIN_ID);
+    expect(deriveChainId('SYSTEM', null)).not.toBe(LEGACY_SYSTEM_CHAIN_ID);
+    expect(ACTIVE_SYSTEM_CHAIN_ID).not.toBe(LEGACY_SYSTEM_CHAIN_ID);
+    // Deterministic across repeated derivations (no reconnection to the legacy segment).
+    expect(deriveChainId('SYSTEM', null)).toBe(deriveChainId('SYSTEM', undefined));
   });
 
   it('CROSS_LAB scope → cross-lab chain', () => {
