@@ -11,6 +11,7 @@ import { AuditQueryReadCaptureGuard } from './query/audit-query-read-capture.gua
 import { AuditExportController } from './query/audit-export.controller';
 import { AuditExportCoordinator } from './query/audit-export.coordinator';
 import { AuditIntegrityMonitorService } from './audit-integrity-monitor.service';
+import { AuditSealRegistrarService } from './audit-seal-registrar.service';
 
 /**
  * Program 2 · P2-3 — Enterprise Audit owner module (ACTIVE).
@@ -42,7 +43,9 @@ import { AuditIntegrityMonitorService } from './audit-integrity-monitor.service'
     AuditExportCoordinator,
     // P2-R016B-C — read-only, report-only integrity monitor (startup + scheduled verification sweeps).
     AuditIntegrityMonitorService,
+    // R-016b — explicit, authorized, fail-closed writer of frozen-generation seals (never auto-run).
+    AuditSealRegistrarService,
   ],
-  exports: [AuditRecorder, AuditQueryService, AuditIntegrityMonitorService],
+  exports: [AuditRecorder, AuditQueryService, AuditIntegrityMonitorService, AuditSealRegistrarService],
 })
 export class AuditModule {}

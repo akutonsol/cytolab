@@ -1,7 +1,8 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../database/prisma.service';
-import { AuditVerificationService } from './audit-verification.service';
+import { AuditVerificationService, VerifiableAuditRow } from './audit-verification.service';
+import { snapshotGeneration, snapshotsEqual } from './audit-generation-snapshot';
 
 /**
  * Program 2 · P2-R016B-C — Audit Integrity Monitoring (READ-ONLY, REPORT-ONLY).
@@ -22,14 +23,15 @@ import { AuditVerificationService } from './audit-verification.service';
 
 export type ChainAssessmentStatus =
   | 'VERIFIED' // full verification passed AND head matches the terminal event
-  | 'COMPROMISED' // an integrity defect was found (ledger or head↔ledger)
+  | 'SEALED' // R-016b: a registered frozen generation whose full-generation snapshot still matches its seal
+  | 'COMPROMISED' // an integrity defect was found (ledger, head↔ledger, or sealed-generation tampering)
   | 'MONITORING_ERROR' // verification could not complete (DB/query/runtime) — NOT corruption
   | 'INCONCLUSIVE'; // the chain changed during assessment — an unstable observation, never reported clean
 
 /** Overall monitor state, distinct from any single chain's status. */
 export type MonitorState =
   | 'PENDING' // no sweep has completed yet
-  | 'HEALTHY' // last sweep completed; every chain VERIFIED
+  | 'HEALTHY' // last sweep completed; every active chain VERIFIED, every sealed generation SEALED, none COMPROMISED
   | 'DEGRADED' // last sweep found ≥1 COMPROMISED chain (integrity failure)
   | 'FAILED' // monitoring infrastructure failed (enumeration failed, or every chain errored)
   | 'PARTIAL'; // sweep finished but some chains were MONITORING_ERROR/INCONCLUSIVE (not conclusively clean)
@@ -60,6 +62,8 @@ export interface SweepReport {
   durationMs: number | null;
   totalChains: number;
   verified: number;
+  /** R-016b — registered frozen generations whose snapshot still matches their seal (healthy, kept visible). */
+  sealed: number;
   compromised: number;
   monitoringErrors: number;
   inconclusive: number;
@@ -144,8 +148,15 @@ export class AuditIntegrityMonitorService implements OnApplicationBootstrap {
     switch (this.state) {
       case 'PENDING':
         return { status: 'warn', value: null, message: 'audit chain integrity verification pending (no sweep completed yet)' };
-      case 'HEALTHY':
-        return { status: 'ok', value: r?.verified ?? 0, message: `all ${r?.verified ?? 0} audit chains verified` };
+      case 'HEALTHY': {
+        const v = r?.verified ?? 0;
+        const s = r?.sealed ?? 0;
+        return {
+          status: 'ok',
+          value: v + s,
+          message: s > 0 ? `all ${v + s} audit chains healthy (${v} verified, ${s} sealed)` : `all ${v} audit chains verified`,
+        };
+      }
       case 'DEGRADED':
         return {
           status: 'error',
@@ -191,6 +202,14 @@ export class AuditIntegrityMonitorService implements OnApplicationBootstrap {
     };
   }
 
+  /** R-016b — load a generation's full rows (ordered) for snapshot recomputation. Read-only. */
+  private async loadGenerationRows(chainId: string): Promise<VerifiableAuditRow[]> {
+    return (await this.prisma.auditEvent.findMany({
+      where: { chainId },
+      orderBy: { sequence: 'asc' },
+    })) as unknown as VerifiableAuditRow[];
+  }
+
   private stable(a: ChainFingerprint, b: ChainFingerprint): boolean {
     return (
       a.count === b.count &&
@@ -211,6 +230,36 @@ export class AuditIntegrityMonitorService implements OnApplicationBootstrap {
 
       let status: ChainAssessmentStatus;
       let reason: string | null = null;
+
+      // R-016b — a REGISTERED sealed generation is a FROZEN prior generation that is NOT required to
+      // verify as a live chain (its interior linkage may predate the atomic allocator). Its invariant
+      // is "unchanged since sealing", proven by recomputing the full-generation snapshot and matching
+      // the seal. This branch does NOT touch the canonical verifier. Only explicitly-sealed chainIds
+      // reach it, so an ACTIVE chain can never be reclassified SEALED (a failed active chain can never
+      // become healthy). Snapshot-shape failures (empty/missing terminal) are tamper signals →
+      // COMPROMISED; a genuine DB error still propagates to the outer catch → MONITORING_ERROR.
+      const seal = await this.prisma.auditChainSeal.findUnique({ where: { chainId } });
+      if (seal) {
+        let sealedStatus: ChainAssessmentStatus = 'COMPROMISED';
+        let sealedReason: string | null = 'sealed_generation_tampered';
+        if (before.count > 0) {
+          const rows = await this.loadGenerationRows(chainId);
+          try {
+            const actual = snapshotGeneration(rows);
+            if (snapshotsEqual(actual, seal)) {
+              sealedStatus = 'SEALED';
+              sealedReason = null;
+            }
+          } catch {
+            // empty / missing-terminal generation under an existing seal — treat as tampering.
+          }
+        }
+        const after = await this.fingerprint(chainId);
+        if (!this.stable(before, after)) {
+          return { chainId, status: 'INCONCLUSIVE', reason: 'chain_changed_during_verification', eventCount: before.count, maxSequence: before.maxSequence, headPresent: before.headLastSelfHash != null };
+        }
+        return { chainId, status: sealedStatus, reason: sealedReason, eventCount: before.count, maxSequence: before.maxSequence, headPresent: before.headLastSelfHash != null };
+      }
 
       if (before.count === 0) {
         // Only reachable when a head exists over an empty ledger (else the chain would not be enumerated).
@@ -301,7 +350,7 @@ export class AuditIntegrityMonitorService implements OnApplicationBootstrap {
       }
       this.logger.log(
         `audit-integrity sweep complete (trigger=${trigger}) state=${report.state} chains=${report.totalChains} ` +
-          `verified=${report.verified} compromised=${report.compromised} errors=${report.monitoringErrors} ` +
+          `verified=${report.verified} sealed=${report.sealed} compromised=${report.compromised} errors=${report.monitoringErrors} ` +
           `inconclusive=${report.inconclusive} durationMs=${report.durationMs?.toFixed(1)}`,
       );
       return report;
@@ -314,13 +363,16 @@ export class AuditIntegrityMonitorService implements OnApplicationBootstrap {
 
   private summarize(trigger: SweepReport['trigger'], startedAt: string, assessments: ChainAssessment[]): SweepReport {
     const verified = assessments.filter((a) => a.status === 'VERIFIED').length;
+    const sealed = assessments.filter((a) => a.status === 'SEALED').length;
     const compromised = assessments.filter((a) => a.status === 'COMPROMISED');
     const monitoringErrors = assessments.filter((a) => a.status === 'MONITORING_ERROR').length;
     const inconclusive = assessments.filter((a) => a.status === 'INCONCLUSIVE').length;
     const failuresByKind: Record<string, number> = {};
     for (const a of compromised) failuresByKind[a.reason ?? 'unknown'] = (failuresByKind[a.reason ?? 'unknown'] ?? 0) + 1;
 
-    const complete = assessments.every((a) => a.status === 'VERIFIED' || a.status === 'COMPROMISED');
+    // A sealed generation is a terminal, HEALTHY verdict (kept as a distinct count so the sealed
+    // fragment stays visible). Overall HEALTHY requires every chain VERIFIED or SEALED and none COMPROMISED.
+    const complete = assessments.every((a) => a.status === 'VERIFIED' || a.status === 'SEALED' || a.status === 'COMPROMISED');
     let state: MonitorState;
     if (assessments.length > 0 && assessments.every((a) => a.status === 'MONITORING_ERROR')) state = 'FAILED';
     else if (compromised.length > 0) state = 'DEGRADED';
@@ -335,6 +387,7 @@ export class AuditIntegrityMonitorService implements OnApplicationBootstrap {
       durationMs: null,
       totalChains: assessments.length,
       verified,
+      sealed,
       compromised: compromised.length,
       monitoringErrors,
       inconclusive,
@@ -353,7 +406,7 @@ export class AuditIntegrityMonitorService implements OnApplicationBootstrap {
   private emptyReport(trigger: SweepReport['trigger'], startedAt = new Date().toISOString()): SweepReport {
     return {
       trigger, state: this.state, startedAt, completedAt: null, durationMs: null, totalChains: 0,
-      verified: 0, compromised: 0, monitoringErrors: 0, inconclusive: 0, failuresByKind: {},
+      verified: 0, sealed: 0, compromised: 0, monitoringErrors: 0, inconclusive: 0, failuresByKind: {},
       compromisedChainIds: [], complete: false,
     };
   }

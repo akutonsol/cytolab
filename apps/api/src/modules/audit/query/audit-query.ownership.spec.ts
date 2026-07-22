@@ -3,8 +3,9 @@ import * as path from 'node:path';
 
 /**
  * P2-7B — ownership + read-only architecture guards. Only the approved owners may touch
- * prisma.auditEvent (append, verifier, the query reader, and — P2-R016B-B1 — the chain allocator's
- * read-only integrity guard); the query service and the chain allocator never mutate the ledger.
+ * prisma.auditEvent (append, verifier, the query reader, the chain allocator's read-only integrity
+ * guard — P2-R016B-B1, the integrity monitor — P2-R016B-C, and the R-016b seal registrar's read-only
+ * snapshot recompute); only the append path mutates the ledger — every other reader is read-only.
  */
 const AUDIT_DIR = path.join(__dirname, '..');
 
@@ -29,13 +30,17 @@ describe('P2-7B — audit-query ownership boundary', () => {
     // P2-R016B-C — the integrity monitor reads the ledger (groupBy/count/aggregate/findFirst/findUnique)
     // to run report-only verification sweeps. Read-only; asserted below.
     'audit-integrity-monitor.service.ts',
+    // R-016b — the seal registrar reads the ledger (findMany) to recompute a frozen generation's
+    // snapshot before sealing. It writes ONLY AuditChainSeal, never auditEvent. Read-only vs the
+    // ledger; asserted below.
+    'audit-seal-registrar.service.ts',
   ]);
 
   // Actual accessor calls (any Prisma method on the model), not prose mentions.
   const ACCESSOR = /\.auditEvent\.(findMany|findFirst|findUnique|create|createMany|update|updateMany|delete|deleteMany|upsert|count|aggregate|groupBy)\b/;
   const MUTATION = /\.auditEvent\.(create|createMany|update|updateMany|delete|deleteMany|upsert)\b/;
 
-  it('only the three approved owners access prisma.auditEvent (no controller/DTO/other reader)', () => {
+  it('only the approved owners access prisma.auditEvent (no controller/DTO/other reader)', () => {
     const offenders: string[] = [];
     for (const file of walk(AUDIT_DIR)) {
       const rel = path.relative(AUDIT_DIR, file);
@@ -55,6 +60,12 @@ describe('P2-7B — audit-query ownership boundary', () => {
     const src = fs.readFileSync(path.join(AUDIT_DIR, 'audit-integrity-monitor.service.ts'), 'utf8');
     expect(src).toMatch(ACCESSOR); // it reads (groupBy/count/aggregate/findFirst/findUnique) to verify
     expect(src).not.toMatch(MUTATION); // ...report-only; never writes the ledger
+  });
+
+  it('the seal registrar reads the ledger to recompute a snapshot but never mutates auditEvent', () => {
+    const src = fs.readFileSync(path.join(AUDIT_DIR, 'audit-seal-registrar.service.ts'), 'utf8');
+    expect(src).toMatch(ACCESSOR); // it reads (findMany) to snapshot the generation before sealing
+    expect(src).not.toMatch(MUTATION); // ...it writes AuditChainSeal, never auditEvent
   });
 
   it('the query controller has no Prisma dependency and no ledger accessor', () => {

@@ -4184,6 +4184,25 @@ model AuditChainHead {
   updatedAt    DateTime @updatedAt
 }
 
+/// R-016b — an authorized, APPEND-ONLY seal for a FROZEN prior chain generation. A sealed generation
+/// is not required to verify as a live chain; instead the integrity monitor proves it is UNCHANGED
+/// since sealing by recomputing `snapshotDigest` (a full-generation fingerprint over every event) and
+/// matching it here. There is deliberately NO update/delete path — seals are immutable, and the
+/// monitor never creates them (sealing is an explicit, authorized, fail-closed operation).
+model AuditChainSeal {
+  chainId          String   @id
+  reason           String
+  sealedAt         DateTime @default(now())
+  sealedBy         String?
+  eventCount       Int
+  terminalSequence BigInt
+  terminalSelfHash String
+  /// sha256 over EVERY event of the generation in canonical sequence order (canonical content + the
+  /// stored selfHash of each). The AUTHORITATIVE immutability check — detects any interior-row change
+  /// that the terminal fingerprint (count + terminal sequence/selfHash) cannot.
+  snapshotDigest   String
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // PLATFORM BILLING — the platform invoicing a Lab as its customer.
 // Distinct from Bill/BillLine/Payment (which is a lab billing ITS OWN clients
