@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Patch, Post, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { AuthorizationContract } from '../../common/decorators/authorization-contract.decorator';
 import { ChangePasswordDto, CreateUserDto, SaveSignatureDto, UpdatePreferencesDto, UpdateUserDto } from './dto/user.dto';
 import { UsersService } from './users.service';
 
@@ -14,22 +15,26 @@ export class UsersController {
   // ── Own signature (no extra permission — a user manages their own). Declared
   //    before :id so the two-segment path is unambiguous. ──
   @Get('me/signature')
+  @AuthorizationContract('authenticated')
   getMySignature(@CurrentUser() user: AuthUser) {
     return this.users.getMySignature(user.userId);
   }
 
   @Put('me/signature')
+  @AuthorizationContract('authenticated')
   saveMySignature(@CurrentUser() user: AuthUser, @Body() dto: SaveSignatureDto) {
     return this.users.saveMySignature(user.userId, dto.signatureDataUri);
   }
 
   // ── Own UI preferences (guided assistance) — a user manages their own. ──
   @Get('me/preferences')
+  @AuthorizationContract('authenticated')
   getMyPreferences(@CurrentUser() user: AuthUser) {
     return this.users.getMyPreferences(user.userId);
   }
 
   @Patch('me/preferences')
+  @AuthorizationContract('authenticated')
   updateMyPreferences(@CurrentUser() user: AuthUser, @Body() dto: UpdatePreferencesDto) {
     return this.users.updateMyPreferences(user.userId, dto);
   }
@@ -66,6 +71,7 @@ export class UsersController {
   }
 
   @Put('password/change')
+  @AuthorizationContract('authenticated')
   changePassword(@CurrentUser() user: AuthUser, @Body() dto: ChangePasswordDto) {
     return this.users.changePassword(user.userId, dto);
   }

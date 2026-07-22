@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { AuthorizationContract } from '../../common/decorators/authorization-contract.decorator';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { KnowledgeBaseService } from './knowledge-base.service';
 import {
@@ -28,6 +29,7 @@ export class KnowledgeBaseController {
   }
 
   @Get('categories')
+  @AuthorizationContract('authenticated')
   listCategories() {
     return this.kb.listCategories();
   }
@@ -47,6 +49,7 @@ export class KnowledgeBaseController {
   // ─── Search + stats (declared before :slug to avoid route capture) ──────────
 
   @Get('search')
+  @AuthorizationContract('authenticated')
   search(@Query() query: SearchQueryDto) {
     return this.kb.search(query);
   }
@@ -66,11 +69,13 @@ export class KnowledgeBaseController {
   }
 
   @Get('articles')
+  @AuthorizationContract('authenticated')
   listArticles(@CurrentUser() user: AuthUser, @Query() query: ArticleQueryDto) {
     return this.kb.listArticles(user, query);
   }
 
   @Get('articles/:slug')
+  @AuthorizationContract('authenticated')
   getArticle(@CurrentUser() user: AuthUser, @Param('slug') slug: string) {
     return this.kb.getArticleBySlug(user, slug);
   }
@@ -94,6 +99,7 @@ export class KnowledgeBaseController {
   }
 
   @Post('articles/:slug/feedback')
+  @AuthorizationContract('authenticated')
   submitFeedback(@CurrentUser() user: AuthUser, @Param('slug') slug: string, @Body() dto: FeedbackDto) {
     return this.kb.submitFeedback(user, slug, dto);
   }

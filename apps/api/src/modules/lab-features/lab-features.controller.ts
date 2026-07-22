@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SuperuserGuard } from '../auth/guards/superuser.guard';
+import { AuthorizationContract } from '../../common/decorators/authorization-contract.decorator';
 import { LabFeaturesService } from './lab-features.service';
 import { ToggleFeatureDto } from './dto/lab-features.dto';
 
@@ -17,6 +18,7 @@ export class LabFeaturesController {
    * still authenticated so the tenancy layer knows which lab to scope to.
    */
   @Get('enabled')
+  @AuthorizationContract('authenticated')
   enabled() {
     return this.features.enabledForLab();
   }

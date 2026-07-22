@@ -4,6 +4,7 @@ import { RequireFeature } from '../../common/decorators/require-feature.decorato
 import { FeatureGuard } from '../../common/guards/feature.guard';
 import { WorkforceManagerGuard } from './guards/manager.guard';
 import { WorkforceReportsService } from './workforce-reports.service';
+import { AuthorizationContract } from '../../common/decorators/authorization-contract.decorator';
 import { AttendanceReportQuery, DateRangeReportQuery } from './dto/workforce-phase2.dto';
 
 // All report endpoints require Workforce enabled + a manager/admin.
@@ -11,6 +12,9 @@ import { AttendanceReportQuery, DateRangeReportQuery } from './dto/workforce-pha
 @ApiBearerAuth()
 @RequireFeature('WORKFORCE_MANAGEMENT')
 @UseGuards(FeatureGuard, WorkforceManagerGuard)
+// Authorization is the WorkforceManagerGuard (manager/admin), not a role
+// permission — declared explicitly so it is not fail-open-by-omission (R-001a).
+@AuthorizationContract('authenticated')
 @Controller()
 export class WorkforceReportsController {
   constructor(private reports: WorkforceReportsService) {}

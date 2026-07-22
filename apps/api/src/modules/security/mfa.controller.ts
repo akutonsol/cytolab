@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthorizationContract } from '../../common/decorators/authorization-contract.decorator';
 import { MfaService } from './mfa.service';
 import { MfaCodeDto } from './dto/security.dto';
 
@@ -8,6 +9,9 @@ import { MfaCodeDto } from './dto/security.dto';
 @ApiTags('mfa')
 @ApiBearerAuth()
 @Controller('auth/mfa')
+// Self-service MFA on the caller's own account — authorization is the authenticated
+// identity itself, not a role permission (R-001a authorization contract).
+@AuthorizationContract('authenticated')
 export class MfaController {
   constructor(private mfa: MfaService) {}
 

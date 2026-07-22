@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import { AuthorizationContract } from '../../common/decorators/authorization-contract.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -41,6 +42,7 @@ export class SupportController {
   // own lab scope and superusers are notified. Management of tickets stays
   // gated on system:health below.
   @Post('tickets')
+  @AuthorizationContract('authenticated')
   createTicket(@CurrentUser() user: AuthUser, @Body() dto: CreateTicketDto) {
     return this.support.createTicket(user, dto);
   }
@@ -149,6 +151,7 @@ export class SupportController {
 
   // Any authenticated user in the lab — the app-shell banner polls this per load.
   @Get('announcements/active')
+  @AuthorizationContract('authenticated')
   activeAnnouncements() {
     return this.support.activeAnnouncements();
   }

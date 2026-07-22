@@ -1,6 +1,7 @@
 import { Controller, Get, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthorizationContract } from '../../common/decorators/authorization-contract.decorator';
 import { SecurityService } from './security.service';
 import { SessionService } from './session.service';
 
@@ -8,6 +9,9 @@ import { SessionService } from './session.service';
 @ApiTags('profile-security')
 @ApiBearerAuth()
 @Controller('auth/profile')
+// Self-service: the signed-in user's own sessions / login history (scoped by
+// user.userId) — authorization is the authenticated identity (R-001a).
+@AuthorizationContract('authenticated')
 export class ProfileSecurityController {
   constructor(
     private security: SecurityService,

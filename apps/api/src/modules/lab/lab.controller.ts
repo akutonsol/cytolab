@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Post, Put, UploadedFile, UseInterceptors
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { AuthorizationContract } from '../../common/decorators/authorization-contract.decorator';
 import { LabService } from './lab.service';
 import { UpdateLabProfileDto } from './dto/lab.dto';
 
@@ -19,6 +20,7 @@ export class LabController {
   // Auth-only: the dashboard shell brands itself with this for every staff user,
   // not just those who can edit company settings. Returns identity fields only.
   @Get('branding')
+  @AuthorizationContract('authenticated')
   getBranding() {
     return this.lab.getBranding();
   }
