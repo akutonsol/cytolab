@@ -32,10 +32,12 @@
 | **Severity** | High |
 | **Likelihood** | Medium (a forgotten decorator silently fails open) |
 | **Recommended checkpoint** | CP-3 (explicit authorization contract + startup policy assertion, then fail-closed flip). Gated behind CP-1. |
-| **Status** | Open |
-| **Verification required** | Route-level enforcement test; startup assertion that every non-`@Public` route declares a policy. |
+| **Status** | **Mitigated / Closed** — PermissionsGuard now fails closed; every production handler carries a recognized authorization contract, CI-enforced. |
+| **Resolution** | Delivered in two phases. **R-001a** (`feat(auth): declare explicit authorization contracts before fail-closed enforcement`): new generalized `@AuthorizationContract(kind)` decorator; 34 previously-implicit routes annotated; `authz-contract.arch.spec.ts` fails CI if any handler lacks a recognized contract (permissions/public/portal/authorizationContract/SuperuserGuard; FeatureGuard **not** accepted). **R-001b** (`fix(auth): enforce fail-closed authorization contracts`): PermissionsGuard flipped fail-closed — a handler with no recognized contract is **denied** (no fail-open-by-omission). Effective order: @Public → allow; @Portal → stand down (PortalAuthGuard + client-scoped tenancy + service ownership govern); no principal → deny; super-role → allow; @RequirePermissions → allow iff all held; @AuthorizationContract('authenticated') → allow; empty/malformed perms → deny; unknown contract → deny; no contract → deny. Metadata override semantics (`getAllAndOverride`) preserved. **Portal spot-audit (26 handlers): PASS** — all portal-touched models carry `clientId`; the tenancy extension fail-closed client-scopes every portal query (Rule B) and the one lab-scope-drop path (report PDF) proves ownership first; no cross-tenant gap. No role grants / seed / schema changes. |
+| **Closed by** | `feat(auth): declare explicit authorization contracts before fail-closed enforcement` (R-001a) + `fix(auth): enforce fail-closed authorization contracts` (R-001b). |
+| **Verification** | `tsc --noEmit` clean ✅; real-guard regression suite `permissions.guard.spec.ts` **18 tests** ✅; `authz-contract.arch.spec.ts` **0 unclassified handlers** ✅; auth/roles/portal-auth suites (33) + portal e2e (17) green under the fail-closed guard ✅. |
 | **Owner** | Unassigned |
-| **Notes** | Fail-closed cannot be a one-line change — it would break all portal, self-service, and alternate-guard routes until each declares an explicit policy. See PERMISSION_MATRIX.md. |
+| **Notes** | Fail-closed was NOT a one-line change — it required every portal, self-service, and alternate-guard route to declare an explicit policy first (R-001a), verified by the architecture invariant before the flip. See PERMISSION_MATRIX.md. |
 
 ## R-002 — Appointments read routes are an accidental fail-open hole
 
