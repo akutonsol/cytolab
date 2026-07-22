@@ -1,13 +1,15 @@
 # Program 4 · Environment Specification
 
-**Status:** REVISION 2 — Identity Resolution (documentation-only; awaiting architectural review before
-commit). Base baseline frozen at `0bb120f`. This revision resolves the HIGH identity blockers (§5, and
-Open Decisions #1/#2/#4/#8/#9) into authoritative values; it provisions nothing.
-**Checkpoint:** Program 4 · Environment Specification Revision (Identity Resolution) — documentation only
-**Date:** 2026-07-21 (Rev 2)
-**Rev-2 identity decisions (owner-ratified):** pooled-prod = **new clean `osieri-prod`** project; demo =
-**Render + Neon (non-GCP, separate stream)**; deploy auth = **Deploy SA JSON key** (WIF declined for
-launch, retained as recommended future hardening).
+**Status:** REVISION 3 — Deployed Foundation (documentation-only). Freezes the **D-2B-applied** pooled-prod
+foundation exactly as it exists (2026-07-21). Rev 2 frozen at `aa2fd28`. This revision records the
+**ACTUAL provisioned values** and becomes the **authoritative deployment baseline for D-3**.
+**Checkpoint:** Program 4 · Environment Specification Rev. 3 (Deployed Foundation) — documentation only
+**Date:** 2026-07-21 (Rev 3)
+**Rev-3 change:** D-2B applied — the pooled-prod foundation is **LIVE** in a new GCP project. The Rev-2
+placeholder `osieri-prod` is superseded by the actually-created **`osieri-prod-9317`** (`osieri-prod` was
+globally taken). Values in the "Deployed foundation" table below are **provisioned facts, not plans**.
+**Rev-2 identity decisions (still in force):** pooled-prod = new clean project; demo = **Render + Neon**
+(non-GCP, separate stream); deploy auth = **Deploy SA JSON key** (WIF declined for launch).
 **Owner:** Osieri platform / deployment (individual owner TBD)
 **Governance:** This document, once reviewed and frozen, becomes the **immutable deployment
 baseline** that Phase D-2 (infrastructure provisioning) and Phase D-3 (deployment rehearsal &
@@ -20,7 +22,33 @@ cutover) must follow. It records **only established facts**; every undecided val
 `docs/deploy/DEPLOYMENT.md` · `docs/deploy/CYTOLABS_ACCOUNT_PROVISIONING.md` ·
 `docs/migration/CUTOVER_RUNBOOK.md` · `docs/architecture/PRODUCTION_READINESS_CHECKLIST.md` ·
 `.github/workflows/deploy.yml` · `apps/api/Dockerfile` · `apps/web/Dockerfile` ·
-`apps/api/.env.example` · Program 4 · Phase D-1 hardening (`1fe5d28`).
+`apps/api/.env.example` · Program 4 · Phase D-1 hardening (`1fe5d28`) ·
+**deployed state:** `deploy/terraform` + GCS `gs://osieri-tfstate-9317/d2a-foundation`.
+
+---
+
+## Rev. 3 — Deployed pooled-prod foundation (D-2B applied 2026-07-21) · AUTHORITATIVE BASELINE FOR D-3
+
+Provisioned via `deploy/terraform` (`hashicorp/google` 6.50.0) on a **remote GCS backend**. Post-apply
+`terraform plan` = **"No changes. Your infrastructure matches the configuration"** (state == reality).
+Blast radius = exactly this **52-resource** foundation; nothing else was created.
+
+| Attribute | Value (deployed fact) |
+|---|---|
+| **Pooled-prod GCP project** | **`osieri-prod-9317`** (created; `osieri-prod` was globally taken) |
+| Region | `us-central1` |
+| Billing account | `01A4FA-86F6D1-1A16AC` ("My Billing Account 1") |
+| **Terraform remote state** | `gs://osieri-tfstate-9317` (**versioned**, hosted in `compact-surfer-318619`), backend prefix **`d2a-foundation`**. No local state. |
+| Provider lock | `hashicorp/google` **6.50.0** (frozen) |
+| **Artifact Registry** | repo **`osieri`** — format **DOCKER** — `us-central1` |
+| **Service accounts** | `osieri-deployer`, `osieri-api-run`, `osieri-web-run`, `osieri-migrate` (all `@osieri-prod-9317.iam.gserviceaccount.com`) |
+| **Secret Manager** (empty containers — **NO secret values**) | `osieri-prod-` × { `DATABASE_URL`, `DATABASE_MIGRATION_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `JWT_PORTAL_SECRET`, `JWT_PORTAL_REFRESH_SECRET`, `ENCRYPTION_KEY`, `ANTHROPIC_API_KEY`, `POWERTRANZ_ID`, `POWERTRANZ_PASSWORD`, `REDIS_URL` } (**11**) |
+| **Enabled APIs** (declared, managed) | `run`, `sqladmin`, `artifactregistry`, `secretmanager`, `iam`, `iamcredentials`, `cloudresourcemanager`, `serviceusage`, `logging`, `clouderrorreporting` — **plus GCP-auto transitive**: `containerregistry`, `pubsub`, `storage-api`, `storage-component`, `telemetry` (dependency side-effects, not TF-managed resources) |
+| IAM | deployer → `run.admin` + `serviceusage.serviceUsageConsumer` + AR writer + act-as the 3 runtime SAs; api/migrate → `cloudsql.client` + `logging.logWriter` + secret accessor; web → `logging.logWriter` + AR reader; project data-access **audit config** |
+| **Intentionally ABSENT at this stage** | **Cloud SQL · Cloud Run · VPC/networking · load balancers · compute** — deferred to later D-phases (verified: **0** SQL instances, **0** Run services, **0** forwarding rules). Cost ≈ **$0/month**. |
+| Auth model | Terraform authenticates via `GOOGLE_OAUTH_ACCESS_TOKEN` minted from the gcloud CLI login (`akutonsolutions@gmail.com`); the Deploy SA (`osieri-deployer`) is the launch CI mechanism (Rev-2 decision). |
+
+**Open-decision status after Rev. 3:** #1 (pooled-prod project) **RESOLVED** → `osieri-prod-9317`. Demo stays Render+Neon (non-GCP). The CytoLabs **silo** remains account-gated (separate track). Cloud SQL role/version, backup–DR, scaling profiles, and monitoring/APM are the subjects of the **later D-phases** (D-3→D-5), not this foundation.
 
 ---
 
