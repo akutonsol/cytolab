@@ -4,18 +4,7 @@ import { PayAdviceStatus, PayrollRunStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { paginate } from '../../common/dto/pagination.dto';
 import { ApproveRunDto, PayAdviceQueryDto, PayrollQueryDto, ProcessPayrollDto, UpdatePayAdviceDto } from './dto/payroll.dto';
-
-// ── Jamaican statutory payroll deductions (employee side), monthly. All money is
-// in minor units (cents). Rates/thresholds approximate the 2024/25 tables and
-// are centralised so a lab can tune them.
-const NIS_RATE = 0.03;
-const NIS_MONTHLY_CEILING = 41_666_667; // cents (~JMD 5,000,000 / yr)
-const NHT_RATE = 0.02;
-const EDTAX_RATE = 0.0225;
-const PAYE_THRESHOLD = 14_167_400; // cents/month (~JMD 1,700,088 / yr)
-const PAYE_HIGHER_THRESHOLD = 50_000_000; // cents/month statutory income (~JMD 6,000,000 / yr)
-const PAYE_RATE_1 = 0.25;
-const PAYE_RATE_2 = 0.3;
+import { calculateStatutoryDeductions } from '../../common/payroll/statutory-deductions';
 
 export interface AdviceInput {
   basicPay: number;
@@ -31,21 +20,14 @@ export interface AdviceComputed {
   grossPay: number; nis: number; nht: number; edTax: number; paye: number; netPay: number;
 }
 
-/** Pure statutory-deduction calculator (exported for unit testing). */
+/**
+ * Pay-advice computation. Gross construction + voluntary deductions (pension/reimbursement/other)
+ * are owned here; the statutory deductions come from the single shared authoritative core (R-008).
+ */
 export function computeAdvice(i: AdviceInput): AdviceComputed {
   const grossPay = i.basicPay + (i.overtime ?? 0) + (i.allowances ?? 0) + (i.commission ?? 0) + (i.bonus ?? 0);
-  const nis = Math.round(Math.min(grossPay, NIS_MONTHLY_CEILING) * NIS_RATE);
-  const nht = Math.round(grossPay * NHT_RATE);
-  const statutory = grossPay - nis; // NIS is deductible before edTax + PAYE
-  const edTax = Math.round(statutory * EDTAX_RATE);
-  let paye = 0;
-  if (statutory > PAYE_THRESHOLD) {
-    const band1 = Math.min(statutory, PAYE_HIGHER_THRESHOLD) - PAYE_THRESHOLD;
-    paye = band1 * PAYE_RATE_1;
-    if (statutory > PAYE_HIGHER_THRESHOLD) paye += (statutory - PAYE_HIGHER_THRESHOLD) * PAYE_RATE_2;
-    paye = Math.round(paye);
-  }
-  const totalDeductions = nis + nht + edTax + paye + (i.pension ?? 0) + (i.reimbursement ?? 0) + (i.otherDeductions ?? 0);
+  const { nis, nht, edTax, paye, total: statutoryTotal } = calculateStatutoryDeductions(grossPay);
+  const totalDeductions = statutoryTotal + (i.pension ?? 0) + (i.reimbursement ?? 0) + (i.otherDeductions ?? 0);
   return { grossPay, nis, nht, edTax, paye, netPay: grossPay - totalDeductions };
 }
 

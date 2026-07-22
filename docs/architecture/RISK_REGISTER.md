@@ -174,10 +174,12 @@
 | **Severity** | High |
 | **Likelihood** | Medium |
 | **Recommended checkpoint** | CP-5. The two engines must be **characterized as-is** before any reconciliation. |
-| **Status** | Open |
-| **Verification required** | Golden-case gross→net per engine; tax rounding boundaries; integrity-hash lifecycle. |
+| **Status** | **Divergence resolved** — both engines delegate to one authoritative statutory core. (Broader financial test expansion + the `integrityHash`/post-approval-edit tamper-evidence sub-item remain separate follow-ups.) |
+| **Forensic (design review)** | Two production-wired engines diverged in **three compounding** ways, all making the workforce engine over-deduct: (1) Education Tax on **gross** vs **gross−NIS**; (2) PAYE on annualised **gross** vs **gross−NIS** (NIS-deductibility); (3) PAYE nil band **1,500,096/yr** (outdated) vs **1,700,088/yr** (current). Worked example (gross JMD 300,000/mo): workforce net 23,450,200¢ vs payroll-wizard net 24,112,100¢ — a **JMD 6,619** gap per employee-month. |
+| **Resolution** | Extracted a single authoritative statutory core `common/payroll/statutory-deductions.ts` encoding the confirmed **2024/25** ruleset (NIS 3% capped; NHT 2%; statutory base = gross−NIS; Education Tax 2.25%; PAYE nil band 1,700,088/yr, 25% then 30% above 6,000,000/yr; round-per-component). **Both** engines (`payroll/payroll.service.ts` `computeAdvice`, `workforce/payroll-engine.service.ts`) now `calculateStatutoryDeductions(...)` — no duplicated NIS/NHT/EdTax/PAYE arithmetic remains in either. Engines still own gross construction, timesheet aggregation, manual/voluntary deductions, advice generation, persistence, and workflow. **Historical `PayrollEntry`/`PayAdvice` are NOT recomputed** — future calculations only. |
+| **Verification** | `common/payroll/statutory-deductions.spec.ts` — golden cases (below-band / 25% / 30% / NIS-ceiling), **characterization of the original divergence** (documents A net 23,450,200 vs B net 24,112,100, Δ 661,900), delegation equality, and a **no-duplication source-scan** (neither engine file re-implements the math). Engine B's existing specs (`payroll.compute.spec.ts`, `payroll.service.spec.ts`, `payroll.controller.spec.ts`) pass **unchanged** → behavior preserved. tsc clean. |
 | **Owner** | Unassigned |
-| **Notes** | Engine divergence is a latent correctness landmine, not merely a test gap. |
+| **Notes** | Engine divergence is a latent correctness landmine, not merely a test gap. Out of this checkpoint (separate items): pension pre-tax deductibility; broader financial regression expansion; the `integrityHash`-not-recomputed-on-`updateAdvice` + edits-after-approval tamper-evidence defect. |
 
 ## R-009 — Design-system: raw hex and Tailwind color debt
 

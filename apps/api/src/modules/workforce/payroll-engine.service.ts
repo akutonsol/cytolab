@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { LeaveRequestStatus, PayrollPeriodStatus, Prisma, TimesheetStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CreatePayrollPeriodDto } from './dto/workforce-phase3.dto';
+import { calculateStatutoryDeductions } from '../../common/payroll/statutory-deductions';
 
 const DAY = 86_400_000;
 const dayStart = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
@@ -13,23 +14,8 @@ const WORK_DAYS_PER_MONTH = 22;
 const WORK_HOURS_PER_DAY = 8;
 const MONTHLY_WORK_HOURS = WORK_DAYS_PER_MONTH * WORK_HOURS_PER_DAY; // 176
 
-// Jamaican statutory deduction rates (employee side).
-const NIS_RATE = 0.03;
-const NIS_ANNUAL_CEILING_CENTS = 5_000_000 * 100; // insurable-wage ceiling per year
-const NHT_RATE = 0.02;
-const EDUCATION_TAX_RATE = 0.0225;
-// PAYE progressive annual bands (cents).
-const PAYE_NIL_BAND_CENTS = 1_500_096 * 100; // 0% up to here
-const PAYE_MID_CEILING_CENTS = 6_000_000 * 100; // 25% up to here, 30% above
-
-/** Annual PAYE (cents) for an annualised gross, per the progressive brackets. */
-function annualPaye(annualGrossCents: number): number {
-  if (annualGrossCents <= PAYE_NIL_BAND_CENTS) return 0;
-  const midBand = Math.min(annualGrossCents, PAYE_MID_CEILING_CENTS) - PAYE_NIL_BAND_CENTS;
-  let paye = midBand * 0.25;
-  if (annualGrossCents > PAYE_MID_CEILING_CENTS) paye += (annualGrossCents - PAYE_MID_CEILING_CENTS) * 0.30;
-  return paye;
-}
+// Statutory deductions come from the single shared authoritative core (R-008) — no duplicated
+// NIS/NHT/Education-Tax/PAYE arithmetic lives in this engine.
 
 @Injectable()
 export class PayrollEngineService {
@@ -123,13 +109,10 @@ export class PayrollEngineService {
         (overtimeMinutes / 60) * hourlyRateCents * (otMultiplier / 100),
       );
 
-      // Statutory deductions (all cents).
-      const insurable = Math.min(grossCents, NIS_ANNUAL_CEILING_CENTS / 12);
-      const nisCents = round(insurable * NIS_RATE);
-      const nhtCents = round(grossCents * NHT_RATE);
-      const educationTaxCents = round(grossCents * EDUCATION_TAX_RATE);
-      const payeCents = round(annualPaye(grossCents * 12) / 12);
-      const totalDeductionsCents = nisCents + nhtCents + educationTaxCents + payeCents;
+      // Statutory deductions (all cents) — delegated to the shared authoritative core (R-008).
+      const {
+        nis: nisCents, nht: nhtCents, edTax: educationTaxCents, paye: payeCents, total: totalDeductionsCents,
+      } = calculateStatutoryDeductions(grossCents);
       const netCents = grossCents - totalDeductionsCents;
 
       // Approved leave days taken within the month.
