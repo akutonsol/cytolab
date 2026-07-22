@@ -7,7 +7,7 @@
  */
 module.exports = {
   testEnvironment: 'node',
-  roots: ['<rootDir>/src/lib/audit'],
+  roots: ['<rootDir>/src/lib/audit', '<rootDir>/src/lib/portal'],
   testMatch: ['**/*.spec.ts'],
   moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },
   transform: {

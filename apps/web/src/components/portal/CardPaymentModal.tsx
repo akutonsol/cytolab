@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { CreditCard, Loader2, X, Lock } from 'lucide-react';
 import { portalApi } from '@/lib/portal-api';
+import { validateCallbackMessage, expectedCallbackOrigin } from '@/lib/portal/callback-message';
 
 interface Props {
   batchId: string;
@@ -63,20 +64,27 @@ export function CardPaymentModal({ batchId, amountLabel, onClose, onPaid }: Prop
     wroteFor.current = redirectData;
   }, [phase, redirectData]);
 
-  // The callback HTML postMessages the parent when 3DS auth completes.
+  // The callback HTML postMessages the parent when 3DS auth completes. Accept the
+  // message ONLY from the expected origin + the active iframe window, with a supported
+  // status for THIS batch (R-004b). The authenticated status poll below remains the
+  // source of payment truth, so an ignored message only fails to advance a UI phase.
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
-      const data = e.data;
-      if (!data || typeof data !== 'object') return;
-      if (data.status === 'payment_processing') setPhase('processing');
-      else if (data.status === 'declined' || data.status === 'error') {
-        setError(data.message ?? 'Payment was declined');
+      const valid = validateCallbackMessage(e, {
+        expectedOrigin: expectedCallbackOrigin(),
+        expectedSource: iframeRef.current?.contentWindow ?? null,
+        batchId,
+      });
+      if (!valid) return;
+      if (valid.status === 'payment_processing') setPhase('processing');
+      else {
+        setError(valid.message ?? 'Payment was declined');
         setPhase('error');
       }
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, []);
+  }, [batchId]);
 
   // Poll payment status once the challenge is underway (also catches the
   // frictionless server-to-server callback where postMessage never fires).

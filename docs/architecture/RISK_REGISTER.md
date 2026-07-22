@@ -96,10 +96,11 @@
 | **Severity** | Low |
 | **Likelihood** | Low |
 | **Recommended checkpoint** | CP-4 (pin sender + validate receiver origin/source), shipped together with the CSP inline-script fix (R-005). |
-| **Status** | Open |
-| **Verification required** | Receiver origin/source assertion; sender pins to configured portal origin. |
+| **Status** | **Mitigated / Closed** (CP-4, with R-005). |
+| **Resolution** | Sender pins the postMessage `targetOrigin` to the configured canonical portal origin (never `'*'`) and posts **only to `window.parent`** (the iframe embedder — no top/opener broadcast); payload is status-only and HTML/JS-escaped against `<script>` breakout. Receiver (`CardPaymentModal` via `validateCallbackMessage`) accepts a message only when `event.origin`, `event.source` (active iframe window), payload shape, supported status, and `orderId === active batchId` all match — otherwise ignored (no UI transition, poll untouched). Browser messages remain **non-authoritative**: the authenticated status poll is the source of payment truth. |
+| **Verification** | `tsc` (API+web) clean; API callback suite (10 tests — pinned origin, parent-only, nonce, XSS-safe, fail-closed origin config) + web receiver suite (11 tests — origin/source/status/orderId rejection, fail-safe); real-HTTP header check confirms the emitted callback markup. |
 | **Owner** | Unassigned |
-| **Notes** | Fixing origin pinning is moot until R-005 is resolved. |
+| **Notes** | Closed jointly with R-005 as one browser boundary. |
 
 ## R-005 — CSP blocks the callback's inline script
 
@@ -115,10 +116,11 @@
 | **Severity** | Medium |
 | **Likelihood** | Medium |
 | **Recommended checkpoint** | CP-4 (scoped CSP nonce or external self script + scoped `frame-ancestors` for the callback route). |
-| **Status** | Open |
-| **Verification required** | Confirm callback script executes under enforced CSP in a real browser. |
+| **Status** | **Mitigated / Closed** (CP-4, with R-004). |
+| **Resolution** | The payment callback response now carries a **route-scoped** CSP set in the controller (overriding the global Helmet headers for that response only): `default-src 'none'; script-src 'nonce-<per-response>'; base-uri 'none'; frame-ancestors <PORTAL_WEB_ORIGIN>`, and `X-Frame-Options: DENY` is removed. The inline callback script runs (nonce), and only the configured portal origin may frame it. **Global Helmet policy is unchanged for every other route** (verified by a real-HTTP header comparison: an ordinary route retains `script-src 'self'` + `X-Frame-Options: DENY`). Portal origin comes from the validated canonical `PORTAL_WEB_ORIGIN` (fail-closed in prod). |
+| **Verification** | Real-HTTP header check — callback emits the nonce CSP + pinned `frame-ancestors`, no `X-Frame-Options`; ordinary route retains global helmet. Unit-level controller header test + config validation tests. |
 | **Owner** | Unassigned |
-| **Notes** | — |
+| **Notes** | `frame-ancestors` (not `frame-src`) is the controlling directive for who may frame the callback. Closed jointly with R-004. |
 
 ## R-006 — Backend section-degradation catches log nothing
 
