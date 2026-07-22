@@ -155,10 +155,11 @@
 | **Severity** | High |
 | **Likelihood** | Medium |
 | **Recommended checkpoint** | CP-5 (critical money/security test suite). Gated behind test DB + gateway/mail mocks. |
-| **Status** | Open |
-| **Verification required** | Suite runs green with `DATABASE_URL` + mocked externals. See TEST_STRATEGY.md. |
+| **Status** | **Closed** — focused risk-based regression coverage added for every previously-untested high-risk auth control; no production code changed, no behavioral defect discovered. |
+| **Resolution** | Additive unit suites (mocked Prisma/mail; real argon2 + TOTP where behaviour depends on them), each with an explicit **negative control**: **`login-protection.service.spec.ts`** — progressive lockout ladder (3/5min, 5/15min, 7/60min, 10/permanent, <3 none), lock-state (permanent/active/elapsed-release), success reset, credential-stuffing (≥20/IP/1h → 24h block), `isIpBlocked`/`assertIpAllowed` incl. **expired-block-not-enforced**; **`mfa.service.spec.ts`** — TOTP enrol enables + mints **exactly 8** backup codes, invalid-code rejection, disable requires valid code, **backup codes single-use** (consumed then rejected), email OTP verify + **expired/used/wrong rejected**; **`ip-block.guard.spec.ts`** — blocked→403 pre-handler, allowed→pass, TTL memoisation; **`session.service.spec.ts`** (extended) — rotation, **revoked/expired token rejected**, **SESSION_EXPIRED** (12h absolute), **SESSION_IDLE_TIMEOUT**, touch-revoked→false, revoke-all/revoke-others. Route-level authorization was already comprehensively covered by R-001a (arch invariant) + R-001b (18-test fail-closed guard) and is not re-tested here. |
+| **Verification** | tsc clean; the 4 new/extended suites (40 tests) green; existing auth/authz/security suites (38) unchanged & green — no regressions. |
 | **Owner** | Unassigned |
-| **Notes** | — |
+| **Notes** | Verification-only checkpoint — locks current behaviour, changes none. The register's earlier "stale token-in-body auth e2e" was already realigned to the cookie-session contract (recent `test(audit)` commits). |
 
 ## R-008 — Financial code paths have no tests; two payroll engines diverge
 
