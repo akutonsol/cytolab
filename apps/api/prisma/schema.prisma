@@ -282,6 +282,7 @@ model Lab {
   derivativeGenerations   DerivativeGeneration[]
   slideAssets             SlideAsset[]
   generationVerifications GenerationVerification[]
+  generationPublications  GenerationPublication[]
   aiScreenings            AIScreeningResult[]
   consultRequests         ConsultRequest[]
   medicalCodes            MedicalCode[]
@@ -2794,6 +2795,7 @@ model DigitalSlide {
   ingestions  SlideIngestion[]
   generations DerivativeGeneration[] @relation("SlideGenerations")
   annotations SlideAnnotation[]
+  publications GenerationPublication[] // P5-4 — append-only publication provenance for this slide
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2920,9 +2922,13 @@ model DerivativeGeneration {
   // NOT merely "when verified=true was set" (a QC_FAILED verdict also stamps it). Null until a verdict.
   verifiedAt                 DateTime?
   publishedAt                DateTime?
+  // P5-4 — when this generation CEASED to be the published generation for its slide. publishedAt is never
+  // cleared, so (publishedAt, supersededAt) records the full authority window: began → ended.
+  supersededAt               DateTime?
 
   assets            SlideAsset[]
   verifications     GenerationVerification[] // P5-3B.3B — append-only verification provenance
+  publications      GenerationPublication[] // P5-4 — append-only publication/supersession provenance
   publishedForSlide DigitalSlide? @relation("SlidePublished")
 
   createdAt DateTime @default(now())
@@ -2988,6 +2994,40 @@ model GenerationVerification {
   @@index([labId])
   @@index([generationId])
   @@index([generationId, outcome])
+}
+
+// P5-4 — the publication-event vocabulary.
+enum PublicationAction {
+  PUBLISHED // a READY generation became the authoritative/live generation for its slide
+  SUPERSEDED // a previously-published generation was retired by a newer publication
+}
+
+// P5-4 — append-only publication provenance. Every row of ONE publication transaction (the new PUBLISHED
+// row, plus a SUPERSEDED row if a prior generation was replaced) shares a `publicationEventId`, so the
+// full replacement is reconstructable without relying on timestamp coincidence. Restrict on delete: this
+// is clinical audit history, NOT disposable runtime data — a later retention/GC checkpoint decides when
+// its deletion is permitted, never a silent cascade.
+model GenerationPublication {
+  id                 String               @id @default(cuid())
+  publicationEventId String // shared by all rows written in ONE publication transaction
+  labId              String
+  lab                Lab                  @relation(fields: [labId], references: [id])
+  slideId            String
+  slide              DigitalSlide         @relation(fields: [slideId], references: [id], onDelete: Restrict)
+  generationId       String
+  generation         DerivativeGeneration @relation(fields: [generationId], references: [id], onDelete: Restrict)
+
+  action      PublicationAction
+  actorUserId String? // the actor who performed the publication; populated by the later HTTP layer (no FK)
+  at          DateTime // the shared publication-event instant (matches the generation/slide publishedAt|supersededAt)
+
+  createdAt DateTime @default(now())
+
+  @@index([labId])
+  @@index([slideId])
+  @@index([generationId])
+  @@index([publicationEventId])
+  @@index([slideId, at])
 }
 
 // ─── AI Screening (Tier 5 — Enterprise) ──────────────────────────────────────
