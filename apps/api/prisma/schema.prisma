@@ -283,6 +283,7 @@ model Lab {
   slideAssets             SlideAsset[]
   generationVerifications GenerationVerification[]
   generationPublications  GenerationPublication[]
+  deliverySessions        DeliverySession[]
   aiScreenings            AIScreeningResult[]
   consultRequests         ConsultRequest[]
   medicalCodes            MedicalCode[]
@@ -2796,6 +2797,7 @@ model DigitalSlide {
   generations DerivativeGeneration[] @relation("SlideGenerations")
   annotations SlideAnnotation[]
   publications GenerationPublication[] // P5-4 — append-only publication provenance for this slide
+  deliverySessions DeliverySession[] // P5-5 — short-lived authenticated viewing capabilities
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2929,6 +2931,7 @@ model DerivativeGeneration {
   assets            SlideAsset[]
   verifications     GenerationVerification[] // P5-3B.3B — append-only verification provenance
   publications      GenerationPublication[] // P5-4 — append-only publication/supersession provenance
+  deliverySessions  DeliverySession[] // P5-5 — short-lived viewing capabilities bound to this generation
   publishedForSlide DigitalSlide? @relation("SlidePublished")
 
   createdAt DateTime @default(now())
@@ -3028,6 +3031,48 @@ model GenerationPublication {
   @@index([generationId])
   @@index([publicationEventId])
   @@index([slideId, at])
+}
+
+// P5-5 — explicit viewing capabilities. These are SECURITY scopes, so they are a closed schema enum (never
+// a free-form string): a new capability requires an intentional schema/security review, not arbitrary text.
+enum DeliveryScope {
+  DESCRIPTOR // the DZI descriptor
+  TILES // the tile pyramid
+  ASSOCIATED_IMAGES // label / macro / thumbnail
+  MANIFEST // the canonical manifest bytes
+}
+
+// P5-5 — a short-lived, generation-bound viewing capability issued to an already-authenticated staff
+// principal. The DATABASE is authoritative for validity (revokedAt IS NULL AND expiresAt > now), scopes,
+// actor, lab, slide, and the bound generation — never client-supplied claims. Only the SHA-256 hash of the
+// opaque 256-bit bearer token is stored; the raw token exists solely in the issuance response + on the
+// client. This is operational capability state, NOT clinical audit history — hence normal operational FK
+// lifecycle (Cascade to slide/generation), while labId stays Restrict per tenancy convention.
+model DeliverySession {
+  id           String               @id @default(cuid())
+  labId        String
+  lab          Lab                  @relation(fields: [labId], references: [id])
+  slideId      String
+  slide        DigitalSlide         @relation(fields: [slideId], references: [id], onDelete: Cascade)
+  generationId String
+  generation   DerivativeGeneration @relation(fields: [generationId], references: [id], onDelete: Cascade)
+
+  actorUserId String // the authenticated staff principal (plain id, no FK — actor identity survives user deletion)
+  tokenHash   String          @unique // SHA-256(rawToken); the raw capability is NEVER persisted
+  scopes      DeliveryScope[]
+
+  issuedAt  DateTime
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([labId])
+  @@index([actorUserId])
+  @@index([slideId])
+  @@index([generationId])
+  @@index([expiresAt])
+  @@index([labId, expiresAt]) // later cleanup / per-lab expiry scans
 }
 
 // ─── AI Screening (Tier 5 — Enterprise) ──────────────────────────────────────
