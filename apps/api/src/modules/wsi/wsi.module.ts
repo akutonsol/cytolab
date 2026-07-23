@@ -16,6 +16,7 @@ import { SourceObjectStore } from './storage/source-object-store';
 import { TILING_ENGINE } from './processing/tiling-engine';
 import { FakeTilingEngine } from './processing/fake-tiling-engine';
 import { LibvipsTilingEngine } from './processing/libvips-tiling-engine';
+import { SlideProcessingProcessor } from './processing/slide-processing.processor';
 import { PROCESSING_CONFIG } from './processing/processing-tokens';
 import { loadProcessingConfig } from './processing/processing-config';
 import { JobLeaseService } from './processing/job-lease.service';
@@ -59,10 +60,17 @@ import { SlideProcessingScheduler } from './processing/slide-processing.schedule
       // P5-3B.1C — the tiling engine. Fake by default (CI, no native deps); libvips when explicitly
       // configured (Program 9 image). Not production-ready until a real WSI fixture passes end-to-end.
       provide: TILING_ENGINE,
-      useFactory: () => (process.env.WSI_TILING_ENGINE === 'libvips' ? new LibvipsTilingEngine() : new FakeTilingEngine()),
+      useFactory: () => {
+        const sel = process.env.WSI_TILING_ENGINE ?? 'fake';
+        if (sel === 'libvips') return new LibvipsTilingEngine();
+        if (sel === 'fake') return new FakeTilingEngine();
+        throw new Error(`unsupported WSI_TILING_ENGINE="${sel}" (expected "fake" or "libvips")`); // fail fast, no silent fallback
+      },
     },
     // P5-3B.1A — processing orchestration + lease runtime (no engine/generation/sealing yet).
     { provide: PROCESSING_CONFIG, useFactory: () => loadProcessingConfig() },
+    // P5-3B.1C-ii — the job processor (produce → PROCESSING generation). Worker loop stays disabled.
+    SlideProcessingProcessor,
     SlideProcessingQueueService,
     JobLeaseService,
     SlideProcessingScheduler,
