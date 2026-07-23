@@ -19,6 +19,7 @@ import { LibvipsTilingEngine } from './processing/libvips-tiling-engine';
 import { SlideProcessingProcessor } from './processing/slide-processing.processor';
 import { GenerationSealer } from './processing/generation-sealer';
 import { GenerationVerifier } from './processing/generation-verifier';
+import { GenerationVerdictService } from './processing/generation-verdict.service';
 import { PROCESSING_CONFIG } from './processing/processing-tokens';
 import { loadProcessingConfig } from './processing/processing-config';
 import { JobLeaseService } from './processing/job-lease.service';
@@ -77,6 +78,8 @@ import { SlideProcessingScheduler } from './processing/slide-processing.schedule
     GenerationSealer,
     // P5-3B.3A — read-only independent verifier (compute an outcome; no state transition, no scheduling).
     GenerationVerifier,
+    // P5-3B.3B-ii-b — apply a terminal verdict (QC_PENDING → READY|QC_FAILED) + append provenance. No scheduling.
+    GenerationVerdictService,
     SlideProcessingQueueService,
     JobLeaseService,
     SlideProcessingScheduler,
