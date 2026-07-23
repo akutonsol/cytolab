@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import {
+  CheckedStream,
   DerivativeKeyError,
   DerivativeObjectStore,
   DerivativeStat,
@@ -93,6 +94,22 @@ export class LocalDerivativeObjectStore implements DerivativeObjectStore {
       if (e?.code === 'ENOENT') return { status: 'NOT_FOUND' };
       throw e;
     }
+  }
+
+  async openReadStreamChecked(key: string): Promise<CheckedStream> {
+    const abs = path.join(this.objectsRoot, ...normalizeKey(key));
+    let st: import('node:fs').Stats;
+    try {
+      st = await fs.stat(abs);
+    } catch (e: any) {
+      // Definitive absence → NOT_FOUND; anything else (EACCES/EIO/…) is indeterminate and is re-thrown.
+      if (e?.code === 'ENOENT') return { status: 'NOT_FOUND' };
+      throw e;
+    }
+    if (!st.isFile()) throw new Error(`derivative key is not a regular file: ${key}`); // e.g. a directory prefix
+    // Path-based stream: default autoClose closes the fd on 'end', 'error', and destroy — so an interrupted
+    // or cancelled consumer never leaks a descriptor. A post-open read fault surfaces as an 'error' event.
+    return { status: 'FOUND', stream: createReadStream(abs), sizeBytes: st.size };
   }
 
   async stat(key: string): Promise<DerivativeStat> {

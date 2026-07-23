@@ -21,6 +21,8 @@ import { GenerationSealer } from './processing/generation-sealer';
 import { GenerationVerifier } from './processing/generation-verifier';
 import { GenerationVerdictService } from './processing/generation-verdict.service';
 import { SlidePublicationService } from './processing/slide-publication.service';
+import { PublishedGenerationResolver } from './delivery/published-generation.resolver';
+import { DeliverySessionService } from './delivery/delivery-session.service';
 import { PROCESSING_CONFIG } from './processing/processing-tokens';
 import { loadProcessingConfig } from './processing/processing-config';
 import { JobLeaseService } from './processing/job-lease.service';
@@ -83,6 +85,9 @@ import { SlideProcessingScheduler } from './processing/slide-processing.schedule
     GenerationVerdictService,
     // P5-4b — publish a READY generation (→ PUBLISHED) + supersede prior + repoint slide. Service-only (no controller).
     SlidePublicationService,
+    // P5-5A-ii — delivery-session runtime (issue/redeem/revoke) + published resolver. Service-only (no HTTP/delivery).
+    PublishedGenerationResolver,
+    DeliverySessionService,
     SlideProcessingQueueService,
     JobLeaseService,
     SlideProcessingScheduler,

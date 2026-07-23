@@ -36,6 +36,15 @@ export interface DerivativeStat {
  */
 export type ObjectRead = { status: 'FOUND'; bytes: Buffer } | { status: 'NOT_FOUND' };
 
+/**
+ * P5-5A-ii — the STREAMING read semantic for delivery (distinct from the buffered `readObject`). Same
+ * definitive-absence-vs-transient rule as `readObject`, but returns a stream instead of materializing
+ * bytes. IMPORTANT: `FOUND` means only that the object was opened — it does NOT guarantee the transfer
+ * completes. A mid-transfer read fault surfaces as a stream `'error'` event, which the consumer MUST treat
+ * as an infrastructure failure (distinct from a clean `'end'`/EOF), never as absence.
+ */
+export type CheckedStream = { status: 'FOUND'; stream: Readable; sizeBytes: number } | { status: 'NOT_FOUND' };
+
 export interface DerivativeObjectStore {
   /** Write a single immutable object. Fails (write-once) if the key already exists. */
   putImmutableObject(key: string, source: Readable): Promise<PutObjectResult>;
@@ -54,6 +63,12 @@ export interface DerivativeObjectStore {
    * converting a transient storage fault into a permanent QC failure.
    */
   readObject(key: string): Promise<ObjectRead>;
+  /**
+   * Streaming analog of `readObject` for delivery: `FOUND` with an open stream + size, `NOT_FOUND` for a
+   * definitively-absent object, THROWS on any indeterminate/transient failure. The returned stream closes
+   * its file descriptor on `'end'`, `'error'`, and destroy/cancel (no leak on interrupted transfers).
+   */
+  openReadStreamChecked(key: string): Promise<CheckedStream>;
   /** Deterministically-ordered keys under a prefix (never exposes internal staging). */
   listPrefix(prefix: string): Promise<string[]>;
   /** Byte reclamation (for a later GC checkpoint). */

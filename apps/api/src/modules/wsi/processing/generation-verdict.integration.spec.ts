@@ -108,6 +108,7 @@ class FaultyReadStore implements DerivativeObjectStore {
   putImmutableObject(k: string, s: Readable) { return this.inner.putImmutableObject(k, s); }
   putImmutableTree(p: string, d: string) { return this.inner.putImmutableTree(p, d); }
   openReadStream(k: string) { return this.inner.openReadStream(k); }
+  openReadStreamChecked(k: string) { return this.inner.openReadStreamChecked(k); }
   stat(k: string) { return this.inner.stat(k); }
   listPrefix(p: string) { return this.inner.listPrefix(p); }
   delete(k: string) { return this.inner.delete(k); }
