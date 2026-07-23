@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -11,13 +11,15 @@ import { FakeTilingEngine } from './fake-tiling-engine';
 import { JobLeaseService, ClaimedJob } from './job-lease.service';
 import { loadProcessingConfig } from './processing-config';
 import { AcquisitionMetadataConflictError, LeaseLostError, SlideProcessingProcessor } from './slide-processing.processor';
+import { GenerationSealer } from './generation-sealer';
 import { InvalidEngineOutputError } from './tiling-output-validator';
 
 /**
- * P5-3B.1C-ii — the JobProcessor against the isolated test DB + real local stores + the fake engine.
- * Proves: a claimed job → an UNSEALED PROCESSING generation with derivative bytes stored + SlideAsset
- * rows registered; lease-safe aborts; metadata conflict handling; retry → new generation. No sealing,
- * verification, or SUCCEEDED is exercised.
+ * P5-3B.1C-ii / P5-3B.2B — the JobProcessor end-to-end against the isolated test DB + real local stores +
+ * the fake engine. Since B.2B wired the sealer in as the final phase, a completed attempt now yields a
+ * SEALED, QC_PENDING (unverified) generation + a MANIFEST asset + a SUCCEEDED job. This spec still proves
+ * the intermediate correctness (assets/bytes registered, acquisition reconciled) plus lease-safe aborts,
+ * metadata-conflict rollback (before sealing), and retry → new generation. Verification stays out (B.3).
  */
 const prisma = createTestPrisma();
 const cfg = { ...loadProcessingConfig({} as any), leaseDurationMs: 60_000 };
@@ -39,13 +41,23 @@ function mkTmp(tag: string): string {
   roots.push(p);
   return p;
 }
+function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    stream.on('data', (d) => chunks.push(d as Buffer));
+    stream.on('end', () => resolve(Buffer.concat(chunks)));
+    stream.on('error', reject);
+  });
+}
 function processor(stores: ReturnType<typeof newStores>, corruption: ConstructorParameters<typeof FakeTilingEngine>[0] = 'none') {
+  const sealer = new GenerationSealer(prisma as unknown as PrismaService, lease, stores.derivStore);
   return new SlideProcessingProcessor(
     prisma as unknown as PrismaService,
     lease,
     stores.materializer,
     new FakeTilingEngine(corruption),
     stores.derivStore,
+    sealer,
   );
 }
 
@@ -92,27 +104,36 @@ afterEach(async () => {
   roots = [];
 });
 
-it('produces an UNSEALED PROCESSING generation with registered assets, bytes, and acquisition metadata', async () => {
+it('produces a SEALED QC_PENDING generation with registered assets, bytes, acquisition, manifest, and a SUCCEEDED job', async () => {
   const stores = newStores();
   const { labId, slideId, ingestionId } = await seed(stores.store);
   const job = await seedRunningJob(labId, ingestionId);
 
-  const { generationId } = await processor(stores).process(job, WORKER);
+  const { generationId, manifestChecksum } = await processor(stores).process(job, WORKER);
 
   const gen = await prisma.derivativeGeneration.findUniqueOrThrow({ where: { id: generationId } });
-  expect(gen.status).toBe('PROCESSING');
-  expect(gen.sealed).toBe(false);
-  expect(gen.verified).toBe(false);
+  expect(gen.status).toBe('QC_PENDING'); // sealed but not verified
+  expect(gen.sealed).toBe(true);
+  expect(gen.verified).toBe(false); // verification is B.3
+  expect(gen.sealedAt).not.toBeNull();
+  expect(gen.publishedAt).toBeNull(); // never published here
+  expect(gen.derivativeManifestChecksum).toBe(manifestChecksum);
   expect(gen.tileSourceType).toBe('DZI');
   expect(gen.tiledWidth).toBe(300);
   expect(gen.levelCount).toBe(2);
 
   const assets = await prisma.slideAsset.findMany({ where: { generationId }, orderBy: { role: 'asc' } });
   const byRole = Object.fromEntries(assets.map((a) => [a.role, a]));
-  expect(new Set(assets.map((a) => a.role))).toEqual(new Set(['TILE_PYRAMID', 'DZI_DESCRIPTOR', 'LABEL', 'THUMBNAIL']));
-  expect(byRole['TILE_PYRAMID'].checksum).toBeNull(); // per-level integrity is B.2
+  expect(new Set(assets.map((a) => a.role))).toEqual(new Set(['TILE_PYRAMID', 'DZI_DESCRIPTOR', 'LABEL', 'THUMBNAIL', 'MANIFEST']));
+  expect(byRole['TILE_PYRAMID'].checksum).toBeNull(); // per-level integrity lives in the manifest
   expect(byRole['TILE_PYRAMID'].sizeBytes).toBeGreaterThan(0);
   expect(byRole['DZI_DESCRIPTOR'].checksum).not.toBeNull();
+
+  // The MANIFEST asset points at persisted bytes whose sha256 is the generation checksum.
+  const manifestBytes = await streamToBuffer(stores.derivStore.openReadStream(byRole['MANIFEST'].storageKey));
+  expect(createHash('sha256').update(manifestBytes).digest('hex')).toBe(manifestChecksum);
+  expect(byRole['MANIFEST'].checksum).toBe(manifestChecksum);
+  expect(byRole['MANIFEST'].sizeBytes).toBe(manifestBytes.length);
 
   expect((await stores.derivStore.listPrefix(byRole['TILE_PYRAMID'].storageKey)).length).toBeGreaterThan(0);
 
@@ -124,7 +145,9 @@ it('produces an UNSEALED PROCESSING generation with registered assets, bytes, an
   expect(slide.availabilityStatus).toBe('DRAFT'); // never published
 
   const jobRow = await prisma.slideProcessingJob.findUniqueOrThrow({ where: { id: job.id } });
-  expect(jobRow.status).toBe('RUNNING'); // never SUCCEEDED (that is B.2)
+  expect(jobRow.status).toBe('SUCCEEDED'); // completed by the sealer
+  expect(jobRow.finishedAt).not.toBeNull();
+  expect(jobRow.workerId).toBe(WORKER); // historical lease fields preserved (OD-7)
 });
 
 it('rejects invalid engine output and registers no assets', async () => {

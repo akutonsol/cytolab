@@ -17,6 +17,7 @@ import { TILING_ENGINE } from './processing/tiling-engine';
 import { FakeTilingEngine } from './processing/fake-tiling-engine';
 import { LibvipsTilingEngine } from './processing/libvips-tiling-engine';
 import { SlideProcessingProcessor } from './processing/slide-processing.processor';
+import { GenerationSealer } from './processing/generation-sealer';
 import { PROCESSING_CONFIG } from './processing/processing-tokens';
 import { loadProcessingConfig } from './processing/processing-config';
 import { JobLeaseService } from './processing/job-lease.service';
@@ -71,6 +72,8 @@ import { SlideProcessingScheduler } from './processing/slide-processing.schedule
     { provide: PROCESSING_CONFIG, useFactory: () => loadProcessingConfig() },
     // P5-3B.1C-ii — the job processor (produce → PROCESSING generation). Worker loop stays disabled.
     SlideProcessingProcessor,
+    // P5-3B.2B — seal a PROCESSING generation → QC_PENDING (unverified) + complete the job.
+    GenerationSealer,
     SlideProcessingQueueService,
     JobLeaseService,
     SlideProcessingScheduler,

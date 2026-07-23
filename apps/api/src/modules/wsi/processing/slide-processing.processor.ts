@@ -12,6 +12,8 @@ import { validateTilingOutput } from './tiling-output-validator';
 import { loadTilingConfig, TilingConfig } from './tiling-config';
 import { JobLeaseService } from './job-lease.service';
 import type { ClaimedJob } from './job-lease.service';
+import { GenerationSealer } from './generation-sealer';
+import { boundedAssetKey, generationPrefix, generationPyramidPrefix } from './derivative-keys';
 
 /** The lease was lost (or never held) at a checkpoint — the worker must perform no further mutation. */
 export class LeaseLostError extends Error {
@@ -50,9 +52,10 @@ export class SlideProcessingProcessor {
     @Inject(SOURCE_MATERIALIZER) private readonly materializer: SourceMaterializer,
     @Inject(TILING_ENGINE) private readonly engine: TilingEngine,
     @Inject(DERIVATIVE_OBJECT_STORE) private readonly derivStore: DerivativeObjectStore,
+    private readonly sealer: GenerationSealer,
   ) {}
 
-  async process(job: ClaimedJob, workerId: string): Promise<{ generationId: string }> {
+  async process(job: ClaimedJob, workerId: string): Promise<{ generationId: string; manifestChecksum: string }> {
     const ing = await this.loadVerifiedIngestion(job.ingestionId);
     const materialized = await this.materializer.materializeVerifiedSource({
       sourceObjectKey: ing.sourceObjectKey,
@@ -82,7 +85,22 @@ export class SlideProcessingProcessor {
       if (!(await this.lease.renew(job.id, workerId))) throw new LeaseLostError('finalization');
       await this.finalizeGeneration(job, workerId, generationId, job.labId, ing.slideId, result, promoted);
 
-      return { generationId };
+      // P5-3B.2B — the final phase of the attempt: build + persist + round-trip the canonical manifest,
+      // then atomically seal (PROCESSING → QC_PENDING, sealed=true) and complete the job (→ SUCCEEDED).
+      const sealed = await this.sealer.seal({
+        jobId: job.id,
+        workerId,
+        generationId,
+        labId: job.labId,
+        slideId: ing.slideId,
+        ingestionId: job.ingestionId,
+        sourceObjectKey: ing.sourceObjectKey,
+        sourceChecksum: ing.sourceChecksum,
+        result,
+        config: this.config,
+      });
+
+      return { generationId, manifestChecksum: sealed.manifestChecksum };
     } finally {
       await materialized.dispose().catch(() => undefined);
       await fs.rm(engineOut, { recursive: true, force: true }).catch(() => undefined);
@@ -127,16 +145,16 @@ export class SlideProcessingProcessor {
   }
 
   private async promote(result: TilingResult, engineOut: string, labId: string, slideId: string, generationId: string) {
-    const prefix = `slides/${labId}/${slideId}/derivatives/${generationId}`;
+    const prefix = generationPrefix(labId, slideId, generationId);
     const promoted: { role: string; storageKey: string; checksum: string | null; sizeBytes: number }[] = [];
     for (const a of result.assets) {
       const abs = path.resolve(engineOut, a.relativePath); // path already validated within the output root
       if (a.kind === 'tree') {
-        const treePrefix = `${prefix}/pyramid`;
+        const treePrefix = generationPyramidPrefix(prefix);
         const res = await this.derivStore.putImmutableTree(treePrefix, abs);
         promoted.push({ role: a.role, storageKey: treePrefix, checksum: null, sizeBytes: res.byteCount });
       } else {
-        const key = `${prefix}/${a.role.toLowerCase()}`;
+        const key = boundedAssetKey(prefix, a.role);
         const res = await this.derivStore.putImmutableObject(key, createReadStream(abs));
         promoted.push({ role: a.role, storageKey: key, checksum: res.checksum, sizeBytes: res.sizeBytes });
       }
