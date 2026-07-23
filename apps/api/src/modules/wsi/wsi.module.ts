@@ -13,6 +13,9 @@ import { LocalDerivativeObjectStore } from './storage/local-derivative-object-st
 import { SOURCE_MATERIALIZER } from './processing/source-materializer';
 import { LocalSourceMaterializer } from './processing/local-source-materializer';
 import { SourceObjectStore } from './storage/source-object-store';
+import { TILING_ENGINE } from './processing/tiling-engine';
+import { FakeTilingEngine } from './processing/fake-tiling-engine';
+import { LibvipsTilingEngine } from './processing/libvips-tiling-engine';
 import { PROCESSING_CONFIG } from './processing/processing-tokens';
 import { loadProcessingConfig } from './processing/processing-config';
 import { JobLeaseService } from './processing/job-lease.service';
@@ -51,6 +54,12 @@ import { SlideProcessingScheduler } from './processing/slide-processing.schedule
           process.env.WSI_MATERIALIZATION_DIR ?? path.join(os.tmpdir(), 'osieri-wsi-materialization'),
         ),
       inject: [SOURCE_OBJECT_STORE],
+    },
+    {
+      // P5-3B.1C — the tiling engine. Fake by default (CI, no native deps); libvips when explicitly
+      // configured (Program 9 image). Not production-ready until a real WSI fixture passes end-to-end.
+      provide: TILING_ENGINE,
+      useFactory: () => (process.env.WSI_TILING_ENGINE === 'libvips' ? new LibvipsTilingEngine() : new FakeTilingEngine()),
     },
     // P5-3B.1A — processing orchestration + lease runtime (no engine/generation/sealing yet).
     { provide: PROCESSING_CONFIG, useFactory: () => loadProcessingConfig() },
