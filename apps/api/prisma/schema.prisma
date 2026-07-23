@@ -281,6 +281,7 @@ model Lab {
   slideProcessingJobs     SlideProcessingJob[]
   derivativeGenerations   DerivativeGeneration[]
   slideAssets             SlideAsset[]
+  generationVerifications GenerationVerification[]
   aiScreenings            AIScreeningResult[]
   consultRequests         ConsultRequest[]
   medicalCodes            MedicalCode[]
@@ -2915,9 +2916,13 @@ model DerivativeGeneration {
   sealed                     Boolean   @default(false)
   verified                   Boolean   @default(false)
   sealedAt                   DateTime?
+  // P5-3B.3B — timestamp when INDEPENDENT VERIFICATION reached a terminal verdict (READY or QC_FAILED);
+  // NOT merely "when verified=true was set" (a QC_FAILED verdict also stamps it). Null until a verdict.
+  verifiedAt                 DateTime?
   publishedAt                DateTime?
 
   assets            SlideAsset[]
+  verifications     GenerationVerification[] // P5-3B.3B — append-only verification provenance
   publishedForSlide DigitalSlide? @relation("SlidePublished")
 
   createdAt DateTime @default(now())
@@ -2949,6 +2954,40 @@ model SlideAsset {
   @@index([labId])
   @@index([generationId])
   @@index([generationId, role])
+}
+
+// P5-3B.3B — the verification-event vocabulary. Deliberately DISTINCT from GenerationStatus: a record
+// describes the verification event (did integrity verification PASS or FAIL), not the generation's
+// workflow state. A transient/RETRYABLE result is a non-event and writes NO row.
+enum VerificationOutcome {
+  PASSED
+  FAILED
+}
+
+// P5-3B.3B — append-only independent-verification provenance. One generation → many attempts (normal
+// Program 5A flow produces a single terminal verdict; the model preserves an audit trail for a future
+// explicit re-verification workflow without rewriting history). The QC_PENDING → READY|QC_FAILED
+// transition and the matching row here commit in ONE transaction (P5-3B.3B-ii). Restrict on delete: this
+// is audit evidence, NOT generation-owned runtime data — a later retention/GC checkpoint decides when its
+// deletion is permitted, never a silent cascade.
+model GenerationVerification {
+  id           String               @id @default(cuid())
+  labId        String
+  lab          Lab                  @relation(fields: [labId], references: [id])
+  generationId String
+  generation   DerivativeGeneration @relation(fields: [generationId], references: [id], onDelete: Restrict)
+
+  outcome         VerificationOutcome
+  reasons         Json // ordered [{code, detail}] — the frozen B.3A taxonomy in deterministic order; [] for PASSED
+  manifestChecksum String // the sealed fingerprint this attempt certified against
+  verifierVersion String // the B.3A verification logic/taxonomy version that produced the outcome
+  verifiedAt      DateTime @default(now())
+
+  createdAt DateTime @default(now())
+
+  @@index([labId])
+  @@index([generationId])
+  @@index([generationId, outcome])
 }
 
 // ─── AI Screening (Tier 5 — Enterprise) ──────────────────────────────────────
