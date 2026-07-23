@@ -20,6 +20,7 @@ import { SlideProcessingProcessor } from './processing/slide-processing.processo
 import { GenerationSealer } from './processing/generation-sealer';
 import { GenerationVerifier } from './processing/generation-verifier';
 import { GenerationVerdictService } from './processing/generation-verdict.service';
+import { SlidePublicationService } from './processing/slide-publication.service';
 import { PROCESSING_CONFIG } from './processing/processing-tokens';
 import { loadProcessingConfig } from './processing/processing-config';
 import { JobLeaseService } from './processing/job-lease.service';
@@ -80,6 +81,8 @@ import { SlideProcessingScheduler } from './processing/slide-processing.schedule
     GenerationVerifier,
     // P5-3B.3B-ii-b — apply a terminal verdict (QC_PENDING → READY|QC_FAILED) + append provenance. No scheduling.
     GenerationVerdictService,
+    // P5-4b — publish a READY generation (→ PUBLISHED) + supersede prior + repoint slide. Service-only (no controller).
+    SlidePublicationService,
     SlideProcessingQueueService,
     JobLeaseService,
     SlideProcessingScheduler,
