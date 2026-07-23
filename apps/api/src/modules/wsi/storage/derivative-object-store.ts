@@ -28,6 +28,14 @@ export interface DerivativeStat {
   sizeBytes: number;
 }
 
+/**
+ * P5-3B.3A — the typed read semantic that separates integrity evidence from transient infrastructure
+ * faults. `NOT_FOUND` is a DEFINITIVE absence (integrity evidence). Any indeterminate failure (timeout,
+ * connection reset, permission, backend 5xx, EISDIR/EIO, …) is THROWN and must NEVER be represented as
+ * absence — a caller may treat a thrown error as retryable, but never as "the object is gone".
+ */
+export type ObjectRead = { status: 'FOUND'; bytes: Buffer } | { status: 'NOT_FOUND' };
+
 export interface DerivativeObjectStore {
   /** Write a single immutable object. Fails (write-once) if the key already exists. */
   putImmutableObject(key: string, source: Readable): Promise<PutObjectResult>;
@@ -39,6 +47,13 @@ export interface DerivativeObjectStore {
   putImmutableTree(prefix: string, sourceDir: string): Promise<PutTreeResult>;
   openReadStream(key: string): Readable;
   stat(key: string): Promise<DerivativeStat>;
+  /**
+   * Read a whole object into memory with DEFINITIVE presence semantics: returns `FOUND` with the bytes,
+   * or `NOT_FOUND` for a definitively-absent object. THROWS on any indeterminate failure — a thrown error
+   * must never be interpreted as absence. This is the contract P5-3B.3 verification relies on to avoid
+   * converting a transient storage fault into a permanent QC failure.
+   */
+  readObject(key: string): Promise<ObjectRead>;
   /** Deterministically-ordered keys under a prefix (never exposes internal staging). */
   listPrefix(prefix: string): Promise<string[]>;
   /** Byte reclamation (for a later GC checkpoint). */

@@ -9,6 +9,7 @@ import {
   DerivativeObjectStore,
   DerivativeStat,
   DerivativeWriteOnceError,
+  ObjectRead,
   PutObjectResult,
   PutTreeResult,
 } from './derivative-object-store';
@@ -80,6 +81,18 @@ export class LocalDerivativeObjectStore implements DerivativeObjectStore {
 
   openReadStream(key: string): Readable {
     return createReadStream(path.join(this.objectsRoot, ...normalizeKey(key)));
+  }
+
+  async readObject(key: string): Promise<ObjectRead> {
+    const abs = path.join(this.objectsRoot, ...normalizeKey(key));
+    try {
+      return { status: 'FOUND', bytes: await fs.readFile(abs) };
+    } catch (e: any) {
+      // ONLY a definitive "does not exist" maps to NOT_FOUND. Every other failure (EISDIR, EACCES, EIO,
+      // …) is indeterminate and is re-thrown — it must never be read as absence (P5-3B.3 OD-D).
+      if (e?.code === 'ENOENT') return { status: 'NOT_FOUND' };
+      throw e;
+    }
   }
 
   async stat(key: string): Promise<DerivativeStat> {
