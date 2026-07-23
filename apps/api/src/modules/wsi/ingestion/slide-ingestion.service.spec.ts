@@ -54,7 +54,9 @@ function makePrisma() {
       findMany: jest.fn(async () => [] as any[]),
     },
     _slides: slides,
-  };
+  } as any;
+  // Interactive transaction runs the callback with the same mock as the tx client (P5-3B.1A).
+  api.$transaction = jest.fn(async (fn: any) => fn(api));
   return api;
 }
 
@@ -63,6 +65,7 @@ describe('SlideIngestionService (P5-3A)', () => {
   let store: LocalSourceObjectStore;
   let prisma: ReturnType<typeof makePrisma>;
   let audit: { recordEntityCreated: jest.Mock };
+  let queue: { enqueueForIngestion: jest.Mock };
   let service: SlideIngestionService;
 
   beforeEach(async () => {
@@ -70,7 +73,13 @@ describe('SlideIngestionService (P5-3A)', () => {
     store = new LocalSourceObjectStore(root);
     prisma = makePrisma();
     audit = { recordEntityCreated: jest.fn() };
-    service = new SlideIngestionService(prisma as unknown as PrismaService, audit as unknown as AuditRecorder, store);
+    queue = { enqueueForIngestion: jest.fn() };
+    service = new SlideIngestionService(
+      prisma as unknown as PrismaService,
+      audit as unknown as AuditRecorder,
+      store,
+      queue as any,
+    );
   });
   afterEach(async () => {
     await fs.rm(root, { recursive: true, force: true });
@@ -103,7 +112,7 @@ describe('SlideIngestionService (P5-3A)', () => {
     const { init, res } = await uploadAndComplete(content);
 
     const statuses = prisma.slideIngestion.update.mock.calls
-      .map((c) => c[0].data.status)
+      .map((c: any) => c[0].data.status)
       .filter(Boolean);
     // initiate sets sourceObjectKey (no status), then UPLOADED, then VERIFIED — order matters (R3).
     expect(statuses).toEqual(['UPLOADED', 'VERIFIED']);
@@ -114,13 +123,16 @@ describe('SlideIngestionService (P5-3A)', () => {
     const slide = prisma._slides.get(init.slideId);
     expect(slide.storageKey).toBe(init.objectKey);
     expect(slide.availabilityStatus).toBe('DRAFT');
+
+    // P5-3B.1A — the initial processing job is enqueued transactionally with the VERIFIED transition.
+    expect(queue.enqueueForIngestion).toHaveBeenCalledTimes(1);
   });
 
   it('a declared checksum mismatch fails the ingestion before VERIFIED', async () => {
     const content = randomBytes(1_000);
     await expect(uploadAndComplete(content, 'f'.repeat(64))).rejects.toBeInstanceOf(BadRequestException);
 
-    const statuses = prisma.slideIngestion.update.mock.calls.map((c) => c[0].data.status).filter(Boolean);
+    const statuses = prisma.slideIngestion.update.mock.calls.map((c: any) => c[0].data.status).filter(Boolean);
     expect(statuses).toEqual(['UPLOADED', 'FAILED']); // never VERIFIED
   });
 

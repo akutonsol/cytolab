@@ -4,6 +4,7 @@ import { PrismaService } from '../../../database/prisma.service';
 import { tenantCreate } from '../../../common/tenancy/tenancy.extension';
 import { AuditRecorder } from '../../audit/audit-recorder.service';
 import { SOURCE_OBJECT_STORE, SourceObjectStore } from '../storage/source-object-store';
+import { SlideProcessingQueueService } from '../processing/slide-processing-queue.service';
 import { CompleteSlideUploadDto, InitiateSlideUploadDto } from './dto/slide-ingestion.dto';
 
 /**
@@ -26,6 +27,7 @@ export class SlideIngestionService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditRecorder,
     @Inject(SOURCE_OBJECT_STORE) private readonly store: SourceObjectStore,
+    private readonly queue: SlideProcessingQueueService,
   ) {}
 
   /** Begin an upload: create a DRAFT slide + an UPLOADING ingestion, and open a resumable session. */
@@ -122,13 +124,20 @@ export class SlideIngestionService {
     }
 
     // VERIFIED — sourceChecksum + sourceObjectKey are now immutable; publish the slide's storageKey.
-    const verified = await this.prisma.slideIngestion.update({
-      where: { id: ingestion.id },
-      data: { status: 'VERIFIED', sourceChecksum: completed.checksum, sourceObjectKey: completed.objectKey },
-    });
-    await this.prisma.digitalSlide.update({
-      where: { id: ingestion.slideId },
-      data: { storageKey: completed.objectKey },
+    // P5-3B.1A: the VERIFIED transition and the initial QUEUED processing job commit ATOMICALLY, so a
+    // verified ingestion always leaves a job to process (enqueue is idempotent vs the active-job partial
+    // unique index; the reconciler repairs any miss). No generation/engine/seal here — that is B.1C/B.2.
+    const verified = await this.prisma.$transaction(async (tx) => {
+      const v = await tx.slideIngestion.update({
+        where: { id: ingestion.id },
+        data: { status: 'VERIFIED', sourceChecksum: completed.checksum, sourceObjectKey: completed.objectKey },
+      });
+      await tx.digitalSlide.update({
+        where: { id: ingestion.slideId },
+        data: { storageKey: completed.objectKey },
+      });
+      await this.queue.enqueueForIngestion(tx, ingestion.id);
+      return v;
     });
 
     // Advisory duplicate detection AFTER VERIFIED — never blocks a valid upload (R5).
