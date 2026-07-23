@@ -156,7 +156,21 @@ it('certifies a valid sealed generation as READY without mutating it', async () 
   const { verifier, generationId } = await sealed();
   const outcome = await verifier.verify({ generationId });
   expect(outcome.status).toBe('READY');
+  // P5-3B.3B-ii-a — a terminal outcome carries the certified state used later as the verdict stale-guard.
+  if (outcome.status === 'READY') {
+    const gen = await prisma.derivativeGeneration.findUniqueOrThrow({ where: { id: generationId } });
+    expect(outcome.certifiedState.manifestChecksum).toBe(gen.derivativeManifestChecksum);
+    expect(outcome.certifiedState.fingerprint).toMatch(/^[a-f0-9]{64}$/);
+  }
   await assertStillQcPending(generationId);
+});
+
+it('attaches the certified state to a QC_FAILED outcome as well (never to RETRYABLE)', async () => {
+  const { verifier, generationId, stores, manifestKey } = await sealed();
+  await overwrite(stores.derivStore, manifestKey, Buffer.from('tampered-bytes'));
+  const outcome = await verifier.verify({ generationId });
+  expect(outcome.status).toBe('QC_FAILED');
+  if (outcome.status === 'QC_FAILED') expect(outcome.certifiedState.fingerprint).toMatch(/^[a-f0-9]{64}$/);
 });
 
 it('is deterministic — repeated verification yields the identical outcome', async () => {

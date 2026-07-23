@@ -6,6 +6,21 @@ import { canonicalSerialize } from './manifest/canonical-json';
 import { digestPyramid } from './manifest/pyramid-digest';
 import { Manifest, MANIFEST_SCHEMA_ID } from './manifest/manifest';
 import { generationManifestKey, generationPrefix, generationPyramidPrefix } from './derivative-keys';
+import { buildCertifiedSurface, fingerprintCertifiedSurface } from './verification-fingerprint';
+
+/**
+ * The version of the verification SEMANTICS — the failure taxonomy, the canonical/manifest checks, AND
+ * the certified-state surface construction, together. Persisted on every verdict (P5-3B.3B). Governance:
+ * any semantic change to those (a new/renamed reason code, a changed canonical check, a changed certified
+ * surface) MUST bump this.
+ */
+export const VERIFICATION_VERSION = '1.0.0';
+
+/** The state B.3A actually certified — re-proved unchanged inside the B.3B verdict transaction. */
+export interface CertifiedState {
+  manifestChecksum: string; // the sealed identity (DerivativeGeneration.derivativeManifestChecksum)
+  fingerprint: string; // sha256 over the canonical certified DB-state surface
+}
 
 /**
  * P5-3B.3A — the read-only, independent generation verifier.
@@ -53,9 +68,9 @@ export interface VerificationFailureReason {
 }
 
 export type VerificationOutcome =
-  | { status: 'READY' }
-  | { status: 'QC_FAILED'; reasons: VerificationFailureReason[] }
-  | { status: 'RETRYABLE'; cause: string };
+  | { status: 'READY'; certifiedState: CertifiedState }
+  | { status: 'QC_FAILED'; reasons: VerificationFailureReason[]; certifiedState: CertifiedState }
+  | { status: 'RETRYABLE'; cause: string }; // carries NO certified state — nothing was certified
 
 export interface VerifyInput {
   generationId: string;
@@ -74,6 +89,8 @@ interface DbGeneration {
   labId: string;
   slideId: string;
   jobId: string;
+  sealed: boolean;
+  tileSourceType: string;
   tiledWidth: number | null;
   tiledHeight: number | null;
   tileSize: number | null;
@@ -108,11 +125,14 @@ export class GenerationVerifier {
   async verify(input: VerifyInput): Promise<VerificationOutcome> {
     try {
       const ctx = await this.loadContext(input.generationId);
+      // The certified state is a pure function of the DB context just loaded — computed once, attached to
+      // whichever terminal verdict results (never to RETRYABLE). No writes, no dependency on the verdict layer.
+      const certifiedState = this.certify(ctx);
 
       // Foundational stage: nothing downstream can be trusted unless exactly one canonical MANIFEST reads
       // back, checksums three-way, parses to the known schema, and is byte-for-byte canonical.
       const foundation = await this.verifyManifestFoundation(ctx);
-      if (foundation.reason) return this.fail([foundation.reason]);
+      if (foundation.reason) return this.fail([foundation.reason], certifiedState);
       const manifest = foundation.manifest!;
 
       const reasons: VerificationFailureReason[] = [];
@@ -120,7 +140,7 @@ export class GenerationVerifier {
       reasons.push(...this.verifyProvenance(ctx, manifest)); //       §4 MANIFEST ⟷ DB
       reasons.push(...(await this.verifyInventory(ctx, manifest))); // strict physical inventory
 
-      return reasons.length ? this.fail(reasons) : { status: 'READY' };
+      return reasons.length ? this.fail(reasons, certifiedState) : { status: 'READY', certifiedState };
     } catch (e) {
       if (e instanceof TransientVerificationError) return { status: 'RETRYABLE', cause: e.message };
       throw e; // a genuine bug is never masked as transient
@@ -130,7 +150,8 @@ export class GenerationVerifier {
   // ── context ───────────────────────────────────────────────────────────────────────────────────────
   private async loadContext(generationId: string): Promise<VerifyContext> {
     const genRows = await this.prisma.$queryRaw<DbGeneration[]>`
-      SELECT id, "labId", "slideId", "jobId", "tiledWidth", "tiledHeight", "tileSize", "levelCount", "derivativeManifestChecksum"
+      SELECT id, "labId", "slideId", "jobId", sealed, "tileSourceType"::text AS "tileSourceType",
+             "tiledWidth", "tiledHeight", "tileSize", "levelCount", "derivativeManifestChecksum"
       FROM "DerivativeGeneration" WHERE id = ${generationId}
     `;
     const gen = genRows[0];
@@ -316,12 +337,35 @@ export class GenerationVerifier {
     }
   }
 
-  private fail(reasons: VerificationFailureReason[]): VerificationOutcome {
+  /** Build the certified-state fingerprint from the loaded DB context (pure; the SINGLE fingerprint path). */
+  private certify(ctx: VerifyContext): CertifiedState {
+    const surface = buildCertifiedSurface(
+      {
+        generationId: ctx.gen.id,
+        slideId: ctx.gen.slideId,
+        jobId: ctx.gen.jobId,
+        ingestionId: ctx.ingestionId,
+        sealed: ctx.gen.sealed,
+        tileSourceType: ctx.gen.tileSourceType,
+        derivativeManifestChecksum: ctx.gen.derivativeManifestChecksum,
+        tiledWidth: ctx.gen.tiledWidth,
+        tiledHeight: ctx.gen.tiledHeight,
+        tileSize: ctx.gen.tileSize,
+        levelCount: ctx.gen.levelCount,
+        sourceObjectKey: ctx.sourceObjectKey,
+        sourceChecksum: ctx.sourceChecksum,
+      },
+      ctx.assets.map((a) => ({ role: a.role, storageKey: a.storageKey, checksum: a.checksum, sizeBytes: a.sizeBytes })),
+    );
+    return { manifestChecksum: ctx.gen.derivativeManifestChecksum ?? '', fingerprint: fingerprintCertifiedSurface(surface) };
+  }
+
+  private fail(reasons: VerificationFailureReason[], certifiedState: CertifiedState): VerificationOutcome {
     const ordered = [...reasons].sort(
       (a, b) => REASON_PRECEDENCE.indexOf(a.code) - REASON_PRECEDENCE.indexOf(b.code) || a.detail.localeCompare(b.detail),
     );
     this.logger.warn(`generation verification FAILED: ${ordered.map((r) => r.code).join(', ')}`);
-    return { status: 'QC_FAILED', reasons: ordered };
+    return { status: 'QC_FAILED', reasons: ordered, certifiedState };
   }
 }
 
