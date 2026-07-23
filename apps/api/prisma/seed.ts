@@ -54,6 +54,10 @@ const SPECIAL_OBJECTS: Record<string, string[]> = {
   // Assigned to NO default role (byPrefix below never selects 'audit'); super roles reach them via
   // the guard bypass, matching the Security Center. NOT a reuse of system:security.
   audit: ['read', 'read_system', 'read_phi'],
+  // P5-5B — digital-pathology viewing. Gates delivery-session issuance (authenticated slide viewing).
+  // Assigned to NO default role (byPrefix below never selects 'wsi'); super roles reach it via the guard
+  // bypass. Granting wsi:view to specific staff roles is an explicit, separate role-configuration decision.
+  wsi: ['view'],
 };
 
 async function main() {

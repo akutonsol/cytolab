@@ -23,6 +23,9 @@ import { GenerationVerdictService } from './processing/generation-verdict.servic
 import { SlidePublicationService } from './processing/slide-publication.service';
 import { PublishedGenerationResolver } from './delivery/published-generation.resolver';
 import { DeliverySessionService } from './delivery/delivery-session.service';
+import { DeliveryTokenGuard } from './delivery/delivery-token.guard';
+import { SlideDeliverySessionController } from './delivery/slide-delivery-session.controller';
+import { ArtifactDeliveryController } from './delivery/artifact-delivery.controller';
 import { PROCESSING_CONFIG } from './processing/processing-tokens';
 import { loadProcessingConfig } from './processing/processing-config';
 import { JobLeaseService } from './processing/job-lease.service';
@@ -31,7 +34,7 @@ import { SlideProcessingScheduler } from './processing/slide-processing.schedule
 
 @Module({
   imports: [PrismaModule],
-  controllers: [WsiController, SlideIngestionController],
+  controllers: [WsiController, SlideIngestionController, SlideDeliverySessionController, ArtifactDeliveryController],
   providers: [
     WsiService,
     SlideIngestionService,
@@ -88,6 +91,8 @@ import { SlideProcessingScheduler } from './processing/slide-processing.schedule
     // P5-5A-ii — delivery-session runtime (issue/redeem/revoke) + published resolver. Service-only (no HTTP/delivery).
     PublishedGenerationResolver,
     DeliverySessionService,
+    // P5-5B-i — the delivery-capability credential boundary for artifact routes.
+    DeliveryTokenGuard,
     SlideProcessingQueueService,
     JobLeaseService,
     SlideProcessingScheduler,
