@@ -1,0 +1,62 @@
+# WSI delivery HTTP e2e — the one remaining Program 5A formal gate (see docs/PROGRAM_5A_CLOSEOUT.md §3).
+#
+# Runs ONLY the gated full-app delivery suite (delivery.e2e.spec.ts) against a real, migrated Postgres:
+# proves HTTP issuance → delivery capability → streamed artifact, plus credential separation (staff-JWT-
+# alone → 401, query token ignored, missing object → 404, Cache-Control: private, no-store).
+#
+# The suite is opt-in via WSI_DELIVERY_E2E=1 (DATABASE_URL is NOT a usable gate — the unit harness sets it
+# universally). NODE_ENV=test (jest default) keeps the background worker OFF during the run — this job
+# exercises delivery only. No product code or spec changes; wiring only.
+#
+# Notes for whoever enables this:
+#   - JWT_SECRET falls back to 'dev-secret' at bootstrap; a CI value is set below for hygiene.
+#   - The Postgres service DB is ephemeral; `prisma migrate deploy` applies the full P5 migration chain to
+#     it (the DB AppModule connects to). jest globalSetup additionally provisions the derived *_test DB.
+#   - If AppModule bootstrap later needs more env, add it under `env:` here (this is the first CI job that
+#     boots the full app).
+
+name: wsi-delivery-e2e
+
+on:
+  workflow_dispatch: # manual trigger for the formal gate
+  push:
+    branches: [main, feat/legacy-etl]
+    paths:
+      - 'apps/api/src/modules/wsi/**'
+      - 'apps/api/prisma/migrations/**'
+      - '.github/workflows/wsi-delivery-e2e.yml'
+
+concurrency:
+  group: wsi-delivery-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  delivery-e2e:
+    name: WSI delivery HTTP e2e (gated)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cytolab
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cytolab
+      JWT_SECRET: ci-delivery-e2e-secret
+      WSI_DELIVERY_E2E: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - name: Prisma generate
+        run: cd apps/api && npx prisma generate
+      - name: Migrate database (prisma migrate deploy)
+        run: cd apps/api && npx prisma migrate deploy
+      - name: Run delivery HTTP e2e (fails the job if the suite fails)
+        run: cd apps/api && npx jest src/modules/wsi/delivery/delivery.e2e.spec.ts --runInBand
