@@ -63,7 +63,9 @@ describeIf('Delivery artifact HTTP (e2e)', () => {
 
     const store = app.get<DerivativeObjectStore>(DERIVATIVE_OBJECT_STORE);
     await store.putImmutableObject(descriptorKey, Readable.from(Buffer.from('<Image TileSize="256" Overlap="1"/>')));
-  });
+    // CI reaches this hook but the full-AppModule bootstrap + CI DB exceeds Jest's default 5s hook ceiling
+    // (the suite itself ran ~34s in CI). Widen ONLY this setup hook; every test's own timeout is untouched.
+  }, 60_000);
 
   afterAll(async () => {
     if (labId) {
