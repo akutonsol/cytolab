@@ -35,10 +35,12 @@ import { SlideProcessingQueueService } from './processing/slide-processing-queue
 import { SlideProcessingScheduler } from './processing/slide-processing.scheduler';
 import { SlideReviewController } from './review/slide-review.controller';
 import { SlideReviewService } from './review/slide-review.service';
+import { SlidePublishController } from './publish/slide-publish.controller';
+import { SlidePublishService } from './publish/slide-publish.service';
 
 @Module({
   imports: [PrismaModule],
-  controllers: [WsiController, SlideIngestionController, SlideDeliverySessionController, ArtifactDeliveryController, SlideReviewController],
+  controllers: [WsiController, SlideIngestionController, SlideDeliverySessionController, ArtifactDeliveryController, SlideReviewController, SlidePublishController],
   providers: [
     WsiService,
     SlideIngestionService,
@@ -105,6 +107,8 @@ import { SlideReviewService } from './review/slide-review.service';
     SlideProcessingScheduler,
     // P5-6.1 — read-only clinical review projection (no mutation / delivery / publication).
     SlideReviewService,
+    // P5-6.3 — HTTP publication envelope (tenancy gate + audit) over the frozen SlidePublicationService.
+    SlidePublishService,
   ],
   exports: [WsiService, SlideIngestionService, SlideProcessingQueueService, JobLeaseService],
 })
