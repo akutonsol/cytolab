@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, MapPin, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ClipboardCheck, MapPin, Plus, Trash2 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
 import { WSIViewer } from '@/components/WSIViewer';
+import { SlideReviewDrawer } from '@/components/wsi/SlideReviewDrawer';
 import { shortDate, type DigitalSlide } from '@/lib/wsi';
 import { useAuth } from '@/lib/auth';
 import { notify } from '@/lib/notify';
@@ -28,7 +29,9 @@ export default function SlideViewerPage() {
   const { isEnabled } = useFeatures();
   const { can } = useAuth();
   const canEdit = can('record:change');
+  const canReview = can('wsi:review');
   const [addSignal, setAddSignal] = useState(0);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   const { data: slide, isLoading } = useQuery<DigitalSlide>({
     queryKey: ['wsi-slide', slideId],
@@ -65,6 +68,14 @@ export default function SlideViewerPage() {
           <div className="text-[14px] font-bold text-white">{slide ? slide.patientName : 'Loading…'}</div>
           <div className="text-[12px] text-slate-500">{slide ? `${slide.labNo}${slide.record?.formType ? ` · ${slide.record.formType}` : ''}` : ''}</div>
         </div>
+        {canReview && (
+          <button
+            onClick={() => setReviewOpen(true)}
+            className="ml-auto flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-semibold text-slate-200 hover:bg-white/10"
+          >
+            <ClipboardCheck size={16} /> Clinical Review
+          </button>
+        )}
       </div>
 
       <div className="flex min-h-0 flex-1">
@@ -125,6 +136,15 @@ export default function SlideViewerPage() {
           )}
         </main>
       </div>
+
+      {canReview && (
+        <SlideReviewDrawer
+          slideId={slideId}
+          open={reviewOpen}
+          onOpenChange={setReviewOpen}
+          patientName={slide?.patientName}
+        />
+      )}
     </div>
   );
 }

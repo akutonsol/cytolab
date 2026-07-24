@@ -103,6 +103,20 @@ export const SYSTEM_HEALTH_STATUS: Record<string, StatusPresentation> = {
   error: s('danger', 'Error', AlertTriangle),
 };
 
+// ── WSI derivative-generation lifecycle (P5-6.4; Prisma GenerationStatus) ──────
+// Zero-orange: QC_FAILED / FAILED are DANGER (rose), never amber. READY (publishable) is `info`
+// (blue) — distinct from PUBLISHED (`success`). Labels are textual so state never relies on colour.
+export const WSI_GENERATION: Record<string, StatusPresentation> = {
+  PUBLISHED: s('success', 'Published', CheckCircle2),
+  READY: s('info', 'Ready'),
+  QC_PENDING: s('neutral', 'Awaiting Verification'),
+  PROCESSING: s('info', 'Processing'),
+  QC_FAILED: s('danger', 'QC Failed', AlertTriangle),
+  SUPERSEDED: s('neutral', 'Superseded'),
+  ARCHIVED: s('neutral', 'Archived'),
+  FAILED: s('danger', 'Failed', AlertTriangle),
+};
+
 /**
  * Safe lookup. Returns the mapped presentation, or a neutral fallback that shows the raw
  * value verbatim — so an unknown/new owner value renders truthfully (never crashes, never

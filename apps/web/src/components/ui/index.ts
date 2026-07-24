@@ -51,4 +51,5 @@ export {
   QC_ALERT_STATUS,
   PROFICIENCY_STATUS,
   SYSTEM_HEALTH_STATUS,
+  WSI_GENERATION,
 } from './status-tokens';
