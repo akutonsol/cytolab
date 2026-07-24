@@ -90,7 +90,7 @@ export class LibvipsTilingEngine implements TilingEngine {
     const xml = await fs.readFile(dziPath, 'utf8').catch(() => '');
     const width = Number(/Width="(\d+)"/.exec(xml)?.[1] ?? 0);
     const height = Number(/Height="(\d+)"/.exec(xml)?.[1] ?? 0);
-    const levelNames = (await fs.readdir(filesDir, { withFileTypes: true }).catch(() => []))
+    const levelNames = (await fs.readdir(filesDir, { withFileTypes: true }).catch((): import('node:fs').Dirent[] => []))
       .filter((e) => e.isDirectory())
       .map((e) => Number(e.name))
       .filter((n) => Number.isInteger(n))

@@ -1,8 +1,9 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { DeliveryScope, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { PublishedGenerationResolver } from './published-generation.resolver';
+import { DELIVERY_SESSION_CONFIG } from './delivery.constants';
 
 /**
  * Program 5A · P5-5A-ii — issue / redeem / revoke short-lived, generation-bound viewing capabilities.
@@ -131,7 +132,9 @@ export class DeliverySessionService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly resolver: PublishedGenerationResolver,
-    private readonly config: DeliverySessionConfig = loadDeliverySessionConfig(),
+    // Resolved explicitly from the DI graph (DELIVERY_SESSION_CONFIG); the default only serves direct
+    // construction in tests — Nest never relies on it.
+    @Inject(DELIVERY_SESSION_CONFIG) private readonly config: DeliverySessionConfig = loadDeliverySessionConfig(),
   ) {}
 
   /** Issue a capability bound to the slide's CURRENTLY published generation (must be PUBLISHED). */

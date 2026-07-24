@@ -22,7 +22,8 @@ import { GenerationVerifier } from './processing/generation-verifier';
 import { GenerationVerdictService } from './processing/generation-verdict.service';
 import { SlidePublicationService } from './processing/slide-publication.service';
 import { PublishedGenerationResolver } from './delivery/published-generation.resolver';
-import { DeliverySessionService } from './delivery/delivery-session.service';
+import { DeliverySessionService, loadDeliverySessionConfig } from './delivery/delivery-session.service';
+import { DELIVERY_SESSION_CONFIG } from './delivery/delivery.constants';
 import { DeliveryTokenGuard } from './delivery/delivery-token.guard';
 import { ArtifactDeliveryService } from './delivery/artifact-delivery.service';
 import { SlideDeliverySessionController } from './delivery/slide-delivery-session.controller';
@@ -90,6 +91,7 @@ import { SlideProcessingScheduler } from './processing/slide-processing.schedule
     // P5-4b — publish a READY generation (→ PUBLISHED) + supersede prior + repoint slide. Service-only (no controller).
     SlidePublicationService,
     // P5-5A-ii — delivery-session runtime (issue/redeem/revoke) + published resolver. Service-only (no HTTP/delivery).
+    { provide: DELIVERY_SESSION_CONFIG, useFactory: () => loadDeliverySessionConfig() },
     PublishedGenerationResolver,
     DeliverySessionService,
     // P5-5B-i — the delivery-capability credential boundary for artifact routes.
