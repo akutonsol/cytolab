@@ -52,6 +52,10 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cytolab
       JWT_SECRET: ci-delivery-e2e-secret
       WSI_DELIVERY_E2E: '1'
+      # Full-AppModule boot requires a PHI encryption key (EncryptionService.onModuleInit). This is a
+      # fixed, NON-SECRET, test-only 32-byte key (64 hex chars) for this isolated CI DB only — it encrypts
+      # nothing of value here and must never be used as, or reused outside of, a production/test key.
+      ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
