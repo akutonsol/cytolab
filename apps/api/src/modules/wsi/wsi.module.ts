@@ -24,6 +24,7 @@ import { SlidePublicationService } from './processing/slide-publication.service'
 import { PublishedGenerationResolver } from './delivery/published-generation.resolver';
 import { DeliverySessionService } from './delivery/delivery-session.service';
 import { DeliveryTokenGuard } from './delivery/delivery-token.guard';
+import { ArtifactDeliveryService } from './delivery/artifact-delivery.service';
 import { SlideDeliverySessionController } from './delivery/slide-delivery-session.controller';
 import { ArtifactDeliveryController } from './delivery/artifact-delivery.controller';
 import { PROCESSING_CONFIG } from './processing/processing-tokens';
@@ -93,6 +94,8 @@ import { SlideProcessingScheduler } from './processing/slide-processing.schedule
     DeliverySessionService,
     // P5-5B-i — the delivery-capability credential boundary for artifact routes.
     DeliveryTokenGuard,
+    // P5-5B-ii — resolve + stream permitted immutable derivative artifacts (descriptor/tile/manifest/associated).
+    ArtifactDeliveryService,
     SlideProcessingQueueService,
     JobLeaseService,
     SlideProcessingScheduler,
