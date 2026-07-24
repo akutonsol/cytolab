@@ -34,7 +34,7 @@ const STANDARD_EXTRA: Record<string, string[]> = {
   appointment: ['manage'],
 };
 // Objects with a non-CRUD action set.
-const SPECIAL_OBJECTS: Record<string, string[]> = {
+export const SPECIAL_OBJECTS: Record<string, string[]> = {
   // System-generated in-app notifications: view + mark-read (change) + delete.
   notification: ['view', 'change', 'delete'],
   applicationprefs: ['view', 'change', 'reports', 'dashboard'],
@@ -54,52 +54,33 @@ const SPECIAL_OBJECTS: Record<string, string[]> = {
   // Assigned to NO default role (byPrefix below never selects 'audit'); super roles reach them via
   // the guard bypass, matching the Security Center. NOT a reuse of system:security.
   audit: ['read', 'read_system', 'read_phi'],
-  // P5-5B — digital-pathology viewing. Gates delivery-session issuance (authenticated slide viewing).
-  // Assigned to NO default role (byPrefix below never selects 'wsi'); super roles reach it via the guard
-  // bypass. Granting wsi:view to specific staff roles is an explicit, separate role-configuration decision.
-  wsi: ['view'],
+  // P5-5B / P5-6.2 — digital-pathology capabilities. view = delivery-session issuance (authenticated slide
+  // viewing); review = the P5-6.1 clinical read surface (generation/QC/publication metadata); publish = the
+  // deliberate publication action (endpoint arrives in P5-6.3 — catalogued here, consumed later). ALL THREE
+  // are assigned to NO default role (buildRoleDefs never selects 'wsi'); super roles reach them via the guard
+  // bypass. Granting any wsi:* to a staff role is an explicit, separate role-configuration decision.
+  wsi: ['view', 'review', 'publish'],
 };
 
-async function main() {
-  const codes: { code: string; label: string }[] = [];
-  for (const obj of STANDARD_OBJECTS) {
-    for (const action of [...STANDARD_ACTIONS, ...(STANDARD_EXTRA[obj] ?? [])]) {
-      codes.push({ code: `${obj}:${action}`, label: `${action} ${obj}` });
-    }
-  }
-  for (const [obj, actions] of Object.entries(SPECIAL_OBJECTS)) {
-    for (const action of actions) codes.push({ code: `${obj}:${action}`, label: `${action} ${obj}` });
-  }
+export interface SeedRoleDef {
+  name: string;
+  description: string;
+  isSuperRole?: boolean;
+  perms: { id: string }[];
+}
 
-  for (const c of codes) {
-    await prisma.permission.upsert({ where: { code: c.code }, update: { label: c.label }, create: c });
-  }
-  // Remove any permission not in the authoritative catalog (e.g. the retired
-  // applicationprefs:create/delete, notification:create/change). Cascades their
-  // RolePermission rows.
-  const keep = codes.map((c) => c.code);
-  const removed = await prisma.permission.deleteMany({ where: { code: { notIn: keep } } });
-  console.log(`Seeded ${codes.length} permissions (removed ${removed.count} stale)`);
-
-  // Default roles aligned to the REAL legacy role set seen in the app
-  // (Pathologist, Receptionist, Lab Technician, Authorizers, Superuser).
-  //
-  // NOTE: "Clients" is intentionally NOT seeded as a staff role. In 2.0 a client
-  // is the PORTAL identity (a structurally client-scoped PortalUser), not a
-  // permission-coded staff role — see the F2 portal design. The permission guard
-  // has no bearing on portal access.
-  //
-  // Super roles bypass the permission guard via the isSuperRole flag (not a
-  // hardcoded name), so a lab can add its own named super roles later.
-  const all = await prisma.permission.findMany();
+/**
+ * Pure default-role → permission-grant construction. Extracted verbatim from the previous inline `roleDefs`
+ * (behavior identical) so the P5-6.2 no-default-grant invariant is testable without executing the seed:
+ * no non-super role's prefixes ever include 'wsi', so no default role receives wsi:view/review/publish.
+ */
+export function buildRoleDefs(all: { id: string; code: string }[]): SeedRoleDef[] {
   const byPrefix = (prefixes: string[], actions?: string[]) =>
     all.filter(
-      (p: any) =>
-        prefixes.includes(p.code.split(':')[0]) &&
-        (!actions || actions.includes(p.code.split(':')[1])),
+      (p) => prefixes.includes(p.code.split(':')[0]) && (!actions || actions.includes(p.code.split(':')[1])),
     );
 
-  const roleDefs: { name: string; description: string; isSuperRole?: boolean; perms: { id: string }[] }[] = [
+  return [
     { name: 'Superuser', description: 'Full access', isSuperRole: true, perms: [] }, // bypasses via isSuperRole
     {
       name: 'Authorizers',
@@ -142,6 +123,41 @@ async function main() {
       ],
     },
   ];
+}
+
+async function main() {
+  const codes: { code: string; label: string }[] = [];
+  for (const obj of STANDARD_OBJECTS) {
+    for (const action of [...STANDARD_ACTIONS, ...(STANDARD_EXTRA[obj] ?? [])]) {
+      codes.push({ code: `${obj}:${action}`, label: `${action} ${obj}` });
+    }
+  }
+  for (const [obj, actions] of Object.entries(SPECIAL_OBJECTS)) {
+    for (const action of actions) codes.push({ code: `${obj}:${action}`, label: `${action} ${obj}` });
+  }
+
+  for (const c of codes) {
+    await prisma.permission.upsert({ where: { code: c.code }, update: { label: c.label }, create: c });
+  }
+  // Remove any permission not in the authoritative catalog (e.g. the retired
+  // applicationprefs:create/delete, notification:create/change). Cascades their
+  // RolePermission rows.
+  const keep = codes.map((c) => c.code);
+  const removed = await prisma.permission.deleteMany({ where: { code: { notIn: keep } } });
+  console.log(`Seeded ${codes.length} permissions (removed ${removed.count} stale)`);
+
+  // Default roles aligned to the REAL legacy role set seen in the app
+  // (Pathologist, Receptionist, Lab Technician, Authorizers, Superuser).
+  //
+  // NOTE: "Clients" is intentionally NOT seeded as a staff role. In 2.0 a client
+  // is the PORTAL identity (a structurally client-scoped PortalUser), not a
+  // permission-coded staff role — see the F2 portal design. The permission guard
+  // has no bearing on portal access.
+  //
+  // Super roles bypass the permission guard via the isSuperRole flag (not a
+  // hardcoded name), so a lab can add its own named super roles later.
+  const all = await prisma.permission.findMany();
+  const roleDefs = buildRoleDefs(all);
 
   for (const r of roleDefs) {
     const role = await prisma.role.upsert({
@@ -164,9 +180,13 @@ async function main() {
   console.log(`Seeded ${roleDefs.length} roles`);
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+// Run only when executed directly (`prisma db seed`), NOT when imported by a test that inspects the pure
+// buildRoleDefs/SPECIAL_OBJECTS exports — importing must not open a DB connection or exit the process.
+if (require.main === module) {
+  main()
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    })
+    .finally(() => prisma.$disconnect());
+}

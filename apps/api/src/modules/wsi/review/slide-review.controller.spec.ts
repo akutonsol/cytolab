@@ -4,11 +4,11 @@ import { SlideReviewController } from './slide-review.controller';
 import { SlideReviewService } from './slide-review.service';
 
 /**
- * P5-6.1 — controller unit test: proves each route delegates with the JWT `labId` (never the body) and
- * that the INTERIM `record:view` permission metadata is present on every handler (the PermissionsGuard,
- * tested elsewhere, enforces it). P5-6.2 will re-point this metadata to `wsi:review`.
+ * P5-6.1/6.2 — controller unit test: proves each route delegates with the JWT `labId` (never the body) and
+ * that the `wsi:review` permission metadata is present on every handler (the PermissionsGuard, tested in
+ * slide-review.authz.spec.ts, enforces it).
  */
-const user: AuthUser = { userId: 'u1', labId: 'lab-1', email: 'e@x.test', roles: [], permissions: ['record:view'] };
+const user: AuthUser = { userId: 'u1', labId: 'lab-1', email: 'e@x.test', roles: [], permissions: ['wsi:review'] };
 
 function makeService() {
   return {
@@ -33,10 +33,10 @@ describe('SlideReviewController', () => {
     expect(svc.getPublicationHistory).toHaveBeenCalledWith('lab-1', 'slide-1', { limit: 25, cursor: 'c' });
   });
 
-  it('gates every handler behind record:view (interim; P5-6.2 → wsi:review)', () => {
+  it('gates every handler behind exactly wsi:review', () => {
     const proto = SlideReviewController.prototype as any;
     for (const handler of ['getReview', 'getEvidence', 'getPublications']) {
-      expect(Reflect.getMetadata(PERMISSIONS_KEY, proto[handler])).toEqual(['record:view']);
+      expect(Reflect.getMetadata(PERMISSIONS_KEY, proto[handler])).toEqual(['wsi:review']);
     }
   });
 });
