@@ -75,9 +75,11 @@ Source objects are structurally unreachable from delivery (generation-prefix con
 |---|---|---|
 | **P5-5 delivery HTTP e2e** | `WSI_DELIVERY_E2E=1` run passes once in a full-app/CI env (migrated DB + deps): proves HTTP issuance → capability → streamed artifact + credential separation (staff-JWT-alone→401, query-token→401, missing→404, `private, no-store`) | ⏳ **pending** (cannot bootstrap full app locally) |
 
-**Runbook (CI job: `.github/workflows/wsi-delivery-e2e.yml`, or manually):** against a migrated Postgres —
-`cd apps/api && DATABASE_URL=postgresql://…/cytolab npx prisma migrate deploy && WSI_DELIVERY_E2E=1 npx jest src/modules/wsi/delivery/delivery.e2e.spec.ts --runInBand`
-(requires a full-app-bootstrappable env; `JWT_SECRET` optional — falls back to a dev default).
+**Runbook (CI job: `.github/workflows/wsi-delivery-e2e.yml`, or manually):** point `DATABASE_URL` at a
+reachable Postgres, then —
+`cd apps/api && DATABASE_URL=postgresql://…/cytolab WSI_DELIVERY_E2E=1 npx jest src/modules/wsi/delivery/delivery.e2e.spec.ts --runInBand`
+(jest globalSetup builds the isolated `<name>_test` DB from the datamodel — no `migrate deploy`, whose
+ordered chain can't build from zero; requires a full-app-bootstrappable env; `JWT_SECRET` optional).
 
 Until this passes: P5-5B-ii **code approved/committed**; **P5-5 overall = provisional**; **Program 5A =
 functionally complete, not formally closed.**

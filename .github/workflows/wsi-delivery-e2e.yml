@@ -10,8 +10,11 @@
 #
 # Notes for whoever enables this:
 #   - JWT_SECRET falls back to 'dev-secret' at bootstrap; a CI value is set below for hygiene.
-#   - The Postgres service DB is ephemeral; `prisma migrate deploy` applies the full P5 migration chain to
-#     it (the DB AppModule connects to). jest globalSetup additionally provisions the derived *_test DB.
+#   - The Postgres service DB is ephemeral. The suite runs against the isolated `<name>_test` sibling that
+#     jest globalSetup builds from the datamodel (order-independent `migrate diff --from-empty`); jest-setup
+#     redirects DATABASE_URL to that `_test` DB. So `migrate deploy` is intentionally NOT run here (the
+#     ordered chain cannot build a fresh DB from zero — see apps/api/test/global-setup.ts). DATABASE_URL
+#     below just needs to point at the service so the harness can derive + create the `_test` sibling.
 #   - If AppModule bootstrap later needs more env, add it under `env:` here (this is the first CI job that
 #     boots the full app).
 
@@ -56,7 +59,5 @@ jobs:
       - run: npm ci
       - name: Prisma generate
         run: cd apps/api && npx prisma generate
-      - name: Migrate database (prisma migrate deploy)
-        run: cd apps/api && npx prisma migrate deploy
       - name: Run delivery HTTP e2e (fails the job if the suite fails)
         run: cd apps/api && npx jest src/modules/wsi/delivery/delivery.e2e.spec.ts --runInBand
