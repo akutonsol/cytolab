@@ -21,6 +21,10 @@ export interface ProcessingConfig {
   claimJitterMs: number;
   /** How long graceful shutdown waits for in-flight attempts before releasing leases to reclaim. */
   drainTimeoutMs: number;
+  /** W-ii — verification workload (independent of processing): concurrency, reconciler batch, cadence. */
+  verifyMaxConcurrent: number;
+  verifyBatchSize: number;
+  verifyIntervalMs: number;
   /** Master gate for the background worker/reconciler/reclaimer schedulers (NOT the enqueue write path). */
   workerEnabled: boolean;
 }
@@ -44,6 +48,9 @@ export function loadProcessingConfig(env: NodeJS.ProcessEnv = process.env): Proc
     claimIntervalMs: num(env.WSI_PROCESSING_CLAIM_MS, 10_000),
     claimJitterMs: num(env.WSI_PROCESSING_CLAIM_JITTER_MS, 5_000),
     drainTimeoutMs: num(env.WSI_PROCESSING_DRAIN_MS, 30_000),
+    verifyMaxConcurrent: num(env.WSI_VERIFY_CONCURRENCY, 2),
+    verifyBatchSize: num(env.WSI_VERIFY_BATCH, 20),
+    verifyIntervalMs: num(env.WSI_VERIFY_INTERVAL_MS, 30_000),
     // Gated OFF unless explicitly enabled, and NEVER under test. B.1A has no processing body to run.
     workerEnabled: env.WSI_PROCESSING_WORKER === 'true' && env.NODE_ENV !== 'test',
   };
@@ -61,6 +68,12 @@ export function validateProcessingConfig(cfg: ProcessingConfig): void {
   }
   if (!(cfg.workerConcurrency >= 1)) throw new Error(`invalid processing config: workerConcurrency must be >= 1 (got ${cfg.workerConcurrency})`);
   if (!(cfg.drainTimeoutMs >= 0)) throw new Error(`invalid processing config: drainTimeoutMs must be >= 0 (got ${cfg.drainTimeoutMs})`);
+  // W-ii — verification workload must be independently well-formed.
+  if (!(cfg.verifyMaxConcurrent >= 1)) throw new Error(`invalid processing config: verifyMaxConcurrent must be >= 1 (got ${cfg.verifyMaxConcurrent})`);
+  if (!(cfg.verifyBatchSize >= cfg.verifyMaxConcurrent)) {
+    throw new Error(`invalid processing config: verifyBatchSize (${cfg.verifyBatchSize}) must be >= verifyMaxConcurrent (${cfg.verifyMaxConcurrent})`);
+  }
+  if (!(cfg.verifyIntervalMs > 0)) throw new Error(`invalid processing config: verifyIntervalMs must be > 0 (got ${cfg.verifyIntervalMs})`);
 }
 
 /** Backoff (ms) that must elapse after the prior attempt's finishedAt before the next attempt is eligible. */

@@ -38,6 +38,10 @@ export class ProcessingWorkerRuntime {
     private readonly cfg: ProcessingConfig,
     private readonly workerId: string,
     private readonly logger: Logger,
+    /** W-ii — best-effort immediate-verification trigger, invoked AFTER the processing slot is released on a
+     *  successful seal. It must NEVER affect the processing outcome; a throw/drop is logged and ignored (the
+     *  periodic verification reconciler is the durable safety net). Default undefined ⇒ W-i behavior. */
+    private readonly onProcessed?: (generationId: string) => void,
   ) {}
 
   get inFlightCount(): number {
@@ -75,8 +79,10 @@ export class ProcessingWorkerRuntime {
   }
 
   private async runAttempt(job: ClaimedJob, state: AttemptState): Promise<void> {
+    let sealedGenerationId: string | null = null;
     try {
-      await this.processor.process(job, this.workerId, { abortSignal: state.abort.signal });
+      const r = await this.processor.process(job, this.workerId, { abortSignal: state.abort.signal });
+      sealedGenerationId = r.generationId;
       this.logger.log(`worker=${this.workerId} processed job ${job.id} → sealed generation (QC_PENDING)`);
     } catch (e) {
       if (state.leaseLost || e instanceof LeaseLostError) {
@@ -91,7 +97,15 @@ export class ProcessingWorkerRuntime {
       }
     } finally {
       clearInterval(state.heartbeat);
-      this.inFlight.delete(job.id);
+      this.inFlight.delete(job.id); // release the processing slot BEFORE any verification trigger (Option B)
+    }
+    // Best-effort immediate verification (W-ii). Never affects the (already committed) processing outcome.
+    if (sealedGenerationId && this.onProcessed) {
+      try {
+        this.onProcessed(sealedGenerationId);
+      } catch (e) {
+        this.logger.warn(`worker=${this.workerId} onProcessed(${sealedGenerationId}) threw (ignored; reconciler recovers): ${(e as Error)?.message}`);
+      }
     }
   }
 

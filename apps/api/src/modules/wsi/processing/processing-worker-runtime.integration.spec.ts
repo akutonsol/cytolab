@@ -17,6 +17,8 @@ import { GenerationSealer } from './generation-sealer';
 import { SlideProcessingQueueService } from './slide-processing-queue.service';
 import { ProcessingWorkerRuntime, classifyProcessingError } from './processing-worker-runtime';
 import { SlideProcessingScheduler } from './slide-processing.scheduler';
+import { GenerationVerdictService } from './generation-verdict.service';
+import { GenerationVerifier } from './generation-verifier';
 import { AcquisitionMetadataConflictError } from './slide-processing.processor';
 import { TilingEngineError } from './tiling-engine';
 import { InvalidEngineOutputError } from './tiling-output-validator';
@@ -71,7 +73,8 @@ function makeRuntime(stores: ReturnType<typeof newStores>, c: ProcessingConfig, 
   const processor = new SlideProcessingProcessor(prisma as unknown as PrismaService, lease, stores.materializer, engine, stores.derivStore, sealer);
   const runtime = new ProcessingWorkerRuntime(lease, processor, c, workerId, new Logger('test'));
   const queue = new SlideProcessingQueueService(prisma as unknown as PrismaService, c);
-  return { lease, processor, runtime, queue };
+  const verdict = new GenerationVerdictService(prisma as unknown as PrismaService, new GenerationVerifier(prisma as unknown as PrismaService, stores.derivStore));
+  return { lease, processor, runtime, queue, verdict };
 }
 const getJob = (id: string) => prisma.slideProcessingJob.findUniqueOrThrow({ where: { id } });
 
@@ -211,9 +214,9 @@ it('graceful drain awaits a normal in-flight attempt and never marks it FAILED',
 // ── scheduler gating ─────────────────────────────────────────────────────────────────────────────────
 it('scheduler: a disabled worker starts no claim loop (no jobs claimed)', async () => {
   const stores = newStores();
-  const { lease, processor, queue } = makeRuntime(stores, cfg(), new FakeTilingEngine('none'));
+  const { lease, processor, queue, verdict } = makeRuntime(stores, cfg(), new FakeTilingEngine('none'));
   const claimSpy = jest.spyOn(lease, 'claim');
-  const sched = new SlideProcessingScheduler(queue, lease, processor, cfg({ workerEnabled: false }));
+  const sched = new SlideProcessingScheduler(prisma as unknown as PrismaService, queue, lease, processor, verdict, cfg({ workerEnabled: false }));
   sched.onApplicationBootstrap();
   expect(claimSpy).not.toHaveBeenCalled();
   await sched.onModuleDestroy();
@@ -221,8 +224,8 @@ it('scheduler: a disabled worker starts no claim loop (no jobs claimed)', async 
 });
 it('scheduler: an enabled worker with unsafe heartbeat config fails fast at bootstrap', () => {
   const stores = newStores();
-  const { lease, processor, queue } = makeRuntime(stores, cfg(), new FakeTilingEngine('none'));
-  const sched = new SlideProcessingScheduler(queue, lease, processor, cfg({ workerEnabled: true, leaseDurationMs: 30_000, heartbeatIntervalMs: 30_000 }));
+  const { lease, processor, queue, verdict } = makeRuntime(stores, cfg(), new FakeTilingEngine('none'));
+  const sched = new SlideProcessingScheduler(prisma as unknown as PrismaService, queue, lease, processor, verdict, cfg({ workerEnabled: true, leaseDurationMs: 30_000, heartbeatIntervalMs: 30_000 }));
   expect(() => sched.onApplicationBootstrap()).toThrow(/heartbeatIntervalMs/);
 });
 

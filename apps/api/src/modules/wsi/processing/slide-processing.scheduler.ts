@@ -1,9 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
+import { PrismaService } from '../../../database/prisma.service';
 import { JobLeaseService } from './job-lease.service';
 import { SlideProcessingQueueService } from './slide-processing-queue.service';
 import { SlideProcessingProcessor } from './slide-processing.processor';
+import { GenerationVerdictService } from './generation-verdict.service';
 import { ProcessingWorkerRuntime } from './processing-worker-runtime';
+import { VerificationWorkerRuntime } from './verification-worker-runtime';
 import { validateProcessingConfig } from './processing-config';
 import { PROCESSING_CONFIG, ProcessingConfig } from './processing-tokens';
 
@@ -23,12 +26,15 @@ export class SlideProcessingScheduler implements OnApplicationBootstrap, OnModul
   private readonly logger = new Logger(SlideProcessingScheduler.name);
   readonly workerId = `${process.env.WSI_WORKER_ID ?? 'wsi-worker'}-${randomUUID()}`;
   private timers: NodeJS.Timeout[] = [];
-  private runtime?: ProcessingWorkerRuntime;
+  private processing?: ProcessingWorkerRuntime;
+  private verification?: VerificationWorkerRuntime;
 
   constructor(
+    private readonly prisma: PrismaService,
     private readonly queue: SlideProcessingQueueService,
     private readonly lease: JobLeaseService,
     private readonly processor: SlideProcessingProcessor,
+    private readonly verdict: GenerationVerdictService,
     @Inject(PROCESSING_CONFIG) private readonly cfg: ProcessingConfig,
   ) {}
 
@@ -37,23 +43,28 @@ export class SlideProcessingScheduler implements OnApplicationBootstrap, OnModul
       this.logger.log('slide-processing scheduler disabled (WSI_PROCESSING_WORKER!=true or NODE_ENV=test)');
       return;
     }
-    validateProcessingConfig(this.cfg); // fail fast on an unsafe worker configuration (heartbeat vs lease, etc.)
+    validateProcessingConfig(this.cfg); // fail fast on an unsafe worker configuration (heartbeat vs lease, verify budgets)
 
-    // W-i — the processing worker runtime (claim → process → seal). Ends at QC_PENDING; no verify/publish.
-    this.runtime = new ProcessingWorkerRuntime(this.lease, this.processor, this.cfg, this.workerId, this.logger);
+    // W-ii — verification workload (independent of processing). W-i processing runtime triggers it immediately
+    // on a successful seal (best-effort); the periodic reconciler is the durable safety net. Neither publishes.
+    this.verification = new VerificationWorkerRuntime(this.prisma, this.verdict, this.cfg, this.workerId, this.logger);
+    this.processing = new ProcessingWorkerRuntime(this.lease, this.processor, this.cfg, this.workerId, this.logger, (genId) =>
+      this.verification!.enqueue(genId),
+    );
 
-    // Row-only reconciliation/reclamation sweeps + the claim/process tick (jittered to avoid lockstep polling).
     this.timers.push(setInterval(() => void this.safe('reconcile', () => this.queue.reconcile()), this.cfg.reconcileIntervalMs));
     this.timers.push(setInterval(() => void this.safe('reclaim', () => this.lease.reclaimExpired()), this.cfg.reclaimIntervalMs));
-    this.timers.push(setInterval(() => void this.safe('claim', () => this.runtime!.claimAndProcess()), this.cfg.claimIntervalMs + jitter(this.cfg.claimJitterMs)));
+    this.timers.push(setInterval(() => void this.safe('claim', () => this.processing!.claimAndProcess()), this.cfg.claimIntervalMs + jitter(this.cfg.claimJitterMs)));
+    this.timers.push(setInterval(() => void this.safe('verify', () => this.verification!.reconcileTick()), this.cfg.verifyIntervalMs));
     for (const t of this.timers) t.unref?.();
-    this.logger.log(`slide-processing worker started (worker=${this.workerId}, concurrency=${this.cfg.workerConcurrency})`);
+    this.logger.log(`slide-processing worker started (worker=${this.workerId}, processing=${this.cfg.workerConcurrency}, verify=${this.cfg.verifyMaxConcurrent})`);
   }
 
   async onModuleDestroy(): Promise<void> {
-    for (const t of this.timers) clearInterval(t);
+    for (const t of this.timers) clearInterval(t); // stop claim + verify ticks first
     this.timers = [];
-    await this.runtime?.drain().catch((e) => this.logger.error(`drain failed: ${(e as Error)?.message}`));
+    await this.processing?.drain().catch((e) => this.logger.error(`processing drain failed: ${(e as Error)?.message}`));
+    await this.verification?.drain().catch((e) => this.logger.error(`verification drain failed: ${(e as Error)?.message}`));
   }
 
   private async safe(name: string, fn: () => Promise<unknown>): Promise<void> {
