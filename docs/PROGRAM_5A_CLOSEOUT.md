@@ -1,7 +1,7 @@
 # Program 5A — Digital Pathology — Closeout & Release Readiness
 
-**Status:** functionally complete; **one** formal gate outstanding (P5-5 delivery HTTP e2e).
-**Branch:** `feat/legacy-etl`  ·  **Head at closeout:** `d0993e4`  ·  **Date:** 2026-07-23
+**Status:** **COMPLETE & FROZEN** — P5-5 and Program 5A formally closed; the delivery HTTP e2e gate passed in CI (§3).
+**Branch:** `feat/legacy-etl`  ·  **Head at functional completion:** `d0993e4`  ·  **Gate closed at:** `9563737`  ·  **Date:** 2026-07-24
 **Scope:** evolved the existing Tier-5 WSI vertical into an enterprise digital-pathology pipeline
 (ingestion → verified derivatives → sealed/verified generations → manual publication → authenticated
 delivery → automated worker), preserving provenance/audit/tenancy/security foundations. No greenfield.
@@ -69,20 +69,26 @@ Source objects are structurally unreachable from delivery (generation-prefix con
 
 ---
 
-## 3. Outstanding gate (blocks 100% formal closure)
+## 3. Delivery HTTP e2e gate — CLOSED (formal-closure evidence)
 
 | Gate | Requirement | Status |
 |---|---|---|
-| **P5-5 delivery HTTP e2e** | `WSI_DELIVERY_E2E=1` run passes once in a full-app/CI env (migrated DB + deps): proves HTTP issuance → capability → streamed artifact + credential separation (staff-JWT-alone→401, query-token→401, missing→404, `private, no-store`) | ⏳ **pending** (cannot bootstrap full app locally) |
+| **P5-5 delivery HTTP e2e** | `WSI_DELIVERY_E2E=1` run passes once in a full-app/CI env (migrated DB + deps): proves HTTP issuance → capability → streamed artifact + credential separation (staff-JWT-alone→401, query-token→401, missing→404, `private, no-store`) | ✅ **PASSED** — `wsi-delivery-e2e` run **#3**, branch `feat/legacy-etl`, commit `9563737`, 2026-07-24 (~2m26s). All 4 assertions green. |
+
+**How the gate was reached (evidence trail).** Exercising the full application surfaced three CI-bootstrap
+prerequisites — each fixed narrowly, with **no product/spec/assertion change**:
+- `953a00e` — delivery-session config resolved via a `DELIVERY_SESSION_CONFIG` DI token (+ a ts-jest typing fix) so the full AppModule compiles/bootstraps under the e2e.
+- `b49861e` — widened **only** the e2e `beforeAll` hook to 60s for the CI full-app boot (Jest's default 5s hook ceiling was exceeded; the suite itself runs ~34s).
+- `9563737` — provided a fixed, non-secret, **test-only** `ENCRYPTION_KEY` in the CI job env (full-app boot legitimately requires a PHI key). The green run #3 is on this commit.
 
 **Runbook (CI job: `.github/workflows/wsi-delivery-e2e.yml`, or manually):** point `DATABASE_URL` at a
 reachable Postgres, then —
-`cd apps/api && DATABASE_URL=postgresql://…/cytolab WSI_DELIVERY_E2E=1 npx jest src/modules/wsi/delivery/delivery.e2e.spec.ts --runInBand`
+`cd apps/api && DATABASE_URL=postgresql://…/cytolab WSI_DELIVERY_E2E=1 ENCRYPTION_KEY=<64-hex> npx jest src/modules/wsi/delivery/delivery.e2e.spec.ts --runInBand`
 (jest globalSetup builds the isolated `<name>_test` DB from the datamodel — no `migrate deploy`, whose
 ordered chain can't build from zero; requires a full-app-bootstrappable env; `JWT_SECRET` optional).
 
-Until this passes: P5-5B-ii **code approved/committed**; **P5-5 overall = provisional**; **Program 5A =
-functionally complete, not formally closed.**
+Gate satisfied ⇒ **P5-5B-ii code approved/committed + e2e-proven; P5-5 = COMPLETE & FROZEN; Program 5A =
+COMPLETE & FROZEN.**
 
 ---
 
@@ -127,7 +133,7 @@ functionally complete, not formally closed.**
 - [x] Source objects structurally unreachable from delivery; strict tile-coordinate validation.
 - [x] Worker activation (processing + verification), default-OFF, durable retry, heartbeat abort, drain.
 - [x] Full WSI regression green (24 suites + 1 gated; 177 tests + 4 skipped) · `tsc` clean.
-- [ ] **P5-5 delivery HTTP e2e passes once (`WSI_DELIVERY_E2E=1`) in CI.** ← only open gate.
+- [x] **P5-5 delivery HTTP e2e passed (`WSI_DELIVERY_E2E=1`) in CI** — run #3, commit `9563737`, 2026-07-24. ← gate closed.
 - [ ] `wsi:view` assigned to intended roles in the target environment (operator action).
 - [ ] Worker enabled + tuned in the target environment (operator action).
 - [ ] Program 9 provisioning/cutover (separate program; deferred).
@@ -135,6 +141,6 @@ functionally complete, not formally closed.**
 ---
 
 **Bottom line:** the clinical WSI artifact lifecycle, read path, and automated worker are implemented,
-tested, and frozen. The single remaining item before formal Program 5A closure is a green
-`WSI_DELIVERY_E2E=1` run in a full-app/CI environment; everything else is either done or an explicit,
-recorded deferral.
+tested, and **frozen**. The final gate — a green `WSI_DELIVERY_E2E=1` run in a full-app/CI environment —
+**passed** (run #3, commit `9563737`, 2026-07-24), so **P5-5 and Program 5A are COMPLETE & FROZEN**.
+Everything else is either done or an explicit, recorded deferral. Program 5B (P5-6 onward) is the next work.
