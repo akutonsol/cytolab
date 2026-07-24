@@ -2,6 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { Inject, Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
 import { JobLeaseService } from './job-lease.service';
 import { SlideProcessingQueueService } from './slide-processing-queue.service';
+import { SlideProcessingProcessor } from './slide-processing.processor';
+import { ProcessingWorkerRuntime } from './processing-worker-runtime';
+import { validateProcessingConfig } from './processing-config';
 import { PROCESSING_CONFIG, ProcessingConfig } from './processing-tokens';
 
 /**
@@ -20,28 +23,37 @@ export class SlideProcessingScheduler implements OnApplicationBootstrap, OnModul
   private readonly logger = new Logger(SlideProcessingScheduler.name);
   readonly workerId = `${process.env.WSI_WORKER_ID ?? 'wsi-worker'}-${randomUUID()}`;
   private timers: NodeJS.Timeout[] = [];
+  private runtime?: ProcessingWorkerRuntime;
 
   constructor(
     private readonly queue: SlideProcessingQueueService,
     private readonly lease: JobLeaseService,
+    private readonly processor: SlideProcessingProcessor,
     @Inject(PROCESSING_CONFIG) private readonly cfg: ProcessingConfig,
   ) {}
 
   onApplicationBootstrap(): void {
     if (!this.cfg.workerEnabled) {
-      this.logger.log('slide-processing scheduler disabled (P5-3B.1A: coordination only; no processing body yet)');
+      this.logger.log('slide-processing scheduler disabled (WSI_PROCESSING_WORKER!=true or NODE_ENV=test)');
       return;
     }
-    // Only the row-only sweeps run — never an end-to-end processing loop (that is B.1C/B.2).
+    validateProcessingConfig(this.cfg); // fail fast on an unsafe worker configuration (heartbeat vs lease, etc.)
+
+    // W-i — the processing worker runtime (claim → process → seal). Ends at QC_PENDING; no verify/publish.
+    this.runtime = new ProcessingWorkerRuntime(this.lease, this.processor, this.cfg, this.workerId, this.logger);
+
+    // Row-only reconciliation/reclamation sweeps + the claim/process tick (jittered to avoid lockstep polling).
     this.timers.push(setInterval(() => void this.safe('reconcile', () => this.queue.reconcile()), this.cfg.reconcileIntervalMs));
     this.timers.push(setInterval(() => void this.safe('reclaim', () => this.lease.reclaimExpired()), this.cfg.reclaimIntervalMs));
+    this.timers.push(setInterval(() => void this.safe('claim', () => this.runtime!.claimAndProcess()), this.cfg.claimIntervalMs + jitter(this.cfg.claimJitterMs)));
     for (const t of this.timers) t.unref?.();
-    this.logger.log(`slide-processing scheduler started (worker=${this.workerId})`);
+    this.logger.log(`slide-processing worker started (worker=${this.workerId}, concurrency=${this.cfg.workerConcurrency})`);
   }
 
-  onModuleDestroy(): void {
+  async onModuleDestroy(): Promise<void> {
     for (const t of this.timers) clearInterval(t);
     this.timers = [];
+    await this.runtime?.drain().catch((e) => this.logger.error(`drain failed: ${(e as Error)?.message}`));
   }
 
   private async safe(name: string, fn: () => Promise<unknown>): Promise<void> {
@@ -51,4 +63,9 @@ export class SlideProcessingScheduler implements OnApplicationBootstrap, OnModul
       this.logger.error(`slide-processing ${name} sweep failed: ${e?.message ?? e}`);
     }
   }
+}
+
+/** Non-negative operational jitter (ms) so multiple instances do not poll in lockstep. */
+function jitter(maxMs: number): number {
+  return Math.floor(Math.random() * Math.max(0, maxMs));
 }

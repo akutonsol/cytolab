@@ -55,14 +55,20 @@ export class SlideProcessingProcessor {
     private readonly sealer: GenerationSealer,
   ) {}
 
-  async process(job: ClaimedJob, workerId: string): Promise<{ generationId: string; manifestChecksum: string }> {
+  async process(
+    job: ClaimedJob,
+    workerId: string,
+    opts?: { abortSignal?: AbortSignal },
+  ): Promise<{ generationId: string; manifestChecksum: string }> {
     const ing = await this.loadVerifiedIngestion(job.ingestionId);
     const materialized = await this.materializer.materializeVerifiedSource({
       sourceObjectKey: ing.sourceObjectKey,
       expectedChecksum: ing.sourceChecksum,
     });
     const engineOut = await fs.mkdtemp(path.join(os.tmpdir(), 'wsi-engine-out-'));
-    const abort = new AbortController();
+    // The worker runtime may supply an external abort signal (heartbeat-driven lease-loss); default to an
+    // internal (never-aborted) controller so direct callers/tests are unaffected.
+    const abortSignal = opts?.abortSignal ?? new AbortController().signal;
 
     try {
       // Lease-guarded generation creation (SELECT job FOR UPDATE owned+RUNNING+lease-valid → INSERT).
@@ -72,7 +78,7 @@ export class SlideProcessingProcessor {
         workingFilePath: materialized.path,
         outputDirectory: engineOut,
         config: this.config,
-        abortSignal: abort.signal,
+        abortSignal,
       });
       await validateTilingOutput(result, engineOut); // untrusted output
 

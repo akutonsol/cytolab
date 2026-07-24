@@ -9,13 +9,16 @@
 export type ProcessingErrorCode =
   | 'CHECKSUM_MISMATCH' // the source no longer matches its verified checksum → deterministic, non-retryable
   | 'UNSUPPORTED_FORMAT' // the engine cannot read this WSI → deterministic, non-retryable
+  | 'ACQUISITION_CONFLICT' // engine acquisition metadata conflicts with existing slide metadata → deterministic, non-retryable (needs human review)
   | 'CANCELLED' // operator/lifecycle cancellation → non-retryable
   | 'ENGINE_CRASH' // native subprocess crashed/killed → retryable
+  | 'ENGINE_UNAVAILABLE' // the engine binary/runtime is unavailable → retryable (environmental)
+  | 'INVALID_OUTPUT' // the engine produced structurally invalid output → retryable, budgeted (may be version/env-related)
   | 'STORAGE_TRANSIENT' // transient object-store failure → retryable
   | 'WORKER_TERMINATED' // lease loss / SIGTERM / reclaimed → retryable
   | 'UNKNOWN'; // unclassified → treated as transient (retryable, but bounded by maxAttempts)
 
-const NON_RETRYABLE = new Set<ProcessingErrorCode>(['CHECKSUM_MISMATCH', 'UNSUPPORTED_FORMAT', 'CANCELLED']);
+const NON_RETRYABLE = new Set<ProcessingErrorCode>(['CHECKSUM_MISMATCH', 'UNSUPPORTED_FORMAT', 'ACQUISITION_CONFLICT', 'CANCELLED']);
 
 export function isRetryable(code: ProcessingErrorCode): boolean {
   return !NON_RETRYABLE.has(code);

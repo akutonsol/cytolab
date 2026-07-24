@@ -15,8 +15,12 @@ export interface ProcessingConfig {
   /** Backoff before the Nth retry is eligible, indexed by (attempt-1); the last value repeats. */
   backoffMs: number[];
   workerConcurrency: number;
+  /** Cadence of the claim/process tick (how often the worker tries to fill free slots). */
+  claimIntervalMs: number;
   /** Randomised jitter added to the claim loop so instances do not poll in lockstep. */
   claimJitterMs: number;
+  /** How long graceful shutdown waits for in-flight attempts before releasing leases to reclaim. */
+  drainTimeoutMs: number;
   /** Master gate for the background worker/reconciler/reclaimer schedulers (NOT the enqueue write path). */
   workerEnabled: boolean;
 }
@@ -37,10 +41,26 @@ export function loadProcessingConfig(env: NodeJS.ProcessEnv = process.env): Proc
     maxAttempts: num(env.WSI_PROCESSING_MAX_ATTEMPTS, 3),
     backoffMs: [1 * MIN, 5 * MIN, 15 * MIN],
     workerConcurrency: num(env.WSI_PROCESSING_CONCURRENCY, 2),
+    claimIntervalMs: num(env.WSI_PROCESSING_CLAIM_MS, 10_000),
     claimJitterMs: num(env.WSI_PROCESSING_CLAIM_JITTER_MS, 5_000),
+    drainTimeoutMs: num(env.WSI_PROCESSING_DRAIN_MS, 30_000),
     // Gated OFF unless explicitly enabled, and NEVER under test. B.1A has no processing body to run.
     workerEnabled: env.WSI_PROCESSING_WORKER === 'true' && env.NODE_ENV !== 'test',
   };
+}
+
+/**
+ * P5-3B (worker activation) — reject an UNSAFE worker configuration at startup rather than silently
+ * running a worker whose lease can expire mid-attempt. The heartbeat must fit comfortably inside the lease
+ * (≤ 1/3 of it) so a couple of missed renewals never let the lease lapse while work is still in flight.
+ */
+export function validateProcessingConfig(cfg: ProcessingConfig): void {
+  if (!(cfg.leaseDurationMs > 0)) throw new Error(`invalid processing config: leaseDurationMs must be > 0 (got ${cfg.leaseDurationMs})`);
+  if (!(cfg.heartbeatIntervalMs > 0 && cfg.heartbeatIntervalMs <= cfg.leaseDurationMs / 3)) {
+    throw new Error(`invalid processing config: require 0 < heartbeatIntervalMs (${cfg.heartbeatIntervalMs}) <= leaseDurationMs/3 (${cfg.leaseDurationMs / 3})`);
+  }
+  if (!(cfg.workerConcurrency >= 1)) throw new Error(`invalid processing config: workerConcurrency must be >= 1 (got ${cfg.workerConcurrency})`);
+  if (!(cfg.drainTimeoutMs >= 0)) throw new Error(`invalid processing config: drainTimeoutMs must be >= 0 (got ${cfg.drainTimeoutMs})`);
 }
 
 /** Backoff (ms) that must elapse after the prior attempt's finishedAt before the next attempt is eligible. */
