@@ -1,0 +1,6 @@
+# P5-6.4 acceptance — runtime artifacts (never committed)
+.fixtures.json
+.auth/
+.output/
+screenshots/
+*.png
