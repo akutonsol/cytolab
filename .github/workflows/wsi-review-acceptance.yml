@@ -80,12 +80,28 @@ jobs:
           cd apps/api
           WSI_PROCESSING_WORKER= PORT=$API_PORT \
             nohup npx ts-node --transpile-only -r tsconfig-paths/register src/main.ts > /tmp/api.log 2>&1 &
-          echo "API_PID=$!" >> "$GITHUB_ENV"
+          API_PID=$!
+          echo "API_PID=$API_PID" >> "$GITHUB_ENV"
+          # Readiness = a REAL API response, not merely "not 000". An empty login body is
+          # deterministically rejected by validation (HTTP 400/401/422); a refused connection yields 000.
+          # `|| true` swallows curl's non-zero exit WITHOUT appending to the captured code — the prior
+          # `|| echo 000` produced "000000", which "!= 000" wrongly declared healthy at ~0s.
           for i in $(seq 1 60); do
-            code=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:$API_PORT/api/v1/auth/login -H 'content-type: application/json' -d '{}' || echo 000)
-            [ "$code" != "000" ] && { echo "API healthy (HTTP $code) after ~$((i*3))s"; break; }
+            if ! kill -0 "$API_PID" 2>/dev/null; then
+              echo "!! API process (PID $API_PID) exited before becoming ready"
+              echo "----- api.log (empty = no output produced before exit) -----"; cat /tmp/api.log || true; echo "----- end api.log -----"
+              exit 1
+            fi
+            code=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:$API_PORT/api/v1/auth/login -H 'content-type: application/json' -d '{}' || true)
+            case "$code" in
+              400|401|422) echo "API healthy (HTTP $code) after ~$((i*3))s"; break;;
+            esac
             sleep 3
-            [ "$i" = 60 ] && { echo "API failed to start"; tail -50 /tmp/api.log; exit 1; }
+            if [ "$i" = 60 ]; then
+              echo "!! API not ready after ~180s (last HTTP $code)"
+              echo "----- api.log (empty = no output produced) -----"; cat /tmp/api.log || true; echo "----- end api.log -----"
+              exit 1
+            fi
           done
 
       - name: Start isolated web :3001 (production) and wait for health
