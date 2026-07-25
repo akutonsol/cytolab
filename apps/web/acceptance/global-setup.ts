@@ -26,6 +26,16 @@ async function browserLogin(email: string, password: string, file: string) {
   const browser = await chromium.launch();
   try {
     const page = await browser.newPage({ baseURL: ACCEPT_BASE });
+    // Passively observe the NATURAL GET /auth/me that loadClaims() fires after a successful
+    // login — we never issue our own auth request. Records only occurrence + HTTP status.
+    let authMeObserved = false;
+    let authMeStatus: number | null = null;
+    page.on('response', (r) => {
+      if (r.url().includes('/api/v1/auth/me') && r.request().method() === 'GET') {
+        authMeObserved = true;
+        authMeStatus = r.status();
+      }
+    });
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
     await page.fill('#login-email', email);
     await page.fill('#login-password', password);
@@ -44,7 +54,36 @@ async function browserLogin(email: string, password: string, file: string) {
       throw new Error(`login for ${email} did not complete (status=${payload.status})`);
     }
     // Prove the authenticated session established: the app hydrates claims and leaves /login.
-    await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 20_000 });
+    // On failure, emit a SECRETS-SAFE diagnostic (cookie/Set-Cookie METADATA only, never values)
+    // to localize the fault, then fail closed. Same 20s budget; no replacement auth request,
+    // no cookie/storage injection — the real browser flow is untouched.
+    try {
+      await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 20_000 });
+    } catch (navErr) {
+      // Cookie METADATA only (name/path/domain/secure/sameSite/expiry/value-length); values are never read out.
+      const jar = await page.context().cookies().catch(() => []);
+      const cookieMeta = (name: string) => {
+        const c = jar.find((x) => x.name === name);
+        return c
+          ? { name: c.name, path: c.path, domain: c.domain, secure: c.secure, sameSite: c.sameSite, expires: c.expires, valueLength: c.value.length }
+          : 'absent';
+      };
+      // Login-response Set-Cookie: report cookie NAMES only (substring before '='); token values redacted.
+      const setCookieNames = (await resp.headersArray())
+        .filter((h) => h.name.toLowerCase() === 'set-cookie')
+        .map((h) => h.value.split('=')[0].trim());
+      const visibleErr = await page.locator('.text-red-700').first().textContent().catch(() => null);
+      const diag = {
+        reason: 'did not leave /login within 20s',
+        url: page.url(),
+        naturalAuthMe: authMeObserved ? `observed HTTP ${authMeStatus}` : 'NOT observed',
+        loginResponseSetCookieNames: setCookieNames.length ? setCookieNames : 'none',
+        access_token: cookieMeta('access_token'),
+        refresh_token: cookieMeta('refresh_token'),
+        visibleLoginError: visibleErr ? visibleErr.trim().slice(0, 200) : 'none',
+      };
+      throw new Error(`login for ${email} did not navigate: ${JSON.stringify(diag, null, 2)}`);
+    }
     await page.context().storageState({ path: file });
   } finally {
     await browser.close();
