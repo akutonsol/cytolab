@@ -35,9 +35,12 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
       DATABASE_MIGRATION_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
-      JWT_SECRET: ci-accept-secret
+      # assertStrongSecrets (apps/api/src/main.ts) fail-hards if JWT_SECRET or JWT_PORTAL_SECRET
+      # is < 32 chars. These two are deterministic, NON-SECRET, test-only values padded to satisfy it.
+      # The refresh secrets below are not length-validated, so they are left unchanged.
+      JWT_SECRET: 'ci-accept-jwt-secret-000000000000000000'
       JWT_REFRESH_SECRET: ci-accept-refresh-secret
-      JWT_PORTAL_SECRET: ci-accept-portal-secret
+      JWT_PORTAL_SECRET: 'ci-accept-jwt-portal-secret-00000000000000'
       JWT_PORTAL_REFRESH_SECRET: ci-accept-portal-refresh-secret
       # Fixed, NON-SECRET, test-only PHI key for this isolated CI DB only (see wsi-delivery-e2e.yml).
       ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
