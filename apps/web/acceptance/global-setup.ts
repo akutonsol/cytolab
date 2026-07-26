@@ -100,21 +100,19 @@ async function browserLogin(email: string, password: string, file: string) {
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
     await page.fill('#login-email', email);
     await page.fill('#login-password', password);
-    // React 18 wires the Sign-in button's onClick via root-level event delegation DURING hydration; a click
-    // that lands before hydration hits an inert `type="button"` (there is no <form>) and fires NO request.
-    // `domcontentloaded` does not prove hydration and `next start` hydration timing varies under CI, so a
-    // single click races (Run #8 lost it). Retry the REAL click until the POST is observed, under a single
-    // 20s wall-clock ceiling: toPass races each attempt against its deadline (playwright-core
+    // Activate the REAL Sign-in button by KEYBOARD (press Enter), not a pointer click: in the headless
+    // 1280x720 CI browser the software-WebGL HeroVial saturates the renderer thread, so a pointer click's
+    // hit-target/dispatch step never completes (Runs #9–#12 timed out with the button visible, enabled and
+    // stable, zero requests emitted). Native keyboard activation fires the SAME React onClick without that
+    // pointer dance. Retry the REAL activation until the matching POST is observed, under a single 20s
+    // wall-clock ceiling: toPass races each attempt against its deadline (playwright-core
     // pollAgainstDeadline → raceAgainstDeadline) and wraps the callback in try/catch (so a failed attempt
-    // never escapes as an unhandled rejection); we clamp each attempt's waitForResponse + click to the
-    // REMAINING budget so no in-flight wait can outlive the deadline, and settle BOTH with allSettled before
-    // throwing so a rejected click can never leave the sibling waiter live into the next attempt. Each
-    // attempt's ceiling restores the acceptance config's existing 10s actionability budget (actionTimeout:
-    // 10_000) — the same budget the click had in the runs that passed — so a click that needs several
-    // seconds to become actionable (CI animation/main-thread load) is not cut off prematurely; a
-    // pre-hydration inert click still rejects within the attempt and retries. An observed matching POST
-    // response is accepted as success (even if the click reports a late rejection), so we never retry —
-    // and never duplicate-login — after the response was seen.
+    // never escapes as an unhandled rejection); we clamp each attempt's waitForResponse + activation to the
+    // REMAINING budget (per-attempt ceiling = the config's actionTimeout, 10s) so no in-flight wait can
+    // outlive the deadline, and settle BOTH with allSettled before throwing so a rejected activation cannot
+    // leave the sibling waiter live into the next attempt. An observed matching POST response is accepted as
+    // success (even if the activation reports a late rejection), so we never retry — and never
+    // duplicate-login — after the response was seen.
     const LOGIN_BUDGET_MS = 20_000;
     const ATTEMPT_MS = 10_000; // per-attempt ceiling = the config's actionTimeout (10s); clamped below to the remaining budget
     const deadline = Date.now() + LOGIN_BUDGET_MS;
@@ -124,30 +122,30 @@ async function browserLogin(email: string, password: string, file: string) {
         const remaining = deadline - Date.now();
         if (remaining <= 0) throw new Error('login budget exhausted');
         const attemptMs = Math.min(ATTEMPT_MS, remaining); // always > 0 (never 0 → never an unbounded wait)
-        // Register the response waiter BEFORE initiating the click, then settle BOTH before throwing/retrying,
-        // so a rejected click cannot leave the sibling waiter active into the next attempt.
+        // Register the response waiter BEFORE the activation, then settle BOTH before throwing/retrying,
+        // so a rejected activation cannot leave the sibling waiter active into the next attempt.
         const responsePromise = page.waitForResponse(
           (res) => res.url().includes('/api/v1/auth/login') && res.request().method() === 'POST',
           { timeout: attemptMs },
         );
-        const clickPromise = page.getByRole('button', { name: 'Sign in' }).click({ timeout: attemptMs });
-        const [responseSettled, clickSettled] = await Promise.allSettled([responsePromise, clickPromise]);
+        const activationPromise = page.getByRole('button', { name: 'Sign in' }).press('Enter', { timeout: attemptMs });
+        const [responseSettled, activationSettled] = await Promise.allSettled([responsePromise, activationPromise]);
         // Diagnostic-only observation (does NOT affect the decision below): record each attempt's outcome.
         attempts.push({
           response: responseSettled.status,
           responseReason: responseSettled.status === 'rejected' ? redactReason(responseSettled.reason) : undefined,
-          click: clickSettled.status,
-          // Click rejections carry Playwright's multiline actionability call log — preserve it (every line
-          // redacted), unlike the single-line response-timeout reason above.
-          clickReason: clickSettled.status === 'rejected' ? redactReasonMultiline(clickSettled.reason) : undefined,
+          click: activationSettled.status,
+          // Activation rejections carry Playwright's multiline actionability call log — preserve it (every
+          // line redacted), unlike the single-line response-timeout reason above.
+          clickReason: activationSettled.status === 'rejected' ? redactReasonMultiline(activationSettled.reason) : undefined,
         });
-        // A fulfilled matching response proves the handler ran; accept it as success even if the click
+        // A fulfilled matching response proves the handler ran; accept it as success even if the activation
         // reports a late rejection, so we never retry — and duplicate-login — after the POST was observed.
         if (responseSettled.status === 'fulfilled') {
           captured = responseSettled.value;
           return;
         }
-        if (clickSettled.status === 'rejected') throw clickSettled.reason;
+        if (activationSettled.status === 'rejected') throw activationSettled.reason;
         throw responseSettled.reason;
       }).toPass({ timeout: LOGIN_BUDGET_MS });
     } catch (loginErr) {
