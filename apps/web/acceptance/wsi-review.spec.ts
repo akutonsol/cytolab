@@ -99,17 +99,22 @@ test.describe('read-only review gates (G4,G5,G6,G7)', () => {
     await expect(loadMore).toBeVisible(); // first page did not exhaust 25 events
 
     // Collect published-generation ids across pages until exhausted; prove append (monotonic growth) + uniqueness.
-    const idsOnPage = async () => drawer.locator('li').filter({ hasText: /Published/ }).allInnerTexts();
+    const publishedRows = drawer.locator('li').filter({ hasText: /Published/ });
     const collected = new Set<string>();
-    const pageIds = async () => (await idsOnPage()).map((t) => (t.match(/[a-z0-9]{20,}/i) || [''])[0]).filter(Boolean);
+    const pageIds = async () => (await publishedRows.allInnerTexts()).map((t) => (t.match(/[a-z0-9]{20,}/i) || [''])[0]).filter(Boolean);
 
     let before = 0;
     for (let guard = 0; guard < 10; guard++) {
       for (const id of await pageIds()) collected.add(id);
       expect(collected.size).toBeGreaterThanOrEqual(before); // append: never shrinks
       before = collected.size;
-      if (await loadMore.isVisible().catch(() => false)) await loadMore.click();
-      else break;
+      if (!(await loadMore.isVisible().catch(() => false))) break;
+      // Load more was visible ⇒ the API contract guarantees a nonempty next page. Capture the current row
+      // count, click, then wait (auto-retrying) for STRICT growth — the authoritative proof the appended
+      // page rendered — before looping back to collect it. End of history is NOT used as an alt signal.
+      const rowsBefore = await publishedRows.count();
+      await loadMore.click();
+      await expect.poll(async () => publishedRows.count()).toBeGreaterThan(rowsBefore);
     }
     await expect(drawer.getByText('End of history')).toBeVisible();
     expect(collected.size).toBe(25); // 25 distinct events, no duplicates across pages
