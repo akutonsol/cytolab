@@ -416,7 +416,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         );
       })}
 
-      <main style={{ position: 'relative', zIndex: 1, flex: 1, padding: '24px 0 16px', background: 'transparent' }}>
+      {/* The full-screen WSI workstation (`/wsi/[slideId]`) renders `fixed inset-0 z-[1000]` INSIDE this
+          <main>, so its z-index is scoped to main's stacking context and can't outrank the sibling
+          .top-navigation (z-1000) — the header's Settings icon then intercepts the workstation's clicks.
+          Lift main's own context above the header on /wsi routes only (1001: above the header, still
+          below the toast ~1010 and the pointer-events:none progress bar at 2000, which must stay on top).
+          Off /wsi, main keeps z-index 1 (unchanged canvas/header layering). */}
+      <main style={{ position: 'relative', zIndex: pathname?.startsWith('/wsi/') ? 1001 : 1, flex: 1, padding: '24px 0 16px', background: 'transparent' }}>
         <div className="dashboard page-container">
           {/* Fade + slide the page content in on each route change. */}
           <RealtimeProvider>
