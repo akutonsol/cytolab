@@ -417,12 +417,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       })}
 
       {/* The full-screen WSI workstation (`/wsi/[slideId]`) renders `fixed inset-0 z-[1000]` INSIDE this
-          <main>, so its z-index is scoped to main's stacking context and can't outrank the sibling
-          .top-navigation (z-1000) — the header's Settings icon then intercepts the workstation's clicks.
-          Lift main's own context above the header on /wsi routes only (1001: above the header, still
-          below the toast ~1010 and the pointer-events:none progress bar at 2000, which must stay on top).
-          Off /wsi, main keeps z-index 1 (unchanged canvas/header layering). */}
-      <main style={{ position: 'relative', zIndex: pathname?.startsWith('/wsi/') ? 1001 : 1, flex: 1, padding: '24px 0 16px', background: 'transparent' }}>
+          <main>. While <main> is a stacking context (z-index:1), the workstation's z-index is scoped to
+          it and can't outrank the sibling .top-navigation (z-1000) — the header's Settings icon then
+          intercepts the workstation's clicks. Its Clinical Review drawer, by contrast, portals to
+          <body> (ui/Drawer → Portal → document.body) at z-1000, so it must sit ABOVE the workstation.
+          Both are satisfied by REMOVING main's stacking context on /wsi (z-index:auto): the fixed
+          workstation then participates directly in the body stacking context, where equal-z painting is
+          DOM order — header (first) < workstation (mid) < body-portaled drawer/evidence/confirm (last),
+          all at 1000; toasts (~1010) and the progress bar (2000) still stay on top. Off /wsi, main keeps
+          z-index 1 (unchanged canvas/header layering). */}
+      <main style={{ position: 'relative', zIndex: pathname?.startsWith('/wsi/') ? 'auto' : 1, flex: 1, padding: '24px 0 16px', background: 'transparent' }}>
         <div className="dashboard page-container">
           {/* Fade + slide the page content in on each route change. */}
           <RealtimeProvider>
