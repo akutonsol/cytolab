@@ -51,18 +51,25 @@ async function browserLogin(email: string, password: string, file: string) {
     // Credential-aware redactor: the real email/password are used ONLY as redaction INPUTS (never emitted).
     // Replaces exact credential occurrences AND email-address patterns, plus URLs and long tokens; caps length.
     const creds = [email, password].filter((c) => typeof c === 'string' && c.length >= 3);
-    const redactMessage = (s: string): string => {
-      let out = (s ?? '').split('\n')[0];
+    const redactLine = (line: string): string => {
+      let out = line ?? '';
       for (const c of creds) out = out.split(c).join('[credential]');
       return out
         .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, '[email]')
         .replace(/https?:\/\/[^\s'"]+/gi, '[url]')
-        .replace(/[A-Za-z0-9._~+/-]{24,}={0,2}/g, '[token]')
-        .slice(0, MAX_DIAG_LEN);
+        .replace(/[A-Za-z0-9._~+/-]{24,}={0,2}/g, '[token]');
     };
+    const redactMessage = (s: string): string => redactLine((s ?? '').split('\n')[0]).slice(0, MAX_DIAG_LEN);
+    // Multiline variant for the Playwright click CALL LOG — its actionability trace is the key signal, so we
+    // keep every line (each redacted) and cap the whole thing rather than discarding after the first newline.
+    const redactMultiline = (s: string, max = 1500): string => (s ?? '').split('\n').map(redactLine).join('\n').slice(0, max);
     const redactReason = (e: unknown): string => {
       const err = e as { name?: string; message?: string };
       return `${err?.name ?? 'Error'}: ${redactMessage(err?.message ?? String(e))}`;
+    };
+    const redactReasonMultiline = (e: unknown): string => {
+      const err = e as { name?: string; message?: string };
+      return `${err?.name ?? 'Error'}: ${redactMultiline(err?.message ?? String(e))}`;
     };
     const attempts: Array<{ response: string; responseReason?: string; click: string; clickReason?: string }> = [];
     let loginPostCount = 0; // exact POST /api/v1/auth/login
@@ -130,7 +137,9 @@ async function browserLogin(email: string, password: string, file: string) {
           response: responseSettled.status,
           responseReason: responseSettled.status === 'rejected' ? redactReason(responseSettled.reason) : undefined,
           click: clickSettled.status,
-          clickReason: clickSettled.status === 'rejected' ? redactReason(clickSettled.reason) : undefined,
+          // Click rejections carry Playwright's multiline actionability call log — preserve it (every line
+          // redacted), unlike the single-line response-timeout reason above.
+          clickReason: clickSettled.status === 'rejected' ? redactReasonMultiline(clickSettled.reason) : undefined,
         });
         // A fulfilled matching response proves the handler ran; accept it as success even if the click
         // reports a late rejection, so we never retry — and duplicate-login — after the POST was observed.
@@ -160,6 +169,59 @@ async function browserLogin(email: string, password: string, file: string) {
         };
       }).catch(() => ({ emailLen: -1, passwordLen: -1, readyState: 'unavailable', nextScriptCount: -1, nextScriptPaths: [] as string[] }));
       const signIn = page.getByRole('button', { name: 'Sign in' });
+      // Actionability probe: resolve the button element and read layout/stacking/animation metadata that
+      // explains why click actionability never settles. Two consecutive rAF bounding-box samples detect
+      // continuous movement without any arbitrary sleep. Metadata only — no values.
+      const actionability = await signIn
+        .evaluate(async (btn) => {
+          const round = (n: number) => Math.round(n * 100) / 100;
+          const box = () => {
+            const b = btn.getBoundingClientRect();
+            return { x: round(b.x), y: round(b.y), width: round(b.width), height: round(b.height) };
+          };
+          const raf = () => new Promise<void>((res) => requestAnimationFrame(() => res()));
+          await raf(); const sample1 = box();
+          await raf(); const sample2 = box();
+          const boxesDiffer =
+            sample1.x !== sample2.x || sample1.y !== sample2.y || sample1.width !== sample2.width || sample1.height !== sample2.height;
+          const meta = (el: Element | null) =>
+            el ? { tag: el.tagName.toLowerCase(), id: el.id || null, className: (typeof el.className === 'string' ? el.className : '').slice(0, 120) } : null;
+          const styleOf = (el: Element) => {
+            const c = getComputedStyle(el);
+            return { pointerEvents: c.pointerEvents, visibility: c.visibility, opacity: c.opacity, transform: c.transform === 'none' ? 'none' : 'set', animationName: c.animationName, animationPlayState: c.animationPlayState };
+          };
+          const rect = btn.getBoundingClientRect();
+          const top = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+          const ancestorStyles: Array<Record<string, unknown>> = [];
+          for (let el = btn.parentElement; el; el = el.parentElement) {
+            ancestorStyles.push({ ...meta(el), ...styleOf(el) });
+            if (el === document.body || ancestorStyles.length >= 15) break;
+          }
+          const chain: Element[] = [];
+          for (let el: Element | null = btn; el; el = el.parentElement) { chain.push(el); if (el === document.body) break; }
+          const anims = typeof document.getAnimations === 'function' ? document.getAnimations() : [];
+          const affecting = anims
+            .filter((a) => { const t = (a.effect as unknown as { target?: Element } | null)?.target; return !!t && chain.includes(t); })
+            .slice(0, 20)
+            .map((a) => {
+              const t = (a.effect as unknown as { target?: Element } | null)?.target ?? null;
+              return { target: t ? t.tagName.toLowerCase() : null, id: (t && t.id) || null, name: (a as unknown as { animationName?: string }).animationName ?? (a.id || 'animation'), playState: a.playState };
+            });
+          return {
+            boundingBox: box(),
+            rafSample1: sample1,
+            rafSample2: sample2,
+            boxesDiffer,
+            elementFromPointCenter: meta(top),
+            topIsButtonOrDescendant: !!top && (top === btn || btn.contains(top)),
+            buttonStyles: styleOf(btn),
+            ancestorStyles,
+            runningAnimationsGlobal: anims.filter((a) => a.playState === 'running').length,
+            totalAnimationsGlobal: anims.length,
+            animationsAffectingButtonOrAncestors: affecting,
+          };
+        })
+        .catch(() => ({ error: 'actionability probe failed (button not resolvable)' }));
       const diag = {
         phase: 'login-retry-exhausted',
         clickAttempts: attempts.length,
@@ -186,6 +248,7 @@ async function browserLogin(email: string, password: string, file: string) {
         navigationPath: navPaths,
         pageErrors,
         consoleErrors,
+        actionability,
       };
       console.error(`login retry failed: ${JSON.stringify(diag, null, 2)}`);
       throw loginErr;
