@@ -2,6 +2,16 @@ import { chromium, expect, type FullConfig } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 
+// ── Secrets-safe URL/path reducers for the login diagnostic below (origin+pathname only; query/hash dropped).
+//    Message redaction is CREDENTIAL-AWARE and defined per-login (it needs the actual creds as redaction inputs). ──
+const MAX_DIAG_LEN = 200;
+function safeUrl(u: string): string {
+  try { const url = new URL(u); return url.origin + url.pathname; } catch { return u.split('?')[0].split('#')[0].slice(0, MAX_DIAG_LEN); }
+}
+function safePathname(u: string): string {
+  try { return new URL(u).pathname; } catch { return u.split('?')[0].split('#')[0].slice(0, MAX_DIAG_LEN); }
+}
+
 // Real cookie login (+ localStorage claims the app gates rendering on) for the two seeded scoped
 // principals, captured to storageState for the spec. Fixtures/creds come from the seeder's .fixtures.json.
 export const ACCEPT_BASE = process.env.ACCEPT_BASE_URL ?? 'http://localhost:3001';
@@ -36,6 +46,50 @@ async function browserLogin(email: string, password: string, file: string) {
         authMeStatus = r.status();
       }
     });
+    // ── Login diagnostics: passive observers registered BEFORE navigation (metadata only). Consumed ONLY
+    //    if the login retry below fails (see its catch); never alters the flow. ──
+    // Credential-aware redactor: the real email/password are used ONLY as redaction INPUTS (never emitted).
+    // Replaces exact credential occurrences AND email-address patterns, plus URLs and long tokens; caps length.
+    const creds = [email, password].filter((c) => typeof c === 'string' && c.length >= 3);
+    const redactMessage = (s: string): string => {
+      let out = (s ?? '').split('\n')[0];
+      for (const c of creds) out = out.split(c).join('[credential]');
+      return out
+        .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, '[email]')
+        .replace(/https?:\/\/[^\s'"]+/gi, '[url]')
+        .replace(/[A-Za-z0-9._~+/-]{24,}={0,2}/g, '[token]')
+        .slice(0, MAX_DIAG_LEN);
+    };
+    const redactReason = (e: unknown): string => {
+      const err = e as { name?: string; message?: string };
+      return `${err?.name ?? 'Error'}: ${redactMessage(err?.message ?? String(e))}`;
+    };
+    const attempts: Array<{ response: string; responseReason?: string; click: string; clickReason?: string }> = [];
+    let loginPostCount = 0; // exact POST /api/v1/auth/login
+    const authLoginReqs: Array<{ method: string; path: string }> = []; // any request whose pathname ends /auth/login
+    const failedScripts: Array<{ path: string; reason: string }> = [];
+    const authLoginFailures: string[] = [];
+    const navPaths: string[] = [];
+    const pageErrors: string[] = [];
+    const consoleErrors: string[] = [];
+    page.on('request', (req) => {
+      let pathname = '';
+      try { pathname = new URL(req.url()).pathname; } catch { pathname = req.url().split('?')[0]; }
+      if (pathname.endsWith('/auth/login')) {
+        authLoginReqs.push({ method: req.method(), path: pathname });
+        if (req.method() === 'POST' && pathname === '/api/v1/auth/login') loginPostCount++;
+      }
+    });
+    page.on('requestfailed', (req) => {
+      let pathname = '';
+      try { pathname = new URL(req.url()).pathname; } catch { pathname = req.url().split('?')[0]; }
+      const reason = redactMessage(req.failure()?.errorText ?? 'unknown');
+      if (pathname.includes('/_next/static') || pathname.endsWith('.js')) failedScripts.push({ path: pathname, reason });
+      if (pathname.endsWith('/auth/login')) authLoginFailures.push(reason);
+    });
+    page.on('framenavigated', (frame) => { if (frame === page.mainFrame()) navPaths.push(safePathname(frame.url())); });
+    page.on('pageerror', (err) => { pageErrors.push(redactReason(err)); });
+    page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(redactMessage(msg.text())); });
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
     await page.fill('#login-email', email);
     await page.fill('#login-password', password);
@@ -55,27 +109,84 @@ async function browserLogin(email: string, password: string, file: string) {
     const ATTEMPT_MS = 4_000;
     const deadline = Date.now() + LOGIN_BUDGET_MS;
     let captured: Awaited<ReturnType<typeof page.waitForResponse>> | undefined;
-    await expect(async () => {
-      const remaining = deadline - Date.now();
-      if (remaining <= 0) throw new Error('login budget exhausted');
-      const attemptMs = Math.min(ATTEMPT_MS, remaining); // always > 0 (never 0 → never an unbounded wait)
-      // Register the response waiter BEFORE initiating the click, then settle BOTH before throwing/retrying,
-      // so a rejected click cannot leave the sibling waiter active into the next attempt.
-      const responsePromise = page.waitForResponse(
-        (res) => res.url().includes('/api/v1/auth/login') && res.request().method() === 'POST',
-        { timeout: attemptMs },
-      );
-      const clickPromise = page.getByRole('button', { name: 'Sign in' }).click({ timeout: attemptMs });
-      const [responseSettled, clickSettled] = await Promise.allSettled([responsePromise, clickPromise]);
-      // A fulfilled matching response proves the handler ran; accept it as success even if the click
-      // reports a late rejection, so we never retry — and duplicate-login — after the POST was observed.
-      if (responseSettled.status === 'fulfilled') {
-        captured = responseSettled.value;
-        return;
-      }
-      if (clickSettled.status === 'rejected') throw clickSettled.reason;
-      throw responseSettled.reason;
-    }).toPass({ timeout: LOGIN_BUDGET_MS });
+    try {
+      await expect(async () => {
+        const remaining = deadline - Date.now();
+        if (remaining <= 0) throw new Error('login budget exhausted');
+        const attemptMs = Math.min(ATTEMPT_MS, remaining); // always > 0 (never 0 → never an unbounded wait)
+        // Register the response waiter BEFORE initiating the click, then settle BOTH before throwing/retrying,
+        // so a rejected click cannot leave the sibling waiter active into the next attempt.
+        const responsePromise = page.waitForResponse(
+          (res) => res.url().includes('/api/v1/auth/login') && res.request().method() === 'POST',
+          { timeout: attemptMs },
+        );
+        const clickPromise = page.getByRole('button', { name: 'Sign in' }).click({ timeout: attemptMs });
+        const [responseSettled, clickSettled] = await Promise.allSettled([responsePromise, clickPromise]);
+        // Diagnostic-only observation (does NOT affect the decision below): record each attempt's outcome.
+        attempts.push({
+          response: responseSettled.status,
+          responseReason: responseSettled.status === 'rejected' ? redactReason(responseSettled.reason) : undefined,
+          click: clickSettled.status,
+          clickReason: clickSettled.status === 'rejected' ? redactReason(clickSettled.reason) : undefined,
+        });
+        // A fulfilled matching response proves the handler ran; accept it as success even if the click
+        // reports a late rejection, so we never retry — and duplicate-login — after the POST was observed.
+        if (responseSettled.status === 'fulfilled') {
+          captured = responseSettled.value;
+          return;
+        }
+        if (clickSettled.status === 'rejected') throw clickSettled.reason;
+        throw responseSettled.reason;
+      }).toPass({ timeout: LOGIN_BUDGET_MS });
+    } catch (loginErr) {
+      // The login retry exhausted its 20s budget with no matching POST captured. Emit a SECRETS-SAFE,
+      // metadata-only diagnostic (lengths/booleans/counts/sanitized paths — never values, tokens, request
+      // or response bodies, raw headers, or raw URLs) to localize the cause, then FAIL CLOSED by re-throwing.
+      const dom = await page.evaluate(() => {
+        const val = (id: string) => (document.getElementById(id) as HTMLInputElement | null)?.value ?? '';
+        const srcs = (Array.from(document.querySelectorAll('script[src]')) as HTMLScriptElement[])
+          .map((s) => s.getAttribute('src') || '')
+          .filter((s) => s.includes('_next/static'));
+        const toPath = (src: string) => { try { return new URL(src, location.href).pathname; } catch { return src.split('?')[0]; } };
+        return {
+          emailLen: val('login-email').length,
+          passwordLen: val('login-password').length,
+          readyState: String(document.readyState),
+          nextScriptCount: srcs.length,
+          nextScriptPaths: srcs.map(toPath).slice(0, 20),
+        };
+      }).catch(() => ({ emailLen: -1, passwordLen: -1, readyState: 'unavailable', nextScriptCount: -1, nextScriptPaths: [] as string[] }));
+      const signIn = page.getByRole('button', { name: 'Sign in' });
+      const diag = {
+        phase: 'login-retry-exhausted',
+        clickAttempts: attempts.length,
+        attemptResults: attempts,
+        emailValueLength: dom.emailLen, // length only — never the value
+        passwordValueLength: dom.passwordLen, // length only — never the value
+        emailValidationVisible: await page.getByText('Enter your email or username').isVisible().catch(() => false),
+        passwordValidationVisible: await page.getByText('Enter your password').isVisible().catch(() => false),
+        loginErrorBannerVisible: await page.locator('.text-red-700').first().isVisible().catch(() => false),
+        button: {
+          visible: await signIn.isVisible().catch(() => false),
+          enabled: await signIn.isEnabled().catch(() => false),
+          ariaBusy: await signIn.getAttribute('aria-busy').catch(() => null),
+          label: ((await signIn.textContent().catch(() => '')) ?? '').replace(/\s+/g, ' ').trim().slice(0, 40),
+        },
+        documentReadyState: dom.readyState,
+        nextStaticScriptCount: dom.nextScriptCount,
+        nextStaticScriptPaths: dom.nextScriptPaths,
+        failedScriptRequests: failedScripts,
+        loginPostRequestCount: loginPostCount,
+        authLoginRequests: authLoginReqs,
+        authLoginRequestFailures: authLoginFailures,
+        url: safeUrl(page.url()),
+        navigationPath: navPaths,
+        pageErrors,
+        consoleErrors,
+      };
+      console.error(`login retry failed: ${JSON.stringify(diag, null, 2)}`);
+      throw loginErr;
+    }
     const resp = captured;
     if (!resp) throw new Error(`login for ${email}: no POST /api/v1/auth/login observed within 20s`);
     if (!resp.ok()) {
