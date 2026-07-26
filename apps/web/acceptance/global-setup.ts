@@ -40,10 +40,18 @@ async function browserLogin(email: string, password: string, file: string) {
     // login — we never issue our own auth request. Records only occurrence + HTTP status.
     let authMeObserved = false;
     let authMeStatus: number | null = null;
+    // Passive, always-on capture of the REAL login POST Response, retained independently of the attempt-local
+    // waiter. A response landing at an attempt/aggregate boundary (keyboard activation under CI load) is thus
+    // still available for the real resp.ok()/payload validation below — success keys off this Response, never
+    // request-observation or /dashboard navigation alone.
+    let loginResponse: Awaited<ReturnType<typeof page.waitForResponse>> | undefined;
     page.on('response', (r) => {
       if (r.url().includes('/api/v1/auth/me') && r.request().method() === 'GET') {
         authMeObserved = true;
         authMeStatus = r.status();
+      }
+      if (r.url().includes('/api/v1/auth/login') && r.request().method() === 'POST') {
+        loginResponse = r;
       }
     });
     // ── Login diagnostics: passive observers registered BEFORE navigation (metadata only). Consumed ONLY
@@ -119,16 +127,21 @@ async function browserLogin(email: string, password: string, file: string) {
     let captured: Awaited<ReturnType<typeof page.waitForResponse>> | undefined;
     try {
       await expect(async () => {
+        // A prior attempt's activation may have completed the real login just after that attempt's waiter
+        // expired; the passive observer retains its Response. If so, accept it and STOP — never press again
+        // (so exactly one real login ever occurs; the product also disables the button while isPending).
+        if (loginResponse) { captured = loginResponse; return; }
         const remaining = deadline - Date.now();
         if (remaining <= 0) throw new Error('login budget exhausted');
         const attemptMs = Math.min(ATTEMPT_MS, remaining); // always > 0 (never 0 → never an unbounded wait)
         // Register the response waiter BEFORE the activation, then settle BOTH before throwing/retrying,
-        // so a rejected activation cannot leave the sibling waiter active into the next attempt.
+        // so a rejected activation cannot leave the sibling waiter active into the next attempt. `noWaitAfter`
+        // makes press return after dispatching Enter instead of blocking on the (CI-janky) client navigation.
         const responsePromise = page.waitForResponse(
           (res) => res.url().includes('/api/v1/auth/login') && res.request().method() === 'POST',
           { timeout: attemptMs },
         );
-        const activationPromise = page.getByRole('button', { name: 'Sign in' }).press('Enter', { timeout: attemptMs });
+        const activationPromise = page.getByRole('button', { name: 'Sign in' }).press('Enter', { timeout: attemptMs, noWaitAfter: true });
         const [responseSettled, activationSettled] = await Promise.allSettled([responsePromise, activationPromise]);
         // Diagnostic-only observation (does NOT affect the decision below): record each attempt's outcome.
         attempts.push({
@@ -145,10 +158,18 @@ async function browserLogin(email: string, password: string, file: string) {
           captured = responseSettled.value;
           return;
         }
+        // The response may have arrived via the passive observer during this attempt (the attempt-local
+        // waiter can miss a boundary-timed response) — accept it and stop rather than pressing again.
+        if (loginResponse) { captured = loginResponse; return; }
         if (activationSettled.status === 'rejected') throw activationSettled.reason;
         throw responseSettled.reason;
       }).toPass({ timeout: LOGIN_BUDGET_MS });
     } catch (loginErr) {
+      // toPass hit its 20s deadline. Before failing, accept a real matching login Response captured passively
+      // right at the boundary — validated below like any other; navigation/request-count alone is NOT enough.
+      if (loginResponse) {
+        captured = loginResponse;
+      } else {
       // The login retry exhausted its 20s budget with no matching POST captured. Emit a SECRETS-SAFE,
       // metadata-only diagnostic (lengths/booleans/counts/sanitized paths — never values, tokens, request
       // or response bodies, raw headers, or raw URLs) to localize the cause, then FAIL CLOSED by re-throwing.
@@ -249,7 +270,8 @@ async function browserLogin(email: string, password: string, file: string) {
         actionability,
       };
       console.error(`login retry failed: ${JSON.stringify(diag, null, 2)}`);
-      throw loginErr;
+        throw loginErr;
+      }
     }
     const resp = captured;
     if (!resp) throw new Error(`login for ${email}: no POST /api/v1/auth/login observed within 20s`);
