@@ -102,11 +102,14 @@ async function browserLogin(email: string, password: string, file: string) {
     // never escapes as an unhandled rejection); we clamp each attempt's waitForResponse + click to the
     // REMAINING budget so no in-flight wait can outlive the deadline, and settle BOTH with allSettled before
     // throwing so a rejected click can never leave the sibling waiter live into the next attempt. Each
-    // attempt is short so a pre-hydration inert click fails fast and retries; an observed matching POST
+    // attempt's ceiling restores the acceptance config's existing 10s actionability budget (actionTimeout:
+    // 10_000) — the same budget the click had in the runs that passed — so a click that needs several
+    // seconds to become actionable (CI animation/main-thread load) is not cut off prematurely; a
+    // pre-hydration inert click still rejects within the attempt and retries. An observed matching POST
     // response is accepted as success (even if the click reports a late rejection), so we never retry —
     // and never duplicate-login — after the response was seen.
     const LOGIN_BUDGET_MS = 20_000;
-    const ATTEMPT_MS = 4_000;
+    const ATTEMPT_MS = 10_000; // per-attempt ceiling = the config's actionTimeout (10s); clamped below to the remaining budget
     const deadline = Date.now() + LOGIN_BUDGET_MS;
     let captured: Awaited<ReturnType<typeof page.waitForResponse>> | undefined;
     try {
