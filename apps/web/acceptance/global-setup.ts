@@ -1,4 +1,4 @@
-import { chromium, type FullConfig } from '@playwright/test';
+import { chromium, expect, type FullConfig } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -39,12 +39,45 @@ async function browserLogin(email: string, password: string, file: string) {
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
     await page.fill('#login-email', email);
     await page.fill('#login-password', password);
-    // Prove the login API call itself — surfaces 401/5xx/proxy failures precisely rather than as a blind
-    // navigation timeout. Same 20s budget; no product/permission change (real scoped-principal login).
-    const [resp] = await Promise.all([
-      page.waitForResponse((r) => r.url().includes('/api/v1/auth/login') && r.request().method() === 'POST', { timeout: 20_000 }),
-      page.getByRole('button', { name: 'Sign in' }).click(),
-    ]);
+    // React 18 wires the Sign-in button's onClick via root-level event delegation DURING hydration; a click
+    // that lands before hydration hits an inert `type="button"` (there is no <form>) and fires NO request.
+    // `domcontentloaded` does not prove hydration and `next start` hydration timing varies under CI, so a
+    // single click races (Run #8 lost it). Retry the REAL click until the POST is observed, under a single
+    // 20s wall-clock ceiling: toPass races each attempt against its deadline (playwright-core
+    // pollAgainstDeadline → raceAgainstDeadline) and wraps the callback in try/catch (so a failed attempt
+    // never escapes as an unhandled rejection); we clamp each attempt's waitForResponse + click to the
+    // REMAINING budget so no in-flight wait can outlive the deadline, and settle BOTH with allSettled before
+    // throwing so a rejected click can never leave the sibling waiter live into the next attempt. Each
+    // attempt is short so a pre-hydration inert click fails fast and retries; an observed matching POST
+    // response is accepted as success (even if the click reports a late rejection), so we never retry —
+    // and never duplicate-login — after the response was seen.
+    const LOGIN_BUDGET_MS = 20_000;
+    const ATTEMPT_MS = 4_000;
+    const deadline = Date.now() + LOGIN_BUDGET_MS;
+    let captured: Awaited<ReturnType<typeof page.waitForResponse>> | undefined;
+    await expect(async () => {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) throw new Error('login budget exhausted');
+      const attemptMs = Math.min(ATTEMPT_MS, remaining); // always > 0 (never 0 → never an unbounded wait)
+      // Register the response waiter BEFORE initiating the click, then settle BOTH before throwing/retrying,
+      // so a rejected click cannot leave the sibling waiter active into the next attempt.
+      const responsePromise = page.waitForResponse(
+        (res) => res.url().includes('/api/v1/auth/login') && res.request().method() === 'POST',
+        { timeout: attemptMs },
+      );
+      const clickPromise = page.getByRole('button', { name: 'Sign in' }).click({ timeout: attemptMs });
+      const [responseSettled, clickSettled] = await Promise.allSettled([responsePromise, clickPromise]);
+      // A fulfilled matching response proves the handler ran; accept it as success even if the click
+      // reports a late rejection, so we never retry — and duplicate-login — after the POST was observed.
+      if (responseSettled.status === 'fulfilled') {
+        captured = responseSettled.value;
+        return;
+      }
+      if (clickSettled.status === 'rejected') throw clickSettled.reason;
+      throw responseSettled.reason;
+    }).toPass({ timeout: LOGIN_BUDGET_MS });
+    const resp = captured;
+    if (!resp) throw new Error(`login for ${email}: no POST /api/v1/auth/login observed within 20s`);
     if (!resp.ok()) {
       const body = await resp.text().catch(() => '');
       throw new Error(`login for ${email} failed: HTTP ${resp.status()} — ${body.slice(0, 200)}`);
