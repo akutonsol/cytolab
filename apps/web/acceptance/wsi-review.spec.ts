@@ -25,7 +25,12 @@ test.beforeAll(() => {
 });
 
 const reviewDrawer = (page: Page) => page.getByRole('dialog', { name: /clinical review/i });
-const genRow = (page: Page, genId: string): Locator => reviewDrawer(page).locator('li', { hasText: genId });
+// A published generation's id legitimately appears in BOTH the "Generations" list and the
+// "Publication history" list, so an unscoped `li` match is strict-mode-ambiguous. Scope to the
+// Generations section via its heading — the product-owned semantic structure — not `.first()`.
+const genSection = (page: Page) =>
+  reviewDrawer(page).locator('section').filter({ has: page.getByRole('heading', { name: /^Generations/ }) });
+const genRow = (page: Page, genId: string): Locator => genSection(page).locator('li', { hasText: genId });
 
 async function openReview(page: Page, slideId: string) {
   await page.goto(`/wsi/${slideId}`);
