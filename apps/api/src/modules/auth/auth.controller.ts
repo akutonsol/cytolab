@@ -4,6 +4,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
+import { AuthorizationContract } from '../../common/decorators/authorization-contract.decorator';
 import { AuthService } from './auth.service';
 import {
   ChangePasswordDto,
@@ -73,6 +74,7 @@ export class AuthController {
   }
 
   @Get('me')
+  @AuthorizationContract('authenticated')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Current user' })
   me(@CurrentUser() user: AuthUser) {
@@ -80,6 +82,7 @@ export class AuthController {
   }
 
   @Post('change-password')
+  @AuthorizationContract('authenticated')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Change own password (enforces policy + no-reuse)' })
   changePassword(@CurrentUser() user: AuthUser, @Body() dto: ChangePasswordDto) {
