@@ -99,6 +99,9 @@ export const NAV_GROUPS: NavGroup[] = [
       // P5B-B4 — the intake exception & reconciliation queue. Gated on wsi:reconcile (granted to no default
       // role), so it is hidden unless an operator has been explicitly assigned the reconciliation authority.
       { label: 'Slide Reconciliation', path: '/operations/reconciliation', permission: 'wsi:reconcile', feature: 'WSI_VIEWER', icon: AlertTriangle },
+      // P5B-B5a — read-only ingestion operational monitoring (same wsi:reconcile authority; no rootPath, no
+      // source administration). Deep-links into the reconciliation queue above.
+      { label: 'Ingestion Operations', path: '/operations/ingestion', permission: 'wsi:reconcile', feature: 'WSI_VIEWER', icon: Activity },
       { label: 'FHIR', path: '/fhir', permission: 'record:view', feature: 'HL7_FHIR', icon: Share2 },
     ],
   },

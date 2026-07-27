@@ -102,6 +102,12 @@ async function main() {
 
     const srcA = await prisma.ingestionSource.create({ data: { labId: A.id, kind: 'FILESYSTEM', rootPath: rootA, enabled: true }, select: { id: true } });
     const srcB = await prisma.ingestionSource.create({ data: { labId: B.id, kind: 'FILESYSTEM', rootPath: rootB, enabled: true }, select: { id: true } });
+    // P5B-B5a — a DISABLED Lab-A source (own empty root, no files) so operational monitoring can prove the
+    // enabled/disabled fact from IngestionSource.enabled without any enable/disable mutation (B5-a is read-only).
+    const rootADisabled = path.join(path.dirname(rootA), 'wf-accept-a-disabled');
+    fs.rmSync(rootADisabled, { recursive: true, force: true });
+    fs.mkdirSync(rootADisabled, { recursive: true });
+    const srcADisabled = await prisma.ingestionSource.create({ data: { labId: A.id, kind: 'FILESYSTEM', rootPath: rootADisabled, enabled: false }, select: { id: true } });
 
     // Real tileable files. bytes U (shared by unique + dup-meta), N (no-match), M (ambiguous) are distinct.
     const bytesU = solidPng(384, 384, [79, 70, 229]);
@@ -143,7 +149,7 @@ async function main() {
     const fixtures = {
       labAId: A.id, labBId: B.id,
       records: { RA, RB, RX, RY, RSTAB, RBB, RRECON, RRECON2 },
-      sources: { A: srcA.id, B: srcB.id },
+      sources: { A: srcA.id, B: srcB.id, ADisabled: srcADisabled.id },
       roots: { A: rootA, B: rootB, outside },
       // ground truth the assertion checks
       sha: { U: sha256(bytesU), N: sha256(bytesN), M: sha256(bytesM), Q: sha256(bytesQ) },

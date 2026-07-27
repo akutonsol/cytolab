@@ -10,6 +10,8 @@ import { WatchFolderProcessor } from './watch-folder-processor';
 import { WatchFolderScheduler } from './watch-folder.scheduler';
 import { ReconciliationService } from './reconciliation.service';
 import { ReconciliationController } from './reconciliation.controller';
+import { IngestionMonitoringService } from './ingestion-monitoring.service';
+import { IngestionMonitoringController } from './ingestion-monitoring.controller';
 import { WATCH_FOLDER_CONFIG, loadWatchFolderConfig } from './watch-folder-config';
 
 /**
@@ -21,14 +23,16 @@ import { WATCH_FOLDER_CONFIG, loadWatchFolderConfig } from './watch-folder-confi
  *
  * B4: human exception & reconciliation workflows over the classified exceptions (ReconciliationController,
  *     gated by wsi:reconcile) — reusing the same accepted pipeline via the composer; no second intake path.
+ * B5-a: read-only operational monitoring over persisted truth (IngestionMonitoringController, gated by
+ *     wsi:reconcile) — no mutation, no source configuration (source administration remains deferred to B5-b).
  *
  * PrismaService, LabContext and ExecutionContextService are globally provided; WsiModule is imported (to reuse
  * the ingestion/queue seams) and AuditModule (for the best-effort reconciliation audit trail). No
- * source-management controller (authz decision — system:ingestion — deferred to B5).
+ * source-management controller (source administration + system:ingestion deferred to B5-b, not authorized).
  */
 @Module({
   imports: [WsiModule, AuditModule],
-  controllers: [ReconciliationController],
+  controllers: [ReconciliationController, IngestionMonitoringController],
   providers: [
     { provide: WATCH_FOLDER_CONFIG, useFactory: () => loadWatchFolderConfig() },
     IngestionSourceService,
@@ -39,7 +43,8 @@ import { WATCH_FOLDER_CONFIG, loadWatchFolderConfig } from './watch-folder-confi
     WatchFolderProcessor,
     WatchFolderScheduler,
     ReconciliationService,
+    IngestionMonitoringService,
   ],
-  exports: [IngestionSourceService, IngestionDiscoveryService, AccessionMatchResolver, AutomatedIngestionComposer, WatchFolderProcessor, ReconciliationService],
+  exports: [IngestionSourceService, IngestionDiscoveryService, AccessionMatchResolver, AutomatedIngestionComposer, WatchFolderProcessor, ReconciliationService, IngestionMonitoringService],
 })
 export class AutoIngestionModule {}

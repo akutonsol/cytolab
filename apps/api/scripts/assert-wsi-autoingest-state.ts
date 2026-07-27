@@ -134,7 +134,7 @@ async function main() {
     await runB4(prisma, fx, fails, ck);
 
     if (fails.length) { console.error('AUTO-INGEST ACCEPTANCE FAILURES:\n - ' + fails.join('\n - ')); process.exit(1); }
-    console.log('P5B-B2/B4 AUTO-INGEST + RECONCILIATION ACCEPTANCE: all persisted-truth assertions passed.');
+    console.log('P5B-B2/B4/B5a AUTO-INGEST + RECONCILIATION + MONITORING ACCEPTANCE: all persisted-truth assertions passed.');
   } finally {
     await prisma.$disconnect();
   }
@@ -161,6 +161,8 @@ async function runB4(prisma: PrismaClient, fx: any, fails: string[], ck: (c: boo
   const { AppModule } = require('../src/app.module');
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { ReconciliationService } = require('../src/modules/wsi/auto-ingestion/reconciliation.service');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { IngestionMonitoringService } = require('../src/modules/wsi/auto-ingestion/ingestion-monitoring.service');
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { LabContext } = require('../src/common/tenancy/lab-context');
 
@@ -238,6 +240,57 @@ async function runB4(prisma: PrismaClient, fx: any, fails: string[], ck: (c: boo
     ck((await prisma.digitalSlide.count({ where: { id: { in: ingestedIds }, OR: [{ publishedGenerationId: { not: null } }, { availabilityStatus: 'PUBLISHED' }] } })) === 0, 'B4 publication boundary: reconciled/ingested/READY slides are NOT published');
 
     console.log(`B4 reconciliation: dup=${dupFinal?.status} amb=${ambFinal?.status} unmatched=${nmFinal?.status} retry=${retryRow?.status} ready=${ready.length}/${ingestedIds.length}`);
+
+    // ── Program 5B · B5-a — read-only operational monitoring must match persisted DB truth (Lab A). ──
+    const monitoring = app.get(IngestionMonitoringService);
+    const mon: any = await asA(() => monitoring.overview(new Date(0).toISOString()));
+
+    // (A/B/C) discovery + exception counts + backlog match a raw, independently-computed Lab-A groupBy.
+    const rawDisc = await prisma.ingestionDiscovery.groupBy({ by: ['status'], where: { labId: fx.labAId }, _count: { _all: true } });
+    const expDisc: Record<string, number> = {};
+    for (const g of rawDisc) expDisc[g.status] = g._count._all;
+    const EX = ['UNMATCHED', 'AMBIGUOUS', 'DUPLICATE', 'FAILED'];
+    for (const st of ['DISCOVERED', 'STABILIZING', 'MATCHED', 'UNMATCHED', 'AMBIGUOUS', 'DUPLICATE', 'INGESTED', 'FAILED', 'RECONCILED']) {
+      ck((mon.totals.discoveries[st] ?? 0) === (expDisc[st] ?? 0), `B5a discovery count ${st} matches DB (${mon.totals.discoveries[st]} vs ${expDisc[st] ?? 0})`);
+    }
+    const expBacklog = EX.reduce((n, s) => n + (expDisc[s] ?? 0), 0);
+    ck(mon.totals.reconciliationBacklog === expBacklog, `B5a reconciliation backlog matches DB exception rows (${mon.totals.reconciliationBacklog} vs ${expBacklog})`);
+    ck(mon.totals.discoveries.total === rawDisc.reduce((n, g) => n + g._count._all, 0), 'B5a total discoveries match DB');
+
+    // (D) processing counts match persisted WATCH_FOLDER job truth.
+    const rawJobs = await prisma.slideProcessingJob.groupBy({ by: ['status'], where: { labId: fx.labAId, ingestion: { sourceKind: 'WATCH_FOLDER' } }, _count: { _all: true } });
+    const expJobs: Record<string, number> = {};
+    for (const g of rawJobs) expJobs[g.status] = g._count._all;
+    for (const st of ['QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED', 'TIMED_OUT']) {
+      ck((mon.totals.processing[st] ?? 0) === (expJobs[st] ?? 0), `B5a processing count ${st} matches DB (${mon.totals.processing[st]} vs ${expJobs[st] ?? 0})`);
+    }
+
+    // (E) READY count matches persisted generation truth for WATCH_FOLDER slides.
+    const rawReady = await prisma.derivativeGeneration.groupBy({ by: ['slideId'], where: { labId: fx.labAId, status: 'READY', slide: { sourceKind: 'WATCH_FOLDER' } }, _count: { _all: true } });
+    ck(mon.totals.ready === rawReady.length, `B5a READY count matches DB (${mon.totals.ready} vs ${rawReady.length})`);
+
+    // (F) enabled/disabled truth from IngestionSource.enabled (the DISABLED Lab-A source shows disabled).
+    const disabledSrc = mon.sources.find((s: any) => s.id === fx.sources.ADisabled);
+    ck(disabledSrc && disabledSrc.enabled === false && disabledSrc.facts.includes('DISABLED'), 'B5a disabled source reported DISABLED');
+    const enabledSrc = mon.sources.find((s: any) => s.id === fx.sources.A);
+    ck(enabledSrc && enabledSrc.enabled === true && enabledSrc.facts.includes('ENABLED'), 'B5a enabled source reported ENABLED');
+
+    // (G) tenant isolation — Lab-A monitoring exposes ONLY Lab-A sources; no Lab-B source/rows.
+    const rawSrcA = await prisma.ingestionSource.count({ where: { labId: fx.labAId } });
+    ck(mon.sources.length === rawSrcA, `B5a Lab-A monitoring lists exactly its own sources (${mon.sources.length} vs ${rawSrcA})`);
+    ck(!mon.sources.some((s: any) => s.id === fx.sources.B), 'B5a Lab-A monitoring never lists a Lab-B source');
+    const monB: any = await asB(() => monitoring.overview(new Date(0).toISOString()));
+    ck(!monB.sources.some((s: any) => s.id === fx.sources.A || s.id === fx.sources.ADisabled), 'B5a tenant isolation: Lab-B monitoring never lists a Lab-A source');
+
+    // (H) security — no rootPath / filesystem path / secret leaks into the monitoring response.
+    const monJson = JSON.stringify(mon);
+    ck(!monJson.includes(fx.roots.A) && !monJson.includes(fx.roots.B) && !monJson.includes('rootPath') && !monJson.includes('matchConfig'), 'B5a monitoring leaks no rootPath/paths/secrets');
+
+    // (J) READY-vs-PUBLISHED — every READY WATCH_FOLDER slide counted stays unpublished.
+    const pub = await prisma.digitalSlide.count({ where: { labId: fx.labAId, id: { in: rawReady.map((r) => r.slideId) }, OR: [{ publishedGenerationId: { not: null } }, { availabilityStatus: 'PUBLISHED' }] } });
+    ck(pub === 0, 'B5a READY monitoring never implies published (counted READY slides are unpublished)');
+
+    console.log(`B5a monitoring: sources=${mon.sources.length} disc=${mon.totals.discoveries.total} backlog=${mon.totals.reconciliationBacklog} ready=${mon.totals.ready} procDone=${mon.totals.processing.SUCCEEDED}`);
   } finally {
     await app.close().catch(() => undefined);
   }
