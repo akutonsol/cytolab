@@ -40,7 +40,7 @@ describe('RequisitionPortalService — R-003 payment security', () => {
     const labContext = { runSystem: (fn: any) => fn() } as any;
     const powertranz = { complete } as any;
     const service = new RequisitionPortalService(
-      prisma, labContext, {} as any, {} as any, {} as any, {} as any, {} as any, powertranz,
+      prisma, labContext, {} as any, {} as any, {} as any, {} as any, {} as any, powertranz, {} as any,
     );
     return { service, requisitionBatch, complete };
   };

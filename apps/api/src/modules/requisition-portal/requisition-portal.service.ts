@@ -32,6 +32,7 @@ import {
 } from '../../common/tenancy/tenancy.extension';
 import { allocateSequence, isUniqueConflict } from '../../common/util/lab-sequence';
 import type { PortalPrincipal } from '../portal/common/portal-principal';
+import { PatientsService } from '../patients/patients.service';
 import { OcrService } from './ocr.service';
 import { ManifestService } from './manifest.service';
 import { PowerTranzService } from './powertranz.service';
@@ -65,6 +66,7 @@ export class RequisitionPortalService {
     private ocr: OcrService,
     private manifest: ManifestService,
     private powertranz: PowerTranzService,
+    private patients: PatientsService,
   ) {}
 
   // ─────────────────────────── Batches (portal) ───────────────────────────
@@ -519,16 +521,15 @@ export class RequisitionPortalService {
   private async materializeForm(labId: string, clientId: string, form: DigitalRequisitionForm) {
     const accession = await this.allocateAccession(labId);
     const { firstName, lastName } = this.splitName(form.patientName ?? '');
-    const regNo = await allocateSequence(this.prisma, labId, 'patientRegNo', 10_000_000n);
 
-    const patient = await this.prisma.patient.create({
-      data: tenantCreate<Prisma.PatientUncheckedCreateInput>({
-        registrationNo: String(regNo),
-        firstName,
-        lastName,
-        dateOfBirth: form.patientDob ?? undefined,
-        clientId,
-      }),
+    // Reuse an existing patient with a matching identity rather than minting a
+    // duplicate — a returning patient's portal forms attach to their one record
+    // set. findOrCreate allocates the registration number and identity key.
+    const patient = await this.patients.findOrCreate({
+      firstName,
+      lastName,
+      dateOfBirth: form.patientDob ?? undefined,
+      clientId,
     });
 
     const requisition = await this.prisma.requisition.create({

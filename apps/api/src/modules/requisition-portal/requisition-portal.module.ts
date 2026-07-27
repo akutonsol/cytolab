@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../database/prisma.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { PatientsModule } from '../patients/patients.module';
 import { MailModule } from '../portal/mail/mail.module';
 import { RequisitionPortalController } from './requisition-portal.controller';
 import { RequisitionPortalInternalController } from './requisition-portal-internal.controller';
@@ -16,7 +17,7 @@ import { PowerTranzService } from './powertranz.service';
  * auth is provided by the already-registered PortalModule's jwt-portal strategy.
  */
 @Module({
-  imports: [PrismaModule, NotificationsModule, MailModule],
+  imports: [PrismaModule, NotificationsModule, MailModule, PatientsModule],
   controllers: [RequisitionPortalController, RequisitionPortalInternalController, RequisitionPaymentController],
   providers: [RequisitionPortalService, OcrService, ManifestService, PowerTranzService],
 })

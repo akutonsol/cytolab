@@ -540,6 +540,12 @@ model Patient {
   dateOfBirth      DateTime?
   identityToken    String?
   motherMaidenName String?
+  // Deterministic identity fingerprint used to prevent duplicate patients (one
+  // patient, many records). HMAC-SHA256 over national ID when present, else over
+  // normalized last|first|dob|gender — see common/util/patient-identity.ts.
+  // Nullable: rows without enough identity info skip dedup (Postgres treats NULLs
+  // as distinct, so many null-key patients coexist). Backfilled for legacy rows.
+  identityKey      String?
   // Nullable stub — actual upload/serving deferred to Phase 6 file storage.
   avatarUrl        String?
   clientId         String?
@@ -553,6 +559,7 @@ model Patient {
   updatedAt        DateTime          @updatedAt
 
   @@unique([labId, registrationNo])
+  @@unique([labId, identityKey])
   @@index([labId])
   @@index([clientId])
 }

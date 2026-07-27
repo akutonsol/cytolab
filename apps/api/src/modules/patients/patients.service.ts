@@ -6,6 +6,7 @@ import { paginate } from '../../common/dto/pagination.dto';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { CreatePatientDto, PatientQueryDto, UpdatePatientDto } from './dto/patient.dto';
 import { allocateSequence, isUniqueConflict } from '../../common/util/lab-sequence';
+import { computeIdentityKey } from '../../common/util/patient-identity';
 import { AuditRecorder } from '../audit/audit-recorder.service';
 
 // The registration-number counter (LabSequence "patientRegNo") starts here for a
@@ -140,7 +141,31 @@ export class PatientsService {
   }
 
   async create(dto: CreatePatientDto) {
+    return this.findOrCreate(dto);
+  }
+
+  /**
+   * De-duplicating patient creation — the single entry point for minting a
+   * patient (used by the manual create endpoint and the requisition portal).
+   * One real-world patient must map to one row that many records hang off, so we
+   * reuse an existing patient with a matching identity fingerprint instead of
+   * creating a duplicate. See {@link computeIdentityKey} for the match rule.
+   *
+   * When a match is found we return the existing patient AS-IS (non-destructive —
+   * we never overwrite stored PHI with a fresh, possibly-thinner submission).
+   */
+  async findOrCreate(dto: CreatePatientDto) {
     const { addresses, ...rest } = dto;
+    const identityKey = computeIdentityKey(rest);
+
+    // Fast path: an existing patient already carries this identity.
+    if (identityKey) {
+      const existing = await this.prisma.patient.findFirst({
+        where: { identityKey },
+        select: patientSelect,
+      });
+      if (existing) return existing;
+    }
 
     // Normally the atomic allocator never collides. The unique-constraint
     // backstop covers the rare case where a generated number equals an imported
@@ -151,12 +176,22 @@ export class PatientsService {
         return await this.prisma.patient.create({
           data: tenantCreate<Prisma.PatientUncheckedCreateInput>({
             registrationNo,
+            identityKey,
             ...rest,
             addresses: this.addressCreate(addresses),
           }),
           select: patientSelect,
         });
       } catch (e) {
+        // Race: a concurrent request created the same identity between our
+        // lookup and this insert — reuse the winner instead of duplicating.
+        if (identityKey && isUniqueConflict(e, 'identityKey')) {
+          const existing = await this.prisma.patient.findFirst({
+            where: { identityKey },
+            select: patientSelect,
+          });
+          if (existing) return existing;
+        }
         if (isUniqueConflict(e, 'registrationNo') && attempt < MAX_REGNO_RETRIES) continue;
         if (isUniqueConflict(e, 'registrationNo')) {
           throw new ConflictException('Could not allocate a unique registration number; please retry');
