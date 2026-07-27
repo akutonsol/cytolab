@@ -95,6 +95,10 @@ async function main() {
     // RSTAB matches a file the ASSERTION writes live (fresh mtime) to deterministically exercise the settle window.
     const RSTAB = await mkRecord(A.id, 'LN-A-STAB', `ID-${randomUUID().slice(0, 8)}`);
     const RBB = await mkRecord(B.id, 'LN-B-ONLY', `ID-${randomUUID().slice(0, 8)}`);
+    // P5B-B4 — reconciliation targets: RRECON (operator resolves the UNMATCHED NO-MATCH file into it);
+    // RRECON2 (the record a seeded retryable FAILED discovery is matched to).
+    const RRECON = await mkRecord(A.id, 'LN-A-RECON', `ID-${randomUUID().slice(0, 8)}`);
+    const RRECON2 = await mkRecord(A.id, 'LN-A-RECON2', `ID-${randomUUID().slice(0, 8)}`);
 
     const srcA = await prisma.ingestionSource.create({ data: { labId: A.id, kind: 'FILESYSTEM', rootPath: rootA, enabled: true }, select: { id: true } });
     const srcB = await prisma.ingestionSource.create({ data: { labId: B.id, kind: 'FILESYSTEM', rootPath: rootB, enabled: true }, select: { id: true } });
@@ -114,14 +118,38 @@ async function main() {
     // Lab B: same accession + same bytes as Lab A's unique → must NOT match Lab A record / dedup.
     fs.writeFileSync(path.join(rootB, 'LN-A-UNIQUE.png'), bytesU);
 
+    // P5B-B4 — a real file (bytes Q) plus a pre-seeded RETRYABLE FAILED discovery matched to it. This models a
+    // prior TRANSIENT hand-off failure: the record + byte identity are already known, so operator RETRY re-reads
+    // the same confined source object, re-verifies the checksum, and reuses the accepted pipeline. FAILED is
+    // terminal to the watch-folder poller, so the running worker never touches this row — only reconciliation does.
+    const bytesQ = solidPng(352, 352, [67, 56, 202]);
+    const b4RetryRef = 'B4-RETRY.png';
+    fs.writeFileSync(path.join(rootA, b4RetryRef), bytesQ);
+    const retryDisc = await prisma.ingestionDiscovery.create({
+      data: {
+        labId: A.id,
+        sourceId: srcA.id,
+        sourceRef: b4RetryRef,
+        sizeBytes: bytesQ.length,
+        sourceChecksum: sha256(bytesQ),
+        status: 'FAILED',
+        matchedRecordId: RRECON2,
+        retryCount: 1,
+        failureReason: 'RECONCILE_HANDOFF_FAILED: seeded transient (prior attempt)',
+      },
+      select: { id: true },
+    });
+
     const fixtures = {
       labAId: A.id, labBId: B.id,
-      records: { RA, RB, RX, RY, RSTAB, RBB },
+      records: { RA, RB, RX, RY, RSTAB, RBB, RRECON, RRECON2 },
       sources: { A: srcA.id, B: srcB.id },
       roots: { A: rootA, B: rootB, outside },
       // ground truth the assertion checks
-      sha: { U: sha256(bytesU), N: sha256(bytesN), M: sha256(bytesM) },
-      refs: { unique: 'LN-A-UNIQUE.png', dupMeta: 'LN-A-DUP-META.png', noMatch: 'NO-MATCH.png', amb: 'AMB-1.png', labB: 'LN-A-UNIQUE.png', escape: 'escape.png', unsupported: 'note.txt' },
+      sha: { U: sha256(bytesU), N: sha256(bytesN), M: sha256(bytesM), Q: sha256(bytesQ) },
+      refs: { unique: 'LN-A-UNIQUE.png', dupMeta: 'LN-A-DUP-META.png', noMatch: 'NO-MATCH.png', amb: 'AMB-1.png', labB: 'LN-A-UNIQUE.png', escape: 'escape.png', unsupported: 'note.txt', b4Retry: b4RetryRef },
+      // P5B-B4 driving inputs (the assertion drives the REAL ReconciliationService with these).
+      b4: { retryDiscoveryId: retryDisc.id, actorA: 'op-recon-a', actorB: 'op-recon-b', candidateRX: RX },
     };
     fs.mkdirSync(path.dirname(FIXTURES_OUT), { recursive: true });
     fs.writeFileSync(FIXTURES_OUT, JSON.stringify(fixtures, null, 2));

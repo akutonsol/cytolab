@@ -54,13 +54,17 @@ export const SPECIAL_OBJECTS: Record<string, string[]> = {
   // Assigned to NO default role (byPrefix below never selects 'audit'); super roles reach them via
   // the guard bypass, matching the Security Center. NOT a reuse of system:security.
   audit: ['read', 'read_system', 'read_phi'],
-  // P5-5B / P5-6.2 — digital-pathology capabilities. view = delivery-session issuance (authenticated slide
-  // viewing); review = the P5-6.1 clinical read surface (generation/QC/publication metadata); publish = the
-  // deliberate publication action. P5-4 grants wsi:VIEW to the staff roles that already hold record:view
-  // (Authorizers, Pathologist, Lab Technician) so they can open slides through the authenticated delivery
-  // path. wsi:review and wsi:publish remain assigned to NO default role (super roles reach them via the
-  // guard bypass); granting either is a separate, explicit role-configuration decision.
-  wsi: ['view', 'review', 'publish'],
+  // P5-5B / P5-6.2 / P5B-B4 — digital-pathology capabilities. view = delivery-session issuance (authenticated
+  // slide viewing); review = the P5-6.1 clinical read surface (generation/QC/publication metadata); publish =
+  // the deliberate publication action; reconcile = the P5B-B4 exception-&-reconciliation authority (the intake
+  // exception queue + the human resolve/acknowledge/retry/dismiss mutations over failed automated ingestion).
+  // P5-4 grants wsi:VIEW to the staff roles that already hold record:view (Authorizers, Pathologist, Lab
+  // Technician) so they can open slides through the authenticated delivery path. wsi:review, wsi:publish and
+  // wsi:reconcile remain assigned to NO default role (super roles reach them via the guard bypass); granting
+  // any of them is a separate, explicit role-configuration decision. reconcile is deliberately NOT folded into
+  // record:change or wsi:review — reconciliation is an operational-integrity authority of its own, and it is
+  // NOT system:ingestion (that stays reserved for B5 source administration).
+  wsi: ['view', 'review', 'publish', 'reconcile'],
 };
 
 export interface SeedRoleDef {

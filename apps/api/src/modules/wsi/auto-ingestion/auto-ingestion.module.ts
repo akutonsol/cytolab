@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { WsiModule } from '../wsi.module';
+import { AuditModule } from '../../audit/audit.module';
 import { IngestionSourceService } from './ingestion-source.service';
 import { IngestionDiscoveryService } from './ingestion-discovery.service';
 import { AccessionMatchResolver } from './accession-match.resolver';
@@ -7,6 +8,8 @@ import { AutomatedIngestionComposer } from './automated-ingestion-composer';
 import { WatchFolderScanner } from './watch-folder-scanner';
 import { WatchFolderProcessor } from './watch-folder-processor';
 import { WatchFolderScheduler } from './watch-folder.scheduler';
+import { ReconciliationService } from './reconciliation.service';
+import { ReconciliationController } from './reconciliation.controller';
 import { WATCH_FOLDER_CONFIG, loadWatchFolderConfig } from './watch-folder-config';
 
 /**
@@ -16,11 +19,16 @@ import { WATCH_FOLDER_CONFIG, loadWatchFolderConfig } from './watch-folder-confi
  * B2: server-owned watch-folder discovery + stable-file hand-off into the ACCEPTED 5A pipeline
  *     (via WsiModule's SlideIngestionService). The poller is DISABLED by default and under test.
  *
- * PrismaService, LabContext and ExecutionContextService are globally provided; only WsiModule is imported
- * (to reuse the ingestion/queue seams). No source-management controller (authz decision deferred to B5).
+ * B4: human exception & reconciliation workflows over the classified exceptions (ReconciliationController,
+ *     gated by wsi:reconcile) — reusing the same accepted pipeline via the composer; no second intake path.
+ *
+ * PrismaService, LabContext and ExecutionContextService are globally provided; WsiModule is imported (to reuse
+ * the ingestion/queue seams) and AuditModule (for the best-effort reconciliation audit trail). No
+ * source-management controller (authz decision — system:ingestion — deferred to B5).
  */
 @Module({
-  imports: [WsiModule],
+  imports: [WsiModule, AuditModule],
+  controllers: [ReconciliationController],
   providers: [
     { provide: WATCH_FOLDER_CONFIG, useFactory: () => loadWatchFolderConfig() },
     IngestionSourceService,
@@ -30,7 +38,8 @@ import { WATCH_FOLDER_CONFIG, loadWatchFolderConfig } from './watch-folder-confi
     WatchFolderScanner,
     WatchFolderProcessor,
     WatchFolderScheduler,
+    ReconciliationService,
   ],
-  exports: [IngestionSourceService, IngestionDiscoveryService, AccessionMatchResolver, AutomatedIngestionComposer, WatchFolderProcessor],
+  exports: [IngestionSourceService, IngestionDiscoveryService, AccessionMatchResolver, AutomatedIngestionComposer, WatchFolderProcessor, ReconciliationService],
 })
 export class AutoIngestionModule {}

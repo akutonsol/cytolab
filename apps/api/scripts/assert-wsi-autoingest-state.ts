@@ -129,10 +129,117 @@ async function main() {
     ck(src?.labId === fx.labAId && src?.kind === 'FILESYSTEM' && src?.enabled === true && src?.rootPath === fx.roots.A, 'IngestionSource A truth (lab/FILESYSTEM/enabled/root)');
 
     console.log(`stabIngested=${stabIngested} winner=${winner?.id ?? 'none'} gen=${gen?.status ?? 'none'}`);
+
+    // ── Program 5B · B4 — human reconciliation over the classified exceptions (drives the REAL service). ──
+    await runB4(prisma, fx, fails, ck);
+
     if (fails.length) { console.error('AUTO-INGEST ACCEPTANCE FAILURES:\n - ' + fails.join('\n - ')); process.exit(1); }
-    console.log('P5B-B2 AUTO-INGEST ACCEPTANCE: all persisted-truth assertions passed.');
+    console.log('P5B-B2/B4 AUTO-INGEST + RECONCILIATION ACCEPTANCE: all persisted-truth assertions passed.');
   } finally {
     await prisma.$disconnect();
+  }
+}
+
+/**
+ * Program 5B · B4 — drives the REAL ReconciliationService over the exceptions the running worker produced,
+ * proving persisted DB truth for: queue truth, tenant isolation, DUPLICATE-ack (no slide) + concurrency,
+ * AMBIGUOUS candidate-constraint + resolve, UNMATCHED resolve → accepted pipeline, FAILED retry idempotency,
+ * and the publication boundary (reconciled → READY but NEVER published). The `wsi:reconcile` 403 boundary is
+ * proven separately by the real-guard authz spec (reconciliation.authz.spec.ts) — the guard is a controller
+ * concern, so it is not re-exercised at the service layer here.
+ *
+ * We boot a SECOND Nest application context purely as a DI container to invoke the service inside lab scope.
+ * The two WSI scheduler toggles are stripped from THIS process first, so this context starts no poller/worker
+ * — the primary API (its workers still ON) is what tiles the reconciled INGESTED slides to READY.
+ */
+async function runB4(prisma: PrismaClient, fx: any, fails: string[], ck: (c: boolean, m: string) => void) {
+  delete process.env.WSI_WATCH_FOLDER;
+  delete process.env.WSI_PROCESSING_WORKER;
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { NestFactory } = require('@nestjs/core');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { AppModule } = require('../src/app.module');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { ReconciliationService } = require('../src/modules/wsi/auto-ingestion/reconciliation.service');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { LabContext } = require('../src/common/tenancy/lab-context');
+
+  const app = await NestFactory.createApplicationContext(AppModule, { logger: false });
+  try {
+    const recon = app.get(ReconciliationService);
+    const lab = app.get(LabContext);
+    const asA = <T>(fn: () => Promise<T>) => lab.runLabScoped(fx.labAId, fn) as Promise<T>;
+    const asB = <T>(fn: () => Promise<T>) => lab.runLabScoped(fx.labBId, fn) as Promise<T>;
+    const discBy = (sourceId: string, ref: string) => prisma.ingestionDiscovery.findFirst({ where: { sourceId, sourceRef: ref } });
+    const threw = async (fn: () => Promise<unknown>) => { try { await fn(); return false; } catch { return true; } };
+
+    // (1) Queue truth — only exception states, tenant-scoped to Lab A.
+    const q: any = await asA(() => recon.queue({}));
+    ck(q.items.every((i: any) => ['UNMATCHED', 'AMBIGUOUS', 'DUPLICATE', 'FAILED'].includes(i.status)), 'B4 queue exposes only exception states');
+    ck(!q.items.some((i: any) => i.sourceId === fx.sources.B), 'B4 queue is tenant-scoped (no Lab-B rows for a Lab-A operator)');
+
+    const nm = await discBy(fx.sources.A, fx.refs.noMatch);   // UNMATCHED
+    const amb = await discBy(fx.sources.A, fx.refs.amb);      // AMBIGUOUS
+    const dupPair = await Promise.all([discBy(fx.sources.A, fx.refs.unique), discBy(fx.sources.A, fx.refs.dupMeta)]);
+    const dup = dupPair.find((d) => d?.status === 'DUPLICATE');
+    if (!nm || !amb || !dup) { fails.push(`B4 preconditions missing (nm=${nm?.status} amb=${amb?.status} dup=${dup?.status})`); return; }
+
+    // (2) Tenant isolation — a Lab-B operator cannot reconcile a Lab-A discovery; the row is not mutated.
+    ck(await threw(() => asB(() => recon.acknowledgeDuplicate(dup.id, fx.b4.actorB))), 'B4 tenant isolation: Lab-B operator cannot act on a Lab-A discovery');
+    ck((await discBy(fx.sources.A, dup.sourceRef))?.status === 'DUPLICATE', 'B4 tenant isolation: the Lab-A DUPLICATE was not mutated by Lab B');
+
+    // (3) DUPLICATE concurrency — two parallel acknowledges → exactly one winner, one Conflict, no new slide.
+    const results = await Promise.allSettled([
+      asA(() => recon.acknowledgeDuplicate(dup.id, fx.b4.actorA)),
+      asA(() => recon.acknowledgeDuplicate(dup.id, fx.b4.actorA)),
+    ]);
+    const ok = results.filter((r) => r.status === 'fulfilled').length;
+    ck(ok === 1 && results.length - ok === 1, `B4 DUPLICATE concurrency: exactly one winner (ok=${ok}/${results.length})`);
+    const dupFinal: any = await discBy(fx.sources.A, dup.sourceRef);
+    ck(dupFinal?.status === 'RECONCILED' && dupFinal?.reconciledById === fx.b4.actorA && dupFinal?.reconciliationAction === 'ACKNOWLEDGE_DUPLICATE', 'B4 DUPLICATE ack → RECONCILED, attributed to the operator');
+    ck(!dupFinal?.resultingSlideId, 'B4 DUPLICATE ack creates NO slide');
+    ck(!!(dupFinal?.matchEvidence as any)?.duplicateOf, 'B4 DUPLICATE ack retains the B3 duplicateOf provenance');
+    ck((await prisma.slideIngestion.count({ where: { sourceChecksum: fx.sha.U, status: 'VERIFIED' } })) === 1, 'B4 DUPLICATE ack: no second VERIFIED ingestion of bytes U');
+
+    // (4) AMBIGUOUS — a non-candidate record is rejected (no mutation), then a valid candidate resolves & ingests.
+    ck(await threw(() => asA(() => recon.resolveToRecord(amb.id, fx.records.RRECON, fx.b4.actorA))), 'B4 AMBIGUOUS: a non-candidate record is rejected');
+    ck((await discBy(fx.sources.A, amb.sourceRef))?.status === 'AMBIGUOUS', 'B4 AMBIGUOUS: a rejected resolve leaves the row unmutated');
+    await asA(() => recon.resolveToRecord(amb.id, fx.b4.candidateRX, fx.b4.actorA));
+    const ambFinal: any = await discBy(fx.sources.A, amb.sourceRef);
+    ck(ambFinal?.status === 'INGESTED' && ambFinal?.matchedRecordId === fx.b4.candidateRX && ambFinal?.reconciliationAction === 'RESOLVE_TO_RECORD', 'B4 AMBIGUOUS → candidate resolve → INGESTED, attributed');
+    ck(!!ambFinal?.resultingSlideId, 'B4 AMBIGUOUS resolve produced a slide via the accepted pipeline');
+
+    // (5) UNMATCHED — resolve into an explicit record → accepted WATCH_FOLDER handoff → INGESTED.
+    await asA(() => recon.resolveToRecord(nm.id, fx.records.RRECON, fx.b4.actorA));
+    const nmFinal: any = await discBy(fx.sources.A, nm.sourceRef);
+    ck(nmFinal?.status === 'INGESTED' && nmFinal?.matchedRecordId === fx.records.RRECON, 'B4 UNMATCHED → resolve → INGESTED into the chosen record');
+    ck(!!nmFinal?.resultingSlideId && !!nmFinal?.resultingIngestionId, 'B4 UNMATCHED resolve produced slide + ingestion');
+    ck((await prisma.slideIngestion.count({ where: { id: nmFinal.resultingIngestionId, status: 'VERIFIED', sourceKind: 'WATCH_FOLDER' } })) === 1, 'B4 UNMATCHED resolve reused the accepted WATCH_FOLDER pipeline');
+
+    // (6) FAILED retry — seeded retryable failure ingests once; a second/stale retry conflicts (no 2nd slide).
+    await asA(() => recon.retry(fx.b4.retryDiscoveryId, fx.b4.actorA));
+    const retryRow: any = await prisma.ingestionDiscovery.findUnique({ where: { id: fx.b4.retryDiscoveryId } });
+    ck(retryRow?.status === 'INGESTED' && retryRow?.reconciliationAction === 'RETRY' && !!retryRow?.resultingSlideId, 'B4 FAILED retry → INGESTED once');
+    const slidesRecon2 = await prisma.digitalSlide.count({ where: { recordId: fx.records.RRECON2 } });
+    ck(await threw(() => asA(() => recon.retry(fx.b4.retryDiscoveryId, fx.b4.actorA))), 'B4 FAILED retry: a second/stale retry is refused (CAS)');
+    ck((await prisma.digitalSlide.count({ where: { recordId: fx.records.RRECON2 } })) === slidesRecon2, 'B4 FAILED retry: no second slide from a repeated retry');
+
+    // (7) Publication boundary — poll the reconciled/ingested slides to READY; they must stay DRAFT/unpublished.
+    const ingestedIds = [nmFinal.resultingSlideId, ambFinal.resultingSlideId, retryRow.resultingSlideId].filter(Boolean);
+    const deadline = Date.now() + 150_000;
+    let ready: string[] = [];
+    while (Date.now() < deadline) {
+      const gens = await prisma.derivativeGeneration.findMany({ where: { slideId: { in: ingestedIds } } });
+      ready = ingestedIds.filter((sid) => gens.some((g) => g.slideId === sid && g.status === 'READY' && g.sealed && g.verified));
+      if (ready.length === ingestedIds.length) break;
+      await sleep(3000);
+    }
+    ck(ready.length === ingestedIds.length, `B4 reconciled slides reached READY via the accepted worker (${ready.length}/${ingestedIds.length})`);
+    ck((await prisma.digitalSlide.count({ where: { id: { in: ingestedIds }, OR: [{ publishedGenerationId: { not: null } }, { availabilityStatus: 'PUBLISHED' }] } })) === 0, 'B4 publication boundary: reconciled/ingested/READY slides are NOT published');
+
+    console.log(`B4 reconciliation: dup=${dupFinal?.status} amb=${ambFinal?.status} unmatched=${nmFinal?.status} retry=${retryRow?.status} ready=${ready.length}/${ingestedIds.length}`);
+  } finally {
+    await app.close().catch(() => undefined);
   }
 }
 

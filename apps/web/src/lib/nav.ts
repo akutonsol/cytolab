@@ -96,6 +96,9 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Ancillary Orders', path: '/ancillary-orders', permission: 'record:view', feature: 'ANCILLARY_ORDERS', icon: Microscope },
       { label: 'Screening Batches', path: '/screening-batches', permission: 'record:view', feature: 'SCREENING_BATCHES', icon: Layers },
       { label: 'Digital Slides', path: '/wsi', permission: 'record:view', feature: 'WSI_VIEWER', icon: ScanEye },
+      // P5B-B4 — the intake exception & reconciliation queue. Gated on wsi:reconcile (granted to no default
+      // role), so it is hidden unless an operator has been explicitly assigned the reconciliation authority.
+      { label: 'Slide Reconciliation', path: '/operations/reconciliation', permission: 'wsi:reconcile', feature: 'WSI_VIEWER', icon: AlertTriangle },
       { label: 'FHIR', path: '/fhir', permission: 'record:view', feature: 'HL7_FHIR', icon: Share2 },
     ],
   },
