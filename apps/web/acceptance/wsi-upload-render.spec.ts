@@ -38,7 +38,7 @@ test.describe('full render path (pathologist: record:change + wsi:review + wsi:p
     await page.goto('/wsi');
     await page.getByTestId('wsi-upload-open').click();
     await expect(page.getByTestId('wsi-upload-modal')).toBeVisible();
-    await page.locator('select').selectOption(fx.recordId);
+    await page.getByTestId('wsi-upload-modal').locator('select').selectOption(fx.recordId);
     await page.getByTestId('wsi-upload-file').setInputFiles({ name: 'render-slide.png', mimeType: 'image/png', buffer: solidPng(512, 512, [79, 70, 229]) });
     await page.getByTestId('wsi-upload-start').click();
 

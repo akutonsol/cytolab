@@ -2809,6 +2809,7 @@ model DigitalSlide {
   @@index([specimenId])
   @@index([labId, availabilityStatus])
   @@index([labId, publishedGenerationId]) // Refinement 1 (operational lookup)
+  @@index([labId, uploadedAt]) // P5-5: primary ordered browse/search path (newest/oldest, tenant-scoped)
 }
 
 // A point annotation on a slide, positioned in normalized image coordinates

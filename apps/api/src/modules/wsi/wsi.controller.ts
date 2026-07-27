@@ -1,9 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { WsiService } from './wsi.service';
 import { CreateAnnotationDto, UpdateAnnotationDto } from './dto/wsi.dto';
+import { ListSlidesQueryDto } from './dto/list-slides-query.dto';
 
 @ApiTags('wsi')
 @ApiBearerAuth()
@@ -13,8 +14,8 @@ export class WsiController {
 
   @Get()
   @RequirePermissions('record:view')
-  list() {
-    return this.wsi.list();
+  list(@Query() query: ListSlidesQueryDto) {
+    return this.wsi.list(query);
   }
 
   @Get('summary')

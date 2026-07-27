@@ -5,10 +5,12 @@
 .upload-result.json
 .render-fixtures.json
 .render-result.json
+.search-fixtures.json
 .auth/
 .output/
 .output-viewer/
 .output-upload/
 .output-render/
+.output-search/
 screenshots/
 *.png

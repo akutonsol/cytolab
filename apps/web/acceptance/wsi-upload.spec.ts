@@ -30,7 +30,7 @@ test('upload UI uses the ingestion pipeline, surfaces truthful pre-publication s
   await expect(page.getByTestId('wsi-upload-modal')).toBeVisible();
 
   // Choose the seeded record + a small slide file.
-  await page.locator('select').selectOption(fx.recordId);
+  await page.getByTestId('wsi-upload-modal').locator('select').selectOption(fx.recordId);
   await page.getByTestId('wsi-upload-file').setInputFiles({
     name: 'acceptance-slide.bin',
     mimeType: 'application/octet-stream',

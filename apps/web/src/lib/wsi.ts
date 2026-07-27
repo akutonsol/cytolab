@@ -9,11 +9,20 @@ export interface SlideAnnotationRow {
   createdAt: string;
 }
 
+// P5-5: truthful lifecycle. `viewable` is true ONLY for PUBLISHED — never inferred from format/metadata.
+export type SlideLifecycleState = 'DRAFT' | 'PROCESSING' | 'READY' | 'QC_FAILED' | 'PUBLISHED';
+export interface SlideLifecycle {
+  state: SlideLifecycleState;
+  viewable: boolean;
+}
+
 export interface DigitalSlide {
   id: string;
   // P5-4 Phase B Part 2: `slideUrl` removed from the supported client contract. Viewability derives from a
   // published generation via the authenticated delivery boundary, never from a URL.
   format: string;
+  tileSourceType: string | null;
+  lifecycle: SlideLifecycle;
   magnification: string | null;
   stain: string | null;
   scanner: string | null;
