@@ -52,6 +52,14 @@ export class WsiController {
     return this.wsi.removeAnnotation(annotationId);
   }
 
+  // P5-8 — bounded asset-graph neighbourhood of a slide (metadata-only, record:view tier). Generation/asset
+  // INTERNALS are NOT here; they stay on the wsi:review evidence surface. 3-segment path — no clash with :slideId.
+  @Get('slides/:slideId/graph')
+  @RequirePermissions('record:view')
+  slideGraph(@Param('slideId') slideId: string) {
+    return this.wsi.slideGraph(slideId);
+  }
+
   @Get(':slideId')
   @RequirePermissions('record:view')
   detail(@Param('slideId') slideId: string) {

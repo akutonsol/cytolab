@@ -137,10 +137,23 @@ export class SlideReviewService {
       select: {
         id: true, slideId: true, status: true, sealed: true, verified: true, sealedAt: true, verifiedAt: true,
         publishedAt: true, supersededAt: true, createdAt: true, tileSourceType: true, tiledWidth: true,
-        tiledHeight: true, tileSize: true, levelCount: true, derivativeManifestChecksum: true,
+        tiledHeight: true, tileSize: true, levelCount: true, derivativeManifestChecksum: true, jobId: true,
       },
     });
     if (!g) throw new NotFoundException('generation not found');
+
+    // P5-8 — source lineage: this generation's processing job → its ingestion. Bounded to slide+lab (a
+    // cross-slide/cross-lab job/ingestion is invisible, not a leak). storageKey/errorDetail excluded.
+    const job = await this.prisma.slideProcessingJob.findFirst({
+      where: { id: g.jobId, labId },
+      select: { id: true, status: true, attempt: true, workerId: true, startedAt: true, finishedAt: true, errorCode: true, ingestionId: true },
+    });
+    const ingestion = job
+      ? await this.prisma.slideIngestion.findFirst({
+          where: { id: job.ingestionId, labId, slideId },
+          select: { id: true, sourceKind: true, status: true, sourceChecksum: true, originalFilename: true, sizeBytes: true, createdAt: true },
+        })
+      : null;
 
     // Asset METADATA only — storageKey is deliberately never selected (delivery-internal; D-F).
     const assets = await this.prisma.slideAsset.findMany({
@@ -202,6 +215,10 @@ export class SlideReviewService {
         actorUserId: p.actorUserId,
         at: p.at.toISOString(),
       })),
+      source: {
+        job: job ? { id: job.id, status: job.status, attempt: job.attempt, workerId: job.workerId, startedAt: iso(job.startedAt), finishedAt: iso(job.finishedAt), errorCode: job.errorCode } : null,
+        ingestion: ingestion ? { id: ingestion.id, sourceKind: ingestion.sourceKind, status: ingestion.status, sourceChecksum: ingestion.sourceChecksum, originalFilename: ingestion.originalFilename, sizeBytes: ingestion.sizeBytes, createdAt: ingestion.createdAt.toISOString() } : null,
+      },
     };
   }
 

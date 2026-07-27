@@ -108,6 +108,27 @@ export function GenerationEvidence({
             )}
           </section>
 
+          {/* P5-8 — source lineage: ingestion → processing job → this generation (completes the chain). */}
+          {(data.source?.ingestion || data.source?.job) && (
+            <section data-testid="gen-source">
+              <h3 className="mb-2 text-[12px] font-bold uppercase tracking-wide text-text-secondary">Source lineage</h3>
+              <ul className="space-y-1.5">
+                {data.source.ingestion && (
+                  <li data-testid="gen-source-ingestion" data-ingestion-id={data.source.ingestion.id} className="flex items-center justify-between gap-3 text-[13px]">
+                    <span className="font-medium text-text">Ingestion · {data.source.ingestion.sourceKind}</span>
+                    <span className="text-text-secondary">{data.source.ingestion.status}{data.source.ingestion.originalFilename ? ` · ${data.source.ingestion.originalFilename}` : ''}</span>
+                  </li>
+                )}
+                {data.source.job && (
+                  <li data-testid="gen-source-job" data-job-id={data.source.job.id} className="flex items-center justify-between gap-3 text-[13px]">
+                    <span className="font-medium text-text">Processing job · attempt {data.source.job.attempt}</span>
+                    <span className="text-text-secondary">{data.source.job.status}{data.source.job.errorCode ? ` · ${data.source.job.errorCode}` : ''}</span>
+                  </li>
+                )}
+              </ul>
+            </section>
+          )}
+
           <section>
             <h3 className="mb-2 text-[12px] font-bold uppercase tracking-wide text-text-secondary">Assets</h3>
             {data.assets.length === 0 ? (

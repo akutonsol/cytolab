@@ -188,6 +188,50 @@ export class WsiService {
     return this.toRow(slide);
   }
 
+  /**
+   * P5-8 — bounded asset-graph NEIGHBOURHOOD of a slide (record:view tier). Persisted edges only:
+   * record/patient/specimen (or explicit unassigned), truthful lifecycle, sibling-in-record count, and a
+   * NON-INTERNAL generation summary (count + whether a published generation exists). Generation/asset
+   * INTERNALS (assets, verification, publication, manifest) are deliberately NOT here — they remain on the
+   * `wsi:review` evidence surface. No storageKey/slideUrl/pixels/delivery. Tenant-scoped by the extension;
+   * a cross-lab id is a 404, not a leak. `links` are deep-link targets grounded in persisted ids.
+   */
+  async slideGraph(slideId: string) {
+    const s = await this.prisma.digitalSlide.findFirst({
+      where: { id: slideId },
+      select: {
+        id: true, recordId: true, specimenId: true, publishedGenerationId: true,
+        specimen: { select: { id: true, type: true, label: true } },
+        record: { select: { id: true, labNumber: true, identifier: true, formType: true, patient: { select: { id: true, firstName: true, lastName: true } } } },
+        generations: { select: { status: true, sealed: true, verified: true } },
+        _count: { select: { annotations: true } },
+      },
+    });
+    if (!s) throw new NotFoundException('Slide not found');
+    const lifecycle = deriveSlideLifecycle({ publishedGenerationId: s.publishedGenerationId ?? null, generations: s.generations });
+    const siblingSlideCount = await this.prisma.digitalSlide.count({ where: { recordId: s.recordId } });
+    if (s.record?.patient?.id) {
+      await this.audit.recordPhiRead({ patientId: s.record.patient.id, accessSurface: 'slide', accessMode: 'view', producerModule: 'wsi', resource: { type: 'DigitalSlide', id: s.id } });
+    }
+    return {
+      node: 'slide' as const,
+      slide: { id: s.id, lifecycle, annotationCount: s._count.annotations },
+      record: s.record ? { id: s.record.id, labNo: s.record.labNumber ?? s.record.identifier, formType: s.record.formType } : null,
+      patient: s.record?.patient ? { id: s.record.patient.id, name: `${s.record.patient.firstName} ${s.record.patient.lastName}`.trim() } : null,
+      specimen: s.specimen ? { id: s.specimen.id, type: s.specimen.type, label: s.specimen.label ?? null } : null,
+      unassignedSpecimen: s.specimenId == null, // truthful record-level state — never fabricated
+      siblingSlideCount,
+      // Non-internal summary ONLY; generation/asset internals require wsi:review.
+      generationSummary: { total: s.generations.length, hasPublished: !!s.publishedGenerationId },
+      links: {
+        record: s.record ? `/records/${s.record.id}` : null,
+        recordSlides: `/wsi?recordId=${s.recordId}`,
+        specimenSlides: s.specimenId ? `/wsi?specimenId=${s.specimenId}` : null,
+        viewer: `/wsi/${s.id}`,
+      },
+    };
+  }
+
   async remove(slideId: string) {
     const slide = await this.prisma.digitalSlide.findFirst({ where: { id: slideId }, select: { id: true } });
     if (!slide) throw new NotFoundException('Slide not found');

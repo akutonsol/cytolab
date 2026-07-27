@@ -96,6 +96,33 @@ export interface GenerationPublicationRef {
   at: string;
 }
 
+// P5-8 — the source half of the generation lineage: ingestion → processing job → (this) generation.
+// Completes the ingestion→job→generation→asset chain. Read-only; storage-internal keys excluded.
+export interface SlideIngestionRef {
+  id: string;
+  sourceKind: string;
+  status: string;
+  sourceChecksum: string | null;
+  originalFilename: string | null;
+  sizeBytes: number | null;
+  createdAt: string;
+  // sourceObjectKey intentionally excluded (private storage key — storage/delivery-internal).
+}
+export interface SlideProcessingJobRef {
+  id: string;
+  status: string;
+  attempt: number;
+  workerId: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  errorCode: string | null;
+  // errorDetail intentionally excluded (may embed internal paths); errorCode is a stable code.
+}
+export interface GenerationSourceLineage {
+  job: SlideProcessingJobRef | null;
+  ingestion: SlideIngestionRef | null;
+}
+
 export interface GenerationEvidence {
   generationId: string;
   slideId: string;
@@ -117,6 +144,8 @@ export interface GenerationEvidence {
   verifications: VerificationRecordDto[];
   verificationsTruncated: boolean;
   publicationEvents: GenerationPublicationRef[];
+  /** P5-8 — the ingestion→job source half of the lineage (completes ingestion→job→generation→asset). */
+  source: GenerationSourceLineage;
 }
 
 // ── R3: GET /wsi/slides/:slideId/publications ────────────────────────────────

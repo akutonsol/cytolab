@@ -8,6 +8,7 @@
 .search-fixtures.json
 .orchestration-fixtures.json
 .specimen-fixtures.json
+.graph-fixtures.json
 .auth/
 .output/
 .output-viewer/
@@ -16,5 +17,6 @@
 .output-search/
 .output-orchestration/
 .output-specimen/
+.output-graph/
 screenshots/
 *.png

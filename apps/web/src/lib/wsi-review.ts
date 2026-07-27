@@ -79,6 +79,30 @@ export interface GenerationPublicationRef {
   at: string;
 }
 
+// P5-8 — source lineage (ingestion → processing job → generation). Completes the lineage chain.
+export interface SlideIngestionRef {
+  id: string;
+  sourceKind: string;
+  status: string;
+  sourceChecksum: string | null;
+  originalFilename: string | null;
+  sizeBytes: number | null;
+  createdAt: string;
+}
+export interface SlideProcessingJobRef {
+  id: string;
+  status: string;
+  attempt: number;
+  workerId: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  errorCode: string | null;
+}
+export interface GenerationSourceLineage {
+  job: SlideProcessingJobRef | null;
+  ingestion: SlideIngestionRef | null;
+}
+
 export interface GenerationEvidence {
   generationId: string;
   slideId: string;
@@ -100,6 +124,8 @@ export interface GenerationEvidence {
   verifications: VerificationRecord[];
   verificationsTruncated: boolean;
   publicationEvents: GenerationPublicationRef[];
+  /** P5-8 — the ingestion→job source half of the lineage. */
+  source: GenerationSourceLineage;
 }
 
 export interface PublicationEvent {

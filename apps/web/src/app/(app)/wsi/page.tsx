@@ -151,8 +151,17 @@ export default function WsiPage() {
                 const lc = LIFECYCLE[s.lifecycle.state];
                 return (
                   <tr key={s.id} data-testid="wsi-slide-row" className="border-b border-[#F1F5F9] transition-colors hover:bg-[#F8FAFC]">
-                    <td className="px-3 py-2.5 font-mono font-semibold text-[#4F46E5]">{s.labNo}</td>
-                    <td className="px-3 py-2.5 font-semibold text-[#0F172A]">{s.patientName}</td>
+                    {/* P5-8 — deep-link into the persisted graph: slide → record, slide → patient. */}
+                    <td className="px-3 py-2.5 font-mono font-semibold text-[#4F46E5]">
+                      {s.record?.id ? (
+                        <button data-testid="wsi-row-record-link" data-record-id={s.record.id} onClick={() => router.push(`/records/${s.record!.id}`)} className="underline-offset-2 hover:underline">{s.labNo}</button>
+                      ) : s.labNo}
+                    </td>
+                    <td className="px-3 py-2.5 font-semibold text-[#0F172A]">
+                      {s.record?.patient?.id ? (
+                        <button data-testid="wsi-row-patient-link" data-patient-id={s.record.patient.id} onClick={() => router.push(`/patients/${s.record!.patient!.id}`)} className="underline-offset-2 hover:underline">{s.patientName}</button>
+                      ) : s.patientName}
+                    </td>
                     <td className="px-3 py-2.5"><span data-testid="wsi-lifecycle" data-state={s.lifecycle.state} data-viewable={String(s.lifecycle.viewable)} className="inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ color: lc.fg, background: lc.bg }}>{lc.label}</span></td>
                     <td className="px-3 py-2.5 text-[#334155]">{s.stain ?? '—'}</td>
                     <td className="px-3 py-2.5 text-[#334155]">{s.magnification ?? '—'}</td>

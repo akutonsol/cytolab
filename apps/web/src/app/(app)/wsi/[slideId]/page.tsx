@@ -9,6 +9,7 @@ import { useFeatures } from '@/lib/feature-context';
 import { WSIViewer } from '@/components/WSIViewer';
 import { SlideTray } from '@/components/wsi/SlideTray';
 import { CompareViewer } from '@/components/wsi/CompareViewer';
+import { RelatedResources } from '@/components/wsi/RelatedResources';
 import { SlideReviewDrawer } from '@/components/wsi/SlideReviewDrawer';
 import { shortDate, type DigitalSlide } from '@/lib/wsi';
 import { useAuth } from '@/lib/auth';
@@ -144,6 +145,9 @@ export default function SlideViewerPage() {
               </div>
             ))}
           </div>
+
+          {/* P5-8 — contextual asset-graph navigation (record ↔ specimen ↔ slide, sibling + generation summary) */}
+          <RelatedResources slideId={activeId} />
 
           {slide?.record && (
             <button onClick={() => router.push(`/records/${slide.record!.id}`)} className="mt-3 rounded-lg border border-slate-700 px-3 py-2 text-[12px] font-semibold text-slate-300 hover:bg-white/5">
