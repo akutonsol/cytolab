@@ -19,6 +19,10 @@ export class ListSlidesQueryDto extends PaginationDto {
   /** Scope to a single record (already an indexed column). */
   @IsOptional() @IsString() recordId?: string;
 
+  /** P5-7: scope to a single specimen (already an indexed column). Additive; tenant scoping still applies,
+   *  so a manipulated specimenId can only ever match slides already visible under the caller's record scope. */
+  @IsOptional() @IsString() specimenId?: string;
+
   /** Truthful lifecycle state filter (see slide-lifecycle.ts). */
   @IsOptional() @IsIn(LIFECYCLE_STATES) status?: SlideLifecycleState;
 

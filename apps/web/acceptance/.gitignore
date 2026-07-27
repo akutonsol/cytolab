@@ -7,6 +7,7 @@
 .render-result.json
 .search-fixtures.json
 .orchestration-fixtures.json
+.specimen-fixtures.json
 .auth/
 .output/
 .output-viewer/
@@ -14,5 +15,6 @@
 .output-render/
 .output-search/
 .output-orchestration/
+.output-specimen/
 screenshots/
 *.png

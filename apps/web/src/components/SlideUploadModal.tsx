@@ -40,6 +40,9 @@ export function SlideUploadModal({ recordId: fixedRecordId, onClose }: Props) {
   const { can } = useAuth();
   const canReview = can('wsi:review');
   const [recordId, setRecordId] = useState(fixedRecordId ?? '');
+  // P5-7: optional specimen anchor. Empty = record-level (specimenId null). The server re-validates that the
+  // specimen belongs to this record; a browser-supplied id is never trusted on its own.
+  const [specimenId, setSpecimenId] = useState('');
   const [file, setFile] = useState<File | null>(null);
 
   const [phase, setPhase] = useState<LifecyclePhase>('idle');
@@ -55,6 +58,14 @@ export function SlideUploadModal({ recordId: fixedRecordId, onClose }: Props) {
     enabled: !fixedRecordId && phase === 'idle',
     queryFn: () => api.get('/specimens', { params: { pageSize: 300 } }).then((r) => r.data),
   });
+
+  // P5-7: the selected record's specimens, from the existing record-detail read (no new discovery service).
+  const { data: recordDetail } = useQuery<any>({
+    queryKey: ['record-specimens', recordId],
+    enabled: phase === 'idle' && !!recordId,
+    queryFn: () => api.get(`/specimens/${recordId}`).then((r) => r.data),
+  });
+  const specimens: any[] = recordDetail?.specimens ?? [];
 
   // Poll the REAL backend state after VERIFIED — never manufacture progress. Stops when published.
   useEffect(() => {
@@ -81,7 +92,7 @@ export function SlideUploadModal({ recordId: fixedRecordId, onClose }: Props) {
       const checksum = await sha256Hex(buf);
       setPhase('uploading');
       setProgress(0);
-      const { slideId: sid, ingestionId: iid } = await initiateUpload(recordId, { filename: file.name, sizeBytes: file.size });
+      const { slideId: sid, ingestionId: iid } = await initiateUpload(recordId, { filename: file.name, sizeBytes: file.size, ...(specimenId ? { specimenId } : {}) });
       setSlideId(sid);
       setIngestionId(iid);
       await uploadChunks(iid, buf, setProgress);
@@ -110,10 +121,19 @@ export function SlideUploadModal({ recordId: fixedRecordId, onClose }: Props) {
         {phase === 'idle' && (
           <div className="flex flex-col gap-3">
             {!fixedRecordId && (
-              <select value={recordId} onChange={(e) => setRecordId(e.target.value)} className={inp}>
+              <select value={recordId} onChange={(e) => { setRecordId(e.target.value); setSpecimenId(''); }} className={inp}>
                 <option value="">Select record…</option>
                 {(recordsPage?.data ?? []).map((r: any) => (
                   <option key={r.id} value={r.id}>{(r.labNumber ?? r.identifier)}{r.patient ? ` · ${r.patient.firstName} ${r.patient.lastName}` : ''}</option>
+                ))}
+              </select>
+            )}
+            {/* P5-7: optional specimen anchor (only when the record has specimens). Empty = record-level. */}
+            {recordId && specimens.length > 0 && (
+              <select data-testid="wsi-upload-specimen" value={specimenId} onChange={(e) => setSpecimenId(e.target.value)} className={inp}>
+                <option value="">No specimen (record-level)</option>
+                {specimens.map((s: any) => (
+                  <option key={s.id} value={s.id}>{(s.label && String(s.label).trim()) || s.type}</option>
                 ))}
               </select>
             )}

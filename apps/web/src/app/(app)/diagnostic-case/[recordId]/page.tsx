@@ -17,6 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
+import { groupSlidesBySpecimen, specimenGroupLabel } from '@/lib/wsi-specimen';
 import type { AncillaryOrdersSection, AttachmentsSubSection, BethesdaSubSection, CaseIdentitySection, CodingSubSection, CollaborationSection, CorrelationSubSection, DecisionSupportSection, DiagnosticCaseOverview, DiagnosticInterpretationSection, DiagnosticMaterialSection, EffectiveDiagnosticPermissions, PriorEvidenceSection, PriorRecordsSubSection, ReportingSignOutSection, ScreeningBatchesSection, SectionStatus, SlidesSubSection, TimelineProvenanceSection } from './types';
 
 // Recorded dates render as plain calendar dates; null → "—". No relative/"ago" phrasing (which would
@@ -507,7 +508,7 @@ function DiagnosticMaterialBand({
               )}
             </>
           )}
-          <p className="mt-3 text-meta text-text-tertiary">Recorded specimen material only. Slides and attachments are recorded against the case, not linked to a specific specimen.</p>
+          <p className="mt-3 text-meta text-text-tertiary">Recorded specimen material only. Attachments are recorded against the case, not linked to a specific specimen.</p>
           <div className="mt-3 border-t border-hairline pt-3">
             <SlidesSubArea slides={d?.slides} onOpenSlide={onOpenSlide} onRetry={onRetry} retrying={retrying} />
           </div>
@@ -563,26 +564,39 @@ function SlidesSubArea({
         <p className="text-meta text-text-tertiary">No slides recorded for this case.</p>
       ) : (
         <>
-          <ul className="space-y-1.5">
-            {slides.items.map((s) => {
-              const meta = [s.magnification, s.scanner, s.format, fmtBytes(s.fileSizeBytes), fmtDate(s.uploadedAt)].filter((v) => v && v !== '—');
-              return (
-                <li key={s.id} className="flex items-center justify-between gap-3 rounded border border-hairline px-2.5 py-1.5">
-                  <div className="min-w-0">
-                    <div className="truncate text-sm text-text">{dash(s.stain)}</div>
-                    <div className="truncate text-meta text-text-tertiary">{meta.length ? meta.join(' · ') : 'Recorded slide'}</div>
-                  </div>
-                  <Button variant="secondary" size="sm" onClick={() => onOpenSlide(s.id)}>
-                    Open slide <ExternalLink size={12} className="ml-1" />
-                  </Button>
-                </li>
-              );
-            })}
-          </ul>
+          {/* P5-7: slides grouped by their PERSISTED specimen anchor; the unassigned/record-level bucket
+              (null specimenId) is shown truthfully and is never folded into a specimen. Grouping asserts
+              nothing about review/completeness/publication/viewability. */}
+          <div className="space-y-3" data-testid="dc-slide-groups">
+            {groupSlidesBySpecimen(slides.items).map((g) => (
+              <div key={g.key} data-testid="dc-slide-group" data-specimen-id={g.specimen?.id ?? ''} data-unassigned={String(g.specimen === null)}>
+                <div className="mb-1.5 flex items-center gap-2">
+                  <span className="text-meta font-semibold uppercase tracking-wide text-text-tertiary">{specimenGroupLabel(g.specimen)}</span>
+                  <Badge tone="neutral" size="xs">{g.slides.length}</Badge>
+                </div>
+                <ul className="space-y-1.5">
+                  {g.slides.map((s) => {
+                    const meta = [s.magnification, s.scanner, s.format, fmtBytes(s.fileSizeBytes), fmtDate(s.uploadedAt)].filter((v) => v && v !== '—');
+                    return (
+                      <li key={s.id} data-testid="dc-slide" data-slide-id={s.id} data-specimen-id={s.specimenId ?? ''} className="flex items-center justify-between gap-3 rounded border border-hairline px-2.5 py-1.5">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm text-text">{dash(s.stain)}</div>
+                          <div className="truncate text-meta text-text-tertiary">{meta.length ? meta.join(' · ') : 'Recorded slide'}</div>
+                        </div>
+                        <Button variant="secondary" size="sm" onClick={() => onOpenSlide(s.id)}>
+                          Open slide <ExternalLink size={12} className="ml-1" />
+                        </Button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
           {slides.items.length < total && (
             <p className="mt-2 text-meta text-text-tertiary">Showing the first {slides.items.length} of {total} recorded slides.</p>
           )}
-          <p className="mt-2 text-meta text-text-tertiary">Slide metadata is as recorded at upload; opening a slide hands off to the viewer.</p>
+          <p className="mt-2 text-meta text-text-tertiary">Slides are grouped by their recorded specimen; opening a slide hands off to the viewer. Grouping does not imply review or completeness.</p>
         </>
       )}
     </div>

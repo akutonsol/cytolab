@@ -14,6 +14,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { deriveAge } from '@/lib/age';
 import { Badge, Button, Card, EmptyState, Skeleton } from '@/components/ui';
+import { groupSlidesBySpecimen, specimenGroupLabel } from '@/lib/wsi-specimen';
 import { ResultSheetModal } from '@/components/ResultSheetModal';
 import { AuthorizationModal } from '@/components/AuthorizationModal';
 import type {
@@ -477,9 +478,21 @@ function SlidesPanel({
       ) : status === 'empty' || !section?.data?.items.length ? (
         <EmptyState bare className="px-0 py-6" title="No digital slides" description="No slides have been uploaded for this case." />
       ) : (
-        <div className="space-y-2">
-          {section.data.items.map((s) => (
-            <SlideRow key={s.id} slide={s} onOpen={() => onOpen(s.viewerPath)} />
+        // P5-7: same persisted specimen grouping as the diagnostic-case surface (shared derivation). The
+        // unassigned/record-level bucket (null specimenId) is truthful and never folded into a specimen.
+        <div className="space-y-3" data-testid="so-slide-groups">
+          {groupSlidesBySpecimen(section.data.items).map((g) => (
+            <div key={g.key} data-testid="so-slide-group" data-specimen-id={g.specimen?.id ?? ''} data-unassigned={String(g.specimen === null)}>
+              <div className="mb-1.5 flex items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">{specimenGroupLabel(g.specimen)}</span>
+                <Badge tone="neutral" size="xs">{g.slides.length}</Badge>
+              </div>
+              <div className="space-y-2">
+                {g.slides.map((s) => (
+                  <SlideRow key={s.id} slide={s} onOpen={() => onOpen(s.viewerPath)} />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -495,7 +508,7 @@ function SlideRow({ slide, onOpen }: { slide: SlideMeta; onOpen: () => void }) {
   const size = fmtSize(slide.fileSizeBytes);
   const uploaded = slide.uploadedAt ? `Uploaded ${new Date(slide.uploadedAt).toLocaleDateString()}` : 'Upload date not recorded';
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-lightgray px-3 py-2">
+    <div data-testid="so-slide" data-slide-id={slide.id} data-specimen-id={slide.specimenId ?? ''} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-lightgray px-3 py-2">
       <div className="min-w-0">
         <div className="text-sm font-semibold text-text">{identity}</div>
         <div className="text-meta text-text-tertiary">{[uploaded, size].filter(Boolean).join(' · ')}</div>

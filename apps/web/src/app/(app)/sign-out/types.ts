@@ -82,6 +82,12 @@ export interface ClinicalContext {
   nonGyn: NonGynHistory | null;
 }
 
+// P5-7: persisted specimen anchor for a slide (or null = record-level). Identity only.
+export interface SlideSpecimenRef {
+  id: string;
+  type: string;
+  label: string | null;
+}
 export interface SlideMeta {
   id: string;
   format: string | null;
@@ -90,6 +96,8 @@ export interface SlideMeta {
   scanner: string | null;
   fileSizeBytes: number | null;
   uploadedAt: string | null;
+  specimenId: string | null;
+  specimen: SlideSpecimenRef | null;
   viewerPath: string;
 }
 

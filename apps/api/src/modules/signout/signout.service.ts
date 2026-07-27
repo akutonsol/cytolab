@@ -95,6 +95,11 @@ export interface ClinicalContext {
   nonGyn: NonGynHistory | null;
 }
 
+export interface SlideSpecimenRef {
+  id: string;
+  type: string; // persisted SpecimenType
+  label: string | null; // persisted label (may be null)
+}
 export interface SlideMeta {
   id: string;
   format: string | null;
@@ -103,6 +108,10 @@ export interface SlideMeta {
   scanner: string | null;
   fileSizeBytes: number | null;
   uploadedAt: string | null;
+  /** P5-7: persisted specimen anchor (identity only), or null = record-level. Derived from the same
+   *  persisted truth as the diagnostic-case surface; never inferred, never fabricated. */
+  specimenId: string | null;
+  specimen: SlideSpecimenRef | null;
   /** The existing viewer route — the viewer owns image delivery, not this aggregate. */
   viewerPath: string;
 }
@@ -458,6 +467,9 @@ export class SignoutService {
         scanner: s.scanner ?? null,
         fileSizeBytes: s.fileSizeBytes ?? null,
         uploadedAt: iso(s.uploadedAt),
+        // P5-7: persisted specimen anchor (or null = record-level). Same persisted source as diagnostic-case.
+        specimenId: s.specimenId ?? null,
+        specimen: s.specimen ? { id: s.specimen.id, type: s.specimen.type, label: s.specimen.label ?? null } : null,
         viewerPath: `/wsi/${s.id}`,
       }));
       return { status: 'ready', data: { count: items.length, items } };

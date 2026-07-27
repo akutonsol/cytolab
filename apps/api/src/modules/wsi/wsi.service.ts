@@ -17,6 +17,10 @@ const slideSelect = {
   id: true, format: true, tileSourceType: true, magnification: true, stain: true, scanner: true,
   fileSizeBytes: true, uploadedById: true, uploadedAt: true, recordId: true,
   publishedGenerationId: true,
+  // P5-7: persisted specimen anchor (nullable). Identity only — never image bytes/storage. A null
+  // specimenId is a genuinely record-level slide and is surfaced as such; never inferred into a specimen.
+  specimenId: true,
+  specimen: { select: { id: true, type: true, label: true } },
   record: {
     select: {
       id: true, labNumber: true, identifier: true, formType: true,
@@ -62,6 +66,9 @@ export class WsiService {
       uploadedById: s.uploadedById,
       uploadedAt: s.uploadedAt,
       recordId: s.recordId,
+      // P5-7: truthful persisted specimen identity (or null for a record-level slide). Never fabricated.
+      specimenId: s.specimenId ?? null,
+      specimen: s.specimen ?? null,
       record: s.record,
       annotations: s.annotations,
       patientName: s.record?.patient ? `${s.record.patient.firstName} ${s.record.patient.lastName}`.trim() : '—',
@@ -96,6 +103,9 @@ export class WsiService {
       select: {
         id: true, format: true, magnification: true, stain: true, scanner: true,
         fileSizeBytes: true, uploadedAt: true,
+        // P5-7: persisted specimen anchor for case/sign-out grouping (identity only, still no slideUrl/bytes).
+        specimenId: true,
+        specimen: { select: { id: true, type: true, label: true } },
       },
     });
   }
@@ -129,6 +139,9 @@ export class WsiService {
   private buildSlideWhere(query: ListSlidesQueryDto): Prisma.DigitalSlideWhereInput {
     const and: Prisma.DigitalSlideWhereInput[] = [];
     if (query.recordId) and.push({ recordId: query.recordId });
+    // P5-7: narrow additive specimen filter (analogous to recordId). Tenant scoping still applies via the
+    // extension; a caller can only ever match specimens on slides already visible under their record scope.
+    if (query.specimenId) and.push({ specimenId: query.specimenId });
     if (query.stain) and.push({ stain: query.stain });
     if (query.scanner) and.push({ scanner: query.scanner });
     if (query.format) and.push({ format: query.format });

@@ -16,6 +16,13 @@ export interface SlideLifecycle {
   viewable: boolean;
 }
 
+// P5-7: persisted specimen identity for a slide (or null = record-level). Identity only.
+export interface SlideSpecimenRef {
+  id: string;
+  type: string;
+  label: string | null;
+}
+
 export interface DigitalSlide {
   id: string;
   // P5-4 Phase B Part 2: `slideUrl` removed from the supported client contract. Viewability derives from a
@@ -30,6 +37,9 @@ export interface DigitalSlide {
   uploadedById: string | null;
   uploadedAt: string;
   recordId: string;
+  // P5-7: persisted specimen anchor (nullable). null = genuinely record-level; never inferred.
+  specimenId: string | null;
+  specimen: SlideSpecimenRef | null;
   record: {
     id: string;
     labNumber: string | null;

@@ -143,7 +143,14 @@ export interface DiagnosticMaterialItem {
 // WsiService.listByRecordMeta seam (metadata only — NO slideUrl, image bytes, thumbnails, annotations,
 // or storage keys; `id` is the viewer-safe identifier for the existing /wsi/:id owner route). It is a
 // SEPARATE owner read with its own status so a WSI failure isolates here and never affects specimens.
-// Slides are Record-anchored, never specimen-linked. No adequacy/quality/importance inference.
+// P5-7: each slide carries its PERSISTED specimen anchor (or null = genuinely record-level). Grouping is
+// derived from this persisted truth only — never inferred; a null specimen is surfaced as unassigned, never
+// fabricated into a specimen. No adequacy/quality/importance/completeness inference.
+export interface SlideSpecimenRef {
+  id: string;
+  type: string; // persisted SpecimenType
+  label: string | null; // persisted label (may be null)
+}
 export interface SlideItem {
   id: string; // DigitalSlide id → owner viewer route /wsi/:id
   format: string | null; // recorded (caller-asserted at upload)
@@ -152,6 +159,8 @@ export interface SlideItem {
   scanner: string | null; // recorded (caller-asserted)
   fileSizeBytes: number | null; // recorded
   uploadedAt: string | null; // recorded (ISO)
+  specimenId: string | null; // P5-7: persisted specimen anchor, or null (record-level)
+  specimen: SlideSpecimenRef | null; // P5-7: persisted specimen identity, or null
 }
 export interface SlidesSubSection {
   status: SectionStatus; // ready | empty | forbidden | error (isolated to this sub-source)
@@ -748,6 +757,9 @@ export class DiagnosticCaseService {
         scanner: s.scanner ?? null,
         fileSizeBytes: typeof s.fileSizeBytes === 'number' ? s.fileSizeBytes : null,
         uploadedAt: iso(s.uploadedAt),
+        // P5-7: persisted specimen anchor (identity only), or null for a record-level slide.
+        specimenId: s.specimenId ?? null,
+        specimen: s.specimen ? { id: s.specimen.id, type: s.specimen.type, label: s.specimen.label ?? null } : null,
       }));
       return { status: 'ready', items, total: ordered.length };
     } catch {

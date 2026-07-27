@@ -79,7 +79,13 @@ export interface DiagnosticMaterialItem {
   receivedAt: string | null;
 }
 // A5: Slides / Imaging sub-source. Metadata only (no image URL/bytes/annotations); `id` opens the
-// existing /wsi/:id owner viewer. Record-anchored, never specimen-linked. Nulls render "—".
+// existing /wsi/:id owner viewer. P5-7: each slide carries its persisted specimen anchor (or null =
+// record-level); grouping derives from that persisted truth only. Nulls render "—".
+export interface SlideSpecimenRef {
+  id: string;
+  type: string;
+  label: string | null;
+}
 export interface SlideItem {
   id: string;
   format: string | null;
@@ -88,6 +94,8 @@ export interface SlideItem {
   scanner: string | null;
   fileSizeBytes: number | null;
   uploadedAt: string | null;
+  specimenId: string | null;
+  specimen: SlideSpecimenRef | null;
 }
 export interface SlidesSubSection {
   status: SectionStatus;
