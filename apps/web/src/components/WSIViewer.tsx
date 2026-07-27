@@ -1,8 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Crosshair, Loader2, Maximize2, Minus, Plus } from 'lucide-react';
+import { Crosshair, ImageOff, Loader2, Maximize2, Minus, Plus } from 'lucide-react';
 import { IconAction } from '@/components/ui';
+import {
+  fetchDescriptor,
+  issueDeliverySession,
+  SlideNotFoundError,
+  SlideNotViewableError,
+  tileUrl,
+  type DziDescriptor,
+} from '@/lib/wsi-delivery';
 
 export interface SlideAnnotation {
   id?: string;
@@ -13,8 +21,8 @@ export interface SlideAnnotation {
 }
 
 interface Props {
-  slideUrl: string;
-  format?: string;
+  /** P5-4: the viewer resolves pixels through the authenticated delivery session — never a raw URL. */
+  slideId: string;
   annotations: SlideAnnotation[];
   readOnly?: boolean;
   /** Called with normalized coords + chosen color when the user clicks to add. */
@@ -27,17 +35,25 @@ interface Props {
 export const ANNOTATION_COLORS = ['#4F46E5', '#DC2626', '#16A34A', '#7C3AED', '#0891B2', '#DB2777'];
 
 type Marker = { id?: string; px: number; py: number; label: string; color: string };
+type ViewState = 'loading' | 'ready' | 'empty' | 'error';
 
-export function WSIViewer({ slideUrl, format, annotations, readOnly = false, onAddAnnotation, enterAddSignal, className }: Props) {
+/** DZI level count: the top level index is ceil(log2(max(w,h))). */
+function maxDziLevel(d: DziDescriptor): number {
+  return Math.ceil(Math.log2(Math.max(d.width, d.height, 1)));
+}
+
+export function WSIViewer({ slideId, annotations, readOnly = false, onAddAnnotation, enterAddSignal, className }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<any>(null);
   const osdRef = useRef<any>(null);
   const annotationsRef = useRef(annotations);
   const addModeRef = useRef(false);
   const colorRef = useRef(ANNOTATION_COLORS[0]);
+  // Raw delivery token — in memory only. Never written to a URL, cookie, or storage.
+  const tokenRef = useRef<string | null>(null);
+  const refreshingRef = useRef(false);
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [state, setState] = useState<ViewState>('loading');
   const [zoom, setZoom] = useState(1);
   const [addMode, setAddMode] = useState(false);
   const [color, setColor] = useState(ANNOTATION_COLORS[0]);
@@ -64,19 +80,50 @@ export function WSIViewer({ slideUrl, format, annotations, readOnly = false, onA
     setZoom(z);
   }, []);
 
-  // Initialize OpenSeadragon (client-only, dynamic import).
+  // Issue a delivery session + open OpenSeadragon against the authenticated tile endpoints.
   useEffect(() => {
     let disposed = false;
-    setLoading(true);
-    setError(false);
+    setState('loading');
+    tokenRef.current = null;
+
     (async () => {
+      // 1) Authenticated, generation-bound session (staff cookie → Bearer token, in memory only).
+      let token: string;
+      let descriptor: DziDescriptor;
+      try {
+        const session = await issueDeliverySession(slideId);
+        token = session.token;
+        descriptor = await fetchDescriptor(token);
+      } catch (e) {
+        if (disposed) return;
+        setState(e instanceof SlideNotViewableError || e instanceof SlideNotFoundError ? 'empty' : 'error');
+        return;
+      }
+      if (disposed || !hostRef.current) return;
+      tokenRef.current = token;
+
       const OpenSeadragon = (await import('openseadragon')).default as any;
       if (disposed || !hostRef.current) return;
       osdRef.current = OpenSeadragon;
-      const tileSources = format && format !== 'image' ? slideUrl : { type: 'image', url: slideUrl };
+
+      // 2) Custom tile source → every tile is fetched from the authenticated delivery endpoint with the
+      //    Bearer header (loadTilesWithAjax + ajaxHeaders). No direct pixel loading from any external URL.
+      const tileSources = {
+        width: descriptor.width,
+        height: descriptor.height,
+        tileSize: descriptor.tileSize,
+        tileOverlap: descriptor.overlap,
+        minLevel: 0,
+        maxLevel: maxDziLevel(descriptor),
+        getTileUrl: (level: number, x: number, y: number) => tileUrl(level, x, y),
+      };
+
       const viewer = OpenSeadragon({
         element: hostRef.current,
         tileSources,
+        loadTilesWithAjax: true,
+        ajaxHeaders: { Authorization: `Bearer ${token}` },
+        crossOriginPolicy: false,
         prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5/build/openseadragon/images/',
         showNavigationControl: false,
         showNavigator: true,
@@ -85,16 +132,36 @@ export function WSIViewer({ slideUrl, format, annotations, readOnly = false, onA
         visibilityRatio: 1,
         minZoomImageRatio: 0.5,
         maxZoomPixelRatio: 4,
-        crossOriginPolicy: 'Anonymous',
         animationTime: 0.4,
       });
       viewerRef.current = viewer;
 
-      viewer.addHandler('open', () => { if (!disposed) { setLoading(false); recompute(); } });
-      viewer.addHandler('open-failed', () => { if (!disposed) { setError(true); setLoading(false); } });
+      viewer.addHandler('open', () => { if (!disposed) { setState('ready'); recompute(); } });
+      viewer.addHandler('open-failed', () => { if (!disposed) setState('error'); });
       viewer.addHandler('update-viewport', recompute);
       viewer.addHandler('animation', recompute);
       viewer.addHandler('resize', recompute);
+
+      // A tile 401 means the short-lived token expired mid-session → re-issue ONCE and re-drive, guarded
+      // against a refresh storm. Never falls back to an unauthenticated fetch.
+      viewer.addHandler('tile-load-failed', async (ev: any) => {
+        if (disposed || refreshingRef.current) return;
+        const status = ev?.tile?.ajaxRequest?.status;
+        if (status !== 401 && status !== 403) return;
+        refreshingRef.current = true;
+        try {
+          const session = await issueDeliverySession(slideId);
+          if (disposed) return;
+          tokenRef.current = session.token;
+          viewer.setAjaxHeaders?.({ Authorization: `Bearer ${session.token}` }, true);
+          viewer.world.resetItems();
+        } catch {
+          if (!disposed) setState('error');
+        } finally {
+          refreshingRef.current = false;
+        }
+      });
+
       viewer.addHandler('canvas-click', (event: any) => {
         if (!addModeRef.current || !event.quick || !onAddAnnotation) return;
         const bounds = viewer.world.getItemAt(0).getBounds();
@@ -105,12 +172,13 @@ export function WSIViewer({ slideUrl, format, annotations, readOnly = false, onA
         setAddMode(false);
       });
     })();
+
     return () => {
       disposed = true;
       if (viewerRef.current) { viewerRef.current.destroy(); viewerRef.current = null; }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slideUrl, format]);
+  }, [slideId]);
 
   // Re-project markers when the annotation set changes.
   useEffect(() => { recompute(); }, [annotations, recompute]);
@@ -172,16 +240,25 @@ export function WSIViewer({ slideUrl, format, annotations, readOnly = false, onA
         ))}
       </svg>
 
-      {loading && !error && (
+      {state === 'loading' && (
         <div className="absolute inset-0 z-30 grid place-items-center bg-black">
           <Loader2 size={28} className="animate-spin text-slate-500" />
         </div>
       )}
-      {error && (
+      {state === 'empty' && (
+        <div className="absolute inset-0 z-30 grid place-items-center bg-black">
+          <div className="text-center">
+            <ImageOff size={26} className="mx-auto text-slate-600" />
+            <div className="mt-2 text-[15px] font-semibold text-slate-200">No published slide image yet.</div>
+            <div className="mt-1 text-[13px] text-slate-500">This slide has no processed, published generation to display.</div>
+          </div>
+        </div>
+      )}
+      {state === 'error' && (
         <div className="absolute inset-0 z-30 grid place-items-center bg-black">
           <div className="text-center">
             <div className="text-[15px] font-semibold text-slate-200">Failed to load slide.</div>
-            <div className="mt-1 text-[13px] text-slate-500">Check the URL.</div>
+            <div className="mt-1 text-[13px] text-slate-500">The image could not be delivered. Try again.</div>
           </div>
         </div>
       )}

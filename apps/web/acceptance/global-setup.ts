@@ -32,7 +32,7 @@ export function readFixtures() {
   };
 }
 
-async function browserLogin(email: string, password: string, file: string) {
+export async function browserLogin(email: string, password: string, file: string) {
   const browser = await chromium.launch();
   try {
     const page = await browser.newPage({ baseURL: ACCEPT_BASE });

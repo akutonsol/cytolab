@@ -56,9 +56,10 @@ export const SPECIAL_OBJECTS: Record<string, string[]> = {
   audit: ['read', 'read_system', 'read_phi'],
   // P5-5B / P5-6.2 — digital-pathology capabilities. view = delivery-session issuance (authenticated slide
   // viewing); review = the P5-6.1 clinical read surface (generation/QC/publication metadata); publish = the
-  // deliberate publication action (endpoint arrives in P5-6.3 — catalogued here, consumed later). ALL THREE
-  // are assigned to NO default role (buildRoleDefs never selects 'wsi'); super roles reach them via the guard
-  // bypass. Granting any wsi:* to a staff role is an explicit, separate role-configuration decision.
+  // deliberate publication action. P5-4 grants wsi:VIEW to the staff roles that already hold record:view
+  // (Authorizers, Pathologist, Lab Technician) so they can open slides through the authenticated delivery
+  // path. wsi:review and wsi:publish remain assigned to NO default role (super roles reach them via the
+  // guard bypass); granting either is a separate, explicit role-configuration decision.
   wsi: ['view', 'review', 'publish'],
 };
 
@@ -70,9 +71,9 @@ export interface SeedRoleDef {
 }
 
 /**
- * Pure default-role → permission-grant construction. Extracted verbatim from the previous inline `roleDefs`
- * (behavior identical) so the P5-6.2 no-default-grant invariant is testable without executing the seed:
- * no non-super role's prefixes ever include 'wsi', so no default role receives wsi:view/review/publish.
+ * Pure default-role → permission-grant construction. Extracted so grant invariants are testable without
+ * executing the seed. P5-4: the slide-viewing roles (Authorizers, Pathologist, Lab Technician) receive
+ * wsi:VIEW only (via byPrefix(['wsi'], ['view'])); no default role receives wsi:review or wsi:publish.
  */
 export function buildRoleDefs(all: { id: string; code: string }[]): SeedRoleDef[] {
   const byPrefix = (prefixes: string[], actions?: string[]) =>
@@ -85,9 +86,14 @@ export function buildRoleDefs(all: { id: string; code: string }[]): SeedRoleDef[
     {
       name: 'Authorizers',
       description: 'Reviews and authorizes result sheets (holds resultsheet:authorize)',
-      perms: byPrefix(
-        ['patient', 'client', 'record', 'recordstatus', 'requisition', 'resultsheet', 'resultentry', 'codesheet', 'labcode', 'report', 'cabinet', 'aidraft'],
-      ),
+      perms: [
+        ...byPrefix(
+          ['patient', 'client', 'record', 'recordstatus', 'requisition', 'resultsheet', 'resultentry', 'codesheet', 'labcode', 'report', 'cabinet', 'aidraft'],
+        ),
+        // P5-4 — wsi:view gates delivery-session issuance (authenticated slide viewing). Granted to the
+        // staff roles that already hold record:view; NEVER wsi:review or wsi:publish.
+        ...byPrefix(['wsi'], ['view']),
+      ],
     },
     {
       name: 'Pathologist',
@@ -97,6 +103,8 @@ export function buildRoleDefs(all: { id: string; code: string }[]): SeedRoleDef[
           ['patient', 'client', 'record', 'recordstatus', 'requisition', 'resultsheet', 'resultentry', 'codesheet', 'labcode', 'report', 'cabinet', 'aidraft'],
         ),
         ...byPrefix(['workspace'], ['view', 'create', 'change']),
+        // P5-4 — authenticated slide viewing (wsi:view only, never review/publish).
+        ...byPrefix(['wsi'], ['view']),
       ],
     },
     {
@@ -111,6 +119,8 @@ export function buildRoleDefs(all: { id: string; code: string }[]): SeedRoleDef[
         // Lab Technicians retain their existing scheduling capability after the record:change → manage fix.
         ...byPrefix(['appointment'], ['manage']),
         ...byPrefix(['workspace'], ['view', 'create', 'change']),
+        // P5-4 — authenticated slide viewing (wsi:view only, never review/publish).
+        ...byPrefix(['wsi'], ['view']),
       ],
     },
     {

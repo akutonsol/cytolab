@@ -64,9 +64,10 @@ describe('P5-6.2 catalog + no-default-grant (seed construction)', () => {
     expect(SPECIAL_OBJECTS.wsi).toEqual(expect.arrayContaining(['view', 'review', 'publish']));
   });
 
-  it('grants NO wsi:* permission to any non-super default role', () => {
-    // Feed the REAL role builder a catalog that INCLUDES every wsi permission; if any non-super role
-    // selected one, it would appear in that role's grants. It does not (no roleDef prefix includes 'wsi').
+  it('grants wsi:view (only) to the slide-viewing roles and NEVER wsi:review or wsi:publish', () => {
+    // Feed the REAL role builder a catalog that INCLUDES every wsi permission. P5-4 grants wsi:view to the
+    // staff roles that already hold record:view; wsi:review/wsi:publish must never be granted to any default
+    // role (super roles reach them via the isSuperRole bypass, not an explicit grant).
     const catalog = [
       { id: 'p-view', code: 'wsi:view' },
       { id: 'p-review', code: 'wsi:review' },
@@ -74,10 +75,15 @@ describe('P5-6.2 catalog + no-default-grant (seed construction)', () => {
       { id: 'p-rv', code: 'record:view' },
       { id: 'p-pv', code: 'patient:view' },
     ];
-    const wsiIds = new Set(['p-view', 'p-review', 'p-publish']);
+    const forbidden = new Set(['p-review', 'p-publish']);
+    const viewRoles = new Set(['Authorizers', 'Pathologist', 'Lab Technician']);
     for (const role of buildRoleDefs(catalog)) {
       if (role.isSuperRole) continue;
-      expect(role.perms.filter((p) => wsiIds.has(p.id))).toEqual([]);
+      // review/publish are granted to NO default role.
+      expect(role.perms.filter((p) => forbidden.has(p.id))).toEqual([]);
+      // wsi:view is granted to exactly the slide-viewing roles, and to no other role.
+      const hasView = role.perms.some((p) => p.id === 'p-view');
+      expect(hasView).toBe(viewRoles.has(role.name));
     }
   });
 

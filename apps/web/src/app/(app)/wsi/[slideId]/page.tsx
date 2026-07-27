@@ -126,8 +126,7 @@ export default function SlideViewerPage() {
             <div className="grid h-full place-items-center bg-black text-slate-500">Loading slide…</div>
           ) : (
             <WSIViewer
-              slideUrl={slide.slideUrl}
-              format={slide.format}
+              slideId={slideId}
               annotations={slide.annotations}
               readOnly={!canEdit}
               enterAddSignal={addSignal}
