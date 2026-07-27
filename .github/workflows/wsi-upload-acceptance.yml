@@ -1,15 +1,12 @@
-# P5-4 Phase B Part 1 — the WSI upload gate (worker OFF, deterministic).
+# P5-4 Phase B Part 1B — the WORKER-ENABLED full-render WSI acceptance gate.
 #
-# Gated (workflow_dispatch only). Same ISOLATED-stack shape as the viewer/review gates. Seeds a scoped
-# uploader principal (record:change + wsi:review, NO wsi:publish) + a record, drives the real chunked
-# ingestion through the browser (initiate → chunk → complete), and asserts: the ingestion pipeline was used
-# (never the legacy paste-URL create), the post-upload state is surfaced truthfully (processing — awaiting
-# review & publication, NEVER viewable), a forced publish is a genuine 403, and persisted DB truth is
-# VERIFIED / DRAFT / QUEUED / not-viewable.
-#
-# The worker is intentionally OFF here (WSI_PROCESSING_WORKER unset) so the gate is deterministic. The full
-# upload → worker → READY → publish → rendered-viewer path requires WSI_PROCESSING_WORKER=true (a separate,
-# explicitly-authorized worker-enabled variant — see docs). Not wired into any deployment.
+# Gated (workflow_dispatch only). Runs the REAL processing worker (WSI_PROCESSING_WORKER=true) with the real
+# libvips tiling engine (WSI_TILING_ENGINE=libvips) against an isolated stack, and proves the full
+# replacement path end to end from an uploaded fixture — NO faked worker state, NO seeded READY/PUBLISHED:
+#   upload (UI → ingestion API) → VERIFIED → real worker → sealed+verified READY → NOT viewable →
+#   authorized wsi:publish → publishedGenerationId persisted → authenticated viewer renders the WSI.
+# Plus the clinical boundary: a non-wsi:publish uploader forcing publish gets a genuine 403.
+# Not wired into any deployment.
 name: wsi-upload-acceptance
 
 on:
@@ -20,8 +17,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  upload-acceptance:
-    name: P5-4 Phase B Part 1 upload (gated)
+  render-acceptance:
+    name: P5-4 Phase B Part 1B full render (gated, worker ON)
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -49,11 +46,27 @@ jobs:
       ALLOWED_ORIGINS: http://localhost:3001
       COOKIE_SECURE: 'false'
       NODE_ENV: development
-      # WSI_PROCESSING_WORKER intentionally unset → worker OFF (deterministic).
+      # Worker ON + real libvips engine — the whole point of this gate.
+      WSI_PROCESSING_WORKER: 'true'
+      WSI_TILING_ENGINE: libvips
+      # Fast, deterministic cadences (operational only; overridable). Speeds QUEUED→READY without changing behaviour.
+      WSI_PROCESSING_CLAIM_MS: '2000'
+      WSI_PROCESSING_CLAIM_JITTER_MS: '0'
+      WSI_PROCESSING_RECONCILE_MS: '5000'
+      WSI_PROCESSING_RECLAIM_MS: '5000'
+      WSI_VERIFY_INTERVAL_MS: '2000'
+      # Isolated stores shared by the single API process.
+      WSI_SOURCE_STORE_DIR: /tmp/osieri-wsi-source
+      WSI_DERIVATIVE_STORE_DIR: /tmp/osieri-wsi-derivative
+      WSI_MATERIALIZATION_DIR: /tmp/osieri-wsi-materialize
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 20, cache: npm }
+
+      - name: Install libvips (provides the `vips` tiling engine binary)
+        run: sudo apt-get update && sudo apt-get install -y libvips-tools && vips --version
+
       - run: npm ci
 
       - name: Prisma generate
@@ -65,11 +78,11 @@ jobs:
           npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > /tmp/accept-schema.sql
           npx prisma db execute --url "$DATABASE_URL" --file /tmp/accept-schema.sql
 
-      - name: Seed permission catalog + WSI upload fixture (uploader principal + record)
+      - name: Seed permission catalog + render fixtures (pathologist + uploader principals + record)
         run: |
           cd apps/api
           npx prisma db seed
-          npx ts-node --transpile-only scripts/seed-wsi-upload-acceptance.ts
+          npx ts-node --transpile-only scripts/seed-wsi-render-acceptance.ts
 
       - name: Install Playwright Chromium (+ CI deps)
         run: cd apps/web && npx playwright install --with-deps chromium
@@ -77,11 +90,11 @@ jobs:
       - name: Build web (production; proxy baked to the isolated API)
         run: cd apps/web && API_INTERNAL_URL=$API_INTERNAL_URL NODE_ENV=production npm run build
 
-      - name: Start isolated API :4001 (worker OFF) and wait for health
+      - name: Start isolated API :4001 (worker ON) and wait for health
         run: |
           cd apps/api
-          WSI_PROCESSING_WORKER= PORT=$API_PORT \
-            nohup npx ts-node --transpile-only -r tsconfig-paths/register src/main.ts > /tmp/api.log 2>&1 &
+          # NOTE: do NOT reset WSI_PROCESSING_WORKER here — it must inherit 'true' from the job env.
+          PORT=$API_PORT nohup npx ts-node --transpile-only -r tsconfig-paths/register src/main.ts > /tmp/api.log 2>&1 &
           API_PID=$!
           echo "API_PID=$API_PID" >> "$GITHUB_ENV"
           for i in $(seq 1 60); do
@@ -91,6 +104,7 @@ jobs:
             sleep 3
             [ "$i" = 60 ] && { echo "!! API not ready"; cat /tmp/api.log || true; exit 1; }
           done
+          grep -qi 'processing.*worker\|scheduler' /tmp/api.log && echo "worker scheduler active (per api.log)" || echo "(worker log line not matched; proceeding — the render poll is the real proof)"
 
       - name: Start isolated web :3001 (production) and wait for health
         run: |
@@ -109,19 +123,19 @@ jobs:
           code=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:$WEB_PORT/api/v1/auth/login -H 'content-type: application/json' -d '{}' || echo 000)
           case "$code" in 400|401|422) echo "proxy OK (HTTP $code)";; *) echo "!! proxy failed (HTTP $code)"; tail -30 /tmp/web.log; exit 1;; esac
 
-      - name: P5-4 Phase B Part 1 — Playwright upload acceptance
-        run: cd apps/web && npx playwright test --config=acceptance/playwright.upload.config.ts
+      - name: P5-4 Phase B Part 1B — Playwright full-render acceptance (worker ON)
+        run: cd apps/web && npx playwright test --config=acceptance/playwright.render.config.ts
 
-      - name: DB-truth assertion (VERIFIED / DRAFT / QUEUED / not-viewable)
-        run: cd apps/api && npx ts-node --transpile-only scripts/assert-wsi-upload-state.ts
+      - name: DB-truth assertion (PUBLISHED / sealed+verified / real assets / publishedGenerationId)
+        run: cd apps/api && npx ts-node --transpile-only scripts/assert-wsi-render-state.ts
 
       - name: Collect artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: p5-4-phase-b-part1-upload
+          name: p5-4-phase-b-part1b-render
           path: |
-            apps/web/acceptance/.output-upload/**
+            apps/web/acceptance/.output-render/**
             /tmp/api.log
             /tmp/web.log
           if-no-files-found: ignore

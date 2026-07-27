@@ -3,9 +3,12 @@
 .viewer-fixtures.json
 .upload-fixtures.json
 .upload-result.json
+.render-fixtures.json
+.render-result.json
 .auth/
 .output/
 .output-viewer/
 .output-upload/
+.output-render/
 screenshots/
 *.png
