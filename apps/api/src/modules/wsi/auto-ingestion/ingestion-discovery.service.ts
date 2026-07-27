@@ -53,6 +53,10 @@ export class IngestionDiscoveryService {
     return this.prisma.ingestionDiscovery.findMany({ where: { status }, orderBy: { discoveredAt: 'asc' } });
   }
 
+  get(id: string) {
+    return this.prisma.ingestionDiscovery.findFirst({ where: { id } });
+  }
+
   /**
    * Dedup CONTRACT (B3 enforces the skip): duplicate identity is the SHA-256 of the source bytes within a
    * lab — NEVER filename/accession/patient/specimen/size. Returns true if these exact bytes are already

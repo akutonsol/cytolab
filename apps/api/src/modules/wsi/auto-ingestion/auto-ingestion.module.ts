@@ -4,18 +4,33 @@ import { IngestionSourceService } from './ingestion-source.service';
 import { IngestionDiscoveryService } from './ingestion-discovery.service';
 import { AccessionMatchResolver } from './accession-match.resolver';
 import { AutomatedIngestionComposer } from './automated-ingestion-composer';
+import { WatchFolderScanner } from './watch-folder-scanner';
+import { WatchFolderProcessor } from './watch-folder-processor';
+import { WatchFolderScheduler } from './watch-folder.scheduler';
+import { WATCH_FOLDER_CONFIG, loadWatchFolderConfig } from './watch-folder-config';
 
 /**
- * Program 5B · B1 — Automated Ingestion (persistence & contracts only).
+ * Program 5B — Automated Ingestion.
  *
- * Imports WsiModule to REUSE the accepted 5A ingestion/queue seams (SlideIngestionService,
- * SlideProcessingQueueService) — one pipeline, multiple intake methods. B1 adds NO controllers (source-
- * management authorization is a B2/B5 decision) and NO poller (B2). Not yet registered in AppModule; it is
- * wired in at B2 when the discovery worker + reconciliation surfaces land.
+ * B1: persistence & contracts (source/discovery/resolver/dedup/composer seam).
+ * B2: server-owned watch-folder discovery + stable-file hand-off into the ACCEPTED 5A pipeline
+ *     (via WsiModule's SlideIngestionService). The poller is DISABLED by default and under test.
+ *
+ * PrismaService, LabContext and ExecutionContextService are globally provided; only WsiModule is imported
+ * (to reuse the ingestion/queue seams). No source-management controller (authz decision deferred to B5).
  */
 @Module({
   imports: [WsiModule],
-  providers: [IngestionSourceService, IngestionDiscoveryService, AccessionMatchResolver, AutomatedIngestionComposer],
-  exports: [IngestionSourceService, IngestionDiscoveryService, AccessionMatchResolver, AutomatedIngestionComposer],
+  providers: [
+    { provide: WATCH_FOLDER_CONFIG, useFactory: () => loadWatchFolderConfig() },
+    IngestionSourceService,
+    IngestionDiscoveryService,
+    AccessionMatchResolver,
+    AutomatedIngestionComposer,
+    WatchFolderScanner,
+    WatchFolderProcessor,
+    WatchFolderScheduler,
+  ],
+  exports: [IngestionSourceService, IngestionDiscoveryService, AccessionMatchResolver, AutomatedIngestionComposer, WatchFolderProcessor],
 })
 export class AutoIngestionModule {}

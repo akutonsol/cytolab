@@ -62,6 +62,7 @@ import { ReagentModule } from './modules/reagent/reagent.module';
 import { RecallModule } from './modules/recall/recall.module';
 import { PlatformBillingModule } from './modules/platform-billing/platform-billing.module';
 import { WsiModule } from './modules/wsi/wsi.module';
+import { AutoIngestionModule } from './modules/wsi/auto-ingestion/auto-ingestion.module';
 import { AIScreeningModule } from './modules/ai-screening/ai-screening.module';
 import { TeleconsultModule } from './modules/teleconsult/teleconsult.module';
 import { CodingModule } from './modules/coding/coding.module';
@@ -162,6 +163,7 @@ import { ScreeningBatchesModule } from './modules/screening-batches/screening-ba
     RecallModule,
     PlatformBillingModule,
     WsiModule,
+    AutoIngestionModule, // Program 5B — automated (watch-folder) ingestion; poller disabled unless WSI_WATCH_FOLDER=true
     AIScreeningModule,
     TeleconsultModule,
     CodingModule,

@@ -1,7 +1,10 @@
 import { IsIn, IsInt, IsOptional, IsString, Matches, Min } from 'class-validator';
+import type { SlideSourceKind } from '@prisma/client';
 
-/** Source kinds a client may declare at intake. Downstream ingestion sources (watch-folder, scanner,
- *  DICOM) arrive in Programs 5B/5C; P5-3A is manual UPLOAD. */
+/** PUBLIC whitelist a *client* may declare at intake — UPLOAD only. The `@IsIn` below keeps this the
+ *  authoritative public boundary: a browser request declaring any other kind (e.g. WATCH_FOLDER) is
+ *  rejected. Automated ingestion (Program 5B) sets its source kind SERVER-SIDE via an in-process call,
+ *  bypassing this DTO/ValidationPipe — so the whitelist is deliberately NOT widened. Scanner/DICOM are 5C. */
 const INGESTION_SOURCE_KINDS = ['UPLOAD'] as const;
 
 export class InitiateSlideUploadDto {
@@ -19,9 +22,11 @@ export class InitiateSlideUploadDto {
   @Min(0)
   sizeBytes?: number;
 
+  // TYPE is the full server-side enum (so an in-process automated caller can set WATCH_FOLDER); the runtime
+  // @IsIn keeps the PUBLIC whitelist at UPLOAD only — the validator, not the type, is the public boundary.
   @IsOptional()
   @IsIn(INGESTION_SOURCE_KINDS)
-  sourceKind?: (typeof INGESTION_SOURCE_KINDS)[number];
+  sourceKind?: SlideSourceKind;
 }
 
 export class CompleteSlideUploadDto {
