@@ -85,6 +85,12 @@ async function main() {
     ck(dupes.length === 1, `expected exactly 1 DUPLICATE among the byte-U pair, got ${dupes.length}`);
     ck(ingested[0]?.sourceChecksum === fx.sha.U && dupes[0]?.sourceChecksum === fx.sha.U, 'byte-U pair checksums must both equal sha(U)');
     ck(!dupes[0]?.resultingSlideId, 'DUPLICATE discovery must not have a resulting slide (no second ingestion)');
+    // B3: the DUPLICATE carries truthful provenance of the prior authoritative object (in matchEvidence only),
+    //     with NO clinical inheritance on the duplicate itself.
+    const dof = (dupes[0]?.matchEvidence as any)?.duplicateOf;
+    ck(dof?.by === 'sourceChecksum' && dof?.sourceChecksum === fx.sha.U, `DUPLICATE.matchEvidence.duplicateOf must record by=sourceChecksum + sha(U) (got ${JSON.stringify(dof)})`);
+    ck(dof?.priorIngestionId === ingested[0]?.resultingIngestionId && dof?.priorSlideId === ingested[0]?.resultingSlideId, 'DUPLICATE provenance must reference the prior authoritative ingestion/slide');
+    ck(!dupes[0]?.matchedRecordId && !dupes[0]?.matchedSpecimenId, 'DUPLICATE must not inherit a clinical (record/specimen) association');
 
     ck(nm?.status === 'UNMATCHED' && !nm?.resultingSlideId && !nm?.matchedRecordId, `NO-MATCH must be UNMATCHED with no record/slide (got ${nm?.status})`);
     ck(nm?.sourceChecksum === fx.sha.N, 'UNMATCHED discovery should carry the real sha(N)');

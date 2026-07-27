@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { IngestionDiscoveryService } from './ingestion-discovery.service';
 import { AccessionMatchResolver } from './accession-match.resolver';
 import { AutomatedIngestionComposer } from './automated-ingestion-composer';
@@ -71,8 +72,12 @@ export class WatchFolderProcessor {
     }
 
     // ── Byte dedup (B1 contract): same bytes in this lab → truthful DUPLICATE, never silently re-ingested. ──
-    if (await this.discovery.isDuplicateBytes(checksum)) {
-      await this.discovery.setStatus(d.id, 'DUPLICATE', { sourceChecksum: checksum });
+    //    B3: persist WHICH prior authoritative object caused the verdict (provenance only — no clinical
+    //    inheritance: matchedRecordId/specimenId/resultingSlideId/resultingIngestionId stay null; the
+    //    human-reconciliation fields are untouched).
+    const dup = await this.discovery.findDuplicateBytes(checksum);
+    if (dup) {
+      await this.discovery.setStatus(d.id, 'DUPLICATE', { sourceChecksum: checksum, matchEvidence: { duplicateOf: dup } as unknown as Prisma.InputJsonValue });
       return;
     }
 

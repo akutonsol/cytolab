@@ -14,7 +14,7 @@ function harness(overrides: Partial<Record<string, any>> = {}) {
       state.row = { ...state.row, status, ...patch };
       return state.row;
     }),
-    isDuplicateBytes: jest.fn(async () => false),
+    findDuplicateBytes: jest.fn(async () => null),
     get: jest.fn(async () => state.row),
   };
   const resolver = { resolve: jest.fn(async () => ({ kind: 'unique', recordId: 'rec-1', matchedBy: 'labNumber' })) };
@@ -71,11 +71,22 @@ describe('P5B-B2 WatchFolderProcessor — pipeline & truthful outcomes', () => {
     expect(h.state.row.sourceChecksum).toBe(checksum);
   });
 
-  it('duplicate bytes → DUPLICATE, never ingested', async () => {
-    const h = harness({ discovery: { isDuplicateBytes: jest.fn(async () => true) } });
+  it('duplicate bytes → DUPLICATE with prior-object provenance, never ingested, no clinical inheritance', async () => {
+    const priorMatch = { by: 'sourceChecksum', sourceChecksum: checksum, sourceType: 'SlideIngestion', priorIngestionId: 'ing-prior', priorSlideId: 'slide-prior', priorDiscoveryId: null };
+    const h = harness({ discovery: { findDuplicateBytes: jest.fn(async () => priorMatch) } });
     h.state.row = { id: 'd1', status: 'STABILIZING', sizeBytes: file.sizeBytes, retryCount: 0 };
     await (h.proc as any).processFile(src, file);
     expect(h.state.row.status).toBe('DUPLICATE');
+    // B3: truthful provenance of the prior authoritative object, in matchEvidence only.
+    expect(h.state.row.matchEvidence).toEqual({ duplicateOf: priorMatch });
+    // no clinical inheritance / no fabricated association on the duplicate discovery
+    expect(h.state.row.matchedRecordId).toBeUndefined();
+    expect(h.state.row.matchedSpecimenId).toBeUndefined();
+    expect(h.state.row.resultingSlideId).toBeUndefined();
+    expect(h.state.row.resultingIngestionId).toBeUndefined();
+    // human-reconciliation fields untouched (reserved for B4)
+    expect(h.state.row.reconciledById).toBeUndefined();
+    expect(h.state.row.reconciliationAction).toBeUndefined();
     expect(h.composer.ingestMatchedFile).not.toHaveBeenCalled();
   });
 

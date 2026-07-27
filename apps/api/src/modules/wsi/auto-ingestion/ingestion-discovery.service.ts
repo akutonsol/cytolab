@@ -4,6 +4,20 @@ import { PrismaService } from '../../../database/prisma.service';
 import { tenantCreate } from '../../../common/tenancy/tenancy.extension';
 
 /**
+ * P5B-B3 — truthful provenance of a duplicate determination. Identity remains SHA-256 of the source bytes
+ * within the lab; this only records WHICH prior authoritative object caused the DUPLICATE verdict. Every id
+ * is grounded in persisted rows (never fabricated); nulls stay null.
+ */
+export interface DuplicateMatch {
+  by: 'sourceChecksum';
+  sourceChecksum: string;
+  sourceType: 'SlideIngestion' | 'IngestionDiscovery';
+  priorIngestionId: string | null;
+  priorSlideId: string | null;
+  priorDiscoveryId: string | null;
+}
+
+/**
  * Program 5B · B1 — pre-ingestion intake persistence. An `IngestionDiscovery` can exist WITHOUT a
  * DigitalSlide/record/specimen association (truthful DISCOVERED/UNMATCHED/AMBIGUOUS states) — discovery
  * never fabricates a slide or a clinical association. Idempotency is DB-enforced by the
@@ -62,12 +76,24 @@ export class IngestionDiscoveryService {
    * lab — NEVER filename/accession/patient/specimen/size. Returns true if these exact bytes are already
    * known in the caller's lab, whether via a verified 5A ingestion or a prior handed-off discovery.
    */
-  async isDuplicateBytes(sourceChecksum: string): Promise<boolean> {
-    if (!sourceChecksum) return false;
-    const [priorIngestion, priorDiscovery] = await Promise.all([
-      this.prisma.slideIngestion.findFirst({ where: { sourceChecksum, status: 'VERIFIED' }, select: { id: true } }),
-      this.prisma.ingestionDiscovery.findFirst({ where: { sourceChecksum, status: 'INGESTED' }, select: { id: true } }),
-    ]);
-    return !!priorIngestion || !!priorDiscovery;
+  async findDuplicateBytes(sourceChecksum: string): Promise<DuplicateMatch | null> {
+    if (!sourceChecksum) return null;
+    // Prefer the authoritative VERIFIED ingestion (the accepted-pipeline object); else a prior INGESTED discovery.
+    const priorIngestion = await this.prisma.slideIngestion.findFirst({
+      where: { sourceChecksum, status: 'VERIFIED' },
+      select: { id: true, slideId: true },
+    });
+    if (priorIngestion) {
+      return { by: 'sourceChecksum', sourceChecksum, sourceType: 'SlideIngestion', priorIngestionId: priorIngestion.id, priorSlideId: priorIngestion.slideId ?? null, priorDiscoveryId: null };
+    }
+    const priorDiscovery = await this.prisma.ingestionDiscovery.findFirst({
+      where: { sourceChecksum, status: 'INGESTED' },
+      select: { id: true, resultingSlideId: true, resultingIngestionId: true },
+    });
+    if (priorDiscovery) {
+      // Only genuinely-persisted resulting ids (may be null); the discovery id is always authoritative.
+      return { by: 'sourceChecksum', sourceChecksum, sourceType: 'IngestionDiscovery', priorIngestionId: priorDiscovery.resultingIngestionId ?? null, priorSlideId: priorDiscovery.resultingSlideId ?? null, priorDiscoveryId: priorDiscovery.id };
+    }
+    return null;
   }
 }
