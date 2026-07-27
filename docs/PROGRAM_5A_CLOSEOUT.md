@@ -1,5 +1,15 @@
 # Program 5A — Digital Pathology — Closeout & Release Readiness
 
+> **Scope clarification (added at P5-9).** This document's "Program 5A formally closed" statement records
+> the earlier **session-era subset** — canonical **P5-0 → P5-3C plus P5-2R** (clinical review), at head
+> `d0993e4` / gate `9563737` (2026-07-24). It **predates** the canonical **P5-4 → P5-8** checkpoints, which
+> were implemented and frozen afterward. The authoritative **Program 5A / Phase 1** closeout — covering all
+> canonical P5-0 → P5-8 with their accepted tags and the final same-head validation matrix — is
+> [`PROGRAM_5A_PHASE1_CLOSEOUT.md`](./PROGRAM_5A_PHASE1_CLOSEOUT.md). See also the refreshed status table in
+> [`PROGRAM_5_ROADMAP_CROSSWALK.md`](./PROGRAM_5_ROADMAP_CROSSWALK.md) §4. This document's historical
+> evidence below is preserved unchanged. (Its "P5-5" label is the session-era delivery-e2e = canonical
+> **P5-3C**, per the crosswalk — not canonical P5-5 search.)
+
 **Status:** **COMPLETE & FROZEN** — P5-5 and Program 5A formally closed; the delivery HTTP e2e gate passed in CI (§3).
 **Branch:** `feat/legacy-etl`  ·  **Head at functional completion:** `d0993e4`  ·  **Gate closed at:** `9563737`  ·  **Date:** 2026-07-24
 **Scope:** evolved the existing Tier-5 WSI vertical into an enterprise digital-pathology pipeline

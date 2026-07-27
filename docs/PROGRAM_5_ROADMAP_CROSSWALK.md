@@ -50,18 +50,33 @@ use **P5-2R**, not "P5-6.x".
 
 ---
 
-## 4. Canonical checkpoint status (as of this record)
+## 4. Canonical checkpoint status
 
-| Canonical §13 checkpoint | Status |
-|---|---|
-| **P5-3C** Authenticated tile-delivery session & private-storage boundary | **Complete** |
-| **P5-4** Viewer on real in-platform tiles / retire paste-URL | **Unopened** |
-| **P5-5** Metadata & indexing (search over slides) | **Unopened** |
-| **P5-6** Multi-slide orchestration | **Unopened** |
-| **P5-7** Case & specimen integration | **Partial** (specimen linkage captured at ingestion but not surfaced/anchored in the case/sign-out seams) |
+Refreshed at Program 5A Phase-1 closeout (P5-9). Each accepted checkpoint carries its immutable tag +
+narrow closeout doc; §13 remains authoritative for the definition of each checkpoint.
 
-This status reflects the shipping code at the time of writing; §13 remains authoritative for the
-definition of each checkpoint.
+| Canonical §13 checkpoint | Status | Accepted tag / evidence |
+|---|---|---|
+| **P5-0** Architecture & domain design | **Accepted** | 5A closeout (`31f18db`) |
+| **P5-1** Domain model & migration | **Accepted** | 5A closeout (`33af1d4`) |
+| **P5-2** Lifecycle, provenance & generation integrity | **Accepted** | 5A closeout (P5-3B chain) |
+| **P5-2R** Clinical review & controlled publication (ext. of P5-2) | **Accepted** | `p5-6.4-accepted` → `145b689` |
+| **P5-3A** Upload orchestration & private storage | **Accepted** | 5A closeout (`c7fd09b`) |
+| **P5-3B** Tiling worker & sealed generations | **Accepted** | 5A closeout (`a39faa8..b431df6`) |
+| **P5-3C** Authenticated tile-delivery & private-storage boundary | **Accepted** | 5A closeout, delivery e2e gate `9563737` |
+| **P5-4** Viewer on real in-platform tiles / retire paste-URL | **Accepted** | `p5-4-phase-a/b-part1/b-part2-accepted` → `9fc0f49` / `a73090c` / `5391293` |
+| **P5-5** Metadata & indexing (search over slides) | **Accepted** | `p5-5-accepted` → `b911def` |
+| **P5-6** Multi-slide orchestration | **Accepted** | `p5-6-accepted` → `2094003` |
+| **P5-7** Case & specimen integration | **Accepted** | `p5-7-accepted` → `a1b11ee` |
+| **P5-8** Asset-graph search & navigation | **Accepted** | `p5-8-accepted` → `c360a19` |
+| **P5-9** Phase-1 validation & closeout | **Accepted** | `p5-9-accepted` / `program-5a-phase1-accepted` (see [`PROGRAM_5A_PHASE1_CLOSEOUT.md`](./PROGRAM_5A_PHASE1_CLOSEOUT.md)) |
+
+**Program 5A / Phase 1 is complete** at this record. Full **Program 5** additionally requires **Program 5B**
+(automated ingestion) and **Program 5C** (scanner & DICOM WSI), both of which remain **future work**.
+
+> Historical note: an earlier line 58–61 of this table (pre-P5-9) recorded P5-4/P5-5/P5-6 as *Unopened* and
+> P5-7 as *Partial* — the shipping state at that earlier writing. That is superseded by the accepted status
+> above; the numbered checkpoints were subsequently implemented and frozen under the tags shown.
 
 ---
 
