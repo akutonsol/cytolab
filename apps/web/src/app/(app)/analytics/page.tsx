@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import { Calendar, Check, ChevronDown, Clock, Droplet, FlaskConical, ScanLine, SlidersHorizontal, TestTube, TrendingUp } from 'lucide-react';
 import { Card } from '@/components/ui';
+import { useFeatures } from '@/lib/feature-context';
 
 // ── Palette (zero-orange: indigo / teal / emerald / slate only) ──────────────
 const INDIGO = '#4F46E5', INDIGO_LT = '#A5B4FC', TEAL = '#0D9488', EMERALD = '#10B981', SLATE = '#94A3B8';
@@ -140,8 +141,10 @@ const authRateData = [
 ];
 
 function ClinicalTab() {
+  const { isEnabled } = useFeatures();
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {isEnabled('BETHESDA_ANALYTICS') && (
       <ChartCard title="Bethesda Classification" subtitle="TBS 2014 category distribution">
         <ResponsiveContainer width="100%" height={240}>
           <BarChart data={bethesdaData} margin={{ top: 4, right: 8, left: 0, bottom: 12 }}>
@@ -153,7 +156,9 @@ function ClinicalTab() {
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
+      )}
 
+      {isEnabled('ABNORMAL_ESCALATION') && (
       <ChartCard title="Abnormal Detection Rate" subtitle="Monthly abnormal findings trend (%)">
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={abnormalTrendData}>
@@ -166,7 +171,9 @@ function ClinicalTab() {
           </LineChart>
         </ResponsiveContainer>
       </ChartCard>
+      )}
 
+      {isEnabled('TAT_ALERTS') && (
       <ChartCard title="Turnaround Time Performance" subtitle="Average TAT vs target by specimen type (days)">
         <ResponsiveContainer width="100%" height={240}>
           <BarChart data={tatData} layout="vertical" margin={{ left: 8, right: 12 }}>
@@ -179,6 +186,7 @@ function ClinicalTab() {
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
+      )}
 
       <BigStatCard title="Authorization Rate" subtitle="Monthly authorization performance" value="84%" delta={2} data={authRateData} dataKey="rate" />
     </div>
@@ -355,6 +363,7 @@ const referringDoctors = [
 ];
 
 function PatientsTab() {
+  const { isEnabled } = useFeatures();
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <ChartCard title="Patient Registration" subtitle="New patient registrations per month">
@@ -387,7 +396,9 @@ function PatientsTab() {
         </ResponsiveContainer>
       </ChartCard>
 
-      <BigStatCard title="Recall Compliance" subtitle="Patients returning within recall window" value="88%" delta={4} data={recallComplianceData} dataKey="rate" />
+      {isEnabled('PATIENT_RECALL') && (
+        <BigStatCard title="Recall Compliance" subtitle="Patients returning within recall window" value="88%" delta={4} data={recallComplianceData} dataKey="rate" />
+      )}
 
       <ChartCard title="Referring Doctor Performance" subtitle="Cases referred by top physicians">
         <ResponsiveContainer width="100%" height={240}>

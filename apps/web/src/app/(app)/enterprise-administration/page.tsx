@@ -1,5 +1,8 @@
 'use client';
 
+import { useFeatures } from '@/lib/feature-context';
+import { FeatureDisabled } from '@/components/FeatureDisabled';
+
 // Enterprise Administration & Controls Workspace — A2: connect the shell to the read-only
 // aggregate (GET /enterprise-administration/overview) and freeze the section-status contract.
 // A2 renders ONLY the descriptive permission map (`permissionMatrix` → ready); the other 21
@@ -61,6 +64,11 @@ const ADMIN_SECTIONS: { key: SectionKey; title: string; responsibility: string }
 ];
 
 export default function EnterpriseAdministrationWorkspacePage() {
+  const { isEnabled } = useFeatures();
+  return isEnabled('ENTERPRISE_ADMINISTRATION') ? <EnterpriseAdministrationWorkspacePageInner /> : <FeatureDisabled name="Enterprise Administration" />;
+}
+
+function EnterpriseAdministrationWorkspacePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { can, hydrated } = useAuth();

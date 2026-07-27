@@ -18,6 +18,8 @@ export type FeatureKey =
   | 'BATCH_AUTHORIZATION'
   | 'REQUISITION_TRACKING'
   | 'SLIDE_LABEL_PRINTING'
+  | 'ANCILLARY_ORDERS'
+  | 'SCREENING_BATCHES'
   // Tier 4 — Compliance
   | 'BETHESDA_ANALYTICS'
   | 'CORRELATION_TRACKING'
@@ -25,12 +27,16 @@ export type FeatureKey =
   | 'REAGENT_TRACKING'
   | 'PATIENT_RECALL'
   | 'REPORT_CENTER'
+  | 'QUALITY_GOVERNANCE'
   // Tier 5 — Enterprise
   | 'WSI_VIEWER'
   | 'AI_SCREENING'
   | 'TELECONSULTATION'
   | 'LOINC_SNOMED'
   | 'HL7_FHIR'
+  | 'OPERATIONS_HUB'
+  | 'ENTERPRISE_ADMINISTRATION'
+  | 'ENTERPRISE_CASE_MGMT'
   | 'WORKFORCE_MANAGEMENT';
 
 export interface FeatureDefinition {
@@ -170,6 +176,22 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     capabilities: ['Barcoded slide and cassette label generation', 'Print directly from the specimen record', 'Scannable barcodes for downstream tracking'],
     tier: 3, tierName: 'Operational', icon: 'Printer', docsUrl: null, navPath: null, dependsOn: [],
   },
+  ANCILLARY_ORDERS: {
+    key: 'ANCILLARY_ORDERS',
+    name: 'Ancillary Orders',
+    description: 'Order and track ancillary tests (IHC, special stains, molecular) on specimens.',
+    longDescription: 'Adds an ancillary-order workflow so staff can request and track add-on tests (IHC, special stains, molecular, cytochemistry) against a specimen through to completion.',
+    capabilities: ['Create ancillary/add-on test orders on a specimen', 'Track order status Ordered → In Process → Complete', 'Flag orders that block sign-out', 'Dedicated open-orders work queue'],
+    tier: 3, tierName: 'Operational', icon: 'Microscope', docsUrl: null, navPath: '/ancillary-orders', dependsOn: [],
+  },
+  SCREENING_BATCHES: {
+    key: 'SCREENING_BATCHES',
+    name: 'Screening Batches',
+    description: 'Group specimens into cytotechnologist screening batches through their review lifecycle.',
+    longDescription: 'Organizes specimens into cytotechnologist screening batches and tracks each batch through Draft → Ready → Assigned → In Screening → Completed.',
+    capabilities: ['Assemble specimens into screening batches', 'Assign batches to cytotechnologists', 'Track batch lifecycle and progress', 'Screening-batch work console'],
+    tier: 3, tierName: 'Operational', icon: 'Layers', docsUrl: null, navPath: '/screening-batches', dependsOn: [],
+  },
 
   // ── Tier 4 — Compliance ────────────────────────────────────────────
   BETHESDA_ANALYTICS: {
@@ -220,6 +242,14 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     capabilities: ['Prebuilt reports across six data domains', 'Customizable filters and columns', 'Export to standard formats'],
     tier: 4, tierName: 'Compliance', icon: 'FileBarChart', docsUrl: null, navPath: '/report-center', dependsOn: [],
   },
+  QUALITY_GOVERNANCE: {
+    key: 'QUALITY_GOVERNANCE',
+    name: 'Quality & Governance Workspace',
+    description: 'Unified workspace aggregating QC, correlation, proficiency, escalations, and governance evidence.',
+    longDescription: 'A single orchestration workspace that brings QC checks, cyto-histo correlation, proficiency testing, abnormal escalations, recalls, and governance events into one oversight surface.',
+    capabilities: ['One workspace across all quality/compliance evidence', 'Governance and oversight event timeline', 'Cross-module quality worklist', 'Surfaces gaps for accreditation review'],
+    tier: 4, tierName: 'Compliance', icon: 'ClipboardCheck', docsUrl: null, navPath: '/quality-governance', dependsOn: [],
+  },
 
   // ── Tier 5 — Enterprise ────────────────────────────────────────────
   WSI_VIEWER: {
@@ -261,6 +291,30 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     longDescription: 'Exchanges orders and results with EHRs over HL7 v2 and FHIR.',
     capabilities: ['Inbound order intake from EHRs', 'Outbound result delivery', 'HL7 v2 and FHIR interfaces'],
     tier: 5, tierName: 'Enterprise', icon: 'Network', docsUrl: null, navPath: '/fhir', dependsOn: [],
+  },
+  OPERATIONS_HUB: {
+    key: 'OPERATIONS_HUB',
+    name: 'Operations Command Center',
+    description: 'Live laboratory operations dashboard — attention items, in-flight work, and bottlenecks.',
+    longDescription: 'A real-time operations command center that surfaces what needs attention, what is in flight, and what is falling behind across the lab, updating live as cases move.',
+    capabilities: ['Live operations overview with realtime updates', 'Attention rail for at-risk work', 'End-to-end pipeline board', 'Quality-alert and integration-health drill-downs'],
+    tier: 5, tierName: 'Enterprise', icon: 'Activity', docsUrl: null, navPath: '/operations', dependsOn: [],
+  },
+  ENTERPRISE_ADMINISTRATION: {
+    key: 'ENTERPRISE_ADMINISTRATION',
+    name: 'Enterprise Administration',
+    description: 'Consolidated administration workspace across configuration, users, security, billing, and modules.',
+    longDescription: 'A single enterprise administration surface consolidating lab configuration, branding, users, roles, security, clients, billing, services, forms, and module toggles.',
+    capabilities: ['One workspace over ~20 admin sections', 'Cross-cutting configuration and controls', 'Enterprise-wide user, role, and security management', 'Module/feature-flag administration'],
+    tier: 5, tierName: 'Enterprise', icon: 'Building2', docsUrl: null, navPath: '/enterprise-administration', dependsOn: [],
+  },
+  ENTERPRISE_CASE_MGMT: {
+    key: 'ENTERPRISE_CASE_MGMT',
+    name: 'Enterprise Case Management',
+    description: 'Multi-queue enterprise case-management console for triaging and routing cases at scale.',
+    longDescription: 'An enterprise case-management command center that presents case queues, summaries, and detail panels for triaging and routing work across the organization at scale.',
+    capabilities: ['Multi-queue case console', 'Summary cards and queue rails', 'Case detail and routing panel', 'Enterprise-scale triage'],
+    tier: 5, tierName: 'Enterprise', icon: 'LayoutGrid', docsUrl: null, navPath: '/command-center', dependsOn: [],
   },
   // ── Tier 6 — Workforce ─────────────────────────────────────────────
   WORKFORCE_MANAGEMENT: {

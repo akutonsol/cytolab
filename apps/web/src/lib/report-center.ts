@@ -212,6 +212,10 @@ for (const r of REPORTS) r.runCount = RUN_COUNT_SEED[r.id] ?? 300;
 // lab. Only reports whose module is optional are listed; everything else is core
 // (always visible). Ids not present here have no required feature.
 const REQUIRED_FEATURE: Partial<Record<string, FeatureKey>> = {
+  'tat-analysis': 'TAT_ALERTS',
+  'bethesda-trends': 'BETHESDA_ANALYTICS',
+  'abnormal-rate': 'ABNORMAL_ESCALATION',
+  'recall-compliance': 'PATIENT_RECALL',
   'cytotechnologist-performance': 'WORKFORCE_MANAGEMENT',
   'pay-advice-history': 'WORKFORCE_MANAGEMENT',
   'qc-failures': 'QC_MODULE',

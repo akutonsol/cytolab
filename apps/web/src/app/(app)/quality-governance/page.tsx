@@ -1,5 +1,8 @@
 'use client';
 
+import { useFeatures } from '@/lib/feature-context';
+import { FeatureDisabled } from '@/components/FeatureDisabled';
+
 // Quality & Governance Workspace — C2: connect the shell to the read-only aggregate.
 // Orchestration surface only. It owns navigation, composition, layout, truthful states,
 // and permission-aware presentation — NO quality-domain logic. C2 reads a single aggregate
@@ -46,6 +49,11 @@ const PERMISSION_LABELS: { key: keyof EffectiveQualityPermissions; label: string
 ];
 
 export default function QualityGovernanceWorkspacePage() {
+  const { isEnabled } = useFeatures();
+  return isEnabled('QUALITY_GOVERNANCE') ? <QualityGovernanceWorkspacePageInner /> : <FeatureDisabled name="Quality & Governance" />;
+}
+
+function QualityGovernanceWorkspacePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { can, hydrated } = useAuth();

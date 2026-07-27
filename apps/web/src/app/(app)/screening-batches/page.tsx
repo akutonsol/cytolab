@@ -1,5 +1,8 @@
 'use client';
 
+import { useFeatures } from '@/lib/feature-context';
+import { FeatureDisabled } from '@/components/FeatureDisabled';
+
 import { useState } from 'react';
 import type { AxiosError } from 'axios';
 import { Ban, Layers, Plus, RefreshCw } from 'lucide-react';
@@ -29,6 +32,11 @@ const LABEL_TO_STATUS: Record<string, ScreeningBatchStatus> = {
 const COLS = 8;
 
 export default function ScreeningBatchesPage() {
+  const { isEnabled } = useFeatures();
+  return isEnabled('SCREENING_BATCHES') ? <ScreeningBatchesPageInner /> : <FeatureDisabled name="Screening Batches" />;
+}
+
+function ScreeningBatchesPageInner() {
   const claims = useAuthStore((s) => s.claims);
   const canView = claimsHavePermission(claims, 'record:view');
   const canChange = claimsHavePermission(claims, 'record:change');

@@ -1,5 +1,8 @@
 'use client';
 
+import { useFeatures } from '@/lib/feature-context';
+import { FeatureDisabled } from '@/components/FeatureDisabled';
+
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { CommandCenterHeader } from './components/CommandCenterHeader';
@@ -18,6 +21,11 @@ import { DISCARD_SELECTION_MESSAGE, QueueDetailPanel } from './components/QueueD
  * stack on smaller screens. Row selection navigates only via `ownerPath`.
  */
 export default function CommandCenterPage() {
+  const { isEnabled } = useFeatures();
+  return isEnabled('ENTERPRISE_CASE_MGMT') ? <CommandCenterPageInner /> : <FeatureDisabled name="Enterprise Case Management" />;
+}
+
+function CommandCenterPageInner() {
   const qc = useQueryClient();
   // Initial selection = the first frozen queue key (a presentational default only).
   const [selected, setSelected] = useState<string | null>('my-work');

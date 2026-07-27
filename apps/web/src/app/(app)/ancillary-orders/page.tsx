@@ -1,5 +1,8 @@
 'use client';
 
+import { useFeatures } from '@/lib/feature-context';
+import { FeatureDisabled } from '@/components/FeatureDisabled';
+
 import { useState } from 'react';
 import type { AxiosError } from 'axios';
 import { Ban, Microscope, Plus, RefreshCw } from 'lucide-react';
@@ -52,6 +55,11 @@ const fmtDateTime = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 
 export default function AncillaryOrdersPage() {
+  const { isEnabled } = useFeatures();
+  return isEnabled('ANCILLARY_ORDERS') ? <AncillaryOrdersPageInner /> : <FeatureDisabled name="Ancillary Orders" />;
+}
+
+function AncillaryOrdersPageInner() {
   const claims = useAuthStore((s) => s.claims);
   const canChange = claimsHavePermission(claims, 'record:change');
   const [creating, setCreating] = useState(false);

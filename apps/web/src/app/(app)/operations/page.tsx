@@ -1,5 +1,8 @@
 'use client';
 
+import { useFeatures } from '@/lib/feature-context';
+import { FeatureDisabled } from '@/components/FeatureDisabled';
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { RefreshCw } from 'lucide-react';
@@ -12,6 +15,11 @@ import { PipelineBoard } from './PipelineBoard';
 import type { OperationsOverview } from './types';
 
 export default function OperationsPage() {
+  const { isEnabled } = useFeatures();
+  return isEnabled('OPERATIONS_HUB') ? <OperationsPageInner /> : <FeatureDisabled name="Operations Command Center" />;
+}
+
+function OperationsPageInner() {
   const router = useRouter();
   const qc = useQueryClient();
 
