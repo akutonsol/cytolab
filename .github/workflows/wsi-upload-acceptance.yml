@@ -1,0 +1,133 @@
+# P5-4 Phase B Part 1 — the WSI upload gate (worker OFF, deterministic).
+#
+# Gated (workflow_dispatch only). Same ISOLATED-stack shape as the viewer/review gates. Seeds a scoped
+# uploader principal (record:change + wsi:review, NO wsi:publish) + a record, drives the real chunked
+# ingestion through the browser (initiate → chunk → complete), and asserts: the ingestion pipeline was used
+# (never the legacy paste-URL create), the post-upload state is surfaced truthfully (processing — awaiting
+# review & publication, NEVER viewable), a forced publish is a genuine 403, and persisted DB truth is
+# VERIFIED / DRAFT / QUEUED / not-viewable.
+#
+# The worker is intentionally OFF here (WSI_PROCESSING_WORKER unset) so the gate is deterministic. The full
+# upload → worker → READY → publish → rendered-viewer path requires WSI_PROCESSING_WORKER=true (a separate,
+# explicitly-authorized worker-enabled variant — see docs). Not wired into any deployment.
+name: wsi-upload-acceptance
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: wsi-upload-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  upload-acceptance:
+    name: P5-4 Phase B Part 1 upload (gated)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cytolab_accept_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
+      DATABASE_MIGRATION_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
+      JWT_SECRET: 'ci-accept-jwt-secret-000000000000000000'
+      JWT_REFRESH_SECRET: ci-accept-refresh-secret
+      JWT_PORTAL_SECRET: 'ci-accept-jwt-portal-secret-00000000000000'
+      JWT_PORTAL_REFRESH_SECRET: ci-accept-portal-refresh-secret
+      ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
+      API_PORT: '4001'
+      WEB_PORT: '3001'
+      ACCEPT_BASE_URL: http://localhost:3001
+      API_INTERNAL_URL: http://localhost:4001
+      ALLOWED_ORIGINS: http://localhost:3001
+      COOKIE_SECURE: 'false'
+      NODE_ENV: development
+      # WSI_PROCESSING_WORKER intentionally unset → worker OFF (deterministic).
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+
+      - name: Prisma generate
+        run: cd apps/api && npx prisma generate
+
+      - name: Build acceptance DB schema from datamodel (no migration introduced)
+        run: |
+          cd apps/api
+          npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > /tmp/accept-schema.sql
+          npx prisma db execute --url "$DATABASE_URL" --file /tmp/accept-schema.sql
+
+      - name: Seed permission catalog + WSI upload fixture (uploader principal + record)
+        run: |
+          cd apps/api
+          npx prisma db seed
+          npx ts-node --transpile-only scripts/seed-wsi-upload-acceptance.ts
+
+      - name: Install Playwright Chromium (+ CI deps)
+        run: cd apps/web && npx playwright install --with-deps chromium
+
+      - name: Build web (production; proxy baked to the isolated API)
+        run: cd apps/web && API_INTERNAL_URL=$API_INTERNAL_URL NODE_ENV=production npm run build
+
+      - name: Start isolated API :4001 (worker OFF) and wait for health
+        run: |
+          cd apps/api
+          WSI_PROCESSING_WORKER= PORT=$API_PORT \
+            nohup npx ts-node --transpile-only -r tsconfig-paths/register src/main.ts > /tmp/api.log 2>&1 &
+          API_PID=$!
+          echo "API_PID=$API_PID" >> "$GITHUB_ENV"
+          for i in $(seq 1 60); do
+            if ! kill -0 "$API_PID" 2>/dev/null; then echo "!! API exited early"; cat /tmp/api.log || true; exit 1; fi
+            code=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:$API_PORT/api/v1/auth/login -H 'content-type: application/json' -d '{}' || true)
+            case "$code" in 400|401|422) echo "API healthy (HTTP $code)"; break;; esac
+            sleep 3
+            [ "$i" = 60 ] && { echo "!! API not ready"; cat /tmp/api.log || true; exit 1; }
+          done
+
+      - name: Start isolated web :3001 (production) and wait for health
+        run: |
+          cd apps/web
+          NODE_ENV=production nohup npx next start -p $WEB_PORT > /tmp/web.log 2>&1 &
+          echo "WEB_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$WEB_PORT/login || echo 000)
+            [ "$code" = "200" ] && { echo "web healthy"; break; }
+            sleep 2
+            [ "$i" = 60 ] && { echo "web failed to start"; tail -50 /tmp/web.log; exit 1; }
+          done
+
+      - name: Verify web :3001 → API :4001 proxy reachability
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:$WEB_PORT/api/v1/auth/login -H 'content-type: application/json' -d '{}' || echo 000)
+          case "$code" in 400|401|422) echo "proxy OK (HTTP $code)";; *) echo "!! proxy failed (HTTP $code)"; tail -30 /tmp/web.log; exit 1;; esac
+
+      - name: P5-4 Phase B Part 1 — Playwright upload acceptance
+        run: cd apps/web && npx playwright test --config=acceptance/playwright.upload.config.ts
+
+      - name: DB-truth assertion (VERIFIED / DRAFT / QUEUED / not-viewable)
+        run: cd apps/api && npx ts-node --transpile-only scripts/assert-wsi-upload-state.ts
+
+      - name: Collect artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p5-4-phase-b-part1-upload
+          path: |
+            apps/web/acceptance/.output-upload/**
+            /tmp/api.log
+            /tmp/web.log
+          if-no-files-found: ignore
+
+      - name: Stop isolated services
+        if: always()
+        run: |
+          [ -n "$API_PID" ] && kill "$API_PID" 2>/dev/null || true
+          [ -n "$WEB_PID" ] && kill "$WEB_PID" 2>/dev/null || true

@@ -1,8 +1,11 @@
 # P5-6.4 / P5-4 acceptance — runtime artifacts (never committed; may contain test creds/tokens)
 .fixtures.json
 .viewer-fixtures.json
+.upload-fixtures.json
+.upload-result.json
 .auth/
 .output/
 .output-viewer/
+.output-upload/
 screenshots/
 *.png
