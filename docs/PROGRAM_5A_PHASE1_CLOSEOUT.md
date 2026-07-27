@@ -9,8 +9,8 @@ independently frozen, and re-validated GREEN at one final closeout head; the §1
 satisfied; the legacy-URL and retention/deletion policies are ratified; and the retired paste-URL creation
 path is authoritatively CI-protected.
 
-- **Final validated closeout head:** `<CLOSEOUT_HEAD>`
-- **Tags:** `p5-9-accepted` and `program-5a-phase1-accepted` → `<CLOSEOUT_HEAD>`
+- **Final validated closeout head:** `cc4dae0`
+- **Tags:** `p5-9-accepted` and `program-5a-phase1-accepted` → `cc4dae0`
 - **P5-9 scope:** CI/governance/documentation only. **No product code, no schema, no migration.**
 
 ## 1. Scope
@@ -34,24 +34,24 @@ altering any product behaviour or historical provenance.
 | P5-6 | Multi-slide orchestration | `p5-6-accepted` → `2094003` |
 | P5-7 | Case & specimen integration | `p5-7-accepted` → `a1b11ee` |
 | P5-8 | Asset-graph search & navigation | `p5-8-accepted` → `c360a19` |
-| P5-9 | Phase-1 validation & closeout | `p5-9-accepted` → `<CLOSEOUT_HEAD>` |
+| P5-9 | Phase-1 validation & closeout | `p5-9-accepted` → `cc4dae0` |
 
 All prior tags are immutable and unchanged by P5-9.
 
-## 3. Final validation matrix — authoritative CI at head `<CLOSEOUT_HEAD>`
+## 3. Final validation matrix — authoritative CI at head `cc4dae0`
 Fresh same-head runs (not historical evidence):
 
 | Gate | Workflow | Run | Result |
 |---|---|---|---|
-| P5-3C delivery E2E | `wsi-delivery-e2e` | `<RUN_P53C>` | `<R>` |
-| P5-2R review/publication | `wsi-review-acceptance` | `<RUN_P52R>` | `<R>` |
-| P5-4 viewer/delivery | `wsi-viewer-acceptance` | `<RUN_P54V>` | `<R>` |
-| P5-4 worker upload→publish→render + 403 | `wsi-upload-acceptance` | `<RUN_P54W>` | `<R>` |
-| P5-5 search | `wsi-search-acceptance` | `<RUN_P55>` | `<R>` |
-| P5-6 orchestration | `wsi-orchestration-acceptance` | `<RUN_P56>` | `<R>` |
-| P5-7 specimen integration | `wsi-specimen-acceptance` | `<RUN_P57>` | `<R>` |
-| P5-8 graph/navigation | `wsi-graph-acceptance` | `<RUN_P58>` | `<R>` |
-| No-paste static gate | `wsi-no-paste-gate` | `<RUN_NOPASTE>` | `<R>` |
+| P5-3C delivery E2E | `wsi-delivery-e2e` | `30287572094` | ✅ success |
+| P5-2R review/publication | `wsi-review-acceptance` | `30288460968` (re-run; orig `30287573360` = env flake) | ✅ success |
+| P5-4 viewer/delivery | `wsi-viewer-acceptance` | `30287575110` | ✅ success |
+| P5-4 worker upload→publish→render + 403 | `wsi-upload-acceptance` | `30287576717` | ✅ success |
+| P5-5 search | `wsi-search-acceptance` | `30287578060` | ✅ success |
+| P5-6 orchestration | `wsi-orchestration-acceptance` | `30288462381` (re-run; orig `30287579619` = env flake) | ✅ success |
+| P5-7 specimen integration | `wsi-specimen-acceptance` | `30287581293` | ✅ success |
+| P5-8 graph/navigation | `wsi-graph-acceptance` | `30287582853` | ✅ success |
+| No-paste static gate | `wsi-no-paste-gate` | `30287584770` | ✅ success |
 
 ## 4. §15 completion-criteria matrix
 | §15 criterion | Evidence | Status |
@@ -144,7 +144,7 @@ deleting it without an explicitly ratified lifecycle policy.**
 
 ## 12. Provenance & governance
 - P5-9 is **CI/governance/documentation only** — no product code, schema, or migration.
-- The only `main` change is the single additive `wsi-no-paste-gate.yml` workflow registration (governed
+- The only `main` change is the single additive `wsi-no-paste-gate.yml` workflow registration on `main` (`b286fa3`; governed
   single-file pattern); no product code on `main`.
 - All prior accepted tags (`p5-4-*`, `p5-5-accepted`, `p5-6-accepted`, `p5-6.4-accepted`, `p5-7-accepted`,
   `p5-8-accepted`) are intact and unmoved.
