@@ -86,23 +86,44 @@ export function flushAllDrafts(): void {
 
 /**
  * Register a form's live values for auto-draft. `getValues` is read only at flush
- * time (right before an idle timeout), so it always sees the latest state without
- * re-registering on every keystroke. Pass `enabled: false` (e.g. drawer closed or
- * edit-of-nothing) to opt out.
+ * time, so it always sees the latest state without re-registering on every
+ * keystroke. Pass `enabled: false` (e.g. drawer closed or edit-of-nothing) to opt
+ * out.
+ *
+ * By default the draft is snapshotted only when the session is about to idle-time
+ * out (the registry path). Pass `{ live: true }` to ALSO snapshot on an interval
+ * and once more on close/unmount, so work is captured even when the user simply
+ * closes the form or navigates away — no timeout required. `saveDraft` already
+ * skips empty content, so an untouched form writes nothing.
  */
-export function useAutosaveDraft(key: string, getValues: () => unknown, enabled = true): void {
+export function useAutosaveDraft(
+  key: string,
+  getValues: () => unknown,
+  enabled = true,
+  options?: { live?: boolean; intervalMs?: number },
+): void {
   const getValuesRef = useRef(getValues);
   getValuesRef.current = getValues;
+  const live = options?.live ?? false;
+  const intervalMs = options?.intervalMs ?? 4000;
 
   useEffect(() => {
     if (!enabled || !key) return;
-    const unregister = registerDraftGetter(() => ({
-      key,
-      data: getValuesRef.current(),
-      path: typeof window !== 'undefined' ? window.location.pathname + window.location.search : undefined,
-    }));
-    return unregister;
-  }, [key, enabled]);
+    const path = () =>
+      typeof window !== 'undefined' ? window.location.pathname + window.location.search : undefined;
+    const unregister = registerDraftGetter(() => ({ key, data: getValuesRef.current(), path: path() }));
+    if (!live) return unregister;
+
+    const snapshot = () => {
+      try { saveDraft(key, getValuesRef.current(), path()); } catch { /* best effort */ }
+    };
+    const timer = setInterval(snapshot, intervalMs);
+    return () => {
+      clearInterval(timer);
+      snapshot(); // final capture on close / unmount / navigation
+      unregister();
+    };
+  }, [key, enabled, live, intervalMs]);
 }
 
 // ── Return-to (restore the page you were on after re-login) ──────────────────

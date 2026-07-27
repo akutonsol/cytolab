@@ -15,10 +15,18 @@ export function encodeForm<T = any>(values: T): any {
   );
 }
 
-/** Reverse of encodeForm(): revive tagged values back into dayjs instances. */
+// A bare ISO-8601 timestamp (what dayjs.toJSON()/toISOString() emits). Older drafts
+// — saved before encodeForm() tagged dayjs values — stored dates as plain strings
+// like this; reviving them to dayjs keeps antd DatePickers from crashing on restore
+// (a DatePicker throws when handed a string instead of a dayjs).
+const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?/;
+
+/** Reverse of encodeForm(): revive tagged (and legacy bare-ISO) values to dayjs. */
 export function decodeForm<T = any>(encoded: T): any {
   const walk = (node: any): any => {
-    if (node == null || typeof node !== 'object') return node;
+    if (node == null || typeof node !== 'object') {
+      return typeof node === 'string' && ISO_TIMESTAMP.test(node) ? dayjs(node) : node;
+    }
     if (typeof node[TAG] === 'string') return dayjs(node[TAG]);
     if (Array.isArray(node)) return node.map(walk);
     const out: Record<string, any> = {};

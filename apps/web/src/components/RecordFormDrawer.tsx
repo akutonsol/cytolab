@@ -21,7 +21,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { api } from '@/lib/api';
 import { deriveAge } from '@/lib/age';
-import { ClientSelect } from '@/components/ClientSelect';
+import { ClientSelect, clientLabel } from '@/components/ClientSelect';
 import { PatientSelect, patientLabel } from '@/components/PatientSelect';
 import { PatientFormDrawer, type PatientRecord } from '@/components/PatientFormDrawer';
 import { SPECIMEN_LABELS, specimenTypesForForm, type FormType } from '@/lib/specimen-types';
@@ -35,20 +35,22 @@ import { fireGuideSignal } from '@/lib/guide/store';
 
 // Specimen type multi-select rendered as dark pill chips (legacy form language).
 // Integrates with Form.Item via the injected value/onChange props.
-function SpecimenChips({ value = [], onChange, options, disabled }: {
+function SpecimenChips({ value, onChange, options, disabled }: {
   value?: string[]; onChange?: (v: string[]) => void;
   options: { value: string; label: string }[]; disabled?: boolean;
 }) {
+  // Defensive: a restored draft can hand us a non-array (e.g. null) — never crash.
+  const list = Array.isArray(value) ? value : [];
   const toggle = (v: string) => {
     if (disabled) return;
-    const set = new Set(value);
+    const set = new Set(list);
     if (set.has(v)) set.delete(v); else set.add(v);
     onChange?.(options.filter((o) => set.has(o.value)).map((o) => o.value));
   };
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
       {options.map((o) => {
-        const active = value.includes(o.value);
+        const active = list.includes(o.value);
         return (
           <button key={o.value} type="button" onClick={() => toggle(o.value)} disabled={disabled}
             style={{ ...DS.specimenChip, ...(active ? DS.specimenChipActive : DS.specimenChipInactive), opacity: disabled ? 0.6 : 1 }}>
@@ -132,7 +134,21 @@ export function RecordFormDrawer({ open, onClose, formType, recordId, initialPat
   // Auto-draft (create mode): the SessionTimeoutProvider flushes these values to a
   // local draft right before an idle timeout, so work-in-progress is never lost.
   const draftKey = isEdit ? '' : `record-new-${formType}`;
-  useAutosaveDraft(draftKey, () => encodeForm(form.getFieldsValue(true)), open && !isEdit);
+  // Live autosave (interval + on-close), but only once the form holds real work —
+  // an untouched form (just the default date) must not spawn a restore banner.
+  useAutosaveDraft(
+    draftKey,
+    () => {
+      const v = form.getFieldsValue(true);
+      const started = !!(
+        v.patientId || v.clientId || v.doctor || v.clinicalDiagnosis ||
+        (Array.isArray(v.specimenTypes) && v.specimenTypes.length)
+      );
+      return started ? encodeForm(v) : {};
+    },
+    open && !isEdit,
+    { live: true },
+  );
   const [draft, setDraft] = useState<Draft | null>(null);
   useEffect(() => {
     setDraft(open && !isEdit ? loadDraft(draftKey) : null);
@@ -268,6 +284,9 @@ export function RecordFormDrawer({ open, onClose, formType, recordId, initialPat
     onSuccess: (_r, opts) => {
       notify.success(isEdit ? 'Record updated' : opts.submit ? 'Record submitted to Cytolab' : 'Record saved');
       if (draftKey) clearDraft(draftKey); // saved for real — drop the local draft
+      // Empty the form so the on-close autosave snapshot has nothing to re-persist
+      // (otherwise a just-saved record would immediately reappear as a draft).
+      if (!isEdit) form.resetFields();
       if (!isEdit) fireGuideSignal('record:created'); // advance guided assistance
       qc.invalidateQueries({ queryKey: ['records'] });
       if (isEdit) qc.invalidateQueries({ queryKey: ['record', recordId] });
@@ -369,7 +388,9 @@ export function RecordFormDrawer({ open, onClose, formType, recordId, initialPat
           </Col>
           <Col span={16}>
             <Form.Item label="Client" name="clientId" rules={[{ required: true, message: 'Choose the client' }]}>
-              <ClientSelect placeholder="Referring client" />
+              {/* Seed the loaded client's label so a restored/preselected clientId
+                  shows its name (the search list may not contain it). */}
+              <ClientSelect placeholder="Referring client" initialOption={client ? { value: client.id, label: clientLabel(client) } : undefined} />
             </Form.Item>
             {client && (
               <Space size={[4, 4]} wrap style={{ marginTop: -8, marginBottom: 8 }}>
@@ -389,7 +410,7 @@ export function RecordFormDrawer({ open, onClose, formType, recordId, initialPat
                 placeholder="Search patient by name or reg no"
                 disabled={isEdit}
                 initialOption={
-                  isEdit && patient
+                  patient
                     ? { value: patient.id, label: patientLabel(patient) }
                     : undefined
                 }
