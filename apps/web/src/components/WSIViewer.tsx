@@ -29,6 +29,9 @@ interface Props {
   onAddAnnotation?: (x: number, y: number, color: string) => void;
   /** Increment to programmatically enter add-annotation mode (e.g. a sidebar button). */
   enterAddSignal?: number;
+  /** P5-6: exposes this viewer's OpenSeadragon instance (or null on teardown) to an orchestration layer
+   *  (e.g. side-by-side sync navigation). The viewer still owns exactly one slide; the callback is read-only. */
+  onViewerReady?: (viewer: unknown | null) => void;
   className?: string;
 }
 
@@ -42,7 +45,7 @@ function maxDziLevel(d: DziDescriptor): number {
   return Math.ceil(Math.log2(Math.max(d.width, d.height, 1)));
 }
 
-export function WSIViewer({ slideId, annotations, readOnly = false, onAddAnnotation, enterAddSignal, className }: Props) {
+export function WSIViewer({ slideId, annotations, readOnly = false, onAddAnnotation, enterAddSignal, onViewerReady, className }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<any>(null);
   const osdRef = useRef<any>(null);
@@ -52,6 +55,8 @@ export function WSIViewer({ slideId, annotations, readOnly = false, onAddAnnotat
   // Raw delivery token — in memory only. Never written to a URL, cookie, or storage.
   const tokenRef = useRef<string | null>(null);
   const refreshingRef = useRef(false);
+  const onReadyRef = useRef(onViewerReady);
+  useEffect(() => { onReadyRef.current = onViewerReady; }, [onViewerReady]);
 
   const [state, setState] = useState<ViewState>('loading');
   const [zoom, setZoom] = useState(1);
@@ -136,7 +141,7 @@ export function WSIViewer({ slideId, annotations, readOnly = false, onAddAnnotat
       });
       viewerRef.current = viewer;
 
-      viewer.addHandler('open', () => { if (!disposed) { setState('ready'); recompute(); } });
+      viewer.addHandler('open', () => { if (!disposed) { setState('ready'); recompute(); onReadyRef.current?.(viewer); } });
       viewer.addHandler('open-failed', () => { if (!disposed) setState('error'); });
       viewer.addHandler('update-viewport', recompute);
       viewer.addHandler('animation', recompute);
@@ -175,6 +180,7 @@ export function WSIViewer({ slideId, annotations, readOnly = false, onAddAnnotat
 
     return () => {
       disposed = true;
+      onReadyRef.current?.(null);
       if (viewerRef.current) { viewerRef.current.destroy(); viewerRef.current = null; }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -211,7 +217,7 @@ export function WSIViewer({ slideId, annotations, readOnly = false, onAddAnnotat
           </>
         )}
         <span className="mx-0.5 h-5 w-px bg-white/15" />
-        <span className="px-1 text-[13px] font-semibold tabular-nums text-white">{zoom.toFixed(1)}x</span>
+        <span data-testid="wsi-zoom" className="px-1 text-[13px] font-semibold tabular-nums text-white">{zoom.toFixed(1)}x</span>
       </div>
 
       {addMode && (

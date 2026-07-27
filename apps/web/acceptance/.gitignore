@@ -6,11 +6,13 @@
 .render-fixtures.json
 .render-result.json
 .search-fixtures.json
+.orchestration-fixtures.json
 .auth/
 .output/
 .output-viewer/
 .output-upload/
 .output-render/
 .output-search/
+.output-orchestration/
 screenshots/
 *.png
