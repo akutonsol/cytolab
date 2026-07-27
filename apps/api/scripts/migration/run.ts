@@ -15,8 +15,9 @@
 import { PrismaClient } from '@prisma/client';
 import { LegacySource } from './core/legacy-source';
 import { IdMap, MemoryIdMapStore } from './core/id-map';
+import { PrismaIdMapStore } from './core/id-map-store';
 import { runEtl } from './engine';
-import { formatReport } from './core/reconcile';
+import { formatReport, writeReportArtifact } from './core/reconcile';
 
 function parseArgs(argv: string[]) {
   const has = (f: string) => argv.includes(f);
@@ -53,14 +54,23 @@ async function main() {
   });
   if (args.limit) console.log(`[sample mode] processing at most ${args.limit} rows per table`);
   const prisma = new PrismaClient();
-  // Deterministic ids => no persistence needed; the in-memory store just holds
-  // aliases (workspace<->client) for the duration of the run.
-  const idMap = new IdMap(new MemoryIdMapStore());
+  // Deterministic ids need no persistence, but ALIASES (workspace<->client pairing
+  // and patient identity-dedup survivors) must survive across runs so incremental
+  // syncs resolve a duplicate's FKs to the row kept on the original full load.
+  // Dry-run touches no DB, so it stays in-memory.
+  const idMap = new IdMap(
+    args.dryRun ? new MemoryIdMapStore() : new PrismaIdMapStore(prisma),
+    args.dryRun,
+  );
 
   await legacy.connect();
   try {
     const report = await runEtl({ legacy, prisma, idMap, dryRun: args.dryRun, incremental: args.incremental });
     console.log('\n' + formatReport(report));
+    if (!args.dryRun) {
+      const path = await writeReportArtifact(report);
+      console.log(`\nReconciliation report written to ${path}`);
+    }
     if (!report.ok) process.exitCode = 1;
   } finally {
     await legacy.end();

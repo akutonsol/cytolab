@@ -9,6 +9,7 @@ import type { LegacySource } from './core/legacy-source';
 import type { IdMap } from './core/id-map';
 import { EtlContext, StageFn } from './core/context';
 import { buildReport, ReconReport } from './core/reconcile';
+import { runIntegrityChecks } from './core/integrity';
 import { LOAD_ORDER } from './mapping';
 import { patientStage } from './mappers/patient';
 import { labCodeStage, clientTypeStage, codeSheetStage, codeFindingStage } from './mappers/reference';
@@ -19,6 +20,7 @@ import { clinicalFeaturesStage } from './mappers/clinical-features';
 import { specimenStage, therapyStage } from './mappers/specimen';
 import { resultSheetStage, resultEntryStage, resultLineStage, reportStage } from './mappers/results';
 import { cabinetStage, userStage } from './mappers/staff';
+import { seedSequencesStage } from './mappers/sequences';
 
 // Every stage in LOAD_ORDER except lab (seeded first) and notification (dropped:
 // legacy notifications are workspace-scoped free text, incompatible with Osieri's
@@ -106,5 +108,18 @@ export async function runEtl(opts: EngineOptions): Promise<ReconReport> {
     await fn(ctx);
   }
 
-  return buildReport(ctx.recon);
+  // Post-load: seed app identifier counters above the imported high-water mark so
+  // app-generated ids never collide with migrated ones.
+  log(`stage seedSequences: running${opts.dryRun ? ' (dry-run)' : ''}`);
+  await seedSequencesStage(ctx);
+
+  // Verify every migrated FK resolves. Dry-run wrote nothing, so there is nothing
+  // to check.
+  let integrity;
+  if (!opts.dryRun) {
+    log('stage integrity: running');
+    integrity = await runIntegrityChecks(opts.prisma);
+  }
+
+  return buildReport(ctx.recon, integrity);
 }
