@@ -69,8 +69,15 @@ export class LibvipsTilingEngine implements TilingEngine {
       );
     }
 
-    // dzsave writes "<base>.dzi" + "<base>_files/<level>/<col>_<row>.<fmt>".
-    const structure = await this.readDziStructure(`${pyramidBase}.dzi`, `${pyramidBase}_files`, input);
+    // dzsave writes "<base>.dzi" + "<base>_files/<level>/<col>_<row>.<fmt>", PLUS a top-level
+    // "vips-properties.xml" metadata sidecar inside "<base>_files". That sidecar is not a tile; if it were
+    // promoted it would inflate the promoted-pyramid aggregate beyond the manifest-declared tile aggregate
+    // and the sealer would reject the generation (PyramidAggregateMismatchError). Prune it so the promoted
+    // tree is exactly the tile payload (registered aggregate == declared-tile aggregate).
+    const filesDir = `${pyramidBase}_files`;
+    const prunedSidecars = await pruneNonTilePyramidSidecars(filesDir);
+    if (prunedSidecars.length) this.logger.log(`pruned non-tile pyramid sidecar(s): ${prunedSidecars.join(', ')}`);
+    const structure = await this.readDziStructure(`${pyramidBase}.dzi`, filesDir, input);
     return {
       structure,
       // Best-effort until the real-WSI validation gate (needs OpenSlide property reads).
@@ -113,6 +120,8 @@ export class LibvipsTilingEngine implements TilingEngine {
     };
   }
 
+  /** (see module-level {@link pruneNonTilePyramidSidecars}) */
+
   /** Spawn the executable with an argv array (no shell), capturing stdout/stderr with kill escalation. */
   private run(args: string[], opts: { timeoutMs: number; signal?: AbortSignal }): Promise<{ code: number; stdout: string; stderr: string }> {
     return new Promise((resolve, reject) => {
@@ -138,4 +147,28 @@ export class LibvipsTilingEngine implements TilingEngine {
       child.on('close', (code) => { clearTimeout(timer); if (!killed) resolve({ code: code ?? -1, stdout, stderr }); });
     });
   }
+}
+
+/**
+ * Remove non-tile sidecar files from a libvips DZI `*_files` pyramid tree so ONLY tile payloads remain.
+ *
+ * In the Deep Zoom layout the `_files` top level contains ONLY numbered level directories; tiles live inside
+ * them as `<col>_<row>.<ext>`. libvips writes a single top-level `vips-properties.xml` metadata sidecar
+ * there — it is not a tile and not the DZI descriptor (the descriptor is the sibling `<base>.dzi`, promoted
+ * separately). Because promotion measures the aggregate over EVERY promoted file while the sealer's
+ * `digestPyramid` sums only the manifest-declared tiles, any stray top-level file makes the two aggregates
+ * disagree and the generation cannot seal. Removing every top-level non-directory entry keeps the promoted
+ * pyramid exactly equal to the declared tiles (the integrity invariant), and is robust to any future
+ * top-level libvips sidecar — nothing legal other than level directories lives at this level. Returns the
+ * names removed (empty when the engine emitted no sidecar).
+ */
+export async function pruneNonTilePyramidSidecars(filesDir: string): Promise<string[]> {
+  const entries = await fs.readdir(filesDir, { withFileTypes: true }).catch((): import('node:fs').Dirent[] => []);
+  const removed: string[] = [];
+  for (const e of entries) {
+    if (e.isDirectory()) continue; // numbered level directories hold the tiles
+    await fs.unlink(path.join(filesDir, e.name)).catch(() => undefined);
+    removed.push(e.name);
+  }
+  return removed;
 }
