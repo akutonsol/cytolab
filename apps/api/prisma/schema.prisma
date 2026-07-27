@@ -210,6 +210,8 @@ model Lab {
   requisitions            Requisition[]
   records                 Record[]
   specimens               Specimen[]
+  ingestionSources        IngestionSource[] // P5B-B1 — automated-ingestion source config
+  ingestionDiscoveries    IngestionDiscovery[] // P5B-B1 — automated-ingestion intake records
   requisitionLines        RequisitionLine[]
   recordStatusEvents      RecordStatusEvent[]
   therapies               Therapy[]
@@ -2136,6 +2138,8 @@ enum FeatureKey {
   BATCH_AUTHORIZATION
   REQUISITION_TRACKING
   SLIDE_LABEL_PRINTING
+  ANCILLARY_ORDERS
+  SCREENING_BATCHES
 
   // Tier 4 — Compliance
   BETHESDA_ANALYTICS
@@ -2145,6 +2149,7 @@ enum FeatureKey {
   PATIENT_RECALL
   REPORT_CENTER
   APPOINTMENTS
+  QUALITY_GOVERNANCE
 
   // Tier 5 — Enterprise
   WSI_VIEWER
@@ -2152,6 +2157,9 @@ enum FeatureKey {
   TELECONSULTATION
   LOINC_SNOMED
   HL7_FHIR
+  OPERATIONS_HUB
+  ENTERPRISE_ADMINISTRATION
+  ENTERPRISE_CASE_MGMT
 
   // Tier 6 — Workforce
   WORKFORCE_MANAGEMENT
@@ -4663,4 +4671,88 @@ model LabInvoiceLine {
 
   @@index([labId])
   @@index([invoiceId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Program 5B · Stage B1 — Automated Ingestion: persistence & contracts.
+// New models ONLY (no change to existing WSI tables). The tenancy extension
+// auto-scopes both (they carry `labId`), so tenant isolation is structural.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// B1 constrains source kind to the filesystem/watch-folder contract actually being
+// implemented (local directory or a mounted/network share exposed as a filesystem path).
+// Object-storage-prefix / scanner kinds are intentionally NOT added here (5B-later / 5C).
+enum IngestionSourceKind {
+  FILESYSTEM
+}
+
+// Truthful intake state machine. Distinguishes discovery/matching/handoff/reconciliation
+// concepts WITHOUT implying discovered=ingested, matched=processed, ingested=READY, or READY=PUBLISHED.
+enum IngestionDiscoveryStatus {
+  DISCOVERED // a source object/path has been observed
+  STABILIZING // observed but not yet size/mtime-stable (partial write guard)
+  MATCHED // uniquely matched to an authoritative record (not yet handed off)
+  UNMATCHED // no authoritative accession match → reconciliation-required
+  AMBIGUOUS // more than one authoritative candidate → reconciliation-required
+  DUPLICATE // same bytes (sourceChecksum) already known in this lab → skipped
+  INGESTED // handed off to the accepted 5A ingestion pipeline (slide+ingestion created)
+  FAILED // terminal failure (checksum/unsupported/etc.) → reconciliation-required
+  RECONCILED // a human resolved a non-automatic outcome (B4)
+}
+
+// Source configuration = the SOLE tenant authority for background discovery. `labId` is
+// authoritative; tenant is NEVER derived from filename/accession/path/patient metadata.
+model IngestionSource {
+  id          String              @id @default(cuid())
+  labId       String
+  lab         Lab                 @relation(fields: [labId], references: [id])
+  kind        IngestionSourceKind @default(FILESYSTEM)
+  rootPath    String // configured filesystem root (local dir or mounted share)
+  matchConfig Json? // accession-extraction convention for B3 (opaque in B1)
+  enabled     Boolean             @default(true)
+  discoveries IngestionDiscovery[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@unique([labId, rootPath]) // one source config per (lab, path)
+  @@index([labId, enabled])
+}
+
+// Pre-ingestion intake record. Exists so unmatched/ambiguous bytes can be represented
+// truthfully BEFORE a DigitalSlide exists — a discovery never fabricates a slide/association.
+// Cross-references to record/specimen/slide/ingestion/user are plain ids (validity enforced at
+// match/handoff time in B3/B4) so B1 touches no existing WSI/Record/Specimen/User table.
+model IngestionDiscovery {
+  id             String                   @id @default(cuid())
+  labId          String
+  lab            Lab                      @relation(fields: [labId], references: [id])
+  sourceId       String
+  source         IngestionSource          @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  sourceRef      String // path/key relative to the source root — the idempotency key
+  discoveredAt   DateTime                 @default(now())
+  sizeBytes      Int?
+  sourceChecksum String? // sha256 of bytes (lab-scoped, byte-based dedup identity), when computed
+  status         IngestionDiscoveryStatus @default(DISCOVERED)
+
+  // Authoritative associations — set ONLY on a genuine unique match/handoff; null = truthful no-association.
+  matchedRecordId      String?
+  matchedSpecimenId    String? // default null (record-level anchoring; P5-7 unassigned semantics)
+  matchEvidence        Json? // which key matched / why ambiguous (B3)
+  resultingSlideId     String? // set after successful pipeline handoff (INGESTED)
+  resultingIngestionId String?
+
+  // Reconciliation provenance (used by B4) — human actor + action, persisted not logged.
+  reconciledById       String?
+  reconciliationAction String?
+  reconciledAt         DateTime?
+
+  retryCount    Int      @default(0)
+  failureReason String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([labId, sourceId, sourceRef]) // idempotency: one intake row per discovered object
+  @@index([labId, status])
+  @@index([labId, sourceChecksum]) // byte-based dedup lookup
+  @@index([sourceId])
 }
