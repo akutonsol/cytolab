@@ -1,0 +1,23 @@
+# P5-9 — static "no paste-URL" gate. Authoritative CI enforcement of the retired legacy paste-URL
+# CREATION/WRITE path (P5-4 Phase B Part 2), while the GET/read path and the retained DigitalSlide.slideUrl
+# DB column stay intentionally preserved. Deterministic source scan — no DB, no services, no browser, no
+# build. Gated (workflow_dispatch); runs the existing checker verbatim (it is not modified to pass).
+name: wsi-no-paste-gate
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: wsi-no-paste-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  no-paste-gate:
+    name: P5-9 no-paste-URL static gate (gated)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Static no-paste-URL check (retired write path absent; read path + DB column preserved)
+        run: node apps/web/acceptance/no-paste-url.check.mjs
