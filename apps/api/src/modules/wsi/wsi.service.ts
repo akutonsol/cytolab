@@ -2,11 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
-import { CreateAnnotationDto, CreateSlideDto, UpdateAnnotationDto } from './dto/wsi.dto';
+import { CreateAnnotationDto, UpdateAnnotationDto } from './dto/wsi.dto';
 import { AuditRecorder } from '../audit/audit-recorder.service';
 
+// P5-4 Phase B Part 2: `slideUrl` is a retained legacy DB column (see schema) but is NOT part of the
+// supported read contract — viewability derives from a published generation via the delivery boundary,
+// never from `slideUrl`. It is therefore excluded from the response projection.
 const slideSelect = {
-  id: true, slideUrl: true, format: true, magnification: true, stain: true, scanner: true,
+  id: true, format: true, magnification: true, stain: true, scanner: true,
   fileSizeBytes: true, uploadedById: true, uploadedAt: true, recordId: true,
   record: {
     select: {
@@ -47,24 +50,9 @@ export class WsiService {
   }
 
   // ── Slides ───────────────────────────────────────────────────────────────
-  async createSlide(recordId: string, dto: CreateSlideDto, userId: string) {
-    const record = await this.prisma.record.findFirst({ where: { id: recordId }, select: { id: true } });
-    if (!record) throw new NotFoundException('Record not found');
-    const slide = await this.prisma.digitalSlide.create({
-      data: tenantCreate<Prisma.DigitalSlideUncheckedCreateInput>({
-        recordId,
-        slideUrl: dto.slideUrl,
-        format: dto.format || 'image',
-        magnification: dto.magnification ?? null,
-        stain: dto.stain ?? null,
-        scanner: dto.scanner ?? null,
-        fileSizeBytes: dto.fileSizeBytes ?? null,
-        uploadedById: userId,
-      }),
-      select: slideSelect,
-    });
-    return this.toRow(slide);
-  }
+  // P5-4 Phase B Part 2: the legacy paste-URL `createSlide` write path was retired. Slides are created
+  // only through the authenticated ingestion pipeline (SlideIngestionService), which sets the retained
+  // legacy `slideUrl` column to the '' compatibility value. Read/list paths below are unchanged.
 
   /** Latest slide for a record, or null. */
   async getByRecord(recordId: string) {

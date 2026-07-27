@@ -11,7 +11,8 @@ export interface SlideAnnotationRow {
 
 export interface DigitalSlide {
   id: string;
-  slideUrl: string;
+  // P5-4 Phase B Part 2: `slideUrl` removed from the supported client contract. Viewability derives from a
+  // published generation via the authenticated delivery boundary, never from a URL.
   format: string;
   magnification: string | null;
   stain: string | null;

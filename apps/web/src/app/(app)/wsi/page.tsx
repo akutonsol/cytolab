@@ -7,7 +7,6 @@ import { App as AntdApp, Popconfirm } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useFeatures } from '@/lib/feature-context';
-import { AddSlideModal } from '@/components/AddSlideModal';
 import { SlideUploadModal } from '@/components/SlideUploadModal';
 import { formatBytes, shortDate, type DigitalSlide, type WsiSummary } from '@/lib/wsi';
 import { Card, EmptyState } from '@/components/ui';
@@ -24,7 +23,6 @@ export default function WsiPage() {
   const router = useRouter();
   const qc = useQueryClient();
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [urlOpen, setUrlOpen] = useState(false);
 
   const { data: summary } = useQuery<WsiSummary>({ queryKey: ['wsi-summary'], queryFn: () => api.get('/wsi/summary').then((r) => r.data), enabled });
   const { data: slides = [] } = useQuery<DigitalSlide[]>({ queryKey: ['wsi-slides'], queryFn: () => api.get('/wsi').then((r) => r.data), enabled });
@@ -54,10 +52,7 @@ export default function WsiPage() {
           <h1 className="text-[26px] font-bold leading-tight tracking-tight text-[#0F172A]">Digital Slides</h1>
           <p className="mt-1.5 text-[15px] text-[#6B7280]">Whole-slide images for remote review and annotation.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => setUrlOpen(true)} className="text-[13px] font-semibold text-[#4F46E5] hover:underline">Add by URL</button>
-          <button data-testid="wsi-upload-open" onClick={() => setUploadOpen(true)} className="rounded-lg bg-[#4F46E5] px-4 py-2.5 text-[14px] font-semibold text-white">Upload Slide</button>
-        </div>
+        <button data-testid="wsi-upload-open" onClick={() => setUploadOpen(true)} className="rounded-lg bg-[#4F46E5] px-4 py-2.5 text-[14px] font-semibold text-white">Upload Slide</button>
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -112,7 +107,6 @@ export default function WsiPage() {
       </Card>
 
       {uploadOpen && <SlideUploadModal onClose={() => setUploadOpen(false)} />}
-      {urlOpen && <AddSlideModal onClose={() => setUrlOpen(false)} onSaved={(id) => router.push(`/wsi/${id}`)} />}
     </div>
   );
 }

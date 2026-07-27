@@ -2753,7 +2753,9 @@ enum SlideAssetRole {
 // slide; ingestion → processing job → derivative generation → asset are its
 // replaceable operational history (aggregate children). `Record` owns the clinical
 // relationship (accession/diagnosis/workflow); the slide owns the digital-asset
-// lifecycle. Legacy external `slideUrl` slides remain viewable during migration.
+// lifecycle. WSI viewability derives from a genuinely published, sealed, verified generation via the
+// authenticated delivery boundary — NOT from legacy `slideUrl`. Historical URL-only rows may remain
+// retained but are non-viewable (P5-4 Phase B). The column is kept for compatibility/dual-read.
 model DigitalSlide {
   id       String @id @default(cuid())
   labId    String

@@ -20,7 +20,7 @@ import { useAuth } from '@/lib/auth';
 import { avatarColor, type WorkloadUser } from '@/lib/workload';
 import { RESULT_META as CORR_META, type CorrelationCase } from '@/lib/correlation';
 import { STATUS_META as RECALL_META, dueColor, dueLabel, shortDate as recallDate, type Recall } from '@/lib/recall';
-import { AddSlideModal } from '@/components/AddSlideModal';
+import { SlideUploadModal } from '@/components/SlideUploadModal';
 import { type DigitalSlide } from '@/lib/wsi';
 import { AIScreeningCard } from '@/components/AIScreeningCard';
 import { NewConsultModal } from '@/components/NewConsultModal';
@@ -520,7 +520,7 @@ export default function RecordDetailPage() {
               <div className="mt-3 rounded-[10px] border border-dashed border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-3">
                 <div className="flex items-center gap-2 text-[13px] font-semibold text-[#475569]"><ScanEye size={15} className="text-[#475569]" /> No digital slide</div>
                 {can('record:change') && (
-                  <button onClick={() => setAddSlideOpen(true)} className="mt-2 text-[12px] font-semibold text-[#4F46E5] hover:underline">+ Add Slide URL</button>
+                  <button onClick={() => setAddSlideOpen(true)} className="mt-2 text-[12px] font-semibold text-[#4F46E5] hover:underline">+ Upload Slide</button>
                 )}
               </div>
             )}
@@ -665,7 +665,7 @@ export default function RecordDetailPage() {
       <AuthorizationModal open={authModal} onClose={() => { setAuthModal(false); refetchAll(); }} record={record} />
       <PriorHistoryPanel open={historyOpen} onClose={() => setHistoryOpen(false)} patientId={record.patientId} excludeRecordId={id} />
       {printLabels && <PrintLabelsModal recordIds={[id]} onClose={() => setPrintLabels(false)} />}
-      {addSlideOpen && <AddSlideModal recordId={id} onClose={() => setAddSlideOpen(false)} />}
+      {addSlideOpen && <SlideUploadModal recordId={id} onClose={() => setAddSlideOpen(false)} />}
       {consultOpen && <NewConsultModal recordId={id} onClose={() => setConsultOpen(false)} onCreated={(cid) => router.push(`/teleconsult/${cid}`)} />}
       {codingOpen && <CodingPanel recordId={id} meta={{ labNo: record.labNumber ?? undefined, specimenType: record.formType ?? undefined }} onClose={() => setCodingOpen(false)} />}
       {fhirOpen && <FhirTransmitModal recordId={id} onClose={() => setFhirOpen(false)} />}

@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { WsiService } from './wsi.service';
-import { CreateAnnotationDto, CreateSlideDto, UpdateAnnotationDto } from './dto/wsi.dto';
+import { CreateAnnotationDto, UpdateAnnotationDto } from './dto/wsi.dto';
 
 @ApiTags('wsi')
 @ApiBearerAuth()
@@ -29,11 +29,9 @@ export class WsiController {
     return this.wsi.getByRecord(recordId);
   }
 
-  @Post('record/:recordId')
-  @RequirePermissions('record:change')
-  createSlide(@CurrentUser() user: AuthUser, @Param('recordId') recordId: string, @Body() dto: CreateSlideDto) {
-    return this.wsi.createSlide(recordId, dto, user.userId);
-  }
+  // P5-4 Phase B Part 2: the legacy paste-URL creation endpoint (POST record/:recordId) was retired.
+  // Slides are created only through the authenticated ingestion pipeline (POST records/:recordId/slide-uploads).
+  // The GET record/:recordId read endpoint above is preserved.
 
   @Post(':slideId/annotations')
   @RequirePermissions('record:change')
