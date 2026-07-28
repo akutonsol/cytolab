@@ -212,6 +212,7 @@ model Lab {
   specimens               Specimen[]
   ingestionSources        IngestionSource[] // P5B-B1 — automated-ingestion source config
   ingestionDiscoveries    IngestionDiscovery[] // P5B-B1 — automated-ingestion intake records
+  slideDicomMetadata      SlideDicomMetadata[] // P5C-C1 — DICOM WSI identity/conformance (tenant-scoped)
   requisitionLines        RequisitionLine[]
   recordStatusEvents      RecordStatusEvent[]
   therapies               Therapy[]
@@ -2815,6 +2816,7 @@ model DigitalSlide {
   annotations SlideAnnotation[]
   publications GenerationPublication[] // P5-4 — append-only publication provenance for this slide
   deliverySessions DeliverySession[] // P5-5 — short-lived authenticated viewing capabilities
+  dicomMetadata SlideDicomMetadata? // P5C-C1 — optional DICOM WSI identity/conformance (1:1; only DICOM-sourced slides)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -4684,6 +4686,20 @@ model LabInvoiceLine {
 // Object-storage-prefix / scanner kinds are intentionally NOT added here (5B-later / 5C).
 enum IngestionSourceKind {
   FILESYSTEM
+  // P5C-C1 — additive: a remote DICOMweb endpoint (QIDO/WADO import transport; used from C3). NOTE:
+  // PostgreSQL cannot DROP an enum value, so a C1 rollback may leave this value harmlessly present
+  // (see the SlideDicomMetadata migration note). SCANNER is intentionally NOT added in C1.
+  DICOMWEB
+}
+
+// Program 5C · C1 — the truthful verdict of DICOM WSI conformance validation. Persisted on
+// SlideDicomMetadata (for accepted VALID series) and echoed on the intake discovery for rejected input.
+// VALID = a supported, conformant VL Whole Slide Microscopy Image series; UNSUPPORTED = well-formed but not
+// a supported SOP class / transfer syntax; NONCONFORMANT = malformed / inconsistent required metadata.
+enum DicomConformanceStatus {
+  VALID
+  UNSUPPORTED
+  NONCONFORMANT
 }
 
 // Truthful intake state machine. Distinguishes discovery/matching/handoff/reconciliation
@@ -4755,4 +4771,52 @@ model IngestionDiscovery {
   @@index([labId, status])
   @@index([labId, sourceChecksum]) // byte-based dedup lookup
   @@index([sourceId])
+}
+
+// Program 5C · C1 — DICOM WSI identity, geometry, and conformance for a DICOM-sourced DigitalSlide.
+//
+// SERIES-GRAIN: one DICOM WSI series (the whole-slide image; many SOP instances = pyramid levels/frames)
+// maps to one Osieri slide (one sealed DZI derivative under the convert-to-DZI architecture). Tenancy is
+// ALWAYS labId (auto-scoped by the extension) — a DICOM UID is NEVER a tenant key, so the same Study+Series
+// may legitimately exist in two different labs, while a duplicate within one lab is rejected.
+//
+// PHI BOUNDARY: only operational / geometry / conformance / provenance metadata is persisted. There is NO
+// PatientName/PatientID/PatientBirthDate/PatientSex/StudyDate/ReferringPhysicianName/InstitutionName and NO
+// raw-header blob — existing Osieri Patient/Record identity remains authoritative and is never created or
+// overwritten from DICOM. Acquisition scale (objectivePower/mpp) + source dimensions stay on DigitalSlide;
+// this model does not duplicate them.
+model SlideDicomMetadata {
+  id      String       @id @default(cuid())
+  labId   String
+  lab     Lab          @relation(fields: [labId], references: [id])
+  slideId String       @unique // 1:1 with the DICOM-sourced slide
+  slide   DigitalSlide @relation(fields: [slideId], references: [id], onDelete: Cascade)
+
+  // ── Identity (series-grain). UIDs identify the DICOM object; labId is the tenant authority, not the UID. ──
+  studyInstanceUID             String // (0020,000D)
+  seriesInstanceUID            String // (0020,000E) — the WSI image; the slide's DICOM identity
+  representativeSopInstanceUID String? // (0008,0018) — a primary instance ref (a series has many)
+  sopClassUID                  String // (0008,0016) — must be VL Whole Slide Microscopy Image Storage
+  transferSyntaxUID            String // (0002,0010) — decode/conformance classification
+  frameOfReferenceUID          String? // (0020,0052) — geometry/conformance
+
+  // ── Geometry (conformance + tiling sanity; NOT a duplicate of DigitalSlide.sourceWidth/Height semantics). ──
+  totalPixelMatrixColumns Int? // (0048,0006) — full-resolution matrix width
+  totalPixelMatrixRows    Int? // (0048,0007) — full-resolution matrix height
+  numberOfFrames          Int? // (0028,0008)
+  frameColumns            Int? // (0028,0011) — per-frame tile width
+  frameRows               Int? // (0028,0010) — per-frame tile height
+  opticalPaths            Json? // (0048,0105) seq — structured optical-path descriptors (multi-channel)
+  containerIdentifier     String? // (0040,0512) — specimen container provenance
+
+  // ── Conformance verdict (structured; never a free-form log string). ──
+  conformanceStatus  DicomConformanceStatus
+  conformanceReasons Json? // structured [{ code, tag?, expected?, actual?, message }]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Series-grain tenant-scoped identity: duplicate Study+Series within a lab is rejected; different labs coexist.
+  @@unique([labId, studyInstanceUID, seriesInstanceUID])
+  @@index([labId, studyInstanceUID])
 }
