@@ -134,7 +134,7 @@ async function main() {
     await runB4(prisma, fx, fails, ck);
 
     if (fails.length) { console.error('AUTO-INGEST ACCEPTANCE FAILURES:\n - ' + fails.join('\n - ')); process.exit(1); }
-    console.log('P5B-B2/B4/B5a + P5C-C2/C3 AUTO-INGEST + RECONCILIATION + MONITORING + DICOM + DICOMWEB ACCEPTANCE: all persisted-truth assertions passed.');
+    console.log('P5B-B2/B4/B5a + P5C-C2/C3/C4 AUTO-INGEST + RECONCILIATION + MONITORING + DICOM + DICOMWEB + SCANNER ACCEPTANCE: all persisted-truth assertions passed.');
   } finally {
     await prisma.$disconnect();
   }
@@ -443,6 +443,74 @@ async function runB4(prisma: PrismaClient, fx: any, fails: string[], ck: (c: boo
       ck(bImp.outcome === 'UNMATCHED', `C3 tenant isolation: Lab-B import of a Lab-A accession → UNMATCHED (got ${bImp.outcome})`);
 
       console.log(`C3 dicomweb: import=${imp.outcome} dup=${dup2.outcome} multi=${multi.outcome} mono=${monoImp.outcome} unmatched=${um.outcome} auth=${bad.error?.code} ssrf=${ssrf.error?.code} labB=${bImp.outcome}`);
+
+      // ── Program 5C · C4 — scanner-adapter framework: filesystem-dicom (.dcm → C2 → DZI → READY) + dicomweb delegate. ──
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { ScannerRouterService } = require('../src/modules/wsi/scanner/scanner-router.service');
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { IngestionSourceService } = require('../src/modules/wsi/auto-ingestion/ingestion-source.service');
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const nodeOs = require('node:os');
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const nodeFs = require('node:fs');
+      const router = app.get(ScannerRouterService);
+      const srcSvc = app.get(IngestionSourceService);
+
+      // A scanner drops a real native .dcm (unique study/series, accession ACC-DICOM-1) into a watch dir.
+      const scanRoot = nodeFs.mkdtempSync(require('node:path').join(nodeOs.tmpdir(), 'c4-scan-'));
+      const s4Study = '1.2.826.0.1.3680043.2.9999.441';
+      const s4Series = s4Study + '.1';
+      const s4Bytes = generateDicomWsiBytes({ studyInstanceUID: s4Study, seriesInstanceUID: s4Series, sopInstanceUID: s4Series + '.1', accessionNumber: 'ACC-DICOM-1', includePHI: true, totalPixelMatrix: 512, frameSize: 256 });
+      const s4Sha = require('node:crypto').createHash('sha256').update(s4Bytes).digest('hex');
+      const dcmPath = require('node:path').join(scanRoot, 'scan-A.dcm');
+      nodeFs.writeFileSync(dcmPath, s4Bytes);
+      // Backdate mtime beyond settleMs so the completeness (mtime-quiescence) gate passes deterministically.
+      const old = new Date(Date.now() - 3_600_000);
+      nodeFs.utimesSync(dcmPath, old, old);
+
+      const fsdSource: any = await asA(() => srcSvc.create({ rootPath: scanRoot, adapterType: 'FILESYSTEM_DICOM' }));
+      const run1: any = await asA(() => router.runSource(fsdSource.id));
+      const r1 = run1.results.find((r: any) => r.sourceRef === 'scan-A.dcm');
+      ck(run1.adapterType === 'FILESYSTEM_DICOM' && r1?.outcome === 'INGESTED' && !!r1?.slideId, `C4 filesystem-dicom scan → INGESTED via C2 (got ${r1?.outcome})`);
+      let c4Ready = false;
+      if (r1?.outcome === 'INGESTED') {
+        const ing = await prisma.slideIngestion.findFirst({ where: { id: (await prisma.ingestionDiscovery.findFirst({ where: { sourceId: fsdSource.id, sourceRef: 'scan-A.dcm' }, select: { resultingIngestionId: true } }))?.resultingIngestionId ?? '' }, select: { sourceKind: true, status: true, sourceChecksum: true } });
+        ck(ing?.sourceKind === 'DICOM' && ing?.status === 'VERIFIED' && ing?.sourceChecksum === s4Sha, 'C4 native-byte provenance: DICOM/VERIFIED + SHA-256 of the exact native .dcm bytes');
+        const sdm: any = await prisma.slideDicomMetadata.findFirst({ where: { slideId: r1.slideId } });
+        ck(sdm?.studyInstanceUID === s4Study && !JSON.stringify(sdm).includes('DOE^JANE'), 'C4 series identity persisted, no PHI');
+        let g: any = null; const dl2 = Date.now() + 150_000;
+        while (Date.now() < dl2) { g = await prisma.derivativeGeneration.findFirst({ where: { slideId: r1.slideId }, orderBy: { createdAt: 'desc' } }); if (g && g.status === 'READY' && g.sealed && g.verified) break; await sleep(3000); }
+        c4Ready = !!g && g.status === 'READY' && g.sealed && g.verified;
+        ck(c4Ready, `C4 scanner DICOM reached READY via the real worker (got ${g?.status})`);
+        const sl = await prisma.digitalSlide.findFirst({ where: { id: r1.slideId }, select: { publishedGenerationId: true, availabilityStatus: true, sourceKind: true } });
+        ck(sl?.publishedGenerationId === null && sl?.availabilityStatus !== 'PUBLISHED' && sl?.sourceKind === 'DICOM', 'C4 READY scanner slide is DICOM-provenance + unpublished');
+      }
+
+      // Idempotent re-scan → no second slide identity.
+      const run2: any = await asA(() => router.runSource(fsdSource.id));
+      const r2 = run2.results.find((r: any) => r.sourceRef === 'scan-A.dcm');
+      ck(['INGESTED', 'DUPLICATE'].includes(r2?.outcome), `C4 re-scan is idempotent (got ${r2?.outcome})`);
+      ck((await prisma.ingestionDiscovery.count({ where: { sourceId: fsdSource.id, sourceRef: 'scan-A.dcm' } })) === 1, 'C4 exactly one discovery identity for the scanned object');
+
+      // Incomplete (freshly-written) .dcm → INCOMPLETE, no slide.
+      const freshPath = require('node:path').join(scanRoot, 'scan-fresh.dcm');
+      nodeFs.writeFileSync(freshPath, generateDicomWsiBytes({ studyInstanceUID: s4Study + '.2', seriesInstanceUID: s4Series + '.2', sopInstanceUID: s4Series + '.2.1', accessionNumber: 'ACC-DICOM-1', totalPixelMatrix: 128, frameSize: 64 }));
+      const run3: any = await asA(() => router.runSource(fsdSource.id));
+      const r3 = run3.results.find((r: any) => r.sourceRef === 'scan-fresh.dcm');
+      ck(r3?.outcome === 'INCOMPLETE', `C4 freshly-written scan → INCOMPLETE (got ${r3?.outcome})`);
+      ck(!(await prisma.slideDicomMetadata.findFirst({ where: { studyInstanceUID: s4Study + '.2' } })), 'C4 incomplete scan created NO slide');
+
+      // DICOMweb adapter delegates to the accepted C3 importSeries. Label the existing C3 source with
+      // adapterType=DICOMWEB (raw — the source service doesn't set it), then run the adapter: QIDO discovers
+      // the already-imported cStudy/cSeries → importSeries returns DUPLICATE/INGESTED (proving delegation to C3).
+      await prisma.ingestionSource.update({ where: { id: src.id }, data: { adapterType: 'DICOMWEB' } });
+      const runWeb: any = await asA(() => router.runSource(src.id));
+      const rWeb = runWeb.results.find((r: any) => r.sourceRef === `${cStudy}/${cSeries}`);
+      const c4web = rWeb?.outcome ?? 'none';
+      ck(['INGESTED', 'DUPLICATE'].includes(rWeb?.outcome) && runWeb.adapterType === 'DICOMWEB', `C4 dicomweb adapter delegates to C3 importSeries (got ${rWeb?.outcome})`);
+
+      nodeFs.rmSync(scanRoot, { recursive: true, force: true });
+      console.log(`C4 scanner: fsdicom=${r1?.outcome} ready=${c4Ready} rescan=${r2?.outcome} incomplete=${r3?.outcome} dicomweb=${c4web}`);
     } finally {
       await mock.close().catch(() => undefined);
     }

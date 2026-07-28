@@ -4723,6 +4723,16 @@ enum DicomWebAuthType {
   BASIC
 }
 
+// P5C-C4 — vendor-neutral scanner ADAPTER selection for an IngestionSource. An adapter is a translation/
+// routing layer over the ACCEPTED transports (never a new transport/pipeline): FILESYSTEM_IMAGE + FILESYSTEM_DICOM
+// require kind=FILESYSTEM; DICOMWEB requires kind=DICOMWEB (enforced in service code). Additive; null = the
+// legacy FILESYSTEM_IMAGE watch-folder behaviour (unchanged).
+enum IngestionAdapterType {
+  FILESYSTEM_IMAGE
+  FILESYSTEM_DICOM
+  DICOMWEB
+}
+
 // Source configuration = the SOLE tenant authority for background discovery. `labId` is
 // authoritative; tenant is NEVER derived from filename/accession/path/patient metadata.
 // P5C-C3 (additive): a DICOMWEB source carries an endpoint base URL + auth type + an AES-256-GCM-encrypted
@@ -4739,6 +4749,8 @@ model IngestionSource {
   endpointBaseUrl  String? // https base URL of the DICOMweb (QIDO/WADO) endpoint (infra-sensitive; never in monitoring)
   authType         DicomWebAuthType? // BEARER | BASIC (null = no auth)
   credentialCipher String? // AES-256-GCM ciphertext of the credential (EncryptionService); decrypted in-process only
+  // ── P5C-C4 scanner adapter selection (null = legacy FILESYSTEM_IMAGE watch-folder behaviour) ──
+  adapterType IngestionAdapterType?
   discoveries IngestionDiscovery[]
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt

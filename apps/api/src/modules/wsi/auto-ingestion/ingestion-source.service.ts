@@ -13,13 +13,15 @@ import { tenantCreate } from '../../../common/tenancy/tenancy.extension';
 export class IngestionSourceService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Register a filesystem watch-folder source for the current lab. Unique per (lab, rootPath). */
-  create(input: { rootPath: string; matchConfig?: Prisma.InputJsonValue; enabled?: boolean }) {
+  /** Register a filesystem watch-folder source for the current lab. Unique per (lab, rootPath).
+   *  P5C-C4: an optional adapterType selects a scanner adapter (FILESYSTEM_IMAGE | FILESYSTEM_DICOM). */
+  create(input: { rootPath: string; matchConfig?: Prisma.InputJsonValue; enabled?: boolean; adapterType?: 'FILESYSTEM_IMAGE' | 'FILESYSTEM_DICOM' }) {
     return this.prisma.ingestionSource.create({
       data: tenantCreate<Prisma.IngestionSourceUncheckedCreateInput>({
         kind: 'FILESYSTEM',
         rootPath: input.rootPath,
         ...(input.matchConfig !== undefined ? { matchConfig: input.matchConfig } : {}),
+        ...(input.adapterType ? { adapterType: input.adapterType } : {}),
         enabled: input.enabled ?? true,
       }),
     });

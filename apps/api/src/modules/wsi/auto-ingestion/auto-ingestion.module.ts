@@ -18,6 +18,12 @@ import { DicomWebClient } from '../dicomweb/dicomweb-client';
 import { DicomWebSourceService } from '../dicomweb/dicomweb-source.service';
 import { DicomWebImportService } from '../dicomweb/dicomweb-import.service';
 import { DicomWebController } from '../dicomweb/dicomweb.controller';
+import { SCANNER_ADAPTERS } from '../scanner/scanner-adapter';
+import { ScannerAdapterRegistry } from '../scanner/scanner-adapter-registry';
+import { ScannerRouterService } from '../scanner/scanner-router.service';
+import { FilesystemDicomAdapter } from '../scanner/adapters/filesystem-dicom.adapter';
+import { DicomWebAdapter } from '../scanner/adapters/dicomweb.adapter';
+import { ScannerController } from '../scanner/scanner.controller';
 import { WATCH_FOLDER_CONFIG, loadWatchFolderConfig } from './watch-folder-config';
 
 /**
@@ -38,7 +44,7 @@ import { WATCH_FOLDER_CONFIG, loadWatchFolderConfig } from './watch-folder-confi
  */
 @Module({
   imports: [WsiModule, AuditModule],
-  controllers: [ReconciliationController, IngestionMonitoringController, DicomWebController],
+  controllers: [ReconciliationController, IngestionMonitoringController, DicomWebController, ScannerController],
   providers: [
     { provide: WATCH_FOLDER_CONFIG, useFactory: () => loadWatchFolderConfig() },
     IngestionSourceService,
@@ -57,7 +63,14 @@ import { WATCH_FOLDER_CONFIG, loadWatchFolderConfig } from './watch-folder-confi
     DicomWebClient,
     DicomWebSourceService,
     DicomWebImportService,
+    // P5C-C4 — scanner-adapter framework: statically-registered reference adapters + registry + router. The
+    // router reuses the accepted intake (ingestDicomWsi / importSeries); no new pipeline/worker/slide path.
+    FilesystemDicomAdapter,
+    DicomWebAdapter,
+    { provide: SCANNER_ADAPTERS, useFactory: (fsd: FilesystemDicomAdapter, dw: DicomWebAdapter) => [fsd, dw], inject: [FilesystemDicomAdapter, DicomWebAdapter] },
+    ScannerAdapterRegistry,
+    ScannerRouterService,
   ],
-  exports: [IngestionSourceService, IngestionDiscoveryService, AccessionMatchResolver, AutomatedIngestionComposer, WatchFolderProcessor, ReconciliationService, IngestionMonitoringService, DicomIngestionService, DicomWebImportService, DicomWebSourceService],
+  exports: [IngestionSourceService, IngestionDiscoveryService, AccessionMatchResolver, AutomatedIngestionComposer, WatchFolderProcessor, ReconciliationService, IngestionMonitoringService, DicomIngestionService, DicomWebImportService, DicomWebSourceService, ScannerRouterService, ScannerAdapterRegistry],
 })
 export class AutoIngestionModule {}

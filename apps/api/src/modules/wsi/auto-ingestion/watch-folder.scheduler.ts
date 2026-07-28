@@ -52,8 +52,11 @@ export class WatchFolderScheduler implements OnApplicationBootstrap, OnModuleDes
       // System-scoped enumeration (cross-lab); the tenancy extension passes through in runSystem.
       const sources = await this.labContext.runSystem(() =>
         this.prisma.ingestionSource.findMany({
-          // FILESYSTEM only — a DICOMWEB source (P5C-C3) has no rootPath and is imported on demand, not polled.
-          where: { enabled: true, kind: 'FILESYSTEM' },
+          // FILESYSTEM image sources only. A DICOMWEB source (C3) has no rootPath and is imported on demand;
+          // a FILESYSTEM_DICOM source (C4) is routed to C2 by the scanner router, NOT the image watch-folder path.
+          // NOTE: `{ not: 'FILESYSTEM_DICOM' }` would EXCLUDE NULL rows in SQL — legacy sources have adapterType
+          // null, so we must include null explicitly (else the poller scans nothing).
+          where: { enabled: true, kind: 'FILESYSTEM', OR: [{ adapterType: null }, { adapterType: 'FILESYSTEM_IMAGE' }] },
           select: { id: true, labId: true, rootPath: true, matchConfig: true },
         }),
       );
