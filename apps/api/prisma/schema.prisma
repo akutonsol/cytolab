@@ -213,6 +213,7 @@ model Lab {
   ingestionSources        IngestionSource[] // P5B-B1 — automated-ingestion source config
   ingestionDiscoveries    IngestionDiscovery[] // P5B-B1 — automated-ingestion intake records
   slideDicomMetadata      SlideDicomMetadata[] // P5C-C1 — DICOM WSI identity/conformance (tenant-scoped)
+  ingestionSourceHealth   IngestionSourceHealth[] // P5C-C5 — per-source import-connection health snapshots
   requisitionLines        RequisitionLine[]
   recordStatusEvents      RecordStatusEvent[]
   therapies               Therapy[]
@@ -4752,12 +4753,49 @@ model IngestionSource {
   // ── P5C-C4 scanner adapter selection (null = legacy FILESYSTEM_IMAGE watch-folder behaviour) ──
   adapterType IngestionAdapterType?
   discoveries IngestionDiscovery[]
+  health      IngestionSourceHealth? // P5C-C5 — 1:1 current health snapshot (import-connection health)
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
 
   @@unique([labId, rootPath]) // one FILESYSTEM source config per (lab, path); nulls (DICOMWEB) don't collide
   @@unique([labId, endpointBaseUrl]) // one DICOMWEB source per (lab, endpoint); nulls (FILESYSTEM) don't collide
   @@index([labId, enabled])
+}
+
+// P5C-C5 — the operational health of an ACCEPTED import connection/intake path (NOT scanner hardware). A small
+// deterministic enum; DISABLED reflects source.enabled=false; DEGRADED is a reachable-but-failing operational
+// signal; STALE is NOT here (it is derived from lastSuccessfulCheckAt + cadence).
+enum SourceHealthState {
+  UNKNOWN
+  HEALTHY
+  DEGRADED
+  UNREACHABLE
+  AUTH_REJECTED
+  MISCONFIGURED
+  DISABLED
+}
+
+// P5C-C5 — a 1:1 CURRENT health snapshot per IngestionSource (no history table; current-snapshot-only). Never
+// stores a raw error message / endpoint URL / credential / patient-bearing path — only a structured error CODE.
+model IngestionSourceHealth {
+  id                    String            @id @default(cuid())
+  labId                 String
+  lab                   Lab               @relation(fields: [labId], references: [id])
+  sourceId              String            @unique
+  source                IngestionSource   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  state                 SourceHealthState @default(UNKNOWN)
+  checkedAt             DateTime?
+  lastSuccessfulCheckAt DateTime?
+  lastFailedCheckAt     DateTime?
+  lastErrorCode         String? // STRUCTURED HealthCheckErrorCode only — never a raw message/URL/credential/path
+  consecutiveFailures   Int               @default(0)
+  responseTimeMs        Int?
+  nextEligibleCheckAt   DateTime? // scheduler claim + backoff
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@index([labId, state])
+  @@index([labId, nextEligibleCheckAt]) // multi-instance-safe claim scan
 }
 
 // Pre-ingestion intake record. Exists so unmatched/ambiguous bytes can be represented

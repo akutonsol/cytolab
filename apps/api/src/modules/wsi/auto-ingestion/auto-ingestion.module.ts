@@ -24,6 +24,13 @@ import { ScannerRouterService } from '../scanner/scanner-router.service';
 import { FilesystemDicomAdapter } from '../scanner/adapters/filesystem-dicom.adapter';
 import { DicomWebAdapter } from '../scanner/adapters/dicomweb.adapter';
 import { ScannerController } from '../scanner/scanner.controller';
+import { SOURCE_HEALTH_CHECKERS } from '../health/source-health';
+import { SourceHealthCheckerRegistry } from '../health/source-health-checker-registry';
+import { SourceHealthService } from '../health/source-health.service';
+import { SourceHealthScheduler } from '../health/source-health.scheduler';
+import { SourceHealthController } from '../health/source-health.controller';
+import { FilesystemHealthChecker } from '../health/checkers/filesystem-health.checker';
+import { DicomWebHealthChecker } from '../health/checkers/dicomweb-health.checker';
 import { WATCH_FOLDER_CONFIG, loadWatchFolderConfig } from './watch-folder-config';
 
 /**
@@ -44,7 +51,7 @@ import { WATCH_FOLDER_CONFIG, loadWatchFolderConfig } from './watch-folder-confi
  */
 @Module({
   imports: [WsiModule, AuditModule],
-  controllers: [ReconciliationController, IngestionMonitoringController, DicomWebController, ScannerController],
+  controllers: [ReconciliationController, IngestionMonitoringController, DicomWebController, ScannerController, SourceHealthController],
   providers: [
     { provide: WATCH_FOLDER_CONFIG, useFactory: () => loadWatchFolderConfig() },
     IngestionSourceService,
@@ -70,7 +77,14 @@ import { WATCH_FOLDER_CONFIG, loadWatchFolderConfig } from './watch-folder-confi
     { provide: SCANNER_ADAPTERS, useFactory: (fsd: FilesystemDicomAdapter, dw: DicomWebAdapter) => [fsd, dw], inject: [FilesystemDicomAdapter, DicomWebAdapter] },
     ScannerAdapterRegistry,
     ScannerRouterService,
+    // P5C-C5 — source health: transport checkers (static registry), execution service, config-gated scheduler.
+    FilesystemHealthChecker,
+    DicomWebHealthChecker,
+    { provide: SOURCE_HEALTH_CHECKERS, useFactory: (fs: FilesystemHealthChecker, dw: DicomWebHealthChecker) => [fs, dw], inject: [FilesystemHealthChecker, DicomWebHealthChecker] },
+    SourceHealthCheckerRegistry,
+    SourceHealthService,
+    SourceHealthScheduler,
   ],
-  exports: [IngestionSourceService, IngestionDiscoveryService, AccessionMatchResolver, AutomatedIngestionComposer, WatchFolderProcessor, ReconciliationService, IngestionMonitoringService, DicomIngestionService, DicomWebImportService, DicomWebSourceService, ScannerRouterService, ScannerAdapterRegistry],
+  exports: [IngestionSourceService, IngestionDiscoveryService, AccessionMatchResolver, AutomatedIngestionComposer, WatchFolderProcessor, ReconciliationService, IngestionMonitoringService, DicomIngestionService, DicomWebImportService, DicomWebSourceService, ScannerRouterService, ScannerAdapterRegistry, SourceHealthService],
 })
 export class AutoIngestionModule {}

@@ -2,12 +2,15 @@ import { Injectable } from '@nestjs/common';
 import type { IngestionDiscoveryStatus, ProcessingJobStatus } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { RECONCILIATION_EXCEPTION_STATES } from './dto/reconciliation.dto';
+import { isStale, loadHealthConfig } from '../health/health-config';
 import type {
   DiscoveryCounts,
   IngestionMonitoringResponse,
   ProcessingCounts,
   SourceFact,
+  SourceHealthSummary,
   SourceMonitor,
+  ThroughputWindow,
 } from './dto/ingestion-monitoring.dto';
 
 const DISCOVERY_STATUSES: IngestionDiscoveryStatus[] = [
@@ -92,6 +95,19 @@ export class IngestionMonitoringService {
     const processing = zeroProcessing();
     for (const g of procGroups) processing[g.status] = g._count._all;
 
+    // ── P5C-C5: current health snapshots (tenant-scoped) + windowed discovery throughput. ──
+    const nowMs = Date.parse(nowIso) || Date.now();
+    const hcfg = loadHealthConfig();
+    const [healthRows, winHour, winDay, winWeek] = await Promise.all([
+      this.prisma.ingestionSourceHealth.findMany({
+        select: { sourceId: true, state: true, lastErrorCode: true, checkedAt: true, lastSuccessfulCheckAt: true, lastFailedCheckAt: true, consecutiveFailures: true, responseTimeMs: true },
+      }),
+      this.windowCounts(nowMs - 3_600_000),
+      this.windowCounts(nowMs - 86_400_000),
+      this.windowCounts(nowMs - 604_800_000),
+    ]);
+    const healthBy = new Map(healthRows.map((h) => [h.sourceId, h]));
+
     // ── Index per-source aggregates. ──
     const bySource = new Map<string, DiscoveryCounts>();
     for (const g of discGroups) {
@@ -128,6 +144,7 @@ export class IngestionMonitoringService {
         recentFailureAt: iso(fail?.updatedAt ?? null),
         recentFailureReason: fail?.failureReason ?? null,
         facts,
+        health: this.healthSummary(healthBy.get(s.id), nowMs, hcfg),
       };
     });
 
@@ -158,8 +175,45 @@ export class IngestionMonitoringService {
         oldestUnresolvedExceptionAt: iso(minDate(oldestException.map((r) => r._min.discoveredAt))),
         lastActivityAt: iso(maxDate(lastActivity.map((r) => r._max.updatedAt))),
         lastIngestedAt: iso(maxDate(lastIngested.map((r) => r._max.updatedAt))),
+        windows: { hour: winHour, day: winDay, week: winWeek },
       },
       sources: sourceMonitors,
+    };
+  }
+
+  /** P5C-C5 — query-time windowed discovery throughput (no rollups/counters). */
+  private async windowCounts(sinceMs: number): Promise<ThroughputWindow> {
+    const groups = await this.prisma.ingestionDiscovery.groupBy({
+      by: ['status'],
+      where: { discoveredAt: { gte: new Date(sinceMs) } },
+      _count: { _all: true },
+    });
+    const by: Record<string, number> = {};
+    let total = 0;
+    for (const g of groups) { by[g.status] = g._count._all; total += g._count._all; }
+    return {
+      discovered: total,
+      ingested: by.INGESTED ?? 0,
+      duplicate: by.DUPLICATE ?? 0,
+      unmatched: by.UNMATCHED ?? 0,
+      ambiguous: by.AMBIGUOUS ?? 0,
+      failed: by.FAILED ?? 0,
+    };
+  }
+
+  /** P5C-C5 — the safe health projection (structured code only; `stale` derived). No endpoint/credential/path. */
+  private healthSummary(h: { state: string; lastErrorCode: string | null; checkedAt: Date | null; lastSuccessfulCheckAt: Date | null; lastFailedCheckAt: Date | null; consecutiveFailures: number; responseTimeMs: number | null } | undefined, nowMs: number, hcfg: ReturnType<typeof loadHealthConfig>): SourceHealthSummary | null {
+    if (!h) return null;
+    const iso = (d: Date | null) => (d ? d.toISOString() : null);
+    return {
+      state: h.state,
+      errorCode: h.lastErrorCode,
+      checkedAt: iso(h.checkedAt),
+      lastSuccessfulCheckAt: iso(h.lastSuccessfulCheckAt),
+      lastFailedCheckAt: iso(h.lastFailedCheckAt),
+      consecutiveFailures: h.consecutiveFailures,
+      responseTimeMs: h.responseTimeMs,
+      stale: isStale(h.lastSuccessfulCheckAt, nowMs, hcfg),
     };
   }
 }

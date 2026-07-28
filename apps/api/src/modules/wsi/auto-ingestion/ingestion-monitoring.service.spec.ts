@@ -72,6 +72,12 @@ function svc() {
         { status: 'QUEUED', _count: { _all: 1 } },
       ]),
     },
+    // C5: per-source health snapshots (1:1). B5-a projection is unaffected when none exist.
+    ingestionSourceHealth: {
+      findMany: jest.fn(async () => [
+        { sourceId: 's1', state: 'HEALTHY', lastErrorCode: null, checkedAt: D2, lastSuccessfulCheckAt: D2, lastFailedCheckAt: null, consecutiveFailures: 0, responseTimeMs: 4 },
+      ]),
+    },
   };
   return { service: new IngestionMonitoringService(prisma as any), prisma };
 }

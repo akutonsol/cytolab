@@ -35,6 +35,30 @@ export interface SourceMonitor {
   recentFailureAt: string | null;
   recentFailureReason: string | null; // persisted IngestionDiscovery.failureReason (no path/secret)
   facts: SourceFact[];
+  // P5C-C5 — import-connection health snapshot (null until the first check). No endpoint/credential/path.
+  health: SourceHealthSummary | null;
+}
+
+/** P5C-C5 — the safe per-source health projection (structured code only; `stale` is derived). */
+export interface SourceHealthSummary {
+  state: string; // SourceHealthState
+  errorCode: string | null; // structured HealthCheckErrorCode
+  checkedAt: string | null;
+  lastSuccessfulCheckAt: string | null;
+  lastFailedCheckAt: string | null;
+  consecutiveFailures: number;
+  responseTimeMs: number | null;
+  stale: boolean; // derived from lastSuccessfulCheckAt + cadence
+}
+
+/** P5C-C5 — windowed discovery throughput (query-time; no rollups). */
+export interface ThroughputWindow {
+  discovered: number;
+  ingested: number;
+  duplicate: number;
+  unmatched: number;
+  ambiguous: number;
+  failed: number;
 }
 
 export interface MonitoringTotals {
@@ -46,6 +70,8 @@ export interface MonitoringTotals {
   oldestUnresolvedExceptionAt: string | null;
   lastActivityAt: string | null;
   lastIngestedAt: string | null;
+  // P5C-C5 — windowed discovery throughput (lab-wide), query-time from IngestionDiscovery.discoveredAt.
+  windows: { hour: ThroughputWindow; day: ThroughputWindow; week: ThroughputWindow };
 }
 
 export interface IngestionMonitoringResponse {

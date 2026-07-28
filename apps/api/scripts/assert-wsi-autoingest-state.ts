@@ -134,7 +134,7 @@ async function main() {
     await runB4(prisma, fx, fails, ck);
 
     if (fails.length) { console.error('AUTO-INGEST ACCEPTANCE FAILURES:\n - ' + fails.join('\n - ')); process.exit(1); }
-    console.log('P5B-B2/B4/B5a + P5C-C2/C3/C4 AUTO-INGEST + RECONCILIATION + MONITORING + DICOM + DICOMWEB + SCANNER ACCEPTANCE: all persisted-truth assertions passed.');
+    console.log('P5B-B2/B4/B5a + P5C-C2/C3/C4/C5 AUTO-INGEST + RECONCILIATION + MONITORING + DICOM + DICOMWEB + SCANNER + HEALTH ACCEPTANCE: all persisted-truth assertions passed.');
   } finally {
     await prisma.$disconnect();
   }
@@ -509,8 +509,58 @@ async function runB4(prisma: PrismaClient, fx: any, fails: string[], ck: (c: boo
       const c4web = rWeb?.outcome ?? 'none';
       ck(['INGESTED', 'DUPLICATE'].includes(rWeb?.outcome) && runWeb.adapterType === 'DICOMWEB', `C4 dicomweb adapter delegates to C3 importSeries (got ${rWeb?.outcome})`);
 
-      nodeFs.rmSync(scanRoot, { recursive: true, force: true });
       console.log(`C4 scanner: fsdicom=${r1?.outcome} ready=${c4Ready} rescan=${r2?.outcome} incomplete=${r3?.outcome} dicomweb=${c4web}`);
+
+      // ── Program 5C · C5 — source health + enterprise import monitoring (drives the REAL health service). ──
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { SourceHealthService } = require('../src/modules/wsi/health/source-health.service');
+      const healthSvc = app.get(SourceHealthService);
+      const discCountA = () => prisma.ingestionDiscovery.count({ where: { sourceId: fx.sources.A } });
+      const before = await discCountA();
+
+      // (1) FILESYSTEM reachable (the B2 watch-folder root exists) → HEALTHY.
+      const beforeCheckMs = Date.now();
+      const fsHealthy: any = await asA(() => healthSvc.checkSource(fx.sources.A, { manual: true }));
+      ck(fsHealthy.state === 'HEALTHY', `C5 reachable filesystem source → HEALTHY (got ${fsHealthy.state})`);
+
+      // (1b) The persisted snapshot honours the approved 5-minute cadence floor (no sub-5-minute recurring check).
+      const persistedA: any = await asA(() => prisma.ingestionSourceHealth.findUnique({ where: { sourceId: fx.sources.A } }));
+      ck(!!persistedA?.nextEligibleCheckAt && persistedA.nextEligibleCheckAt.getTime() - beforeCheckMs >= 300_000,
+        `C5 nextEligibleCheckAt >= 5min ahead (approved cadence floor; got +${persistedA?.nextEligibleCheckAt ? Math.round((persistedA.nextEligibleCheckAt.getTime() - beforeCheckMs) / 1000) : 'null'}s)`);
+
+      // (2) FILESYSTEM missing root → UNREACHABLE, then create the dir + recheck → HEALTHY (recovery transition).
+      const missRoot = require('node:path').join(nodeOs.tmpdir(), 'c5-missing-' + require('node:crypto').randomUUID());
+      const missSrc: any = await asA(() => srcSvc.create({ rootPath: missRoot, adapterType: 'FILESYSTEM_IMAGE' }));
+      const miss1: any = await asA(() => healthSvc.checkSource(missSrc.id, { manual: true }));
+      ck(miss1.state === 'UNREACHABLE' && miss1.errorCode === 'FILESYSTEM_NOT_FOUND', `C5 missing filesystem root → UNREACHABLE/FILESYSTEM_NOT_FOUND (got ${miss1.state}/${miss1.errorCode})`);
+      nodeFs.mkdirSync(missRoot, { recursive: true });
+      const miss2: any = await asA(() => healthSvc.checkSource(missSrc.id, { manual: true }));
+      ck(miss2.state === 'HEALTHY', `C5 recovery: recreated root → HEALTHY (got ${miss2.state})`);
+
+      // (3) DICOMWEB reachable + authenticated (the C3 mock) → HEALTHY (minimal QIDO, no WADO/import).
+      const webHealthy: any = await asA(() => healthSvc.checkSource(src.id, { manual: true }));
+      ck(webHealthy.state === 'HEALTHY', `C5 valid DICOMweb endpoint → HEALTHY (got ${webHealthy.state}/${webHealthy.errorCode ?? ''})`);
+
+      // (4) DICOMWEB bad credential → AUTH_REJECTED; (5) SSRF private-IP endpoint → MISCONFIGURED/HOST_REJECTED.
+      const webAuth: any = await asA(() => healthSvc.checkSource(badSrc.id, { manual: true }));
+      ck(webAuth.state === 'AUTH_REJECTED' && webAuth.errorCode === 'DICOMWEB_AUTH_REJECTED', `C5 bad credential → AUTH_REJECTED (got ${webAuth.state}/${webAuth.errorCode})`);
+      const webSsrf: any = await asA(() => healthSvc.checkSource(ssrfSrc.id, { manual: true }));
+      ck(webSsrf.state === 'MISCONFIGURED' && webSsrf.errorCode === 'DICOMWEB_HOST_REJECTED', `C5 SSRF endpoint → MISCONFIGURED/DICOMWEB_HOST_REJECTED (got ${webSsrf.state}/${webSsrf.errorCode})`);
+
+      // (6) Monitoring surfaces the health snapshot + windows, and leaks no endpoint/credential/rootPath.
+      const m5: any = await asA(() => monitoring.overview(new Date().toISOString()));
+      const srcAmon = m5.sources.find((s: any) => s.id === fx.sources.A);
+      ck(srcAmon?.health?.state === 'HEALTHY' && typeof srcAmon.health.stale === 'boolean', 'C5 monitoring surfaces the per-source health snapshot + derived stale');
+      ck(!!m5.totals.windows?.day && typeof m5.totals.windows.day.ingested === 'number', 'C5 monitoring exposes windowed throughput (hour/day/week)');
+      const m5json = JSON.stringify(m5);
+      ck(!m5json.includes(fx.roots.A) && !m5json.includes(mock.baseUrl) && !m5json.includes('secret-token') && !m5json.includes('credentialCipher'), 'C5 monitoring leaks no rootPath/endpoint/credential');
+
+      // (7) No intake side effect: health checking created no new discovery/slide for the source.
+      ck((await discCountA()) === before, 'C5 health checks create NO discovery (no intake side effect)');
+
+      nodeFs.rmSync(scanRoot, { recursive: true, force: true });
+      nodeFs.rmSync(missRoot, { recursive: true, force: true });
+      console.log(`C5 health: fs=${fsHealthy.state} miss=${miss1.state}->${miss2.state} web=${webHealthy.state} auth=${webAuth.state} ssrf=${webSsrf.state}`);
     } finally {
       await mock.close().catch(() => undefined);
     }
