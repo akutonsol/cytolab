@@ -44,8 +44,9 @@ describe('IngestionMonitoringController authorization (real PermissionsGuard + r
     const meta = Reflect.getMetadata(PERMISSIONS_KEY, (IngestionMonitoringController.prototype as any).overview);
     expect(meta).toEqual(['wsi:reconcile']);
   });
-  it('introduces no system:ingestion permission in the catalog (B5-a adds no permission)', () => {
-    expect(SPECIAL_OBJECTS.system).not.toContain('ingestion');
-    expect(Object.keys(SPECIAL_OBJECTS)).not.toContain('ingestion');
+  it('does NOT gate monitoring on system:ingestion (that authority — introduced in P5C-C3 — is for endpoint admin/import, not read-only monitoring)', () => {
+    const meta = Reflect.getMetadata(PERMISSIONS_KEY, (IngestionMonitoringController.prototype as any).overview);
+    expect(meta).not.toContain('system:ingestion');
+    expect(meta).toEqual(['wsi:reconcile']);
   });
 });

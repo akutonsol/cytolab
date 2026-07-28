@@ -4716,21 +4716,35 @@ enum IngestionDiscoveryStatus {
   RECONCILED // a human resolved a non-automatic outcome (B4)
 }
 
+// P5C-C3 — the outbound-endpoint authentication scheme for a DICOMWEB source. A small enum (not a free-form
+// string) so config is compile-time-validated and future schemes (OAuth2/mTLS) are explicit additive changes.
+enum DicomWebAuthType {
+  BEARER
+  BASIC
+}
+
 // Source configuration = the SOLE tenant authority for background discovery. `labId` is
 // authoritative; tenant is NEVER derived from filename/accession/path/patient metadata.
+// P5C-C3 (additive): a DICOMWEB source carries an endpoint base URL + auth type + an AES-256-GCM-encrypted
+// credential (never plaintext, never returned to any API/UI) instead of a filesystem rootPath.
 model IngestionSource {
   id          String              @id @default(cuid())
   labId       String
   lab         Lab                 @relation(fields: [labId], references: [id])
   kind        IngestionSourceKind @default(FILESYSTEM)
-  rootPath    String // configured filesystem root (local dir or mounted share)
-  matchConfig Json? // accession-extraction convention for B3 (opaque in B1)
+  rootPath    String? // FILESYSTEM: configured root (local dir/mounted share). Null for a DICOMWEB source.
+  matchConfig Json? // accession-extraction convention for B3 (opaque in B1); non-secret endpoint config for C3
   enabled     Boolean             @default(true)
+  // ── P5C-C3 DICOMweb endpoint (all null for a FILESYSTEM source) ──
+  endpointBaseUrl  String? // https base URL of the DICOMweb (QIDO/WADO) endpoint (infra-sensitive; never in monitoring)
+  authType         DicomWebAuthType? // BEARER | BASIC (null = no auth)
+  credentialCipher String? // AES-256-GCM ciphertext of the credential (EncryptionService); decrypted in-process only
   discoveries IngestionDiscovery[]
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
 
-  @@unique([labId, rootPath]) // one source config per (lab, path)
+  @@unique([labId, rootPath]) // one FILESYSTEM source config per (lab, path); nulls (DICOMWEB) don't collide
+  @@unique([labId, endpointBaseUrl]) // one DICOMWEB source per (lab, endpoint); nulls (FILESYSTEM) don't collide
   @@index([labId, enabled])
 }
 

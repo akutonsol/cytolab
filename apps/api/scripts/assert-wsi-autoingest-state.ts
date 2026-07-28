@@ -134,7 +134,7 @@ async function main() {
     await runB4(prisma, fx, fails, ck);
 
     if (fails.length) { console.error('AUTO-INGEST ACCEPTANCE FAILURES:\n - ' + fails.join('\n - ')); process.exit(1); }
-    console.log('P5B-B2/B4/B5a + P5C-C2 AUTO-INGEST + RECONCILIATION + MONITORING + DICOM ACCEPTANCE: all persisted-truth assertions passed.');
+    console.log('P5B-B2/B4/B5a + P5C-C2/C3 AUTO-INGEST + RECONCILIATION + MONITORING + DICOM + DICOMWEB ACCEPTANCE: all persisted-truth assertions passed.');
   } finally {
     await prisma.$disconnect();
   }
@@ -155,6 +155,7 @@ async function main() {
 async function runB4(prisma: PrismaClient, fx: any, fails: string[], ck: (c: boolean, m: string) => void) {
   delete process.env.WSI_WATCH_FOLDER;
   delete process.env.WSI_PROCESSING_WORKER;
+  process.env.WSI_DICOMWEB_ALLOW_LOOPBACK = 'true'; // C3 acceptance: permit the in-process 127.0.0.1 mock server
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { NestFactory } = require('@nestjs/core');
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -352,6 +353,99 @@ async function runB4(prisma: PrismaClient, fx: any, fails: string[], ck: (c: boo
     ck(bRes.outcome === 'UNMATCHED' && !bRes.slideId, 'C2 tenant isolation: Lab-B cannot match a Lab-A accession record');
 
     console.log(`C2 dicom: outcome=${c2.outcome} slide=${c2.slideId ?? 'none'} mono=${monoRes.outcome} dup=${dupRes.outcome} labB=${bRes.outcome}`);
+
+    // ── Program 5C · C3 — DICOMweb import: mock endpoint → QIDO/WADO → native bytes → C2 → real worker → DZI → READY. ──
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { DicomWebImportService } = require('../src/modules/wsi/dicomweb/dicomweb-import.service');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { DicomWebSourceService } = require('../src/modules/wsi/dicomweb/dicomweb-source.service');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { startMockDicomWebServer } = require('../src/modules/wsi/dicomweb/testing/mock-dicomweb-server');
+    const importer = app.get(DicomWebImportService);
+    const dwSources = app.get(DicomWebSourceService);
+    const WSI_SOP = '1.2.840.10008.5.1.4.1.1.77.1.6';
+
+    // A fresh WSI object (unique study/series, accession ACC-DICOM-1 → matches RDICOM), with PHI.
+    const cStudy = '1.2.826.0.1.3680043.2.9999.331';
+    const cSeries = cStudy + '.1';
+    const cSop = cSeries + '.1';
+    const cBytes = generateDicomWsiBytes({ studyInstanceUID: cStudy, seriesInstanceUID: cSeries, sopInstanceUID: cSop, accessionNumber: 'ACC-DICOM-1', includePHI: true, totalPixelMatrix: 512, frameSize: 256 });
+    const cSha = require('node:crypto').createHash('sha256').update(cBytes).digest('hex');
+    const mono2 = generateDicomWsiBytes({ studyInstanceUID: cStudy + '.7', seriesInstanceUID: cSeries + '.7', sopInstanceUID: cSeries + '.7.1', accessionNumber: 'ACC-DICOM-1', photometricInterpretation: 'MONOCHROME2', totalPixelMatrix: 128, frameSize: 64 });
+    const noMatch = generateDicomWsiBytes({ studyInstanceUID: cStudy + '.8', seriesInstanceUID: cSeries + '.8', sopInstanceUID: cSeries + '.8.1', accessionNumber: 'NOSUCHACC', totalPixelMatrix: 128, frameSize: 64 });
+
+    const mock = await startMockDicomWebServer({
+      bearerToken: 'secret-token',
+      instances: [
+        { studyInstanceUID: cStudy, seriesInstanceUID: cSeries, sopInstanceUID: cSop, sopClassUID: WSI_SOP, bytes: cBytes },
+        // a multi-instance series (two WSI objects) → must be UNSUPPORTED
+        { studyInstanceUID: cStudy + '.9', seriesInstanceUID: cSeries + '.9', sopInstanceUID: cSeries + '.9.1', sopClassUID: WSI_SOP, bytes: cBytes },
+        { studyInstanceUID: cStudy + '.9', seriesInstanceUID: cSeries + '.9', sopInstanceUID: cSeries + '.9.2', sopClassUID: WSI_SOP, bytes: cBytes },
+        { studyInstanceUID: cStudy + '.7', seriesInstanceUID: cSeries + '.7', sopInstanceUID: cSeries + '.7.1', sopClassUID: WSI_SOP, bytes: mono2 },
+        { studyInstanceUID: cStudy + '.8', seriesInstanceUID: cSeries + '.8', sopInstanceUID: cSeries + '.8.1', sopClassUID: WSI_SOP, bytes: noMatch },
+      ],
+    });
+    try {
+      // Create a Lab-A DICOMweb source (credential encrypted at rest; never returned).
+      const src: any = await asA(() => dwSources.create({ endpointBaseUrl: mock.baseUrl, authType: 'BEARER', credential: 'secret-token' }));
+      ck(src.hasCredential === true && !('credentialCipher' in src), 'C3 source view exposes hasCredential but NEVER the cipher');
+      const rawSrc = await prisma.ingestionSource.findFirst({ where: { id: src.id }, select: { credentialCipher: true, endpointBaseUrl: true } });
+      ck(!!rawSrc?.credentialCipher && rawSrc.credentialCipher !== 'secret-token', 'C3 credential is encrypted at rest (not plaintext)');
+
+      // (1) Positive: QIDO/WADO → native bytes → C2 → INGESTED.
+      const imp: any = await asA(() => importer.importSeries({ sourceId: src.id, studyInstanceUID: cStudy, seriesInstanceUID: cSeries }));
+      ck(imp.outcome === 'INGESTED' && !!imp.slideId, `C3 import VALID series → INGESTED (got ${imp.outcome} ${imp.error?.code ?? ''})`);
+      if (imp.outcome === 'INGESTED') {
+        const ing = await prisma.slideIngestion.findFirst({ where: { id: imp.ingestionId }, select: { sourceKind: true, status: true, sourceChecksum: true } });
+        ck(ing?.sourceKind === 'DICOM' && ing?.status === 'VERIFIED' && ing?.sourceChecksum === cSha, 'C3 native-byte provenance: DICOM/VERIFIED + SHA-256 of the WADO-retrieved native object');
+        const sdm: any = await prisma.slideDicomMetadata.findFirst({ where: { slideId: imp.slideId } });
+        ck(sdm?.studyInstanceUID === cStudy && sdm?.seriesInstanceUID === cSeries, 'C3 series identity persisted from the native object');
+        ck(!JSON.stringify(sdm).includes('DOE^JANE') && !JSON.stringify(sdm).includes('PHI-PID-123'), 'C3 no PHI persisted');
+        // real worker → DZI → READY, unpublished
+        let g: any = null; const dl = Date.now() + 150_000;
+        while (Date.now() < dl) { g = await prisma.derivativeGeneration.findFirst({ where: { slideId: imp.slideId }, orderBy: { createdAt: 'desc' } }); if (g && g.status === 'READY' && g.sealed && g.verified) break; await sleep(3000); }
+        ck(!!g && g.status === 'READY' && g.sealed && g.verified, `C3 imported DICOM reached READY via the real worker (got ${g?.status})`);
+        const sl = await prisma.digitalSlide.findFirst({ where: { id: imp.slideId }, select: { publishedGenerationId: true, availabilityStatus: true } });
+        ck(sl?.publishedGenerationId === null && sl?.availabilityStatus !== 'PUBLISHED', 'C3 READY import remains unpublished (no auto-publish)');
+      }
+
+      // (2) Idempotency / duplicate: re-import the same series → DUPLICATE/INGESTED short-circuit, no new slide.
+      const dup2: any = await asA(() => importer.importSeries({ sourceId: src.id, studyInstanceUID: cStudy, seriesInstanceUID: cSeries }));
+      ck(['DUPLICATE', 'INGESTED'].includes(dup2.outcome), `C3 re-import is idempotent (got ${dup2.outcome})`);
+      ck((await prisma.slideDicomMetadata.count({ where: { studyInstanceUID: cStudy, seriesInstanceUID: cSeries } })) === 1, 'C3 exactly one SlideDicomMetadata for the series (no duplicate identity)');
+
+      // (3) Multi-instance WSI series → UNSUPPORTED (C2 single-object contract not widened).
+      const multi: any = await asA(() => importer.importSeries({ sourceId: src.id, studyInstanceUID: cStudy + '.9', seriesInstanceUID: cSeries + '.9' }));
+      ck(multi.outcome === 'UNSUPPORTED', `C3 multi-instance series → UNSUPPORTED (got ${multi.outcome})`);
+
+      // (4) Conformant-but-unsupported (MONOCHROME) → UNSUPPORTED, no slide.
+      const monoImp: any = await asA(() => importer.importSeries({ sourceId: src.id, studyInstanceUID: cStudy + '.7', seriesInstanceUID: cSeries + '.7' }));
+      ck(monoImp.outcome === 'UNSUPPORTED' && !monoImp.slideId, `C3 unsupported profile → UNSUPPORTED (got ${monoImp.outcome})`);
+
+      // (5) Unmatched accession → UNMATCHED, no slide.
+      const um: any = await asA(() => importer.importSeries({ sourceId: src.id, studyInstanceUID: cStudy + '.8', seriesInstanceUID: cSeries + '.8' }));
+      ck(um.outcome === 'UNMATCHED' && !um.slideId, `C3 unmatched accession → UNMATCHED (got ${um.outcome})`);
+
+      // (6) Auth rejected: a source with the wrong credential → FAILED(AUTH_REJECTED), no slide. Uses the
+      // 'localhost' alias of the same mock (a distinct endpoint string, so the per-(lab,endpoint) unique holds).
+      const badSrc: any = await asA(() => dwSources.create({ endpointBaseUrl: mock.baseUrl.replace('127.0.0.1', 'localhost'), authType: 'BEARER', credential: 'wrong-token' }));
+      const bad: any = await asA(() => importer.importSeries({ sourceId: badSrc.id, studyInstanceUID: cStudy + '.8', seriesInstanceUID: cSeries + '.8' }));
+      ck(bad.outcome === 'FAILED' && bad.error?.code === 'AUTH_REJECTED', `C3 bad credential → FAILED(AUTH_REJECTED) (got ${bad.outcome}/${bad.error?.code})`);
+
+      // (7) SSRF: a source whose endpoint resolves to a private address → FAILED(HOST_NOT_ALLOWED), never fetched.
+      const ssrfSrc: any = await asA(() => dwSources.create({ endpointBaseUrl: 'https://10.0.0.1/dicomweb', authType: 'BEARER', credential: 't' }));
+      const ssrf: any = await asA(() => importer.importSeries({ sourceId: ssrfSrc.id, studyInstanceUID: cStudy, seriesInstanceUID: cSeries }));
+      ck(ssrf.outcome === 'FAILED' && ssrf.error?.code === 'HOST_NOT_ALLOWED', `C3 SSRF private-IP endpoint → FAILED(HOST_NOT_ALLOWED) (got ${ssrf.outcome}/${ssrf.error?.code})`);
+
+      // (8) Tenant isolation: Lab B imports a series whose accession matches only a Lab-A record → UNMATCHED.
+      const bSrc: any = await asB(() => dwSources.create({ endpointBaseUrl: mock.baseUrl, authType: 'BEARER', credential: 'secret-token' }));
+      const bImp: any = await asB(() => importer.importSeries({ sourceId: bSrc.id, studyInstanceUID: cStudy + '.8', seriesInstanceUID: cSeries + '.8' }));
+      ck(bImp.outcome === 'UNMATCHED', `C3 tenant isolation: Lab-B import of a Lab-A accession → UNMATCHED (got ${bImp.outcome})`);
+
+      console.log(`C3 dicomweb: import=${imp.outcome} dup=${dup2.outcome} multi=${multi.outcome} mono=${monoImp.outcome} unmatched=${um.outcome} auth=${bad.error?.code} ssrf=${ssrf.error?.code} labB=${bImp.outcome}`);
+    } finally {
+      await mock.close().catch(() => undefined);
+    }
   } finally {
     await app.close().catch(() => undefined);
   }

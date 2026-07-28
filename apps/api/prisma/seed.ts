@@ -41,8 +41,11 @@ export const SPECIAL_OBJECTS: Record<string, string[]> = {
   accountprefs: ['view', 'change'],
   // Internal System Health dashboard + Security Center — intentionally assigned
   // to NO default role, so only super roles (which bypass the permission guard)
-  // can reach them.
-  system: ['health', 'security'],
+  // can reach them. P5C-C3: `ingestion` is the ingestion-source administration + remote
+  // import-execution authority (DICOMweb endpoint config + running an import). It is
+  // infrastructure-sensitive (endpoint URLs + encrypted credentials), granted to NO
+  // default role; NOT reused for viewing (wsi:view) or reconciliation/monitoring (wsi:reconcile).
+  system: ['health', 'security', 'ingestion'],
   // Form Setup (clinical-feature UI config). Lab-admin territory — assigned to no
   // default staff role; super roles reach it via the guard bypass.
   formconfig: ['view', 'manage'],

@@ -13,6 +13,11 @@ import { ReconciliationController } from './reconciliation.controller';
 import { IngestionMonitoringService } from './ingestion-monitoring.service';
 import { IngestionMonitoringController } from './ingestion-monitoring.controller';
 import { DicomIngestionService } from '../dicom/dicom-ingestion.service';
+import { EncryptionService } from '../../../common/encryption.service';
+import { DicomWebClient } from '../dicomweb/dicomweb-client';
+import { DicomWebSourceService } from '../dicomweb/dicomweb-source.service';
+import { DicomWebImportService } from '../dicomweb/dicomweb-import.service';
+import { DicomWebController } from '../dicomweb/dicomweb.controller';
 import { WATCH_FOLDER_CONFIG, loadWatchFolderConfig } from './watch-folder-config';
 
 /**
@@ -33,7 +38,7 @@ import { WATCH_FOLDER_CONFIG, loadWatchFolderConfig } from './watch-folder-confi
  */
 @Module({
   imports: [WsiModule, AuditModule],
-  controllers: [ReconciliationController, IngestionMonitoringController],
+  controllers: [ReconciliationController, IngestionMonitoringController, DicomWebController],
   providers: [
     { provide: WATCH_FOLDER_CONFIG, useFactory: () => loadWatchFolderConfig() },
     IngestionSourceService,
@@ -46,7 +51,13 @@ import { WATCH_FOLDER_CONFIG, loadWatchFolderConfig } from './watch-folder-confi
     ReconciliationService,
     IngestionMonitoringService,
     DicomIngestionService, // P5C-C2 — server-owned native DICOM WSI intake into the accepted pipeline
+    // P5C-C3 — DICOMweb import (QIDO/WADO → native bytes → the C2 service). EncryptionService encrypts endpoint
+    // credentials at rest (provided directly, mirroring SecurityModule).
+    EncryptionService,
+    DicomWebClient,
+    DicomWebSourceService,
+    DicomWebImportService,
   ],
-  exports: [IngestionSourceService, IngestionDiscoveryService, AccessionMatchResolver, AutomatedIngestionComposer, WatchFolderProcessor, ReconciliationService, IngestionMonitoringService, DicomIngestionService],
+  exports: [IngestionSourceService, IngestionDiscoveryService, AccessionMatchResolver, AutomatedIngestionComposer, WatchFolderProcessor, ReconciliationService, IngestionMonitoringService, DicomIngestionService, DicomWebImportService, DicomWebSourceService],
 })
 export class AutoIngestionModule {}

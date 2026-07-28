@@ -253,7 +253,8 @@ export class ReconciliationService {
     specimenId: string | null,
   ) {
     const source = await this.sources.get(sourceId);
-    if (!source) {
+    if (!source || !source.rootPath) {
+      // A FILESYSTEM rootPath is required to reconstruct the object (a DICOMWEB source has none — P5C-C3).
       await this.fail(id, 'RECONCILE_SOURCE_UNAVAILABLE');
       throw new BadRequestException('the discovery source is no longer available');
     }

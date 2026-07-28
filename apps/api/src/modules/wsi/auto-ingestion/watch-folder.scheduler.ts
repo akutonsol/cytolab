@@ -52,7 +52,8 @@ export class WatchFolderScheduler implements OnApplicationBootstrap, OnModuleDes
       // System-scoped enumeration (cross-lab); the tenancy extension passes through in runSystem.
       const sources = await this.labContext.runSystem(() =>
         this.prisma.ingestionSource.findMany({
-          where: { enabled: true },
+          // FILESYSTEM only — a DICOMWEB source (P5C-C3) has no rootPath and is imported on demand, not polled.
+          where: { enabled: true, kind: 'FILESYSTEM' },
           select: { id: true, labId: true, rootPath: true, matchConfig: true },
         }),
       );
@@ -61,7 +62,7 @@ export class WatchFolderScheduler implements OnApplicationBootstrap, OnModuleDes
         this.inFlight.add(src.id);
         const run = this.execCtx
           .runJob({ jobName: 'wsi-watch-folder', labId: src.labId }, () =>
-            this.processor.processSource({ id: src.id, rootPath: src.rootPath, matchConfig: src.matchConfig }),
+            this.processor.processSource({ id: src.id, rootPath: src.rootPath ?? '', matchConfig: src.matchConfig }),
           )
           .catch((e) => this.logger.error(`watch-folder source ${src.id} failed: ${(e as Error)?.message}`))
           .finally(() => this.inFlight.delete(src.id));
