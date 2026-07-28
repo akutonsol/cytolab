@@ -64,6 +64,7 @@ export class SlideProcessingProcessor {
     const materialized = await this.materializer.materializeVerifiedSource({
       sourceObjectKey: ing.sourceObjectKey,
       expectedChecksum: ing.sourceChecksum,
+      sourceKind: ing.sourceKind, // P5C-C2 — the DICOM-aware materializer decodes only when this is 'DICOM'.
     });
     const engineOut = await fs.mkdtemp(path.join(os.tmpdir(), 'wsi-engine-out-'));
     // The worker runtime may supply an external abort signal (heartbeat-driven lease-loss); default to an
@@ -114,13 +115,13 @@ export class SlideProcessingProcessor {
   }
 
   private async loadVerifiedIngestion(ingestionId: string) {
-    const rows = await this.prisma.$queryRaw<{ slideId: string; sourceObjectKey: string | null; sourceChecksum: string | null }[]>`
-      SELECT "slideId", "sourceObjectKey", "sourceChecksum" FROM "SlideIngestion"
+    const rows = await this.prisma.$queryRaw<{ slideId: string; sourceObjectKey: string | null; sourceChecksum: string | null; sourceKind: string }[]>`
+      SELECT "slideId", "sourceObjectKey", "sourceChecksum", "sourceKind" FROM "SlideIngestion"
       WHERE id = ${ingestionId} AND status = 'VERIFIED'
     `;
     const r = rows[0];
     if (!r || !r.sourceObjectKey || !r.sourceChecksum) throw new Error('ingestion is not VERIFIED / has no source');
-    return { slideId: r.slideId, sourceObjectKey: r.sourceObjectKey, sourceChecksum: r.sourceChecksum };
+    return { slideId: r.slideId, sourceObjectKey: r.sourceObjectKey, sourceChecksum: r.sourceChecksum, sourceKind: r.sourceKind };
   }
 
   /**

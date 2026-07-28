@@ -99,6 +99,8 @@ async function main() {
     // RRECON2 (the record a seeded retryable FAILED discovery is matched to).
     const RRECON = await mkRecord(A.id, 'LN-A-RECON', `ID-${randomUUID().slice(0, 8)}`);
     const RRECON2 = await mkRecord(A.id, 'LN-A-RECON2', `ID-${randomUUID().slice(0, 8)}`);
+    // P5C-C2 — the record a DICOM WSI fixture (AccessionNumber 'ACC-DICOM-1') matches by exact labNumber.
+    const RDICOM = await mkRecord(A.id, 'ACC-DICOM-1', `ID-${randomUUID().slice(0, 8)}`);
 
     const srcA = await prisma.ingestionSource.create({ data: { labId: A.id, kind: 'FILESYSTEM', rootPath: rootA, enabled: true }, select: { id: true } });
     const srcB = await prisma.ingestionSource.create({ data: { labId: B.id, kind: 'FILESYSTEM', rootPath: rootB, enabled: true }, select: { id: true } });
@@ -148,7 +150,7 @@ async function main() {
 
     const fixtures = {
       labAId: A.id, labBId: B.id,
-      records: { RA, RB, RX, RY, RSTAB, RBB, RRECON, RRECON2 },
+      records: { RA, RB, RX, RY, RSTAB, RBB, RRECON, RRECON2, RDICOM },
       sources: { A: srcA.id, B: srcB.id, ADisabled: srcADisabled.id },
       roots: { A: rootA, B: rootB, outside },
       // ground truth the assertion checks

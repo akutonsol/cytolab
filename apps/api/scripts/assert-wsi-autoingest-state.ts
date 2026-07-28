@@ -134,7 +134,7 @@ async function main() {
     await runB4(prisma, fx, fails, ck);
 
     if (fails.length) { console.error('AUTO-INGEST ACCEPTANCE FAILURES:\n - ' + fails.join('\n - ')); process.exit(1); }
-    console.log('P5B-B2/B4/B5a AUTO-INGEST + RECONCILIATION + MONITORING ACCEPTANCE: all persisted-truth assertions passed.');
+    console.log('P5B-B2/B4/B5a + P5C-C2 AUTO-INGEST + RECONCILIATION + MONITORING + DICOM ACCEPTANCE: all persisted-truth assertions passed.');
   } finally {
     await prisma.$disconnect();
   }
@@ -291,6 +291,67 @@ async function runB4(prisma: PrismaClient, fx: any, fails: string[], ck: (c: boo
     ck(pub === 0, 'B5a READY monitoring never implies published (counted READY slides are unpublished)');
 
     console.log(`B5a monitoring: sources=${mon.sources.length} disc=${mon.totals.discoveries.total} backlog=${mon.totals.reconciliationBacklog} ready=${mon.totals.ready} procDone=${mon.totals.processing.SUCCEEDED}`);
+
+    // ── Program 5C · C2 — native DICOM WSI → accepted pipeline → real DZI → READY (drives the REAL service;
+    //    the primary API's worker + DICOM-aware materializer decode + tile it). ──
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { DicomIngestionService } = require('../src/modules/wsi/dicom/dicom-ingestion.service');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { generateDicomWsiBytes } = require('../src/modules/wsi/dicom/testing/dicom-wsi-fixture');
+    const dicom = app.get(DicomIngestionService);
+    const study = '1.2.826.0.1.3680043.2.9999.777';
+    const series = '1.2.826.0.1.3680043.2.9999.777.1';
+    const dcmBytes = generateDicomWsiBytes({ studyInstanceUID: study, seriesInstanceUID: series, sopInstanceUID: study + '.1.1', accessionNumber: 'ACC-DICOM-1', includePHI: true, totalPixelMatrix: 512, frameSize: 256 });
+    const nativeSha = require('node:crypto').createHash('sha256').update(dcmBytes).digest('hex');
+
+    const c2: any = await asA(() => dicom.ingestDicomWsi(dcmBytes, { filename: 'wsi.dcm' }));
+    ck(c2.outcome === 'INGESTED' && !!c2.slideId, `C2 native DICOM VALID+matched → INGESTED (got ${c2.outcome})`);
+    if (c2.outcome === 'INGESTED') {
+      const ing = await prisma.slideIngestion.findFirst({ where: { id: c2.ingestionId }, select: { sourceKind: true, status: true, sourceChecksum: true } });
+      ck(ing?.sourceKind === 'DICOM' && ing?.status === 'VERIFIED', `C2 SlideIngestion is DICOM/VERIFIED (got ${ing?.sourceKind}/${ing?.status})`);
+      ck(ing?.sourceChecksum === nativeSha, 'C2 ingestion sourceChecksum is the SHA-256 of the NATIVE DICOM bytes');
+      const slide = await prisma.digitalSlide.findFirst({ where: { id: c2.slideId }, select: { sourceKind: true, availabilityStatus: true, publishedGenerationId: true, recordId: true, objectivePower: true } });
+      ck(slide?.sourceKind === 'DICOM' && slide?.availabilityStatus === 'DRAFT' && slide?.publishedGenerationId === null, 'C2 slide is DICOM / DRAFT / unpublished');
+      ck(slide?.recordId === fx.records.RDICOM, 'C2 slide matched the exact accession record (no fabricated identity)');
+      ck(slide?.objectivePower === 20, 'C2 acquisition (objective power) mapped onto the existing DigitalSlide field');
+      const sdm: any = await prisma.slideDicomMetadata.findFirst({ where: { slideId: c2.slideId } });
+      ck(sdm?.studyInstanceUID === study && sdm?.seriesInstanceUID === series && sdm?.conformanceStatus === 'VALID', 'C2 SlideDicomMetadata persisted (series identity + VALID)');
+      ck(!JSON.stringify(sdm).includes('DOE^JANE') && !JSON.stringify(sdm).includes('PHI-PID-123') && !('patientName' in (sdm ?? {})), 'C2 SlideDicomMetadata persists NO PHI');
+
+      // Poll the real worker to READY (DICOM → decode → libvips DZI → sealed+verified), then prove unpublished.
+      let dgen: any = null;
+      const dl = Date.now() + 150_000;
+      while (Date.now() < dl) {
+        dgen = await prisma.derivativeGeneration.findFirst({ where: { slideId: c2.slideId }, orderBy: { createdAt: 'desc' } });
+        if (dgen && dgen.status === 'READY' && dgen.sealed && dgen.verified) break;
+        await sleep(3000);
+      }
+      ck(!!dgen && dgen.status === 'READY' && dgen.sealed && dgen.verified, `C2 DICOM slide reached READY via the real worker (got ${dgen?.status})`);
+      ck(dgen?.status !== 'PUBLISHED', 'C2 generation is NOT PUBLISHED (no auto-publish)');
+      const dslide = await prisma.digitalSlide.findFirst({ where: { id: c2.slideId }, select: { publishedGenerationId: true, availabilityStatus: true } });
+      ck(dslide?.publishedGenerationId === null && dslide?.availabilityStatus !== 'PUBLISHED', 'C2 READY DICOM slide remains unpublished (publishedGenerationId=null)');
+      if (dgen) {
+        const roles = (await prisma.slideAsset.findMany({ where: { generationId: dgen.id }, select: { role: true } })).map((a) => a.role);
+        ck(roles.includes('TILE_PYRAMID') && roles.includes('MANIFEST'), `C2 real DZI assets from the native DICOM (got [${roles.join(', ')}])`);
+      }
+    }
+
+    // Negative: a conformant-but-unsupported profile (MONOCHROME) → UNSUPPORTED, NO slide/ingestion.
+    const monoBytes = generateDicomWsiBytes({ studyInstanceUID: study + '.9', seriesInstanceUID: series + '.9', accessionNumber: 'ACC-DICOM-1', photometricInterpretation: 'MONOCHROME2', totalPixelMatrix: 128, frameSize: 64 });
+    const monoRes: any = await asA(() => dicom.ingestDicomWsi(monoBytes, { filename: 'mono.dcm' }));
+    ck(monoRes.outcome === 'UNSUPPORTED' && !monoRes.slideId, 'C2 unsupported profile → UNSUPPORTED, no slide');
+
+    // Duplicate series identity → DUPLICATE, no second DICOM slide.
+    const dupRes: any = await asA(() => dicom.ingestDicomWsi(dcmBytes, { filename: 'wsi-again.dcm' }));
+    ck(dupRes.outcome === 'DUPLICATE' && !dupRes.slideId, 'C2 duplicate Study+Series → DUPLICATE, no second slide');
+    ck((await prisma.slideDicomMetadata.count({ where: { studyInstanceUID: study, seriesInstanceUID: series } })) === 1, 'C2 exactly one SlideDicomMetadata for the series (no duplicate identity)');
+
+    // Tenant isolation: Lab B cannot match a Lab-A accession record → UNMATCHED, no slide.
+    const bBytes = generateDicomWsiBytes({ studyInstanceUID: study + '.2', seriesInstanceUID: series + '.2', accessionNumber: 'ACC-DICOM-1', totalPixelMatrix: 128, frameSize: 64 });
+    const bRes: any = await asB(() => dicom.ingestDicomWsi(bBytes, { filename: 'labB.dcm' }));
+    ck(bRes.outcome === 'UNMATCHED' && !bRes.slideId, 'C2 tenant isolation: Lab-B cannot match a Lab-A accession record');
+
+    console.log(`C2 dicom: outcome=${c2.outcome} slide=${c2.slideId ?? 'none'} mono=${monoRes.outcome} dup=${dupRes.outcome} labB=${bRes.outcome}`);
   } finally {
     await app.close().catch(() => undefined);
   }

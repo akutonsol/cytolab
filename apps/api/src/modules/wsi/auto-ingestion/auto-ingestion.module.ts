@@ -12,6 +12,7 @@ import { ReconciliationService } from './reconciliation.service';
 import { ReconciliationController } from './reconciliation.controller';
 import { IngestionMonitoringService } from './ingestion-monitoring.service';
 import { IngestionMonitoringController } from './ingestion-monitoring.controller';
+import { DicomIngestionService } from '../dicom/dicom-ingestion.service';
 import { WATCH_FOLDER_CONFIG, loadWatchFolderConfig } from './watch-folder-config';
 
 /**
@@ -44,7 +45,8 @@ import { WATCH_FOLDER_CONFIG, loadWatchFolderConfig } from './watch-folder-confi
     WatchFolderScheduler,
     ReconciliationService,
     IngestionMonitoringService,
+    DicomIngestionService, // P5C-C2 — server-owned native DICOM WSI intake into the accepted pipeline
   ],
-  exports: [IngestionSourceService, IngestionDiscoveryService, AccessionMatchResolver, AutomatedIngestionComposer, WatchFolderProcessor, ReconciliationService, IngestionMonitoringService],
+  exports: [IngestionSourceService, IngestionDiscoveryService, AccessionMatchResolver, AutomatedIngestionComposer, WatchFolderProcessor, ReconciliationService, IngestionMonitoringService, DicomIngestionService],
 })
 export class AutoIngestionModule {}

@@ -21,6 +21,9 @@ export interface SourceMaterializer {
   materializeVerifiedSource(input: {
     sourceObjectKey: string;
     expectedChecksum: string;
+    // P5C-C2 — optional intake provenance. The base 5A materializer ignores it; the DICOM-aware decorator
+    // uses it to decide whether to add the native-DICOM → working-image decode step. Absent = 5A behaviour.
+    sourceKind?: string;
   }): Promise<MaterializedSource>;
 }
 

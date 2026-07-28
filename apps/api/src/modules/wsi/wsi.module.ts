@@ -12,6 +12,7 @@ import { DERIVATIVE_OBJECT_STORE } from './storage/derivative-object-store';
 import { LocalDerivativeObjectStore } from './storage/local-derivative-object-store';
 import { SOURCE_MATERIALIZER } from './processing/source-materializer';
 import { LocalSourceMaterializer } from './processing/local-source-materializer';
+import { DicomAwareSourceMaterializer } from './dicom/dicom-source-materializer';
 import { SourceObjectStore } from './storage/source-object-store';
 import { TILING_ENGINE } from './processing/tiling-engine';
 import { FakeTilingEngine } from './processing/fake-tiling-engine';
@@ -63,11 +64,15 @@ import { SlidePublishService } from './publish/slide-publish.service';
     },
     {
       // P5-3B.1B: materialize a verified source into a private read-only working file for the engine.
+      // P5C-C2: wrapped in the DICOM-aware decorator — non-DICOM sources are byte-identical to 5A; a DICOM
+      // source additionally decodes the native object into a transient working image (no second pipeline).
       provide: SOURCE_MATERIALIZER,
       useFactory: (store: SourceObjectStore) =>
-        new LocalSourceMaterializer(
-          store,
-          process.env.WSI_MATERIALIZATION_DIR ?? path.join(os.tmpdir(), 'osieri-wsi-materialization'),
+        new DicomAwareSourceMaterializer(
+          new LocalSourceMaterializer(
+            store,
+            process.env.WSI_MATERIALIZATION_DIR ?? path.join(os.tmpdir(), 'osieri-wsi-materialization'),
+          ),
         ),
       inject: [SOURCE_OBJECT_STORE],
     },
