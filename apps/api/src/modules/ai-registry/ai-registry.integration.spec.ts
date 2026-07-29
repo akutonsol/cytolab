@@ -134,4 +134,28 @@ describeIf('P6-6A AI registry (integration)', () => {
     expect(slideRel?.type).toBe('DigitalSlide');
     expect(infFields.find((f) => f.name === 'subjectSlideId')?.isRequired).toBe(false);
   });
+
+  it('the inference SHELL is inert — no status/runtime/execution semantics in 6A', () => {
+    // No execution-state enum exists yet (6C owns runtime/queue/timing/completion/result design).
+    expect(Prisma.dmmf.datamodel.enums.find((e) => e.name === 'InferenceRecordStatus')).toBeUndefined();
+    const infFields = Prisma.dmmf.datamodel.models.find((x) => x.name === 'InferenceRecord')!.fields.map((f) => f.name);
+    const execish = /status|runtime|timing|latency|duration|started|finished|completed|result|output|prediction|confidence|score|progress/i;
+    expect(infFields.filter((f) => execish.test(f))).toEqual([]);
+    // 6A shell = identity + lab + model-version ref + optional slide ref + requestedAt + digest, nothing else.
+    expect(new Set(infFields)).toEqual(new Set(['id', 'recordUuid', 'labId', 'lab', 'modelVersionId', 'modelVersion', 'subjectSlideId', 'subjectSlide', 'inputDigest', 'requestedAt', 'createdAt']));
+  });
+
+  it('every provenance foreign key uses ON DELETE RESTRICT (immutable provenance, no silent null/cascade)', () => {
+    const restrictExpected: Record<string, string[]> = {
+      AiModelVersion: ['model'], // → AiModel
+      AiModelLifecycleEvent: ['modelVersion'], // → AiModelVersion
+      InferenceRecord: ['modelVersion', 'subjectSlide'], // → AiModelVersion, DigitalSlide (was SET NULL, now RESTRICT)
+    };
+    for (const [model, rels] of Object.entries(restrictExpected)) {
+      const fields = Prisma.dmmf.datamodel.models.find((x) => x.name === model)!.fields;
+      for (const rel of rels) {
+        expect(fields.find((f) => f.name === rel)?.relationOnDelete).toBe('Restrict');
+      }
+    }
+  });
 });

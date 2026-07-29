@@ -1092,12 +1092,6 @@ enum AiModelLifecycleState {
   RETIRED
 }
 
-// 6A inference-status SHELL. Only REQUESTED exists in 6A (no execution); 6C
-// extends this enum additively with runtime states.
-enum InferenceRecordStatus {
-  REQUESTED
-}
-
 // A logical clinical/image AI model in a lab's registry. `modelUuid` is the
 // permanent identity that never changes as key/displayName evolve.
 model AiModel {
@@ -1183,9 +1177,11 @@ model AiModelLifecycleEvent {
 }
 
 // Immutable inference-record SHELL (6A). Created so the architecture exists; it
-// is NEVER written in 6A (there is no execution). 6C adds runtime/timing fields
-// additively and the execution path that writes rows. Slides are referenced by
-// id ONLY — no PHI is copied.
+// is INERT in 6A — never written, with NO execution/status/runtime/timing/result
+// semantics (those are designed and added additively by the 6C preflight). Slides
+// are referenced by id ONLY — no PHI is copied. All provenance FKs are RESTRICT:
+// accepted inference provenance can never lose its subject/version reference via a
+// later deletion (no silent history mutation).
 model InferenceRecord {
   id             String         @id @default(cuid())
   recordUuid     String         @unique @default(uuid())
@@ -1194,12 +1190,11 @@ model InferenceRecord {
   modelVersionId String
   modelVersion   AiModelVersion @relation(fields: [modelVersionId], references: [id], onDelete: Restrict)
   subjectSlideId String? // reference ONLY to DigitalSlide (labId,id); no PHI copied
-  subjectSlide   DigitalSlide?  @relation(fields: [subjectSlideId], references: [id], onDelete: SetNull)
+  subjectSlide   DigitalSlide?  @relation(fields: [subjectSlideId], references: [id], onDelete: Restrict)
 
-  status      InferenceRecordStatus @default(REQUESTED)
   inputDigest String? // sha256 of a redacted/reference payload; proves input class w/o PHI
-  requestedAt DateTime              @default(now())
-  createdAt   DateTime              @default(now())
+  requestedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
 
   @@index([labId])
   @@index([labId, modelVersionId])

@@ -1,9 +1,6 @@
 -- CreateEnum
 CREATE TYPE "AiModelLifecycleState" AS ENUM ('DRAFT', 'VALIDATION', 'APPROVED', 'DEPRECATED', 'RETIRED');
 
--- CreateEnum
-CREATE TYPE "InferenceRecordStatus" AS ENUM ('REQUESTED');
-
 -- CreateTable
 CREATE TABLE "AiModel" (
     "id" TEXT NOT NULL,
@@ -65,7 +62,6 @@ CREATE TABLE "InferenceRecord" (
     "labId" TEXT NOT NULL,
     "modelVersionId" TEXT NOT NULL,
     "subjectSlideId" TEXT,
-    "status" "InferenceRecordStatus" NOT NULL DEFAULT 'REQUESTED',
     "inputDigest" TEXT,
     "requestedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -137,5 +133,5 @@ ALTER TABLE "InferenceRecord" ADD CONSTRAINT "InferenceRecord_labId_fkey" FOREIG
 ALTER TABLE "InferenceRecord" ADD CONSTRAINT "InferenceRecord_modelVersionId_fkey" FOREIGN KEY ("modelVersionId") REFERENCES "AiModelVersion"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "InferenceRecord" ADD CONSTRAINT "InferenceRecord_subjectSlideId_fkey" FOREIGN KEY ("subjectSlideId") REFERENCES "DigitalSlide"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "InferenceRecord" ADD CONSTRAINT "InferenceRecord_subjectSlideId_fkey" FOREIGN KEY ("subjectSlideId") REFERENCES "DigitalSlide"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
