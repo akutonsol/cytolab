@@ -81,6 +81,9 @@ jobs:
       - name: Focused AI-registry tests
         run: cd apps/api && npx jest src/modules/ai-registry --runInBand
 
+      - name: Reporting-service spec (executes the corrected 3-arg ReportsService construction)
+        run: cd apps/api && npx jest src/modules/reports/reports.service.spec.ts --runInBand
+
       - name: TypeScript (strict — any error fails the gate closed)
         run: cd apps/api && npx tsc --noEmit -p tsconfig.json
 
