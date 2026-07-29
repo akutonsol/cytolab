@@ -214,6 +214,10 @@ model Lab {
   ingestionDiscoveries    IngestionDiscovery[] // P5B-B1 — automated-ingestion intake records
   slideDicomMetadata      SlideDicomMetadata[] // P5C-C1 — DICOM WSI identity/conformance (tenant-scoped)
   ingestionSourceHealth   IngestionSourceHealth[] // P5C-C5 — per-source import-connection health snapshots
+  aiModels                AiModel[] // P6-6A — lab-scoped AI model registry
+  aiModelVersions         AiModelVersion[] // P6-6A — versioned AI model records
+  aiModelLifecycleEvents  AiModelLifecycleEvent[] // P6-6A — append-only lifecycle transitions
+  inferenceRecords        InferenceRecord[] // P6-6A — immutable inference-record shell (unpopulated until 6C)
   requisitionLines        RequisitionLine[]
   recordStatusEvents      RecordStatusEvent[]
   therapies               Therapy[]
@@ -1066,6 +1070,141 @@ enum AiDraftStatus {
   Rejected
   Superseded
 }
+
+// ============================================================================
+// Program 6 · Phase 6A — AI model registry, versioning & lifecycle governance.
+// ARCHITECTURE ONLY: a LAB-SCOPED clinical/image AI model registry, versioned
+// metadata with a PERMANENT immutable UUID identity, an append-only lifecycle
+// transition log, and an immutable InferenceRecord SHELL. There is NO image
+// inference / prediction / execution / queue / worker / runtime model call in
+// 6A (those arrive in 6C). This is a PARALLEL subsystem to the text-reporting
+// AiService/AiDraft path (which is untouched) and is unrelated to the simulated
+// AIScreeningResult (a Legacy Demonstration Component). No PHI is stored: slides
+// are referenced by id only; provenance is a digest/reference, never patient
+// data and never model weights/binaries.
+// ============================================================================
+
+enum AiModelLifecycleState {
+  DRAFT
+  VALIDATION
+  APPROVED
+  DEPRECATED
+  RETIRED
+}
+
+// 6A inference-status SHELL. Only REQUESTED exists in 6A (no execution); 6C
+// extends this enum additively with runtime states.
+enum InferenceRecordStatus {
+  REQUESTED
+}
+
+// A logical clinical/image AI model in a lab's registry. `modelUuid` is the
+// permanent identity that never changes as key/displayName evolve.
+model AiModel {
+  id          String   @id @default(cuid())
+  modelUuid   String   @unique @default(uuid())
+  labId       String
+  lab         Lab      @relation(fields: [labId], references: [id])
+  key         String // stable human slug (unique per lab)
+  displayName String
+  task        String // descriptive purpose — NEVER a clinical/diagnostic claim
+  description String?
+  createdById String? // actor; no FK so provenance survives user deletion
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  versions AiModelVersion[]
+
+  @@unique([labId, key])
+  @@index([labId])
+}
+
+// A versioned, lifecycle-bearing, provenance-bearing model version. Content and
+// provenance are immutable after creation; only `lifecycleState` transitions,
+// each recorded append-only in AiModelLifecycleEvent. `versionUuid` is the
+// permanent identity, independent of key/semver.
+model AiModelVersion {
+  id          String  @id @default(cuid())
+  versionUuid String  @unique @default(uuid())
+  labId       String
+  lab         Lab     @relation(fields: [labId], references: [id])
+  modelId     String
+  model       AiModel @relation(fields: [modelId], references: [id], onDelete: Restrict)
+
+  semverMajor Int
+  semverMinor Int
+  semverPatch Int
+
+  lifecycleState AiModelLifecycleState @default(DRAFT)
+
+  // Provenance — a REFERENCE/DIGEST only; never model weights/binaries, never PHI.
+  artifactDigest String? // sha256 of an artifact reference (not the artifact itself)
+  provenanceRef  String? // URI / opaque provenance reference; no PHI
+
+  createdById String? // actor; no FK
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Latest transition-into-state stamps (the append-only log is authoritative).
+  validatedAt  DateTime?
+  approvedAt   DateTime?
+  deprecatedAt DateTime?
+  retiredAt    DateTime?
+
+  lifecycleEvents  AiModelLifecycleEvent[]
+  inferenceRecords InferenceRecord[]
+
+  @@unique([labId, modelId, semverMajor, semverMinor, semverPatch])
+  @@index([labId])
+  @@index([labId, lifecycleState])
+  @@index([modelId])
+}
+
+// Append-only lifecycle transition log — the deterministic audit trail. Restrict
+// on delete (audit evidence, never a silent cascade). Rows of one transition
+// share `eventId`. No update/delete path in the application.
+model AiModelLifecycleEvent {
+  id             String         @id @default(cuid())
+  labId          String
+  lab            Lab            @relation(fields: [labId], references: [id])
+  modelVersionId String
+  modelVersion   AiModelVersion @relation(fields: [modelVersionId], references: [id], onDelete: Restrict)
+
+  fromState  AiModelLifecycleState
+  toState    AiModelLifecycleState
+  actorId    String? // actor; no FK
+  reason     String? // structured/plain justification; NEVER PHI
+  eventId    String // shared across the rows of one transition transaction
+  occurredAt DateTime @default(now())
+
+  @@index([labId])
+  @@index([labId, modelVersionId])
+  @@index([modelVersionId])
+}
+
+// Immutable inference-record SHELL (6A). Created so the architecture exists; it
+// is NEVER written in 6A (there is no execution). 6C adds runtime/timing fields
+// additively and the execution path that writes rows. Slides are referenced by
+// id ONLY — no PHI is copied.
+model InferenceRecord {
+  id             String         @id @default(cuid())
+  recordUuid     String         @unique @default(uuid())
+  labId          String
+  lab            Lab            @relation(fields: [labId], references: [id])
+  modelVersionId String
+  modelVersion   AiModelVersion @relation(fields: [modelVersionId], references: [id], onDelete: Restrict)
+  subjectSlideId String? // reference ONLY to DigitalSlide (labId,id); no PHI copied
+  subjectSlide   DigitalSlide?  @relation(fields: [subjectSlideId], references: [id], onDelete: SetNull)
+
+  status      InferenceRecordStatus @default(REQUESTED)
+  inputDigest String? // sha256 of a redacted/reference payload; proves input class w/o PHI
+  requestedAt DateTime              @default(now())
+  createdAt   DateTime              @default(now())
+
+  @@index([labId])
+  @@index([labId, modelVersionId])
+}
+
 
 // ---- Phase 4: Revenue ----
 // All monetary amounts are integers in minor units (cents). Currency is the
@@ -2817,6 +2956,7 @@ model DigitalSlide {
   annotations SlideAnnotation[]
   publications GenerationPublication[] // P5-4 — append-only publication provenance for this slide
   deliverySessions DeliverySession[] // P5-5 — short-lived authenticated viewing capabilities
+  inferenceRecords InferenceRecord[] // P6-6A — inference-record shell references (reference only; no PHI)
   dicomMetadata SlideDicomMetadata? // P5C-C1 — optional DICOM WSI identity/conformance (1:1; only DICOM-sourced slides)
 
   createdAt DateTime @default(now())

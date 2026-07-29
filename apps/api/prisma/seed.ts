@@ -68,6 +68,13 @@ export const SPECIAL_OBJECTS: Record<string, string[]> = {
   // record:change or wsi:review — reconciliation is an operational-integrity authority of its own, and it is
   // NOT system:ingestion (that stays reserved for B5 source administration).
   wsi: ['view', 'review', 'publish', 'reconcile'],
+  // P6-6A — AI model registry + lifecycle governance (clinical/image AI infrastructure; a PARALLEL subsystem to
+  // the text-reporting aidraft path, which is unchanged). view = read registry/versions; manage = create model/
+  // version + edit descriptive model metadata; promote = perform a lifecycle transition (incl. → APPROVED, the
+  // governance-critical action). Assigned to NO default role (byPrefix below never selects 'aimodel'); super
+  // roles reach it via the guard bypass. promote is deliberately distinct from manage. NOT reused for anything
+  // else, and unrelated to the simulated AIScreeningResult (a Legacy Demonstration Component).
+  aimodel: ['view', 'manage', 'promote'],
 };
 
 export interface SeedRoleDef {
