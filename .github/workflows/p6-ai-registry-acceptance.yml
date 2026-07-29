@@ -1,0 +1,107 @@
+# Program 6 · Phase 6A — AI model registry acceptance gate (folded, gated).
+#
+# Gated (workflow_dispatch only). Proves the AI-infrastructure ARCHITECTURE against PERSISTED DB truth on a fresh
+# checkout + isolated Postgres — NO faked state, NO inference execution (there is none in 6A):
+#   schema-from-datamodel → seed permission catalogue → seed two labs → drive the REAL AiRegistryService →
+#   assert catalogue + no-default-grant + tenancy + cross-lab fail-closed + per-lab key uniqueness + per-model
+#   semver uniqueness + permanent UUID identity + lifecycle (legal/illegal/concurrent/one-event/RETIRED-terminal)
+#   + promote≠manage + inert-&-empty InferenceRecord shell (no status/runtime/result semantics) + RESTRICT on
+#   every provenance FK + reporting-path (AiService/AiDraft) intact + AIScreeningResult unconnected. Then the
+#   focused AI-registry jest suite and a zero-error tsc. Every command fails the job closed.
+name: p6-ai-registry-acceptance
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: p6-ai-registry-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ai-registry-acceptance:
+    name: P6-6A AI model registry (gated)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cytolab_accept_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
+      DATABASE_MIGRATION_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
+      JWT_SECRET: 'ci-accept-jwt-secret-000000000000000000'
+      JWT_REFRESH_SECRET: ci-accept-refresh-secret
+      JWT_PORTAL_SECRET: 'ci-accept-jwt-portal-secret-00000000000000'
+      JWT_PORTAL_REFRESH_SECRET: ci-accept-portal-refresh-secret
+      ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
+      COOKIE_SECURE: 'false'
+      NODE_ENV: development
+      AI_INFRA_FIXTURES_OUT: /tmp/.ai-infra-fixtures.json
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Print & verify the checked-out commit (exact-head)
+        run: |
+          set -euo pipefail
+          echo "github.sha        = ${{ github.sha }}"
+          echo "git rev-parse HEAD = $(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}" || { echo "!! checkout SHA does not match github.sha"; exit 1; }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+
+      - run: npm ci
+
+      - name: Prisma generate
+        run: cd apps/api && npx prisma generate
+
+      - name: Build acceptance DB schema from the committed datamodel (folded-gate method; no migration introduced)
+        run: |
+          set -euo pipefail
+          cd apps/api
+          npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > /tmp/accept-schema.sql
+          npx prisma db execute --url "$DATABASE_URL" --file /tmp/accept-schema.sql
+
+      - name: Seed the permission catalogue + two isolated labs
+        run: |
+          set -euo pipefail
+          cd apps/api
+          npx prisma db seed
+          npx ts-node --transpile-only scripts/seed-ai-infra-acceptance.ts
+
+      - name: Persisted-state assertions (registry / lifecycle / tenancy / RESTRICT / inert shell)
+        run: cd apps/api && npx ts-node --transpile-only scripts/assert-ai-infra-state.ts
+
+      - name: Focused AI-registry tests
+        run: cd apps/api && npx jest src/modules/ai-registry --runInBand
+
+      - name: TypeScript (zero NEW/6A errors; one documented pre-existing baseline error excluded by design)
+        run: |
+          set -uo pipefail
+          cd apps/api
+          npx tsc --noEmit -p tsconfig.json 2>&1 | tee /tmp/tsc.txt || true
+          # The ONLY tolerated error is a PRE-EXISTING baseline defect, reproduced identically at the clean parent
+          # cf1da89 and entirely UNRELATED to Program 6: reports.service.spec.ts TS2554 — ReportsService gained a
+          # third constructor argument (audit) while the committed spec still passes two; the correction lives in
+          # unrelated uncommitted WIP and must not be made here. Every OTHER TypeScript error (including any 6A
+          # error) fails the gate closed.
+          KNOWN='src/modules/reports/reports.service.spec.ts(18,23): error TS2554'
+          OTHER="$(grep -E 'error TS' /tmp/tsc.txt | grep -vF "$KNOWN" || true)"
+          if [ -n "$OTHER" ]; then echo "!! unexpected TypeScript error(s) beyond the documented baseline defect:"; echo "$OTHER"; exit 1; fi
+          echo "TypeScript: no new/6A errors ($(grep -cE 'error TS' /tmp/tsc.txt || echo 0) total; only the documented pre-existing baseline error, reproduced at cf1da89, is present)."
+
+      - name: Collect artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p6-6a-ai-registry-acceptance
+          path: |
+            /tmp/.ai-infra-fixtures.json
+            /tmp/accept-schema.sql
+          if-no-files-found: ignore

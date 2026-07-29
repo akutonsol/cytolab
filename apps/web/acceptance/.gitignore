@@ -9,6 +9,7 @@
 .orchestration-fixtures.json
 .specimen-fixtures.json
 .autoingest-fixtures.json
+.ai-infra-fixtures.json
 .graph-fixtures.json
 .auth/
 .output/
