@@ -68,11 +68,23 @@ REQUIRED / REPOSITORY EVIDENCE REQUIRED) → explicit implementation authorizati
 annotated `p6-<phase>-accepted → <sha>` tag. Engineering, verification, and governance evidence stay distinct.
 
 ## 7. Evidence & provenance model
-- **Engineering:** implementation commits on a Program-6 feature branch (never `main`, never a frozen tag).
+- **Engineering:** implementation commits on the dedicated Program-6 branch **`feat/program-6-ai-foundation`**
+  (never `main`, never a frozen tag). Program 5 stays visually complete on `feat/legacy-etl`; the frozen `p5*`
+  tags remain the immutable reference regardless of branch. Program 6 branches from `feat/legacy-etl`'s tip so it
+  carries this charter + the 6A design of record.
 - **Verification:** authoritative exact-head CI per phase (a Program-6 acceptance workflow; reuse the folded-gate
   pattern where possible — no per-phase YAML churn if avoidable).
-- **Governance:** per-phase closeouts + a Program 6 master closeout + this charter; an immutable
-  `p6-*-accepted` tag chain analogous to `p5c-*-accepted`.
+- **Governance:** per-phase closeouts + a Program 6 master closeout + this charter; an immutable accepted-tag chain.
+
+### 7.1 Accepted-tag naming convention (canonical)
+Program-6 phase-acceptance tags use **`p6-<phase>-accepted`**, mirroring the Program 5 (`p5c-c*-accepted`)
+convention and scaling to multi-sub-phase programmes:
+```
+p6-6a-accepted   p6-6b-accepted   p6-6c-accepted   p6-6d-accepted
+p6-6e-accepted   p6-6f-accepted   p6-6g-accepted   p6-6h-accepted
+```
+Each is an **annotated** tag on the exact accepted head, created only **after** that phase's authoritative CI is
+GREEN — never on a design or a red run. A Program-6 master-closeout tag may follow the final phase.
 
 ## 8. What this charter does NOT do
 It authorizes no engineering, schema, migration, dependency, permission, workflow, or runtime change. It is a
