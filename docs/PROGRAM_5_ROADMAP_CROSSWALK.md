@@ -71,8 +71,15 @@ narrow closeout doc; §13 remains authoritative for the definition of each check
 | **P5-8** Asset-graph search & navigation | **Accepted** | `p5-8-accepted` → `c360a19` |
 | **P5-9** Phase-1 validation & closeout | **Accepted** | `p5-9-accepted` / `program-5a-phase1-accepted` (see [`PROGRAM_5A_PHASE1_CLOSEOUT.md`](./PROGRAM_5A_PHASE1_CLOSEOUT.md)) |
 
-**Program 5A / Phase 1 is complete** at this record. Full **Program 5** additionally requires **Program 5B**
-(automated ingestion) and **Program 5C** (scanner & DICOM WSI), both of which remain **future work**.
+**Program 5A / Phase 1 is complete** at this record. Full **Program 5** additionally required **Program 5B**
+(automated ingestion) and **Program 5C** (scanner & DICOM WSI). Both are now **complete, accepted, and frozen**:
+
+- **Program 5B** — Automated ingestion — **Accepted** · `p5b-accepted` → `f20d4a9`
+  (stages B2/B4/B5-a; see [`PROGRAM_5B_CLOSEOUT.md`](./PROGRAM_5B_CLOSEOUT.md)).
+- **Program 5C** — Scanner & DICOM WSI — **Accepted / Frozen** · stages C1–C6
+  (`p5c-c1-accepted → 3d476d7`, `p5c-c2-accepted → 7e2a657`, `p5c-c3-accepted → bf0455d`,
+  `p5c-c4-accepted → 628a1f1`, `p5c-c5-accepted → d895738`, `p5c-c6-accepted → 03215ec`;
+  master record [`PROGRAM_5C_CLOSEOUT.md`](./PROGRAM_5C_CLOSEOUT.md)).
 
 > Historical note: an earlier line 58–61 of this table (pre-P5-9) recorded P5-4/P5-5/P5-6 as *Unopened* and
 > P5-7 as *Partial* — the shipping state at that earlier writing. That is superseded by the accepted status
