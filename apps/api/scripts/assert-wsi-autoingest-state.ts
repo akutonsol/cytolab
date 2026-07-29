@@ -134,7 +134,7 @@ async function main() {
     await runB4(prisma, fx, fails, ck);
 
     if (fails.length) { console.error('AUTO-INGEST ACCEPTANCE FAILURES:\n - ' + fails.join('\n - ')); process.exit(1); }
-    console.log('P5B-B2/B4/B5a + P5C-C2/C3/C4/C5 AUTO-INGEST + RECONCILIATION + MONITORING + DICOM + DICOMWEB + SCANNER + HEALTH ACCEPTANCE: all persisted-truth assertions passed.');
+    console.log('P5B-B2/B4/B5a + P5C-C2/C3/C4/C5/C6 AUTO-INGEST + RECONCILIATION + MONITORING + DICOM + DICOMWEB + SCANNER + HEALTH + INTEROP ACCEPTANCE: all persisted-truth assertions passed.');
   } finally {
     await prisma.$disconnect();
   }
@@ -561,6 +561,135 @@ async function runB4(prisma: PrismaClient, fx: any, fails: string[], ck: (c: boo
       nodeFs.rmSync(scanRoot, { recursive: true, force: true });
       nodeFs.rmSync(missRoot, { recursive: true, force: true });
       console.log(`C5 health: fs=${fsHealthy.state} miss=${miss1.state}->${miss2.state} web=${webHealthy.state} auth=${webAuth.state} ssrf=${webSsrf.state}`);
+
+      // ── Program 5C · C6 — conformance & cross-vendor interoperability over the FROZEN C1–C5 pipeline. Two
+      //    independently-constructed conformant fixtures traverse BOTH accepted transports to READY-unpublished;
+      //    identical bytes across separate labs prove transport-independent truth; the negative matrix proves
+      //    truthful UNSUPPORTED classification with no processing side effect. No new runtime capability. ──
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { generateDicomWsiBytesB, generateDicomWsiNegative } = require('../src/modules/wsi/dicom/testing/dicom-wsi-fixture-b');
+      const nodePath = require('node:path');
+      const sha6 = (b: Buffer) => require('node:crypto').createHash('sha256').update(b).digest('hex');
+      const pollReady = async (slideId: string) => {
+        const dl = Date.now() + 150_000; let g: any = null;
+        while (Date.now() < dl) { g = await prisma.derivativeGeneration.findFirst({ where: { slideId }, orderBy: { createdAt: 'desc' } }); if (g && g.status === 'READY' && g.sealed && g.verified) break; await sleep(3000); }
+        return g;
+      };
+      const dziOk = async (slideId: string, gen: any, label: string) => {
+        ck(!!gen && gen.status === 'READY' && gen.sealed && gen.verified, `C6 ${label}: generation READY + sealed + verified (got ${gen?.status})`);
+        if (!gen) return;
+        ck((gen.tiledWidth ?? 0) > 0 && (gen.tiledHeight ?? 0) > 0 && (gen.tileSize ?? 0) > 0 && (gen.levelCount ?? 0) > 0, `C6 ${label}: DZI dimensions/tileSize/levelCount present`);
+        const roles = (await prisma.slideAsset.findMany({ where: { generationId: gen.id }, select: { role: true } })).map((a) => a.role);
+        ck(roles.includes('DZI_DESCRIPTOR') && roles.includes('TILE_PYRAMID') && roles.includes('MANIFEST'), `C6 ${label}: DZI descriptor + tile pyramid + manifest present (got [${roles.join(',')}])`);
+        const tiles = await prisma.slideAsset.count({ where: { generationId: gen.id, role: 'TILE_PYRAMID' } });
+        ck(tiles > 0, `C6 ${label}: non-zero tile-pyramid asset`);
+        const sl = await prisma.digitalSlide.findFirst({ where: { id: slideId }, select: { publishedGenerationId: true, availabilityStatus: true } });
+        ck(sl?.publishedGenerationId === null && sl?.availabilityStatus !== 'PUBLISHED', `C6 ${label}: READY but NOT PUBLISHED (no auto-publish)`);
+      };
+
+      // Fixture A (accession ACC-C6-A) + INDEPENDENT Fixture B (accession ACC-C6-B) — both in-profile, tileable.
+      const c6aStudy = '1.2.826.0.1.3680043.2.9999.661', c6aSeries = c6aStudy + '.1', c6aSop = c6aSeries + '.1';
+      const c6bStudy = '1.2.826.0.1.3680043.2.9999.8888.662', c6bSeries = c6bStudy + '.1', c6bSop = c6bSeries + '.1';
+      const c6aBytes: Buffer = generateDicomWsiBytes({ studyInstanceUID: c6aStudy, seriesInstanceUID: c6aSeries, sopInstanceUID: c6aSop, accessionNumber: 'ACC-C6-A', includePHI: true, totalPixelMatrix: 512, frameSize: 256 });
+      const c6bBytes: Buffer = generateDicomWsiBytesB({ studyInstanceUID: c6bStudy, seriesInstanceUID: c6bSeries, sopInstanceUID: c6bSop, accessionNumber: 'ACC-C6-B', totalPixelMatrix: 512, frameSize: 256 });
+      const c6aSha = sha6(c6aBytes), c6bSha = sha6(c6bBytes);
+      ck(c6aSha !== c6bSha, 'C6 Fixture A and B are byte-different (distinct native SHA-256)');
+      const WSI_SOP6 = '1.2.840.10008.5.1.4.1.1.77.1.6';
+
+      const c6mock = await startMockDicomWebServer({
+        bearerToken: 'secret-token',
+        instances: [
+          { studyInstanceUID: c6aStudy, seriesInstanceUID: c6aSeries, sopInstanceUID: c6aSop, sopClassUID: WSI_SOP6, bytes: c6aBytes },
+          { studyInstanceUID: c6bStudy, seriesInstanceUID: c6bSeries, sopInstanceUID: c6bSop, sopClassUID: WSI_SOP6, bytes: c6bBytes },
+        ],
+      });
+      try {
+        // (1) Lab A FILESYSTEM_DICOM delivery of A and B (mtime-backdated so completeness passes).
+        const c6ScanRoot = nodeFs.mkdtempSync(nodePath.join(nodeOs.tmpdir(), 'c6-scan-'));
+        nodeFs.writeFileSync(nodePath.join(c6ScanRoot, 'c6a.dcm'), c6aBytes);
+        nodeFs.writeFileSync(nodePath.join(c6ScanRoot, 'c6b.dcm'), c6bBytes);
+        const c6old = new Date(Date.now() - 3_600_000);
+        nodeFs.utimesSync(nodePath.join(c6ScanRoot, 'c6a.dcm'), c6old, c6old);
+        nodeFs.utimesSync(nodePath.join(c6ScanRoot, 'c6b.dcm'), c6old, c6old);
+        const c6fsSrc: any = await asA(() => srcSvc.create({ rootPath: c6ScanRoot, adapterType: 'FILESYSTEM_DICOM' }));
+        const c6fsRun: any = await asA(() => router.runSource(c6fsSrc.id));
+        const rAfs = c6fsRun.results.find((r: any) => r.sourceRef === 'c6a.dcm');
+        const rBfs = c6fsRun.results.find((r: any) => r.sourceRef === 'c6b.dcm');
+        ck(rAfs?.outcome === 'INGESTED' && !!rAfs?.slideId, `C6 Fixture A via FILESYSTEM_DICOM → INGESTED (got ${rAfs?.outcome})`);
+        ck(rBfs?.outcome === 'INGESTED' && !!rBfs?.slideId, `C6 Fixture B via FILESYSTEM_DICOM → INGESTED (got ${rBfs?.outcome})`);
+
+        // (2) Lab B DICOMWEB delivery of A and B — a SEPARATE lab, so IDENTICAL bytes ingest (not identity-deduped).
+        const c6webSrcB: any = await asB(() => dwSources.create({ endpointBaseUrl: c6mock.baseUrl, authType: 'BEARER', credential: 'secret-token' }));
+        const impAwebB: any = await asB(() => importer.importSeries({ sourceId: c6webSrcB.id, studyInstanceUID: c6aStudy, seriesInstanceUID: c6aSeries }));
+        const impBwebB: any = await asB(() => importer.importSeries({ sourceId: c6webSrcB.id, studyInstanceUID: c6bStudy, seriesInstanceUID: c6bSeries }));
+        ck(impAwebB.outcome === 'INGESTED' && !!impAwebB.slideId, `C6 Fixture A via DICOMWEB (Lab B) → INGESTED (got ${impAwebB.outcome} ${impAwebB.error?.code ?? ''})`);
+        ck(impBwebB.outcome === 'INGESTED' && !!impBwebB.slideId, `C6 Fixture B via DICOMWEB (Lab B) → INGESTED (got ${impBwebB.outcome} ${impBwebB.error?.code ?? ''})`);
+
+        // (3) Cross-transport equivalence (two labs, identical bytes) — transport-independent truth equal.
+        const ingAfs: any = await prisma.slideIngestion.findFirst({ where: { slideId: rAfs.slideId }, select: { sourceChecksum: true, sourceKind: true, labId: true } });
+        const ingAweb: any = await prisma.slideIngestion.findFirst({ where: { slideId: impAwebB.slideId }, select: { sourceChecksum: true, sourceKind: true, labId: true } });
+        ck(ingAfs?.sourceChecksum === c6aSha && ingAweb?.sourceChecksum === c6aSha, 'C6 cross-transport A: native SHA-256 equal across FILESYSTEM_DICOM and DICOMWEB');
+        ck(ingAfs?.sourceKind === 'DICOM' && ingAweb?.sourceKind === 'DICOM', 'C6 cross-transport A: both provenance DICOM');
+        const sdmAfs: any = await prisma.slideDicomMetadata.findFirst({ where: { slideId: rAfs.slideId } });
+        const sdmAweb: any = await prisma.slideDicomMetadata.findFirst({ where: { slideId: impAwebB.slideId } });
+        ck(sdmAfs?.studyInstanceUID === sdmAweb?.studyInstanceUID && sdmAfs?.seriesInstanceUID === sdmAweb?.seriesInstanceUID && sdmAfs?.sopClassUID === sdmAweb?.sopClassUID && sdmAfs?.transferSyntaxUID === sdmAweb?.transferSyntaxUID, 'C6 cross-transport A: DICOM identity + allowlist metadata equal');
+        ck(sdmAfs?.conformanceStatus === 'VALID' && sdmAweb?.conformanceStatus === 'VALID', 'C6 cross-transport A: conformance status VALID on both');
+        ck(sdmAfs?.labId === fx.labAId && sdmAweb?.labId === fx.labBId && sdmAfs?.labId !== sdmAweb?.labId, 'C6 cross-transport A: different tenant (source/discovery identity differs, clinical truth equal)');
+
+        // (4) Same-lab identity dedup — re-delivering the SAME Study/Series into Lab A → DUPLICATE, no 2nd identity.
+        const c6webSrcA: any = await asA(() => dwSources.create({ endpointBaseUrl: c6mock.baseUrl.replace('127.0.0.1', 'localhost'), authType: 'BEARER', credential: 'secret-token' }));
+        const dedupA: any = await asA(() => importer.importSeries({ sourceId: c6webSrcA.id, studyInstanceUID: c6aStudy, seriesInstanceUID: c6aSeries }));
+        ck(dedupA.outcome === 'DUPLICATE' && !dedupA.slideId, `C6 same-lab identity dedup: same Study/Series in one lab → DUPLICATE (got ${dedupA.outcome})`);
+        ck((await prisma.slideDicomMetadata.count({ where: { labId: fx.labAId, studyInstanceUID: c6aStudy, seriesInstanceUID: c6aSeries } })) === 1, 'C6 exactly one Lab-A identity for Fixture A (no second clinical identity)');
+
+        // (5) Byte-different fixtures are NOT collapsed as duplicates (distinct slides + identities).
+        ck(rAfs.slideId !== rBfs.slideId, 'C6 byte-different A/B are distinct slides (not checksum-collapsed)');
+        ck((await prisma.slideDicomMetadata.count({ where: { labId: fx.labAId, seriesInstanceUID: { in: [c6aSeries, c6bSeries] } } })) === 2, 'C6 A and B persist as two distinct identities in Lab A');
+
+        // (6) Private-tag + vendor + PHI never persisted (Fixture B carries all three in native bytes).
+        const sdmBfs: any = await prisma.slideDicomMetadata.findFirst({ where: { slideId: rBfs.slideId } });
+        const bj = JSON.stringify(sdmBfs);
+        ck(!bj.includes('osieri-b-private') && !bj.includes('OSIERI Synthetic') && !bj.includes('VirtualScope') && !bj.includes('ROE^RICHARD'), 'C6 Fixture B: private tag / vendor metadata / PHI NOT persisted in SlideDicomMetadata');
+
+        // (7) Real libvips DZI invariants for all four positive paths + READY-not-PUBLISHED.
+        const [gAfs, gAweb, gBfs, gBweb] = await Promise.all([pollReady(rAfs.slideId), pollReady(impAwebB.slideId), pollReady(rBfs.slideId), pollReady(impBwebB.slideId)]);
+        await dziOk(rAfs.slideId, gAfs, 'A/filesystem');
+        await dziOk(impAwebB.slideId, gAweb, 'A/dicomweb');
+        await dziOk(rBfs.slideId, gBfs, 'B/filesystem');
+        await dziOk(impBwebB.slideId, gBweb, 'B/dicomweb');
+        // (8) No vendor branch — A (NO vendor tags) and B (fictional vendor tags) both reach READY on the same path.
+        ck(gAfs?.status === 'READY' && gBfs?.status === 'READY', 'C6 no vendor branch: A (no vendor) and B (fictional vendor) processed identically to READY');
+
+        // (9) Negative matrix (live) — truthful classification, NO processing side effect.
+        const slidesBefore = await prisma.digitalSlide.count({ where: { labId: fx.labAId } });
+        const negBase = '1.2.826.0.1.3680043.2.9999.663';
+        const negatives: Array<[string, Buffer, string]> = [
+          ['wrong-SOP', generateDicomWsiNegative('WRONG_SOP', { studyInstanceUID: negBase + '.1', seriesInstanceUID: negBase + '.1.1', sopInstanceUID: negBase + '.1.1.1', accessionNumber: 'ACC-C6-A' }), 'UNSUPPORTED'],
+          ['bit-depth', generateDicomWsiNegative('BITDEPTH16', { studyInstanceUID: negBase + '.2', seriesInstanceUID: negBase + '.2.1', sopInstanceUID: negBase + '.2.1.1', accessionNumber: 'ACC-C6-A' }), 'UNSUPPORTED'],
+          ['tiled-sparse', generateDicomWsiNegative('TILED_SPARSE', { studyInstanceUID: negBase + '.3', seriesInstanceUID: negBase + '.3.1', sopInstanceUID: negBase + '.3.1.1', accessionNumber: 'ACC-C6-A' }), 'UNSUPPORTED'],
+          ['multi-optical-path', generateDicomWsiNegative('MULTI_OPTICAL_PATH', { studyInstanceUID: negBase + '.4', seriesInstanceUID: negBase + '.4.1', sopInstanceUID: negBase + '.4.1.1', accessionNumber: 'ACC-C6-A' }), 'UNSUPPORTED'],
+          ['monochrome', generateDicomWsiBytes({ studyInstanceUID: negBase + '.5', seriesInstanceUID: negBase + '.5.1', sopInstanceUID: negBase + '.5.1.1', accessionNumber: 'ACC-C6-A', photometricInterpretation: 'MONOCHROME2', totalPixelMatrix: 128, frameSize: 64 }), 'UNSUPPORTED'],
+        ];
+        let negOk = 0;
+        for (const [label, bytes, expected] of negatives) {
+          const r: any = await asA(() => dicom.ingestDicomWsi(bytes, { filename: label + '.dcm' }));
+          ck(r.outcome === expected && !r.slideId && !r.ingestionId, `C6 negative ${label} → ${expected}, no slide/ingestion (got ${r.outcome})`);
+          if (r.outcome === expected && !r.slideId) negOk++;
+        }
+        ck((await prisma.digitalSlide.count({ where: { labId: fx.labAId } })) === slidesBefore, 'C6 negatives create NO slide (no processing side effect)');
+
+        // (10) C5 independence — health checks remain read-only and side-effect-free through the C6 fixtures.
+        const c6DiscBefore = await prisma.ingestionDiscovery.count({ where: { sourceId: c6fsSrc.id } });
+        const c6HealthWeb: any = await asB(() => healthSvc.checkSource(c6webSrcB.id, { manual: true }));
+        const c6HealthFs: any = await asA(() => healthSvc.checkSource(c6fsSrc.id, { manual: true }));
+        ck(c6HealthWeb.state === 'HEALTHY' && c6HealthFs.state === 'HEALTHY', `C6 C5-independence: health checks over C6 sources are HEALTHY (web=${c6HealthWeb.state} fs=${c6HealthFs.state})`);
+        ck((await prisma.ingestionDiscovery.count({ where: { sourceId: c6fsSrc.id } })) === c6DiscBefore, 'C6 C5-independence: health checks created NO discovery (read-only)');
+
+        nodeFs.rmSync(c6ScanRoot, { recursive: true, force: true });
+        console.log(`C6 interop: Afs=${rAfs?.outcome} Aweb=${impAwebB.outcome} Bfs=${rBfs?.outcome} Bweb=${impBwebB.outcome} dedup=${dedupA.outcome} shaEq=${ingAfs?.sourceChecksum === ingAweb?.sourceChecksum} negatives=${negOk}/${negatives.length} dziA=${gAfs?.status} dziB=${gBfs?.status}`);
+      } finally {
+        await c6mock.close().catch(() => undefined);
+      }
     } finally {
       await mock.close().catch(() => undefined);
     }

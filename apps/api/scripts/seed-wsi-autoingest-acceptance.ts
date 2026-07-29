@@ -101,6 +101,15 @@ async function main() {
     const RRECON2 = await mkRecord(A.id, 'LN-A-RECON2', `ID-${randomUUID().slice(0, 8)}`);
     // P5C-C2 — the record a DICOM WSI fixture (AccessionNumber 'ACC-DICOM-1') matches by exact labNumber.
     const RDICOM = await mkRecord(A.id, 'ACC-DICOM-1', `ID-${randomUUID().slice(0, 8)}`);
+    // P5C-C6 — cross-transport interoperability records. Fixture A (ACC-C6-A) + Fixture B (ACC-C6-B) each have a
+    // matching record in BOTH labs, so IDENTICAL native bytes can be delivered via FILESYSTEM_DICOM in Lab A and
+    // via DICOMWEB in Lab B and both INGEST (identical bytes ⇒ identical Study/Series ⇒ same-lab identity dedup,
+    // hence separate labs for the byte-equivalence proof). ACC-DICOM-1 is deliberately NOT added to Lab B, so the
+    // existing C2/C3 Lab-B tenant-isolation (ACC-DICOM-1 → UNMATCHED) is unaffected.
+    const RC6A = await mkRecord(A.id, 'ACC-C6-A', `ID-${randomUUID().slice(0, 8)}`);
+    const RC6B = await mkRecord(A.id, 'ACC-C6-B', `ID-${randomUUID().slice(0, 8)}`);
+    const RC6A_B = await mkRecord(B.id, 'ACC-C6-A', `ID-${randomUUID().slice(0, 8)}`);
+    const RC6B_B = await mkRecord(B.id, 'ACC-C6-B', `ID-${randomUUID().slice(0, 8)}`);
 
     const srcA = await prisma.ingestionSource.create({ data: { labId: A.id, kind: 'FILESYSTEM', rootPath: rootA, enabled: true }, select: { id: true } });
     const srcB = await prisma.ingestionSource.create({ data: { labId: B.id, kind: 'FILESYSTEM', rootPath: rootB, enabled: true }, select: { id: true } });
@@ -150,7 +159,7 @@ async function main() {
 
     const fixtures = {
       labAId: A.id, labBId: B.id,
-      records: { RA, RB, RX, RY, RSTAB, RBB, RRECON, RRECON2, RDICOM },
+      records: { RA, RB, RX, RY, RSTAB, RBB, RRECON, RRECON2, RDICOM, RC6A, RC6B, RC6A_B, RC6B_B },
       sources: { A: srcA.id, B: srcB.id, ADisabled: srcADisabled.id },
       roots: { A: rootA, B: rootB, outside },
       // ground truth the assertion checks
