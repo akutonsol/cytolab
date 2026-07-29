@@ -81,20 +81,8 @@ jobs:
       - name: Focused AI-registry tests
         run: cd apps/api && npx jest src/modules/ai-registry --runInBand
 
-      - name: TypeScript (zero NEW/6A errors; one documented pre-existing baseline error excluded by design)
-        run: |
-          set -uo pipefail
-          cd apps/api
-          npx tsc --noEmit -p tsconfig.json 2>&1 | tee /tmp/tsc.txt || true
-          # The ONLY tolerated error is a PRE-EXISTING baseline defect, reproduced identically at the clean parent
-          # cf1da89 and entirely UNRELATED to Program 6: reports.service.spec.ts TS2554 — ReportsService gained a
-          # third constructor argument (audit) while the committed spec still passes two; the correction lives in
-          # unrelated uncommitted WIP and must not be made here. Every OTHER TypeScript error (including any 6A
-          # error) fails the gate closed.
-          KNOWN='src/modules/reports/reports.service.spec.ts(18,23): error TS2554'
-          OTHER="$(grep -E 'error TS' /tmp/tsc.txt | grep -vF "$KNOWN" || true)"
-          if [ -n "$OTHER" ]; then echo "!! unexpected TypeScript error(s) beyond the documented baseline defect:"; echo "$OTHER"; exit 1; fi
-          echo "TypeScript: no new/6A errors ($(grep -cE 'error TS' /tmp/tsc.txt || echo 0) total; only the documented pre-existing baseline error, reproduced at cf1da89, is present)."
+      - name: TypeScript (strict — any error fails the gate closed)
+        run: cd apps/api && npx tsc --noEmit -p tsconfig.json
 
       - name: Collect artifacts
         if: always()

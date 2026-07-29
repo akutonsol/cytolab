@@ -15,7 +15,7 @@ describe('ReportsService.renderForRecord — authorization gate', () => {
     const prisma = { resultSheet: { findFirst } } as unknown as PrismaService;
     const pdf = new ReportPdfService();
     const renderSpy = jest.spyOn(pdf, 'render');
-    return { service: new ReportsService(prisma, pdf), renderSpy };
+    return { service: new ReportsService(prisma, pdf, { recordPhiRead: async () => {} } as any), renderSpy };
   }
 
   const authorizedSheet = {
