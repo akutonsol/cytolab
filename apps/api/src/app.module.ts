@@ -68,6 +68,7 @@ import { AiRegistryModule } from './modules/ai-registry/ai-registry.module';
 import { DatasetGovernanceModule } from './modules/dataset-governance/dataset-governance.module';
 import { InferenceEngineModule } from './modules/inference-engine/inference-engine.module';
 import { ExplainabilityModule } from './modules/explainability/explainability.module';
+import { HumanReviewModule } from './modules/human-review/human-review.module';
 import { TeleconsultModule } from './modules/teleconsult/teleconsult.module';
 import { CodingModule } from './modules/coding/coding.module';
 import { FhirModule } from './modules/fhir/fhir.module';
@@ -173,6 +174,7 @@ import { ScreeningBatchesModule } from './modules/screening-batches/screening-ba
     DatasetGovernanceModule, // Program 6 · Phase 6B — dataset governance (no inference/training/validation)
     InferenceEngineModule, // Program 6 · Phase 6C — inference execution engine (orchestration only; adapter interface + deterministic stub)
     ExplainabilityModule, // Program 6 · Phase 6D — explainability artifacts (assists, never asserts correctness; generator interface + deterministic stub)
+    HumanReviewModule, // Program 6 · Phase 6E — human review workflow (the human owns the diagnosis; separate from clinical sign-out)
     TeleconsultModule,
     CodingModule,
     FhirModule,

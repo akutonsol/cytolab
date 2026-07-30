@@ -224,6 +224,10 @@ model Lab {
   explainabilityArtifacts     ExplainabilityArtifact[] // P6-6D — immutable explainability artifacts
   explainabilityRegions       ExplainabilityRegion[] // P6-6D — explainability feature-region geometry
   explainabilityProbabilities ExplainabilityProbability[] // P6-6D — explainability probability-distribution entries
+  humanReviewRequests         HumanReviewRequest[] // P6-6E — human-review workflow requests
+  humanReviewDecisions        HumanReviewDecision[] // P6-6E — immutable human-review decisions
+  humanReviewModifiedFindings HumanReviewModifiedFinding[] // P6-6E — structured MODIFY findings
+  humanReviewRequestEvents    HumanReviewRequestEvent[] // P6-6E — append-only request-state audit
   datasets                    Dataset[] // P6-6B — governed datasets
   datasetVersions             DatasetVersion[] // P6-6B — immutable dataset versions
   datasetSlides               DatasetSlide[] // P6-6B — dataset membership (slide refs)
@@ -451,6 +455,8 @@ model User {
   workforceNotifications  WorkforceNotification[]     @relation("WorkforceNotificationRecipient")
   payrollPeriodsProcessed PayrollPeriod[]             @relation("PayrollPeriodProcessor")
   performanceReviewsGiven PerformanceReview[]         @relation("PerformanceReviewer")
+  humanReviewsSubmitted   HumanReviewDecision[]       @relation("HumanReviewReviewer") // P6-6E — decisions this human authored
+  humanReviewsAssigned    HumanReviewRequest[]        @relation("HumanReviewAssignee") // P6-6E — review requests assigned to this human
   // Enterprise security (Phase 1) — password lifecycle, MFA, login protection.
   passwordChangedAt       DateTime?
   passwordExpiresAt       DateTime?
@@ -1237,6 +1243,10 @@ model InferenceRecord {
   explainabilityGenerations ExplainabilityGeneration[]
   explainabilityArtifacts   ExplainabilityArtifact[]
 
+  // P6-6E — downstream human-review evidence (reference only; never mutates this record).
+  humanReviewRequests  HumanReviewRequest[]
+  humanReviewDecisions HumanReviewDecision[]
+
   @@index([labId])
   @@index([labId, modelVersionId])
   @@index([jobId])
@@ -1392,6 +1402,9 @@ model ExplainabilityGeneration {
 
   artifacts ExplainabilityArtifact[]
 
+  // P6-6E — human-review decisions that (optionally) consulted this generation (reference only; RESTRICT).
+  humanReviewDecisions HumanReviewDecision[]
+
   @@index([labId])
   @@index([labId, inferenceRecordId])
   @@index([inferenceRecordId])
@@ -1476,6 +1489,147 @@ model ExplainabilityProbability {
   @@index([labId])
   @@index([labId, artifactId])
   @@index([artifactId])
+}
+
+// ============================================================================
+// Program 6 · Phase 6E — HUMAN REVIEW WORKFLOW (the human owns the diagnosis).
+// A governed human-decision EVIDENCE layer over a completed (SUCCEEDED) 6C
+// InferenceRecord — SEPARATE from, and never modifying, the authoritative clinical
+// sign-out (ResultSheet/Record/AiDraft). A mutable HumanReviewRequest carries
+// operational routing (PENDING→ASSIGNED→COMPLETED→CANCELLED); the immutable
+// append-only HumanReviewDecision rows carry the human's ACCEPT/REJECT/MODIFY
+// (change of mind = a NEW decision; the effective decision is DERIVED, never
+// rewritten). The reviewer is a NON-NULL User FK (RESTRICT) taken from the
+// authenticated principal — never the request body; no AI/worker/scheduler/system
+// path may author a decision. MODIFY content is structured coded child rows (no
+// PHI, no report narrative, no diagnosis field). Each decision snapshots what was
+// reviewed (record + model version + result digest + validation-only) so it never
+// depends on mutable downstream lookups (Guardrail 1). An optional explainability
+// reference must belong to the SAME InferenceRecord + lab (Guardrail 2). Deliberately
+// uses reviewDecision/modifiedFinding/reviewRationale terminology — never a
+// clinical-authority name. Lab-scoped; all provenance FKs onDelete: Restrict.
+// ============================================================================
+
+enum HumanReviewRequestState {
+  PENDING
+  ASSIGNED
+  COMPLETED
+  CANCELLED
+}
+
+enum HumanReviewDecisionType {
+  ACCEPT
+  REJECT
+  MODIFY
+}
+
+// Mutable operational routing — NOT clinical truth. State transitions are audited in
+// HumanReviewRequestEvent; cancellation never deletes submitted decisions; completion
+// is a deterministic boundary (Guardrail 3) that a governed reopen transitions, never mutates away.
+model HumanReviewRequest {
+  id                String                  @id @default(cuid())
+  requestUuid       String                  @unique @default(uuid())
+  labId             String
+  lab               Lab                     @relation(fields: [labId], references: [id])
+  inferenceRecordId String
+  inferenceRecord   InferenceRecord         @relation(fields: [inferenceRecordId], references: [id], onDelete: Restrict)
+  state             HumanReviewRequestState @default(PENDING)
+  assigneeUserId    String? // reviewer assignment (workflow only; grants no clinical authority)
+  assignee          User?                   @relation("HumanReviewAssignee", fields: [assigneeUserId], references: [id], onDelete: Restrict)
+  validationOnly    Boolean // inherited immutably from the inference record
+  completedAt       DateTime? // deterministic completion boundary (Guardrail 3)
+
+  createdById String? // actor/machine provenance for the workflow object; no FK
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  decisions HumanReviewDecision[]
+  events    HumanReviewRequestEvent[]
+
+  @@index([labId])
+  @@index([labId, inferenceRecordId])
+  @@index([labId, state])
+  @@index([inferenceRecordId])
+}
+
+// Immutable, append-only human decision (Decisions 3/4/11 + Guardrail 1). No update/delete path.
+model HumanReviewDecision {
+  id                String             @id @default(cuid())
+  decisionUuid      String             @unique @default(uuid())
+  labId             String
+  lab               Lab                @relation(fields: [labId], references: [id])
+  requestId         String
+  request           HumanReviewRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  inferenceRecordId String
+  inferenceRecord   InferenceRecord    @relation(fields: [inferenceRecordId], references: [id], onDelete: Restrict)
+
+  // Human ownership — a NON-NULL authenticated reviewer (Decision 3). RESTRICT so the identity never vanishes.
+  reviewerUserId String
+  reviewer       User   @relation("HumanReviewReviewer", fields: [reviewerUserId], references: [id], onDelete: Restrict)
+
+  reviewDecision HumanReviewDecisionType
+  validationOnly Boolean // inherited immutably (Decision 7)
+
+  // Guardrail 1 — immutable snapshot of WHAT was reviewed (no dependence on mutable downstream lookups).
+  reviewedModelVersionId      String // the model version identity the reviewed inference used
+  reviewedResultDigest        String? // the inference result digest at review time
+  modelLifecycleStateAtReview AiModelLifecycleState? // provenance
+
+  reviewRationale  String? // SHORT bounded rationale only — never a report narrative, never PHI (Decision 6)
+  correctionDigest String? // sha256 over the structured modifiedFinding rows (when MODIFY)
+
+  // Guardrail 2 — optional consulted explainability; must belong to the SAME record + lab (service-enforced).
+  explainabilityGenerationId String?
+  explainabilityGeneration   ExplainabilityGeneration? @relation(fields: [explainabilityGenerationId], references: [id], onDelete: Restrict)
+
+  eventId     String // immutable audit identity
+  submittedAt DateTime @default(now())
+
+  modifiedFindings HumanReviewModifiedFinding[]
+
+  @@index([labId])
+  @@index([labId, requestId])
+  @@index([labId, inferenceRecordId])
+  @@index([requestId])
+  @@index([reviewerUserId])
+}
+
+// Structured MODIFY content (Decision 6). Coded findings only — NO PHI, NO narrative, NO diagnosis field.
+model HumanReviewModifiedFinding {
+  id         String              @id @default(cuid())
+  labId      String
+  lab        Lab                 @relation(fields: [labId], references: [id])
+  decisionId String
+  decision   HumanReviewDecision @relation(fields: [decisionId], references: [id], onDelete: Restrict)
+
+  findingCode String // coded finding identity — never a diagnosis name
+  valueCode   String? // coded categorical value
+  valueNum    Float? // structured numeric value
+  ordinal     Int // deterministic ordering
+  createdAt   DateTime @default(now())
+
+  @@index([labId])
+  @@index([labId, decisionId])
+  @@index([decisionId])
+}
+
+// Append-only audit of the mutable request's state changes (Decision 11). No update/delete path.
+model HumanReviewRequestEvent {
+  id        String             @id @default(cuid())
+  labId     String
+  lab       Lab                @relation(fields: [labId], references: [id])
+  requestId String
+  request   HumanReviewRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+
+  fromState  HumanReviewRequestState?
+  toState    HumanReviewRequestState
+  actorId    String? // actor; no FK
+  eventId    String // shared with the transaction that caused it
+  occurredAt DateTime                 @default(now())
+
+  @@index([labId])
+  @@index([labId, requestId])
+  @@index([requestId])
 }
 
 // ============================================================================

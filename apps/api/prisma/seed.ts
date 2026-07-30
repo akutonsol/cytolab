@@ -94,6 +94,13 @@ export const SPECIAL_OBJECTS: Record<string, string[]> = {
   // via the guard bypass. generate distinct from view; manage distinct from generate. Digest/reference only; no PHI;
   // no diagnostic/correctness claim; downstream evidence only.
   explainability: ['view', 'generate', 'manage'],
+  // P6-6E — human review workflow (the human owns the diagnosis; a downstream evidence layer, NOT clinical sign-out).
+  // view = read review requests/decisions; request = open a review workflow; assign = assign a reviewer; submit = a
+  // human ACCEPT/REJECT/MODIFY decision (authenticated human authorship); manage = administrative workflow actions
+  // ONLY (never rewrites decisions, changes the recorded actor, or converts a review into clinical authorization).
+  // Assigned to NO default role (byPrefix below never selects 'review'); super roles reach it via the guard bypass.
+  // submit is deliberately distinct from view/request/assign. No write to ResultSheet/Record/AiDraft; no PHI.
+  review: ['view', 'request', 'assign', 'submit', 'manage'],
 };
 
 export interface SeedRoleDef {
