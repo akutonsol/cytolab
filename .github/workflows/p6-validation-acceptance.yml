@@ -1,0 +1,109 @@
+# Program 6 · Phase 6F — validation acceptance gate (folded, gated).
+#
+# Gated (workflow_dispatch only). Proves the validation-evidence subsystem (no claim beyond recorded evidence) against
+# PERSISTED DB truth on a fresh checkout + isolated Postgres — additive schema (4 tables + 1 enum), 9 RESTRICT
+# provenance FKs, immutable FROZEN-dataset × model-version linkage, dataset/model/config snapshot integrity
+# (Guardrails 1/2/5), metric provenance + metric-schema version (Guardrails 3/7), deterministic calculation id +
+# reproducibility (Guardrail 4), structured validated metrics/cells/points with confusion-matrix consistency, atomic
+# persistence (Guardrail 6), cross-run independence (Guardrail 8), eligibility enforcement, claim-boundary enforcement,
+# NO automatic lifecycle promotion, permission separation + no default grant, no evidence-mutation route, no
+# certification/clinical-authority terminology, and no PHI columns. Then the focused 6F jest, a Program-5/6A-6E
+# non-regression jest, and a strict zero-error tsc. Every command fails the job closed. Verifies the exact head and
+# that it descends from the 6F implementation candidate b9b9da6.
+#
+# NOTE: 6F introduces NO raw-SQL migration-only invariant (plain validated numeric/coded columns), so — like the 6D/6E
+# gates — there is NO raw-index install step; the datamodel reconstruction produces a complete schema.
+name: p6-validation-acceptance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p6-validation-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validation-acceptance:
+    name: P6-6F validation (gated)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cytolab_accept_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
+      DATABASE_MIGRATION_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
+      JWT_SECRET: 'ci-accept-jwt-secret-000000000000000000'
+      JWT_REFRESH_SECRET: ci-accept-refresh-secret
+      JWT_PORTAL_SECRET: 'ci-accept-jwt-portal-secret-00000000000000'
+      JWT_PORTAL_REFRESH_SECRET: ci-accept-portal-refresh-secret
+      ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
+      COOKIE_SECURE: 'false'
+      NODE_ENV: development
+      VALIDATION_FIXTURES_OUT: /tmp/.validation-fixtures.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so the merge-base lineage check can resolve b9b9da6
+
+      - name: Print & verify the checked-out commit (exact-head + 6F lineage rooted at b9b9da6)
+        run: |
+          set -euo pipefail
+          echo "github.sha        = ${{ github.sha }}"
+          echo "git rev-parse HEAD = $(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}" || { echo "!! checkout SHA does not match github.sha"; exit 1; }
+          git merge-base --is-ancestor b9b9da68c8db298eede352c091fdb2766f5c1ddb "$(git rev-parse HEAD)" || { echo "!! head is not a descendant of the 6F implementation candidate b9b9da6"; exit 1; }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+
+      - run: npm ci
+
+      - name: Prisma generate
+        run: cd apps/api && npx prisma generate
+
+      - name: Build acceptance DB schema from the committed datamodel (folded-gate method; no migration introduced)
+        run: |
+          set -euo pipefail
+          cd apps/api
+          npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > /tmp/accept-schema.sql
+          npx prisma db execute --url "$DATABASE_URL" --file /tmp/accept-schema.sql
+
+      - name: Seed the permission catalogue + two isolated labs (model versions across lifecycle + FROZEN/DRAFT datasets)
+        run: |
+          set -euo pipefail
+          cd apps/api
+          npx prisma db seed
+          npx ts-node --transpile-only scripts/seed-validation-acceptance.ts
+
+      - name: Persisted-state assertions (linkage / snapshots / provenance / determinism / atomicity / eligibility / no-lifecycle-promotion / RESTRICT / no-PHI)
+        run: cd apps/api && npx ts-node --transpile-only scripts/assert-validation-state.ts
+
+      - name: Focused validation tests
+        run: cd apps/api && npx jest src/modules/validation --runInBand
+
+      - name: Program-5 / 6A-6E non-regression tests
+        run: cd apps/api && npx jest src/modules/ai-registry src/modules/dataset-governance src/modules/inference-engine src/modules/explainability src/modules/human-review src/modules/wsi/dicom/dicom-conformance.spec.ts src/modules/reports/reports.service.spec.ts --runInBand
+
+      - name: TypeScript (strict — any error fails the gate closed)
+        run: cd apps/api && npx tsc --noEmit -p tsconfig.json
+
+      - name: Collect artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p6-6f-validation-acceptance
+          path: |
+            /tmp/.validation-fixtures.json
+            /tmp/accept-schema.sql
+          if-no-files-found: ignore
