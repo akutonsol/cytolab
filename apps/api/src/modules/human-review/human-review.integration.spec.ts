@@ -94,24 +94,36 @@ describeIf('P6-6E human review (integration)', () => {
     await expect(asLab(A, () => svc.submitDecision(req.id, { reviewDecision: 'ACCEPT' }, foreignReviewer))).rejects.toThrow(/reviewer not found/i);
   });
 
-  it('is append-only: a change of mind is a NEW decision; the effective decision is the latest; prior untouched', async () => {
+  it('is append-only with a TERMINAL completion boundary: a change of mind requires a governed reopen (Guardrail 3)', async () => {
     const A = await mkLab();
     const { recordId } = await mkRecord(A);
     const reviewer = await mkUser(A);
     const req = await asLab(A, () => svc.createRequest({ inferenceRecordId: recordId }));
-    const d1 = await asLab(A, () => svc.submitDecision(req.id, { reviewDecision: 'ACCEPT' }, reviewer));
+    const d1 = await asLab(A, () => svc.submitDecision(req.id, { reviewDecision: 'ACCEPT' }, reviewer)); // PENDING → COMPLETED
+    const d1Row = await raw.humanReviewDecision.findUnique({ where: { id: d1.id } });
     const completedAt1 = (await raw.humanReviewRequest.findUnique({ where: { id: req.id } }))?.completedAt;
-    const d2 = await asLab(A, () => svc.submitDecision(req.id, { reviewDecision: 'REJECT' }, reviewer)); // change of mind
+    expect((await asLab(A, () => svc.getRequest(req.id))).effectiveReviewDecision?.reviewDecision).toBe('ACCEPT');
+
+    // COMPLETED is terminal: a DIRECT second submission fails closed (no reopen was performed)
+    await expect(asLab(A, () => svc.submitDecision(req.id, { reviewDecision: 'REJECT' }, reviewer))).rejects.toThrow(/COMPLETED/);
+    expect(await raw.humanReviewDecision.count({ where: { requestId: req.id } })).toBe(1); // no new decision persisted
+    expect((await asLab(A, () => svc.getRequest(req.id))).effectiveReviewDecision?.reviewDecision).toBe('ACCEPT'); // effective unchanged
+
+    // the governed reopen creates an append-only request event; only then may a new decision be submitted
+    const pendingEventsBefore = await raw.humanReviewRequestEvent.count({ where: { requestId: req.id, toState: 'PENDING' } });
+    await asLab(A, () => svc.reopen(req.id, {}));
+    expect(await raw.humanReviewRequestEvent.count({ where: { requestId: req.id, toState: 'PENDING' } })).toBe(pendingEventsBefore + 1); // reopen recorded
+    const d2 = await asLab(A, () => svc.submitDecision(req.id, { reviewDecision: 'REJECT' }, reviewer)); // PENDING → COMPLETED again
     expect(d2.id).not.toBe(d1.id);
     expect(await raw.humanReviewDecision.count({ where: { requestId: req.id } })).toBe(2); // both retained
-    const view = await asLab(A, () => svc.getRequest(req.id));
-    expect(view.effectiveReviewDecision?.reviewDecision).toBe('REJECT'); // latest
-    expect((await raw.humanReviewDecision.findUnique({ where: { id: d1.id } }))?.reviewDecision).toBe('ACCEPT'); // prior untouched
-    for (const s of ['updateDecision', 'editDecision', 'deleteDecision']) expect((svc as any)[s]).toBeUndefined();
-    // completion represented once (Guardrail 3) — completedAt is unchanged by the 2nd decision, and exactly one COMPLETED event exists
+    expect((await asLab(A, () => svc.getRequest(req.id))).effectiveReviewDecision?.reviewDecision).toBe('REJECT'); // effective changed ONLY after reopen + new submission
+
+    // prior decision byte-unchanged; original completedAt preserved; the event history proves each completion cycle
+    expect(await raw.humanReviewDecision.findUnique({ where: { id: d1.id } })).toEqual(d1Row);
     const reqRow = await raw.humanReviewRequest.findUnique({ where: { id: req.id } });
-    expect(reqRow?.completedAt?.getTime()).toBe(completedAt1?.getTime());
-    expect(await raw.humanReviewRequestEvent.count({ where: { requestId: req.id, toState: 'COMPLETED' } })).toBe(1);
+    expect(reqRow?.completedAt?.getTime()).toBe(completedAt1?.getTime()); // single immutable completion boundary
+    expect(await raw.humanReviewRequestEvent.count({ where: { requestId: req.id, toState: 'COMPLETED' } })).toBe(2); // two governed completion cycles
+    for (const s of ['updateDecision', 'editDecision', 'deleteDecision']) expect((svc as any)[s]).toBeUndefined();
   });
 
   it('MODIFY carries structured coded findings + a correction digest; ACCEPT/REJECT may not carry findings', async () => {

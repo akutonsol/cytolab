@@ -85,7 +85,11 @@ export class HumanReviewService {
   async submitDecision(requestId: string, dto: SubmitReviewDecisionDto, reviewerUserId: string) {
     const req = await this.prisma.humanReviewRequest.findFirst({ where: { id: requestId }, select: { id: true, state: true, inferenceRecordId: true, completedAt: true } });
     if (!req) throw new NotFoundException('review request not found');
-    if (req.state === 'CANCELLED') throw new BadRequestException('review request is CANCELLED; reopen it before submitting a decision');
+    // A decision may be submitted ONLY from an active state. COMPLETED and CANCELLED are terminal boundaries — a
+    // later change of mind requires the governed reopen transition first (which records its own append-only event).
+    if (req.state === 'COMPLETED' || req.state === 'CANCELLED') {
+      throw new BadRequestException(`review request is ${req.state}; reopen it (to PENDING/ASSIGNED) before submitting a decision`);
+    }
 
     // Human ownership: the reviewer must be a real, authenticated user IN THIS LAB (fails closed cross-lab).
     const reviewer = await this.prisma.user.findFirst({ where: { id: reviewerUserId }, select: { id: true } });
@@ -139,13 +143,13 @@ export class HumanReviewService {
           }),
         });
       }
-      // Guardrail 3 — completion is a deterministic boundary, represented once. First completion sets it; a request
-      // already COMPLETED (accruing further decisions) is not re-transitioned.
-      if (req.state === 'PENDING' || req.state === 'ASSIGNED') {
-        const cas = await tx.humanReviewRequest.updateMany({ where: { id: req.id, state: req.state }, data: { state: 'COMPLETED', completedAt: req.completedAt ?? now } });
-        if (cas.count !== 1) throw new ConflictException('review request state changed concurrently');
-        await this.appendRequestEvent(tx, req.id, req.state, 'COMPLETED', reviewerUserId, eventId);
-      }
+      // Guardrail 3 — completion is a deterministic boundary. Submission only ever runs from an active state
+      // (PENDING/ASSIGNED — terminal states are rejected above), so this transition always fires. `completedAt` is
+      // set once (the original boundary) via COALESCE and is preserved across later reopen→recomplete cycles; the
+      // append-only request-event history proves each completion cycle.
+      const cas = await tx.humanReviewRequest.updateMany({ where: { id: req.id, state: req.state }, data: { state: 'COMPLETED', completedAt: req.completedAt ?? now } });
+      if (cas.count !== 1) throw new ConflictException('review request state changed concurrently');
+      await this.appendRequestEvent(tx, req.id, req.state, 'COMPLETED', reviewerUserId, eventId);
       return dec;
     });
 
