@@ -171,147 +171,151 @@ enum ScanStatus {
 // ---- F1: Multi-lab tenancy (every tenant-owned model carries labId) ----
 
 model Lab {
-  id                      String                       @id @default(uuid())
-  name                    String
-  slug                    String                       @unique
-  logoUrl                 String?
+  id                          String                       @id @default(uuid())
+  name                        String
+  slug                        String                       @unique
+  logoUrl                     String?
   // Short brand tagline shown beside the lab name on the dashboard/login shell
   // (Settings > General > Company). Falls back to a default when unset.
-  tagline                 String?
+  tagline                     String?
   // Branding shown on rendered report PDFs (Phase 3.5).
-  address                 String?
-  phone                   String?
-  email                   String?
-  currency                String                       @default("JMD")
-  isActive                Boolean                      @default(true)
+  address                     String?
+  phone                       String?
+  email                       String?
+  currency                    String                       @default("JMD")
+  isActive                    Boolean                      @default(true)
   // Analytics targets. targetTatDays: expected turnaround (Submitted->Approved);
   // monthlyVolumeTarget: expected specimens/month (null -> derived from history).
-  targetTatDays           Int                          @default(3)
-  monthlyVolumeTarget     Int?
+  targetTatDays               Int                          @default(3)
+  monthlyVolumeTarget         Int?
   // --- Hybrid tenancy (pool + silo). Additive + BEHAVIOR-NEUTRAL: every existing
   // lab defaults to POOL, so nothing changes until a lab is flipped to SILO.
   // See docs/architecture/HYBRID_TENANCY_AND_CUSTOM_DOMAINS.md.
-  tenancyMode             TenancyMode                  @default(POOL)
+  tenancyMode                 TenancyMode                  @default(POOL)
   // SILO only: a *reference* (e.g. GCP Secret Manager resource name) to the lab's
   // dedicated DB connection secret — NEVER the raw connection string. Null for POOL.
-  databaseSecretRef       String?
-  migrationSecretRef      String?
+  databaseSecretRef           String?
+  migrationSecretRef          String?
   // Optional data-residency / instance placement hint.
-  dataRegion              String?
-  domains                 LabDomain[]
-  createdAt               DateTime                     @default(now())
-  updatedAt               DateTime                     @updatedAt
-  accounts                Account[]
-  users                   User[]
-  workspaces              Workspace[]
-  patients                Patient[]
-  clientTypes             ClientType[]
-  clients                 Client[]
-  requisitions            Requisition[]
-  records                 Record[]
-  specimens               Specimen[]
-  ingestionSources        IngestionSource[] // P5B-B1 — automated-ingestion source config
-  ingestionDiscoveries    IngestionDiscovery[] // P5B-B1 — automated-ingestion intake records
-  slideDicomMetadata      SlideDicomMetadata[] // P5C-C1 — DICOM WSI identity/conformance (tenant-scoped)
-  ingestionSourceHealth   IngestionSourceHealth[] // P5C-C5 — per-source import-connection health snapshots
-  aiModels                AiModel[] // P6-6A — lab-scoped AI model registry
-  aiModelVersions         AiModelVersion[] // P6-6A — versioned AI model records
-  aiModelLifecycleEvents  AiModelLifecycleEvent[] // P6-6A — append-only lifecycle transitions
-  inferenceRecords        InferenceRecord[] // P6-6A — immutable inference-record shell (populated at terminalization by 6C)
-  inferenceJobs           InferenceJob[] // P6-6C — mutable inference execution/queue rows
-  inferenceEvents         InferenceEvent[] // P6-6C — append-only inference audit trail
-  datasets                Dataset[] // P6-6B — governed datasets
-  datasetVersions         DatasetVersion[] // P6-6B — immutable dataset versions
-  datasetSlides           DatasetSlide[] // P6-6B — dataset membership (slide refs)
-  groundTruthLabels       GroundTruthLabel[] // P6-6B — structured ground-truth labels
-  annotationLineageEvents AnnotationLineageEvent[] // P6-6B — append-only label lineage
-  trainingDatasetRefs     TrainingDatasetReference[] // P6-6B — external training-corpus references
-  requisitionLines        RequisitionLine[]
-  recordStatusEvents      RecordStatusEvent[]
-  therapies               Therapy[]
-  cabinets                Cabinet[]
-  codeSheets              CodeSheet[]
-  codeFindings            CodeFinding[]
-  labCodes                LabCode[]
-  aiSettings              LabAiSettings?
-  aiDrafts                AiDraft[]
-  resultSheets            ResultSheet[]
-  resultEntries           ResultEntry[]
-  resultLines             ResultLine[]
-  reports                 Report[]
-  resultSheetEvents       ResultSheetEvent[]
-  services                Service[]
-  taxes                   Tax[]
-  bills                   Bill[]
-  billLines               BillLine[]
-  billTaxes               BillTax[]
-  payments                Payment[]
-  portalUsers             PortalUser[]
-  portalAccessTokens      PortalAccessToken[]
-  changeRequests          ChangeRequest[]
-  changeRequestMessages   ChangeRequestMessage[]
-  changeRequestEvents     ChangeRequestEvent[]
-  requisitionBatches      RequisitionBatch[]
-  digitalRequisitionForms DigitalRequisitionForm[]
-  patientAddresses        PatientAddress[]
-  clientAddresses         ClientAddress[]
-  sequences               LabSequence[]
-  gynClinicalFeatures     GynClinicalFeatures[]
-  nonGynClinicalFeatures  NonGynClinicalFeatures[]
-  specimenImages          SpecimenImage[]
-  recordAttachments       RecordAttachment[]
-  threads                 Thread[]
-  appointments            Appointment[]
-  formConfigs             FormConfig[]
-  notifications           Notification[]
-  notificationPreferences UserNotificationPreference[]
-  departments             Department[]
-  employees               Employee[]
-  payrollRuns             PayrollRun[]
-  payAdvices              PayAdvice[]
-  resultTemplates         ResultTemplate[]
-  bethesdaResults         BethesdaResult[]
-  tatConfigs              TATConfig[]
-  tatAlerts               TATAlert[]
-  features                LabFeature[]
-  escalations             EscalationRecord[]
-  workloadTargets         WorkloadTarget[]
-  qcChecks                QCCheck[]
-  equipment               Equipment[]
-  ancillaryOrders         AncillaryOrder[]
-  screeningBatches        ScreeningBatch[]
-  screeningBatchCases     ScreeningBatchCase[]
-  qcFailureAlerts         QCFailureAlert[]
-  requisitionTrackings    RequisitionTracking[]
-  trackingEvents          TrackingEvent[]
-  correlationCases        CorrelationCase[]
-  proficiencyTests        ProficiencyTest[]
-  proficiencyCases        ProficiencyCase[]
-  proficiencyResponses    ProficiencyResponse[]
-  reagentLots             ReagentLot[]
-  reagentUsages           ReagentUsage[]
-  recalls                 RecallRecord[]
-  digitalSlides           DigitalSlide[]
-  slideAnnotations        SlideAnnotation[]
-  slideIngestions         SlideIngestion[]
-  slideProcessingJobs     SlideProcessingJob[]
-  derivativeGenerations   DerivativeGeneration[]
-  slideAssets             SlideAsset[]
-  generationVerifications GenerationVerification[]
-  generationPublications  GenerationPublication[]
-  deliverySessions        DeliverySession[]
-  aiScreenings            AIScreeningResult[]
-  consultRequests         ConsultRequest[]
-  medicalCodes            MedicalCode[]
-  recordCodings           RecordCoding[]
-  fhirEndpoints           FHIREndpoint[]
-  fhirTransmissions       FHIRTransmission[]
+  dataRegion                  String?
+  domains                     LabDomain[]
+  createdAt                   DateTime                     @default(now())
+  updatedAt                   DateTime                     @updatedAt
+  accounts                    Account[]
+  users                       User[]
+  workspaces                  Workspace[]
+  patients                    Patient[]
+  clientTypes                 ClientType[]
+  clients                     Client[]
+  requisitions                Requisition[]
+  records                     Record[]
+  specimens                   Specimen[]
+  ingestionSources            IngestionSource[] // P5B-B1 — automated-ingestion source config
+  ingestionDiscoveries        IngestionDiscovery[] // P5B-B1 — automated-ingestion intake records
+  slideDicomMetadata          SlideDicomMetadata[] // P5C-C1 — DICOM WSI identity/conformance (tenant-scoped)
+  ingestionSourceHealth       IngestionSourceHealth[] // P5C-C5 — per-source import-connection health snapshots
+  aiModels                    AiModel[] // P6-6A — lab-scoped AI model registry
+  aiModelVersions             AiModelVersion[] // P6-6A — versioned AI model records
+  aiModelLifecycleEvents      AiModelLifecycleEvent[] // P6-6A — append-only lifecycle transitions
+  inferenceRecords            InferenceRecord[] // P6-6A — immutable inference-record shell (populated at terminalization by 6C)
+  inferenceJobs               InferenceJob[] // P6-6C — mutable inference execution/queue rows
+  inferenceEvents             InferenceEvent[] // P6-6C — append-only inference audit trail
+  explainabilityGenerations   ExplainabilityGeneration[] // P6-6D — explainability artifact-set generations
+  explainabilityArtifacts     ExplainabilityArtifact[] // P6-6D — immutable explainability artifacts
+  explainabilityRegions       ExplainabilityRegion[] // P6-6D — explainability feature-region geometry
+  explainabilityProbabilities ExplainabilityProbability[] // P6-6D — explainability probability-distribution entries
+  datasets                    Dataset[] // P6-6B — governed datasets
+  datasetVersions             DatasetVersion[] // P6-6B — immutable dataset versions
+  datasetSlides               DatasetSlide[] // P6-6B — dataset membership (slide refs)
+  groundTruthLabels           GroundTruthLabel[] // P6-6B — structured ground-truth labels
+  annotationLineageEvents     AnnotationLineageEvent[] // P6-6B — append-only label lineage
+  trainingDatasetRefs         TrainingDatasetReference[] // P6-6B — external training-corpus references
+  requisitionLines            RequisitionLine[]
+  recordStatusEvents          RecordStatusEvent[]
+  therapies                   Therapy[]
+  cabinets                    Cabinet[]
+  codeSheets                  CodeSheet[]
+  codeFindings                CodeFinding[]
+  labCodes                    LabCode[]
+  aiSettings                  LabAiSettings?
+  aiDrafts                    AiDraft[]
+  resultSheets                ResultSheet[]
+  resultEntries               ResultEntry[]
+  resultLines                 ResultLine[]
+  reports                     Report[]
+  resultSheetEvents           ResultSheetEvent[]
+  services                    Service[]
+  taxes                       Tax[]
+  bills                       Bill[]
+  billLines                   BillLine[]
+  billTaxes                   BillTax[]
+  payments                    Payment[]
+  portalUsers                 PortalUser[]
+  portalAccessTokens          PortalAccessToken[]
+  changeRequests              ChangeRequest[]
+  changeRequestMessages       ChangeRequestMessage[]
+  changeRequestEvents         ChangeRequestEvent[]
+  requisitionBatches          RequisitionBatch[]
+  digitalRequisitionForms     DigitalRequisitionForm[]
+  patientAddresses            PatientAddress[]
+  clientAddresses             ClientAddress[]
+  sequences                   LabSequence[]
+  gynClinicalFeatures         GynClinicalFeatures[]
+  nonGynClinicalFeatures      NonGynClinicalFeatures[]
+  specimenImages              SpecimenImage[]
+  recordAttachments           RecordAttachment[]
+  threads                     Thread[]
+  appointments                Appointment[]
+  formConfigs                 FormConfig[]
+  notifications               Notification[]
+  notificationPreferences     UserNotificationPreference[]
+  departments                 Department[]
+  employees                   Employee[]
+  payrollRuns                 PayrollRun[]
+  payAdvices                  PayAdvice[]
+  resultTemplates             ResultTemplate[]
+  bethesdaResults             BethesdaResult[]
+  tatConfigs                  TATConfig[]
+  tatAlerts                   TATAlert[]
+  features                    LabFeature[]
+  escalations                 EscalationRecord[]
+  workloadTargets             WorkloadTarget[]
+  qcChecks                    QCCheck[]
+  equipment                   Equipment[]
+  ancillaryOrders             AncillaryOrder[]
+  screeningBatches            ScreeningBatch[]
+  screeningBatchCases         ScreeningBatchCase[]
+  qcFailureAlerts             QCFailureAlert[]
+  requisitionTrackings        RequisitionTracking[]
+  trackingEvents              TrackingEvent[]
+  correlationCases            CorrelationCase[]
+  proficiencyTests            ProficiencyTest[]
+  proficiencyCases            ProficiencyCase[]
+  proficiencyResponses        ProficiencyResponse[]
+  reagentLots                 ReagentLot[]
+  reagentUsages               ReagentUsage[]
+  recalls                     RecallRecord[]
+  digitalSlides               DigitalSlide[]
+  slideAnnotations            SlideAnnotation[]
+  slideIngestions             SlideIngestion[]
+  slideProcessingJobs         SlideProcessingJob[]
+  derivativeGenerations       DerivativeGeneration[]
+  slideAssets                 SlideAsset[]
+  generationVerifications     GenerationVerification[]
+  generationPublications      GenerationPublication[]
+  deliverySessions            DeliverySession[]
+  aiScreenings                AIScreeningResult[]
+  consultRequests             ConsultRequest[]
+  medicalCodes                MedicalCode[]
+  recordCodings               RecordCoding[]
+  fhirEndpoints               FHIREndpoint[]
+  fhirTransmissions           FHIRTransmission[]
   // Platform-level billing: the platform invoicing THIS lab as a customer
   // (distinct from Bill/Payment, which is the lab billing its own clients).
-  billingProfile          LabBillingProfile?
-  billingItems            LabBillingItem[]
-  labInvoices             LabInvoice[]
-  labInvoiceLines         LabInvoiceLine[]
+  billingProfile              LabBillingProfile?
+  billingItems                LabBillingItem[]
+  labInvoices                 LabInvoice[]
+  labInvoiceLines             LabInvoiceLine[]
 }
 
 /// How a lab's DATA-PLANE storage is provisioned. Control-plane rows (Lab, LabDomain,
@@ -1229,6 +1233,10 @@ model InferenceRecord {
   finishedAt   DateTime? // execution end (provenance/timing)
   durationMs   Int? // runtime duration (Decision 10)
 
+  // P6-6D — downstream explainability evidence (reference only; never mutates this record).
+  explainabilityGenerations ExplainabilityGeneration[]
+  explainabilityArtifacts   ExplainabilityArtifact[]
+
   @@index([labId])
   @@index([labId, modelVersionId])
   @@index([jobId])
@@ -1323,6 +1331,151 @@ model InferenceEvent {
   @@index([labId])
   @@index([labId, jobId])
   @@index([jobId])
+}
+
+// ============================================================================
+// Program 6 · Phase 6D — EXPLAINABILITY (governed artifact architecture only;
+// assists, NEVER asserts correctness). Immutable, append-only explainability
+// artifacts attached to a completed (SUCCEEDED) 6C InferenceRecord by identity
+// (RESTRICT); the default generator is a DETERMINISTIC, NON-CLINICAL stub. A
+// single generation request creates the complete artifact set atomically under
+// one shared generationUuid (Guardrail 2). Every geometry-bearing artifact
+// records immutable coordinate-space provenance (Guardrail 1). Content is
+// digest/reference only — NO bytes/tiles/PHI. Structured kind-specific content
+// (regions/probabilities) uses tightly-validated child rows, never arbitrary
+// JSON blobs. NO field asserts diagnosis/correctness/accuracy/confidence/ground
+// truth; validationOnly is inherited immutably from the record. Explainability
+// NEVER mutates the InferenceRecord or any 6C/6A/6B row (no support inference).
+// Lab-scoped; all provenance FKs onDelete: Restrict. Distinct from SlideAnnotation
+// (viewer markup) and GroundTruthLabel (6B ground truth).
+// ============================================================================
+
+enum ExplainabilityArtifactKind {
+  HEATMAP
+  ATTENTION_OVERLAY
+  FEATURE_REGION
+  PROBABILITY_DISTRIBUTION
+}
+
+enum ExplainabilityRegionType {
+  BOUNDING_BOX
+  POLYGON
+}
+
+// The artifact-set aggregate (Decision 12 / Guardrail 2): one deterministic
+// generation request → one atomic, immutable set of artifacts sharing this
+// identity. Append-only; references a SUCCEEDED InferenceRecord (service-enforced).
+model ExplainabilityGeneration {
+  id                String          @id @default(cuid())
+  generationUuid    String          @unique @default(uuid())
+  labId             String
+  lab               Lab             @relation(fields: [labId], references: [id])
+  inferenceRecordId String
+  inferenceRecord   InferenceRecord @relation(fields: [inferenceRecordId], references: [id], onDelete: Restrict)
+  subjectSlideId    String? // coordinate-space subject (from the record); reference only, no PHI
+  subjectSlide      DigitalSlide?   @relation(fields: [subjectSlideId], references: [id], onDelete: Restrict)
+
+  generatorId      String // generator identity (default deterministic stub)
+  generatorVersion String
+  configDigest     String? // sha256 of the runtime configuration that materially affects generation
+  validationOnly   Boolean // inherited IMMUTABLY from the inference record (Decision 3/5)
+
+  // Guardrail 1 — immutable coordinate-space provenance: interpret geometry against the originating
+  // slide regardless of future viewer/slide changes.
+  coordinateSpace String? // e.g. "slide-pixel"
+  slideWidthPx    Int? // slide dimensions snapshot AT GENERATION time
+  slideHeightPx   Int?
+
+  eventId     String // shared deterministic event identity across the set
+  createdById String? // actor; no FK
+  createdAt   DateTime @default(now())
+
+  artifacts ExplainabilityArtifact[]
+
+  @@index([labId])
+  @@index([labId, inferenceRecordId])
+  @@index([inferenceRecordId])
+}
+
+// The common immutable artifact row (Decision 2). Kind-specific content lives in the
+// tightly-validated child rows below (regions / probabilities), never arbitrary JSON.
+// NO diagnosis/correct/accuracy/clinicalConfidence/groundTruth/validated/approvedInterpretation
+// column may exist here (Decision 3).
+model ExplainabilityArtifact {
+  id                String                     @id @default(cuid())
+  artifactUuid      String                     @unique @default(uuid())
+  labId             String
+  lab               Lab                        @relation(fields: [labId], references: [id])
+  generationId      String
+  generation        ExplainabilityGeneration   @relation(fields: [generationId], references: [id], onDelete: Restrict)
+  inferenceRecordId String
+  inferenceRecord   InferenceRecord            @relation(fields: [inferenceRecordId], references: [id], onDelete: Restrict)
+  kind              ExplainabilityArtifactKind
+
+  generatorId      String
+  generatorVersion String
+  configDigest     String?
+  contentDigest    String // sha256 of the structured content — evidence without copying
+  contentRef       String? // opaque reference; NO bytes/tiles/PHI/diagnostic narrative
+  validationOnly   Boolean // inherited immutably from the generation/record
+
+  // Guardrail 1 — geometry-bearing artifacts carry coordinate-space provenance for self-containment.
+  slideId         String?
+  slide           DigitalSlide? @relation(fields: [slideId], references: [id], onDelete: Restrict)
+  coordinateSpace String? // e.g. "slide-pixel@<w>x<h>"
+
+  createdAt DateTime @default(now())
+
+  regions       ExplainabilityRegion[]
+  probabilities ExplainabilityProbability[]
+
+  @@index([labId])
+  @@index([labId, generationId])
+  @@index([labId, inferenceRecordId])
+  @@index([generationId])
+}
+
+// Feature-region / overlay geometry (Decision 7). Slide pixel space; box or polygon;
+// coded categories only — NO diagnostic narrative, NO human ground-truth semantics.
+// DISTINCT from SlideAnnotation and GroundTruthLabel.
+model ExplainabilityRegion {
+  id         String                 @id @default(cuid())
+  labId      String
+  lab        Lab                    @relation(fields: [labId], references: [id])
+  artifactId String
+  artifact   ExplainabilityArtifact @relation(fields: [artifactId], references: [id], onDelete: Restrict)
+
+  regionType   ExplainabilityRegionType
+  categoryCode String // coded region category — never a narrative or diagnosis
+  geometry     Json // validated: box {x,y,w,h} (finite, non-negative) or polygon {points:[{x,y}...]} (>=3)
+  weight       Float? // optional coded intensity — NOT confidence, NOT accuracy
+  ordinal      Int                      @default(0) // deterministic ordering within the artifact
+  createdAt    DateTime                 @default(now())
+
+  @@index([labId])
+  @@index([labId, artifactId])
+  @@index([artifactId])
+}
+
+// Probability-distribution entries (Decision 6). Coded, non-diagnostic classes; finite
+// values; deterministic ordering; the service enforces Σvalue = 1.0 ± tolerance. A value
+// is NOT "clinical confidence"; a classCode is NOT a diagnosis.
+model ExplainabilityProbability {
+  id         String                 @id @default(cuid())
+  labId      String
+  lab        Lab                    @relation(fields: [labId], references: [id])
+  artifactId String
+  artifact   ExplainabilityArtifact @relation(fields: [artifactId], references: [id], onDelete: Restrict)
+
+  classCode String // stable coded class identity — never a diagnosis/clinical conclusion
+  value     Float // finite probability mass
+  ordinal   Int // deterministic ordering
+  createdAt DateTime @default(now())
+
+  @@unique([labId, artifactId, classCode])
+  @@index([labId])
+  @@index([labId, artifactId])
+  @@index([artifactId])
 }
 
 // ============================================================================
@@ -3239,16 +3392,18 @@ model DigitalSlide {
   uploadedById String?
   uploadedAt   DateTime @default(now())
 
-  ingestions        SlideIngestion[]
-  generations       DerivativeGeneration[]  @relation("SlideGenerations")
-  annotations       SlideAnnotation[]
-  publications      GenerationPublication[] // P5-4 — append-only publication provenance for this slide
-  deliverySessions  DeliverySession[] // P5-5 — short-lived authenticated viewing capabilities
-  inferenceRecords  InferenceRecord[] // P6-6A — inference-record shell references (reference only; no PHI)
-  inferenceJobs     InferenceJob[] // P6-6C — inference execution jobs referencing this slide (reference only; no PHI)
-  datasetSlides     DatasetSlide[] // P6-6B — dataset membership references (reference only; no PHI)
-  groundTruthLabels GroundTruthLabel[] // P6-6B — ground-truth labels referencing this slide
-  dicomMetadata     SlideDicomMetadata? // P5C-C1 — optional DICOM WSI identity/conformance (1:1; only DICOM-sourced slides)
+  ingestions                SlideIngestion[]
+  generations               DerivativeGeneration[]     @relation("SlideGenerations")
+  annotations               SlideAnnotation[]
+  publications              GenerationPublication[] // P5-4 — append-only publication provenance for this slide
+  deliverySessions          DeliverySession[] // P5-5 — short-lived authenticated viewing capabilities
+  inferenceRecords          InferenceRecord[] // P6-6A — inference-record shell references (reference only; no PHI)
+  inferenceJobs             InferenceJob[] // P6-6C — inference execution jobs referencing this slide (reference only; no PHI)
+  explainabilityGenerations ExplainabilityGeneration[] // P6-6D — coordinate-space subject of explainability sets (reference only; no PHI)
+  explainabilityArtifacts   ExplainabilityArtifact[] // P6-6D — geometry-bearing explainability artifacts (reference only; no PHI)
+  datasetSlides             DatasetSlide[] // P6-6B — dataset membership references (reference only; no PHI)
+  groundTruthLabels         GroundTruthLabel[] // P6-6B — ground-truth labels referencing this slide
+  dicomMetadata             SlideDicomMetadata? // P5C-C1 — optional DICOM WSI identity/conformance (1:1; only DICOM-sourced slides)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

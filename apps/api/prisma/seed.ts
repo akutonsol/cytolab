@@ -87,6 +87,13 @@ export const SPECIAL_OBJECTS: Record<string, string[]> = {
   // below never selects 'inference'); super roles reach it via the guard bypass. run is deliberately distinct from
   // view and manage. Slides referenced by id only; results are digest/reference only — no PHI, no diagnostic claim.
   inference: ['view', 'run', 'manage'],
+  // P6-6D — explainability artifacts (assists, NEVER asserts correctness). view = read generations/artifacts;
+  // generate = manual generation from a completed (SUCCEEDED) inference record (also enforces access to the referenced
+  // inference + lab); manage = administrative configuration/operational actions (NEVER artifact rewriting — artifacts
+  // are immutable). Assigned to NO default role (byPrefix below never selects 'explainability'); super roles reach it
+  // via the guard bypass. generate distinct from view; manage distinct from generate. Digest/reference only; no PHI;
+  // no diagnostic/correctness claim; downstream evidence only.
+  explainability: ['view', 'generate', 'manage'],
 };
 
 export interface SeedRoleDef {
