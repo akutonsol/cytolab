@@ -48,6 +48,8 @@ jobs:
       DATASET_FIXTURES_OUT: /tmp/.dataset-governance-fixtures.json
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so the merge-base lineage check can resolve 80063a4
 
       - name: Print & verify the checked-out commit (exact-head + 6B lineage rooted at 80063a4)
         run: |
