@@ -135,14 +135,26 @@ describeIf('P6-6A AI registry (integration)', () => {
     expect(infFields.find((f) => f.name === 'subjectSlideId')?.isRequired).toBe(false);
   });
 
-  it('the inference SHELL is inert — no status/runtime/execution semantics in 6A', () => {
-    // No execution-state enum exists yet (6C owns runtime/queue/timing/completion/result design).
-    expect(Prisma.dmmf.datamodel.enums.find((e) => e.name === 'InferenceRecordStatus')).toBeUndefined();
+  // GOVERNED EVOLUTION of a forward-looking 6A assertion, in accordance with the approved 6C design. The 6A shell
+  // reserved execution/timing/result semantics for a future governed phase (see the schema comment); Phase 6C now
+  // ADDITIVELY activates it. This narrowly replaces the original "shell is inert" assertion with the new 6C
+  // invariants — 6A's own columns are intact, the change is additive (not a redesign), and no PHI enters the record.
+  // All OTHER 6A regression assertions in this file are unchanged (the ai-registry service still writes no record).
+  it('the inference record is ADDITIVELY extended by 6C (6A columns intact; no redesign; no PHI)', () => {
     const infFields = Prisma.dmmf.datamodel.models.find((x) => x.name === 'InferenceRecord')!.fields.map((f) => f.name);
-    const execish = /status|runtime|timing|latency|duration|started|finished|completed|result|output|prediction|confidence|score|progress/i;
-    expect(infFields.filter((f) => execish.test(f))).toEqual([]);
-    // 6A shell = identity + lab + model-version ref + optional slide ref + requestedAt + digest, nothing else.
-    expect(new Set(infFields)).toEqual(new Set(['id', 'recordUuid', 'labId', 'lab', 'modelVersionId', 'modelVersion', 'subjectSlideId', 'subjectSlide', 'inputDigest', 'requestedAt', 'createdAt']));
+    // The 6A-era columns are all still present and unchanged (extension, not replacement).
+    for (const f of ['id', 'recordUuid', 'labId', 'lab', 'modelVersionId', 'modelVersion', 'subjectSlideId', 'subjectSlide', 'inputDigest', 'requestedAt', 'createdAt']) {
+      expect(infFields).toContain(f);
+    }
+    // Execution STATUS is not put on the record — it lives on InferenceJob (the record is immutable evidence).
+    expect(Prisma.dmmf.datamodel.enums.find((e) => e.name === 'InferenceRecordStatus')).toBeUndefined();
+    // 6C evidence is added additively.
+    for (const f of ['jobId', 'adapterId', 'adapterVersion', 'engineVersion', 'configDigest', 'modelLifecycleStateAtRun', 'validationOnly', 'outcome', 'resultDigest', 'resultRef', 'startedAt', 'finishedAt', 'durationMs']) {
+      expect(infFields).toContain(f);
+    }
+    // No PHI columns entered the record via the extension.
+    const phi = /patient|birth|\bdob\b|ssn|mrn|firstname|lastname|demographic|address|phone/i;
+    expect(infFields.filter((f) => phi.test(f))).toEqual([]);
   });
 
   it('every provenance foreign key uses ON DELETE RESTRICT (immutable provenance, no silent null/cascade)', () => {

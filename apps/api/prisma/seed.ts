@@ -81,6 +81,12 @@ export const SPECIAL_OBJECTS: Record<string, string[]> = {
   // (byPrefix below never selects 'dataset'); super roles reach it via the guard bypass. freeze is deliberately
   // distinct from manage. Datasets reference Program-5 slides by identity only; no PHI. Deferred: 6F links dataset↔model.
   dataset: ['view', 'manage', 'freeze'],
+  // P6-6C — inference execution engine (orchestration only; the default adapter is deterministic + non-clinical).
+  // view = read inference jobs/records/events; run = dispatch an inference (manual trigger — no automatic/event/
+  // scheduled execution); manage = administrative reconcile/reclaim controls. Assigned to NO default role (byPrefix
+  // below never selects 'inference'); super roles reach it via the guard bypass. run is deliberately distinct from
+  // view and manage. Slides referenced by id only; results are digest/reference only — no PHI, no diagnostic claim.
+  inference: ['view', 'run', 'manage'],
 };
 
 export interface SeedRoleDef {

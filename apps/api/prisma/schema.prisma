@@ -217,7 +217,9 @@ model Lab {
   aiModels                AiModel[] // P6-6A — lab-scoped AI model registry
   aiModelVersions         AiModelVersion[] // P6-6A — versioned AI model records
   aiModelLifecycleEvents  AiModelLifecycleEvent[] // P6-6A — append-only lifecycle transitions
-  inferenceRecords        InferenceRecord[] // P6-6A — immutable inference-record shell (unpopulated until 6C)
+  inferenceRecords        InferenceRecord[] // P6-6A — immutable inference-record shell (populated at terminalization by 6C)
+  inferenceJobs           InferenceJob[] // P6-6C — mutable inference execution/queue rows
+  inferenceEvents         InferenceEvent[] // P6-6C — append-only inference audit trail
   datasets                Dataset[] // P6-6B — governed datasets
   datasetVersions         DatasetVersion[] // P6-6B — immutable dataset versions
   datasetSlides           DatasetSlide[] // P6-6B — dataset membership (slide refs)
@@ -1154,6 +1156,7 @@ model AiModelVersion {
 
   lifecycleEvents  AiModelLifecycleEvent[]
   inferenceRecords InferenceRecord[]
+  inferenceJobs    InferenceJob[] // P6-6C — execution jobs selecting this version
 
   @@unique([labId, modelId, semverMajor, semverMinor, semverPatch])
   @@index([labId])
@@ -1183,12 +1186,16 @@ model AiModelLifecycleEvent {
   @@index([modelVersionId])
 }
 
-// Immutable inference-record SHELL (6A). Created so the architecture exists; it
-// is INERT in 6A — never written, with NO execution/status/runtime/timing/result
-// semantics (those are designed and added additively by the 6C preflight). Slides
-// are referenced by id ONLY — no PHI is copied. All provenance FKs are RESTRICT:
-// accepted inference provenance can never lose its subject/version reference via a
-// later deletion (no silent history mutation).
+// Immutable inference-record shell — the 6A-reserved provenance record, ADDITIVELY
+// activated in 6C. The 6A-era columns (identity/lab/model-version ref/optional slide
+// ref/inputDigest/requestedAt) are UNCHANGED. 6C adds — additively — the immutable
+// EVIDENCE of one completed execution (deterministic-contract fields + outcome +
+// result reference/digest + timing), written EXACTLY ONCE at terminalization and
+// never mutated (no update/delete path in the application — the mutable job lives in
+// InferenceJob; the audit trail in InferenceEvent). Slides are referenced by id ONLY
+// — no PHI is copied; results are digest/reference only — no bytes, no PHI, and no
+// diagnostic claim. All provenance FKs are RESTRICT: accepted inference provenance can
+// never lose its subject/version/job reference via a later deletion.
 model InferenceRecord {
   id             String         @id @default(cuid())
   recordUuid     String         @unique @default(uuid())
@@ -1203,8 +1210,119 @@ model InferenceRecord {
   requestedAt DateTime @default(now())
   createdAt   DateTime @default(now())
 
+  // ── P6-6C additive immutable evidence (written once at terminalization) ──────────
+  jobId String?       @unique // the execution that produced this evidence (1:1)
+  job   InferenceJob? @relation(fields: [jobId], references: [id], onDelete: Restrict)
+
+  // Deterministic execution contract (Decision 10) — reproducible from audit.
+  adapterId                String? // selected adapter identity (e.g. "stub")
+  adapterVersion           String? // adapter version — provenance of what ran
+  engineVersion            String? // orchestration-engine version
+  configDigest             String? // sha256 of the runtime configuration that materially affects execution (Guardrail 1) — immutable
+  modelLifecycleStateAtRun AiModelLifecycleState? // eligibility provenance at dispatch (VALIDATION vs APPROVED)
+  validationOnly           Boolean                @default(false) // immutable "not approved for clinical use" provenance (Decision 3)
+
+  outcome      InferenceOutcome? // terminal outcome frozen onto the evidence
+  resultDigest String? // sha256 of the structured output — evidence without copying content
+  resultRef    String? // opaque reference/URI to the structured output; NO bytes, NO PHI, NO diagnostic narrative
+  startedAt    DateTime? // execution start (provenance/timing)
+  finishedAt   DateTime? // execution end (provenance/timing)
+  durationMs   Int? // runtime duration (Decision 10)
+
   @@index([labId])
   @@index([labId, modelVersionId])
+  @@index([jobId])
+}
+
+// ============================================================================
+// Program 6 · Phase 6C — inference EXECUTION ENGINE (orchestration only; never
+// clinical interpretation). A MUTABLE, lease-based execution/queue row
+// (InferenceJob) mirrors the Program-5 SlideProcessingJob concurrency core; on
+// terminalization it writes the immutable InferenceRecord evidence once and an
+// append-only InferenceEvent audit trail. The default adapter is deterministic
+// and NON-CLINICAL. Model selection is limited to eligible lifecycle states
+// (VALIDATION/APPROVED); VALIDATION runs are recorded validation-only. Slides are
+// referenced by id ONLY; results are digest/reference only — no bytes, no PHI, no
+// diagnostic claim. All provenance FKs RESTRICT; lab-scoped tenancy throughout.
+// ============================================================================
+
+enum InferenceJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  TIMED_OUT
+}
+
+enum InferenceOutcome {
+  SUCCEEDED
+  FAILED
+  TIMED_OUT
+}
+
+// Mutable inference execution/queue row (mirrors SlideProcessingJob). Lease-based
+// ownership; status transitions QUEUED → RUNNING → (SUCCEEDED | FAILED | TIMED_OUT).
+// Runtime cadences/lease DURATION are policy (config), never schema — only the
+// resulting expiry timestamp is stored. A raw-SQL PARTIAL UNIQUE INDEX on
+// (modelVersionId, subjectSlideId, inputDigest) WHERE status IN ('QUEUED','RUNNING')
+// enforces at-most-one-active inference per subject+input (Decision 5).
+model InferenceJob {
+  id             String         @id @default(cuid())
+  jobUuid        String         @unique @default(uuid())
+  labId          String
+  lab            Lab            @relation(fields: [labId], references: [id])
+  modelVersionId String
+  modelVersion   AiModelVersion @relation(fields: [modelVersionId], references: [id], onDelete: Restrict)
+  subjectSlideId String? // reference ONLY to DigitalSlide (labId,id); no PHI copied
+  subjectSlide   DigitalSlide?  @relation(fields: [subjectSlideId], references: [id], onDelete: Restrict)
+
+  inputDigest  String // sha256 of a redacted/reference payload; proves input class w/o PHI
+  configDigest String? // sha256 of the runtime configuration that materially affects execution (Guardrail 1)
+  adapterId    String // selected adapter identity (default deterministic stub)
+
+  status         InferenceJobStatus @default(QUEUED)
+  attempt        Int                @default(1)
+  workerId       String? // logical worker identity (populated at claim)
+  heartbeatAt    DateTime?
+  leaseExpiresAt DateTime?
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  errorCode      String? // stable classified failure code — never PHI
+  errorDetail    String? // bounded diagnostic — never PHI, never a diagnostic claim
+
+  createdById String? // actor; no FK so provenance survives user deletion
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  record InferenceRecord? // the immutable evidence written at terminalization (1:1)
+  events InferenceEvent[] // append-only audit trail
+
+  @@index([labId])
+  @@index([labId, status])
+  @@index([status, leaseExpiresAt]) // reclaimer scan (RUNNING jobs with an expired lease)
+  @@index([modelVersionId])
+}
+
+// Append-only inference audit trail (mirrors AiModelLifecycleEvent). Exactly one
+// row per accepted status transition; the rows of one transition share `eventId`.
+// No update/delete path in the application. Restrict on delete (audit evidence).
+model InferenceEvent {
+  id    String       @id @default(cuid())
+  labId String
+  lab   Lab          @relation(fields: [labId], references: [id])
+  jobId String
+  job   InferenceJob @relation(fields: [jobId], references: [id], onDelete: Restrict)
+
+  fromStatus InferenceJobStatus?
+  toStatus   InferenceJobStatus
+  actorId    String? // actor; no FK
+  detail     String? // structured/bounded; NEVER PHI, NEVER a diagnostic claim
+  eventId    String // shared across the rows of one transition
+  occurredAt DateTime            @default(now())
+
+  @@index([labId])
+  @@index([labId, jobId])
+  @@index([jobId])
 }
 
 // ============================================================================
@@ -3127,6 +3245,7 @@ model DigitalSlide {
   publications      GenerationPublication[] // P5-4 — append-only publication provenance for this slide
   deliverySessions  DeliverySession[] // P5-5 — short-lived authenticated viewing capabilities
   inferenceRecords  InferenceRecord[] // P6-6A — inference-record shell references (reference only; no PHI)
+  inferenceJobs     InferenceJob[] // P6-6C — inference execution jobs referencing this slide (reference only; no PHI)
   datasetSlides     DatasetSlide[] // P6-6B — dataset membership references (reference only; no PHI)
   groundTruthLabels GroundTruthLabel[] // P6-6B — ground-truth labels referencing this slide
   dicomMetadata     SlideDicomMetadata? // P5C-C1 — optional DICOM WSI identity/conformance (1:1; only DICOM-sourced slides)
