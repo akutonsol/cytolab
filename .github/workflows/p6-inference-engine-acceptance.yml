@@ -1,0 +1,122 @@
+# Program 6 · Phase 6C — inference-engine acceptance gate (folded, gated).
+#
+# Gated (workflow_dispatch only). Proves the inference EXECUTION ENGINE architecture (orchestration only) against
+# PERSISTED DB truth on a fresh checkout + isolated Postgres — additive schema (2 tables + 2 enums + additively
+# extended InferenceRecord), the raw-SQL active-job partial unique index (tuple + predicate), RESTRICT provenance
+# FKs, preserved 6A columns, no PHI, model eligibility (VALIDATION/APPROVED only), immutable validation-only
+# provenance, active-job idempotency + freeing after terminalization, lab tenancy + cross-lab fail-closed, immutable
+# single-write evidence + append-only audit, deterministic adapter + immutable config digest, digest/reference
+# results, adapter-failure isolation, reclaim → TIMED_OUT with no retry, permission separation + no default grant,
+# worker disabled by default, and no dataset/automatic/clinical coupling. Then the focused 6C jest, a Program-5/6A/6B
+# non-regression jest, and a strict zero-error tsc. Every command fails the job closed. Verifies the exact head and
+# that it descends from the 6C implementation candidate 1f1856b.
+#
+# IMPORTANT: the active-job partial unique index is a RAW-SQL migration-only invariant that Prisma's datamodel
+# reconstruction does not reproduce. The gate installs it EXPLICITLY (from the authoritative migration) after
+# building the schema from the datamodel and BEFORE seeding/assertions, then verifies it against DB truth.
+name: p6-inference-engine-acceptance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p6-inference-engine-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  inference-engine-acceptance:
+    name: P6-6C inference engine (gated)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cytolab_accept_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
+      DATABASE_MIGRATION_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
+      JWT_SECRET: 'ci-accept-jwt-secret-000000000000000000'
+      JWT_REFRESH_SECRET: ci-accept-refresh-secret
+      JWT_PORTAL_SECRET: 'ci-accept-jwt-portal-secret-00000000000000'
+      JWT_PORTAL_REFRESH_SECRET: ci-accept-portal-refresh-secret
+      ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
+      COOKIE_SECURE: 'false'
+      NODE_ENV: development
+      INFERENCE_FIXTURES_OUT: /tmp/.inference-engine-fixtures.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so the merge-base lineage check can resolve 1f1856b
+
+      - name: Print & verify the checked-out commit (exact-head + 6C lineage rooted at 1f1856b)
+        run: |
+          set -euo pipefail
+          echo "github.sha        = ${{ github.sha }}"
+          echo "git rev-parse HEAD = $(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}" || { echo "!! checkout SHA does not match github.sha"; exit 1; }
+          git merge-base --is-ancestor 1f1856b61082c694f9b46ee2d29b85ed5f9f5707 "$(git rev-parse HEAD)" || { echo "!! head is not a descendant of the 6C implementation candidate 1f1856b"; exit 1; }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+
+      - run: npm ci
+
+      - name: Prisma generate
+        run: cd apps/api && npx prisma generate
+
+      - name: Build acceptance DB schema from the committed datamodel (folded-gate method; no migration introduced)
+        run: |
+          set -euo pipefail
+          cd apps/api
+          npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > /tmp/accept-schema.sql
+          npx prisma db execute --url "$DATABASE_URL" --file /tmp/accept-schema.sql
+
+      - name: Install migration-only raw SQL invariants (active-job partial unique index; omitted by datamodel reconstruction)
+        run: |
+          set -euo pipefail
+          cd apps/api
+          # Extract the authoritative index DDL from the 6C migration (single source of truth) and apply it.
+          awk '/CREATE UNIQUE INDEX "InferenceJob_active_subject_input_key"/,/;/' \
+            prisma/migrations/20260731090000_p6_6c_inference_engine/migration.sql > /tmp/6c-raw-invariants.sql
+          test -s /tmp/6c-raw-invariants.sql || { echo "!! could not extract the active-job partial unique index from the migration"; exit 1; }
+          echo "--- installing raw invariant(s) ---"; cat /tmp/6c-raw-invariants.sql
+          npx prisma db execute --url "$DATABASE_URL" --file /tmp/6c-raw-invariants.sql
+
+      - name: Seed the permission catalogue + two isolated labs (models across the lifecycle + Program-5 slides)
+        run: |
+          set -euo pipefail
+          cd apps/api
+          npx prisma db seed
+          npx ts-node --transpile-only scripts/seed-inference-engine-acceptance.ts
+
+      - name: Persisted-state assertions (schema / raw-index / RESTRICT / eligibility / idempotency / immutability / failure-isolation / reclaim / no-PHI)
+        run: cd apps/api && npx ts-node --transpile-only scripts/assert-inference-engine-state.ts
+
+      - name: Focused inference-engine tests
+        run: cd apps/api && npx jest src/modules/inference-engine --runInBand
+
+      - name: Program-5 / 6A / 6B non-regression tests
+        run: cd apps/api && npx jest src/modules/ai-registry src/modules/dataset-governance src/modules/wsi/dicom/dicom-conformance.spec.ts src/modules/reports/reports.service.spec.ts --runInBand
+
+      - name: TypeScript (strict — any error fails the gate closed)
+        run: cd apps/api && npx tsc --noEmit -p tsconfig.json
+
+      - name: Collect artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p6-6c-inference-engine-acceptance
+          path: |
+            /tmp/.inference-engine-fixtures.json
+            /tmp/accept-schema.sql
+            /tmp/6c-raw-invariants.sql
+          if-no-files-found: ignore
