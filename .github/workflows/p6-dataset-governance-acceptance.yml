@@ -1,0 +1,102 @@
+# Program 6 · Phase 6B — dataset-governance acceptance gate (folded, gated).
+#
+# Gated (workflow_dispatch only). Proves the dataset-governance architecture against PERSISTED DB truth on a
+# fresh checkout + isolated Postgres — additive schema, RESTRICT provenance FKs, lab tenancy + cross-lab
+# fail-closed, dataset-kind enforcement, pointer-only training references, DRAFT→FROZEN compare-and-set +
+# frozen immutability + correction-as-new-version, structured ground-truth labels + append-only lineage,
+# immutable purpose, no PHI columns, no model-version linkage, permission separation + no default grant, and
+# Program-5/6A non-regression. Then the focused dataset-governance jest, a 6A/reporting/Program-5 non-regression
+# jest, and a strict zero-error tsc. Every command fails the job closed. Verifies the exact head and that it is
+# a descendant of the 6B implementation candidate 80063a4.
+name: p6-dataset-governance-acceptance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p6-dataset-governance-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dataset-governance-acceptance:
+    name: P6-6B dataset governance (gated)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cytolab_accept_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
+      DATABASE_MIGRATION_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
+      JWT_SECRET: 'ci-accept-jwt-secret-000000000000000000'
+      JWT_REFRESH_SECRET: ci-accept-refresh-secret
+      JWT_PORTAL_SECRET: 'ci-accept-jwt-portal-secret-00000000000000'
+      JWT_PORTAL_REFRESH_SECRET: ci-accept-portal-refresh-secret
+      ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
+      COOKIE_SECURE: 'false'
+      NODE_ENV: development
+      DATASET_FIXTURES_OUT: /tmp/.dataset-governance-fixtures.json
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Print & verify the checked-out commit (exact-head + 6B lineage rooted at 80063a4)
+        run: |
+          set -euo pipefail
+          echo "github.sha        = ${{ github.sha }}"
+          echo "git rev-parse HEAD = $(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}" || { echo "!! checkout SHA does not match github.sha"; exit 1; }
+          git merge-base --is-ancestor 80063a4adbe179760ecec658bd95e989a5de9d44 "$(git rev-parse HEAD)" || { echo "!! head is not a descendant of the 6B implementation candidate 80063a4"; exit 1; }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+
+      - run: npm ci
+
+      - name: Prisma generate
+        run: cd apps/api && npx prisma generate
+
+      - name: Build acceptance DB schema from the committed datamodel (folded-gate method; no migration introduced)
+        run: |
+          set -euo pipefail
+          cd apps/api
+          npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > /tmp/accept-schema.sql
+          npx prisma db execute --url "$DATABASE_URL" --file /tmp/accept-schema.sql
+
+      - name: Seed the permission catalogue + two isolated labs (with Program-5 slides)
+        run: |
+          set -euo pipefail
+          cd apps/api
+          npx prisma db seed
+          npx ts-node --transpile-only scripts/seed-dataset-governance-acceptance.ts
+
+      - name: Persisted-state assertions (governance / immutability / tenancy / RESTRICT / no-PHI / lineage)
+        run: cd apps/api && npx ts-node --transpile-only scripts/assert-dataset-governance-state.ts
+
+      - name: Focused dataset-governance tests
+        run: cd apps/api && npx jest src/modules/dataset-governance --runInBand
+
+      - name: Program-5 / 6A non-regression tests
+        run: cd apps/api && npx jest src/modules/ai-registry src/modules/wsi/dicom/dicom-conformance.spec.ts src/modules/reports/reports.service.spec.ts --runInBand
+
+      - name: TypeScript (strict — any error fails the gate closed)
+        run: cd apps/api && npx tsc --noEmit -p tsconfig.json
+
+      - name: Collect artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p6-6b-dataset-governance-acceptance
+          path: |
+            /tmp/.dataset-governance-fixtures.json
+            /tmp/accept-schema.sql
+          if-no-files-found: ignore

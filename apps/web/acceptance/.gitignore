@@ -10,6 +10,7 @@
 .specimen-fixtures.json
 .autoingest-fixtures.json
 .ai-infra-fixtures.json
+.dataset-governance-fixtures.json
 .graph-fixtures.json
 .auth/
 .output/
