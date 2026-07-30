@@ -1,9 +1,10 @@
 # Program 7 — Enterprise Identity & Access Management (IAM) — CHARTER & ROADMAP
 
-**Status:** Charter of record — **v1 (amended)**, submitted for ratification. Governance framing for a NEW programme;
-**no engineering authorized.** This document establishes the mission, governing principles, scope, phase structure,
-hard non-goals, relationship to existing systems, and governance lifecycle for Program 7. It **references** — and
-modifies nothing in — the frozen Programs 1–6 baselines (Program 6 complete at tag `p6-complete`; Program 5 frozen).
+**Status:** **RATIFIED — v1.1 (2026-07-30).** Governance framing for a NEW programme; **no engineering authorized.**
+Ratification authorizes only the move to the Program 7 Architecture Review. v1.1 adds Principle 9 (Identity is a
+Platform Service), recorded at ratification. This document establishes the mission, governing principles, scope, phase
+structure, hard non-goals, relationship to existing systems, and governance lifecycle for Program 7. It **references** —
+and modifies nothing in — the frozen Programs 1–6 baselines (Program 6 complete at tag `p6-complete`; Program 5 frozen).
 
 ---
 
@@ -43,6 +44,11 @@ authority, AI authority, or diagnostic decision-making.
    authentication and authorization infrastructure. The existing custom auth, session, and permission systems remain
    **authoritative** until intentionally superseded through a **governed migration**. This preserves backward
    compatibility and reduces migration risk.
+9. **Identity is a Platform Service.** Identity is a shared platform capability, not a feature owned by individual
+   modules. Identity owns authentication and authorization; every other program **consumes** it as a single source of
+   truth. Clinical modules (Programs 1–5) do not implement their own identity logic; AI modules (Program 6) do not
+   implement their own identity logic; audit/governance modules **consume** identity events rather than duplicating
+   identity behaviour. This reduces duplication and keeps one authoritative access-decision boundary.
 
 ## 3. Relationship to existing systems (the incumbent Program 7 extends)
 - **Authentication / sessions:** custom JWT staff + portal auth in `apps/api/src/modules/auth` (e.g. `PermissionsGuard`,
