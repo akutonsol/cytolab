@@ -75,6 +75,12 @@ export const SPECIAL_OBJECTS: Record<string, string[]> = {
   // roles reach it via the guard bypass. promote is deliberately distinct from manage. NOT reused for anything
   // else, and unrelated to the simulated AIScreeningResult (a Legacy Demonstration Component).
   aimodel: ['view', 'manage', 'promote'],
+  // P6-6B — dataset governance (validation datasets + training-dataset references). view = read datasets/versions;
+  // manage = create dataset/version + edit DRAFT membership/labels/rules/purpose + add training references;
+  // freeze = freeze a dataset version (the immutability commit — governance-critical). Assigned to NO default role
+  // (byPrefix below never selects 'dataset'); super roles reach it via the guard bypass. freeze is deliberately
+  // distinct from manage. Datasets reference Program-5 slides by identity only; no PHI. Deferred: 6F links dataset↔model.
+  dataset: ['view', 'manage', 'freeze'],
 };
 
 export interface SeedRoleDef {

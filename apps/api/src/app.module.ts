@@ -65,6 +65,7 @@ import { WsiModule } from './modules/wsi/wsi.module';
 import { AutoIngestionModule } from './modules/wsi/auto-ingestion/auto-ingestion.module';
 import { AIScreeningModule } from './modules/ai-screening/ai-screening.module';
 import { AiRegistryModule } from './modules/ai-registry/ai-registry.module';
+import { DatasetGovernanceModule } from './modules/dataset-governance/dataset-governance.module';
 import { TeleconsultModule } from './modules/teleconsult/teleconsult.module';
 import { CodingModule } from './modules/coding/coding.module';
 import { FhirModule } from './modules/fhir/fhir.module';
@@ -167,6 +168,7 @@ import { ScreeningBatchesModule } from './modules/screening-batches/screening-ba
     AutoIngestionModule, // Program 5B — automated (watch-folder) ingestion; poller disabled unless WSI_WATCH_FOLDER=true
     AIScreeningModule,
     AiRegistryModule, // Program 6 · Phase 6A — AI model registry + lifecycle governance (no inference)
+    DatasetGovernanceModule, // Program 6 · Phase 6B — dataset governance (no inference/training/validation)
     TeleconsultModule,
     CodingModule,
     FhirModule,

@@ -218,6 +218,12 @@ model Lab {
   aiModelVersions         AiModelVersion[] // P6-6A — versioned AI model records
   aiModelLifecycleEvents  AiModelLifecycleEvent[] // P6-6A — append-only lifecycle transitions
   inferenceRecords        InferenceRecord[] // P6-6A — immutable inference-record shell (unpopulated until 6C)
+  datasets                Dataset[] // P6-6B — governed datasets
+  datasetVersions         DatasetVersion[] // P6-6B — immutable dataset versions
+  datasetSlides           DatasetSlide[] // P6-6B — dataset membership (slide refs)
+  groundTruthLabels       GroundTruthLabel[] // P6-6B — structured ground-truth labels
+  annotationLineageEvents AnnotationLineageEvent[] // P6-6B — append-only label lineage
+  trainingDatasetRefs     TrainingDatasetReference[] // P6-6B — external training-corpus references
   requisitionLines        RequisitionLine[]
   recordStatusEvents      RecordStatusEvent[]
   therapies               Therapy[]
@@ -807,6 +813,7 @@ model Specimen {
   resultEntries ResultEntry[]
   images        SpecimenImage[]
   digitalSlides DigitalSlide[] // P5-1 optional specimen-anchored slides (nullable link)
+  datasetSlides DatasetSlide[] // P6-6B — dataset membership (specimen refs)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
@@ -1169,7 +1176,7 @@ model AiModelLifecycleEvent {
   actorId    String? // actor; no FK
   reason     String? // structured/plain justification; NEVER PHI
   eventId    String // shared across the rows of one transition transaction
-  occurredAt DateTime @default(now())
+  occurredAt DateTime              @default(now())
 
   @@index([labId])
   @@index([labId, modelVersionId])
@@ -1200,6 +1207,174 @@ model InferenceRecord {
   @@index([labId, modelVersionId])
 }
 
+// ============================================================================
+// Program 6 · Phase 6B — dataset governance (validation datasets + training-
+// dataset REFERENCES). Immutable versioned datasets that REFERENCE Program-5
+// slides by identity (labId, slideId[, specimenId]) and NEVER duplicate PHI;
+// structured/coded ground-truth labels with append-only annotation lineage;
+// inclusion/exclusion rules; immutable dataset-purpose provenance. No inference/
+// training/model-linkage/validation-metrics here (dataset↔model-version is 6F).
+// Ground truth is DISTINCT from the viewer SlideAnnotation. Lab-scoped; all
+// provenance FKs onDelete: Restrict; reference-not-copy.
+// ============================================================================
+
+enum DatasetKind {
+  VALIDATION // in-platform curated membership + ground-truth labels over Program-5 slides
+  TRAINING_REFERENCE // pointer-only provenance to an EXTERNAL corpus (no membership/labels/bytes/PHI)
+}
+
+enum DatasetVersionState {
+  DRAFT // membership/labels/rules/purpose mutable
+  FROZEN // immutable snapshot; a correction creates a NEW version (ARCHIVED deferred)
+}
+
+// Declared PURPOSE — provenance only, NEVER used for authorization.
+enum DatasetPurpose {
+  ALGORITHM_VALIDATION
+  REGULATORY_SUBMISSION
+  INTERNAL_BENCHMARKING
+  CLINICAL_QA
+  RESEARCH
+  DEMONSTRATION
+}
+
+enum DatasetSlideMembership {
+  INCLUDED
+  EXCLUDED
+}
+
+enum AnnotationMethod {
+  PATHOLOGIST_ASSERTED
+  CONSENSUS
+  IMPORTED
+}
+
+// A logical governed dataset. `datasetUuid` is the permanent identity.
+model Dataset {
+  id          String      @id @default(cuid())
+  datasetUuid String      @unique @default(uuid())
+  labId       String
+  lab         Lab         @relation(fields: [labId], references: [id])
+  key         String // stable human slug (unique per lab)
+  displayName String
+  kind        DatasetKind
+  description String?
+  createdById String? // actor; no FK
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  versions           DatasetVersion[]
+  trainingReferences TrainingDatasetReference[]
+
+  @@unique([labId, key])
+  @@index([labId])
+}
+
+// Immutable versioned snapshot. DRAFT mutable; FROZEN immutable (a correction is
+// a NEW version). `purpose` is immutable provenance.
+model DatasetVersion {
+  id             String              @id @default(cuid())
+  versionUuid    String              @unique @default(uuid())
+  labId          String
+  lab            Lab                 @relation(fields: [labId], references: [id])
+  datasetId      String
+  dataset        Dataset             @relation(fields: [datasetId], references: [id], onDelete: Restrict)
+  versionNumber  Int // monotonic per dataset
+  state          DatasetVersionState @default(DRAFT)
+  purpose        DatasetPurpose // immutable provenance — NOT authorization
+  inclusionRules Json? // structured snapshot — slide/technical attributes only, NO PHI
+  manifestDigest String? // sha256 over frozen membership+labels (provenance w/o copying content)
+  createdById    String? // actor; no FK
+  createdAt      DateTime            @default(now())
+  frozenAt       DateTime?
+
+  slides      DatasetSlide[]
+  groundTruth GroundTruthLabel[]
+
+  @@unique([labId, datasetId, versionNumber])
+  @@index([labId])
+  @@index([labId, datasetId])
+  @@index([datasetId])
+}
+
+// Membership (VALIDATION kind): references a Program-5 slide by id ONLY — no PHI.
+model DatasetSlide {
+  id               String                 @id @default(cuid())
+  labId            String
+  lab              Lab                    @relation(fields: [labId], references: [id])
+  datasetVersionId String
+  datasetVersion   DatasetVersion         @relation(fields: [datasetVersionId], references: [id], onDelete: Restrict)
+  slideId          String
+  slide            DigitalSlide           @relation(fields: [slideId], references: [id], onDelete: Restrict)
+  specimenId       String?
+  specimen         Specimen?              @relation(fields: [specimenId], references: [id], onDelete: Restrict)
+  membership       DatasetSlideMembership @default(INCLUDED)
+  exclusionReason  String? // coded reason — NO PHI
+  addedAt          DateTime               @default(now())
+
+  @@unique([labId, datasetVersionId, slideId])
+  @@index([labId])
+  @@index([datasetVersionId])
+  @@index([slideId])
+}
+
+// Structured/coded ground-truth label, frozen with the version. NO PHI.
+model GroundTruthLabel {
+  id                 String         @id @default(cuid())
+  labId              String
+  lab                Lab            @relation(fields: [labId], references: [id])
+  datasetVersionId   String
+  datasetVersion     DatasetVersion @relation(fields: [datasetVersionId], references: [id], onDelete: Restrict)
+  slideId            String
+  slide              DigitalSlide   @relation(fields: [slideId], references: [id], onDelete: Restrict)
+  labelSchemaKey     String
+  labelSchemaVersion String
+  labelValue         String // structured/coded — NO free-text PHI
+  assertedById       String? // actor; no FK
+  assertedAt         DateTime       @default(now())
+
+  lineage AnnotationLineageEvent[]
+
+  @@unique([labId, datasetVersionId, slideId, labelSchemaKey])
+  @@index([labId])
+  @@index([datasetVersionId])
+  @@index([slideId])
+}
+
+// Append-only provenance for how a label was derived. NO PHI.
+model AnnotationLineageEvent {
+  id                 String           @id @default(cuid())
+  labId              String
+  lab                Lab              @relation(fields: [labId], references: [id])
+  groundTruthLabelId String
+  groundTruthLabel   GroundTruthLabel @relation(fields: [groundTruthLabelId], references: [id], onDelete: Restrict)
+  method             AnnotationMethod
+  actorId            String? // no FK
+  sourceRef          String? // provenance pointer — NO PHI
+  eventId            String // shared across the rows of one lineage transaction
+  occurredAt         DateTime         @default(now())
+
+  @@index([labId])
+  @@index([groundTruthLabelId])
+}
+
+// Pointer-only provenance to an EXTERNAL training corpus (TRAINING_REFERENCE
+// kind). No slide membership, no labels, no bytes, no PHI, no import.
+model TrainingDatasetReference {
+  id            String   @id @default(cuid())
+  labId         String
+  lab           Lab      @relation(fields: [labId], references: [id])
+  datasetId     String
+  dataset       Dataset  @relation(fields: [datasetId], references: [id], onDelete: Restrict)
+  descriptor    String
+  provenanceUri String
+  contentDigest String? // optional integrity digest of the external corpus
+  createdById   String? // no FK
+  createdAt     DateTime @default(now())
+
+  @@index([labId])
+  @@index([datasetId])
+}
 
 // ---- Phase 4: Revenue ----
 // All monetary amounts are integers in minor units (cents). Currency is the
@@ -2924,9 +3099,9 @@ model DigitalSlide {
   format   String @default("image") // legacy container hint; superseded by tileSourceType
 
   // Acquisition metadata (intrinsic to the source image).
-  tileSourceType TileSourceType?  // backfilled from `format`; NOT NULL after backfill (Phase C)
+  tileSourceType TileSourceType? // backfilled from `format`; NOT NULL after backfill (Phase C)
   sourceKind     SlideSourceKind? // backfilled EXTERNAL_URL; NOT NULL after backfill (Phase C)
-  storageKey     String?          // in-platform private source object key (null for legacy external)
+  storageKey     String? // in-platform private source object key (null for legacy external)
   objectivePower Float?
   mpp            Float? // microns per pixel
   sourceWidth    Int?
@@ -2938,21 +3113,23 @@ model DigitalSlide {
 
   // Clinical availability + publication provenance (Refinement 3).
   availabilityStatus    SlideAvailabilityStatus? // backfilled PUBLISHED; NOT NULL after backfill (Phase C)
-  publishedGenerationId String?               @unique
-  publishedGeneration   DerivativeGeneration? @relation("SlidePublished", fields: [publishedGenerationId], references: [id])
+  publishedGenerationId String?                  @unique
+  publishedGeneration   DerivativeGeneration?    @relation("SlidePublished", fields: [publishedGenerationId], references: [id])
   publishedAt           DateTime?
   publishedById         String?
 
   uploadedById String?
   uploadedAt   DateTime @default(now())
 
-  ingestions  SlideIngestion[]
-  generations DerivativeGeneration[] @relation("SlideGenerations")
-  annotations SlideAnnotation[]
-  publications GenerationPublication[] // P5-4 — append-only publication provenance for this slide
-  deliverySessions DeliverySession[] // P5-5 — short-lived authenticated viewing capabilities
-  inferenceRecords InferenceRecord[] // P6-6A — inference-record shell references (reference only; no PHI)
-  dicomMetadata SlideDicomMetadata? // P5C-C1 — optional DICOM WSI identity/conformance (1:1; only DICOM-sourced slides)
+  ingestions        SlideIngestion[]
+  generations       DerivativeGeneration[]  @relation("SlideGenerations")
+  annotations       SlideAnnotation[]
+  publications      GenerationPublication[] // P5-4 — append-only publication provenance for this slide
+  deliverySessions  DeliverySession[] // P5-5 — short-lived authenticated viewing capabilities
+  inferenceRecords  InferenceRecord[] // P6-6A — inference-record shell references (reference only; no PHI)
+  datasetSlides     DatasetSlide[] // P6-6B — dataset membership references (reference only; no PHI)
+  groundTruthLabels GroundTruthLabel[] // P6-6B — ground-truth labels referencing this slide
+  dicomMetadata     SlideDicomMetadata? // P5C-C1 — optional DICOM WSI identity/conformance (1:1; only DICOM-sourced slides)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3045,14 +3222,14 @@ model SlideProcessingJob {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  // P5-3B.0 migration adds a raw-SQL PARTIAL UNIQUE INDEX on (ingestionId) WHERE status IN
+  // ('QUEUED','RUNNING') — the DB backstop for "at most one active job per ingestion".
 
   @@unique([labId, idempotencyKey])
   @@index([labId])
   @@index([ingestionId])
   @@index([labId, status])
   @@index([status, leaseExpiresAt]) // P5-3B.0 — reclaimer scan (RUNNING jobs with an expired lease)
-  // P5-3B.0 migration adds a raw-SQL PARTIAL UNIQUE INDEX on (ingestionId) WHERE status IN
-  // ('QUEUED','RUNNING') — the DB backstop for "at most one active job per ingestion".
 }
 
 // One immutable, sealed derivative pyramid produced by a job. Publishable only when its
@@ -3073,8 +3250,8 @@ model DerivativeGeneration {
   tileSize                   Int?
   levelCount                 Int?
   derivativeManifestChecksum String? // whole-pyramid fingerprint (P5-0 §7); sealed+verified before publish
-  sealed                     Boolean   @default(false)
-  verified                   Boolean   @default(false)
+  sealed                     Boolean          @default(false)
+  verified                   Boolean          @default(false)
   sealedAt                   DateTime?
   // P5-3B.3B — timestamp when INDEPENDENT VERIFICATION reached a terminal verdict (READY or QC_FAILED);
   // NOT merely "when verified=true was set" (a QC_FAILED verdict also stamps it). Null until a verdict.
@@ -3088,16 +3265,16 @@ model DerivativeGeneration {
   verifications     GenerationVerification[] // P5-3B.3B — append-only verification provenance
   publications      GenerationPublication[] // P5-4 — append-only publication/supersession provenance
   deliverySessions  DeliverySession[] // P5-5 — short-lived viewing capabilities bound to this generation
-  publishedForSlide DigitalSlide? @relation("SlidePublished")
+  publishedForSlide DigitalSlide?            @relation("SlidePublished")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  // P5-1A migration adds a raw-SQL PARTIAL UNIQUE INDEX on (slideId) WHERE status='PUBLISHED'
+  // to enforce "at most one published generation per slide" (Prisma cannot express the WHERE).
 
   @@index([labId])
   @@index([slideId])
   @@index([slideId, status])
-  // P5-1A migration adds a raw-SQL PARTIAL UNIQUE INDEX on (slideId) WHERE status='PUBLISHED'
-  // to enforce "at most one published generation per slide" (Prisma cannot express the WHERE).
 }
 
 // One generated object within a generation (tile pyramid, descriptor, label, macro, thumbnail).
@@ -3142,11 +3319,11 @@ model GenerationVerification {
   generationId String
   generation   DerivativeGeneration @relation(fields: [generationId], references: [id], onDelete: Restrict)
 
-  outcome         VerificationOutcome
-  reasons         Json // ordered [{code, detail}] — the frozen B.3A taxonomy in deterministic order; [] for PASSED
+  outcome          VerificationOutcome
+  reasons          Json // ordered [{code, detail}] — the frozen B.3A taxonomy in deterministic order; [] for PASSED
   manifestChecksum String // the sealed fingerprint this attempt certified against
-  verifierVersion String // the B.3A verification logic/taxonomy version that produced the outcome
-  verifiedAt      DateTime @default(now())
+  verifierVersion  String // the B.3A verification logic/taxonomy version that produced the outcome
+  verifiedAt       DateTime            @default(now())
 
   createdAt DateTime @default(now())
 
@@ -4592,7 +4769,7 @@ model AuditEvent {
   // --- Classification (resolved from the registry) ---
   category        AuditCategory
   severity        AuditSeverity
-  phiIndicator    Boolean             @default(false)
+  phiIndicator    Boolean              @default(false)
   dataClass       AuditDataClass
   retentionClass  AuditRetentionClass
   durabilityClass AuditDurabilityClass
@@ -4653,16 +4830,16 @@ model AuditEvent {
   executionId    String?
   metadata       Json? // typed/bounded per registry contract; validated at the write boundary
 
-  @@index([scopeLabId, recordedAt])
-  @@index([category, recordedAt])
-  @@index([actorId, recordedAt])
-  @@index([resourceType, resourceId])
-  @@index([correlationId])
   // P2-4B: (chainId, sequence) uniquely identifies every chained event. Legacy pre-P2-4
   // rows carry chainId = NULL; Postgres treats NULL index keys as distinct (NULLS DISTINCT,
   // the PG16 default), so unlimited legacy NULL-chainId rows coexist under this standard
   // UNIQUE with no partial predicate. Allocation/wiring is P2-4C, not here.
   @@unique([chainId, sequence])
+  @@index([scopeLabId, recordedAt])
+  @@index([category, recordedAt])
+  @@index([actorId, recordedAt])
+  @@index([resourceType, resourceId])
+  @@index([correlationId])
   @@index([recordedAt])
 }
 
@@ -4874,23 +5051,23 @@ enum IngestionAdapterType {
 // P5C-C3 (additive): a DICOMWEB source carries an endpoint base URL + auth type + an AES-256-GCM-encrypted
 // credential (never plaintext, never returned to any API/UI) instead of a filesystem rootPath.
 model IngestionSource {
-  id          String              @id @default(cuid())
-  labId       String
-  lab         Lab                 @relation(fields: [labId], references: [id])
-  kind        IngestionSourceKind @default(FILESYSTEM)
-  rootPath    String? // FILESYSTEM: configured root (local dir/mounted share). Null for a DICOMWEB source.
-  matchConfig Json? // accession-extraction convention for B3 (opaque in B1); non-secret endpoint config for C3
-  enabled     Boolean             @default(true)
+  id               String                 @id @default(cuid())
+  labId            String
+  lab              Lab                    @relation(fields: [labId], references: [id])
+  kind             IngestionSourceKind    @default(FILESYSTEM)
+  rootPath         String? // FILESYSTEM: configured root (local dir/mounted share). Null for a DICOMWEB source.
+  matchConfig      Json? // accession-extraction convention for B3 (opaque in B1); non-secret endpoint config for C3
+  enabled          Boolean                @default(true)
   // ── P5C-C3 DICOMweb endpoint (all null for a FILESYSTEM source) ──
   endpointBaseUrl  String? // https base URL of the DICOMweb (QIDO/WADO) endpoint (infra-sensitive; never in monitoring)
   authType         DicomWebAuthType? // BEARER | BASIC (null = no auth)
   credentialCipher String? // AES-256-GCM ciphertext of the credential (EncryptionService); decrypted in-process only
   // ── P5C-C4 scanner adapter selection (null = legacy FILESYSTEM_IMAGE watch-folder behaviour) ──
-  adapterType IngestionAdapterType?
-  discoveries IngestionDiscovery[]
-  health      IngestionSourceHealth? // P5C-C5 — 1:1 current health snapshot (import-connection health)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  adapterType      IngestionAdapterType?
+  discoveries      IngestionDiscovery[]
+  health           IngestionSourceHealth? // P5C-C5 — 1:1 current health snapshot (import-connection health)
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
 
   @@unique([labId, rootPath]) // one FILESYSTEM source config per (lab, path); nulls (DICOMWEB) don't collide
   @@unique([labId, endpointBaseUrl]) // one DICOMWEB source per (lab, endpoint); nulls (FILESYSTEM) don't collide
