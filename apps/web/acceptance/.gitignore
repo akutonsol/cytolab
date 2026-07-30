@@ -16,6 +16,7 @@
 .human-review-fixtures.json
 .validation-fixtures.json
 .continuous-eval-fixtures.json
+.clinical-perf-fixtures.json
 .graph-fixtures.json
 .auth/
 .output/
