@@ -228,6 +228,10 @@ model Lab {
   humanReviewDecisions        HumanReviewDecision[] // P6-6E — immutable human-review decisions
   humanReviewModifiedFindings HumanReviewModifiedFinding[] // P6-6E — structured MODIFY findings
   humanReviewRequestEvents    HumanReviewRequestEvent[] // P6-6E — append-only request-state audit
+  validationRuns              ValidationRun[] // P6-6F — immutable validation-evidence runs
+  validationMetrics           ValidationMetric[] // P6-6F — structured validation metrics
+  validationConfusionCells    ValidationConfusionCell[] // P6-6F — confusion-matrix cells
+  validationCurvePoints       ValidationCurvePoint[] // P6-6F — ROC/calibration curve points
   datasets                    Dataset[] // P6-6B — governed datasets
   datasetVersions             DatasetVersion[] // P6-6B — immutable dataset versions
   datasetSlides               DatasetSlide[] // P6-6B — dataset membership (slide refs)
@@ -1167,6 +1171,7 @@ model AiModelVersion {
   lifecycleEvents  AiModelLifecycleEvent[]
   inferenceRecords InferenceRecord[]
   inferenceJobs    InferenceJob[] // P6-6C — execution jobs selecting this version
+  validationRuns   ValidationRun[] // P6-6F — validation-evidence runs evaluating this version (reference only; no lifecycle mutation)
 
   @@unique([labId, modelId, semverMajor, semverMinor, semverPatch])
   @@index([labId])
@@ -1633,6 +1638,148 @@ model HumanReviewRequestEvent {
 }
 
 // ============================================================================
+// Program 6 · Phase 6F — VALIDATION EVIDENCE (no claim beyond recorded evidence).
+// A governed, IMMUTABLE validation-evidence subsystem: a ValidationRun permanently
+// binds a FROZEN 6B DatasetVersion (the immutable reference corpus + ground truth)
+// to a 6A AiModelVersion (the evaluated model), and records structured metrics as
+// evidence attached to the MODEL VERSION. The default validator is a DETERMINISTIC,
+// NON-CLINICAL stub — 6F does NOT compute real model performance, certify a model,
+// or make regulatory/clinical/accuracy claims. Validation INFORMS promotion but NEVER
+// performs it (NO SUPPORT LIFECYCLE PROMOTION); it mutates no 6A-6E, dataset, or
+// clinical state. Each run SNAPSHOTS the dataset identity + digest + ground-truth
+// digest (Guardrail 1), the model identity + artifact digest (Guardrail 2), and the
+// full validation config as digests (Guardrail 5), plus metric/computation provenance
+// (Guardrails 3/7), so later dataset/registry/config evolution never alters the
+// evidence. Metrics are STRUCTURED child rows (never JSON blobs/narrative); every
+// numeric is validated; no PHI, no slide diagnosis. Runs are append-only (revalidation
+// = a NEW, fully independent evidence graph — Guardrail 8); the whole set commits
+// ATOMICALLY or not at all (Guardrail 6). Lab-scoped; all provenance FKs RESTRICT.
+// ============================================================================
+
+enum ValidationMetricKind {
+  CONFUSION_MATRIX
+  SENSITIVITY
+  SPECIFICITY
+  PRECISION
+  RECALL
+  F_SCORE
+  ROC_POINT
+  CALIBRATION_POINT
+  OPERATING_THRESHOLD
+}
+
+// Immutable validation-evidence aggregate. Binds a FROZEN DatasetVersion × an
+// AiModelVersion (both RESTRICT) and permanently snapshots what was validated. No
+// update/delete path; revalidation creates a NEW run with its own independent children.
+model ValidationRun {
+  id               String         @id @default(cuid())
+  runUuid          String         @unique @default(uuid())
+  labId            String
+  lab              Lab            @relation(fields: [labId], references: [id])
+  modelVersionId   String
+  modelVersion     AiModelVersion @relation(fields: [modelVersionId], references: [id], onDelete: Restrict)
+  datasetVersionId String
+  datasetVersion   DatasetVersion @relation(fields: [datasetVersionId], references: [id], onDelete: Restrict)
+
+  // Guardrail 1 — dataset identity snapshot (interpretation fixed regardless of later dataset evolution).
+  datasetManifestDigest String?
+  groundTruthDigest     String
+
+  // Guardrail 2 — model identity snapshot (provenance fixed regardless of later registry evolution).
+  modelVersionUuid         String
+  modelUuid                String
+  modelArtifactDigest      String?
+  adapterId                String? // where applicable (not applicable to a model-version validation → null)
+  adapterVersion           String?
+  modelLifecycleStateAtRun AiModelLifecycleState
+
+  // Guardrails 3/5/7 — computation + config provenance (deterministic + traceable).
+  validatorId             String
+  validatorVersion        String
+  computationVersion      String // Guardrail 3 — how metrics were produced
+  metricSchemaVersion     String // Guardrail 7 — the metric-catalog schema version (distinct from computationVersion)
+  calculationId           String // Guardrail 3/4 — deterministic calculation identifier
+  configDigest            String? // Guardrail 5 — overall validation-config digest
+  thresholdConfigDigest   String? // Guardrail 5 — operating-threshold config
+  metricSelectionDigest   String? // Guardrail 5 — metric-selection config
+  computationConfigDigest String? // Guardrail 5 — computation config
+
+  eventId     String // immutable audit identity
+  createdById String? // actor; no FK
+  createdAt   DateTime @default(now())
+
+  metrics        ValidationMetric[]
+  confusionCells ValidationConfusionCell[]
+  curvePoints    ValidationCurvePoint[]
+
+  @@index([labId])
+  @@index([labId, modelVersionId])
+  @@index([labId, datasetVersionId])
+  @@index([modelVersionId])
+  @@index([datasetVersionId])
+}
+
+// A structured, validated scalar metric (Decision 4 + Guardrail 3). Coded class scope only.
+model ValidationMetric {
+  id    String        @id @default(cuid())
+  labId String
+  lab   Lab           @relation(fields: [labId], references: [id])
+  runId String
+  run   ValidationRun @relation(fields: [runId], references: [id], onDelete: Restrict)
+
+  metricKind        ValidationMetricKind
+  labelClassCode    String? // coded class the metric is scoped to (null = overall) — never a diagnosis name
+  value             Float? // validated finite; ratios in [0,1]
+  numeratorSource   String? // Guardrail 3 — provenance of the numerator
+  denominatorSource String? // Guardrail 3 — provenance of the denominator
+  ordinal           Int
+  createdAt         DateTime             @default(now())
+
+  @@index([labId])
+  @@index([labId, runId])
+  @@index([runId])
+}
+
+// Structured confusion-matrix counts (Decision 4). Coded classes only — never a diagnosis.
+model ValidationConfusionCell {
+  id    String        @id @default(cuid())
+  labId String
+  lab   Lab           @relation(fields: [labId], references: [id])
+  runId String
+  run   ValidationRun @relation(fields: [runId], references: [id], onDelete: Restrict)
+
+  trueClassCode String // coded
+  predClassCode String // coded
+  count         Int // validated >= 0
+  createdAt     DateTime @default(now())
+
+  @@unique([labId, runId, trueClassCode, predClassCode])
+  @@index([labId])
+  @@index([labId, runId])
+  @@index([runId])
+}
+
+// Structured ROC / calibration coordinates (Decision 4). Coordinates validated in [0,1].
+model ValidationCurvePoint {
+  id    String        @id @default(cuid())
+  labId String
+  lab   Lab           @relation(fields: [labId], references: [id])
+  runId String
+  run   ValidationRun @relation(fields: [runId], references: [id], onDelete: Restrict)
+
+  curveKind ValidationMetricKind // ROC_POINT | CALIBRATION_POINT
+  x         Float // validated finite in [0,1]
+  y         Float // validated finite in [0,1]
+  threshold Float? // associated operating threshold, when applicable
+  ordinal   Int // deterministic ordering
+  createdAt DateTime             @default(now())
+
+  @@index([labId])
+  @@index([labId, runId])
+  @@index([runId])
+}
+
+// ============================================================================
 // Program 6 · Phase 6B — dataset governance (validation datasets + training-
 // dataset REFERENCES). Immutable versioned datasets that REFERENCE Program-5
 // slides by identity (labId, slideId[, specimenId]) and NEVER duplicate PHI;
@@ -1715,6 +1862,9 @@ model DatasetVersion {
 
   slides      DatasetSlide[]
   groundTruth GroundTruthLabel[]
+
+  // P6-6F — validation runs that use this frozen version as the reference corpus (reference only; RESTRICT).
+  validationRuns ValidationRun[]
 
   @@unique([labId, datasetId, versionNumber])
   @@index([labId])

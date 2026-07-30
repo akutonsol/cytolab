@@ -101,6 +101,13 @@ export const SPECIAL_OBJECTS: Record<string, string[]> = {
   // Assigned to NO default role (byPrefix below never selects 'review'); super roles reach it via the guard bypass.
   // submit is deliberately distinct from view/request/assign. No write to ResultSheet/Record/AiDraft; no PHI.
   review: ['view', 'request', 'assign', 'submit', 'manage'],
+  // P6-6F — validation evidence (governs what may be claimed about a model version; NOT clinical performance/
+  // certification/regulatory claims). view = read validation runs/metrics; run = create a validation run (binds a
+  // FROZEN dataset version × a VALIDATION/APPROVED model version, records immutable structured metrics); manage =
+  // administrative workflow ONLY (NEVER rewrites evidence, promotes a model, or asserts a claim — no support
+  // lifecycle promotion). Assigned to NO default role (byPrefix below never selects 'validation'); super roles reach
+  // it via the guard bypass. run is deliberately distinct from view. No PHI; no slide diagnosis; no lifecycle mutation.
+  validation: ['view', 'run', 'manage'],
 };
 
 export interface SeedRoleDef {
