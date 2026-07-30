@@ -108,6 +108,13 @@ export const SPECIAL_OBJECTS: Record<string, string[]> = {
   // lifecycle promotion). Assigned to NO default role (byPrefix below never selects 'validation'); super roles reach
   // it via the guard bypass. run is deliberately distinct from view. No PHI; no slide diagnosis; no lifecycle mutation.
   validation: ['view', 'run', 'manage'],
+  // P6-6G — continuous evaluation evidence (longitudinal monitoring; NOT autonomous). view = read evaluation
+  // windows/metrics/recommendations; run = initiate a manual evaluation window (aggregates a model version's
+  // InferenceRecord stream over a time window into immutable evidence); manage = administrative workflow ONLY
+  // (NEVER retires/deprecates/promotes/retrains/disables a model or mutates lifecycle — no support lifecycle
+  // mutation). Assigned to NO default role (byPrefix below never selects 'evaluation'); super roles reach it via
+  // the guard bypass. run is deliberately distinct from view. No PHI; no clinical claim; no automatic action.
+  evaluation: ['view', 'run', 'manage'],
 };
 
 export interface SeedRoleDef {

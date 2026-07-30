@@ -70,6 +70,7 @@ import { InferenceEngineModule } from './modules/inference-engine/inference-engi
 import { ExplainabilityModule } from './modules/explainability/explainability.module';
 import { HumanReviewModule } from './modules/human-review/human-review.module';
 import { ValidationModule } from './modules/validation/validation.module';
+import { ContinuousEvalModule } from './modules/continuous-eval/continuous-eval.module';
 import { TeleconsultModule } from './modules/teleconsult/teleconsult.module';
 import { CodingModule } from './modules/coding/coding.module';
 import { FhirModule } from './modules/fhir/fhir.module';
@@ -177,6 +178,7 @@ import { ScreeningBatchesModule } from './modules/screening-batches/screening-ba
     ExplainabilityModule, // Program 6 · Phase 6D — explainability artifacts (assists, never asserts correctness; generator interface + deterministic stub)
     HumanReviewModule, // Program 6 · Phase 6E — human review workflow (the human owns the diagnosis; separate from clinical sign-out)
     ValidationModule, // Program 6 · Phase 6F — validation evidence (immutable; informs but never performs lifecycle promotion)
+    ContinuousEvalModule, // Program 6 · Phase 6G — continuous evaluation evidence (longitudinal; informs but never performs lifecycle mutation)
     TeleconsultModule,
     CodingModule,
     FhirModule,
