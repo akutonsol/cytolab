@@ -4,6 +4,10 @@ Single authoritative reference for every accepted Program 6 phase. **Append-only
 its phase is formally accepted and frozen. `origin/feat/program-6-ai-foundation` is the authoritative Program 6
 history; each acceptance tag is the immutable governance anchor.
 
+> **PROGRAM 6 COMPLETE (2026-07-30).** All eight phases (6A–6H) Accepted & Frozen; program-level Completion Review
+> passed on every audit; master closeout [`PROGRAM_6_MASTER_CLOSEOUT.md`](./PROGRAM_6_MASTER_CLOSEOUT.md); completion
+> anchor = annotated tag `p6-complete`. The program is immutable — future work references it, never amends it.
+
 Per the stage convention: **Implementation Candidate** = the exact implementation/evidence head the authoritative
 CI ran against · **Frozen Head** = the accepted stage head the acceptance tag points to (typically the closeout
 commit; for 6B, 6C, and 6D the governance authorization pinned the tag to the exact evidence head — `1c27092` for 6B,
