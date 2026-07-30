@@ -15,6 +15,7 @@
 .explainability-fixtures.json
 .human-review-fixtures.json
 .validation-fixtures.json
+.continuous-eval-fixtures.json
 .graph-fixtures.json
 .auth/
 .output/
