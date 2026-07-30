@@ -1,0 +1,107 @@
+# Program 6 · Phase 6D — explainability acceptance gate (folded, gated).
+#
+# Gated (workflow_dispatch only). Proves the explainability artifact architecture (assists, never asserts correctness)
+# against PERSISTED DB truth on a fresh checkout + isolated Postgres — additive schema (2 enums + 4 tables), RESTRICT
+# provenance FKs, artifact-set hierarchy + immutable identity, SUCCEEDED-only eligibility, validation-only inheritance,
+# coordinate-space provenance (Guardrail 1), probability normalization (Σ=1±tol), region validation, deterministic
+# generation, append-only regeneration, atomic all-or-nothing persistence (Guardrail 2), no support inference, absence
+# of prohibited semantic + PHI columns, digest/reference-only storage, permission separation + no default grant, and
+# no mutation route. Then the focused 6D jest, a Program-5/6A/6B/6C non-regression jest, and a strict zero-error tsc.
+# Every command fails the job closed. Verifies the exact head and that it descends from the 6D candidate dd3338e.
+#
+# NOTE: 6D introduces NO raw-SQL migration-only invariant (plain validated numeric coordinates), so — unlike the 6C
+# gate — there is NO explicit raw-index install step; the datamodel reconstruction produces a complete schema.
+name: p6-explainability-acceptance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p6-explainability-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  explainability-acceptance:
+    name: P6-6D explainability (gated)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cytolab_accept_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
+      DATABASE_MIGRATION_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
+      JWT_SECRET: 'ci-accept-jwt-secret-000000000000000000'
+      JWT_REFRESH_SECRET: ci-accept-refresh-secret
+      JWT_PORTAL_SECRET: 'ci-accept-jwt-portal-secret-00000000000000'
+      JWT_PORTAL_REFRESH_SECRET: ci-accept-portal-refresh-secret
+      ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
+      COOKIE_SECURE: 'false'
+      NODE_ENV: development
+      EXPLAINABILITY_FIXTURES_OUT: /tmp/.explainability-fixtures.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so the merge-base lineage check can resolve dd3338e
+
+      - name: Print & verify the checked-out commit (exact-head + 6D lineage rooted at dd3338e)
+        run: |
+          set -euo pipefail
+          echo "github.sha        = ${{ github.sha }}"
+          echo "git rev-parse HEAD = $(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}" || { echo "!! checkout SHA does not match github.sha"; exit 1; }
+          git merge-base --is-ancestor dd3338e09529a2fcc3deb6d6a33eb816221e0338 "$(git rev-parse HEAD)" || { echo "!! head is not a descendant of the 6D implementation candidate dd3338e"; exit 1; }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+
+      - run: npm ci
+
+      - name: Prisma generate
+        run: cd apps/api && npx prisma generate
+
+      - name: Build acceptance DB schema from the committed datamodel (folded-gate method; no migration introduced)
+        run: |
+          set -euo pipefail
+          cd apps/api
+          npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > /tmp/accept-schema.sql
+          npx prisma db execute --url "$DATABASE_URL" --file /tmp/accept-schema.sql
+
+      - name: Seed the permission catalogue + two isolated labs (inference records across eligibility + Program-5 slides)
+        run: |
+          set -euo pipefail
+          cd apps/api
+          npx prisma db seed
+          npx ts-node --transpile-only scripts/seed-explainability-acceptance.ts
+
+      - name: Persisted-state assertions (hierarchy / immutability / eligibility / coordinate-space / probability / regions / determinism / atomicity / no-support-inference / RESTRICT / no-PHI)
+        run: cd apps/api && npx ts-node --transpile-only scripts/assert-explainability-state.ts
+
+      - name: Focused explainability tests
+        run: cd apps/api && npx jest src/modules/explainability --runInBand
+
+      - name: Program-5 / 6A / 6B / 6C non-regression tests
+        run: cd apps/api && npx jest src/modules/ai-registry src/modules/dataset-governance src/modules/inference-engine src/modules/wsi/dicom/dicom-conformance.spec.ts src/modules/reports/reports.service.spec.ts --runInBand
+
+      - name: TypeScript (strict — any error fails the gate closed)
+        run: cd apps/api && npx tsc --noEmit -p tsconfig.json
+
+      - name: Collect artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p6-6d-explainability-acceptance
+          path: |
+            /tmp/.explainability-fixtures.json
+            /tmp/accept-schema.sql
+          if-no-files-found: ignore

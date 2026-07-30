@@ -12,6 +12,7 @@
 .ai-infra-fixtures.json
 .dataset-governance-fixtures.json
 .inference-engine-fixtures.json
+.explainability-fixtures.json
 .graph-fixtures.json
 .auth/
 .output/
