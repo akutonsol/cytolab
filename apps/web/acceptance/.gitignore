@@ -14,6 +14,7 @@
 .inference-engine-fixtures.json
 .explainability-fixtures.json
 .human-review-fixtures.json
+.validation-fixtures.json
 .graph-fixtures.json
 .auth/
 .output/
