@@ -1,8 +1,10 @@
 # Program 7 — Enterprise Identity & Access Management (IAM) — CHARTER & ROADMAP
 
-**Status:** **RATIFIED — v1.1 (2026-07-30).** Governance framing for a NEW programme; **no engineering authorized.**
-Ratification authorizes only the move to the Program 7 Architecture Review. v1.1 adds Principle 9 (Identity is a
-Platform Service), recorded at ratification. This document establishes the mission, governing principles, scope, phase
+**Status:** **RATIFIED — v1.2 (2026-07-30).** Governance framing for a NEW programme; **no engineering authorized.**
+Ratification authorized the Architecture Review; its approval authorized the Cross-Program Boundary Review. v1.1 added
+Principle 9 (Identity is a Platform Service) at ratification; v1.2 adds Principle 10 (Source of Authentication, not
+Domain Truth) and Principle 11 (Human and Non-Human Identities are distinct principal classes — the promoted D3), both
+recorded at Architecture-Review approval. This document establishes the mission, governing principles, scope, phase
 structure, hard non-goals, relationship to existing systems, and governance lifecycle for Program 7. It **references** —
 and modifies nothing in — the frozen Programs 1–6 baselines (Program 6 complete at tag `p6-complete`; Program 5 frozen).
 
@@ -49,6 +51,16 @@ authority, AI authority, or diagnostic decision-making.
    truth. Clinical modules (Programs 1–5) do not implement their own identity logic; AI modules (Program 6) do not
    implement their own identity logic; audit/governance modules **consume** identity events rather than duplicating
    identity behaviour. This reduces duplication and keeps one authoritative access-decision boundary.
+10. **Identity is the Source of Authentication, not Domain Truth.** Identity asserts only **who** the principal is,
+    **how** they authenticated, and **what permissions they currently hold**. It is **never** the authoritative source
+    for pathology credentials, employment status, medical licensing, laboratory accreditation, AI governance, or
+    clinical-workflow state — those remain owned by their respective domains. IAM must not become a catch-all
+    repository for unrelated business truth.
+11. **Human and Non-Human Identities are distinct principal classes** (promoted D3). Human identities and non-human
+    identities (service accounts / machine principals) are **structurally distinct** principal classes with distinct
+    governance. A non-human principal is never a human user and can never acquire clinical, diagnostic, sign-out, or
+    AI-approval authority. (Detailed credential/runtime model deferred to phase design; the class distinction is
+    established now as immutable.)
 
 ## 3. Relationship to existing systems (the incumbent Program 7 extends)
 - **Authentication / sessions:** custom JWT staff + portal auth in `apps/api/src/modules/auth` (e.g. `PermissionsGuard`,

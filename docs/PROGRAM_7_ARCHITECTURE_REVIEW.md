@@ -148,6 +148,19 @@ authoritative until governed migration), and **P9** (identity owned centrally, c
   `LabDomain` custom domains, and the Control-Center control plane — is an Organization the same grouping the Control
   Center administers, or distinct?
 
+### 7.1 Governance disposition (Architecture-Review approval, 2026-07-30)
+The Architecture Review was **APPROVED**; the open decisions were dispositioned by governance as follows:
+- **D1 (permission freshness)** → **deferred to Phase 7C** (Enterprise Authorization) — an authorization-semantics/
+  performance choice, not a platform-architecture choice.
+- **D2 (role scoping)** → **carried to Phase 7C**; the architecture merely acknowledges scoped roles.
+- **D3 (service accounts / API identities)** → **promoted to a charter principle** — Principle 11 (human vs non-human
+  principal classes). No longer an open question; the runtime credential model follows at phase design.
+- **D4 (Organization model shape)** → **carried to Phase 7D**; the invariant (administrative, not tenancy) is already
+  fixed by Principle 4.
+- **D5 (federated-identity linking / SCIM JIT)** → **carried to Phase 7B** (Identity Lifecycle).
+- **D6 (hybrid-tenancy reconciliation)** → **escalated to the Cross-Program Boundary Review** (greatest cross-cutting
+  impact; must be resolved before implementation). See `PROGRAM_7_CROSS_PROGRAM_BOUNDARY_REVIEW.md`.
+
 ## 8. Reconciliation with the target platform
 The platform already encodes hybrid-tenancy primitives on `Lab` (`tenancyMode POOL|SILO`, `databaseSecretRef`,
 `dataRegion`, `LabDomain`). Program 7 keeps these as the **data-isolation** mechanism and adds an **administrative**
