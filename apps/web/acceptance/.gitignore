@@ -13,6 +13,7 @@
 .dataset-governance-fixtures.json
 .inference-engine-fixtures.json
 .explainability-fixtures.json
+.human-review-fixtures.json
 .graph-fixtures.json
 .auth/
 .output/
