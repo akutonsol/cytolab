@@ -115,6 +115,13 @@ export const SPECIAL_OBJECTS: Record<string, string[]> = {
   // mutation). Assigned to NO default role (byPrefix below never selects 'evaluation'); super roles reach it via
   // the guard bypass. run is deliberately distinct from view. No PHI; no clinical claim; no automatic action.
   evaluation: ['view', 'run', 'manage'],
+  // P6-6H — clinical performance MEASUREMENT evidence (measurement only; NEVER clinical validity/safety/effectiveness/
+  // regulatory/diagnostic claim). view = read measurement windows/metrics; run = initiate a manual measurement window
+  // (aggregates 6C inference + 6E human-review evidence over a time window into immutable measurements); manage =
+  // administrative workflow ONLY. NO permission grants clinical or diagnostic authority (no support diagnostic
+  // authority; never creates/alters a diagnosis, sign-out, or lifecycle). Assigned to NO default role (byPrefix below
+  // never selects 'clinicalperf'); super roles reach it via the guard bypass. run distinct from view. No PHI.
+  clinicalperf: ['view', 'run', 'manage'],
 };
 
 export interface SeedRoleDef {

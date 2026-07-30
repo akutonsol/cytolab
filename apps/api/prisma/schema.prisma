@@ -237,6 +237,9 @@ model Lab {
   evaluationMetrics                EvaluationMetric[] // P6-6G — structured evaluation metrics
   evaluationRecommendations        EvaluationRecommendation[] // P6-6G — advisory lifecycle-review recommendations
   evaluationRecommendationEvidence EvaluationRecommendationEvidence[] // P6-6G — recommendation→metric provenance links
+  clinicalPerfWindows              ClinicalPerfWindow[] // P6-6H — immutable clinical-performance measurement windows
+  clinicalPerfWindowMembers        ClinicalPerfWindowMember[] // P6-6H — window membership snapshot
+  clinicalPerfMetrics              ClinicalPerfMetric[] // P6-6H — structured measurement metrics
   datasets                         Dataset[] // P6-6B — governed datasets
   datasetVersions                  DatasetVersion[] // P6-6B — immutable dataset versions
   datasetSlides                    DatasetSlide[] // P6-6B — dataset membership (slide refs)
@@ -1173,11 +1176,12 @@ model AiModelVersion {
   deprecatedAt DateTime?
   retiredAt    DateTime?
 
-  lifecycleEvents   AiModelLifecycleEvent[]
-  inferenceRecords  InferenceRecord[]
-  inferenceJobs     InferenceJob[] // P6-6C — execution jobs selecting this version
-  validationRuns    ValidationRun[] // P6-6F — validation-evidence runs evaluating this version (reference only; no lifecycle mutation)
-  evaluationWindows EvaluationWindow[] // P6-6G — continuous-evaluation windows monitoring this version (reference only; no lifecycle mutation)
+  lifecycleEvents     AiModelLifecycleEvent[]
+  inferenceRecords    InferenceRecord[]
+  inferenceJobs       InferenceJob[] // P6-6C — execution jobs selecting this version
+  validationRuns      ValidationRun[] // P6-6F — validation-evidence runs evaluating this version (reference only; no lifecycle mutation)
+  evaluationWindows   EvaluationWindow[] // P6-6G — continuous-evaluation windows monitoring this version (reference only; no lifecycle mutation)
+  clinicalPerfWindows ClinicalPerfWindow[] // P6-6H — clinical-performance measurement windows for this version (reference only; no diagnostic/lifecycle authority)
 
   @@unique([labId, modelId, semverMajor, semverMinor, semverPatch])
   @@index([labId])
@@ -1260,6 +1264,9 @@ model InferenceRecord {
 
   // P6-6G — continuous-evaluation window membership (reference only; never mutates this record).
   evaluationWindowMembers EvaluationWindowMember[]
+
+  // P6-6H — clinical-performance window membership (reference only; never mutates this record).
+  clinicalPerfWindowMembers ClinicalPerfWindowMember[]
 
   @@index([labId])
   @@index([labId, modelVersionId])
@@ -1601,6 +1608,9 @@ model HumanReviewDecision {
 
   modifiedFindings HumanReviewModifiedFinding[]
 
+  // P6-6H — clinical-performance window membership (reference only; never mutates this decision).
+  clinicalPerfWindowMembers ClinicalPerfWindowMember[]
+
   @@index([labId])
   @@index([labId, requestId])
   @@index([labId, inferenceRecordId])
@@ -1722,7 +1732,9 @@ model ValidationRun {
   curvePoints    ValidationCurvePoint[]
 
   // P6-6G — continuous-evaluation windows that (optionally) compare against this run as an immutable baseline.
-  evaluationWindows EvaluationWindow[]
+  evaluationWindows   EvaluationWindow[]
+  // P6-6H — clinical-performance windows that (optionally) reference this run as an immutable baseline.
+  clinicalPerfWindows ClinicalPerfWindow[]
 
   @@index([labId])
   @@index([labId, modelVersionId])
@@ -1991,6 +2003,166 @@ model EvaluationRecommendationEvidence {
   @@index([labId])
   @@index([recommendationId])
   @@index([metricId])
+}
+
+// ============================================================================
+// Program 6 · Phase 6H — CLINICAL PERFORMANCE MEASUREMENT EVIDENCE (measurement
+// evidence ONLY; NEVER clinical validity/safety/effectiveness/regulatory/
+// diagnostic-correctness). 6H measures the AI and creates NO new diagnoses.
+// Immutable ClinicalPerfWindows over 6C inference + 6E human-review decisions (+
+// an optional immutable 6F ValidationRun baseline) record reader agreement,
+// concordance (CONSISTENCY measures — never correctness), review/turnaround
+// duration, workload counts + reduction, and operational throughput. The default
+// evaluator is a DETERMINISTIC, NON-CLINICAL stub. NO SUPPORT DIAGNOSTIC AUTHORITY
+// (+ carried-forward no-support clinical-authorization/lifecycle-mutation) — 6H
+// never creates/alters a diagnosis, sign-out, authorization, lifecycle, or any
+// upstream evidence. Program-5 interaction is STRICTLY REFERENCE-ONLY coded
+// operational metadata (never narrative/findings/PHI; never modified — Guardrail
+// 1). Each window SNAPSHOTS the model identity + time basis + window-definition
+// version and the EXACT member population (Guardrail 3); metrics carry explicit
+// OBSERVED/SYNTHETIC_STUB/UNAVAILABLE provenance + cohort + source subsystem
+// (Guardrail 2); empty/sparse windows are truthful. NO recommendation entity
+// (Guardrail 5 — measurement only). Atomic all-or-nothing + explicit COMPLETE
+// state; deterministic calculationId + windowSignature. Lab-scoped; FKs Restrict.
+// The schema names measurement, NEVER authority — no clinicallyValid/FDACleared/
+// diagnosticAccuracy/superiorTo/certified column exists.
+// ============================================================================
+
+enum ClinicalPerfMetricKind {
+  READER_AGREEMENT // consistency between recorded decisions — NOT correctness (Decision 5)
+  CONCORDANCE // consistency between governed evidence sources — NOT correctness (Decision 6)
+  REVIEW_DURATION
+  TURNAROUND_DURATION
+  WORKLOAD_COUNT
+  WORKLOAD_REDUCTION
+  OPERATIONAL_THROUGHPUT
+}
+
+enum ClinicalPerfEvidenceProvenance {
+  OBSERVED
+  SYNTHETIC_STUB
+  UNAVAILABLE
+}
+
+enum ClinicalPerfCohort {
+  CLINICAL
+  VALIDATION_ONLY // kept structurally separate — no silent aggregation (Decision 10)
+}
+
+enum ClinicalPerfCoverageStatus {
+  COVERED
+  SPARSE
+  EMPTY
+}
+
+enum ClinicalPerfMemberSource {
+  INFERENCE_RECORD
+  HUMAN_REVIEW_DECISION
+}
+
+enum ClinicalPerfWindowStatus {
+  COMPLETE // a visible window is always COMPLETE (written atomically) — Decision 9
+}
+
+// Immutable clinical-performance measurement window. Append-only; no update/delete path;
+// recomputation creates a NEW window with an independent evidence graph.
+model ClinicalPerfWindow {
+  id             String         @id @default(cuid())
+  windowUuid     String         @unique @default(uuid())
+  labId          String
+  lab            Lab            @relation(fields: [labId], references: [id])
+  modelVersionId String
+  modelVersion   AiModelVersion @relation(fields: [modelVersionId], references: [id], onDelete: Restrict)
+
+  modelVersionUuid         String
+  modelUuid                String
+  modelLifecycleStateAtRun AiModelLifecycleState
+
+  windowStart             DateTime
+  windowEnd               DateTime
+  timeBasis               String
+  windowDefinitionVersion String
+
+  cohort ClinicalPerfCohort
+
+  baselineValidationRunId String?
+  baselineValidationRun   ValidationRun?                 @relation(fields: [baselineValidationRunId], references: [id], onDelete: Restrict)
+  baselineCalculationId   String?
+  evidenceCompatibility   ClinicalPerfEvidenceProvenance // OBSERVED when sources compatible; UNAVAILABLE otherwise (Guardrail 4)
+  operationalDataUsed     Boolean // whether reference-only Program-5 coded operational metadata was read (Decision 4)
+
+  sampleCount    Int
+  coverageStatus ClinicalPerfCoverageStatus
+
+  evaluatorId         String
+  evaluatorVersion    String
+  computationVersion  String
+  metricSchemaVersion String
+  configDigest        String?
+  calculationId       String
+  windowSignature     String
+  completionState     ClinicalPerfWindowStatus @default(COMPLETE)
+
+  eventId     String
+  createdById String? // actor; no FK
+  createdAt   DateTime @default(now())
+
+  members ClinicalPerfWindowMember[]
+  metrics ClinicalPerfMetric[]
+
+  @@index([labId])
+  @@index([labId, modelVersionId])
+  @@index([labId, windowSignature])
+  @@index([modelVersionId])
+}
+
+// Immutable membership snapshot (Guardrail 3). Exactly one reference is set (by `source`):
+// a 6C InferenceRecord or a 6E HumanReviewDecision — never a Program-5 clinical object.
+model ClinicalPerfWindowMember {
+  id                    String                   @id @default(cuid())
+  labId                 String
+  lab                   Lab                      @relation(fields: [labId], references: [id])
+  windowId              String
+  window                ClinicalPerfWindow       @relation(fields: [windowId], references: [id], onDelete: Restrict)
+  source                ClinicalPerfMemberSource
+  inferenceRecordId     String?
+  inferenceRecord       InferenceRecord?         @relation(fields: [inferenceRecordId], references: [id], onDelete: Restrict)
+  humanReviewDecisionId String?
+  humanReviewDecision   HumanReviewDecision?     @relation(fields: [humanReviewDecisionId], references: [id], onDelete: Restrict)
+  ordinal               Int
+  createdAt             DateTime                 @default(now())
+
+  @@index([labId])
+  @@index([labId, windowId])
+  @@index([windowId])
+}
+
+// Structured immutable measurement (Decision 7 + Guardrail 2). Coded/numeric only;
+// NO JSON blobs, NO correctness/clinical/regulatory column.
+model ClinicalPerfMetric {
+  id       String             @id @default(cuid())
+  labId    String
+  lab      Lab                @relation(fields: [labId], references: [id])
+  windowId String
+  window   ClinicalPerfWindow @relation(fields: [windowId], references: [id], onDelete: Restrict)
+
+  metricKind        ClinicalPerfMetricKind
+  provenance        ClinicalPerfEvidenceProvenance
+  cohort            ClinicalPerfCohort
+  sourceSubsystem   String // coded: "6c" | "6e" | "6f" | "program5-operational"
+  binCode           String?
+  value             Float? // validated by kind; UNAVAILABLE ⇒ null
+  numeratorSource   String?
+  denominatorSource String?
+  unit              String?
+  sampleCount       Int?
+  unavailableReason String? // required when provenance = UNAVAILABLE
+  ordinal           Int
+  createdAt         DateTime                       @default(now())
+
+  @@index([labId])
+  @@index([labId, windowId])
+  @@index([windowId])
 }
 
 // ============================================================================
