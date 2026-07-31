@@ -92,6 +92,32 @@ async function main() {
     // ── (durable append-only evidence — L9) ─────────────────────────────────────────────────────────────────────
     ck((await prisma.identityLifecycleEvent.count({ where: { userId: fx.activeUserId } })) >= 3, 'durable lifecycle evidence recorded for the active user (suspend/reactivate/deprovision)');
 
+    // ── (L8 sole-writer boundary — SOURCE scan on the fresh checkout) ────────────────────────────────────────────
+    // Prove no production code writes User.isActive/lifecycleState via a User mutation outside IdentityLifecycleService.
+    const fs2 = require('node:fs');
+    const path2 = require('node:path');
+    const srcRoot = path2.resolve(__dirname, '../src');
+    const lifecycleSvc = path2.resolve(srcRoot, 'modules/identity-lifecycle/identity-lifecycle.service.ts');
+    const walk = (dir: string, out: string[] = []): string[] => {
+      for (const n of fs2.readdirSync(dir)) {
+        const full = path2.join(dir, n);
+        if (fs2.statSync(full).isDirectory()) walk(full, out);
+        else if (full.endsWith('.ts') && !full.endsWith('.spec.ts') && !full.includes('/testing/')) out.push(full);
+      }
+      return out;
+    };
+    const writeRe = /\.user\.(update|updateMany|upsert)\s*\(([\s\S]{0,500})/g;
+    const fieldRe = /\b(isActive|lifecycleState)\b\s*:/;
+    const writers: string[] = [];
+    for (const f of walk(srcRoot)) {
+      if (path2.resolve(f) === lifecycleSvc) continue;
+      const s = fs2.readFileSync(f, 'utf8');
+      let mm: RegExpExecArray | null;
+      writeRe.lastIndex = 0;
+      while ((mm = writeRe.exec(s)) !== null) if (fieldRe.test(mm[2])) writers.push(path2.relative(srcRoot, f));
+    }
+    ck(writers.length === 0, `L8 sole-writer: no User.isActive/lifecycleState writes outside IdentityLifecycleService (offenders: ${writers.join(', ') || 'none'})`);
+
     // ── (ET1/2/3/7 on the lifecycle table + ET8 neighbours) ─────────────────────────────────────────────────────
     const phi = /patient|birth|\bdob\b|ssn|mrn|demographic|address|phone|email|firstname|lastname/i;
     const forbidden = /diagnos|resultsheet|aidraft|aimodel|inference|clinical|promote|permission|role/i;

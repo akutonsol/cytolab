@@ -10,7 +10,7 @@
 # refresh revocation, deprovision federated-link deactivation + terminality + User.id preservation (no hard delete),
 # single-winner CAS + idempotency (L9), durable append-only lifecycle evidence (L9), and ET1-ET8. Then the FOCUSED
 # identity-lifecycle jest suites, the FULL cumulative non-regression suite in module-scoped batches (no exclusions), and
-# a strict zero-error tsc. Verifies the exact head + descent from the 7B.1 candidate 5ae7818, that the post-candidate
+# a strict zero-error tsc. Verifies the exact head + descent from the 7B.1 candidate 268472b, that the post-candidate
 # delta is acceptance-infra only, and that the frozen p6-* / p7-7a1-accepted / p7-7a2a-accepted / p7-7a2b-accepted /
 # p7-7a3-accepted / p7-7a-complete anchors are unmodified.
 name: p7-identity-lifecycle-core-acceptance
@@ -58,18 +58,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Print & verify the checked-out commit (exact-head + 7B.1 lineage rooted at candidate 5ae7818)
+      - name: Print & verify the checked-out commit (exact-head + 7B.1 lineage rooted at candidate 268472b)
         run: |
           set -euo pipefail
           echo "github.sha        = ${{ github.sha }}"
           echo "git rev-parse HEAD = $(git rev-parse HEAD)"
           test "$(git rev-parse HEAD)" = "${{ github.sha }}" || { echo "!! checkout SHA does not match github.sha"; exit 1; }
-          git merge-base --is-ancestor 5ae78183b87fd044e1a081df322d1a8c478e7a00 "$(git rev-parse HEAD)" || { echo "!! head is not a descendant of the 7B.1 candidate 5ae7818"; exit 1; }
+          git merge-base --is-ancestor 268472b9b1ac37112c644b9fe028f1ef73a4ca3a "$(git rev-parse HEAD)" || { echo "!! head is not a descendant of the 7B.1 candidate 268472b"; exit 1; }
 
       - name: Confirm post-candidate delta is acceptance-infra only; frozen anchors unmodified
         run: |
           set -euo pipefail
-          git diff --name-only 5ae78183b87fd044e1a081df322d1a8c478e7a00..HEAD | tee /tmp/post-candidate.txt
+          git diff --name-only 268472b9b1ac37112c644b9fe028f1ef73a4ca3a..HEAD | tee /tmp/post-candidate.txt
           if grep -vE '^(\.github/workflows/p7-identity-lifecycle-core-acceptance\.yml|apps/api/scripts/(seed|assert)-identity-lifecycle-.*\.ts|apps/web/acceptance/\.gitignore|docs/)$' /tmp/post-candidate.txt; then
             echo "!! post-candidate delta contains a non-acceptance-infra change"; exit 1
           fi

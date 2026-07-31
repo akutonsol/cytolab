@@ -34,7 +34,10 @@ Legal graph: `INVITED/PROVISIONED → ACTIVE`; `ACTIVE → SUSPENDED`; `SUSPENDE
 
 ## 4. Single command boundary (L8) + atomicity/concurrency (L9)
 `IdentityLifecycleService` is the **only** production writer of `lifecycleState` / its `isActive` coordination / the
-coordinated effects. Each transition runs one DB transaction: guard idempotency (already-in-target ⇒ benign no-op) →
+coordinated effects. The pre-existing `UsersService.setActive` admin path was **reconciled** to delegate to it
+(disable → `suspend`, enable → `reactivate`) and performs **no** direct `isActive`/`lifecycleState` write; a source-scan
+arch spec (`identity-lifecycle.arch.spec.ts`) + a gate source-scan assert enforce the sole-writer boundary (permitted
+exceptions: the lifecycle service, tests, testing helpers; migrations/seed live under `prisma/`). Each transition runs one DB transaction: guard idempotency (already-in-target ⇒ benign no-op) →
 legality check → **single-winner compare-and-set** on `lifecycleState` (`updateMany … where lifecycleState IN (from)`;
 exactly one concurrent writer wins) → write the durable `IdentityLifecycleEvent` in the **same** transaction → coordinated
 effects. A lost CAS re-reads and resolves to idempotent-success (if already at target) or fails closed. Best-effort
