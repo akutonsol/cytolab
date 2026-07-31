@@ -130,6 +130,20 @@ principals free of clinical/AI authority (ET6); captures no domain truth (ET7); 
 The Phase 7A folded acceptance gate will assert the applicable ET1–ET8 alongside focused tests, a Programs 1–6
 non-regression suite, strict `tsc`, additive-only migration, and persisted-state assertions.
 
+## 9.1 Implementation invariant — Authentication Provider Isolation
+**Authentication providers are never referenced directly by downstream business logic.** Every provider (Local, SAML,
+OIDC, OAuth, and any future provider) terminates at an **Authentication Adapter**, and the adapter's only output is the
+**canonical principal**. Clinical, AI, authorization, and all other code depend **solely** on the canonical principal —
+never on a provider type, assertion, token, or IdP detail.
+
+```
+ SAML · OIDC · OAuth · Local · Future  ──▶  Authentication Adapter  ──▶  Canonical Principal  ──▶  Everything else
+```
+
+This guarantees a new identity provider can be introduced by adding an adapter, with **zero** change to clinical, AI, or
+authorization code. Recorded as an **implementation invariant** (not a charter principle) at Phase 7A design approval;
+the Phase 7A acceptance gate will assert that no downstream module references a provider/assertion/token type.
+
 ## 10. Deferred to implementation design / later phases
 Concrete schema (principal/identifier/linkage/IdP-config models), API/route surface, guard/strategy wiring, and the
 service-principal credential runtime are **implementation-design** artifacts produced only **after** this architecture
