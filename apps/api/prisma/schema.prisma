@@ -336,6 +336,7 @@ model Lab {
   identityProviders                IdentityProvider[]
   servicePrincipals                ServicePrincipal[]
   federatedIdentities              FederatedIdentity[]
+  oidcAuthTransactions             OidcAuthTransaction[]
 }
 
 /// How a lab's DATA-PLANE storage is provisioned. Control-plane rows (Lab, LabDomain,
@@ -6196,12 +6197,16 @@ model IdentityProvider {
   displayName  String
   protocol     IdentityProviderProtocol
   issuer       String? // issuer / entityID; protocol-specific config fields land with each adapter increment
+  // 7A.2a OIDC public-client config (PKCE; NO stored client secret in this increment). Nullable until OIDC-enabled.
+  clientId     String?
+  redirectUri  String?
   isEnabled    Boolean                  @default(false) // inert until an adapter activates it
   createdById  String? // actor; no FK
   createdAt    DateTime                 @default(now())
   updatedAt    DateTime                 @updatedAt
 
   federatedIdentities FederatedIdentity[]
+  oidcTransactions    OidcAuthTransaction[]
 
   @@unique([labId, key])
   @@index([labId])
@@ -6245,4 +6250,33 @@ model FederatedIdentity {
   @@unique([labId, identityProviderId, externalSubject])
   @@index([labId])
   @@index([userId])
+}
+
+// Program 7 · Phase 7A.2a — server-side OIDC authorization transaction. Short-lived, single-use state that survives the
+// IdP redirect. Binds the trusted provider configuration at INITIATION (configFingerprint) so a config change before
+// the callback fails closed (OIDC configuration-immutability invariant). Carries the CSRF `state`, the replay `nonce`,
+// and the PKCE verifier (needed to complete the code exchange). Lab-scoped; provider FK onDelete: Restrict. No PHI.
+model OidcAuthTransaction {
+  id                 String           @id @default(cuid())
+  transactionUuid    String           @unique @default(uuid())
+  labId              String
+  lab                Lab              @relation(fields: [labId], references: [id])
+  identityProviderId String
+  identityProvider   IdentityProvider @relation(fields: [identityProviderId], references: [id], onDelete: Restrict)
+
+  state             String // CSRF binding + callback lookup key (single-use)
+  nonce             String // replay binding — compared to the ID-token nonce
+  pkceVerifier      String // PKCE S256 verifier — sent to the token endpoint on callback
+  redirectUri       String // exact redirect URI bound at initiation
+  expectedIssuer    String // the issuer bound at initiation
+  clientId          String // the client id bound at initiation
+  configFingerprint String // digest over the trusted config at initiation (immutability invariant)
+
+  expiresAt  DateTime
+  consumedAt DateTime? // set when the transaction is completed/validated (single-use)
+  createdAt  DateTime  @default(now())
+
+  @@unique([labId, state])
+  @@index([labId])
+  @@index([identityProviderId])
 }

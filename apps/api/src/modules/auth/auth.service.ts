@@ -419,6 +419,34 @@ export class AuthService {
     return { status: 'OK' as const, user: this.userSummary(user) };
   }
 
+  /**
+   * Program 7 · Phase 7A.2a — establish a session for an ALREADY-AUTHENTICATED federated principal, reusing the EXACT
+   * existing session path (createSession + access token + cookies). ADDITIVE: the password login flow is unchanged and
+   * this is the same, single session-establishment mechanism (no parallel session). The caller (enterprise-auth OIDC)
+   * has already validated the external assertion and resolved the human principal; NO password/credential is involved
+   * here and NO authorization decision is made (the principal's permissions come from its existing roles).
+   */
+  async completeFederatedLogin(userId: string, req: Request, res: Response, opts: { method: string; providerId: string }) {
+    const user = (await this.labContext.runSystem(() =>
+      this.prisma.user.findUnique({ where: { id: userId }, include: this.rolesInclude() }),
+    )) as UserWithRoles | null;
+    if (!user || !user.isActive) throw new UnauthorizedException('federated principal is not an active user');
+    const ctx = buildRequestContext(user.id, req);
+    const { sessionId, refreshToken } = await this.sessions.createSession(user.id, ctx);
+    const accessToken = await this.buildAccessToken(user, sessionId);
+    this.sessions.setAuthCookies(res, accessToken, refreshToken);
+    this.executionContext.bindPrincipal({ kind: 'staff', userId: user.id, labId: user.labId, sessionId });
+    await this.audit.record({
+      category: 'AUTHENTICATION',
+      actionCode: 'LOGIN_SUCCEEDED',
+      resource: { type: 'User', id: user.id },
+      outcome: { status: 'SUCCESS' },
+      producerModule: 'enterprise-auth',
+      metadata: { method: opts.method, identityProviderId: opts.providerId },
+    });
+    return { status: 'OK' as const, user: this.userSummary(user) };
+  }
+
   private buildClaims(user: UserWithRoles) {
     const roles = user.roles.map((r) => r.role.name);
     const isSuperRole = user.roles.some((r) => r.role.isSuperRole);
