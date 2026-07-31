@@ -63,7 +63,7 @@ principles + ETs above). D3 and D6 are already closed (Principle 11 and the Boun
 | D4 | Organization model shape | **Phase 7D** | The administrative hierarchy above `Lab` — administrative only (Principle 4/ET3); never a tenancy key. |
 | D5 | Federated-identity linking | **Phase 7B** | SAML/OIDC subject → `User` linking, SCIM JIT provisioning — preserving `@@unique([labId,email])` and per-lab identity. |
 
-## 4. Part 4 — Additional identity-specific guardrails (GG1–GG6)
+## 4. Part 4 — Additional identity-specific guardrails (GG1–GG7)
 - **GG1 — Deterministic authorization evaluation** (Principle 12). Authorization is a pure function of (principal, org
   context, lab context, resource, effective permission set). No hidden policy engine, no implicit override, no
   ambient/time/random inputs; the same inputs always yield the same decision. The single global `PermissionsGuard`
@@ -84,10 +84,15 @@ principles + ETs above). D3 and D6 are already closed (Principle 11 and the Boun
 - **GG6 — Separation of duties for administration.** Administrative authority (7D/7E) is scoped and delegable but never
   self-elevating into clinical/AI authority; break-glass and cross-lab actions are explicit, time-bounded where
   applicable, and always audited (`organizationScope = CROSS_LAB`).
+- **GG7 — Stable Identity Identifiers.** Every identity record carries a **stable internal identifier** that remains
+  constant even when external attributes change — email, username, display name, or identity-provider subject mappings
+  are all **mutable** and never serve as the durable key. Downstream references (permissions, sessions, audit
+  attribution, federation linkage) bind to the stable internal identifier, reducing coupling to external providers and
+  simplifying auditing, provisioning, and federation. (This mirrors the Program-6 permanent-UUID-identity discipline.)
 
 ## 5. Governance decision summary
 The binding decisions for every Program 7 phase are: **Principles 1–12** (Part 1, immutable) · **ET1–ET8** (Part 2,
-required acceptance criteria) · **GG1–GG6** (Part 4, identity-specific guardrails) · the **deferred-decision register**
+required acceptance criteria) · **GG1–GG7** (Part 4, identity-specific guardrails) · the **deferred-decision register**
 (Part 3, phase-assigned). A phase design that violates any of these is out of scope by construction; a phase gate that
 cannot assert the applicable ETs cannot be accepted.
 
