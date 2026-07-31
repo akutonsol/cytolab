@@ -115,6 +115,14 @@ const ENTRIES: AuditRegistryEntry[] = [
     attributionPolicy: 'HTTP_REQUEST',
     metadataContractId: null,
   },
+  // Program-7-authorized ADDITIVE extension (P7-7A.2b). MACHINE (non-human) authentication + credential lifecycle,
+  // kept DISTINCT from the human LOGIN_* events (humans and machines are different identity classes). Coded metadata
+  // only — never the client secret, token, or plaintext. Program 2's accepted baseline is historically unchanged.
+  { category: 'AUTHENTICATION', actionCode: 'SERVICE_AUTH_INITIATED', eventVersion: 1, defaultSeverity: 'INFO', phiIndicator: false, dataClass: 'INTERNAL', retentionClass: 'STANDARD', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
+  { category: 'AUTHENTICATION', actionCode: 'SERVICE_AUTH_SUCCEEDED', eventVersion: 1, defaultSeverity: 'INFO', phiIndicator: false, dataClass: 'INTERNAL', retentionClass: 'STANDARD', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
+  { category: 'AUTHENTICATION', actionCode: 'SERVICE_AUTH_FAILED', eventVersion: 1, defaultSeverity: 'WARNING', phiIndicator: false, dataClass: 'INTERNAL', retentionClass: 'STANDARD', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
+  { category: 'AUTHENTICATION', actionCode: 'SERVICE_CREDENTIAL_ROTATED', eventVersion: 1, defaultSeverity: 'INFO', phiIndicator: false, dataClass: 'INTERNAL', retentionClass: 'STANDARD', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
+  { category: 'AUTHENTICATION', actionCode: 'SERVICE_CREDENTIAL_REVOKED', eventVersion: 1, defaultSeverity: 'INFO', phiIndicator: false, dataClass: 'INTERNAL', retentionClass: 'STANDARD', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
   // P2-5B PHI-access taxonomy (small + stable): single-subject VIEWED, aggregate LIST_QUERIED,
   // and multi-subject EXPORTED. All are OPERATIONAL (PHI reads are non-transactional and
   // side-effect-free; CRITICAL_TRANSACTIONAL would be untruthful, REQUIRED_DURABLE is unsupported).

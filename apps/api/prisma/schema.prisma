@@ -337,6 +337,8 @@ model Lab {
   servicePrincipals                ServicePrincipal[]
   federatedIdentities              FederatedIdentity[]
   oidcAuthTransactions             OidcAuthTransaction[]
+  servicePrincipalCredentials      ServicePrincipalCredential[]
+  servicePrincipalScopes           ServicePrincipalScope[]
 }
 
 /// How a lab's DATA-PLANE storage is provisioned. Control-plane rows (Lab, LabDomain,
@@ -522,10 +524,12 @@ enum RoleScope {
 }
 
 model Permission {
-  id    String           @id @default(uuid())
-  code  String           @unique
-  label String
-  roles RolePermission[]
+  id                     String                  @id @default(uuid())
+  code                   String                  @unique
+  label                  String
+  roles                  RolePermission[]
+  // Program 7 · Phase 7A.2b — service-principal scopes reuse the EXISTING permission catalogue (one authz vocabulary)
+  servicePrincipalScopes ServicePrincipalScope[]
 }
 
 model UserRole {
@@ -6227,6 +6231,10 @@ model ServicePrincipal {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  // Program 7 · Phase 7A.2b — machine credential lifecycle + scopes (child entities; ServicePrincipal shape unchanged)
+  credentials ServicePrincipalCredential[]
+  scopes      ServicePrincipalScope[]
+
   @@unique([labId, key])
   @@index([labId])
 }
@@ -6279,4 +6287,58 @@ model OidcAuthTransaction {
   @@unique([labId, state])
   @@index([labId])
   @@index([identityProviderId])
+}
+
+// ============================================================================
+// Program 7 · Phase 7A.2b — Service-Principal OAuth (machine authentication).
+// ADDITIVE, lab-scoped, provenance FKs onDelete: Restrict. The frozen 7A.1
+// ServicePrincipal is UNCHANGED (D1/D6): credentials + scopes are CHILD entities.
+// Machine identity is immutable (D6): stable identifiers, no key rename, no hard
+// delete (deactivation only). Nothing here touches the human login path, tenancy,
+// the clinical path, or AI evidence.
+// ============================================================================
+
+enum ServiceCredentialStatus {
+  ACTIVE
+  REVOKED
+}
+
+// A machine credential for a ServicePrincipal. Argon2id HASH ONLY — the plaintext secret is shown once at
+// issuance/rotation and NEVER persisted/logged/audited (D1). Rotation issues a new credential; revocation flips status.
+model ServicePrincipalCredential {
+  id                 String                  @id @default(cuid())
+  credentialUuid     String                  @unique @default(uuid()) // stable internal identifier
+  labId              String
+  lab                Lab                     @relation(fields: [labId], references: [id])
+  servicePrincipalId String
+  servicePrincipal   ServicePrincipal        @relation(fields: [servicePrincipalId], references: [id], onDelete: Restrict)
+  secretHash         String // Argon2id hash of the client secret — never the plaintext
+  status             ServiceCredentialStatus @default(ACTIVE)
+  rotatedAt          DateTime?
+  expiresAt          DateTime? // optional secret expiry
+  createdById        String? // actor; no FK
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  @@index([labId])
+  @@index([labId, servicePrincipalId])
+  @@index([servicePrincipalId])
+}
+
+// Scope grant: a ServicePrincipal is granted an EXISTING catalogue Permission (D5 — one authorization vocabulary,
+// enforced by the single existing PermissionsGuard). No second scope language.
+model ServicePrincipalScope {
+  id                 String           @id @default(cuid())
+  labId              String
+  lab                Lab              @relation(fields: [labId], references: [id])
+  servicePrincipalId String
+  servicePrincipal   ServicePrincipal @relation(fields: [servicePrincipalId], references: [id], onDelete: Restrict)
+  permissionId       String
+  permission         Permission       @relation(fields: [permissionId], references: [id], onDelete: Restrict)
+  createdById        String? // actor; no FK
+  createdAt          DateTime         @default(now())
+
+  @@unique([labId, servicePrincipalId, permissionId])
+  @@index([labId])
+  @@index([servicePrincipalId])
 }
