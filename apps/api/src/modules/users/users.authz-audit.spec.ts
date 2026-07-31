@@ -24,7 +24,7 @@ describe('UsersService — P2-6D role assignment audit', () => {
       user: { findFirst: jest.fn().mockResolvedValue(null), create: jest.fn().mockResolvedValue(created) },
       account: { findFirst: jest.fn().mockResolvedValue({ id: 'acc1' }) },
     } as any;
-    const svc = new UsersService(prisma, audit as any);
+    const svc = new UsersService(prisma, audit as any, { suspend: jest.fn(), reactivate: jest.fn() } as any);
     await svc.create({ email: 'a@b.co', password: 'x', firstName: 'A', lastName: 'B', roleIds: ['r1', 'r2'] } as any);
     expect(audit.recordRoleAssignmentChanged).toHaveBeenCalledWith({ userId: 'u1', rolesAddedCount: 2, rolesRemovedCount: 0, resultingRoleCount: 2, producerModule: 'users' });
   });
@@ -35,7 +35,7 @@ describe('UsersService — P2-6D role assignment audit', () => {
       user: { findFirst: jest.fn().mockResolvedValue(null), create: jest.fn().mockResolvedValue(created) },
       account: { findFirst: jest.fn().mockResolvedValue({ id: 'acc1' }) },
     } as any;
-    const svc = new UsersService(prisma, audit as any);
+    const svc = new UsersService(prisma, audit as any, { suspend: jest.fn(), reactivate: jest.fn() } as any);
     await svc.create({ email: 'a@b.co', password: 'x', firstName: 'A', lastName: 'B' } as any);
     expect(audit.recordRoleAssignmentChanged).not.toHaveBeenCalled();
   });
@@ -44,7 +44,7 @@ describe('UsersService — P2-6D role assignment audit', () => {
     const audit = rec();
     // prev roles: r1, r2 → new roles: r2, r3  ⇒ added 1 (r3), removed 1 (r1), resulting 2
     const prisma = { user: { findFirst: jest.fn().mockResolvedValue(rawUser(['r1', 'r2'])), update: jest.fn().mockResolvedValue(created) } } as any;
-    const svc = new UsersService(prisma, audit as any);
+    const svc = new UsersService(prisma, audit as any, { suspend: jest.fn(), reactivate: jest.fn() } as any);
     await svc.update('u1', { roleIds: ['r2', 'r3'] } as any);
     expect(audit.recordRoleAssignmentChanged).toHaveBeenCalledTimes(1);
     expect(audit.recordRoleAssignmentChanged).toHaveBeenCalledWith({ userId: 'u1', rolesAddedCount: 1, rolesRemovedCount: 1, resultingRoleCount: 2, producerModule: 'users' });
@@ -53,7 +53,7 @@ describe('UsersService — P2-6D role assignment audit', () => {
   it('update re-submitting the identical role set (no-op) emits nothing', async () => {
     const audit = rec();
     const prisma = { user: { findFirst: jest.fn().mockResolvedValue(rawUser(['r1', 'r2'])), update: jest.fn().mockResolvedValue(created) } } as any;
-    const svc = new UsersService(prisma, audit as any);
+    const svc = new UsersService(prisma, audit as any, { suspend: jest.fn(), reactivate: jest.fn() } as any);
     await svc.update('u1', { roleIds: ['r1', 'r2'] } as any);
     expect(audit.recordRoleAssignmentChanged).not.toHaveBeenCalled();
   });
@@ -61,7 +61,7 @@ describe('UsersService — P2-6D role assignment audit', () => {
   it('update without roleIds does not emit an assignment event', async () => {
     const audit = rec();
     const prisma = { user: { findFirst: jest.fn().mockResolvedValue(rawUser(['r1'])), update: jest.fn().mockResolvedValue(created) } } as any;
-    const svc = new UsersService(prisma, audit as any);
+    const svc = new UsersService(prisma, audit as any, { suspend: jest.fn(), reactivate: jest.fn() } as any);
     await svc.update('u1', { firstName: 'New' } as any);
     expect(audit.recordRoleAssignmentChanged).not.toHaveBeenCalled();
   });
@@ -69,7 +69,7 @@ describe('UsersService — P2-6D role assignment audit', () => {
   it('does NOT emit an assignment event if the update persistence fails', async () => {
     const audit = rec();
     const prisma = { user: { findFirst: jest.fn().mockResolvedValue(rawUser(['r1'])), update: jest.fn().mockRejectedValue(new Error('db')) } } as any;
-    const svc = new UsersService(prisma, audit as any);
+    const svc = new UsersService(prisma, audit as any, { suspend: jest.fn(), reactivate: jest.fn() } as any);
     await expect(svc.update('u1', { roleIds: ['r2'] } as any)).rejects.toThrow();
     expect(audit.recordRoleAssignmentChanged).not.toHaveBeenCalled();
   });

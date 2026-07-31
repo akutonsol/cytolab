@@ -10,6 +10,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { tenantCreate } from '../../common/tenancy/tenancy.extension';
 import { AuditRecorder } from '../audit/audit-recorder.service';
+import { IdentityLifecycleService } from '../identity-lifecycle/identity-lifecycle.service';
 import { ChangePasswordDto, CreateUserDto, UpdateUserDto } from './dto/user.dto';
 
 const userSelect = {
@@ -27,6 +28,7 @@ export class UsersService {
   constructor(
     private prisma: PrismaService,
     private audit: AuditRecorder,
+    private lifecycle: IdentityLifecycleService,
   ) {}
 
   // All queries are lab-scoped automatically by the tenancy extension: labId
@@ -128,22 +130,18 @@ export class UsersService {
     return this.flatten(user);
   }
 
-  /** Legacy parity: PATCH /user/authAccess/{id} — enable/disable login */
+  /**
+   * Legacy parity: PATCH /user/authAccess/{id} — enable/disable login. Program 7 · Phase 7B.1 (L8): the state mutation
+   * is DELEGATED to the single lifecycle command boundary (`IdentityLifecycleService`) — this method never writes
+   * `User.isActive` / `User.lifecycleState` directly. `enable` maps to `reactivate` (SUSPENDED → ACTIVE, idempotent if
+   * already ACTIVE); `disable` maps to `suspend` (ACTIVE → SUSPENDED). The lifecycle service coordinates `isActive`,
+   * session/refresh revocation, and the durable lifecycle event + audit; this method re-reads and returns the summary.
+   */
   async setActive(id: string, isActive: boolean) {
-    const prev = await this.findOne(id);
-    const user = await this.prisma.user.update({
-      where: { id },
-      data: { isActive },
-      select: userSelect,
-    });
-    // Enterprise audit (P2-6C): account activation/deactivation state transition.
-    await this.audit.recordEntityStateChanged({
-      resource: { type: 'User', id },
-      stateKey: 'account_active',
-      previousValue: prev.isActive,
-      newValue: isActive,
-      producerModule: 'users',
-    });
+    await this.findOne(id); // tenancy-scoped existence check (throws NotFound if not in this lab)
+    if (isActive) await this.lifecycle.reactivate(id);
+    else await this.lifecycle.suspend(id);
+    const user = await this.prisma.user.findFirstOrThrow({ where: { id }, select: userSelect });
     return this.flatten(user);
   }
 
