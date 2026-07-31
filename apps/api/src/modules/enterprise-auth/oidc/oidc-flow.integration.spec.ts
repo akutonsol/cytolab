@@ -7,6 +7,7 @@ import { FederatedIdentityService } from '../federated-identity.service';
 import { OidcTransactionService } from './oidc-transaction.service';
 import { OidcTokenValidator } from './oidc-token-validator';
 import { OidcAuthenticationAdapter } from './oidc-authentication.adapter';
+import { OidcJwksResolver } from './oidc-jwks-resolver';
 import { OidcDiscoveryClient, OidcCodeExchangeInput } from './oidc-discovery';
 import { OidcProviderConfig, OidcJwks } from './oidc-config';
 
@@ -36,7 +37,7 @@ describeIf('P7-7A.2a interactive OIDC flow (integration)', () => {
       id_token: await new SignJWT({ nonce, sub: subject }).setProtectedHeader({ alg: 'RS256', kid: 'k1' }).setIssuedAt().setIssuer(ISS).setAudience('client-abc').setExpirationTime('5m').sign(priv),
     }),
   });
-  const adapterWith = (idp: OidcDiscoveryClient) => new OidcAuthenticationAdapter(idp, new OidcTokenValidator(), federated);
+  const adapterWith = (idp: OidcDiscoveryClient) => new OidcAuthenticationAdapter(idp, new OidcTokenValidator(), new OidcJwksResolver(idp), federated);
 
   beforeAll(async () => {
     const kp = await generateKeyPair('RS256'); priv = kp.privateKey;
@@ -97,5 +98,26 @@ describeIf('P7-7A.2a interactive OIDC flow (integration)', () => {
     const begun = await asLab(labId, () => transactions.begin(config));
     const consumed = await asLab(labId, () => transactions.verifyAndConsume(begun.state, config));
     await expect(asLab(labId, () => adapterWith(makeIdp('sub-z', 'WRONG-NONCE')).authenticate({ config, code: 'c', nonce: consumed.nonce, pkceVerifier: consumed.pkceVerifier, redirectUri: config.redirectUri }))).rejects.toThrow(/nonce/i);
+  });
+
+  it('rejects discovery whose issuer does not match the configured trust anchor', async () => {
+    const { labId, config } = await setup('sub-d');
+    const begun = await asLab(labId, () => transactions.begin(config));
+    const consumed = await asLab(labId, () => transactions.verifyAndConsume(begun.state, config));
+    const evilIdp: any = { ...makeIdp('sub-d', consumed.nonce), discover: async () => ({ issuer: 'https://evil.test', authorization_endpoint: `${ISS}/a`, token_endpoint: `${ISS}/t`, jwks_uri: `${ISS}/j` }) };
+    await expect(asLab(labId, () => adapterWith(evilIdp).authenticate({ config, code: 'c', nonce: consumed.nonce, pkceVerifier: consumed.pkceVerifier, redirectUri: config.redirectUri }))).rejects.toThrow(/issuer/i);
+  });
+
+  it('CONCURRENCY: two concurrent consumes of the same valid transaction → exactly one succeeds, one fails closed', async () => {
+    const { labId, config } = await setup('sub-c');
+    const begun = await asLab(labId, () => transactions.begin(config));
+    const results = await Promise.allSettled([
+      asLab(labId, () => transactions.verifyAndConsume(begun.state, config)),
+      asLab(labId, () => transactions.verifyAndConsume(begun.state, config)),
+    ]);
+    const ok = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    expect(ok).toBe(1);
+    expect(failed).toBe(1);
   });
 });

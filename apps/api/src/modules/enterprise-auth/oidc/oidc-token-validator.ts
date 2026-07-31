@@ -1,39 +1,46 @@
 import { Injectable } from '@nestjs/common';
-import { createLocalJWKSet, jwtVerify } from 'jose';
-import { OidcJwks } from './oidc-config';
+import { jwtVerify, decodeProtectedHeader, type KeyLike } from 'jose';
+import { OIDC_ALLOWED_ALGS, OIDC_CLOCK_SKEW_SECONDS } from './oidc-config';
 
 /**
- * Program 7 · Phase 7A.2a — deterministic, fail-closed OIDC ID-token validation (jose). Validates signature (against
- * the provider JWKS), issuer, audience (client id), expiry/nbf (bounded skew), and the replay `nonce`; requires a
- * stable subject (`sub`). ASYMMETRIC algorithms only (alg:none and HMAC are rejected). Returns only the stable subject
- * — the durable linkage key (GG7); email/other claims are mutable and never the key. Throws on ANY failure.
+ * Program 7 · Phase 7A.2a — deterministic, fail-closed OIDC ID-token validation (jose). `readHeader` selects the
+ * signing key by `kid` and enforces the ASYMMETRIC-only algorithm allowlist (alg:none / HMAC rejected) BEFORE any key
+ * is fetched. `validateIdToken` verifies signature, issuer, audience, `exp`/`nbf` (bounded skew) and — explicitly — a
+ * future `iat` beyond skew, plus the replay `nonce`, and requires a stable subject (`sub`). Returns only the stable
+ * subject — the durable linkage key (GG7); email/other claims are mutable and never the key. Throws on ANY failure.
  */
 export interface ValidatedIdToken {
-  subject: string; // OIDC `sub` — the external subject used for federated linkage
+  subject: string;
 }
 
 export interface IdTokenValidationParams {
-  jwks: OidcJwks;
+  key: KeyLike | Uint8Array;
+  alg: string;
   expectedIssuer: string;
   clientId: string;
   expectedNonce: string;
-  maxSkewSeconds?: number;
 }
-
-const ALLOWED_ALGS = ['RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'PS256'];
 
 @Injectable()
 export class OidcTokenValidator {
+  /** Decode the (unverified) header to pick the key by kid + enforce the allow-listed asymmetric alg. */
+  readHeader(idToken: string): { kid: string; alg: string } {
+    const header = decodeProtectedHeader(idToken);
+    if (!header.alg || !OIDC_ALLOWED_ALGS.includes(header.alg)) throw new Error(`disallowed id_token alg: ${header.alg}`);
+    if (typeof header.kid !== 'string' || !header.kid) throw new Error('id_token has no kid');
+    return { kid: header.kid, alg: header.alg };
+  }
+
   async validateIdToken(idToken: string, params: IdTokenValidationParams): Promise<ValidatedIdToken> {
-    const keySet = createLocalJWKSet(params.jwks as any);
-    const { payload, protectedHeader } = await jwtVerify(idToken, keySet, {
+    const { payload } = await jwtVerify(idToken, params.key, {
       issuer: params.expectedIssuer,
       audience: params.clientId,
-      algorithms: ALLOWED_ALGS,
-      clockTolerance: params.maxSkewSeconds ?? 60,
+      algorithms: OIDC_ALLOWED_ALGS, // signature/iss/aud/exp/nbf verified here (bounded skew below)
+      clockTolerance: OIDC_CLOCK_SKEW_SECONDS,
     });
-    if (!protectedHeader.alg || !ALLOWED_ALGS.includes(protectedHeader.alg)) {
-      throw new Error(`disallowed id_token alg: ${protectedHeader.alg}`);
+    const now = Math.floor(Date.now() / 1000);
+    if (typeof payload.iat === 'number' && payload.iat > now + OIDC_CLOCK_SKEW_SECONDS) {
+      throw new Error('id_token iat is in the future beyond the allowed skew');
     }
     if (typeof payload.nonce !== 'string' || payload.nonce !== params.expectedNonce) {
       throw new Error('id_token nonce mismatch (possible replay)');

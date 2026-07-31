@@ -34,10 +34,11 @@ export class OidcController {
   @Public()
   @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @Get('callback')
-  async callback(@Query('state') state: string, @Query('code') code: string, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    if (!state || !code) throw new BadRequestException('missing state or code');
+  async callback(@Query('state') state: string, @Query('code') code: string, @Query('error') error: string, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    if (!state) throw new BadRequestException('missing state');
     const labId = await this.labFromTransactionState(state);
-    return this.labContext.runLabScoped(labId, () => this.oidc.complete(state, code, req, res));
+    // Pass the IdP error (if any) through; the service fails closed and audits it. `error_description` is NOT read.
+    return this.labContext.runLabScoped(labId, () => this.oidc.complete(state, code, req, res, error));
   }
 
   /** Resolve the lab from the request host via LabDomain (system-scoped lookup). Never changes labId isolation. */

@@ -12,6 +12,7 @@ import { OidcService } from './oidc/oidc.service';
 import { OidcTransactionService } from './oidc/oidc-transaction.service';
 import { OidcTokenValidator } from './oidc/oidc-token-validator';
 import { OidcAuthenticationAdapter } from './oidc/oidc-authentication.adapter';
+import { OidcJwksResolver } from './oidc/oidc-jwks-resolver';
 import { OIDC_DISCOVERY_CLIENT, HttpOidcDiscoveryClient } from './oidc/oidc-discovery';
 
 /**
@@ -35,6 +36,7 @@ import { OIDC_DISCOVERY_CLIENT, HttpOidcDiscoveryClient } from './oidc/oidc-disc
     OidcService,
     OidcTransactionService,
     OidcTokenValidator,
+    OidcJwksResolver,
     { provide: OIDC_DISCOVERY_CLIENT, useClass: HttpOidcDiscoveryClient },
   ],
   exports: [AuthenticationService, IdentityProviderService, ServicePrincipalService, FederatedIdentityService, OidcService],
