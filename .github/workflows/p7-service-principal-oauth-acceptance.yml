@@ -57,18 +57,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Print & verify the checked-out commit (exact-head + 7A.2b lineage rooted at 9218467)
+      - name: Print & verify the checked-out commit (exact-head + 7A.2b lineage: core 9218467 → live-wiring f072538)
         run: |
           set -euo pipefail
           echo "github.sha        = ${{ github.sha }}"
           echo "git rev-parse HEAD = $(git rev-parse HEAD)"
           test "$(git rev-parse HEAD)" = "${{ github.sha }}" || { echo "!! checkout SHA does not match github.sha"; exit 1; }
-          git merge-base --is-ancestor 9218467e0634ecee23ee050963ec040198f241bb "$(git rev-parse HEAD)" || { echo "!! head is not a descendant of the 7A.2b candidate 9218467"; exit 1; }
+          for c in 9218467e0634ecee23ee050963ec040198f241bb f0725387eed35c8917caefd9b3aed7466a3fd68e; do
+            git merge-base --is-ancestor "$c" "$(git rev-parse HEAD)" || { echo "!! head is not a descendant of 7A.2b candidate $c"; exit 1; }
+          done
 
       - name: Confirm post-candidate delta is acceptance-infra only; frozen anchors unmodified
         run: |
           set -euo pipefail
-          git diff --name-only 9218467e0634ecee23ee050963ec040198f241bb..HEAD | tee /tmp/post-candidate.txt
+          git diff --name-only f0725387eed35c8917caefd9b3aed7466a3fd68e..HEAD | tee /tmp/post-candidate.txt
           if grep -vE '^(\.github/workflows/p7-service-principal-oauth-acceptance\.yml|apps/api/scripts/(seed|assert)-service-principal-oauth-.*\.ts|apps/web/acceptance/\.gitignore|docs/)$' /tmp/post-candidate.txt; then
             echo "!! post-candidate delta contains a non-acceptance-infra change"; exit 1
           fi
@@ -106,8 +108,10 @@ jobs:
       - name: Focused enterprise-auth + service-oauth tests (contract / crossover / anti-enumeration / audit outcomes)
         run: cd apps/api && npx jest src/modules/enterprise-auth --runInBand
 
-      - name: Non-regression NR1 (identity/auth-adjacent + platform core + audit registry)
-        run: cd apps/api && npx jest src/common src/database src/health.controller.spec.ts src/modules/auth src/modules/security src/modules/portal src/modules/roles src/modules/users src/modules/audit --runInBand
+      - name: Non-regression NR1 (identity/auth-adjacent + platform core)
+        run: cd apps/api && npx jest src/common src/database src/health.controller.spec.ts src/modules/auth src/modules/security src/modules/portal src/modules/roles src/modules/users --runInBand
+      - name: Non-regression NR1b (audit — isolated process; state-sensitive chain/seal regression specs)
+        run: cd apps/api && npx jest src/modules/audit --runInBand
       - name: Non-regression NR2 (Program 6 AI + WSI)
         run: cd apps/api && npx jest src/modules/ai-registry src/modules/dataset-governance src/modules/inference-engine src/modules/explainability src/modules/human-review src/modules/validation src/modules/continuous-eval src/modules/clinical-perf src/modules/ai src/modules/wsi --runInBand
       - name: Non-regression NR3 (records / billing / reporting)

@@ -41,13 +41,14 @@ async function main() {
     }
     const A = (await prisma.lab.create({ data: { name: 'P7-7A2b SvcOAuth Lab A', slug: SLUG_A }, select: { id: true } })).id;
     const B = (await prisma.lab.create({ data: { name: 'P7-7A2b SvcOAuth Lab B', slug: SLUG_B }, select: { id: true } })).id;
-    const sp = await prisma.servicePrincipal.create({ data: { labId: A, key: `svc-${randomUUID()}`, displayName: 'Acceptance Robot', isActive: true }, select: { id: true, key: true } });
+    const sp = await prisma.servicePrincipal.create({ data: { labId: A, key: `svc-${randomUUID()}`, displayName: 'Acceptance Robot', isActive: true }, select: { id: true, principalUuid: true } });
     const secret = randomBytes(32).toString('base64url');
     await prisma.servicePrincipalCredential.create({ data: { labId: A, servicePrincipalId: sp.id, secretHash: await argon2.hash(secret), status: 'ACTIVE', rotatedAt: new Date() } });
     const permission = await prisma.permission.upsert({ where: { code: SCOPE_CODE }, update: {}, create: { code: SCOPE_CODE, label: 'view record' }, select: { id: true } });
     await prisma.servicePrincipalScope.create({ data: { labId: A, servicePrincipalId: sp.id, permissionId: permission.id } });
 
-    const fixtures = { labAId: A, labBId: B, servicePrincipalId: sp.id, clientId: sp.key, clientSecret: secret, scopeCode: SCOPE_CODE };
+    // client_id is the globally-unique principalUuid (the token endpoint is unauthenticated + cross-lab).
+    const fixtures = { labAId: A, labBId: B, servicePrincipalId: sp.id, clientId: sp.principalUuid, clientSecret: secret, scopeCode: SCOPE_CODE };
     fs.mkdirSync(path.dirname(FIXTURES_OUT), { recursive: true });
     fs.writeFileSync(FIXTURES_OUT, JSON.stringify(fixtures, null, 2));
     console.log(`seeded service-oauth fixtures → ${FIXTURES_OUT}`);
