@@ -14,7 +14,10 @@ describe('P2-7B — audit permission catalog', () => {
   });
 
   it('does not reuse or modify system:security', () => {
-    expect(SEED).toMatch(/system:\s*\[\s*'health',\s*'security'\s*\]/); // unchanged
+    // system:security stays within the `system` object and is never reused for audit. The `system` set also carries
+    // 'ingestion' (P5C source-administration authority, added after this test was written) — reflected here so the
+    // expectation matches the accepted platform state without changing what the test guards.
+    expect(SEED).toMatch(/system:\s*\[\s*'health',\s*'security',\s*'ingestion'\s*\]/);
   });
 
   it('no default role byPrefix list selects the "audit" object', () => {
