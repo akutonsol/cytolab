@@ -57,7 +57,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Print & verify the checked-out commit (exact-head + 7A.2b lineage: core 9218467 → live-wiring f072538)
+      - name: Print & verify the checked-out commit (exact-head + 7A.2b lineage rooted at core 9218467 and live-wiring f072538)
         run: |
           set -euo pipefail
           echo "github.sha        = ${{ github.sha }}"
