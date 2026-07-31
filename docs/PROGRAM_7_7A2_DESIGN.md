@@ -34,10 +34,13 @@ changes.
   browser/agent is redirected to the IdP authorize endpoint; the IdP redirects back to a platform callback with a
   code; the platform exchanges the code (+PKCE verifier) at the token endpoint for an ID token (and access token).
 - Implicit and password grants are **not** supported (OAuth 2.1 prohibits them).
-- **Client-credentials** (non-interactive, machine) is the natural fit for the 7A.1 **service-principal** machine-auth
-  runtime; whether it lands in 7A.2 or a dedicated service-principal increment is a design decision flagged here
-  (recommended: a small, clearly-separated sub-scope, since it reuses the same token machinery but a distinct principal
-  class — Principle 11).
+- **Client-credentials** (non-interactive, machine) is **split out** into a separate sub-increment (governance-directed)
+  so human federation and machine authentication are never accepted/frozen as one inseparable security change:
+  - **7A.2a — Interactive OIDC Federation** (this increment, authorized): Authorization Code + PKCE, OIDC discovery,
+    JWKS + claim validation, federated-identity linkage, canonical **human** principal, existing session establishment.
+  - **7A.2b — Service-Principal OAuth** (NOT yet authorized): client-credentials / equivalent machine flow;
+    service-principal credential lifecycle (secret issuance/rotation/hashing/storage), restricted scopes, revocation,
+    non-human session/token lifetime, audit provenance, separation from human login, explicit ET5/ET6 assertions.
 
 ## 4. Issuer discovery & metadata validation
 - OIDC discovery via the provider's `/.well-known/openid-configuration`; the resolved `issuer`, `authorization_endpoint`,
@@ -78,6 +81,14 @@ changes.
   `LabDomain` host mapping. **`labId` remains sourced canonically and is never derived from Organization**; the
   Organization/administrative overlay is **never** a tenancy/isolation key (Principle 4 / **ET3**). Routing selects a
   provider; it does not change what data is isolated.
+
+## 9.1 Implementation invariant — OIDC configuration immutability during a transaction
+**The provider configuration used to *begin* an authorization transaction must be the same trusted configuration used
+to *complete* it.** Each transaction binds, at minimum: provider identifier · expected issuer · client identifier ·
+redirect URI · a configuration/version fingerprint (a digest over the trusted config in effect at initiation). On
+callback, the transaction's bound fingerprint is re-checked against the provider's current trusted configuration; **any
+change between initiation and callback fails closed** — the trust basis is never silently swapped mid-transaction.
+(Recorded as an implementation invariant at 7A.2 design approval; the 7A.2a acceptance gate will assert it.)
 
 ## 10. Session establishment (existing SessionService)
 - After principal establishment, the existing `SessionService` issues the **same** session/token artifacts (rotating
