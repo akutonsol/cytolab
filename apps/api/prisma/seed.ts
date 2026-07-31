@@ -122,6 +122,12 @@ export const SPECIAL_OBJECTS: Record<string, string[]> = {
   // authority; never creates/alters a diagnosis, sign-out, or lifecycle). Assigned to NO default role (byPrefix below
   // never selects 'clinicalperf'); super roles reach it via the guard bypass. run distinct from view. No PHI.
   clinicalperf: ['view', 'run', 'manage'],
+  // P7-7A.1 — Enterprise Authentication administration (identity is a platform service). view = read identity-provider
+  // configs + service principals; manage = register an (inert) identity-provider config, create/deactivate a service
+  // principal (the non-human principal class). NO route grants clinical/diagnostic/sign-out/AI-approval authority
+  // (identity never becomes clinical authority). Assigned to NO default role (byPrefix below never selects 'identity');
+  // super roles reach it via the guard bypass. Distinct from user:*/role:* (which administer human users + RBAC).
+  identity: ['view', 'manage'],
 };
 
 export interface SeedRoleDef {

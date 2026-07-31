@@ -332,6 +332,10 @@ model Lab {
   billingItems                     LabBillingItem[]
   labInvoices                      LabInvoice[]
   labInvoiceLines                  LabInvoiceLine[]
+  // Program 7 · Phase 7A — Enterprise Authentication foundation (additive; identity is a platform service)
+  identityProviders                IdentityProvider[]
+  servicePrincipals                ServicePrincipal[]
+  federatedIdentities              FederatedIdentity[]
 }
 
 /// How a lab's DATA-PLANE storage is provisioned. Control-plane rows (Lab, LabDomain,
@@ -486,6 +490,7 @@ model User {
   trustedDevices          TrustedDevice[]
   mfaConfig               MfaConfig?
   passwordHistory         PasswordHistory[]
+  federatedIdentities     FederatedIdentity[]         @relation("FederatedIdentityUser")
   createdAt               DateTime                    @default(now())
   updatedAt               DateTime                    @updatedAt
 
@@ -6159,4 +6164,85 @@ model SlideDicomMetadata {
   // Series-grain tenant-scoped identity: duplicate Study+Series within a lab is rejected; different labs coexist.
   @@unique([labId, studyInstanceUID, seriesInstanceUID])
   @@index([labId, studyInstanceUID])
+}
+
+// ============================================================================
+// Program 7 · Phase 7A — Enterprise Authentication foundation (7A.1).
+// ADDITIVE, lab-scoped, provenance FKs onDelete: Restrict. Identity is a platform
+// service (Principle 9): these are the canonical-principal + provider-isolation
+// seam foundations. IdentityProvider + FederatedIdentity are INERT in 7A.1 (no
+// protocol adapter ships until 7A.2/7A.3); ServicePrincipal is the non-human
+// principal CLASS (Principle 11) — its machine-auth runtime lands with 7A.2. Each
+// record carries a STABLE internal identifier (GG7) that never changes as external
+// attributes change. Nothing here touches the live login path, tenancy, the clinical
+// path, or AI evidence.
+// ============================================================================
+
+// Federation protocol a provider speaks. Reserved in 7A.1; adapters ship in 7A.2 (OIDC/OAUTH) and 7A.3 (SAML).
+enum IdentityProviderProtocol {
+  OIDC
+  OAUTH
+  SAML
+}
+
+// Per-lab enterprise identity-provider CONFIGURATION (administrative; never a tenancy key — Principle 4/ET3).
+// Inert in 7A.1: registering a provider does not yet enable a federated login flow.
+model IdentityProvider {
+  id           String                   @id @default(cuid())
+  providerUuid String                   @unique @default(uuid()) // stable internal identifier (GG7)
+  labId        String
+  lab          Lab                      @relation(fields: [labId], references: [id])
+  key          String // lab-unique administrative handle
+  displayName  String
+  protocol     IdentityProviderProtocol
+  issuer       String? // issuer / entityID; protocol-specific config fields land with each adapter increment
+  isEnabled    Boolean                  @default(false) // inert until an adapter activates it
+  createdById  String? // actor; no FK
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+
+  federatedIdentities FederatedIdentity[]
+
+  @@unique([labId, key])
+  @@index([labId])
+}
+
+// Non-human principal CLASS (Principle 11) — a machine/service identity, structurally distinct from a human User.
+// It can NEVER hold clinical/diagnostic/sign-out/AI-approval authority. The machine-auth (client-credentials) runtime
+// is deferred to 7A.2; 7A.1 establishes the entity + its stable identifier + canonical-principal resolution.
+model ServicePrincipal {
+  id            String   @id @default(cuid())
+  principalUuid String   @unique @default(uuid()) // stable internal identifier (GG7)
+  labId         String
+  lab           Lab      @relation(fields: [labId], references: [id])
+  key           String // lab-unique client handle
+  displayName   String
+  isActive      Boolean  @default(true)
+  createdById   String? // actor; no FK
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([labId, key])
+  @@index([labId])
+}
+
+// Durable linkage from an external federated subject to an internal human principal (the User). INERT in 7A.1 —
+// written/consumed by the federation adapters in 7A.2/7A.3. Binds to the stable internal principal (User.id), never to
+// mutable external attributes (GG7). Provenance FKs onDelete: Restrict.
+model FederatedIdentity {
+  id                    String           @id @default(cuid())
+  federatedIdentityUuid String           @unique @default(uuid()) // stable internal identifier (GG7)
+  labId                 String
+  lab                   Lab              @relation(fields: [labId], references: [id])
+  identityProviderId    String
+  identityProvider      IdentityProvider @relation(fields: [identityProviderId], references: [id], onDelete: Restrict)
+  externalSubject       String // the provider's subject/nameID — a mutable external attribute, never the durable key
+  userId                String
+  user                  User             @relation("FederatedIdentityUser", fields: [userId], references: [id], onDelete: Restrict)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  @@unique([labId, identityProviderId, externalSubject])
+  @@index([labId])
+  @@index([userId])
 }
