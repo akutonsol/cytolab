@@ -1,9 +1,11 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Req } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import type { Request } from 'express';
 import { Public } from '../../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
 import { AuthUser, CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { Service } from './service-auth.guard';
 import { ClientCredentialsService } from './client-credentials.service';
 import { ServicePrincipalCredentialService } from './service-principal-credential.service';
 import { ServicePrincipalScopeService } from './service-principal-scope.service';
@@ -31,6 +33,17 @@ export class ServiceOAuthController {
   @Post('oauth/token')
   token(@Body() dto: ClientCredentialsTokenDto) {
     return this.clientCredentials.grant(dto.client_id, dto.client_secret);
+  }
+
+  // ── Representative SERVICE-authenticated route (proves the live machine-auth path end-to-end) ─────────────────
+  // @Service → JwtAuthGuard stands down; the global ServiceAuthGuard validates the machine token and binds the
+  // SERVICE principal; the EXISTING PermissionsGuard then enforces `identity:view` against the token's scopes.
+  @Service()
+  @RequirePermissions('identity:view')
+  @Get('oauth/introspect')
+  introspect(@Req() req: Request) {
+    const principal = (req as unknown as { user?: { kind?: string; servicePrincipalId?: string; labId?: string; permissions?: string[] } }).user;
+    return { kind: principal?.kind, servicePrincipalId: principal?.servicePrincipalId, labId: principal?.labId, scopes: principal?.permissions ?? [] };
   }
 
   // ── Credential lifecycle (staff admin) ────────────────────────────────────────────────────────────────────────

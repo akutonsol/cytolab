@@ -28,7 +28,7 @@ describeIf('P7-7A.2b Service-Principal OAuth (integration)', () => {
   const credentials = new ServicePrincipalCredentialService(prisma, audit);
   const scopes = new ServicePrincipalScopeService(prisma);
   const signer = new ServiceTokenSigner(new JwtService({}), { get: () => SECRET } as any);
-  const clientCredentials = new ClientCredentialsService(prisma, credentials, scopes, signer, audit);
+  const clientCredentials = new ClientCredentialsService(prisma, labContext, credentials, scopes, signer, audit);
   const asLab = <T>(labId: string, fn: () => Promise<T>) => labContext.runLabScoped(labId, fn) as Promise<T>;
   const labIds: string[] = [];
   const jwt = new JwtService({});
@@ -82,7 +82,7 @@ describeIf('P7-7A.2b Service-Principal OAuth (integration)', () => {
     await asLab(labId, () => scopes.assign(sp.id, perm.code, null));
     audit.record.mockClear();
     const spRow = await raw.servicePrincipal.findUnique({ where: { id: sp.id } });
-    const res = await asLab(labId, () => clientCredentials.grant(spRow!.key, secret));
+    const res = await asLab(labId, () => clientCredentials.grant(spRow!.principalUuid, secret));
     expect(res.token_type).toBe('Bearer');
     const decoded: any = jwt.decode(res.access_token);
     expect(decoded.aud).toBe('service');
@@ -104,12 +104,12 @@ describeIf('P7-7A.2b Service-Principal OAuth (integration)', () => {
     expect(reason('SERVICE_AUTH_FAILED')[0][0].metadata.reason).toBe('unknown_client');
     // bad secret
     audit.record.mockClear();
-    await expect(asLab(labId, () => clientCredentials.grant(spRow!.key, 'wrong-secret'))).rejects.toThrow(/invalid client credentials/i);
+    await expect(asLab(labId, () => clientCredentials.grant(spRow!.principalUuid, 'wrong-secret'))).rejects.toThrow(/invalid client credentials/i);
     expect(reason('SERVICE_AUTH_FAILED')[0][0].metadata.reason).toBe('bad_secret');
     // inactive principal
     await raw.servicePrincipal.update({ where: { id: sp.id }, data: { isActive: false } });
     audit.record.mockClear();
-    await expect(asLab(labId, () => clientCredentials.grant(spRow!.key, secret))).rejects.toThrow(/invalid client credentials/i);
+    await expect(asLab(labId, () => clientCredentials.grant(spRow!.principalUuid, secret))).rejects.toThrow(/invalid client credentials/i);
     expect(reason('SERVICE_AUTH_FAILED')[0][0].metadata.reason).toBe('inactive_principal');
     expect(noSecrets()).toBe(true);
   });

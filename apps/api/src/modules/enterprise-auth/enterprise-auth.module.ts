@@ -22,7 +22,6 @@ import { ServicePrincipalCredentialService } from './service-oauth/service-princ
 import { ServicePrincipalScopeService } from './service-oauth/service-principal-scope.service';
 import { ClientCredentialsService } from './service-oauth/client-credentials.service';
 import { ServiceJwtStrategy } from './service-oauth/service-jwt.strategy';
-import { ServiceAuthGuard } from './service-oauth/service-auth.guard';
 
 /**
  * Program 7 · Phase 7A — Enterprise Authentication. 7A.1 established the canonical-principal + provider-isolation seam
@@ -52,8 +51,7 @@ import { ServiceAuthGuard } from './service-oauth/service-auth.guard';
     ServicePrincipalCredentialService,
     ServicePrincipalScopeService,
     ClientCredentialsService,
-    ServiceJwtStrategy,
-    ServiceAuthGuard,
+    ServiceJwtStrategy, // registers the 'jwt-service' passport strategy; the guard is a global APP_GUARD in AuthModule
   ],
   exports: [AuthenticationService, IdentityProviderService, ServicePrincipalService, FederatedIdentityService, OidcService, ServicePrincipalCredentialService, ServicePrincipalScopeService, ClientCredentialsService, ServiceTokenSigner],
 })

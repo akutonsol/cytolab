@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { IS_PUBLIC_KEY } from '../../../common/decorators/public.decorator';
 import { IS_PORTAL_KEY } from '../../portal/common/portal-principal';
+import { IS_SERVICE_KEY } from '../../enterprise-auth/service-oauth/service-oauth.constants';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -17,6 +18,10 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     // audience) via their own PortalAuthGuard — the staff strategy stands down so
     // it never tries (and rejects) a portal token on this guard.
     if (this.reflector.getAllAndOverride<boolean>(IS_PORTAL_KEY, targets)) return true;
+    // P7-7A.2b — @Service routes authenticate with the 'jwt-service' strategy (separate
+    // audience) via the global ServiceAuthGuard; the staff strategy stands down here so it
+    // never tries (and rejects) a machine token. Human routes are unaffected.
+    if (this.reflector.getAllAndOverride<boolean>(IS_SERVICE_KEY, targets)) return true;
     return super.canActivate(context);
   }
 }

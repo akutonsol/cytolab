@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
+import { LabContext } from '../../../common/tenancy/lab-context';
 import { AuditRecorder } from '../../audit/audit-recorder.service';
 import { ServicePrincipalCredentialService } from './service-principal-credential.service';
 import { ServicePrincipalScopeService } from './service-principal-scope.service';
@@ -20,26 +21,34 @@ const GENERIC_ERROR = 'invalid client credentials';
 export class ClientCredentialsService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly labContext: LabContext,
     private readonly credentials: ServicePrincipalCredentialService,
     private readonly scopes: ServicePrincipalScopeService,
     private readonly signer: ServiceTokenSigner,
     private readonly audit: AuditRecorder,
   ) {}
 
+  /** `clientId` is the globally-unique ServicePrincipal.principalUuid; the endpoint is unauthenticated so it resolves
+   *  the principal (and its lab) system-scoped, then verifies + scopes it under the principal's own lab context. */
   async grant(clientId: string, clientSecret: string): Promise<{ access_token: string; token_type: 'Bearer'; expires_in: number }> {
-    const sp = await this.prisma.servicePrincipal.findFirst({ where: { key: clientId }, select: { id: true, isActive: true, labId: true } });
+    const sp = await this.labContext.runSystem(() => this.prisma.servicePrincipal.findFirst({ where: { principalUuid: clientId }, select: { id: true, isActive: true, labId: true } }));
     await this.recordServiceAudit('SERVICE_AUTH_INITIATED', sp?.id ?? null); // mandatory once a valid attempt is processed (D3)
 
-    // Anti-enumeration: unknown / inactive principal performs comparable work and returns an indistinguishable failure.
-    const verified = sp && sp.isActive ? await this.credentials.verifySecret(sp.id, clientSecret) : await this.credentials.dummyVerify(clientSecret);
-    if (!sp || !sp.isActive || !verified) {
-      await this.recordServiceAudit('SERVICE_AUTH_FAILED', sp?.id ?? null, sp ? (sp.isActive ? 'bad_secret' : 'inactive_principal') : 'unknown_client');
+    // Anti-enumeration: unknown / inactive principal performs comparable Argon2 work and fails indistinguishably.
+    if (!sp || !sp.isActive) {
+      await this.credentials.dummyVerify(clientSecret);
+      await this.recordServiceAudit('SERVICE_AUTH_FAILED', sp?.id ?? null, sp ? 'inactive_principal' : 'unknown_client');
       throw new UnauthorizedException(GENERIC_ERROR);
     }
-
-    const permissions = await this.scopes.effectivePermissions(sp.id);
-    const token = await this.signer.sign({ servicePrincipalId: sp.id, labId: sp.labId, permissions });
-    await this.recordServiceAudit('SERVICE_AUTH_SUCCEEDED', sp.id);
+    const active = sp;
+    const ok = await this.labContext.runLabScoped(active.labId, () => this.credentials.verifySecret(active.id, clientSecret));
+    if (!ok) {
+      await this.recordServiceAudit('SERVICE_AUTH_FAILED', active.id, 'bad_secret');
+      throw new UnauthorizedException(GENERIC_ERROR);
+    }
+    const permissions = await this.labContext.runLabScoped(active.labId, () => this.scopes.effectivePermissions(active.id));
+    const token = await this.signer.sign({ servicePrincipalId: active.id, labId: active.labId, permissions });
+    await this.recordServiceAudit('SERVICE_AUTH_SUCCEEDED', active.id);
     return { access_token: token, token_type: 'Bearer', expires_in: SERVICE_TOKEN_TTL_SECONDS };
   }
 

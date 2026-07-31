@@ -7,7 +7,7 @@ import { IsIn, IsString, MaxLength, MinLength } from 'class-validator';
  */
 export class ClientCredentialsTokenDto {
   @IsIn(['client_credentials']) grant_type!: 'client_credentials';
-  @IsString() @MinLength(1) @MaxLength(128) client_id!: string;
+  @IsString() @MinLength(1) @MaxLength(128) client_id!: string; // the globally-unique ServicePrincipal.principalUuid
   @IsString() @MinLength(1) @MaxLength(512) client_secret!: string;
 }
 
