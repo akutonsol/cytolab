@@ -339,6 +339,9 @@ model Lab {
   oidcAuthTransactions             OidcAuthTransaction[]
   servicePrincipalCredentials      ServicePrincipalCredential[]
   servicePrincipalScopes           ServicePrincipalScope[]
+  samlIdpCertificates              SamlIdpCertificate[]
+  samlAuthRequests                 SamlAuthRequest[]
+  samlConsumedAssertions           SamlConsumedAssertion[]
 }
 
 /// How a lab's DATA-PLANE storage is provisioned. Control-plane rows (Lab, LabDomain,
@@ -6193,24 +6196,34 @@ enum IdentityProviderProtocol {
 // Per-lab enterprise identity-provider CONFIGURATION (administrative; never a tenancy key — Principle 4/ET3).
 // Inert in 7A.1: registering a provider does not yet enable a federated login flow.
 model IdentityProvider {
-  id           String                   @id @default(cuid())
-  providerUuid String                   @unique @default(uuid()) // stable internal identifier (GG7)
-  labId        String
-  lab          Lab                      @relation(fields: [labId], references: [id])
-  key          String // lab-unique administrative handle
-  displayName  String
-  protocol     IdentityProviderProtocol
-  issuer       String? // issuer / entityID; protocol-specific config fields land with each adapter increment
+  id                       String                   @id @default(cuid())
+  providerUuid             String                   @unique @default(uuid()) // stable internal identifier (GG7)
+  labId                    String
+  lab                      Lab                      @relation(fields: [labId], references: [id])
+  key                      String // lab-unique administrative handle
+  displayName              String
+  protocol                 IdentityProviderProtocol
+  issuer                   String? // issuer / entityID; for SAML this is the expected IdP entityID (trust-anchor identity)
   // 7A.2a OIDC public-client config (PKCE; NO stored client secret in this increment). Nullable until OIDC-enabled.
-  clientId     String?
-  redirectUri  String?
-  isEnabled    Boolean                  @default(false) // inert until an adapter activates it
-  createdById  String? // actor; no FK
-  createdAt    DateTime                 @default(now())
-  updatedAt    DateTime                 @updatedAt
+  clientId                 String?
+  redirectUri              String?
+  // 7A.3 SAML SP-initiated Web-SSO config (additive, nullable until SAML-enabled). Signing certs are a child table
+  // (SamlIdpCertificate) so rollover uses multiple concurrently-valid certs with deterministic fingerprints (S4).
+  samlSpEntityId           String? // OUR (SP) entityID — the required Audience of the assertion (S8)
+  samlAcsUrl               String? // OUR Assertion Consumer Service URL — the required Destination/Recipient (S8)
+  samlIdpSsoUrl            String? // the IdP's SSO endpoint (HTTP-Redirect binding) for the AuthnRequest
+  samlNameIdFormat         String? // allowed NameID-format policy (S8); null ⇒ default persistent/unspecified policy
+  samlWantAssertionsSigned Boolean                  @default(true) // baseline requires signed assertions (S7 signed-only)
+  isEnabled                Boolean                  @default(false) // inert until an adapter activates it
+  createdById              String? // actor; no FK
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
 
-  federatedIdentities FederatedIdentity[]
-  oidcTransactions    OidcAuthTransaction[]
+  federatedIdentities    FederatedIdentity[]
+  oidcTransactions       OidcAuthTransaction[]
+  samlCertificates       SamlIdpCertificate[]
+  samlAuthRequests       SamlAuthRequest[]
+  samlConsumedAssertions SamlConsumedAssertion[]
 
   @@unique([labId, key])
   @@index([labId])
@@ -6341,4 +6354,91 @@ model ServicePrincipalScope {
   @@unique([labId, servicePrincipalId, permissionId])
   @@index([labId])
   @@index([servicePrincipalId])
+}
+
+// ============================================================================
+// Program 7 · Phase 7A.3 — SAML Federation (interactive HUMAN authentication).
+// SP-initiated Web-SSO ONLY (S3). ADDITIVE, lab-scoped, provenance FKs onDelete:
+// Restrict. The frozen IdentityProvider scalar shape gains only NULLABLE SAML
+// columns; signing certs, the SP-initiated request transaction, and the
+// assertion-replay store are CHILD entities. Nothing here touches the human
+// login path, tenancy, OIDC, service-principal OAuth, the clinical path, or AI
+// evidence. NameID is an opaque external subject linked via FederatedIdentity
+// (durable key = User.id, GG7) — never domain truth (Principle 10).
+// ============================================================================
+
+enum SamlCertificateStatus {
+  ACTIVE
+  RETIRED
+}
+
+// A configured IdP signing certificate for a SAML IdentityProvider. The configured cert(s) ARE the trust anchor (S4) —
+// message/metadata may never redefine them. Multiple ACTIVE certs support bounded rollover; `fingerprint` is a
+// deterministic identifier (sha256 of the DER). Retiring a cert is a status flip (no hard delete).
+model SamlIdpCertificate {
+  id                 String                @id @default(cuid())
+  certificateUuid    String                @unique @default(uuid()) // stable internal identifier (GG7)
+  labId              String
+  lab                Lab                   @relation(fields: [labId], references: [id])
+  identityProviderId String
+  identityProvider   IdentityProvider      @relation(fields: [identityProviderId], references: [id], onDelete: Restrict)
+  pemCertificate     String // the X.509 signing certificate (PEM) — public material only, never a private key
+  fingerprint        String // deterministic sha256(DER) identifier for the configured cert (S4)
+  status             SamlCertificateStatus @default(ACTIVE)
+  notAfter           DateTime? // optional expiry hint; an expired/RETIRED cert is not used to validate (fail closed)
+  createdById        String? // actor; no FK
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  @@unique([labId, identityProviderId, fingerprint])
+  @@index([labId])
+  @@index([labId, identityProviderId, status])
+  @@index([identityProviderId])
+}
+
+// Server-side SP-initiated SAML request transaction (the OidcAuthTransaction analogue). Created at `initiate`, survives
+// the IdP round-trip, and binds: the AuthnRequest `requestId` (matched to the assertion's InResponseTo — S8), the
+// Osieri-controlled single-use `relayState` correlation token (§3a), the expected ACS destination, and a
+// `configFingerprint` captured at initiation (trust-basis immutability — S4/S5). `verifyAndConsume` enforces existence
+// + not-expired + fingerprint match + single-use (compare-and-set on `consumedAt`), fail closed. Lab-scoped; no PHI.
+model SamlAuthRequest {
+  id                  String           @id @default(cuid())
+  samlAuthRequestUuid String           @unique @default(uuid()) // stable internal identifier (GG7)
+  labId               String
+  lab                 Lab              @relation(fields: [labId], references: [id])
+  identityProviderId  String
+  identityProvider    IdentityProvider @relation(fields: [identityProviderId], references: [id], onDelete: Restrict)
+
+  requestId         String // the AuthnRequest ID — matched to the assertion's InResponseTo (single-use)
+  relayState        String // Osieri-generated single-use correlation token (§3a) — never a free-form redirect
+  expectedAcsUrl    String // the ACS destination bound at initiation
+  configFingerprint String // digest over the trusted SAML config at initiation (immutability invariant)
+
+  expiresAt  DateTime
+  consumedAt DateTime? // set when the response is validated/consumed (single-use)
+  createdAt  DateTime  @default(now())
+
+  @@unique([labId, requestId])
+  @@index([labId])
+  @@index([identityProviderId])
+  @@index([relayState])
+}
+
+// Consumed-assertion replay store: a validated assertion's `ID` is single-use within its validity window. A replayed
+// (but otherwise valid) assertion riding a fresh transaction is rejected by the unique constraint (fail closed). GC by
+// `notOnOrAfter`. Distinct from SamlAuthRequest single-use (which binds the SP request, not the IdP assertion).
+model SamlConsumedAssertion {
+  id                 String           @id @default(cuid())
+  labId              String
+  lab                Lab              @relation(fields: [labId], references: [id])
+  identityProviderId String
+  identityProvider   IdentityProvider @relation(fields: [identityProviderId], references: [id], onDelete: Restrict)
+  assertionId        String // the SAML assertion ID (single-use)
+  notOnOrAfter       DateTime? // assertion validity bound — used only for GC of the replay store
+  consumedAt         DateTime         @default(now())
+  createdAt          DateTime         @default(now())
+
+  @@unique([labId, identityProviderId, assertionId])
+  @@index([labId])
+  @@index([identityProviderId])
 }

@@ -33,6 +33,7 @@
     "@nestjs/swagger": "^7.4.0",
     "@nestjs/throttler": "^6.2.0",
     "@nestjs/websockets": "^10.4.22",
+    "@node-saml/node-saml": "^5.1.0",
     "@prisma/client": "^5.19.0",
     "@sentry/node": "^10.64.0",
     "argon2": "^0.41.0",
