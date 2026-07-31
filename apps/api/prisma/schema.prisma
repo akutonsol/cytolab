@@ -342,6 +342,7 @@ model Lab {
   samlIdpCertificates              SamlIdpCertificate[]
   samlAuthRequests                 SamlAuthRequest[]
   samlConsumedAssertions           SamlConsumedAssertion[]
+  identityLifecycleEvents          IdentityLifecycleEvent[]
 }
 
 /// How a lab's DATA-PLANE storage is provisioned. Control-plane rows (Lab, LabDomain,
@@ -406,99 +407,108 @@ model Workspace {
 }
 
 model User {
-  id                      String                      @id @default(uuid())
-  labId                   String
-  lab                     Lab                         @relation(fields: [labId], references: [id])
-  email                   String
-  passwordHash            String
-  firstName               String
-  lastName                String
+  id                       String                      @id @default(uuid())
+  labId                    String
+  lab                      Lab                         @relation(fields: [labId], references: [id])
+  email                    String
+  passwordHash             String
+  firstName                String
+  lastName                 String
   // Authorizer signature image for rendered reports (Phase 3.5). Typed name
   // (firstName lastName) is the fallback when this is absent.
-  signatureUrl            String?
+  signatureUrl             String?
   // Professional designation for staff who authorize result sheets (legacy
   // Authorizer.type). Null for non-authorizer staff; rendered on the report.
-  authorizerDesignation   AuthorizerDesignation?
-  isActive                Boolean                     @default(true)
-  accountId               String
-  account                 Account                     @relation(fields: [accountId], references: [id])
-  workspaceId             String?
-  workspace               Workspace?                  @relation(fields: [workspaceId], references: [id])
-  roles                   UserRole[]
-  authAttempts            AuthAttempt[]
-  recordStatusEvents      RecordStatusEvent[]
-  authorizedResultSheets  ResultSheet[]               @relation("ResultSheetAuthorizer")
-  authoredReports         Report[]                    @relation("ReportAuthor")
-  resultSheetEvents       ResultSheetEvent[]
-  aiDraftsCreated         AiDraft[]                   @relation("AiDraftCreatedBy")
-  aiDraftsAccepted        AiDraft[]                   @relation("AiDraftAcceptedBy")
-  aiScreeningsReviewed    AIScreeningResult[]         @relation("AIScreeningReviewer")
-  consultRequests         ConsultRequest[]            @relation("ConsultRequester")
-  recordCodings           RecordCoding[]
-  assignedChangeRequests  ChangeRequest[]             @relation("ChangeRequestAssignee")
-  changeRequestMessages   ChangeRequestMessage[]      @relation("ChangeRequestMessageStaffAuthor")
-  changeRequestEvents     ChangeRequestEvent[]        @relation("ChangeRequestEventStaffActor")
-  threadParticipants      ThreadParticipant[]
-  authoredMessages        Message[]
-  assignedAppointments    Appointment[]               @relation("AppointmentAssignee")
-  createdAppointments     Appointment[]               @relation("AppointmentCreator")
-  notifications           Notification[]
-  notificationPreference  UserNotificationPreference?
-  typingIndicators        TypingIndicator[]
+  authorizerDesignation    AuthorizerDesignation?
+  isActive                 Boolean                     @default(true)
+  // Program 7 · Phase 7B.1 — Identity Lifecycle Core (ADDITIVE). `isActive` remains the frozen runtime authentication
+  // gate; `lifecycleState` is a governed overlay coordinated ONLY by IdentityLifecycleService (deterministic mapping:
+  // ACTIVE ⇒ isActive=true; INVITED/PROVISIONED/SUSPENDED/DEPROVISIONED ⇒ false). `originProvisioningSource` is IMMUTABLE
+  // creation provenance (never current authority). Nothing here confers permissions, clinical, or AI authority.
+  lifecycleState           UserLifecycleState          @default(ACTIVE)
+  originProvisioningSource ProvisioningSource          @default(MANUAL)
+  lifecycleUpdatedAt       DateTime?
+  deprovisionedAt          DateTime?
+  lifecycleEvents          IdentityLifecycleEvent[]    @relation("IdentityLifecycleEventUser")
+  accountId                String
+  account                  Account                     @relation(fields: [accountId], references: [id])
+  workspaceId              String?
+  workspace                Workspace?                  @relation(fields: [workspaceId], references: [id])
+  roles                    UserRole[]
+  authAttempts             AuthAttempt[]
+  recordStatusEvents       RecordStatusEvent[]
+  authorizedResultSheets   ResultSheet[]               @relation("ResultSheetAuthorizer")
+  authoredReports          Report[]                    @relation("ReportAuthor")
+  resultSheetEvents        ResultSheetEvent[]
+  aiDraftsCreated          AiDraft[]                   @relation("AiDraftCreatedBy")
+  aiDraftsAccepted         AiDraft[]                   @relation("AiDraftAcceptedBy")
+  aiScreeningsReviewed     AIScreeningResult[]         @relation("AIScreeningReviewer")
+  consultRequests          ConsultRequest[]            @relation("ConsultRequester")
+  recordCodings            RecordCoding[]
+  assignedChangeRequests   ChangeRequest[]             @relation("ChangeRequestAssignee")
+  changeRequestMessages    ChangeRequestMessage[]      @relation("ChangeRequestMessageStaffAuthor")
+  changeRequestEvents      ChangeRequestEvent[]        @relation("ChangeRequestEventStaffActor")
+  threadParticipants       ThreadParticipant[]
+  authoredMessages         Message[]
+  assignedAppointments     Appointment[]               @relation("AppointmentAssignee")
+  createdAppointments      Appointment[]               @relation("AppointmentCreator")
+  notifications            Notification[]
+  notificationPreference   UserNotificationPreference?
+  typingIndicators         TypingIndicator[]
   // HR / Payroll (Phase 7)
-  employeeProfile         Employee?                   @relation("EmployeeUser")
-  managedDepartments      Department[]                @relation("DepartmentManager")
-  processedPayrollRuns    PayrollRun[]                @relation("PayrollProcessor")
-  approvedPayrollRuns     PayrollRun[]                @relation("PayrollApprover")
-  resultTemplates         ResultTemplate[]            @relation("ResultTemplateCreator")
-  bethesdaResults         BethesdaResult[]            @relation("BethesdaReporter")
-  acknowledgedTatAlerts   TATAlert[]                  @relation("TATAcknowledger")
-  toggledFeatures         LabFeature[]                @relation("LabFeatureToggler")
-  escalationsAssigned     EscalationRecord[]          @relation("EscalationAssignee")
-  escalationsReviewed     EscalationRecord[]          @relation("EscalationReviewer")
-  assignedRecords         Record[]                    @relation("RecordAssignee")
-  workloadTarget          WorkloadTarget?
-  qcChecks                QCCheck[]
-  formsReceived           RequisitionTracking[]       @relation("FormReceiver")
-  benchReceived           RequisitionTracking[]       @relation("BenchReceiver")
-  formsVerified           RequisitionTracking[]       @relation("FormVerifier")
-  formsFiled              RequisitionTracking[]       @relation("FormFiler")
-  trackingEvents          TrackingEvent[]             @relation("TrackingEventActor")
-  correlationsReviewed    CorrelationCase[]           @relation("CorrelationReviewer")
-  correlationsCreated     CorrelationCase[]           @relation("CorrelationCreator")
-  proficiencyTests        ProficiencyTest[]           @relation("ProfTestCreator")
-  proficiencyResponses    ProficiencyResponse[]       @relation("ProfResponder")
-  reagentLotsCreated      ReagentLot[]                @relation("ReagentCreator")
-  reagentUsages           ReagentUsage[]              @relation("ReagentUser")
-  clockEventEdits         ClockEvent[]                @relation("ClockEventEditor")
-  timesheetsReviewed      Timesheet[]                 @relation("TimesheetReviewer")
-  leaveRequestsApproved   LeaveRequest[]              @relation("LeaveApprover")
-  overtimeRecordsApproved OvertimeRecord[]            @relation("OvertimeApprover")
-  workforceNotifications  WorkforceNotification[]     @relation("WorkforceNotificationRecipient")
-  payrollPeriodsProcessed PayrollPeriod[]             @relation("PayrollPeriodProcessor")
-  performanceReviewsGiven PerformanceReview[]         @relation("PerformanceReviewer")
-  humanReviewsSubmitted   HumanReviewDecision[]       @relation("HumanReviewReviewer") // P6-6E — decisions this human authored
-  humanReviewsAssigned    HumanReviewRequest[]        @relation("HumanReviewAssignee") // P6-6E — review requests assigned to this human
+  employeeProfile          Employee?                   @relation("EmployeeUser")
+  managedDepartments       Department[]                @relation("DepartmentManager")
+  processedPayrollRuns     PayrollRun[]                @relation("PayrollProcessor")
+  approvedPayrollRuns      PayrollRun[]                @relation("PayrollApprover")
+  resultTemplates          ResultTemplate[]            @relation("ResultTemplateCreator")
+  bethesdaResults          BethesdaResult[]            @relation("BethesdaReporter")
+  acknowledgedTatAlerts    TATAlert[]                  @relation("TATAcknowledger")
+  toggledFeatures          LabFeature[]                @relation("LabFeatureToggler")
+  escalationsAssigned      EscalationRecord[]          @relation("EscalationAssignee")
+  escalationsReviewed      EscalationRecord[]          @relation("EscalationReviewer")
+  assignedRecords          Record[]                    @relation("RecordAssignee")
+  workloadTarget           WorkloadTarget?
+  qcChecks                 QCCheck[]
+  formsReceived            RequisitionTracking[]       @relation("FormReceiver")
+  benchReceived            RequisitionTracking[]       @relation("BenchReceiver")
+  formsVerified            RequisitionTracking[]       @relation("FormVerifier")
+  formsFiled               RequisitionTracking[]       @relation("FormFiler")
+  trackingEvents           TrackingEvent[]             @relation("TrackingEventActor")
+  correlationsReviewed     CorrelationCase[]           @relation("CorrelationReviewer")
+  correlationsCreated      CorrelationCase[]           @relation("CorrelationCreator")
+  proficiencyTests         ProficiencyTest[]           @relation("ProfTestCreator")
+  proficiencyResponses     ProficiencyResponse[]       @relation("ProfResponder")
+  reagentLotsCreated       ReagentLot[]                @relation("ReagentCreator")
+  reagentUsages            ReagentUsage[]              @relation("ReagentUser")
+  clockEventEdits          ClockEvent[]                @relation("ClockEventEditor")
+  timesheetsReviewed       Timesheet[]                 @relation("TimesheetReviewer")
+  leaveRequestsApproved    LeaveRequest[]              @relation("LeaveApprover")
+  overtimeRecordsApproved  OvertimeRecord[]            @relation("OvertimeApprover")
+  workforceNotifications   WorkforceNotification[]     @relation("WorkforceNotificationRecipient")
+  payrollPeriodsProcessed  PayrollPeriod[]             @relation("PayrollPeriodProcessor")
+  performanceReviewsGiven  PerformanceReview[]         @relation("PerformanceReviewer")
+  humanReviewsSubmitted    HumanReviewDecision[]       @relation("HumanReviewReviewer") // P6-6E — decisions this human authored
+  humanReviewsAssigned     HumanReviewRequest[]        @relation("HumanReviewAssignee") // P6-6E — review requests assigned to this human
   // Enterprise security (Phase 1) — password lifecycle, MFA, login protection.
-  passwordChangedAt       DateTime?
-  passwordExpiresAt       DateTime?
-  mfaRequired             Boolean                     @default(false)
+  passwordChangedAt        DateTime?
+  passwordExpiresAt        DateTime?
+  mfaRequired              Boolean                     @default(false)
   // Per-user UI preference: the guided-assistance coach (follows the user across
   // devices). Off by default.
-  guidedAssistanceEnabled Boolean                     @default(false)
-  lastLoginAt             DateTime?
-  lastLoginIp             String?
-  failedLoginCount        Int                         @default(0)
-  failedLoginAt           DateTime?
-  refreshTokens           RefreshToken[]
-  userSessions            UserSession[]
-  accountLock             AccountLock?
-  trustedDevices          TrustedDevice[]
-  mfaConfig               MfaConfig?
-  passwordHistory         PasswordHistory[]
-  federatedIdentities     FederatedIdentity[]         @relation("FederatedIdentityUser")
-  createdAt               DateTime                    @default(now())
-  updatedAt               DateTime                    @updatedAt
+  guidedAssistanceEnabled  Boolean                     @default(false)
+  lastLoginAt              DateTime?
+  lastLoginIp              String?
+  failedLoginCount         Int                         @default(0)
+  failedLoginAt            DateTime?
+  refreshTokens            RefreshToken[]
+  userSessions             UserSession[]
+  accountLock              AccountLock?
+  trustedDevices           TrustedDevice[]
+  mfaConfig                MfaConfig?
+  passwordHistory          PasswordHistory[]
+  federatedIdentities      FederatedIdentity[]         @relation("FederatedIdentityUser")
+  createdAt                DateTime                    @default(now())
+  updatedAt                DateTime                    @updatedAt
 
   @@unique([labId, email])
   @@index([accountId])
@@ -6265,6 +6275,9 @@ model FederatedIdentity {
   externalSubject       String // the provider's subject/nameID — a mutable external attribute, never the durable key
   userId                String
   user                  User             @relation("FederatedIdentityUser", fields: [userId], references: [id], onDelete: Restrict)
+  // Program 7 · Phase 7B.1 (ADDITIVE) — set by IdentityLifecycleService on deprovisioning (evidence of link
+  // deactivation; the isActive gate is the runtime enforcement). Nullable; frozen 7A resolve() behavior unchanged.
+  deactivatedAt         DateTime?
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
 
@@ -6441,4 +6454,52 @@ model SamlConsumedAssertion {
   @@unique([labId, identityProviderId, assertionId])
   @@index([labId])
   @@index([identityProviderId])
+}
+
+// ============================================================================
+// Program 7 · Phase 7B.1 — Identity Lifecycle Core (governed human-identity
+// lifecycle AFTER authentication). ADDITIVE, lab-scoped, provenance FKs
+// onDelete: Restrict. `isActive` (frozen) stays the authentication gate; the
+// lifecycle overlay is coordinated ONLY by IdentityLifecycleService (the single
+// command boundary). Lifecycle state confers NO permissions, clinical, or AI
+// authority, and is NOT employment/licensing truth (Principle 10). Nothing here
+// touches the clinical path, AI evidence, tenancy keys, or authorization.
+// ============================================================================
+
+// The governed access-lifecycle state of a human identity. Only ACTIVE maps to isActive=true.
+enum UserLifecycleState {
+  INVITED // activation pending acceptance by the intended person (7B.2)
+  PROVISIONED // exists via an authoritative admin lifecycle source; not yet login-enabled (7B.3)
+  ACTIVE // authentication permitted (subject to all other controls)
+  SUSPENDED // reversible administrative block
+  DEPROVISIONED // terminal
+}
+
+// IMMUTABLE creation provenance of an identity (never rewritten by later management channels — L2).
+enum ProvisioningSource {
+  MANUAL // admin-created (the only origin produced in 7B.1)
+  INVITATION // 7B.2
+  SCIM // 7B.3/7B.4
+  JIT // 7B.5
+}
+
+// Append-only durable evidence of every lifecycle transition (the authoritative record — L9). Distinct from the
+// best-effort AuditEvent ledger; both are written, but this persisted transition is the source of truth. Lab-scoped;
+// provenance FKs onDelete: Restrict; no PHI/secret columns.
+model IdentityLifecycleEvent {
+  id          String              @id @default(cuid())
+  eventUuid   String              @unique @default(uuid())
+  labId       String
+  lab         Lab                 @relation(fields: [labId], references: [id])
+  userId      String
+  user        User                @relation("IdentityLifecycleEventUser", fields: [userId], references: [id], onDelete: Restrict)
+  fromState   UserLifecycleState? // null for an initial provisioning event
+  toState     UserLifecycleState
+  reason      String? // bounded free-text reason (no PHI/secrets)
+  actorUserId String? // the human who performed the transition (attribution; no FK)
+  createdAt   DateTime            @default(now())
+
+  @@index([labId])
+  @@index([labId, userId])
+  @@index([userId])
 }

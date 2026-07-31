@@ -123,6 +123,16 @@ const ENTRIES: AuditRegistryEntry[] = [
   { category: 'AUTHENTICATION', actionCode: 'SERVICE_AUTH_FAILED', eventVersion: 1, defaultSeverity: 'WARNING', phiIndicator: false, dataClass: 'INTERNAL', retentionClass: 'STANDARD', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
   { category: 'AUTHENTICATION', actionCode: 'SERVICE_CREDENTIAL_ROTATED', eventVersion: 1, defaultSeverity: 'INFO', phiIndicator: false, dataClass: 'INTERNAL', retentionClass: 'STANDARD', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
   { category: 'AUTHENTICATION', actionCode: 'SERVICE_CREDENTIAL_REVOKED', eventVersion: 1, defaultSeverity: 'INFO', phiIndicator: false, dataClass: 'INTERNAL', retentionClass: 'STANDARD', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
+  // Program 7 · Phase 7B.1 — Identity Lifecycle Core (ADDITIVE; Program-7-authorized, no modification of existing codes).
+  // Human-identity ACCESS-lifecycle transitions, DISTINCT from human LOGIN_* (7A) and AUTHORIZATION ROLE_* codes.
+  // Coded metadata only — never a password, token, refresh token, raw external claim, PHI, or employment/licensing
+  // assertion. Invitation/SCIM/group/JIT codes are deferred to their owning 7B increments.
+  { category: 'ADMINISTRATIVE', actionCode: 'IDENTITY_PROVISIONED', eventVersion: 1, defaultSeverity: 'NOTICE', phiIndicator: false, dataClass: 'CONFIDENTIAL', retentionClass: 'EXTENDED', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
+  { category: 'ADMINISTRATIVE', actionCode: 'IDENTITY_ACTIVATED', eventVersion: 1, defaultSeverity: 'NOTICE', phiIndicator: false, dataClass: 'CONFIDENTIAL', retentionClass: 'EXTENDED', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
+  { category: 'ADMINISTRATIVE', actionCode: 'IDENTITY_SUSPENDED', eventVersion: 1, defaultSeverity: 'WARNING', phiIndicator: false, dataClass: 'CONFIDENTIAL', retentionClass: 'EXTENDED', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
+  { category: 'ADMINISTRATIVE', actionCode: 'IDENTITY_REACTIVATED', eventVersion: 1, defaultSeverity: 'NOTICE', phiIndicator: false, dataClass: 'CONFIDENTIAL', retentionClass: 'EXTENDED', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
+  { category: 'ADMINISTRATIVE', actionCode: 'IDENTITY_DEPROVISIONED', eventVersion: 1, defaultSeverity: 'WARNING', phiIndicator: false, dataClass: 'CONFIDENTIAL', retentionClass: 'EXTENDED', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
+  { category: 'ADMINISTRATIVE', actionCode: 'IDENTITY_LINK_DEACTIVATED', eventVersion: 1, defaultSeverity: 'NOTICE', phiIndicator: false, dataClass: 'CONFIDENTIAL', retentionClass: 'EXTENDED', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
   // P2-5B PHI-access taxonomy (small + stable): single-subject VIEWED, aggregate LIST_QUERIED,
   // and multi-subject EXPORTED. All are OPERATIONAL (PHI reads are non-transactional and
   // side-effect-free; CRITICAL_TRANSACTIONAL would be untruthful, REQUIRED_DURABLE is unsupported).

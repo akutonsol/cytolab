@@ -128,6 +128,11 @@ export const SPECIAL_OBJECTS: Record<string, string[]> = {
   // (identity never becomes clinical authority). Assigned to NO default role (byPrefix below never selects 'identity');
   // super roles reach it via the guard bypass. Distinct from user:*/role:* (which administer human users + RBAC).
   identity: ['view', 'manage'],
+  // P7-7B.1 — Identity Lifecycle Core: a DISTINCT additive namespace (never mutating the frozen 7A `identity` catalog).
+  // `manage` = govern human-identity ACCESS lifecycle (suspend / reactivate / terminal deprovision) through the single
+  // lifecycle command boundary. Confers NO clinical/AI authority and grants no other permission; assigned to NO default
+  // role (byPrefix never selects 'identitylifecycle'); enforcement still terminates at the existing PermissionsGuard.
+  identitylifecycle: ['manage'],
 };
 
 export interface SeedRoleDef {

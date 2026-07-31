@@ -73,6 +73,7 @@ import { ValidationModule } from './modules/validation/validation.module';
 import { ContinuousEvalModule } from './modules/continuous-eval/continuous-eval.module';
 import { ClinicalPerfModule } from './modules/clinical-perf/clinical-perf.module';
 import { EnterpriseAuthModule } from './modules/enterprise-auth/enterprise-auth.module';
+import { IdentityLifecycleModule } from './modules/identity-lifecycle/identity-lifecycle.module';
 import { TeleconsultModule } from './modules/teleconsult/teleconsult.module';
 import { CodingModule } from './modules/coding/coding.module';
 import { FhirModule } from './modules/fhir/fhir.module';
@@ -183,6 +184,7 @@ import { ScreeningBatchesModule } from './modules/screening-batches/screening-ba
     ContinuousEvalModule, // Program 6 · Phase 6G — continuous evaluation evidence (longitudinal; informs but never performs lifecycle mutation)
     ClinicalPerfModule, // Program 6 · Phase 6H — clinical performance measurement evidence (measurement only; no clinical/diagnostic authority)
     EnterpriseAuthModule, // Program 7 · Phase 7A.1 — Enterprise Authentication foundation (canonical principal + provider-isolation seam; additive)
+    IdentityLifecycleModule, // Program 7 · Phase 7B.1 — Identity Lifecycle Core (governed access-lifecycle; additive)
     TeleconsultModule,
     CodingModule,
     FhirModule,
