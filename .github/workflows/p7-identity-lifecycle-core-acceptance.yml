@@ -70,7 +70,7 @@ jobs:
         run: |
           set -euo pipefail
           git diff --name-only 268472b9b1ac37112c644b9fe028f1ef73a4ca3a..HEAD | tee /tmp/post-candidate.txt
-          if grep -vE '^(\.github/workflows/p7-identity-lifecycle-core-acceptance\.yml|apps/api/scripts/(seed|assert)-identity-lifecycle-.*\.ts|apps/web/acceptance/\.gitignore|docs/)$' /tmp/post-candidate.txt; then
+          if grep -vE '^(\.github/workflows/p7-identity-lifecycle-core-acceptance\.yml|apps/api/scripts/(seed|assert)-identity-lifecycle-.*\.ts|apps/web/acceptance/\.gitignore|docs/.*)$' /tmp/post-candidate.txt; then
             echo "!! post-candidate delta contains a non-acceptance-infra change"; exit 1
           fi
           test "$(git rev-parse p6-6h-accepted^{commit})" = "f98b9f11e4765da2ee9d27b0a7e3e15c05407961" || { echo "!! p6-6h-accepted moved"; exit 1; }
