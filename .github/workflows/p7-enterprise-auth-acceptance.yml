@@ -1,0 +1,139 @@
+# Program 7 · Phase 7A.1 — Enterprise Authentication foundation acceptance gate (folded, gated).
+#
+# Gated (workflow_dispatch only). Proves the enterprise-authentication foundation (canonical principal + provider-
+# isolation seam; additive; existing local login path left authoritative) against PERSISTED DB truth on a fresh
+# checkout + isolated Postgres — additive schema (3 tables + 1 enum + 5 RESTRICT FKs), stable identifiers (GG7), the
+# human/non-human principal classes, federated linkage → the stable User.id, INERT IdP/FederatedIdentity, lab scoping +
+# cross-lab fail-closed, existing local auth authoritative, downstream still terminating at the existing
+# PermissionsGuard, and encroachment tests ET1–ET8. Then the focused 7A.1 jest, the FULL cumulative non-regression
+# suite in module-scoped batches (every test file runs; NO exclusions; module-scoped processes keep state-sensitive
+# audit specs isolated), and a strict zero-error tsc. Every command fails the job closed. Verifies the exact head and
+# that it descends from the 7A.1 implementation candidate 112e6f8; confirms the delta after the candidate is
+# acceptance-infrastructure + Platform-Acceptance-Infrastructure-Corrections only (no further product change) and that
+# the frozen Program 6 baselines are unmodified.
+#
+# NOTE: 7A.1 introduces NO raw-SQL migration-only invariant (plain additive tables), so there is NO raw-index install
+# step; the datamodel reconstruction produces the complete schema.
+name: p7-enterprise-auth-acceptance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p7-enterprise-auth-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  enterprise-auth-acceptance:
+    name: P7-7A.1 enterprise authentication (gated)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cytolab_accept_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
+      DATABASE_MIGRATION_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
+      JWT_SECRET: 'ci-accept-jwt-secret-000000000000000000'
+      JWT_REFRESH_SECRET: ci-accept-refresh-secret
+      JWT_PORTAL_SECRET: 'ci-accept-jwt-portal-secret-00000000000000'
+      JWT_PORTAL_REFRESH_SECRET: ci-accept-portal-refresh-secret
+      ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
+      COOKIE_SECURE: 'false'
+      NODE_ENV: development
+      NODE_OPTIONS: '--max-old-space-size=6144'
+      ENTERPRISE_AUTH_FIXTURES_OUT: /tmp/.enterprise-auth-fixtures.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so the merge-base lineage check can resolve 112e6f8 and the p6 tags
+
+      - name: Print & verify the checked-out commit (exact-head + 7A.1 lineage rooted at 112e6f8)
+        run: |
+          set -euo pipefail
+          echo "github.sha        = ${{ github.sha }}"
+          echo "git rev-parse HEAD = $(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}" || { echo "!! checkout SHA does not match github.sha"; exit 1; }
+          git merge-base --is-ancestor 112e6f874a02b36204a6741eac3b29d87daf2d75 "$(git rev-parse HEAD)" || { echo "!! head is not a descendant of the 7A.1 implementation candidate 112e6f8"; exit 1; }
+
+      - name: Confirm post-candidate delta is acceptance-infra + PAIC only; frozen Program 6 baselines unmodified
+        run: |
+          set -euo pipefail
+          echo "--- files changed since the 7A.1 candidate 112e6f8 ---"
+          git diff --name-only 112e6f874a02b36204a6741eac3b29d87daf2d75..HEAD | tee /tmp/post-candidate.txt
+          # every post-candidate change must be acceptance infrastructure or a Platform Acceptance Infrastructure Correction (test-only)
+          if grep -vE '^(\.github/workflows/p7-enterprise-auth-acceptance\.yml|apps/api/scripts/(seed|assert)-enterprise-auth-.*\.ts|apps/web/acceptance/\.gitignore|docs/|apps/api/src/modules/auth/guards/authz-contract\.arch\.spec\.ts|apps/api/src/modules/audit/query/audit-query\.catalog\.spec\.ts)$' /tmp/post-candidate.txt; then
+            echo "!! post-candidate delta contains a non-acceptance/non-PAIC change"; exit 1
+          fi
+          # frozen Program 6 immutability anchors still resolve to their accepted heads
+          test "$(git rev-parse p6-6h-accepted^{commit})" = "f98b9f11e4765da2ee9d27b0a7e3e15c05407961" || { echo "!! p6-6h-accepted moved"; exit 1; }
+          test "$(git rev-parse p6-complete^{commit})" = "40d810e4f541125eaddfc841c07c709348db214b" || { echo "!! p6-complete moved"; exit 1; }
+          echo "OK: post-candidate delta is acceptance-infra + PAIC only; p6 baselines immutable"
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+
+      - run: npm ci
+
+      - name: Prisma generate
+        run: cd apps/api && npx prisma generate
+
+      - name: Build acceptance DB schema from the committed datamodel (folded-gate method; no migration introduced)
+        run: |
+          set -euo pipefail
+          cd apps/api
+          npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > /tmp/accept-schema.sql
+          npx prisma db execute --url "$DATABASE_URL" --file /tmp/accept-schema.sql
+
+      - name: Seed the permission catalogue + two isolated labs (users + inert IdP + service principal + federated link)
+        run: |
+          set -euo pipefail
+          cd apps/api
+          npx prisma db seed
+          npx ts-node --transpile-only scripts/seed-enterprise-auth-acceptance.ts
+
+      - name: Persisted-state assertions (schema / seam / principal classes / federation / inert / existing-auth-authoritative / PermissionsGuard / ET1-ET8)
+        run: cd apps/api && npx ts-node --transpile-only scripts/assert-enterprise-auth-state.ts
+
+      - name: Focused enterprise-auth (7A.1) tests
+        run: cd apps/api && npx jest src/modules/enterprise-auth --runInBand
+
+      # Full cumulative non-regression — EVERY test file runs, NO exclusions, in module-scoped processes so
+      # state-sensitive audit specs stay isolated (single-process contamination avoided). Batches partition the suite.
+      - name: Non-regression NR1 (identity/auth-adjacent + platform core)
+        run: cd apps/api && npx jest src/common src/database src/health.controller.spec.ts src/modules/auth src/modules/security src/modules/portal src/modules/roles src/modules/users --runInBand
+      - name: Non-regression NR2 (Program 6 AI + WSI)
+        run: cd apps/api && npx jest src/modules/ai-registry src/modules/dataset-governance src/modules/inference-engine src/modules/explainability src/modules/human-review src/modules/validation src/modules/continuous-eval src/modules/clinical-perf src/modules/ai src/modules/wsi --runInBand
+      - name: Non-regression NR3 (records / billing / reporting)
+        run: cd apps/api && npx jest src/modules/records src/modules/result-sheets src/modules/signout src/modules/reports src/modules/report-center src/modules/patients src/modules/clients src/modules/billing src/modules/payments src/modules/platform-billing src/modules/coding src/modules/correlation --runInBand
+      - name: Non-regression NR4 (messaging / ops / audit)
+        run: cd apps/api && npx jest src/modules/messaging src/modules/notifications src/modules/appointments src/modules/qc src/modules/tat src/modules/workforce src/modules/workload src/modules/escalation src/modules/system src/modules/analytics src/modules/search src/modules/audit src/modules/realtime --runInBand
+      - name: Non-regression NR5 (enterprise-admin / case / requisitions)
+        run: cd apps/api && npx jest src/modules/enterprise-administration src/modules/enterprise-case-management src/modules/diagnostic-case src/modules/quality-governance src/modules/ancillary-orders src/modules/recall src/modules/reagent src/modules/cabinets src/modules/fhir src/modules/req-tracking src/modules/requisitions src/modules/requisition-portal src/modules/services-catalog src/modules/screening-batches src/modules/batch --runInBand
+      - name: Non-regression NR6 (remaining product modules)
+        run: cd apps/api && npx jest src/modules/ai-screening src/modules/bethesda src/modules/change-requests src/modules/code-sheets src/modules/departments src/modules/employees src/modules/files src/modules/form-config src/modules/knowledge-base src/modules/lab-codes src/modules/lab-features src/modules/lab src/modules/operations src/modules/payroll src/modules/proficiency src/modules/result-templates src/modules/taxes src/modules/teleconsult src/modules/workspaces --runInBand
+
+      - name: TypeScript (strict — any error fails the gate closed)
+        run: cd apps/api && npx tsc --noEmit -p tsconfig.json
+
+      - name: Collect artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p7-7a-enterprise-auth-acceptance
+          path: |
+            /tmp/.enterprise-auth-fixtures.json
+            /tmp/accept-schema.sql
+            /tmp/post-candidate.txt
+          if-no-files-found: ignore
