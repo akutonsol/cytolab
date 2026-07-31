@@ -1,6 +1,8 @@
 # Program 7 · Phase 7B.2 — Staff Invitations — DESIGN OF RECORD (proposed)
 
-**Status:** Architecture-level design of record, **AWAITING governance review**. Governance-only: **no** implementation,
+**Status:** Architecture-level design of record — **APPROVED (Architecture / Boundary / Guardrails PASS) with the required
+I1 revision (Model C) + three clarifications incorporated below.** Implementation is **not yet authorized** — a separate
+implementation authorization follows this revised DoR. Governance-only: **no** implementation,
 schema, migration, dependency, endpoint, test, workflow, tag, or baseline change is authorized here. Additive to the
 frozen Programs 1–6, Phase 7A (`p7-7a-complete` → `aef3faa`), and **Phase 7B.1** (`p7-7b1-accepted` → `9142d20`);
 modifies no accepted baseline. Phase 7B DoR: [`PROGRAM_7_7B_DESIGN.md`](./PROGRAM_7_7B_DESIGN.md) (L1–L12, esp. **L6**) ·
@@ -37,7 +39,9 @@ authenticates, provisions externally, links federated identities, or changes ten
 a staff-facing email, additive invitation audit codes, and an additive admin permission namespace.
 
 **Central preflight finding:** staff `User.passwordHash` is **required** (`schema:414`), whereas `PortalUser.passwordHash`
-is nullable. An INVITED staff user has **no password until acceptance** — resolved by **I1/I8** below.
+is nullable. An INVITED staff user has **no usable password until acceptance** — resolved by **I1 (Model C)**: the invited
+user is created with a **random placeholder Argon2id hash** (never NULL), so `User.passwordHash` **stays NOT NULL** and
+the "an ACTIVE staff identity always possesses a credential" invariant is preserved.
 
 ## 2. Boundary analysis — 7B.2 extends the frozen lifecycle without changing it
 | Constraint | How 7B.2 satisfies it |
@@ -48,7 +52,7 @@ is nullable. An INVITED staff user has **no password until acceptance** — reso
 | Never changes tenancy | Every invitation row carries `labId`; the invited user is created in the acting admin's lab; `labId`/`LabContext` unchanged (ET3). |
 | Never becomes authentication | 7B.2 issues/consumes an invitation token; it does **not** mint sessions or JWTs, does not touch 7A strategies/guards. The user authenticates later via the normal 7A path once ACTIVE. |
 | Never becomes provisioning (SCIM) / JIT linking | Invitation source is `INVITATION`; SCIM (7B.3/4) and JIT (7B.5) are distinct sources, deferred (I15/I16). |
-| Never modifies 7A auth / 7B.1 lifecycle semantics | Additive entity + additive namespace + additive audit codes only; no change to `User` auth semantics beyond an additive nullable column (I1). |
+| Never modifies 7A auth / 7B.1 lifecycle semantics | Additive entity + additive namespace + additive audit codes only; **no change to `User` at all** (I1/Model C: placeholder hash, `passwordHash` stays NOT NULL). |
 
 ## 3. Threat model
 - **Token theft/guessing:** high-entropy (256-bit) token, emailed once, **hash-only** at rest (sha256); no plaintext
@@ -65,13 +69,19 @@ is nullable. An INVITED staff user has **no password until acceptance** — reso
   break-glass remains a 7B.1 concern.
 
 ## 4. Governance decisions requiring ratification (I1–I16)
-- **I1 — Invitation entity model.** *Recommendation:* **Model A** — the invited `User` exists in lifecycle **INVITED**
-  (created via `provision(INVITED)`), and a new additive `StaffInvitation` binds to it (FK RESTRICT); `User.passwordHash`
-  becomes **additively nullable** (null until acceptance; backward-compatible — existing rows unaffected; an INVITED
-  user is `isActive=false` so cannot authenticate). *Alternative:* **Model B** — `StaffInvitation` holds pending data and
-  the `User` is created only on acceptance (avoids the nullable column but diverges from L1, which defines INVITED as a
-  *User* lifecycle state). Ratify A vs B.
-- **I2 — Token generation.** 256-bit `randomBytes(32).base64url`; raw token returned once (email), never stored.
+- **I1 — Invitation entity model. RATIFIED: Model C** (Model A **rejected** — `User.passwordHash` must **not** become
+  nullable; the invariant *"an ACTIVE staff identity always possesses a password/authentication credential"* is
+  preserved). The invited `User` is created immediately in lifecycle **INVITED** with `isActive=false` and a **random,
+  cryptographically-generated placeholder Argon2id hash** (not NULL, and not a usable password — no one holds the
+  plaintext, and `isActive=false` blocks authentication regardless). A new additive `StaffInvitation` binds to that user
+  (FK RESTRICT). **Acceptance replaces the placeholder hash with the invitee's Argon2id password, then activates via
+  `IdentityLifecycleService`** (see I8 for the frozen order). `User.passwordHash` **stays NOT NULL** — no nullable
+  authentication credential; future password policies stay simpler; authentication can never misinterpret a NULL hash.
+- **I2 — Token generation + OPAQUE invitation URLs (Clarification 3, FROZEN invariant).** 256-bit
+  `randomBytes(32).base64url`; the raw token is returned **once** (email) and never stored. **The invitation URL is
+  opaque — it carries ONLY the high-entropy random token.** No email, no `userId`, no `labId`, no `invitationId`, no
+  status — the server resolves everything (lab, user, invitation, expiry, lifecycle state) from the token's hash. Nothing
+  identity-bearing appears in the URL or query string.
 - **I3 — Hashing.** Store **sha256(token)** only (`@unique`); verification = lookup by hash (constant-time by
   construction). Never Argon2 for the lookup token (fast-hash lookup is correct for high-entropy tokens; Argon2 is for
   the user-chosen **password** set at acceptance).
@@ -80,13 +90,23 @@ is nullable. An INVITED staff user has **no password until acceptance** — reso
   prior token (supersede).
 - **I6 — Replay protection.** Consumed/expired/cancelled tokens fail closed; unique `tokenHash`; single-use CAS.
 - **I7 — Invitation states.** `PENDING → ACCEPTED | CANCELLED | EXPIRED` (all terminal). Enum `StaffInvitationStatus`.
-- **I8 — Lifecycle interaction.** Issue → `provision(INVITED)`; accept → set password (Argon2id) **then**
-  `activate(INVITED→ACTIVE)` **through the lifecycle boundary** (L8) in one governed operation; the durable
-  `IdentityLifecycleEvent` (ACTIVATED) is authoritative. Cancellation never changes lifecycle state (the user stays
-  INVITED until an admin deprovisions — and per 7B.1 **L5, deprovision cancels outstanding invitations**).
-- **I9 — Email delivery architecture.** Reuse `MailService` (extract a **shared** `MailModule` or import it) — best-effort,
-  **asynchronous**, never authoritative; a delivery failure leaves the invitation persisted and re-sendable. No PHI; the
-  one-time token is the only secret in the body.
+- **I8 — Lifecycle interaction + FROZEN acceptance order (Clarification 1).** Issue → `provision(INVITED)`. Acceptance
+  executes this **exact, frozen sequence** — and **never activates before the password is durably persisted**:
+  1. **validate token** (lookup by sha256(raw));
+  2. **CAS consume** the invitation (single-use — set `acceptedAt`);
+  3. **validate the lifecycle state is still INVITED**;
+  4. **write the Argon2id password** (replace the placeholder hash) — must succeed and commit;
+  5. **`activate()`** via `IdentityLifecycleService` (INVITED→ACTIVE, sole writer, L8);
+  6. **audit** (`IDENTITY_INVITATION_ACCEPTED` + `IDENTITY_ACTIVATED`);
+  7. **send welcome email** (best-effort; never gates or rolls back activation).
+
+  Cancellation never changes lifecycle state (the user stays INVITED until an admin deprovisions — and per 7B.1 **L5,
+  deprovision cancels outstanding invitations**).
+- **I9 — Email delivery architecture (Clarification 2).** Reuse `MailService` (extract a **shared** `MailModule` or import
+  it). **Email delivery is ADVISORY ONLY:** the authoritative event is the **successful database commit** (invitation
+  persisted on issue; password+activation committed on accept). **Mail failures never roll back identity state** — a
+  failed send leaves the invitation persisted and re-sendable. Best-effort, asynchronous, no PHI; the one-time token is
+  the only secret in the body, carried inside an **opaque** URL (Clarification 3 / I2).
 - **I10 — Audit vocabulary.** Additive `IDENTITY_INVITED`, `IDENTITY_INVITATION_ACCEPTED`, `IDENTITY_INVITATION_CANCELLED`
   (+ coded failure reasons: `unknown`, `expired`, `consumed`, `cancelled`, `mismatch`) — the codes reserved in 7B DoR
   **L7**. Coded metadata; **never** the token, password, or PHI. `IDENTITY_ACTIVATED` (7B.1) fires for the lifecycle
@@ -111,7 +131,9 @@ is nullable. An INVITED staff user has **no password until acceptance** — reso
 - Model `StaffInvitation`: `id`, `invitationUuid @unique` (GG7), `labId` (FK RESTRICT), `userId` (FK RESTRICT → the
   INVITED `User`), `tokenHash @unique` (sha256; hash-only), `status`, `expiresAt`, `acceptedAt?`, `cancelledAt?`,
   `invitedById?` (actor; no FK), timestamps. `@@index([labId])`, `@@index([userId])`. No PHI/secret columns.
-- `User.passwordHash` → **additively nullable** (I1/Model A). *(No other frozen-model change.)*
+- **`User.passwordHash` stays `String` (NOT NULL) — no schema change to `User` (I1/Model C).** The invited user is created
+  with a **random placeholder Argon2id hash**; acceptance replaces it with the invitee's Argon2id password. **No frozen
+  model is modified** — 7B.2 is purely additive (the new enum + `StaffInvitation` table).
 
 ## 6. State machine
 ```
@@ -125,17 +147,21 @@ User lifecycle (7B.1, unchanged):  INVITED ──activate (on acceptance)──�
 ## 7. Sequence (issue → accept)
 ```
 Admin ─(identityinvitation:manage)─▶ InvitationService.issue(email, roles?)
+   └▶ create User in INVITED, isActive=false, passwordHash=argon2id(random placeholder)  [Model C; NOT NULL]
    └▶ IdentityLifecycleService.provision(user, INVITED)         [sole writer, L8]
-   └▶ persist StaffInvitation{tokenHash=sha256(raw), expiresAt}  [hash-only]
-   └▶ MailService.send(one-time link)  [best-effort, async]
+   └▶ persist StaffInvitation{tokenHash=sha256(raw), expiresAt}  [hash-only; authoritative on commit]
+   └▶ MailService.send(OPAQUE one-time link)  [ADVISORY only, async — never rolls back state]
    └▶ audit IDENTITY_INVITED (coded, no token)
 
-Invitee ─(@Public, throttled, token)─▶ InvitationService.accept(raw, password)
-   └▶ lookup by sha256(raw); assert PENDING + not-expired; CAS acceptedAt   [single-use]
-   └▶ set User.passwordHash = argon2id(password)
-   └▶ IdentityLifecycleService.activate(user)  [INVITED→ACTIVE, sole writer, L8]
-   └▶ audit IDENTITY_INVITATION_ACCEPTED + (via lifecycle) IDENTITY_ACTIVATED
-   └▶ NO session minted, NO permission granted   (user logs in later via 7A)
+Invitee ─(@Public, throttled, opaque token)─▶ InvitationService.accept(raw, password)   [FROZEN order, I8]
+   1. lookup by sha256(raw)                       (validate token)
+   2. CAS acceptedAt                              (single-use consume)
+   3. assert lifecycle still INVITED              (validate state)
+   4. User.passwordHash = argon2id(password)      (persist password — MUST commit first)
+   5. IdentityLifecycleService.activate(user)     [INVITED→ACTIVE, sole writer, L8]
+   6. audit IDENTITY_INVITATION_ACCEPTED + IDENTITY_ACTIVATED
+   7. send welcome email                          (best-effort; never gates activation)
+   ▶ NO session minted, NO permission granted     (user logs in later via 7A)
 ```
 
 ## 8. ET1–ET8 analysis
@@ -143,8 +169,8 @@ ET1/ET2 — no clinical/AI writes; acceptance confers no diagnostic/AI authority
 never a tenancy key. ET4 — invitation + lifecycle events additive on the existing append-only ledger; no parallel chain.
 ET5 — acceptance grants no permissions; `identityinvitation:manage` no default grant. ET6 — human `User` invitations only
 (portal is separate). ET7 — no domain-truth/PHI (an invitation email address is contact data, coded, not licensing/HR
-truth). ET8 — Programs 1–6 + all 7A increments + 7B.1 immutable; the only frozen-model touch is an additive nullable
-`passwordHash`. Conforms to Principles 1–12 + GG1–GG7 (GG7 stable `User.id` across INVITED→ACTIVE).
+truth). ET8 — Programs 1–6 + all 7A increments + 7B.1 immutable; **no frozen model is modified** (Model C — additive
+`StaffInvitation` table + enum only). Conforms to Principles 1–12 + GG1–GG7 (GG7 stable `User.id` across INVITED→ACTIVE).
 
 ## 9. Acceptance strategy (proposed folded gate — draft; not authorized to build)
 `p7-staff-invitations-acceptance`: exact-head + candidate ancestry; acceptance-infra-only delta; frozen anchors
@@ -163,10 +189,13 @@ may be captured but authorization remains a 7C/PermissionsGuard concern) · orga
 outbound notifications beyond email.
 
 ## 11. Risks
-- **Frozen-model change (I1/Model A):** additive nullable `User.passwordHash` touches a core model — mitigated by
-  backward-compatibility (existing rows unchanged; INVITED users are `isActive=false` so cannot authenticate; all
-  password-verifying paths are gated by `isActive` first). Model B avoids it at the cost of L1 divergence. **Governance
-  chooses.**
+- **No frozen-model change (I1/Model C):** `User.passwordHash` stays NOT NULL — the invited user carries a random
+  placeholder Argon2id hash (unusable; `isActive=false` also blocks auth). This preserves the "ACTIVE staff always
+  possess a credential" invariant and keeps authentication from ever encountering a NULL hash. The only new schema is the
+  additive `StaffInvitation` table + `StaffInvitationStatus` enum. *(Model A — nullable `passwordHash` — was rejected in
+  review.)*
+- **Ordering integrity:** activation must never precede durable password persistence (I8 frozen order); a crash between
+  steps leaves the user safely INVITED (`isActive=false`), re-acceptable — never ACTIVE with a placeholder credential.
 - **Mail-module extraction:** reusing the portal `MailService` requires a shared module — an additive refactor
   (move/registration), not a behavior change; must not alter portal mail behavior.
 - **Sole-writer invariant:** acceptance MUST route through `IdentityLifecycleService.activate` — enforced by the 7B.1
@@ -185,7 +214,7 @@ increment tags) is modified.
 ## 14. Governance state
 | Stage | Status |
 |---|---|
-| 7B.2 read-only preflight + current-state map | Complete (this document, §1) |
-| 7B.2 boundary review | Drafted (§2) — awaiting governance review |
-| 7B.2 Design of Record (I1–I16) | **Proposed — awaiting review** |
-| 7B.2 implementation | **Not authorized** |
+| 7B.2 read-only preflight + current-state map | Complete (§1) |
+| 7B.2 architecture / boundary / guardrails review | **PASS** |
+| 7B.2 Design of Record (I1–I16) | **Approved with required revision — Model C + 3 clarifications incorporated** |
+| 7B.2 implementation | **Not authorized** (separate authorization required) |
