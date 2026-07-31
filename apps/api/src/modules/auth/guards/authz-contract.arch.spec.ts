@@ -14,6 +14,9 @@ import { join, resolve, relative } from 'node:path';
  *   - @Portal()                 → client-portal contract (PortalAuthGuard + ownership)
  *   - @AuthorizationContract()  → authenticated/self-service or dedicated-guard authz
  *   - @UseGuards(... SuperuserGuard ...) → superuser-only surface
+ *   - @DeliveryProtected()      → the P5-5B delivery-token contract, a composed
+ *                                 applyDecorators(Public(), UseGuards(DeliveryTokenGuard));
+ *                                 recognized SPECIFICALLY by name (not arbitrary composed decorators).
  *
  * NOT recognized on their own: FeatureGuard (feature flag, not authz) and
  * WorkforceManagerGuard (must also carry @AuthorizationContract, since the global
@@ -31,7 +34,10 @@ const hasContract = (text: string) =>
   /@Public\(\)/.test(text) ||
   /@Portal\(\)/.test(text) ||
   /@AuthorizationContract\(/.test(text) ||
-  /@UseGuards\([^)]*SuperuserGuard/.test(text);
+  /@UseGuards\([^)]*SuperuserGuard/.test(text) ||
+  // @DeliveryProtected() is the P5-5B composed delivery-token contract (applyDecorators(Public(),
+  // UseGuards(DeliveryTokenGuard))). Recognized by exact name only — NOT a broadening to arbitrary composed decorators.
+  /@DeliveryProtected\(/.test(text);
 
 function walk(dir: string): string[] {
   const out: string[] = [];
@@ -99,5 +105,10 @@ describe('R-001a — every HTTP handler declares a recognized authorization cont
     expect(hasContract('@Public()')).toBe(true);
     expect(hasContract('@Portal()')).toBe(true);
     expect(hasContract('@UseGuards(SuperuserGuard)')).toBe(true);
+    // @DeliveryProtected() IS an authorized composed contract (Public() + DeliveryTokenGuard) — recognized by name…
+    expect(hasContract('@DeliveryProtected()')).toBe(true);
+    // …but recognition is NOT broadened to arbitrary composed decorators: an unknown composed decorator still fails.
+    expect(hasContract('@SomethingComposed()')).toBe(false);
+    expect(hasContract('@UseGuards(DeliveryTokenGuard)')).toBe(false); // the raw guard alone is not a recognized contract
   });
 });
