@@ -19,6 +19,7 @@
 .clinical-perf-fixtures.json
 .enterprise-auth-fixtures.json
 .oidc-federation-fixtures.json
+.service-oauth-fixtures.json
 .graph-fixtures.json
 .auth/
 .output/
