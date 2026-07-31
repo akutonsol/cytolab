@@ -1,5 +1,12 @@
 # Program 7 — Accepted Baseline Index
 
+> **✅ PHASE 7A — ENTERPRISE AUTHENTICATION IS COMPLETE.** All four increments (7A.1, 7A.2a, 7A.2b, 7A.3) are Accepted &
+> Frozen and together constitute one completed authentication capability. Phase-level record:
+> [`PROGRAM_7_7A_MASTER_CLOSEOUT.md`](./PROGRAM_7_7A_MASTER_CLOSEOUT.md); completion tag **`p7-7a-complete`** (annotated,
+> pinned to the master-closeout commit — the `p6-complete` pattern). Phase 7A completion does **not** accept any later
+> Program 7 phase (7B–7H). Frozen anchors unchanged; no baseline mutated after acceptance.
+
+
 Single authoritative reference for every accepted Program 7 phase/increment. **Append-only:** update a row **only**
 when its increment is formally accepted and frozen. `origin/feat/program-7-iam` is the authoritative Program 7 history;
 each acceptance tag is the immutable governance anchor. Program 7 (Enterprise IAM) opened after Program 6 completed
