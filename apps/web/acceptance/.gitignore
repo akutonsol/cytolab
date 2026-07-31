@@ -18,6 +18,7 @@
 .continuous-eval-fixtures.json
 .clinical-perf-fixtures.json
 .enterprise-auth-fixtures.json
+.oidc-federation-fixtures.json
 .graph-fixtures.json
 .auth/
 .output/
