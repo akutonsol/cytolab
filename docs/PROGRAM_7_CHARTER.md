@@ -1,12 +1,14 @@
 # Program 7 — Enterprise Identity & Access Management (IAM) — CHARTER & ROADMAP
 
-**Status:** **RATIFIED — v1.2 (2026-07-30).** Governance framing for a NEW programme; **no engineering authorized.**
-Ratification authorized the Architecture Review; its approval authorized the Cross-Program Boundary Review. v1.1 added
-Principle 9 (Identity is a Platform Service) at ratification; v1.2 adds Principle 10 (Source of Authentication, not
-Domain Truth) and Principle 11 (Human and Non-Human Identities are distinct principal classes — the promoted D3), both
-recorded at Architecture-Review approval. This document establishes the mission, governing principles, scope, phase
-structure, hard non-goals, relationship to existing systems, and governance lifecycle for Program 7. It **references** —
-and modifies nothing in — the frozen Programs 1–6 baselines (Program 6 complete at tag `p6-complete`; Program 5 frozen).
+**Status:** **RATIFIED — v1.3 (2026-07-30).** Governance framing for a NEW programme; **no engineering authorized.**
+Ratification authorized the Architecture Review; its approval authorized the Cross-Program Boundary Review; that
+review's approval authorized the Guardrails & Governance Decisions stage. v1.1 added Principle 9 (Identity is a Platform
+Service) at ratification; v1.2 added Principle 10 (Source of Authentication, not Domain Truth) and Principle 11 (Human
+and Non-Human Identities are distinct principal classes — the promoted D3) at Architecture-Review approval; v1.3 adds
+Principle 12 (Authorization Decisions Must Be Deterministic) at Boundary-Review approval. This document establishes the
+mission, governing principles, scope, phase structure, hard non-goals, relationship to existing systems, and governance
+lifecycle for Program 7. It **references** — and modifies nothing in — the frozen Programs 1–6 baselines (Program 6
+complete at tag `p6-complete`; Program 5 frozen).
 
 ---
 
@@ -61,6 +63,10 @@ authority, AI authority, or diagnostic decision-making.
     governance. A non-human principal is never a human user and can never acquire clinical, diagnostic, sign-out, or
     AI-approval authority. (Detailed credential/runtime model deferred to phase design; the class distinction is
     established now as immutable.)
+12. **Authorization Decisions Must Be Deterministic.** Given the same authenticated principal, organization context,
+    laboratory context, resource, and effective permission set, authorization evaluation **always produces the same
+    result** — no hidden policy evaluation, implicit override, or non-deterministic behaviour. This complements the
+    deterministic-evidence philosophy of Program 6 and simplifies audit and troubleshooting.
 
 ## 3. Relationship to existing systems (the incumbent Program 7 extends)
 - **Authentication / sessions:** custom JWT staff + portal auth in `apps/api/src/modules/auth` (e.g. `PermissionsGuard`,
