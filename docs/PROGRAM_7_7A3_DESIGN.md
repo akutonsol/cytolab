@@ -1,14 +1,17 @@
-# Program 7 · Phase 7A.3 — SAML Federation — DESIGN OF RECORD (proposed)
+# Program 7 · Phase 7A.3 — SAML Federation — DESIGN OF RECORD (approved with required revisions)
 
-**Status:** Architecture-level design of record, **AWAITING governance review**. No implementation is authorized by this
-document. Additive to the frozen 7A.1 / 7A.2a / 7A.2b baselines; references — and modifies nothing in — the frozen
-Programs 1–6, 7A.1, 7A.2a, or 7A.2b. **Interactive human** federation only. Charter:
-[`PROGRAM_7_CHARTER.md`](./PROGRAM_7_CHARTER.md) · Guardrails: [`PROGRAM_7_GUARDRAILS.md`](./PROGRAM_7_GUARDRAILS.md) ·
-7A design: [`PROGRAM_7_7A_DESIGN.md`](./PROGRAM_7_7A_DESIGN.md) · 7A.2 design: [`PROGRAM_7_7A2_DESIGN.md`](./PROGRAM_7_7A2_DESIGN.md).
+**Status:** Architecture-level design of record — **APPROVED WITH REQUIRED REVISIONS** (governance rulings S1–S8, the
+RelayState-integrity ruling, and the NameID-linkage constraints, all incorporated below). Implementation is **not yet
+authorized** — a separate implementation authorization is required after this revised DoR is confirmed. Additive to the
+frozen 7A.1 / 7A.2a / 7A.2b baselines; references — and modifies nothing in — the frozen Programs 1–6, 7A.1, 7A.2a, or
+7A.2b. **Interactive human** federation only. Charter: [`PROGRAM_7_CHARTER.md`](./PROGRAM_7_CHARTER.md) · Guardrails:
+[`PROGRAM_7_GUARDRAILS.md`](./PROGRAM_7_GUARDRAILS.md) · 7A design: [`PROGRAM_7_7A_DESIGN.md`](./PROGRAM_7_7A_DESIGN.md) ·
+7A.2 design: [`PROGRAM_7_7A2_DESIGN.md`](./PROGRAM_7_7A2_DESIGN.md).
 
-This is a **governance and architecture exercise only** (read-only preflight + DoR). It defines *what* SAML federation
-would be and the decisions requiring ratification; it authorizes **no** schema, migration, DTO, controller, service,
-adapter, dependency, endpoint, test, CI, workflow, acceptance infrastructure, gate, closeout, tag, or freeze.
+This remains a **governance and architecture document**. It defines *what* SAML federation is and the ratified
+decisions that bind implementation; it authorizes **no** schema, migration, DTO, controller, service, adapter,
+dependency, endpoint, test, CI, workflow, acceptance infrastructure, gate, closeout, tag, or freeze. Implementation,
+when separately authorized, must conform to S1–S8 and the constraints in §3a–§3c exactly.
 
 ---
 
@@ -81,18 +84,26 @@ depends only on the canonical principal — no assertion/XML/certificate detail 
 ### 2.2 SP-initiated transaction (mirrors `OidcAuthTransaction`)
 A short-lived, single-use `SamlAuthRequest` row created at **initiate**, surviving the IdP round-trip, binding:
 `requestId` (the `AuthnRequest` ID → matched to the assertion’s **`InResponseTo`**, the SAML CSRF/replay binding, the
-`state`/`nonce` analogue), `relayState`, the resolved provider, and a **`configFingerprint`** captured at initiation
-(trusted-config-immutability invariant, re-checked at ACS — identical discipline to OIDC). `verifyAndConsume` enforces
-existence + not-expired + single-use (compare-and-set on `consumedAt`) + fingerprint match, fail-closed. Lab-scoped.
+`state`/`nonce` analogue), the Osieri-controlled `relayState` correlation token (§3a), the expected ACS/destination, the
+resolved provider + lab, and a **`configFingerprint`** captured at initiation (trusted-config-immutability invariant,
+re-checked at ACS — identical discipline to OIDC). `verifyAndConsume` enforces existence + not-expired + single-use +
+fingerprint match, fail-closed. **Single-use is a compare-and-set on `consumedAt`** (the OIDC `updateMany where
+consumedAt: null` pattern): two concurrent attempts to consume the same still-valid response resolve to **exactly one
+success and one fail-closed** result. **Assertion/response `ID` replay is prevented separately** by a consumed-assertion
+store (a distinct single-use CAS keyed on the assertion `ID` within its validity window) so a replayed assertion that
+rides a *fresh* transaction is still rejected. Lab-scoped; provider FK `onDelete: Restrict`; stable `samlAuthRequestUuid`
+(GG7); no PHI/secret columns.
 
 ### 2.3 SAML-specific trust model (the security obligations)
 The `SamlAssertionValidator` shell (the `OidcTokenValidator` analogue) must enforce, deterministically and fail-closed:
 
 - **XML signature validation** against the provider’s **configured X.509 signing certificate(s)** — the *configured
   cert is the trust anchor*; nothing in the message (or fetched metadata) may redefine it (mirrors OIDC issuer-as-anchor).
-- **Signature-Wrapping (XSW) defense** — validate that the signature covers the **exact element that is consumed**
-  (assertion), reject multiple/relocated/detached signatures, and read claims only from the signed, verified subtree.
-  This is the single most common SAML break and is why hand-rolling is discouraged (S2).
+- **Signature-Wrapping (XSW) defense — validate and consume the SAME signed node.** Identity attributes must be read
+  **only** from the exact element whose signature was verified; the validator must reject relocated/detached/multiple
+  signatures and any document with **duplicate security-critical elements** or more than **one unambiguous
+  assertion/subject**. Validating one XML element and consuming identity from another is the core failure this rule
+  forbids (S2/S8). This is the single most common SAML break and the reason hand-rolling is prohibited (S2).
 - **XXE / entity-expansion hardening** — parse with DTD processing **disabled**, no external entity resolution, no
   network fetch during parse, bounded document size.
 - **Algorithm allowlist** — approved signature + digest algorithms only (e.g. RSA-SHA256 / ECDSA-SHA256; **SHA-1 and
@@ -126,39 +137,82 @@ fails closed with a **coded** `AUTHENTICATION/LOGIN_FAILED` reason (never a cert
 email, or PHI). Success emits `LOGIN_SUCCEEDED (method='saml')` via the existing bridge. Initiation reuses the existing
 additive `LOGIN_INITIATED` after a `SamlAuthRequest` is created (S6).
 
-## 3. Governance decisions requiring ratification (S1–S7)
+## 3. Ratified governance rulings (S1–S8) — APPROVED with required revisions
+These are binding on implementation.
 
-- **S1 — SAML as a third front-end behind the accepted seam.** `SamlAuthenticationAdapter` outputs only a HUMAN
-  `CanonicalPrincipal`; **no** new authorization point (terminates at `PermissionsGuard`); the human session path and
-  token contract are unchanged. *Recommendation: approve.*
-- **S2 — Signature-validation seam: ADOPT a vetted library, do not hand-roll XML-DSig.** Isolate all XML/signature/XSW/
-  XXE handling behind a `SamlAssertionValidator` seam (the `OidcTokenValidator`/D2 analogue), backed by an actively
-  maintained, security-reviewed SAML/XML-DSig library rather than bespoke XML crypto. This **requires adding a
-  dependency** (an implementation-stage action, not authorized here) and pins a build-vs-adopt choice now. *Recommendation:
-  ADOPT (hand-rolling XML-DSig is the dominant SAML CVE source; the seam keeps the choice swappable and provider-isolated).*
-- **S3 — SP-initiated only in the 7A.3 baseline; IdP-initiated (unsolicited) DISABLED/fail-closed.** IdP-initiated SSO
-  has no `AuthnRequest` and therefore **no `InResponseTo`** binding (weaker CSRF/replay posture); if ever supported it
-  is a **per-provider explicit opt-in** in a later increment, compensated by Recipient/Audience/NotOnOrAfter + the
-  assertion-replay store. *Recommendation: SP-initiated only for 7A.3.*
-- **S4 — Trust anchor = configured X.509 signing cert(s); rollover via a small set of concurrently-valid configured
-  certs.** Message/metadata may never redefine the cert or the entityID (issuer-as-anchor analogue). *Recommendation:
-  configured certs with an N-cert overlap window; expired ⇒ fail closed.*
-- **S5 — Additive entities, frozen `IdentityProvider` shape preserved.** A `SamlAuthRequest` transaction (SP-initiated
-  request/`InResponseTo`/`RelayState`/`configFingerprint`, single-use, TTL, lab-scoped, provider FK RESTRICT) + a
-  consumed-assertion replay store; SAML provider config carried as **additive nullable columns** on `IdentityProvider`
-  (SP entityID, ACS URL, IdP SSO URL, IdP signing cert(s), NameID format, wantAssertionsSigned…) — the frozen scalar
-  shape gains only nullable, protocol-specific fields, exactly as OIDC added `clientId`/`redirectUri`. *Recommendation:
-  approve the entity approach; the concrete columns are fixed at implementation-design under this ruling.*
-- **S6 — Audit: REUSE the human `LOGIN_*` codes (SAML is human interactive federation), no new registry codes.**
-  `LOGIN_SUCCEEDED`/`LOGIN_FAILED` (+ existing additive `LOGIN_INITIATED`) with `method='saml'` and coded reasons —
-  the same treatment 7A.2a used for OIDC, and the deliberate opposite of 7A.2b’s distinct **machine** codes.
-  *Recommendation: reuse (no Program 2 registry change).*
-- **S7 — Signed assertions in the baseline; encrypted assertions (EncryptedAssertion) decision.** Baseline validates
-  **signed** assertions. Encrypted assertions add SP-private-key decryption and key management. *Recommendation: state
-  explicitly whether EncryptedAssertion is in the 7A.3 baseline or deferred; default proposal = **deferred** to keep
-  7A.3 focused on the signature/XSW/replay core (open for the reviewer).*
+- **S1 — SAML as a third front-end behind the accepted seam. APPROVED.** The flow terminates strictly as: SAML Response
+  → `SamlAssertionValidator` → `FederatedIdentityService` → canonical **HUMAN** principal → the existing federated
+  session bridge. **No downstream domain module may depend on SAML attributes or provider details**; **no** new
+  authorization point (terminates at the single `PermissionsGuard`); the human session path and token contract are
+  unchanged.
+- **S2 — Vetted SAML/XML-signature library, MANDATORY; no hand-rolling. APPROVED AND MANDATORY.** The implementation
+  must **not** hand-roll XML parsing, canonicalization, XML Digital Signature validation, X.509 certificate handling,
+  signature-reference resolution, or XSW defenses. A maintained SAML/XML-DSig library is selected **only after
+  confirming it supports the exact fail-closed validation contract of this DoR (S8)**; all library-specific types and
+  parsing behavior stay **behind the `SamlAssertionValidator` seam** and never leak into downstream services. (Adding
+  the dependency is an implementation-stage action, not authorized by this document.)
+- **S3 — SP-initiated only. APPROVED (frozen baseline boundary).** The 7A.3 baseline supports **only** SP-initiated
+  authentication. **Unsolicited IdP-initiated responses fail closed** because they lack the accepted request and the
+  `InResponseTo` correlation boundary. IdP-initiated SSO may be considered later as separately governed work.
+- **S4 — Certificate trust anchor and rollover. APPROVED.** Configured provider trust includes: the expected IdP
+  **entityID**; one or more **explicitly configured** signing certificates; **deterministic certificate identifiers/
+  fingerprints**; and **bounded rollover** via multiple concurrently-valid certificates. **Metadata or assertions may
+  never silently replace or redefine the configured trust anchor.** Certificate removal/rollover during an active
+  transaction has **deterministic** behavior via the request’s bound `configFingerprint` (mirrors 7A.2a): a trust
+  change mid-transaction fails closed at ACS.
+- **S5 — Request transaction and replay storage. APPROVED.** Introduce an additive `SamlAuthRequest` (or equivalent
+  persisted) transaction recording at minimum: a **stable request identity**; the SAML **request ID**; **lab + provider**
+  identity; the **expected ACS/redirect target**; the **provider-configuration fingerprint**; **issue + expiry** times;
+  **single-use consumption state**; a **safe RelayState correlation** (§3a); timestamps and an immutable identifier.
+  **Consumption uses compare-and-set semantics**; two concurrent consumptions of the same valid response yield
+  **exactly one success and one fail-closed**. A separate consumed-assertion store enforces assertion/response **ID
+  replay** protection. Frozen `IdentityProvider` scalar shape preserved — SAML config is carried as **additive nullable
+  columns** (SP entityID, ACS URL, IdP SSO URL, IdP signing cert(s)/fingerprints, NameID-format policy,
+  wantAssertionsSigned…), exactly as OIDC added `clientId`/`redirectUri`.
+- **S6 — Audit vocabulary: REUSE the human `LOGIN_*` codes. APPROVED.** `LOGIN_INITIATED` / `LOGIN_SUCCEEDED` /
+  coded `LOGIN_FAILED`, all with `method='saml'` — SAML is human interactive authentication (the deliberate opposite of
+  7A.2b’s distinct **machine** codes); **no Program 2 registry change**. Coded failure reasons include: `unknown_request`,
+  `expired_request`, `replay`, `provider_disabled`, `config_fingerprint_mismatch`, `malformed_response`,
+  `invalid_signature`, `certificate_mismatch`, `issuer_mismatch`, `audience_mismatch`, `destination_recipient_mismatch`,
+  `in_response_to_mismatch`, `assertion_time_invalid`, `unlinked_identity`. **Audit metadata must NEVER contain** raw
+  SAML XML, assertions, signatures, certificates, `NameID`, email, RelayState secrets, `SessionIndex`, or any PHI.
+- **S7 — Encrypted assertions: EXCLUDED FROM THE 7A.3 BASELINE (binding).** The accepted baseline **supports signed,
+  unencrypted assertions** and must **explicitly detect and reject `EncryptedAssertion`** with a **coded fail-closed
+  error** + safe audit evidence — **not** ambiguous/undefined runtime behavior. Encrypted-assertion support (SP
+  decryption keys, key custody, rotation, algorithm policy, `EncryptedKey` handling, deployment secret management) is
+  **separately governed later work**. This is a **deliberate baseline exclusion**, not an unfinished decision.
+- **S8 — Assertion semantic binding (REQUIRED). A valid XML signature alone is insufficient.** The validator fails
+  closed unless **all applicable** semantic checks pass: expected IdP **issuer/entityID**; expected SP **audience**
+  (`AudienceRestriction`); expected **ACS destination**; expected **`SubjectConfirmationData.Recipient`**; **exact
+  `InResponseTo`** match to the persisted SP request; **response + assertion IDs replay-protected**; **`NotBefore` /
+  `NotOnOrAfter`** within **centrally bounded clock skew** (a `SAML_CLOCK_SKEW_SECONDS` mirroring
+  `OIDC_CLOCK_SKEW_SECONDS`); a **valid bearer `SubjectConfirmation`**; the **signed element is the exact response/
+  assertion consumed** (§2.3 XSW rule); **no duplicate security-critical elements**; **one unambiguous assertion + one
+  subject**; a **required stable `NameID` present**; the **allowed NameID-format policy satisfied**; an **`AuthnStatement`
+  present where required**; and **provider + request remain enabled and configuration-compatible**. The implementation
+  must **never validate one XML element and consume identity attributes from another**.
 
-## 4. Deferred decisions (out of 7A.3 regardless of S1–S7)
+### 3a. RelayState integrity ruling (binding)
+`RelayState` is **correlation data, not a trusted free-form redirect**. It must be: **generated or allowlisted by
+Osieri**; **bound to the persisted `SamlAuthRequest`**; **single-use with that request**; **length-bounded**; **excluded
+from sensitive logs**; and **resolved only to approved local destinations**. **No arbitrary external redirect may be
+accepted from RelayState** — an unrecognized/unbound RelayState fails closed.
+
+### 3b. NameID and identity-linkage constraints (binding)
+Linkage key is **`(identityProviderId, NameID)`** (the accepted `FederatedIdentity` uniqueness). `NameID` is an **opaque
+external subject**; **email / display name / any mutable claim is NEVER used for account matching**. **Unlinked
+identities fail closed** — **no JIT user creation, no automatic linking, no SCIM behavior**. Provisioning and linking
+policy remain owned by **Phase 7B / D5**. The durable internal identity stays `User.id` (GG7); `NameID` is never the key.
+
+### 3c. Required design revisions — incorporated (record)
+Per the governance review, this DoR now records, as binding: **S7** as an explicit **rejection of encrypted assertions**
+in the baseline (§3 S7); **S8** assertion **semantic-binding** requirements (§3 S8); **RelayState** integrity + safe-
+redirect rules (§3a); **configuration-fingerprint binding** for active SAML requests (§2.2, §3 S4/S5); **persisted
+single-use + concurrent-consumption** (exactly one success / one fail-closed) (§2.2, §3 S5); the explicit **XSW
+validate-and-consume-the-same-signed-node** rule (§2.3, §3 S8); **safe audit outcome** requirements (§3 S6); and
+**SP-initiated-only** as a **frozen baseline boundary** (§3 S3).
+
+## 4. Deferred decisions (out of 7A.3 regardless of S1–S8)
 - **Just-in-time provisioning / auto-linking** of an unlinked NameID → 7B / D5 (baseline: unlinked ⇒ fail closed, as
   OIDC).
 - **SCIM** provisioning/deprovisioning → 7B.
@@ -167,7 +221,10 @@ additive `LOGIN_INITIATED` after a `SamlAuthRequest` is created (S6).
 - **SP metadata publishing endpoint** (auto-configuration for IdP admins) — convenience, not a security primitive;
   proposed deferred (or a thin later increment).
 - **HTTP-Artifact binding**, additional NameID formats (transient/custom), and multi-IdP discovery UX — out of scope.
-- **EncryptedAssertion** if S7 defers it.
+- **EncryptedAssertion** — **excluded from the baseline (S7)**; the baseline explicitly **detects and rejects** it
+  (coded fail-closed + safe audit). Support is separately governed later work (SP decryption keys / custody / rotation /
+  algorithm policy / `EncryptedKey` handling / secret management).
+- **IdP-initiated (unsolicited) SSO** — excluded from the baseline (S3); separately governed later work.
 
 ## 5. Boundaries (ET1–ET8) — all preserved (to be asserted by the eventual gate)
 No clinical/AI writes (ET1/ET2) · `labId` the sole isolation anchor, SAML routing never a tenancy key (ET3) · human
@@ -178,26 +235,42 @@ SAML yields a HUMAN principal only (ET6) · no domain-truth/PHI captured; NameID
 enforcement boundary; GG7 stable identifiers).
 
 ## 6. Candidate components (named for review only — NOT authorized to build)
-`SamlAuthenticationAdapter` · `SamlAssertionValidator` (S2 seam) · `SamlRequestBuilder` (AuthnRequest, HTTP-Redirect) ·
-`SamlAuthRequestService` + entity `SamlAuthRequest` · consumed-assertion replay store · `saml-config.ts` (trust anchor,
-alg/C14N allowlist, clock skew, fingerprint) · `SamlService` (initiate/ACS orchestration → existing session bridge) ·
-`@Public` throttled `SamlController` (`initiate`, `acs`) · additive nullable `IdentityProvider` SAML columns · a vetted
-XML-DSig/SAML dependency (S2) · DTOs. **No schema, migration, code, dependency, test, or CI is authorized by this
-document.**
+`SamlAuthenticationAdapter` · `SamlAssertionValidator` (S2 seam — enforces S8 semantic binding, XSW same-signed-node,
+XXE hardening, alg/C14N allowlist, and **explicit `EncryptedAssertion` reject** per S7) · `SamlRequestBuilder`
+(AuthnRequest, HTTP-Redirect) · `SamlAuthRequestService` + entity `SamlAuthRequest` (RelayState correlation §3a,
+`configFingerprint`, single-use CAS) · consumed-assertion replay store · `saml-config.ts` (configured trust anchor +
+cert fingerprints/rollover, alg/C14N allowlist, `SAML_CLOCK_SKEW_SECONDS`, fingerprint) · `SamlService` (initiate/ACS
+orchestration → existing `completeFederatedLogin`) · `@Public` throttled `SamlController` (`initiate`, `acs`) · additive
+nullable `IdentityProvider` SAML columns · a vetted XML-DSig/SAML dependency (S2) · DTOs. **No schema, migration, code,
+dependency, test, or CI is authorized by this document.**
 
 ## 7. Proposed acceptance strategy (draft — NOT authorized to build or run)
 A future `p7-saml-federation-acceptance` folded gate mirroring the OIDC gate: exact-head + candidate-chain ancestry;
 post-candidate delta acceptance-infra only; unchanged `p6-*` / `p7-7a1-accepted` / `p7-7a2a-accepted` / `p7-7a2b-accepted`
-anchors; persisted assertions (`SamlAuthRequest` single-use + `InResponseTo` + config-immutability, assertion-replay
-single-use, unlinked ⇒ fail closed, existing-auth authoritative, terminates at `PermissionsGuard`); focused suites
-binding a **negative security matrix** (XSW, XXE, `alg=none`/SHA-1, expired/wrong cert, audience/recipient/`InResponseTo`
-mismatch, replayed assertion, NotBefore/NotOnOrAfter skew) plus the coded audit outcomes (no secrets); ET1–ET8; full
-no-exclusions non-regression; strict tsc. Freeze tag (later) `p7-7a3-accepted`. **This is a sketch for the design
-review only.**
+anchors; persisted assertions (`SamlAuthRequest` single-use + `InResponseTo` + config-immutability, **concurrent-consume
+= exactly 1 success / 1 fail-closed**, assertion-`ID` replay single-use, unlinked ⇒ fail closed, existing-auth
+authoritative, terminates at `PermissionsGuard`); focused suites binding a **negative security matrix** — XSW
+(validate-and-consume-same-node; duplicate/relocated signature; >1 assertion/subject), XXE/entity-expansion, `alg=none`/
+SHA-1/weak-C14N, expired/wrong/removed cert, **`EncryptedAssertion` explicitly rejected (S7)**, issuer/audience/
+destination/`Recipient`/`InResponseTo` mismatch, replayed assertion, `NotBefore`/`NotOnOrAfter` skew, **IdP-initiated/
+unsolicited rejected (S3)**, RelayState unbound/oversized/external-redirect rejected (§3a) — plus the coded audit
+outcomes (no XML/assertion/signature/cert/NameID/email/RelayState/`SessionIndex`/PHI); ET1–ET8; full no-exclusions
+non-regression; strict tsc. Freeze tag (later) `p7-7a3-accepted`. **This is a sketch for the design review only.**
 
 ## 8. What this document authorizes
-**Nothing beyond its own authoring.** It is the reviewable design of record for a governance decision. Implementation,
-schema, migrations, dependencies, endpoints, tests, CI, acceptance infrastructure, gates, closeouts, tags, and freeze
-remain **unauthorized** until this DoR is reviewed and separately approved, and implementation is separately authorized.
-No frozen baseline (`p6-complete` → `40d810e`, `p7-7a1-accepted` → `84b9f74`, `p7-7a2a-accepted` → `e7bd388`,
-`p7-7a2b-accepted` → `e58ffb5`) is modified.
+**Nothing beyond its own authoring.** This is the **approved-with-revisions** design of record; S1–S8, §3a, and §3b are
+binding on implementation. Implementation, schema, migrations, **dependencies**, endpoints, tests, CI, acceptance
+infrastructure, gates, closeouts, tags, and freeze remain **unauthorized** until a **separate implementation
+authorization** is granted against this revised DoR. No frozen baseline (`p6-complete` → `40d810e`, `p7-7a1-accepted` →
+`84b9f74`, `p7-7a2a-accepted` → `e7bd388`, `p7-7a2b-accepted` → `e58ffb5`) is modified.
+
+## 9. Governance state
+| Stage | Status |
+|---|---|
+| 7A.1 Foundation | Accepted & Frozen (`84b9f74`) |
+| 7A.2a Interactive OIDC | Accepted & Frozen (`e7bd388`) |
+| 7A.2b Service-Principal OAuth | Accepted & Frozen (`e58ffb5`) |
+| 7A.3 read-only preflight | Complete |
+| 7A.3 Design of Record | **Approved with required revisions — incorporated (S1–S8, §3a, §3b)** |
+| 7A.3 implementation | **Not authorized** |
+| Phase 7A overall | Not accepted (7A.3 outstanding) |
