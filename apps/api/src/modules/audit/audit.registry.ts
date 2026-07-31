@@ -97,6 +97,24 @@ const ENTRIES: AuditRegistryEntry[] = [
     attributionPolicy: 'HTTP_REQUEST',
     metadataContractId: null,
   },
+  {
+    // Program-7-authorized ADDITIVE extension (P7-7A.2a). Records that an authentication was INITIATED —
+    // emitted when an OIDC authorization transaction is successfully created. Program 2's accepted baseline is
+    // historically unchanged; this is a new, additive AUTHENTICATION code (not a modification/reinterpretation of an
+    // existing one). Does NOT require local authentication to emit it in 7A.2a. Metadata is coded/correlational only —
+    // never the authorization code, token, nonce, PKCE verifier, raw state, email, PHI, client secret, or redirect
+    // query contents.
+    category: 'AUTHENTICATION',
+    actionCode: 'LOGIN_INITIATED',
+    eventVersion: 1,
+    defaultSeverity: 'INFO',
+    phiIndicator: false,
+    dataClass: 'INTERNAL',
+    retentionClass: 'STANDARD',
+    durabilityClass: 'OPERATIONAL',
+    attributionPolicy: 'HTTP_REQUEST',
+    metadataContractId: null,
+  },
   // P2-5B PHI-access taxonomy (small + stable): single-subject VIEWED, aggregate LIST_QUERIED,
   // and multi-subject EXPORTED. All are OPERATIONAL (PHI reads are non-transactional and
   // side-effect-free; CRITICAL_TRANSACTIONAL would be untruthful, REQUIRED_DURABLE is unsupported).

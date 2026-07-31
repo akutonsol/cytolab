@@ -68,6 +68,8 @@ describeIf('P7-7A.2a OidcService (feature-gate / IdP-error / audit / session han
   const lastFailReason = () => (audit.record.mock.calls.find((c: any[]) => c[0]?.actionCode === 'LOGIN_FAILED')?.[0]?.metadata?.reason);
   const auditedNoSecrets = () => audit.record.mock.calls.every((c: any[]) => { const m = JSON.stringify(c[0]?.metadata ?? {}); return !/nonce|verifier|pkce|code|token|state/i.test(m); });
 
+  const initEvents = () => audit.record.mock.calls.filter((c: any[]) => c[0]?.actionCode === 'LOGIN_INITIATED');
+
   it('initiate builds a valid authorize URL (S256 + state + nonce); a DISABLED provider fails closed', async () => {
     const { labId } = await setup({ enabled: true });
     const { authorizeUrl } = await asLab(labId, () => svcWith(idp('s', 'n')).initiate('idp'));
@@ -78,6 +80,24 @@ describeIf('P7-7A.2a OidcService (feature-gate / IdP-error / audit / session han
     expect(u.searchParams.get('nonce')).toBeTruthy();
     const disabled = await setup({ enabled: false });
     await expect(asLab(disabled.labId, () => svcWith(idp('s', 'n')).initiate('idp'))).rejects.toBeDefined();
+  });
+
+  it('a successful initiation emits exactly one AUTHENTICATION/LOGIN_INITIATED event (coded, no secrets)', async () => {
+    const { labId, config } = await setup({ enabled: true });
+    await asLab(labId, () => svcWith(idp('s', 'n')).initiate('idp'));
+    expect(initEvents().length).toBe(1);
+    const ev = initEvents()[0][0];
+    expect(ev.category).toBe('AUTHENTICATION');
+    expect(ev.metadata.method).toBe('oidc');
+    expect(ev.metadata.identityProviderId).toBe(config.providerId);
+    expect(ev.metadata.transactionUuid).toMatch(/^[0-9a-f-]{36}$/);
+    expect(auditedNoSecrets()).toBe(true);
+  });
+
+  it('a FAILED initiation before transaction creation (disabled provider) emits NO initiation event', async () => {
+    const { labId } = await setup({ enabled: false });
+    await expect(asLab(labId, () => svcWith(idp('s', 'n')).initiate('idp'))).rejects.toBeDefined();
+    expect(initEvents().length).toBe(0); // fail-closed before begin() ⇒ no false initiation event
   });
 
   it('an IdP error response fails closed and is audited (reason idp_error, no secrets)', async () => {

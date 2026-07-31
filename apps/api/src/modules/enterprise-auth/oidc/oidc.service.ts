@@ -39,6 +39,13 @@ export class OidcService {
     throw new UnauthorizedException(message);
   }
 
+  /** Program-7-authorized additive AUTHENTICATION/LOGIN_INITIATED event — emitted ONLY after a transaction is created. */
+  private async auditInitiation(identityProviderId: string, transactionUuid: string): Promise<void> {
+    await this.audit
+      .record({ category: 'AUTHENTICATION', actionCode: 'LOGIN_INITIATED', resource: { type: 'IdentityProvider', id: identityProviderId }, outcome: { status: 'SUCCESS' }, producerModule: 'enterprise-auth', metadata: { method: 'oidc', identityProviderId, transactionUuid } })
+      .catch(() => undefined);
+  }
+
   private async resolveEnabledConfig(providerKey: string): Promise<OidcProviderConfig> {
     const p = await this.prisma.identityProvider.findFirst({ where: { key: providerKey, protocol: 'OIDC', isEnabled: true } });
     if (!p) throw new BadRequestException('no enabled OIDC provider for that key');
@@ -52,6 +59,7 @@ export class OidcService {
     const metadata = await this.discovery.discover(config.expectedIssuer);
     if (metadata.issuer !== config.expectedIssuer) throw new BadRequestException('OIDC issuer mismatch');
     const tx = await this.transactions.begin(config);
+    await this.auditInitiation(config.providerId, tx.transactionUuid); // only after a transaction is successfully created
     const url = new URL(metadata.authorization_endpoint);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('scope', 'openid');

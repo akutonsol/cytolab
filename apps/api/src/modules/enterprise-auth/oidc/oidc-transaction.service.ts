@@ -17,6 +17,7 @@ export interface BegunTransaction {
   state: string;
   nonce: string;
   pkceChallenge: string;
+  transactionUuid: string; // non-secret stable correlation id (safe for audit metadata)
 }
 
 export interface ConsumedTransaction {
@@ -39,7 +40,7 @@ export class OidcTransactionService {
     const state = token();
     const nonce = token();
     const pkceVerifier = token();
-    await this.prisma.oidcAuthTransaction.create({
+    const row = await this.prisma.oidcAuthTransaction.create({
       data: tenantCreate<Prisma.OidcAuthTransactionUncheckedCreateInput>({
         identityProviderId: config.providerId,
         state,
@@ -51,8 +52,9 @@ export class OidcTransactionService {
         configFingerprint: configFingerprint(config),
         expiresAt: new Date(Date.now() + TTL_MS),
       }),
+      select: { transactionUuid: true },
     });
-    return { state, nonce, pkceChallenge: pkceS256Challenge(pkceVerifier) };
+    return { state, nonce, pkceChallenge: pkceS256Challenge(pkceVerifier), transactionUuid: row.transactionUuid };
   }
 
   async verifyAndConsume(state: string, currentConfig: OidcProviderConfig): Promise<ConsumedTransaction> {
