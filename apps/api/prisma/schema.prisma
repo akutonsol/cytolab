@@ -343,6 +343,7 @@ model Lab {
   samlAuthRequests                 SamlAuthRequest[]
   samlConsumedAssertions           SamlConsumedAssertion[]
   identityLifecycleEvents          IdentityLifecycleEvent[]
+  staffInvitations                 StaffInvitation[]
 }
 
 /// How a lab's DATA-PLANE storage is provisioned. Control-plane rows (Lab, LabDomain,
@@ -430,6 +431,7 @@ model User {
   lifecycleUpdatedAt       DateTime?
   deprovisionedAt          DateTime?
   lifecycleEvents          IdentityLifecycleEvent[]    @relation("IdentityLifecycleEventUser")
+  staffInvitations         StaffInvitation[]
   accountId                String
   account                  Account                     @relation(fields: [accountId], references: [id])
   workspaceId              String?
@@ -6501,5 +6503,47 @@ model IdentityLifecycleEvent {
 
   @@index([labId])
   @@index([labId, userId])
+  @@index([userId])
+}
+
+// ============================================================================
+// Program 7 · Phase 7B.2 — Staff Invitations (governed entry-by-invitation into
+// the frozen 7B.1 lifecycle). ADDITIVE, lab-scoped, provenance FKs onDelete:
+// Restrict. NO frozen model is modified (Model C: the invited User carries a
+// random PLACEHOLDER Argon2id hash; User.passwordHash stays NOT NULL). An
+// invitation activates ACCESS on acceptance (INVITED→ACTIVE via
+// IdentityLifecycleService — the sole lifecycle writer, L8); it NEVER grants
+// permissions, authenticates, mints a session, changes tenancy, or performs
+// SCIM/JIT. The token is stored HASH-ONLY (sha256); the opaque URL carries only
+// the high-entropy token. Nothing here touches the clinical path or AI evidence.
+// ============================================================================
+
+enum StaffInvitationStatus {
+  PENDING
+  ACCEPTED
+  CANCELLED
+  EXPIRED
+}
+
+// A single-use, expiring staff invitation bound to exactly one INVITED User. `tokenHash` is sha256 of the one-time
+// token (the plaintext is emailed once and NEVER persisted/logged/audited). Acceptance is a compare-and-set on the
+// PENDING status (single-use). Lab-scoped; provenance FKs onDelete: Restrict; no PHI/secret columns.
+model StaffInvitation {
+  id             String                @id @default(cuid())
+  invitationUuid String                @unique @default(uuid()) // stable internal identifier (GG7)
+  labId          String
+  lab            Lab                   @relation(fields: [labId], references: [id])
+  userId         String
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  tokenHash      String                @unique // sha256 of the one-time token — never the plaintext
+  status         StaffInvitationStatus @default(PENDING)
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  cancelledAt    DateTime?
+  invitedById    String? // actor who issued the invitation; no FK
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([labId])
   @@index([userId])
 }

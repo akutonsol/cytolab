@@ -133,6 +133,10 @@ export const SPECIAL_OBJECTS: Record<string, string[]> = {
   // lifecycle command boundary. Confers NO clinical/AI authority and grants no other permission; assigned to NO default
   // role (byPrefix never selects 'identitylifecycle'); enforcement still terminates at the existing PermissionsGuard.
   identitylifecycle: ['manage'],
+  // P7-7B.2 — Staff Invitations: a DISTINCT additive namespace for administrative issue/cancel/resend of staff
+  // invitations. Acceptance itself is @Public (token-bound) and grants NO permission. Confers NO clinical/AI authority;
+  // assigned to NO default role (byPrefix never selects 'identityinvitation'); enforcement terminates at PermissionsGuard.
+  identityinvitation: ['manage'],
 };
 
 export interface SeedRoleDef {

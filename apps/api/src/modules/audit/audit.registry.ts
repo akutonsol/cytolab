@@ -133,6 +133,11 @@ const ENTRIES: AuditRegistryEntry[] = [
   { category: 'ADMINISTRATIVE', actionCode: 'IDENTITY_REACTIVATED', eventVersion: 1, defaultSeverity: 'NOTICE', phiIndicator: false, dataClass: 'CONFIDENTIAL', retentionClass: 'EXTENDED', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
   { category: 'ADMINISTRATIVE', actionCode: 'IDENTITY_DEPROVISIONED', eventVersion: 1, defaultSeverity: 'WARNING', phiIndicator: false, dataClass: 'CONFIDENTIAL', retentionClass: 'EXTENDED', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
   { category: 'ADMINISTRATIVE', actionCode: 'IDENTITY_LINK_DEACTIVATED', eventVersion: 1, defaultSeverity: 'NOTICE', phiIndicator: false, dataClass: 'CONFIDENTIAL', retentionClass: 'EXTENDED', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
+  // Program 7 · Phase 7B.2 — Staff Invitations (ADDITIVE; Program-7-authorized, reserved in 7B DoR L7). Coded metadata
+  // only — NEVER the invitation token, password, or PHI. Acceptance also emits IDENTITY_ACTIVATED via the 7B.1 lifecycle.
+  { category: 'ADMINISTRATIVE', actionCode: 'IDENTITY_INVITED', eventVersion: 1, defaultSeverity: 'NOTICE', phiIndicator: false, dataClass: 'CONFIDENTIAL', retentionClass: 'EXTENDED', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
+  { category: 'ADMINISTRATIVE', actionCode: 'IDENTITY_INVITATION_ACCEPTED', eventVersion: 1, defaultSeverity: 'NOTICE', phiIndicator: false, dataClass: 'CONFIDENTIAL', retentionClass: 'EXTENDED', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
+  { category: 'ADMINISTRATIVE', actionCode: 'IDENTITY_INVITATION_CANCELLED', eventVersion: 1, defaultSeverity: 'NOTICE', phiIndicator: false, dataClass: 'CONFIDENTIAL', retentionClass: 'EXTENDED', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
   // P2-5B PHI-access taxonomy (small + stable): single-subject VIEWED, aggregate LIST_QUERIED,
   // and multi-subject EXPORTED. All are OPERATIONAL (PHI reads are non-transactional and
   // side-effect-free; CRITICAL_TRANSACTIONAL would be untruthful, REQUIRED_DURABLE is unsupported).
