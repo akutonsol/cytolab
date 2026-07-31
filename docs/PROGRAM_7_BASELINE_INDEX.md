@@ -25,6 +25,7 @@ gate; recorded separately from product implementation.
 | 7A.1 — Enterprise Authentication Foundation | `98cc795` (+invariant `75056f9`) | `112e6f8` | `84b9f74` | `p7-7a1-accepted` → `84b9f74` | **Accepted & Frozen** |
 | 7A.2a — Interactive OIDC Federation | `98cc795`/`75056f9` → `7f70a0c` (7A.2 design + split + config-immutability invariant) | `5dfb970` → `67e99ba` → `4fb8fcf` | `e7bd388` | `p7-7a2a-accepted` → `e7bd388` | **Accepted & Frozen** |
 | 7A.2b — Service-Principal OAuth | `7f70a0c` (7A.2 design + split) → DoR `PROGRAM_7_7A2B_DESIGN.md` (D1–D6) | `9218467` → `f072538` (live-wiring) | `e58ffb5` | `p7-7a2b-accepted` → `e58ffb5` | **Accepted & Frozen** |
+| 7A.3 — SAML Federation (SP-initiated) | `PROGRAM_7_7A3_DESIGN.md` → `4c32bf2` (S1–S8 + §3a/§3b, approved-with-revisions) | `bd6d5cd` | `4da3afd` | `p7-7a3-accepted` → `4da3afd` | **Accepted & Frozen** |
 
 ## Authoritative CI evidence
 | Phase | Workflow | Run | Result |
@@ -32,6 +33,7 @@ gate; recorded separately from product implementation.
 | 7A.1 | `p7-enterprise-auth-acceptance` | run `30603180627` (#1, `workflow_dispatch`, `feat/program-7-iam` @ `84b9f74`) | success — focused 14/14; full cumulative non-regression ~1,850 passed / 0 failed / 4 skipped (no exclusions, module-scoped batches); strict tsc 0; persisted assertions all passed (3 tables, 1 enum, 5 RESTRICT FKs, stable identifiers, provider-isolation seam, human/non-human classes, federated linkage, inert IdP/FederatedIdentity, existing-auth-authoritative, terminates-at-PermissionsGuard); **ET1–ET8 all GREEN**; post-candidate delta acceptance-infra + PAIC only; `p6-6h-accepted`/`p6-complete` unmoved |
 | 7A.2a | `p7-oidc-federation-acceptance` | run `30608520089` (#1, `workflow_dispatch`, `feat/program-7-iam` @ `e7bd388`) | success — focused enterprise-auth+OIDC 38/38; full cumulative non-regression ~1,850 passed / 0 failed / 4 skipped (no exclusions); strict tsc 0; persisted assertions all passed (`OidcAuthTransaction` + 2 IdP OIDC cols, 2 RESTRICT FKs, **configuration-fingerprint immutability**, single-use, **persisted concurrent-consume = 1 success / 1 fail-closed**, existing-auth-authoritative, terminates-at-PermissionsGuard); OIDC security obligations (PKCE S256, discovery/JWKS/token-time/rotation, feature-gate/rollback, fail-closed) + audit outcomes (`LOGIN_INITIATED`/`LOGIN_SUCCEEDED`/coded `LOGIN_FAILED`, no secrets) bound by focused suites; **ET1–ET8 all GREEN**; delta after candidate `4fb8fcf` acceptance-infra only; `p6-6h-accepted`/`p6-complete`/`p7-7a1-accepted` unmoved |
 | 7A.2b | `p7-service-principal-oauth-acceptance` | run `30635759436` (#3, `workflow_dispatch`, `feat/program-7-iam` @ `e58ffb5`) | success (21/21 steps) — focused enterprise-auth incl. live e2e 57/57; full cumulative non-regression ~1,850 passed / 0 failed / 4 skipped (no exclusions, module-scoped batches; audit isolated in NR1b at 391/391); strict tsc 0; persisted assertions all passed (2 tables + 1 enum + 5 RESTRICT FKs, **Argon2id hash-only / no plaintext**, distinct service token `aud=service`/`isSuperRole=false`/no session, **Permission-catalogue scopes via the single existing PermissionsGuard**, bad-secret/unknown-client fail-closed, **rotation revokes the prior credential**, cross-lab fail-closed, **machine-identity immutability (D1/D6)**, existing-auth authoritative); the 5 machine audit outcomes (initiation/success/failure/rotation/revocation, no secrets) bound by focused suites; **ET1–ET8 all GREEN**; delta after live-wiring candidate `f072538` acceptance-infra only; `p6-6h-accepted`/`p6-complete`/`p7-7a1-accepted`/`p7-7a2a-accepted` unmoved |
+| 7A.3 | `p7-saml-federation-acceptance` | run `30657622621` (#1, `workflow_dispatch`, `feat/program-7-iam` @ `4da3afd`) | success (21/21 steps) — focused enterprise-auth incl. **live ACS e2e + the S8 security matrix** 100/100; full cumulative non-regression ~1,850 passed / 0 failed / 4 skipped (no exclusions; NR1 210, NR1b audit-isolated 391, NR2 695+4skip, NR3 157, NR4 86, NR5 163, NR6 148); strict tsc 0; persisted assertions all passed (**3 tables + 1 enum + 6 RESTRICT FKs** + nullable IdentityProvider SAML columns, no JSON; provider seam `[local,oidc,saml]`; **vetted-library S8 semantic binding** incl. XSW/XXE/unsigned/wrong-cert/issuer/audience/**Recipient**/InResponseTo/NameID-format/time/**EncryptedAssertion-reject** fail-closed; **config-fingerprint single-use** with exactly-one concurrent consume; **assertion-ID replay** fail-closed; NameID → **HUMAN** principal (GG7) / unlinked → null, no JIT; RelayState request-bound/local-only; existing-auth authoritative; single PermissionsGuard); coded `LOGIN_INITIATED`/`LOGIN_SUCCEEDED`/`LOGIN_FAILED` (`method=saml`, **no new registry codes**, no secrets) bound by focused suites; **ET1–ET8 all GREEN**; delta after candidate `bd6d5cd` acceptance-infra only; `p6-6h-accepted`/`p6-complete`/`p7-7a1-accepted`/`p7-7a2a-accepted`/`p7-7a2b-accepted` unmoved |
 
 ## Platform Acceptance Infrastructure Corrections (PAIC — test-only; NOT product)
 Pre-existing acceptance-test drifts, unrelated to Program 7, corrected under explicit authorization (production
@@ -56,6 +58,7 @@ copy, no product/schema/runtime change:
 - `3e71e4d` — 7A.1 gate registration on `main` (byte-identical blob `1a42f26` to branch copy `84b9f74`).
 - `6049cae` — 7A.2a gate registration on `main` (byte-identical blob `08a0059` to branch copy `e7bd388`).
 - `d014315` — 7A.2b gate registration on `main` (byte-identical blob `ab45f1e` to branch copy `e58ffb5`).
+- `a55d8f4` — 7A.3 gate registration on `main` (byte-identical blob `01c4b30` to branch copy `4da3afd`).
 
 ## Notes
 - Each increment opens only via its own authorized design → implementation → acceptance, and is accepted only on a
@@ -63,6 +66,12 @@ copy, no product/schema/runtime change:
   `p7-<increment>-accepted`.
 - Program 7 references — and never modifies — the frozen Programs 1–6 (`p6-complete` → `40d810e`).
 - **No accepted increment accepts Phase 7A as a whole.** 7A.2a is accepted for **interactive human OIDC only**
-  (Authorization Code + PKCE); 7A.2b is accepted for **machine (service-principal) OAuth 2.0 Client Credentials only**.
-  Neither includes SAML (7A.3), SCIM, automatic provisioning, or email-based linking. Deferred/unauthorized: **7A.3
-  (SAML)**. No broader `p7-7a2-accepted` or `p7-7a-accepted` tag exists until all 7A increments are accepted.
+  (Authorization Code + PKCE); 7A.2b for **machine (service-principal) OAuth 2.0 Client Credentials only**; 7A.3 for
+  **SP-initiated interactive human SAML Web-SSO only** (no IdP-initiated, EncryptedAssertion, SLO, SCIM, JIT
+  provisioning, or email-based linking). **All four 7A increments (7A.1, 7A.2a, 7A.2b, 7A.3) are now Accepted & Frozen.**
+  No broader `p7-7a2-accepted` or `p7-7a-accepted` tag exists; Phase 7A is now *eligible* for a **distinct,
+  separately-authorized** phase-level completion review (a cross-increment audit of the four increments as one governed
+  capability — never an automatic rollup).
+- **7A.3 dependency (S2):** `@node-saml/node-saml` (→ `xml-crypto`) is adopted for all SAML XML parsing / canonicalization
+  / XML-DSig / X.509 / signature-reference / XSW handling, isolated behind the `SamlAssertionValidator` seam. Per S6,
+  7A.3 reuses the existing human `LOGIN_*` audit codes (`method=saml`) and adds **no** Program 2 audit registry code.
