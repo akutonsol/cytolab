@@ -11,7 +11,7 @@
 # permission, the L8 sole-writer boundary still holds (source scan), and ET1-ET8. Then the FOCUSED staff-invitations +
 # identity-lifecycle jest suites (incl. the sole-writer arch spec), the FULL cumulative non-regression suite in
 # module-scoped batches (no exclusions), and a strict zero-error tsc. Verifies the exact head + descent from the 7B.2
-# candidate 38a75a2, that the post-candidate delta is acceptance-infra only, and that the frozen p6-* / all four 7A
+# candidate f31c827, that the post-candidate delta is acceptance-infra only, and that the frozen p6-* / all four 7A
 # increment / p7-7a-complete / p7-7b1-accepted anchors are unmodified.
 name: p7-staff-invitations-acceptance
 
@@ -58,18 +58,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Print & verify the checked-out commit (exact-head + 7B.2 lineage rooted at candidate 38a75a2)
+      - name: Print & verify the checked-out commit (exact-head + 7B.2 lineage rooted at candidate f31c827)
         run: |
           set -euo pipefail
           echo "github.sha        = ${{ github.sha }}"
           echo "git rev-parse HEAD = $(git rev-parse HEAD)"
           test "$(git rev-parse HEAD)" = "${{ github.sha }}" || { echo "!! checkout SHA does not match github.sha"; exit 1; }
-          git merge-base --is-ancestor 38a75a247442b4cd5680042a898c41100ffc835f "$(git rev-parse HEAD)" || { echo "!! head is not a descendant of the 7B.2 candidate 38a75a2"; exit 1; }
+          git merge-base --is-ancestor f31c827c885b21b8a72ad92c29b8958fafc6794c "$(git rev-parse HEAD)" || { echo "!! head is not a descendant of the 7B.2 candidate f31c827"; exit 1; }
 
       - name: Confirm post-candidate delta is acceptance-infra only; frozen anchors unmodified
         run: |
           set -euo pipefail
-          git diff --name-only 38a75a247442b4cd5680042a898c41100ffc835f..HEAD | tee /tmp/post-candidate.txt
+          git diff --name-only f31c827c885b21b8a72ad92c29b8958fafc6794c..HEAD | tee /tmp/post-candidate.txt
           if grep -vE '^(\.github/workflows/p7-staff-invitations-acceptance\.yml|apps/api/scripts/(seed|assert)-staff-invitations-.*\.ts|apps/web/acceptance/\.gitignore|docs/.*)$' /tmp/post-candidate.txt; then
             echo "!! post-candidate delta contains a non-acceptance-infra change"; exit 1
           fi
