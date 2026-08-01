@@ -122,4 +122,56 @@ describeIf('P7-7B.2 Staff Invitations (integration)', () => {
     await asLab(labId, () => svc.issue({ email, firstName: 'M', lastName: 'N' }, 'admin-1'));
     await expect(asLab(labId, () => svc.issue({ email, firstName: 'M', lastName: 'N' }, 'admin-1'))).rejects.toBeDefined();
   });
+
+  // ── Atomicity: concurrency (single-winner) ────────────────────────────────────────────────────────────────────────
+  it('two concurrent acceptances → exactly one success + one fail-closed; one password swap; one ACTIVE; one event', async () => {
+    const labId = await mkLab();
+    const { userId, rawToken } = await asLab(labId, () => svc.issue({ email: `conc-${randomUUID()}@lab.test`, firstName: 'C', lastName: 'C' }, 'admin-1'));
+    const results = await Promise.allSettled([svc.accept(rawToken, 'CorrectHorse12!'), svc.accept(rawToken, 'CorrectHorse12!')]);
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((r) => r.status === 'rejected')).toHaveLength(1);
+    expect(await raw.staffInvitation.count({ where: { userId, status: 'ACCEPTED' } })).toBe(1);
+    expect((await userOf(userId)).lifecycleState).toBe(UserLifecycleState.ACTIVE);
+    expect((await userOf(userId)).isActive).toBe(true);
+    expect(await raw.identityLifecycleEvent.count({ where: { userId, toState: UserLifecycleState.ACTIVE } })).toBe(1); // exactly one transition
+    expect(await argon2.verify((await userOf(userId)).passwordHash, 'CorrectHorse12!')).toBe(true); // one password swap
+  });
+
+  // ── Atomicity: failure injection (all-or-nothing rollback) ────────────────────────────────────────────────────────
+  async function assertRolledBackAndRetryable(userId: string, invitationId: string, placeholderHash: string, rawToken: string) {
+    const u = await userOf(userId);
+    expect(u.lifecycleState).toBe(UserLifecycleState.INVITED); // user stays INVITED
+    expect(u.isActive).toBe(false);
+    expect(u.passwordHash).toBe(placeholderHash); // placeholder unchanged (password write rolled back)
+    expect((await raw.staffInvitation.findUniqueOrThrow({ where: { id: invitationId } })).status).toBe('PENDING'); // reusable
+    expect(await raw.identityLifecycleEvent.count({ where: { userId, toState: UserLifecycleState.ACTIVE } })).toBe(0); // no lifecycle event
+    // a subsequent valid retry succeeds
+    await expect(svc.accept(rawToken, 'CorrectHorse12!')).resolves.toEqual({ status: 'OK' });
+    expect((await userOf(userId)).lifecycleState).toBe(UserLifecycleState.ACTIVE);
+  }
+
+  it('failure DURING activation (after claim + after password) → full rollback, then retry succeeds', async () => {
+    const labId = await mkLab();
+    const { invitationId, userId, rawToken } = await asLab(labId, () => svc.issue({ email: `fi1-${randomUUID()}@lab.test`, firstName: 'F', lastName: 'I' }, 'admin-1'));
+    const placeholder = (await userOf(userId)).passwordHash;
+    const spy = jest.spyOn(lifecycle, 'activateInTx').mockRejectedValueOnce(new Error('inject: during activation'));
+    await expect(svc.accept(rawToken, 'CorrectHorse12!')).rejects.toBeDefined();
+    spy.mockRestore();
+    await assertRolledBackAndRetryable(userId, invitationId, placeholder, rawToken);
+  });
+
+  it('failure AFTER activation but BEFORE final commit → full rollback, then retry succeeds', async () => {
+    const labId = await mkLab();
+    const { invitationId, userId, rawToken } = await asLab(labId, () => svc.issue({ email: `fi2-${randomUUID()}@lab.test`, firstName: 'F', lastName: 'J' }, 'admin-1'));
+    const placeholder = (await userOf(userId)).passwordHash;
+    const orig = lifecycle.activateInTx.bind(lifecycle);
+    const spy = jest.spyOn(lifecycle, 'activateInTx').mockImplementationOnce(async (...args: Parameters<typeof orig>) => {
+      const r = await orig(...args); // perform the real transition inside the tx …
+      throw new Error('inject: after activation, before commit'); // … then fail before commit ⇒ everything rolls back
+      return r;
+    });
+    await expect(svc.accept(rawToken, 'CorrectHorse12!')).rejects.toBeDefined();
+    spy.mockRestore();
+    await assertRolledBackAndRetryable(userId, invitationId, placeholder, rawToken);
+  });
 });

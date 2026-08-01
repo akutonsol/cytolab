@@ -99,44 +99,58 @@ export class IdentityLifecycleService {
     return { labId, userId, fromState: from, toState: to, reason: actor.reason ?? null, actorUserId: actor.actorUserId ?? null };
   }
 
+  /**
+   * Program 7 · Phase 7B.2 — additive TRANSACTION-AWARE seam. Runs `activate` (INVITED/PROVISIONED → ACTIVE) inside the
+   * CALLER's transaction, so a multi-step operation (e.g. invitation acceptance) can commit the lifecycle transition
+   * atomically with its own effects. Semantics are IDENTICAL to `activate()` (same CAS, deterministic mapping, durable
+   * event); the ONLY difference is that the caller owns the transaction and is responsible for the best-effort audit
+   * AFTER commit (L9 — the durable IdentityLifecycleEvent, written here in-tx, remains authoritative). `labId` is passed
+   * explicitly (the caller runs system-scoped inside its own tx). This changes no existing behavior of the public
+   * `activate/suspend/reactivate/deprovision` methods.
+   */
+  activateInTx(tx: Prisma.TransactionClient, userId: string, labId: string, actor: LifecycleActor = {}): Promise<LifecycleResult> {
+    return this.applyTransition(tx, 'activate', userId, labId, actor);
+  }
+
+  /** The core transition (CAS + deterministic mapping + durable event + coordinated effects) run on a given tx client. */
+  private async applyTransition(tx: Prisma.TransactionClient, op: LifecycleOp, userId: string, labId: string, actor: LifecycleActor): Promise<LifecycleResult> {
+    const { from, to } = LIFECYCLE_TRANSITIONS[op];
+    const user = await tx.user.findFirst({ where: { id: userId, labId }, select: { id: true, lifecycleState: true } });
+    if (!user) throw new NotFoundException('user not found in this lab');
+    // Idempotent: already in the target state (repeated request / benign retry).
+    if (user.lifecycleState === to) return { userId, from: user.lifecycleState, to, isActive: isActiveForState(to), idempotent: true, changed: false };
+    // Legality: the current state must be a legal `from` for this op — else fail closed (illegal transition).
+    if (!from.includes(user.lifecycleState)) throw new ConflictException(`illegal ${op} transition from ${user.lifecycleState}`);
+    // Single-winner CAS: only one concurrent transition may flip the state.
+    const cas = await tx.user.updateMany({
+      where: { id: userId, labId, lifecycleState: { in: from } },
+      data: { lifecycleState: to, isActive: isActiveForState(to), lifecycleUpdatedAt: new Date(), ...(to === UserLifecycleState.DEPROVISIONED ? { deprovisionedAt: new Date() } : {}) },
+    });
+    if (cas.count !== 1) {
+      const now = await tx.user.findFirst({ where: { id: userId, labId }, select: { lifecycleState: true } });
+      if (now?.lifecycleState === to) return { userId, from: user.lifecycleState, to, isActive: isActiveForState(to), idempotent: true, changed: false };
+      throw new ConflictException('lifecycle transition lost a concurrent race');
+    }
+    // Authoritative durable evidence (L9) — same transaction as the state change.
+    await tx.identityLifecycleEvent.create({ data: this.eventData(labId, userId, user.lifecycleState, to, actor) });
+    // Coordinated effects: suspension + deprovisioning revoke sessions + refresh capability.
+    if (op === 'suspend' || op === 'deprovision') {
+      await tx.userSession.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
+      await tx.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
+    }
+    // Deprovisioning additionally deactivates federated links (evidence; the isActive gate is the runtime block).
+    if (op === 'deprovision') {
+      await tx.federatedIdentity.updateMany({ where: { userId, deactivatedAt: null }, data: { deactivatedAt: new Date() } });
+    }
+    return { userId, from: user.lifecycleState, to, isActive: isActiveForState(to), idempotent: false, changed: true };
+  }
+
   private async transition(op: LifecycleOp, userId: string, actor: LifecycleActor): Promise<LifecycleResult> {
     const labId = this.requireLab();
-    const { from, to } = LIFECYCLE_TRANSITIONS[op];
-    const result = await this.labContext.runSystem(() =>
-      this.prisma.$transaction(async (tx) => {
-        const user = await tx.user.findFirst({ where: { id: userId, labId }, select: { id: true, lifecycleState: true } });
-        if (!user) throw new NotFoundException('user not found in this lab');
-        // Idempotent: already in the target state (repeated request / benign retry).
-        if (user.lifecycleState === to) return { userId, from: user.lifecycleState, to, isActive: isActiveForState(to), idempotent: true, changed: false };
-        // Legality: the current state must be a legal `from` for this op — else fail closed (illegal transition).
-        if (!from.includes(user.lifecycleState)) throw new ConflictException(`illegal ${op} transition from ${user.lifecycleState}`);
-        // Single-winner CAS: only one concurrent transition may flip the state.
-        const cas = await tx.user.updateMany({
-          where: { id: userId, labId, lifecycleState: { in: from } },
-          data: { lifecycleState: to, isActive: isActiveForState(to), lifecycleUpdatedAt: new Date(), ...(to === UserLifecycleState.DEPROVISIONED ? { deprovisionedAt: new Date() } : {}) },
-        });
-        if (cas.count !== 1) {
-          const now = await tx.user.findFirst({ where: { id: userId, labId }, select: { lifecycleState: true } });
-          if (now?.lifecycleState === to) return { userId, from: user.lifecycleState, to, isActive: isActiveForState(to), idempotent: true, changed: false };
-          throw new ConflictException('lifecycle transition lost a concurrent race');
-        }
-        // Authoritative durable evidence (L9) — same transaction as the state change.
-        await tx.identityLifecycleEvent.create({ data: this.eventData(labId, userId, user.lifecycleState, to, actor) });
-        // Coordinated effects: suspension + deprovisioning revoke sessions + refresh capability.
-        if (op === 'suspend' || op === 'deprovision') {
-          await tx.userSession.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
-          await tx.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
-        }
-        // Deprovisioning additionally deactivates federated links (evidence; the isActive gate is the runtime block).
-        if (op === 'deprovision') {
-          await tx.federatedIdentity.updateMany({ where: { userId, deactivatedAt: null }, data: { deactivatedAt: new Date() } });
-        }
-        return { userId, from: user.lifecycleState, to, isActive: isActiveForState(to), idempotent: false, changed: true };
-      }),
-    );
+    const result = await this.labContext.runSystem(() => this.prisma.$transaction((tx) => this.applyTransition(tx, op, userId, labId, actor)));
     if (result.changed) {
-      await this.bestEffortAudit(AUDIT_CODE[op], userId, result.from, to, actor.reason);
-      if (op === 'deprovision') await this.bestEffortAudit('IDENTITY_LINK_DEACTIVATED', userId, result.from, to, actor.reason);
+      await this.bestEffortAudit(AUDIT_CODE[op], userId, result.from, LIFECYCLE_TRANSITIONS[op].to, actor.reason);
+      if (op === 'deprovision') await this.bestEffortAudit('IDENTITY_LINK_DEACTIVATED', userId, result.from, LIFECYCLE_TRANSITIONS[op].to, actor.reason);
     }
     return result;
   }

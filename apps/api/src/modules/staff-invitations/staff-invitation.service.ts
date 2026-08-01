@@ -90,34 +90,40 @@ export class StaffInvitationService {
     if (!rawToken || !password) throw new BadRequestException('missing token or password');
     const tokenHash = hashInvitationToken(rawToken);
 
-    // (1) validate token — public (no lab context); resolve via the hash only (opaque URL).
-    const inv = await this.labContext.runSystem(() => this.prisma.staffInvitation.findFirst({ where: { tokenHash }, select: { id: true, labId: true, userId: true, status: true, expiresAt: true } }));
-    if (!inv) throw new UnauthorizedException('invalid or expired invitation');
-    if (inv.status !== 'PENDING') throw new UnauthorizedException('invalid or expired invitation');
-    if (inv.expiresAt.getTime() < Date.now()) {
-      await this.labContext.runSystem(() => this.prisma.staffInvitation.updateMany({ where: { id: inv.id, status: 'PENDING' }, data: { status: 'EXPIRED' } }));
-      throw new UnauthorizedException('invalid or expired invitation');
+    // Expiry cleanup (terminal, orthogonal to acceptance): if a PENDING invite is past expiry, mark it EXPIRED so the
+    // atomic boundary below finds no PENDING invite and fails closed. This commit is independent of acceptance.
+    const pre = await this.labContext.runSystem(() => this.prisma.staffInvitation.findFirst({ where: { tokenHash }, select: { id: true, status: true, expiresAt: true } }));
+    if (pre && pre.status === 'PENDING' && pre.expiresAt.getTime() < Date.now()) {
+      await this.labContext.runSystem(() => this.prisma.staffInvitation.updateMany({ where: { id: pre.id, status: 'PENDING' }, data: { status: 'EXPIRED' } }));
     }
 
-    // (2) CAS consume + (3) verify still INVITED + (4) persist Argon2id password — atomic; commits before activation.
+    // Hash the password OUTSIDE the transaction (expensive; independent of tx state) so the atomic boundary stays short.
     const passwordHash = await argon2.hash(password);
-    await this.labContext.runSystem(() =>
+
+    // ── ATOMIC ACCEPTANCE BOUNDARY (7B.2 reconciliation) — all effects commit together or roll back together ──────────
+    // 1. resolve+validate token · 2. CAS-claim PENDING→ACCEPTED · 3. verify user still INVITED · 4. replace placeholder
+    // password · 5. INVITED→ACTIVE via the governed transaction-aware lifecycle seam · (durable evidence, all in-tx).
+    // A failure at ANY step rolls back the WHOLE transaction — invitation stays PENDING & reusable, user stays INVITED
+    // (isActive=false, placeholder unchanged), no acceptance/lifecycle event, no session/permission.
+    const committed = await this.labContext.runSystem(() =>
       this.prisma.$transaction(async (tx) => {
-        const cas = await tx.staffInvitation.updateMany({ where: { id: inv.id, status: 'PENDING' }, data: { status: 'ACCEPTED', acceptedAt: new Date() } });
-        if (cas.count !== 1) throw new UnauthorizedException('invalid or expired invitation'); // already consumed (single-use)
-        const user = await tx.user.findFirst({ where: { id: inv.userId, labId: inv.labId }, select: { lifecycleState: true } });
+        const inv = await tx.staffInvitation.findFirst({ where: { tokenHash }, select: { id: true, labId: true, userId: true, status: true, expiresAt: true } }); // (1)
+        if (!inv || inv.status !== 'PENDING' || inv.expiresAt.getTime() < Date.now()) throw new UnauthorizedException('invalid or expired invitation');
+        const claimed = await tx.staffInvitation.updateMany({ where: { id: inv.id, status: 'PENDING' }, data: { status: 'ACCEPTED', acceptedAt: new Date() } }); // (2) single-winner
+        if (claimed.count !== 1) throw new UnauthorizedException('invalid or expired invitation'); // lost the concurrent race
+        const user = await tx.user.findFirst({ where: { id: inv.userId, labId: inv.labId }, select: { lifecycleState: true } }); // (3)
         if (!user || user.lifecycleState !== UserLifecycleState.INVITED) throw new UnauthorizedException('invitation is not in an acceptable state');
-        // Persist the password (NOT isActive/lifecycleState — those transition via the lifecycle boundary in step 5).
-        await tx.user.update({ where: { id: inv.userId }, data: { passwordHash } });
+        await tx.user.update({ where: { id: inv.userId }, data: { passwordHash } }); // (4) NOT isActive/lifecycleState — those transition via the seam
+        const lc = await this.lifecycle.activateInTx(tx, inv.userId, inv.labId, { reason: 'staff invitation accepted' }); // (5) INVITED→ACTIVE, same tx
+        if (lc.to !== UserLifecycleState.ACTIVE || !lc.changed) throw new ConflictException('activation did not occur'); // never leave ACCEPTED without ACTIVE
+        return { userId: inv.userId, labId: inv.labId, invitationId: inv.id };
       }),
     );
 
-    // (5) activate ONLY through the sole lifecycle writer (INVITED→ACTIVE) — after the password is durably persisted.
-    await this.labContext.runLabScoped(inv.labId, () => this.lifecycle.activate(inv.userId, { reason: 'staff invitation accepted' }));
-    // (6) audit — coded, no token/password.
-    await this.bestEffortAudit('IDENTITY_INVITATION_ACCEPTED', inv.userId, { invitationId: inv.id });
-    // (7) best-effort welcome email (advisory; never gates activation).
-    await this.sendWelcomeEmail(inv.labId, inv.userId);
+    // Post-commit ONLY (advisory / best-effort — never affects committed identity state).
+    await this.bestEffortAudit('IDENTITY_INVITATION_ACCEPTED', committed.userId, { invitationId: committed.invitationId });
+    await this.bestEffortAudit('IDENTITY_ACTIVATED', committed.userId, { toState: 'ACTIVE', via: 'staff-invitation' });
+    await this.sendWelcomeEmail(committed.labId, committed.userId);
     return { status: 'OK' }; // NO session minted, NO permission granted — the user logs in later via 7A.
   }
 
