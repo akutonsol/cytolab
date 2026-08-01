@@ -138,6 +138,12 @@ const ENTRIES: AuditRegistryEntry[] = [
   { category: 'ADMINISTRATIVE', actionCode: 'IDENTITY_INVITED', eventVersion: 1, defaultSeverity: 'NOTICE', phiIndicator: false, dataClass: 'CONFIDENTIAL', retentionClass: 'EXTENDED', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
   { category: 'ADMINISTRATIVE', actionCode: 'IDENTITY_INVITATION_ACCEPTED', eventVersion: 1, defaultSeverity: 'NOTICE', phiIndicator: false, dataClass: 'CONFIDENTIAL', retentionClass: 'EXTENDED', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
   { category: 'ADMINISTRATIVE', actionCode: 'IDENTITY_INVITATION_CANCELLED', eventVersion: 1, defaultSeverity: 'NOTICE', phiIndicator: false, dataClass: 'CONFIDENTIAL', retentionClass: 'EXTENDED', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: null },
+  // Program 7 · Phase 7B.3 — SCIM Users (ADDITIVE; Program-7-authorized, reserved in 7B DoR L7). One coded event per SCIM
+  // operation OUTCOME (create/replace/patch/delete → provisioned/activated/suspended/deprovisioned/updated/no_op/rejected)
+  // via the bounded `identity.scim_provisioning.v1` contract — NEVER the raw SCIM payload, service token, password, PHI,
+  // or a mutable external claim (externalId/email). The lifecycle transitions themselves also emit the 7B.1 codes
+  // (IDENTITY_PROVISIONED/ACTIVATED/SUSPENDED/DEPROVISIONED) through the sole lifecycle writer.
+  { category: 'ADMINISTRATIVE', actionCode: 'IDENTITY_SCIM_SYNCED', eventVersion: 1, defaultSeverity: 'NOTICE', phiIndicator: false, dataClass: 'CONFIDENTIAL', retentionClass: 'EXTENDED', durabilityClass: 'OPERATIONAL', attributionPolicy: 'HTTP_REQUEST', metadataContractId: 'identity.scim_provisioning.v1' },
   // P2-5B PHI-access taxonomy (small + stable): single-subject VIEWED, aggregate LIST_QUERIED,
   // and multi-subject EXPORTED. All are OPERATIONAL (PHI reads are non-transactional and
   // side-effect-free; CRITICAL_TRANSACTIONAL would be untruthful, REQUIRED_DURABLE is unsupported).
@@ -634,6 +640,9 @@ const CURRENT_VERSIONS: Record<AuditEventKey, number> = {
   'SYSTEM:JOB_COMPLETED': 1,
   'DATA_EXPORT:EVIDENCE_EXPORTED': 2,
   'DATA_EXPORT:AUDIT_EXPORTED': 1,
+  // Program 7 · Phase 7B.3 — SCIM Users provisioning outcome (declared current so producers resolve it; the earlier
+  // 7B.1/7B.2 IDENTITY_* lifecycle codes are authoritative via the durable IdentityLifecycleEvent).
+  'ADMINISTRATIVE:IDENTITY_SCIM_SYNCED': 1,
 };
 
 const BY_EXACT: ReadonlyMap<AuditExactKey, AuditRegistryEntry> = new Map(

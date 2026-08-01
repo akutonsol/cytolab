@@ -344,6 +344,7 @@ model Lab {
   samlConsumedAssertions           SamlConsumedAssertion[]
   identityLifecycleEvents          IdentityLifecycleEvent[]
   staffInvitations                 StaffInvitation[]
+  scimUserMappings                 ScimUserMapping[]
 }
 
 /// How a lab's DATA-PLANE storage is provisioned. Control-plane rows (Lab, LabDomain,
@@ -432,6 +433,7 @@ model User {
   deprovisionedAt          DateTime?
   lifecycleEvents          IdentityLifecycleEvent[]    @relation("IdentityLifecycleEventUser")
   staffInvitations         StaffInvitation[]
+  scimUserMappings         ScimUserMapping[]           @relation("ScimUserMappingUser")
   accountId                String
   account                  Account                     @relation(fields: [accountId], references: [id])
   workspaceId              String?
@@ -6259,6 +6261,9 @@ model ServicePrincipal {
   // Program 7 · Phase 7A.2b — machine credential lifecycle + scopes (child entities; ServicePrincipal shape unchanged)
   credentials ServicePrincipalCredential[]
   scopes      ServicePrincipalScope[]
+  // Program 7 · Phase 7B.3 — SCIM connector provenance (a SCIM ServicePrincipal may create many mappings). Additive
+  // back-relation only; the ServicePrincipal shape/behavior is unchanged.
+  scimUserMappings ScimUserMapping[]
 
   @@unique([labId, key])
   @@index([labId])
@@ -6544,6 +6549,44 @@ model StaffInvitation {
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
 
+  @@index([labId])
+  @@index([userId])
+}
+
+// ============================================================================
+// Program 7 · Phase 7B.3 — SCIM Users (inbound SCIM 2.0 provisioning into the
+// frozen 7B.1 lifecycle). ADDITIVE, lab-scoped, provenance FKs onDelete:
+// Restrict. NO frozen model is modified: the SCIM `externalId` (a MUTABLE
+// external attribute) lives HERE, never on `User` (GG7 — the durable key stays
+// `User.id`). SCIM connectors authenticate as frozen 7A.2b ServicePrincipals
+// (no standalone SCIM credential model); all lifecycle effects flow through
+// IdentityLifecycleService (the sole writer, L8); enforcement terminates at the
+// existing PermissionsGuard. Nothing here grants permissions, mints a session,
+// writes FederatedIdentity, manages passwords, or touches the clinical/AI path.
+//
+// IMMUTABLE, APPEND-ONLY (§4b): a mapping row is immutable after creation.
+// Ordinary SCIM POST/PUT/PATCH/DELETE NEVER re-point/update/delete it; an
+// externalId reassignment fails closed on the [labId, externalId] uniqueness.
+// The 7B.3 baseline implements NO reconciliation. Any future governed
+// reconciliation is append-only supersession (retain + supersede + new row +
+// evidence + separate admin permission/actor/reason/audit + at most one active
+// mapping per (labId, externalId)); PHYSICAL DELETION OF MAPPING HISTORY IS
+// PROHIBITED. (No `updatedAt` column — the row is never updated.)
+// ============================================================================
+model ScimUserMapping {
+  id                 String            @id @default(cuid())
+  mappingUuid        String            @unique @default(uuid()) // stable internal identifier (GG7)
+  labId              String
+  lab                Lab               @relation(fields: [labId], references: [id])
+  userId             String
+  user               User              @relation("ScimUserMappingUser", fields: [userId], references: [id], onDelete: Restrict)
+  externalId         String // the IdM's external identifier — a MUTABLE external attribute, NEVER the durable key
+  servicePrincipalId String? // the SCIM connector (ServicePrincipal) that created the mapping — attribution/provenance
+  servicePrincipal   ServicePrincipal? @relation(fields: [servicePrincipalId], references: [id], onDelete: Restrict)
+  createdAt          DateTime          @default(now())
+
+  @@unique([labId, userId]) // at most one SCIM mapping per user in a lab
+  @@unique([labId, externalId]) // at most one active binding per external id in a lab (immutability guard)
   @@index([labId])
   @@index([userId])
 }

@@ -137,6 +137,12 @@ export const SPECIAL_OBJECTS: Record<string, string[]> = {
   // invitations. Acceptance itself is @Public (token-bound) and grants NO permission. Confers NO clinical/AI authority;
   // assigned to NO default role (byPrefix never selects 'identityinvitation'); enforcement terminates at PermissionsGuard.
   identityinvitation: ['manage'],
+  // P7-7B.3 — SCIM Users provisioning: a DISTINCT additive namespace granted ONLY to a SCIM connector ServicePrincipal
+  // (machine identity; 7A.2b OAuth). `manage` = perform inbound SCIM 2.0 Users provisioning (create/read/list/replace/
+  // patch/deprovision) whose lifecycle effects flow through IdentityLifecycleService. It authorizes the SCIM provisioning
+  // SURFACE, not any domain/clinical/AI resource, and grants no other permission. Assigned to NO default role (byPrefix
+  // never selects 'identityprovisioning' — NO default grant); enforcement terminates at the existing PermissionsGuard.
+  identityprovisioning: ['manage'],
 };
 
 export interface SeedRoleDef {

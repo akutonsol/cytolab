@@ -75,6 +75,7 @@ import { ClinicalPerfModule } from './modules/clinical-perf/clinical-perf.module
 import { EnterpriseAuthModule } from './modules/enterprise-auth/enterprise-auth.module';
 import { IdentityLifecycleModule } from './modules/identity-lifecycle/identity-lifecycle.module';
 import { StaffInvitationsModule } from './modules/staff-invitations/staff-invitations.module';
+import { ScimModule } from './modules/scim/scim.module';
 import { TeleconsultModule } from './modules/teleconsult/teleconsult.module';
 import { CodingModule } from './modules/coding/coding.module';
 import { FhirModule } from './modules/fhir/fhir.module';
@@ -187,6 +188,7 @@ import { ScreeningBatchesModule } from './modules/screening-batches/screening-ba
     EnterpriseAuthModule, // Program 7 · Phase 7A.1 — Enterprise Authentication foundation (canonical principal + provider-isolation seam; additive)
     IdentityLifecycleModule, // Program 7 · Phase 7B.1 — Identity Lifecycle Core (governed access-lifecycle; additive)
     StaffInvitationsModule, // Program 7 · Phase 7B.2 — Staff Invitations (governed entry-by-invitation; additive)
+    ScimModule, // Program 7 · Phase 7B.3 — SCIM Users (inbound SCIM 2.0 provisioning into the frozen lifecycle; additive)
     TeleconsultModule,
     CodingModule,
     FhirModule,

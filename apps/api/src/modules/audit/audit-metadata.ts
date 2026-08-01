@@ -28,7 +28,8 @@ export type AuditMetadataContractId =
   | 'security.session_termination.v1' // P2-6E — administrative session termination (scope + count)
   | 'security.ip_block.v1' // P2-6E — administrative IP block add (durability flag only)
   | 'security.audit_event_phi_access.v1' // P2-7C — PHI-projection read of the audit ledger (counts/enums only)
-  | 'data_export.audit_export.v1'; // P2-9A — governed audit-log export (projection/format/scope/counts only)
+  | 'data_export.audit_export.v1' // P2-9A — governed audit-log export (projection/format/scope/counts only)
+  | 'identity.scim_provisioning.v1'; // P7-7B.3 — SCIM Users provisioning OUTCOME (bounded operation/outcome codes only)
 
 export type AuditMetadataScalar = string | number | boolean | null;
 export type AuditMetadataValue = Record<string, AuditMetadataScalar>;
@@ -134,6 +135,14 @@ export const AUDIT_EXPORT_FORMATS = ['csv', 'ndjson'] as const;
 export type AuditExportFormat = (typeof AUDIT_EXPORT_FORMATS)[number];
 export const AUDIT_EXPORT_FILTER_CLASSES = ['none', 'time_only', 'single_dimension', 'multi_dimension'] as const;
 export type AuditExportFilterClass = (typeof AUDIT_EXPORT_FILTER_CLASSES)[number];
+
+// P7-7B.3 — bounded enums for the SCIM Users provisioning-outcome contract (identity.scim_provisioning.v1). `operation`
+// is the SCIM verb; `outcome` is the coded lifecycle/attribute result. Value-free codes ONLY — NEVER the raw SCIM
+// payload, externalId, userName/email, service token, password, or PHI. Exported so producers/tests reference constants.
+export const SCIM_OPERATIONS = ['create', 'replace', 'patch', 'delete'] as const;
+export type ScimOperation = (typeof SCIM_OPERATIONS)[number];
+export const SCIM_OUTCOMES = ['provisioned', 'activated', 'reactivated', 'suspended', 'deprovisioned', 'updated', 'no_op', 'rejected'] as const;
+export type ScimOutcome = (typeof SCIM_OUTCOMES)[number];
 
 // Member types for typed producer/owner call sites (P2-5C).
 export type PhiAccessSurface = (typeof PHI_ACCESS_SURFACES)[number];
@@ -250,6 +259,19 @@ const CONTRACTS: Record<AuditMetadataContractId, MetadataContract> = {
       truncated: { kind: 'boolean', required: true }, // more matched than the applied cap
       cap: { kind: 'number', required: true, integer: true, min: 1 }, // applied server-owned maximum
       filterClass: { kind: 'string', required: true, values: AUDIT_EXPORT_FILTER_CLASSES },
+    },
+  },
+  // P7-7B.3 — SCIM Users provisioning outcome. Bounded operation + outcome codes + a lifecycleChanged boolean ONLY.
+  // NEVER the raw SCIM payload, externalId, userName/email, service token, password, or PHI. `operation` is the SCIM
+  // verb; `outcome` is the coded result; `lifecycleChanged` = whether a lifecycle transition actually occurred (vs a
+  // benign idempotent no-op). Coded evidence only — the durable IdentityLifecycleEvent remains authoritative for the
+  // transition itself.
+  'identity.scim_provisioning.v1': {
+    id: 'identity.scim_provisioning.v1',
+    fields: {
+      operation: { kind: 'string', required: true, values: SCIM_OPERATIONS },
+      outcome: { kind: 'string', required: true, values: SCIM_OUTCOMES },
+      lifecycleChanged: { kind: 'boolean' },
     },
   },
   // P2-5B — PHI-access metadata: bounded enums + counts only. No free text, no reason prompt,
