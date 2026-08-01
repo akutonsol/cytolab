@@ -1,7 +1,8 @@
 # Program 7 · Phase 7B.3 — SCIM Users — DESIGN OF RECORD (proposed)
 
-**Status:** Architecture-level design of record — **REVISED per governance rulings R1–R8 (incorporated below); AWAITING
-FINAL design approval.** Governance-only: **no**
+**Status:** Architecture-level design of record — **APPROVED PER R1–R8, with the final immutable-mapping reconciliation
+clarification (append-only supersession, no physical deletion — §4b) incorporated; AWAITING FINAL CONFIRMATION.**
+Governance-only: **no**
 implementation, schema, migration, dependency, endpoint, test, workflow, tag, or baseline change is authorized here.
 Additive to the frozen Programs 1–6, Phase 7A (`p7-7a-complete` → `aef3faa`), Phase 7B.1 (`p7-7b1-accepted` → `9142d20`),
 and Phase 7B.2 (`p7-7b2-accepted` → `53b936b`); modifies no accepted baseline. Phase 7B DoR:
@@ -71,21 +72,40 @@ per-lab SCIM bearer credentials, a SCIM↔canonical identifier mapping, and addi
 - SCIM `active` maps deterministically to lifecycle via the boundary; SCIM never bypasses a lifecycle transition.
 - **R1 — one machine-auth model:** SCIM authenticates ONLY as a constrained `ServicePrincipal` (7A.2b); it introduces no
   new credential model, mints no user session, and never touches 7A user-authentication strategies/guards.
-- **R3 — immutable mapping:** a `ScimUserMapping` (`externalId → User.id`) is immutable after creation; re-pointing it is
-  only possible through an explicit governed reconciliation process — never automatic reassignment.
+- **R3 — immutable mapping (append-only):** a `ScimUserMapping` (`externalId → User.id`) is immutable after creation.
+  Ordinary SCIM `POST/PUT/PATCH/DELETE` may **never** re-point an existing mapping; any attempted `externalId`
+  reassignment **fails closed** with a deterministic SCIM conflict (§5b). The **7B.3 baseline implements no
+  reconciliation.** A future governed reconciliation (if separately authorized) uses **append-only supersession** — it
+  retains the prior row, never deletes it (§4b). **Physical deletion of mapping history is prohibited.**
 
 ## 4. Canonical data model (additive; no frozen-model change)
 - **NO standalone SCIM credential model (R1).** SCIM authentication reuses the frozen 7A.2b `ServicePrincipal` + its
   OAuth Client-Credentials + service-token path. A SCIM connector is a `ServicePrincipal` granted a **dedicated additive
   SCIM permission** (proposed namespace `identityprovisioning:manage`, no default grant) — enforced by the existing
   `PermissionsGuard` on `@Service` SCIM routes. No `ScimClient` table.
-- **`ScimUserMapping`** (SCIM↔canonical identifier separation — L10; **immutable — R3**): `id`, `mappingUuid @unique`,
-  `labId` (FK RESTRICT), `userId` (FK RESTRICT, `@@unique[labId,userId]`), `externalId` (the IdM's id;
-  `@@unique[labId, externalId]`), `servicePrincipalId?` (the connector that created it; attribution), `createdAt`. **No
-  `updatedAt`-driven re-pointing** — the `externalId → userId` binding is set once at creation and never automatically
-  reassigned; a changed binding requires an explicit governed reconciliation (delete-and-recreate under audit), not an
-  in-place update. Keeps SCIM's mutable external identifier off the frozen `User` model. **`User` is unchanged** (S7).
-- No JSON columns; provenance FKs `onDelete: Restrict`.
+- **`ScimUserMapping`** (SCIM↔canonical identifier separation — L10; **immutable, append-only — R3**): `id`,
+  `mappingUuid @unique`, `labId` (FK RESTRICT), `userId` (FK RESTRICT, `@@unique[labId,userId]`), `externalId` (the IdM's
+  id), `servicePrincipalId?` (the connector that created it; attribution), `createdAt`. The `externalId → userId` binding
+  is set once at creation and **never** updated in place — there is no re-pointing path. **`User` is unchanged** (S7).
+  Uniqueness of the **active** binding per `(labId, externalId)` is enforced so at most one active mapping exists (in the
+  baseline, where no superseded rows exist, `@@unique[labId, externalId]`; the future supersession model (§4b) carries a
+  status so the uniqueness applies to the active row only). No JSON columns; provenance FKs `onDelete: Restrict`.
+
+## 4b. Mapping reconciliation — immutable, append-only supersession (binding rule)
+1. `ScimUserMapping` rows are **immutable after creation**.
+2. Ordinary SCIM `POST/PUT/PATCH/DELETE` operations may **never** re-point an existing mapping to another `User`.
+3. Any attempted `externalId` reassignment **fails closed** with a deterministic SCIM conflict response (§5b — `409`
+   `uniqueness`).
+4. The **initial 7B.3 baseline implements no mapping reconciliation** (create-only + immutable).
+5. A future governed reconciliation capability, **if separately authorized**, uses **append-only supersession**:
+   - **retain** the prior mapping row (never deleted);
+   - mark it **inactive / superseded**;
+   - **create a new** mapping row;
+   - **link both** through durable reconciliation evidence;
+   - require a **separate administrative permission**, an actor, a bounded reason, and an audit event;
+   - enforce **at most one active mapping** per `(labId, externalId)`;
+   - preserve **complete historical attribution**.
+6. **Physical deletion of mapping history is prohibited.**
 
 ## 5. SCIM lifecycle model (Users; RFC 7644)
 ```
@@ -124,7 +144,8 @@ Every conflict resolves to a fixed, non-heuristic outcome (no fuzzy matching, no
 - **Stale version (optimistic concurrency):** with an `If-Match`/`meta.version` (ETag) that no longer matches → **`412
   Precondition Failed`**; the client must re-read and retry.
 - **All uniqueness violations** surface the RFC 7644 error schema (`urn:ietf:params:scim:api:messages:2.0:Error`,
-  `scimType:"uniqueness"`), never a heuristic reconciliation. Mapping re-pointing is out of band (governed reconciliation).
+  `scimType:"uniqueness"`), never a heuristic reconciliation. Mapping re-pointing is impossible via SCIM ops; correction
+  is only a future authorized **append-only supersession** (§4b), never a delete or in-place re-point.
 
 ## 6. Trust boundaries
 External IdM → **OAuth Client-Credentials** as a constrained `ServicePrincipal` (7A.2b) → `@Service` SCIM route →
@@ -149,10 +170,11 @@ sets a tenancy key from the body, or touches the clinical/AI path.
   CAS; concurrent SCIM ops resolve deterministically.
 - **S6 — Attribute updates.** name/email updates are `User` profile writes (not lifecycle); enforce `@@unique[labId,email]`;
   reject/þ conflict per SCIM error schema.
-- **S7 — Identifier separation (L10) + immutable mapping (R3).** SCIM `externalId` lives in **`ScimUserMapping`**, NOT on
-  `User` — no frozen-model change; canonical id is `User.id`; auth-subject stays in `FederatedIdentity`. The mapping is
-  **immutable after creation** — `externalId → User.id` changes only via an explicit governed reconciliation (never
-  automatic reassignment).
+- **S7 — Identifier separation (L10) + immutable, append-only mapping (R3).** SCIM `externalId` lives in
+  **`ScimUserMapping`**, NOT on `User` — no frozen-model change; canonical id is `User.id`; auth-subject stays in
+  `FederatedIdentity`. The mapping is **immutable after creation**; ordinary SCIM ops never re-point it (deterministic
+  conflict on attempted reassignment); the baseline implements no reconciliation, and any future reconciliation is
+  **append-only supersession** (retain + supersede + new row + evidence; **never physical deletion**) — §4b.
 - **S8 — Provisioning-source precedence (L2).** SCIM-created ⇒ `originProvisioningSource=SCIM` (immutable). Whether SCIM may
   manage a MANUAL/INVITATION-origin identity (adopt) is a governed policy — *recommend: 7B.3 manages only identities it
   created or that are explicitly SCIM-linked; broader adoption deferred.*
@@ -186,16 +208,18 @@ GG1–GG7 (GG7 stable `User.id`; SCIM `externalId`/`userName` are mutable, never
 - **Credential handling (R1):** SCIM reuses the 7A.2b `ServicePrincipal` credential lifecycle (Argon2id hash-only, rotation/
   revocation already frozen); a compromised connector is contained to one lab's SCIM provisioning surface (its scope),
   never domain authorization — no new credential model to secure.
-- **Mapping immutability (R3):** the `externalId → User.id` binding is set once; a mistaken binding is corrected only via a
-  governed reconciliation (audited delete-and-recreate), never a silent re-point — this trades convenience for auditable
-  correctness.
+- **Mapping immutability (R3, append-only):** the `externalId → User.id` binding is set once and never re-pointed by SCIM;
+  a mistaken binding is corrected only via a future authorized **append-only supersession** (retain + supersede + new row
+  + durable evidence; **physical deletion prohibited**), never a silent re-point or a delete — full historical
+  attribution is preserved (§4b).
 - **Sole-writer preservation:** SCIM handlers MUST route lifecycle through `IdentityLifecycleService` (enforced by the 7B.1
   arch scan + the gate assert), and may use the 7B.2 `activateInTx` seam for atomic create+activate.
 
 ## 10. Deferred decisions
 SCIM **Groups** + membership (7B.4) · group→role/permission mapping (7B.4/7C) · outbound SCIM · SCIM bulk operations ·
-advanced filtering/sorting beyond the baseline · adoption of non-SCIM-origin identities (S8 broad policy) · JIT federation
-linkage (7B.5) · organization-scoped SCIM (7D).
+advanced filtering/sorting beyond the baseline · adoption of non-SCIM-origin identities (S8 broad policy) · **mapping
+reconciliation (append-only supersession — §4b; not in the 7B.3 baseline; separately authorized future capability)** ·
+JIT federation linkage (7B.5) · organization-scoped SCIM (7D).
 
 ## 11. Acceptance strategy (proposed folded gate — draft; not authorized to build)
 `p7-scim-users-acceptance`: exact-head + candidate ancestry; acceptance-infra-only delta; frozen anchors immutable
@@ -209,7 +233,8 @@ additionally prove:
 - **RFC idempotency** — repeated **PUT / PATCH / DELETE** yield the same committed state (no duplicate transition/mapping/
   event); repeated create-by-`externalId` returns the existing resource.
 - **Duplicate `externalId` rejection** — a second identity for an existing `externalId` fails closed (`409` uniqueness).
-- **Immutable mapping** — no in-place `externalId → User.id` re-pointing (governed reconciliation only).
+- **Immutable, append-only mapping** — no in-place `externalId → User.id` re-pointing and **no physical deletion** of a
+  mapping; reconciliation (not in the baseline) is append-only supersession only.
 - **Deterministic conflict handling** — duplicate email/externalId/concurrent/stale-version all resolve to fixed
   `409`/`412` outcomes, never a heuristic merge.
 - **Sole `PermissionsGuard` authorization boundary** — SCIM authorization terminates at the existing guard; SCIM grants
@@ -236,5 +261,5 @@ the four 7A increment tags) is modified.
 |---|---|
 | 7B.3 read-only preflight + current-state map | Complete (§1) |
 | 7B.3 architecture / boundary / guardrails review | Rulings R1–R8 issued |
-| 7B.3 Design of Record (S1–S12 + R1–R8) | **Revised — R1–R8 incorporated; awaiting FINAL design approval** |
+| 7B.3 Design of Record (S1–S12 + R1–R8 + §4b append-only reconciliation) | **Revised — incorporated; awaiting FINAL confirmation** |
 | 7B.3 implementation | **Not authorized** (separate authorization required) |
