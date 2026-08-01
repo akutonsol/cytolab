@@ -1,0 +1,141 @@
+# Program 7 · Phase 7B.2 — Staff Invitations acceptance gate (folded, gated). PREPARED — not yet registered on the
+# default branch and not yet dispatched (per the 7B.2 implementation authorization: prepare, do not run or register; a
+# separate completion review + gate authorization precedes registration/dispatch).
+#
+# Gated (workflow_dispatch only). Proves governed entry-by-invitation into the frozen 7B.1 lifecycle — additive; no
+# frozen model changed (Model C); isActive stays the auth gate; IdentityLifecycleService remains the sole lifecycle
+# writer — against PERSISTED DB truth on a fresh checkout + isolated Postgres: additive schema (1 enum + StaffInvitation
+# table + 2 RESTRICT FKs, no JSON, NO User change), Model C (invited user INVITED/isActive=false/non-null placeholder
+# Argon2id hash/source=INVITATION), hash-only token (no plaintext), the FROZEN acceptance order (password persisted then
+# activate via the lifecycle boundary → ACTIVE), single-use CAS, expiry/cancel fail-closed, acceptance grants NO
+# permission, the L8 sole-writer boundary still holds (source scan), and ET1-ET8. Then the FOCUSED staff-invitations +
+# identity-lifecycle jest suites (incl. the sole-writer arch spec), the FULL cumulative non-regression suite in
+# module-scoped batches (no exclusions), and a strict zero-error tsc. Verifies the exact head + descent from the 7B.2
+# candidate 38a75a2, that the post-candidate delta is acceptance-infra only, and that the frozen p6-* / all four 7A
+# increment / p7-7a-complete / p7-7b1-accepted anchors are unmodified.
+name: p7-staff-invitations-acceptance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p7-staff-invitations-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  staff-invitations-acceptance:
+    name: P7-7B.2 staff invitations (gated)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cytolab_accept_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
+      DATABASE_MIGRATION_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cytolab_accept_test
+      JWT_SECRET: 'ci-accept-jwt-secret-000000000000000000'
+      JWT_REFRESH_SECRET: ci-accept-refresh-secret
+      JWT_PORTAL_SECRET: 'ci-accept-jwt-portal-secret-00000000000000'
+      JWT_PORTAL_REFRESH_SECRET: ci-accept-portal-refresh-secret
+      ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
+      COOKIE_SECURE: 'false'
+      NODE_ENV: development
+      NODE_OPTIONS: '--max-old-space-size=6144'
+      INVITATION_FIXTURES_OUT: /tmp/.invitation-fixtures.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Print & verify the checked-out commit (exact-head + 7B.2 lineage rooted at candidate 38a75a2)
+        run: |
+          set -euo pipefail
+          echo "github.sha        = ${{ github.sha }}"
+          echo "git rev-parse HEAD = $(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}" || { echo "!! checkout SHA does not match github.sha"; exit 1; }
+          git merge-base --is-ancestor 38a75a247442b4cd5680042a898c41100ffc835f "$(git rev-parse HEAD)" || { echo "!! head is not a descendant of the 7B.2 candidate 38a75a2"; exit 1; }
+
+      - name: Confirm post-candidate delta is acceptance-infra only; frozen anchors unmodified
+        run: |
+          set -euo pipefail
+          git diff --name-only 38a75a247442b4cd5680042a898c41100ffc835f..HEAD | tee /tmp/post-candidate.txt
+          if grep -vE '^(\.github/workflows/p7-staff-invitations-acceptance\.yml|apps/api/scripts/(seed|assert)-staff-invitations-.*\.ts|apps/web/acceptance/\.gitignore|docs/.*)$' /tmp/post-candidate.txt; then
+            echo "!! post-candidate delta contains a non-acceptance-infra change"; exit 1
+          fi
+          test "$(git rev-parse p6-6h-accepted^{commit})" = "f98b9f11e4765da2ee9d27b0a7e3e15c05407961" || { echo "!! p6-6h-accepted moved"; exit 1; }
+          test "$(git rev-parse p6-complete^{commit})" = "40d810e4f541125eaddfc841c07c709348db214b" || { echo "!! p6-complete moved"; exit 1; }
+          test "$(git rev-parse p7-7a1-accepted^{commit})" = "84b9f740729ab089ed46966971492346dc11e28c" || { echo "!! p7-7a1-accepted moved"; exit 1; }
+          test "$(git rev-parse p7-7a2a-accepted^{commit})" = "e7bd38810a6a9048ca9dbd208d015d0d769be0af" || { echo "!! p7-7a2a-accepted moved"; exit 1; }
+          test "$(git rev-parse p7-7a2b-accepted^{commit})" = "e58ffb5fadff96274e3f8db2976079482a918a8c" || { echo "!! p7-7a2b-accepted moved"; exit 1; }
+          test "$(git rev-parse p7-7a3-accepted^{commit})" = "4da3afd12c5e97e4cb6f34224d2e5a8d189ff405" || { echo "!! p7-7a3-accepted moved"; exit 1; }
+          test "$(git rev-parse p7-7a-complete^{commit})" = "aef3faa2c48b4ff3535dea360060af37d7ca42e6" || { echo "!! p7-7a-complete moved"; exit 1; }
+          test "$(git rev-parse p7-7b1-accepted^{commit})" = "9142d2015a77f93218c46ed840584324e9968fc2" || { echo "!! p7-7b1-accepted moved"; exit 1; }
+          echo "OK: post-candidate delta is acceptance-infra only; p6 + all 7A increments + p7-7a-complete + p7-7b1-accepted anchors immutable"
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+
+      - run: npm ci
+
+      - name: Prisma generate
+        run: cd apps/api && npx prisma generate
+
+      - name: Build acceptance DB schema from the committed datamodel (folded-gate method)
+        run: |
+          set -euo pipefail
+          cd apps/api
+          npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > /tmp/accept-schema.sql
+          npx prisma db execute --url "$DATABASE_URL" --file /tmp/accept-schema.sql
+
+      - name: Seed the catalogue + an isolated lab (+ account)
+        run: |
+          set -euo pipefail
+          cd apps/api
+          npx prisma db seed
+          npx ts-node --transpile-only scripts/seed-staff-invitations-acceptance.ts
+
+      - name: Persisted-state assertions (schema / Model C / hash-only token / frozen accept order / single-use / L8 sole-writer / ET1-ET8)
+        run: cd apps/api && npx ts-node --transpile-only scripts/assert-staff-invitations-state.ts
+
+      - name: Focused staff-invitations + identity-lifecycle tests (Model C / frozen order / single-use / sole-writer arch)
+        run: cd apps/api && npx jest src/modules/staff-invitations src/modules/identity-lifecycle --runInBand
+
+      - name: Non-regression NR1 (identity/auth-adjacent + platform core)
+        run: cd apps/api && npx jest src/common src/database src/health.controller.spec.ts src/modules/auth src/modules/security src/modules/portal src/modules/roles src/modules/users src/modules/enterprise-auth --runInBand
+      - name: Non-regression NR1b (audit — isolated process; state-sensitive chain/seal regression specs)
+        run: cd apps/api && npx jest src/modules/audit --runInBand
+      - name: Non-regression NR2 (Program 6 AI + WSI)
+        run: cd apps/api && npx jest src/modules/ai-registry src/modules/dataset-governance src/modules/inference-engine src/modules/explainability src/modules/human-review src/modules/validation src/modules/continuous-eval src/modules/clinical-perf src/modules/ai src/modules/wsi --runInBand
+      - name: Non-regression NR3 (records / billing / reporting)
+        run: cd apps/api && npx jest src/modules/records src/modules/result-sheets src/modules/signout src/modules/reports src/modules/report-center src/modules/patients src/modules/clients src/modules/billing src/modules/payments src/modules/platform-billing src/modules/coding src/modules/correlation --runInBand
+      - name: Non-regression NR4 (messaging / ops)
+        run: cd apps/api && npx jest src/modules/messaging src/modules/notifications src/modules/appointments src/modules/qc src/modules/tat src/modules/workforce src/modules/workload src/modules/escalation src/modules/system src/modules/analytics src/modules/search src/modules/realtime --runInBand
+      - name: Non-regression NR5 (enterprise-admin / case / requisitions)
+        run: cd apps/api && npx jest src/modules/enterprise-administration src/modules/enterprise-case-management src/modules/diagnostic-case src/modules/quality-governance src/modules/ancillary-orders src/modules/recall src/modules/reagent src/modules/cabinets src/modules/fhir src/modules/req-tracking src/modules/requisitions src/modules/requisition-portal src/modules/services-catalog src/modules/screening-batches src/modules/batch --runInBand
+      - name: Non-regression NR6 (remaining product modules)
+        run: cd apps/api && npx jest src/modules/ai-screening src/modules/bethesda src/modules/change-requests src/modules/code-sheets src/modules/departments src/modules/employees src/modules/files src/modules/form-config src/modules/knowledge-base src/modules/lab-codes src/modules/lab-features src/modules/lab src/modules/operations src/modules/payroll src/modules/proficiency src/modules/result-templates src/modules/taxes src/modules/teleconsult src/modules/workspaces --runInBand
+
+      - name: TypeScript (strict — any error fails the gate closed)
+        run: cd apps/api && npx tsc --noEmit -p tsconfig.json
+
+      - name: Collect artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p7-7b2-staff-invitations-acceptance
+          path: |
+            /tmp/.invitation-fixtures.json
+            /tmp/accept-schema.sql
+            /tmp/post-candidate.txt
+          if-no-files-found: ignore
